@@ -1,0 +1,9 @@
+# MSBuild output
+/bin
+/obj
+
+# Visual Studio Code fieles
+/.vscode
+
+# ImGui ini file
+/imgui.ini
