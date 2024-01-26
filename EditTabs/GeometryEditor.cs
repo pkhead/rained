@@ -1,12 +1,17 @@
 using Raylib_cs;
+using ImGuiNET;
+using rlImGui_cs;
 
 namespace RainEd;
 
-public class GeometryEditor : UICanvasWidget
+public class GeometryEditor
 {
+    public bool IsWindowOpen = true;
+
+    private readonly Level level;
+
     public int Width;
     public int Height;
-    private Level level;
     private int workLayer = 0;
 
     public int WorkLayer { get => workLayer; set => workLayer = value; }
@@ -24,19 +29,76 @@ public class GeometryEditor : UICanvasWidget
         new(255, 0, 0, 127)
     };
 
+    private readonly string[] _viewModes = new string[2] {
+        "Overlay", "Stack"
+    };
+
     private const int TILE_SIZE = 20;
 
-    public GeometryEditor(Level level, int widgetWidth, int widgetHeight) : base(widgetWidth, widgetHeight)
+    private readonly UICanvasWidget canvasWidget;
+
+    public GeometryEditor(Level level)
     {
-        id = "##geom_edit";
+        this.level = level;
+        canvasWidget = new(1, 1);
         Width = 72;
         Height = 42;
-        this.level = level;
     }
 
-    protected override void Draw()
+    public void Render()
     {
-        Raylib.ClearBackground(Color.White);
+        // work layer
+        {
+            var workLayerV = workLayer + 1;
+            ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4);
+            ImGui.InputInt("Work Layer", ref workLayerV);
+            workLayerV = Math.Clamp(workLayerV, 1, 3);    
+            workLayer = workLayerV - 1;
+        }
+
+        // view mode
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8);
+            if (ImGui.BeginCombo("View Mode", _viewModes[(int)layerViewMode]))
+            {
+                for (int i = 0; i < _viewModes.Count(); i++)
+                {
+                    bool isSelected = i == (int)layerViewMode;
+                    if (ImGui.Selectable(_viewModes[i], isSelected))
+                    {
+                        layerViewMode = (GeometryEditor.LayerViewMode) i;
+                    }
+
+                    if (isSelected) ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
+            }
+        }
+
+        // canvas widget
+        {
+            var regionMax = ImGui.GetWindowContentRegionMax();
+            var regionMin = ImGui.GetCursorPos();
+
+            canvasWidget.Resize((int)(regionMax.X - regionMin.X), (int)(regionMax.Y - regionMin.Y));
+            
+            if (canvasWidget.RenderTexture is not null)
+            {
+                Raylib.BeginTextureMode(canvasWidget.RenderTexture);
+                DrawCanvas();
+                Raylib.EndTextureMode();
+            }
+
+            canvasWidget.Draw();
+        }
+    }
+
+    private void DrawCanvas()
+    {
+        Raylib.ClearBackground(new Color(0, 0, 0, 0)); // make canvas bg transparent
+        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, Color.White); // draw white over level area
 
         switch (layerViewMode)
         {
@@ -85,10 +147,10 @@ public class GeometryEditor : UICanvasWidget
                 break;
         }
 
-        var mouseCx = (int)(MouseX / TILE_SIZE);
-        var mouseCy = (int)(MouseY / TILE_SIZE);
+        var mouseCx = (int)(canvasWidget.MouseX / TILE_SIZE);
+        var mouseCy = (int)(canvasWidget.MouseY / TILE_SIZE);
 
-        if (IsHovered && mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
+        if (canvasWidget.IsHovered && mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
         {
             Raylib.DrawRectangleLines(mouseCx * TILE_SIZE, mouseCy * TILE_SIZE, TILE_SIZE, TILE_SIZE, Color.White);
 

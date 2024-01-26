@@ -9,10 +9,10 @@ namespace RainEd
         static void Main(string[] args)
         {
             Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
-            Raylib.InitWindow(1280, 800, "raylib-Extras-cs [ImGui] example - simple ImGui Demo");
+            Raylib.InitWindow(1280, 800, "Rained");
             Raylib.SetTargetFPS(144);
 
-            rlImGui.Setup(true);
+            rlImGui.Setup(true, true);
 
             RainEd app = new();
 

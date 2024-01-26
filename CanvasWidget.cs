@@ -2,13 +2,11 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
-using RlManaged;
-
 namespace RainEd;
 
-abstract public class UICanvasWidget
+public class UICanvasWidget
 {
-    protected string id;
+    public string ID;
     private float mouseX;
     private float mouseY;
     private bool hovered;
@@ -18,6 +16,8 @@ abstract public class UICanvasWidget
     public bool IsHovered { get => hovered; }
 
     private RlManaged.RenderTexture2D? renderTexture;
+    public RlManaged.RenderTexture2D? RenderTexture { get => renderTexture; }
+
     int curWidth, curHeight;
 
     public delegate void ActivationHandler(object sender);
@@ -28,7 +28,7 @@ abstract public class UICanvasWidget
 
     public UICanvasWidget(int width, int height)
     {
-        id = "##canvas_widget";
+        ID = "##canvas_widget";
 
         if (width > 0 && height > 0)
         {
@@ -66,23 +66,17 @@ abstract public class UICanvasWidget
             renderTexture = new(curWidth, curHeight);
         }
     }
-
-    protected abstract void Draw();
-
-    public void ImguiRender()
+    
+    public void Draw()
     {
         if (renderTexture is null) return;
-
-        Raylib.BeginTextureMode(renderTexture);
-        Draw();
-        Raylib.EndTextureMode();
 
         var windowOrigin = ImGui.GetCursorPos();
         var screenOrigin = ImGui.GetCursorScreenPos();
 
         rlImGui.ImageRenderTexture(renderTexture);
         ImGui.SetCursorPos(windowOrigin);
-        ImGui.InvisibleButton(id, new Vector2(curWidth, curHeight));
+        ImGui.InvisibleButton(ID, new Vector2(curWidth, curHeight));
 
         hovered = ImGui.IsItemHovered() || ImGui.IsItemActive();
         if (hovered)

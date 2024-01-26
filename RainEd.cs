@@ -7,90 +7,89 @@ namespace RainEd;
 class RainEd
 {
     private readonly Level level;
-    private readonly GeometryEditor geometryEditor;
+
+    private readonly LevelOverview overview;
+    private readonly GeometryEditor geometry;
+
+    private bool overview_p_open = true;
 
     public RainEd() {
         level = new();
-        geometryEditor = new(level, 1, 1);
+        
+        overview = new LevelOverview(level);
+        geometry = new GeometryEditor(level);
     }
-
-    private readonly string[] _viewModes = new string[2] {
-        "Overlay", "Stack"
-    };
 
     public void Draw()
     {
         Raylib.ClearBackground(Color.DarkGray);
 
         rlImGui.Begin();
+        ImGui.DockSpaceOverViewport();
 
         if (ImGui.BeginMainMenuBar())
         {
             if (ImGui.BeginMenu("File"))
             {
+                ImGui.MenuItem("New");
+                ImGui.MenuItem("Open");
+                ImGui.MenuItem("Save");
+                ImGui.MenuItem("Save As...");
+                ImGui.Separator();
+                ImGui.MenuItem("Render");
+                ImGui.Separator();
+                ImGui.MenuItem("Quit");
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("Edit"))
+            {
+                ImGui.MenuItem("Undo");
+                ImGui.MenuItem("Redo");
+                ImGui.Separator();
+                ImGui.MenuItem("Cut");
+                ImGui.MenuItem("Copy");
+                ImGui.MenuItem("Paste");
+                ImGui.Separator();
+                ImGui.MenuItem("Level Properties");
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("View"))
+            {
+                if (ImGui.MenuItem("Overview", null, overview.IsWindowOpen))
+                    overview.IsWindowOpen = !overview.IsWindowOpen;
+
+                if (ImGui.MenuItem("Geometry Editor", null, geometry.IsWindowOpen))
+                    geometry.IsWindowOpen = !geometry.IsWindowOpen;
+                
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("Help"))
+            {
+                ImGui.MenuItem("About...");
+                
                 ImGui.EndMenu();
             }
 
             ImGui.EndMainMenuBar();
         }
 
-        var imViewport = ImGui.GetMainViewport();
-        ImGui.SetNextWindowPos(imViewport.WorkPos);
-        ImGui.SetNextWindowSize(imViewport.WorkSize);
-
-        var fullscreenFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoBringToFrontOnFocus;
-        if (ImGui.Begin("RainEd", fullscreenFlags))
+        
+        if (overview.IsWindowOpen && ImGui.Begin("Overview", ref overview.IsWindowOpen))
         {
-            if (ImGui.BeginTabBar("Editor Tabs", ImGuiTabBarFlags.None))
-            {
-                if (ImGui.BeginTabItem("Overview"))
-                {
-                    ImGui.EndTabItem();
-                }
-
-                // TOOD: make each tab a separate class
-                if (ImGui.BeginTabItem("Geometry"))
-                {
-                    // work layer
-                    var workLayer = geometryEditor.WorkLayer + 1;
-                    ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4);
-                    ImGui.InputInt("Work Layer", ref workLayer);
-                    workLayer = Math.Clamp(workLayer, 1, 3);
-                    
-                    geometryEditor.WorkLayer = workLayer - 1;
-
-                    // view mode
-                    ImGui.SameLine();
-                    ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8);
-                    if (ImGui.BeginCombo("View Mode", _viewModes[(int)geometryEditor.layerViewMode]))
-                    {
-                        for (int i = 0; i < _viewModes.Count(); i++)
-                        {
-                            bool isSelected = i == (int)geometryEditor.layerViewMode;
-                            if (ImGui.Selectable(_viewModes[i], isSelected))
-                            {
-                                geometryEditor.layerViewMode = (GeometryEditor.LayerViewMode) i;
-                            }
-
-                            if (isSelected) ImGui.SetItemDefaultFocus();
-                        }
-
-                        ImGui.EndCombo();
-                    }
-
-                    var regionMax = ImGui.GetWindowContentRegionMax();
-                    var regionMin = ImGui.GetCursorPos();
-
-                    geometryEditor.Resize((int)(regionMax.X - regionMin.X), (int)(regionMax.Y - regionMin.Y));
-                    geometryEditor.ImguiRender();
-
-                    ImGui.EndTabItem();
-                }
-
-                ImGui.EndTabBar();
-            }
+            overview.Render();
+            ImGui.EndTabItem();
         }
-        ImGui.End();
+
+        if (geometry.IsWindowOpen && ImGui.Begin("Geometry Editor", ref geometry.IsWindowOpen))
+        {
+            geometry.Render();
+            ImGui.EndTabItem();
+        }
 
         ImGui.ShowDemoWindow();
         rlImGui.End();
