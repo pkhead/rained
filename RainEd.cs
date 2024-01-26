@@ -14,6 +14,10 @@ class RainEd
         geometryEditor = new(level, 1, 1);
     }
 
+    private readonly string[] _viewModes = new string[2] {
+        "Overlay", "Stack"
+    };
+
     public void Draw()
     {
         Raylib.ClearBackground(Color.DarkGray);
@@ -44,9 +48,35 @@ class RainEd
                     ImGui.EndTabItem();
                 }
 
+                // TOOD: make each tab a separate class
                 if (ImGui.BeginTabItem("Geometry"))
                 {
-                    ImGui.Text($"Work Layer: {geometryEditor.WorkLayer}");
+                    // work layer
+                    var workLayer = geometryEditor.WorkLayer + 1;
+                    ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4);
+                    ImGui.InputInt("Work Layer", ref workLayer);
+                    workLayer = Math.Clamp(workLayer, 1, 3);
+                    
+                    geometryEditor.WorkLayer = workLayer - 1;
+
+                    // view mode
+                    ImGui.SameLine();
+                    ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8);
+                    if (ImGui.BeginCombo("View Mode", _viewModes[(int)geometryEditor.layerViewMode]))
+                    {
+                        for (int i = 0; i < _viewModes.Count(); i++)
+                        {
+                            bool isSelected = i == (int)geometryEditor.layerViewMode;
+                            if (ImGui.Selectable(_viewModes[i], isSelected))
+                            {
+                                geometryEditor.layerViewMode = (GeometryEditor.LayerViewMode) i;
+                            }
+
+                            if (isSelected) ImGui.SetItemDefaultFocus();
+                        }
+
+                        ImGui.EndCombo();
+                    }
 
                     var regionMax = ImGui.GetWindowContentRegionMax();
                     var regionMin = ImGui.GetCursorPos();
