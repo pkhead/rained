@@ -348,6 +348,23 @@ public class GeometryEditor
             }
         }
 
+        // draw level border outline
+        {
+            int borderRight = level.Width - level.BufferTilesRight;
+            int borderBottom = level.Height - level.BufferTilesBot;
+            int borderW = borderRight - level.BufferTilesLeft;
+            int borderH = borderBottom - level.BufferTilesTop;
+
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    level.BufferTilesLeft * Level.TileSize, level.BufferTilesTop * Level.TileSize,
+                    borderW * Level.TileSize, borderH * Level.TileSize
+                ),
+                1f / viewZoom,
+                Color.White
+            );
+        }
+
         // obtain mouse coordinates
         int lastMouseCx = mouseCx;
         int lastMouseCy = mouseCy;

@@ -78,9 +78,12 @@ public class Level
 
     public LevelCell[,,] Layers;
     private int _width, _height;
+    public int BufferTilesLeft, BufferTilesTop;
+    public int BufferTilesRight, BufferTilesBot;
 
     public int Width { get => _width; }
     public int Height { get => _height; }
+
     public const int LayerCount = 3;
     public const int TileSize = 20;
 
@@ -114,6 +117,10 @@ public class Level
 
         _width = 72;
         _height = 42;
+        BufferTilesLeft = 12;
+        BufferTilesTop = 3;
+        BufferTilesRight = 12;
+        BufferTilesBot = 5;
 
         Layers = new LevelCell[LayerCount,Width,Height];
 
