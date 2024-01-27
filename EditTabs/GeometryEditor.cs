@@ -2,6 +2,7 @@ using Raylib_cs;
 using ImGuiNET;
 using rlImGui_cs;
 using System.Numerics;
+using System.Diagnostics;
 
 namespace RainEd;
 
@@ -10,6 +11,9 @@ public class GeometryEditor
     public bool IsWindowOpen = true;
 
     private readonly Level level;
+
+    private Vector2 viewOffset = new();
+    private float viewZoom = 1f;
 
     public int Width;
     public int Height;
@@ -105,6 +109,9 @@ public class GeometryEditor
 
     private Tool selectedTool = Tool.Wall;
     public LayerViewMode layerViewMode = LayerViewMode.Overlay;
+    private int mouseCx = 0;
+    private int mouseCy = 0;
+    private Vector2 mouseCellFloat = new();
 
     private static readonly Color[] LAYER_COLORS = new Color[3] {
         new(0, 0, 0, 255),
@@ -195,6 +202,7 @@ public class GeometryEditor
                 
                 ImGui.PushID(i);
                 
+                // create tool button, select if clicked
                 if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24)))
                 {
                     selectedTool = toolEnum;
@@ -206,12 +214,15 @@ public class GeometryEditor
                 }
 
                 ImGui.PopID();
-
                 ImGui.PopStyleColor();
             }
             
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
+
+            // show stats
+            ImGui.Text($"Mouse X: {mouseCx}");
+            ImGui.Text($"Mouse Y: {mouseCy}");
 
             ImGui.EndGroup();
         }
@@ -235,13 +246,31 @@ public class GeometryEditor
         }
     }
 
+    private void Zoom(float factor, Vector2 mpos)
+    {
+        Console.WriteLine(viewOffset);
+
+        viewZoom *= factor;
+        viewOffset = -(mpos - viewOffset) / factor + mpos;
+
+        Console.WriteLine(viewOffset);
+    }
+
     private void DrawCanvas()
     {
-        Raylib.ClearBackground(new Color(0, 0, 0, 0)); // make canvas bg transparent
-        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, Color.White); // draw white over level area
+        Raylib.ClearBackground(new Color(0, 0, 0, 0));
 
+        Rlgl.PushMatrix();
+        Rlgl.Scalef(viewZoom, viewZoom, 1f);
+        Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
+
+        // draw level background (solid white)
+        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, Color.White);
+        
+        // draw the layers
         switch (layerViewMode)
         {
+            // overlay: each layer is drawn over each other with a unique transparent colors
             case LayerViewMode.Overlay:
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
@@ -263,6 +292,7 @@ public class GeometryEditor
 
                 break;
             
+            // stack: view each layer individually, each other layer is transparent
             case LayerViewMode.Stack:
                 for (int l = Level.LayerCount-1; l >= 0; l--)
                 {
@@ -287,23 +317,56 @@ public class GeometryEditor
                 break;
         }
 
-        var mouseCx = (int)(canvasWidget.MouseX / TILE_SIZE);
-        var mouseCy = (int)(canvasWidget.MouseY / TILE_SIZE);
+        // obtain mouse coordinates
+        mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / TILE_SIZE;
+        mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / TILE_SIZE;
+        mouseCx = (int) mouseCellFloat.X;
+        mouseCy = (int) mouseCellFloat.Y;
 
-        if (canvasWidget.IsHovered && mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
+        if (canvasWidget.IsHovered)
         {
-            Raylib.DrawRectangleLines(mouseCx * TILE_SIZE, mouseCy * TILE_SIZE, TILE_SIZE, TILE_SIZE, Color.White);
+            // middle click pan
+            if (Raylib.IsMouseButtonDown(MouseButton.Middle))
+            {
+                var mouseDelta = Raylib.GetMouseDelta();
+                viewOffset -= mouseDelta / viewZoom;
+            }
 
-            if (Raylib.IsMouseButtonDown(MouseButton.Left))
-                level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Solid;
+            // scroll wheel zooming
+            var wheelMove = Raylib.GetMouseWheelMove();
+            if (wheelMove > 0f)
+            {
+                Zoom(1.5f, mouseCellFloat * TILE_SIZE);
+            }
+            else if (wheelMove < 0f)
+            {
+                Zoom(1f / 1.5f, mouseCellFloat * TILE_SIZE);
+            }
 
-            if (Raylib.IsMouseButtonDown(MouseButton.Right))
-                level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Air;
+            // if mouse is within level bounds?
+            if (mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
+            {
+                // draw grid cursor
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(mouseCx * TILE_SIZE, mouseCy * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                    1f / viewZoom,
+                    Color.White
+                );
+
+                if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                    level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Solid;
+
+                if (Raylib.IsMouseButtonDown(MouseButton.Right))
+                    level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Air;
+            }
         }
 
+        // keybind to switch layer
         if (Raylib.IsKeyPressed(KeyboardKey.L))
         {
             workLayer = (workLayer + 1) % 3;
         }
+
+        Rlgl.PopMatrix();
     }
 }
