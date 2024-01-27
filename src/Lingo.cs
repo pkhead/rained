@@ -80,7 +80,6 @@ namespace Lingo
 
         public List<Token> Read()
         {
-            // read
             tokens.Clear();
             strBuffer.Clear();
 
@@ -117,7 +116,7 @@ namespace Lingo
         private void DiscardWhitespace()
         {
             while (char.IsWhiteSpace((char) stream.Peek()))
-                stream.Read();
+                ReadChar();
         }
 
         private char ReadChar()
@@ -174,7 +173,7 @@ namespace Lingo
         private string ReadWord()
         {
             strBuffer.Clear();
-            while (char.IsLetter(PeekChar()) || PeekChar() == '_')
+            while (char.IsLetter(PeekChar()) || char.IsDigit(PeekChar()) || PeekChar() == '_')
             {
                 strBuffer.Add(ReadChar());
             }
@@ -237,7 +236,7 @@ namespace Lingo
             	case '\"':
                 {
                     BeginToken();
-                    stream.Read(); // pop off quotation mark
+                    ReadChar(); // pop off quotation mark
 
                     strBuffer.Clear();                
                     while (true)
@@ -253,7 +252,7 @@ namespace Lingo
                 }
 
             default:
-                // hyphen -- may be a negative number, or a simple hyphen
+                // hyphen -- may be a negative number, or simply a hyphen
                 if (PeekChar() == '-')
                 {
                     BeginToken();
@@ -364,14 +363,20 @@ namespace Lingo
             }
 
             if (tok.Value is null) throw new NullReferenceException();
-            return (float) tok.Value;
+            if (tok.Type == TokenType.Integer)
+                return (float) (int) tok.Value;
+            else
+                return (float) tok.Value;
         }
 
         // this assumes the open bracket was already popped off
         private List ReadList()
         {
             List list = new();
-            if (PeekToken().Type == TokenType.CloseBracket) return list;
+            if (PeekToken().Type == TokenType.CloseBracket){
+                PopToken();
+                return list;
+            }
 
             while (true)
             {
@@ -384,7 +389,7 @@ namespace Lingo
                     Expect(TokenType.Colon);
                     object? value = ReadValue();
                     if (value is not null)
-                        list.pairs.Add((string) initTok.Value, value);
+                        list.pairs[(string) initTok.Value] = value;
                 }
                 else if (initTok.Type != TokenType.Void)
                 {
@@ -396,7 +401,8 @@ namespace Lingo
                     PopToken();
                 }
 
-                if (PopToken().Type != TokenType.Comma) break;
+                if (PeekToken().Type != TokenType.Comma) break;
+                PopToken();
             }
 
             Expect(TokenType.CloseBracket);
@@ -452,7 +458,8 @@ namespace Lingo
                 }
             }
 
-            throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok}");
+            
+            throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
         }
 
         private List<object> ReadTable()
@@ -464,6 +471,12 @@ namespace Lingo
                 var val = ReadValue();
                 if (val is not null)
                     items.Add(val);
+                
+                // for some reason in the Custom/DSMachines section,
+                // there are unmatched closing brackets. but editors still parse it correctly?
+                // im not sure what that's supposed to mean, so i just ignore dangling closing brackets
+                if (tokens.Count > 0 && PeekToken().Type == TokenType.CloseBracket)
+                    PopToken();
             }
 
             return items;
