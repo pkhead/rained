@@ -1,0 +1,11 @@
+Overall:
+- saving/loading
+- undo/redo
+- what if everything was on one screen?
+
+Level Properties:
+
+Geometry Editor:
+
+Tile Editor:
+

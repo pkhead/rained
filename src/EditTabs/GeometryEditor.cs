@@ -108,22 +108,6 @@ public class GeometryEditor
         { Tool.WormGrass,       new(2, 5) }
     };
 
-    private static readonly Dictionary<LevelObject, Vector2> ObjectTextureOffsets = new()
-    {
-        { LevelObject.Rock,             new(0, 0) },
-        { LevelObject.Spear,            new(1, 0) },
-        { LevelObject.Shortcut,         new(2, 1) },
-        { LevelObject.CreatureDen,      new(3, 1) },
-        { LevelObject.Entrance,         new(4, 1) },
-        { LevelObject.Hive,             new(0, 2) },
-        { LevelObject.ForbidFlyChain,   new(1, 2) },
-        { LevelObject.Waterfall,        new(2, 2) },
-        { LevelObject.WhackAMoleHole,   new(3, 2) },
-        { LevelObject.ScavengerHole,    new(4, 2) },
-        { LevelObject.GarbageWorm,      new(0, 3) },
-        { LevelObject.WormGrass,        new(1, 3) },
-    };
-
     private Tool selectedTool = Tool.Wall;
     public LayerViewMode layerViewMode = LayerViewMode.Overlay;
     private int mouseCx = 0;
@@ -333,29 +317,7 @@ public class GeometryEditor
 
         // draw object graphics
         var objColor = new Color(255, 255, 255, foregroundAlpha);
-        for (int x = 0; x < level.Width; x++)
-        {
-            for (int y = 0; y < level.Height; y++)
-            {
-                var cell = level.Layers[0, x, y];
-
-                // draw object graphics
-                for (int i = 1; i < 32; i++)
-                {
-                    LevelObject objType = (LevelObject) (1 << (i-1));
-                    if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
-                    {
-                        Raylib.DrawTextureRec(
-                            editor.LevelGraphicsTexture,
-                            new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
-                            new Vector2(x, y) * Level.TileSize,
-                            objColor
-                        );
-                    }
-                }
-            }
-        }
-
+        level.RenderObjects(objColor);
         level.RenderShortcuts(Color.White);
 
         // draw grid squares
@@ -446,7 +408,7 @@ public class GeometryEditor
             else if (mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
             {
                 isToolRectActive = false;
-                
+
                 // draw grid cursor otherwise
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(mouseCx * Level.TileSize, mouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
@@ -547,7 +509,7 @@ public class GeometryEditor
                 break;
 
             case Tool.ShortcutEntrance:
-                if (pressed) cell.Cell = CellType.ShortcutEntrance;
+                if (pressed) cell.Cell = cell.Cell == CellType.ShortcutEntrance ? CellType.Air : CellType.ShortcutEntrance;
                 break;
             
             case Tool.Slope:
@@ -615,6 +577,22 @@ public class GeometryEditor
             case Tool.Crack:
                 levelObject = LevelObject.Crack;
                 break;
+            
+            case Tool.Hive:
+                levelObject = LevelObject.Hive;
+                break;
+            
+            case Tool.ForbidFlyChain:
+                levelObject = LevelObject.ForbidFlyChain;
+                break;
+            
+            case Tool.Waterfall:
+                levelObject = LevelObject.Waterfall;
+                break;
+            
+            case Tool.WormGrass:
+                levelObject = LevelObject.WormGrass;
+                break;
 
             case Tool.Shortcut:
                 levelObject = LevelObject.Shortcut;
@@ -626,6 +604,18 @@ public class GeometryEditor
 
             case Tool.CreatureDen:
                 levelObject = LevelObject.CreatureDen;
+                break;
+            
+            case Tool.WhackAMoleHole:
+                levelObject = LevelObject.WhackAMoleHole;
+                break;
+            
+            case Tool.GarbageWorm:
+                levelObject = LevelObject.GarbageWorm;
+                break;
+            
+            case Tool.ScavengerHole:
+                levelObject = LevelObject.ScavengerHole;
                 break;
         }
 
