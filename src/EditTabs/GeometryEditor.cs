@@ -141,8 +141,12 @@ public class GeometryEditor
     };
 
     private readonly UICanvasWidget canvasWidget;
-    private RlManaged.Texture2D toolIcons;
-    private RlManaged.Texture2D graphics;
+    private readonly RlManaged.Texture2D toolIcons;
+
+    // tool rect - for wall/air/inverse/geometry tools
+    private bool isToolRectActive;
+    private int toolRectX;
+    private int toolRectY;
 
     public GeometryEditor(RainEd editor)
     {
@@ -153,7 +157,6 @@ public class GeometryEditor
         Height = 42;
 
         toolIcons = new("data/tool-icons.png");
-        graphics = new("data/level-graphics.png");
     }
 
     public void Render()
@@ -240,10 +243,15 @@ public class GeometryEditor
                 ImGui.PopStyleVar();
                 ImGui.PopStyleColor();
 
-                // show stats
+                // show stats & hints
                 ImGui.Text($"Mouse X: {mouseCx}");
                 ImGui.Text($"Mouse Y: {mouseCy}");
                 ImGui.NewLine();
+
+                if (selectedTool == Tool.Wall || selectedTool == Tool.Air || selectedTool == Tool.Inverse || selectedTool == Tool.Glass)
+                {
+                    ImGui.Text("Shift+Drag to\nfill rect");
+                }
 
                 ImGui.EndGroup();
             }
@@ -338,7 +346,7 @@ public class GeometryEditor
                     if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
-                            graphics,
+                            editor.LevelGraphicsTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
                             objColor
@@ -407,22 +415,53 @@ public class GeometryEditor
                 Zoom(1f / 1.5f, mouseCellFloat * Level.TileSize);
             }
 
-            // if mouse is within level bounds?
-            if (mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
+            // cursor rect mode
+            if (isToolRectActive && Raylib.IsKeyDown(KeyboardKey.LeftShift))
             {
-                // draw grid cursor
+                var mx = Math.Clamp(mouseCx, 0, level.Width - 1);
+                var my = Math.Clamp(mouseCy, 0, level.Height - 1);
+
+                // draw tool rect
+                var rectMinX = Math.Min(mx, toolRectX);
+                var rectMinY = Math.Min(my, toolRectY);
+                var rectMaxX = Math.Max(mx, toolRectX);
+                var rectMaxY = Math.Max(my, toolRectY);
+                var rectW = rectMaxX - rectMinX + 1;
+                var rectH = rectMaxY - rectMinY + 1;
+
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
+                    1f / viewZoom,
+                    Color.White
+                );
+
+                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                {
+                    ApplyToolRect();
+                }
+            }
+            
+            // normal cursor mode
+            // if mouse is within level bounds?
+            else if (mouseCx >= 0 && mouseCy >= 0 && mouseCx < level.Width && mouseCy < level.Height)
+            {
+                isToolRectActive = false;
+                
+                // draw grid cursor otherwise
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(mouseCx * Level.TileSize, mouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
                     1f / viewZoom,
                     Color.White
                 );
 
+                // activate tool on click
+                // or if user moves mouse on another tile space
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left) ||
                     (Raylib.IsMouseButtonDown(MouseButton.Left) && (mouseCx != lastMouseCx || mouseCy != lastMouseCy)))
                 {
-                    ActivateTool(Raylib.IsMouseButtonPressed(MouseButton.Left));
+                    if (!isToolRectActive)
+                        ActivateTool(mouseCx, mouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
                 }
-                    
             }
         }
 
@@ -437,19 +476,41 @@ public class GeometryEditor
 
     private bool toolPlaceMode;
 
-    private void ActivateTool(bool pressed)
+    private void ActivateTool(int tx, int ty, bool pressed, bool shift)
     {
-        var cell = level.Layers[workLayer, mouseCx, mouseCy];
+        isToolRectActive = false;
+
+        var cell = level.Layers[workLayer, tx, ty];
         LevelObject levelObject = LevelObject.None;
 
         switch (selectedTool)
         {
             case Tool.Wall:
-                cell.Cell = CellType.Solid;
+                if (shift)
+                {
+                    isToolRectActive = true;
+                    toolRectX = tx;
+                    toolRectY = ty;
+                }
+                else
+                {
+                    cell.Cell = CellType.Solid;
+                }
+
                 break;
             
             case Tool.Air:
-                cell.Cell = CellType.Air;
+                if (shift)
+                {
+                    isToolRectActive = true;
+                    toolRectX = tx;
+                    toolRectY = ty;
+                }
+                else
+                {
+                    cell.Cell = CellType.Air;
+                }
+
                 break;
 
             case Tool.Platform:
@@ -457,12 +518,32 @@ public class GeometryEditor
                 break;
 
             case Tool.Glass:
-                cell.Cell = CellType.Glass;
+                if (shift)
+                {
+                    isToolRectActive = true;
+                    toolRectX = tx;
+                    toolRectY = ty;
+                }
+                else
+                {
+                    cell.Cell = CellType.Glass;
+                }
+
                 break;
             
             case Tool.Inverse:
-                if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
-                cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
+                if (shift)
+                {
+                    isToolRectActive = true;
+                    toolRectX = tx;
+                    toolRectY = ty;
+                }
+                else
+                {
+                    if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
+                    cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
+                }
+
                 break;
 
             case Tool.ShortcutEntrance:
@@ -483,25 +564,25 @@ public class GeometryEditor
                 int possibleConfigs = 0;
 
                 // figure out how to orient the slope using solid neighbors
-                if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
+                if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty+1))
                 {
                     newType = CellType.SlopeRightUp;
                     possibleConfigs++;
                 }
                 
-                if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
+                if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty+1))
                 {
                     newType = CellType.SlopeLeftUp;
                     possibleConfigs++;
                 }
                 
-                if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty-1))
                 {
                     newType = CellType.SlopeRightDown;
                     possibleConfigs++;
                 }
                 
-                if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty-1))
                 {
                     newType = CellType.SlopeLeftDown;
                     possibleConfigs++;
@@ -565,6 +646,29 @@ public class GeometryEditor
             }
         }
 
-        level.Layers[workLayer, mouseCx, mouseCy] = cell;
+        level.Layers[workLayer, tx, ty] = cell;
+    }
+
+    private void ApplyToolRect()
+    {
+        // apply the rect to the tool by
+        // applying the tool at every cell
+        // in the rectangle.
+        var mx = Math.Clamp(mouseCx, 0, level.Width - 1);
+        var my = Math.Clamp(mouseCy, 0, level.Height - 1);
+        var rectMinX = Math.Min(mx, toolRectX);
+        var rectMinY = Math.Min(my, toolRectY);
+        var rectMaxX = Math.Max(mx, toolRectX);
+        var rectMaxY = Math.Max(my, toolRectY);
+
+        for (int x = rectMinX; x <= rectMaxX; x++)
+        {
+            for (int y = rectMinY; y <= rectMaxY; y++)
+            {
+                ActivateTool(x, y, true, false);
+            }
+        }
+        
+        isToolRectActive = false;
     }
 }

@@ -11,6 +11,7 @@ namespace RainEd
             Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
             Raylib.InitWindow(1280, 800, "Rained");
             Raylib.SetTargetFPS(144);
+            Raylib.SetExitKey(KeyboardKey.Null);
 
             // setup imgui
             rlImGui.Setup(true, true);
