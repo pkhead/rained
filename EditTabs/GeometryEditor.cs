@@ -135,7 +135,7 @@ public class GeometryEditor
         Width = 72;
         Height = 42;
 
-        toolIcons = new("data/geometry-icons.png");
+        toolIcons = new("data/tool-icons.png");
     }
 
     public void Render()
@@ -275,19 +275,7 @@ public class GeometryEditor
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
                     var color = LAYER_COLORS[l];
-
-                    for (int x = 0; x < level.Width; x++)
-                    {
-                        for (int y = 0; y < level.Height; y++)
-                        {
-                            LevelCell c = level.Layers[l,x,y];
-
-                            if (c.Cell != CellType.Air)
-                            {
-                                Raylib.DrawRectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, color);
-                            }
-                        }
-                    }
+                    level.RenderLayer(l, TILE_SIZE, color);
                 }
 
                 break;
@@ -300,24 +288,45 @@ public class GeometryEditor
                     var color = new Color(LAYER_COLORS[l].R, LAYER_COLORS[l].G, LAYER_COLORS[l].B, alpha);
                     int offset = l * 2;
 
-                    for (int x = 0; x < level.Width; x++)
-                    {
-                        for (int y = 0; y < level.Height; y++)
-                        {
-                            LevelCell c = level.Layers[l,x,y];
-
-                            if (c.Cell != CellType.Air)
-                            {
-                                Raylib.DrawRectangle(x * TILE_SIZE + offset, y * TILE_SIZE + offset, TILE_SIZE, TILE_SIZE, color);
-                            }
-                        }
-                    }
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef(offset, offset, 0f);
+                    level.RenderLayer(l, TILE_SIZE, color);
+                    Rlgl.PopMatrix();
                 }
 
                 break;
         }
 
+        // draw grid squares
+        for (int x = 0; x < level.Width; x++)
+        {
+            for (int y = 0; y < level.Height; y++)
+            {
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                    1.0f / viewZoom,
+                    new Color(255, 255, 255, 60)
+                );
+            }
+        }
+
+        // draw bigger grid squares
+        for (int x = 0; x < level.Width; x += 2)
+        {
+            for (int y = 0; y < level.Height; y += 2)
+            {
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE * 2, TILE_SIZE * 2),
+                    1.0f / viewZoom,
+                    new Color(255, 255, 255, 60)
+                );
+            }
+        }
+
         // obtain mouse coordinates
+        int lastMouseCx = mouseCx;
+        int lastMouseCy = mouseCy;
+
         mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / TILE_SIZE;
         mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / TILE_SIZE;
         mouseCx = (int) mouseCellFloat.X;
@@ -353,11 +362,12 @@ public class GeometryEditor
                     Color.White
                 );
 
-                if (Raylib.IsMouseButtonDown(MouseButton.Left))
-                    level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Solid;
-
-                if (Raylib.IsMouseButtonDown(MouseButton.Right))
-                    level.Layers[workLayer, mouseCx, mouseCy].Cell = CellType.Air;
+                if (Raylib.IsMouseButtonPressed(MouseButton.Left) ||
+                    (Raylib.IsMouseButtonDown(MouseButton.Left) && (mouseCx != lastMouseCx || mouseCy != lastMouseCy)))
+                {
+                    ActivateTool(Raylib.IsMouseButtonPressed(MouseButton.Left));
+                }
+                    
             }
         }
 
@@ -368,5 +378,102 @@ public class GeometryEditor
         }
 
         Rlgl.PopMatrix();
+    }
+
+    private bool toolPlaceMode;
+
+    private void ActivateTool(bool pressed)
+    {
+        var cell = level.Layers[workLayer, mouseCx, mouseCy];
+        LevelObject levelObject = LevelObject.None;
+
+        switch (selectedTool)
+        {
+            case Tool.Wall:
+                cell.Cell = CellType.Solid;
+                break;
+            
+            case Tool.Air:
+                cell.Cell = CellType.Air;
+                break;
+
+            case Tool.Platform:
+                cell.Cell = CellType.Platform;
+                break;
+
+            case Tool.Glass:
+                cell.Cell = CellType.Glass;
+                break;
+            
+            case Tool.Inverse:
+                if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
+                cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
+                break;
+            
+            case Tool.Slope:
+            {
+                if (!pressed) break;
+                static bool isSolid(Level level, int l, int x, int y)
+                {
+                    if (x < 0 || y < 0) return false;
+                    if (x >= level.Width || y >= level.Height) return false;
+                    return level.Layers[l,x,y].Cell == CellType.Solid;
+                }
+
+                CellType newType = CellType.Air;
+
+                // figure out how to orient the slope using solid neighbors
+                if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
+                {
+                    newType = CellType.SlopeRightUp;
+                }
+                else if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
+                {
+                    newType = CellType.SlopeLeftUp;
+                }
+                else if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                {
+                    newType = CellType.SlopeRightDown;
+                }
+                else if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                {
+                    newType = CellType.SlopeLeftDown;
+                }
+
+                if (newType != CellType.Air)
+                    cell.Cell = newType;
+
+                break;
+            }
+
+            // the following will use the default object tool
+            // handler
+            case Tool.HorizontalBeam:
+                levelObject = LevelObject.HorizontalBeam;
+                break;
+
+            case Tool.VerticalBeam:
+                levelObject = LevelObject.VerticalBeam;
+                break;
+                
+            case Tool.Rock:
+                levelObject = LevelObject.Rock;
+                break;
+
+            case Tool.Spear:
+                levelObject = LevelObject.Spear;
+                break;
+        }
+
+        if (levelObject != LevelObject.None)
+        {
+            if (pressed) toolPlaceMode = cell.Has(levelObject);
+            if (toolPlaceMode)
+                cell.Remove(levelObject);
+            else
+                cell.Add(levelObject);
+        }
+
+        level.Layers[workLayer, mouseCx, mouseCy] = cell;
     }
 }
