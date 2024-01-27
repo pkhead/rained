@@ -1,6 +1,7 @@
 using Raylib_cs;
 using ImGuiNET;
 using rlImGui_cs;
+using System.Numerics;
 
 namespace RainEd;
 
@@ -21,6 +22,88 @@ public class GeometryEditor
         Overlay = 0,
         Stack = 1
     }
+
+    public enum Tool : int
+    {
+        Wall = 0,
+        Air,
+        Inverse,
+        Glass,
+        Slope,
+        Platform,
+        HorizontalBeam,
+        VerticalBeam,
+        Rock,
+        Spear,
+        Crack,
+        Waterfall,
+        ShortcutEntrance,
+        Shortcut,
+        Entrance,
+        CreatureDen,
+        WhackAMoleHole,
+        ScavengerHole,
+        Hive,
+        ForbidFlyChain,
+        GarbageWorm,
+        WormGrass,
+
+        ToolCount // not an enum, just the number of tools
+    }
+
+    public static readonly Dictionary<Tool, string> ToolNames = new()
+    {
+        { Tool.Wall,            "Wall"              },
+        { Tool.Air,             "Air"               },
+        { Tool.Inverse,         "Toggle Wall/Air"   },
+        { Tool.Slope,           "Slope"             },
+        { Tool.Platform,        "Platform"          },
+        { Tool.Rock,            "Rock"              },
+        { Tool.Spear,           "Spear"             },
+        { Tool.Crack,           "Fissure"           },
+        { Tool.HorizontalBeam,  "Horizontal Beam"   },
+        { Tool.VerticalBeam,    "Vertical Beam"     },
+        { Tool.Glass,           "Invisible Wall"    },
+        { Tool.ShortcutEntrance,"Shortcut Entrance" },
+        { Tool.Shortcut,        "Shortcut Dot"      },
+        { Tool.CreatureDen,     "Creature Den"      },
+        { Tool.Entrance,        "Room Entrance"     },
+        { Tool.Hive,            "Batfly Hive"       },
+        { Tool.ForbidFlyChain,  "Forbid Fly Chain"  },
+        { Tool.Waterfall,       "Waterfall"         },
+        { Tool.WhackAMoleHole,  "Whack-a-mole Hole" },
+        { Tool.ScavengerHole,   "Scavenger Hole"    },
+        { Tool.GarbageWorm,     "Garbage Worm"      },
+        { Tool.WormGrass,       "Worm Grass"        }
+    };
+
+    public static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
+    {
+        { Tool.Wall,            new(1, 0) },
+        { Tool.Air,             new(2, 0) },
+        { Tool.Inverse,         new(0, 0) },
+        { Tool.Slope,           new(3, 0) },
+        { Tool.Platform,        new(0, 1) },
+        { Tool.Rock,            new(1, 1) },
+        { Tool.Spear,           new(2, 1) },
+        { Tool.Crack,           new(3, 1) },
+        { Tool.HorizontalBeam,  new(0, 2) },
+        { Tool.VerticalBeam,    new(1, 2) },
+        { Tool.Glass,           new(2, 2) },
+        { Tool.ShortcutEntrance,new(3, 2) },
+        { Tool.Shortcut,        new(0, 3) },
+        { Tool.CreatureDen,     new(1, 3) },
+        { Tool.Entrance,        new(2, 3) },
+        { Tool.Hive,            new(3, 3) },
+        { Tool.ForbidFlyChain,  new(0, 4) },
+        { Tool.Waterfall,       new(2, 4) },
+        { Tool.WhackAMoleHole,  new(3, 4) },
+        { Tool.ScavengerHole,   new(0, 5) },
+        { Tool.GarbageWorm,     new(1, 5) },
+        { Tool.WormGrass,       new(2, 5) }
+    };
+
+    private Tool selectedTool = Tool.Wall;
     public LayerViewMode layerViewMode = LayerViewMode.Overlay;
 
     private static readonly Color[] LAYER_COLORS = new Color[3] {
@@ -36,6 +119,7 @@ public class GeometryEditor
     private const int TILE_SIZE = 20;
 
     private readonly UICanvasWidget canvasWidget;
+    private RlManaged.Texture2D toolIcons;
 
     public GeometryEditor(Level level)
     {
@@ -43,6 +127,8 @@ public class GeometryEditor
         canvasWidget = new(1, 1);
         Width = 72;
         Height = 42;
+
+        toolIcons = new("data/geometry-icons.png");
     }
 
     public void Render()
@@ -77,7 +163,61 @@ public class GeometryEditor
             }
         }
 
+        // toolbar
+        {
+            ImGui.BeginGroup();
+
+            ImGui.Text("Tools");
+
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
+
+            for (int i = 0; i < (int) Tool.ToolCount; i++)
+            {
+                Tool toolEnum = (Tool) i;
+
+                if (i % 4 > 0) ImGui.SameLine();
+
+                string toolName = ToolNames[toolEnum];
+                Vector2 texOffset = ToolTextureOffsets[toolEnum];
+
+                // highlight selected tool
+                if (toolEnum == selectedTool)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
+
+                // tool buttons will have a more transparent hover color
+                } else {
+                    Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
+                        new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                }
+                
+                ImGui.PushID(i);
+                
+                if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24)))
+                {
+                    selectedTool = toolEnum;
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip(toolName);
+                }
+
+                ImGui.PopID();
+
+                ImGui.PopStyleColor();
+            }
+            
+            ImGui.PopStyleVar();
+            ImGui.PopStyleColor();
+
+            ImGui.EndGroup();
+        }
+
         // canvas widget
+        ImGui.SameLine();
         {
             var regionMax = ImGui.GetWindowContentRegionMax();
             var regionMin = ImGui.GetCursorPos();
