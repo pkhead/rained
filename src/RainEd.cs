@@ -22,7 +22,8 @@ public partial class RainEd
         geometry = new GeometryEditor(this);
 
         Console.WriteLine("reading tileinit...");
-        var parser = new Lingo.TokenParser(new StreamReader("data/tileinit.txt"));
+        var parser = new Lingo.Parser(new StreamReader("data/tileinit.txt"));
+        var tables = parser.Read();
         Console.WriteLine("tileinit done");
     }
 

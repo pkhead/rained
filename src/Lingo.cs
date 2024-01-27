@@ -1,10 +1,17 @@
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace Lingo
 {
     public struct Color
     {
         public int R, G, B;
+        public Color(int r, int g, int b)
+        {
+            R = r;
+            G = g;
+            B = b;
+        }
     }
 
     public class List
@@ -25,35 +32,36 @@ namespace Lingo
         }
     }
 
+    public enum TokenType
+    {
+        OpenBracket,
+        CloseBracket,
+        CloseParen,
+        OpenParen,
+        Comma,
+        Hyphen,
+        Colon,
+        
+        Void,
+        String,
+        Float,
+        Integer,
+        Symbol,
+        KeywordColor,
+        KeywordPoint,
+    }
+
+    public struct Token
+    {
+        public TokenType Type;
+        public object? Value;
+
+        public int CharOffset;
+        public int Line;
+    }
+
     class TokenParser
     {
-        public enum TokenType
-        {
-            LeftBracket,
-            RightBracket,
-            LeftParen,
-            RightParen,
-            Comma,
-            Hyphen,
-            Colon,
-            
-            Void,
-            String,
-            Float,
-            Symbol,
-            KeywordColor,
-            KeywordPoint,
-        }
-
-        public struct Token
-        {
-            public TokenType Type;
-            public object? Value;
-
-            public int CharOffset;
-            public int Line;
-        }
-
         private readonly StreamReader stream;
         private readonly List<char> strBuffer = new();
         private List<Token> tokens = new();
@@ -68,12 +76,20 @@ namespace Lingo
         public TokenParser(StreamReader stream)
         {
             this.stream = stream;
+        }
 
+        public List<Token> Read()
+        {
             // read
+            tokens.Clear();
+            strBuffer.Clear();
+
             while (!stream.EndOfStream)
             {
                 ReadToken();
             }
+
+            return tokens;
         }
 
         private void Error(string msg)
@@ -122,15 +138,37 @@ namespace Lingo
             return (char) stream.Peek();
         }
 
-        private float ReadFloat()
+        // read either a float or an integer
+        private object ReadNumber(out bool isFloat)
         {
+            isFloat = false;
+
             strBuffer.Clear();
-            while (char.IsDigit(PeekChar()) || PeekChar() == '.' || PeekChar() == '-')
+            while (char.IsDigit(PeekChar()) || PeekChar() == '.')
             {
-                strBuffer.Add(ReadChar());
+                var ch = ReadChar();
+                if (ch == '.') isFloat = true;
+                strBuffer.Add(ch);
             }
 
-            return float.Parse(string.Join("", strBuffer));
+            if (isFloat)
+                return float.Parse(string.Join("", strBuffer));
+            else
+                return int.Parse(string.Join("", strBuffer));
+        }
+
+        private void ParseNumber()
+        {
+            var num = ReadNumber(out bool isFloat);
+
+            if (isFloat)
+            {
+                EndToken(TokenType.Float, num);
+            }
+            else
+            {
+                EndToken(TokenType.Integer, num);
+            }
         }
 
         private string ReadWord()
@@ -152,37 +190,31 @@ namespace Lingo
                 case '[':
                     BeginToken();
                     ReadChar();
-                    EndToken(TokenType.LeftBracket);
+                    EndToken(TokenType.OpenBracket);
                     break;
 
                 case ']':
                     BeginToken();
                     ReadChar();
-                    EndToken(TokenType.RightBracket);
+                    EndToken(TokenType.CloseBracket);
                     break;
                 
                 case '(':
                     BeginToken();
                     ReadChar();
-                    EndToken(TokenType.LeftParen);
+                    EndToken(TokenType.OpenParen);
                     break;
 
             	case ')':
                     BeginToken();
                     ReadChar();
-                    EndToken(TokenType.RightParen);
+                    EndToken(TokenType.CloseParen);
                     break;
 
             	case ',':
                     BeginToken();
                     ReadChar();
                     EndToken(TokenType.Comma);
-                    break;
-
-            	case '-':
-                    BeginToken();
-                    ReadChar();
-                    EndToken(TokenType.Hyphen);
                     break;
 
             	case ':':
@@ -221,12 +253,24 @@ namespace Lingo
                 }
 
             default:
-                // number
-                if (char.IsDigit(PeekChar()))
+                // hyphen -- may be a negative number, or a simple hyphen
+                if (PeekChar() == '-')
                 {
                     BeginToken();
-                    EndToken(TokenType.Float, ReadFloat());
+                    ReadChar();
+
+                    if (char.IsDigit(PeekChar()))
+                    {
+                        ParseNumber();
+                    }
+                    else
+                    {
+                        EndToken(TokenType.Hyphen);
+                    }
                 }
+
+                else if (char.IsDigit(PeekChar()))
+                    ParseNumber();
 
                 // keyword
                 else
@@ -255,5 +299,174 @@ namespace Lingo
                 break;
             }
         } 
+    }
+
+    class Parser
+    {
+        private readonly TokenParser tokenParser;
+        private readonly Queue<Token> tokens = new();
+        private Token lastProcessedToken;
+
+        public Parser(StreamReader stream)
+        {
+            tokenParser = new TokenParser(stream);
+        }
+
+        public List<List<object>> Read()
+        {
+            tokens.Clear();
+            foreach (Token tok in tokenParser.Read())
+            {
+                tokens.Enqueue(tok);
+            }
+
+            var tables = new List<List<object>>();
+            
+            if (PeekToken().Type == TokenType.Hyphen)
+                PopToken();
+            
+            while (tokens.Count > 0)
+            {
+                tables.Add(ReadTable());
+
+                if (tokens.Count > 0 && PeekToken().Type == TokenType.Hyphen)
+                    PopToken();
+            }
+
+            return tables;
+        }
+
+        private Token PeekToken() => tokens.Peek();
+        private Token PopToken() => lastProcessedToken = tokens.Dequeue();
+
+        /*private void Error(string msg)
+        {
+            var tok = lastProcessedToken;
+            throw new Exception($"{tok.Line}:{tok.CharOffset}: {msg});
+        }*/
+
+        private Token Expect(TokenType type)
+        {
+            var tok = PopToken();
+            if (tok.Type != type)
+            {
+                throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected {type}, got {tok.Type}");
+            }
+            return tok;
+        }
+
+        private float ExpectNumber()
+        {
+            var tok = PopToken();
+            if (tok.Type != TokenType.Integer && tok.Type != TokenType.Float)
+            {
+                throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
+            }
+
+            if (tok.Value is null) throw new NullReferenceException();
+            return (float) tok.Value;
+        }
+
+        // this assumes the open bracket was already popped off
+        private List ReadList()
+        {
+            List list = new();
+            if (PeekToken().Type == TokenType.CloseBracket) return list;
+
+            while (true)
+            {
+                var initTok = PeekToken();
+
+                if (initTok.Type == TokenType.Symbol)
+                {
+                    PopToken();
+                    if (initTok.Value is null) throw new NullReferenceException();
+                    Expect(TokenType.Colon);
+                    object? value = ReadValue();
+                    if (value is not null)
+                        list.pairs.Add((string) initTok.Value, value);
+                }
+                else if (initTok.Type != TokenType.Void)
+                {
+                    var value = ReadValue() ?? throw new NullReferenceException();
+                    list.values.Add(value);
+                }
+                else
+                {
+                    PopToken();
+                }
+
+                if (PopToken().Type != TokenType.Comma) break;
+            }
+
+            Expect(TokenType.CloseBracket);
+            return list;
+        }
+
+        private object? ReadValue()
+        {
+            var tok = PopToken();
+            switch (tok.Type)
+            {
+                case TokenType.Void:
+                    return null;
+
+                case TokenType.String:
+                case TokenType.Float:
+                case TokenType.Integer:
+                    return tok.Value;
+
+                case TokenType.OpenBracket:
+                    return ReadList();
+                
+                case TokenType.KeywordColor:
+                {
+                    Expect(TokenType.OpenParen);
+                    int[] components = new int[3];
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var num = Expect(TokenType.Integer);
+                        if (num.Value is null) throw new NullReferenceException();
+                        components[i] = (int) num.Value;
+                        if (i < 2) Expect(TokenType.Comma);
+                    }
+
+                    Expect(TokenType.CloseParen);
+                    return new Color(components[0], components[1], components[2]);
+                }
+
+                case TokenType.KeywordPoint:
+                {
+                    Expect(TokenType.OpenParen);
+                    float[] components = new float[2];
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        components[i] = ExpectNumber();
+                        if (i < 1) Expect(TokenType.Comma);
+                    }
+
+                    Expect(TokenType.CloseParen);
+                    return new Vector2(components[0], components[1]);
+                }
+            }
+
+            throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok}");
+        }
+
+        private List<object> ReadTable()
+        {
+            List<object> items = new();
+
+            while (tokens.Count > 0 && PeekToken().Type != TokenType.Hyphen)
+            {
+                var val = ReadValue();
+                if (val is not null)
+                    items.Add(val);
+            }
+
+            return items;
+        }
     }
 }
