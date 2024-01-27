@@ -20,6 +20,10 @@ public partial class RainEd
         
         overview = new LevelOverview(this);
         geometry = new GeometryEditor(this);
+
+        Console.WriteLine("reading tileinit...");
+        var parser = new Lingo.TokenParser(new StreamReader("data/tileinit.txt"));
+        Console.WriteLine("tileinit done");
     }
 
     // TODO: show status thing in ImGui
