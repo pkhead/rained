@@ -175,6 +175,13 @@ public class GeometryEditor
 
                     ImGui.EndCombo();
                 }
+
+                ImGui.SameLine();
+                if (ImGui.Button("Reset View"))
+                {
+                    viewOffset = new();
+                    viewZoom = 1f;
+                }
             }
 
             // toolbar

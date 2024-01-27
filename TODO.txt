@@ -6,6 +6,8 @@ Overall:
 Level Properties:
 
 Geometry Editor:
+- arrow keys to scroll
+- select and copy/paste
 
 Tile Editor:
 
