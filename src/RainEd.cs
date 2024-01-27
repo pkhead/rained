@@ -11,8 +11,6 @@ class RainEd
     private readonly LevelOverview overview;
     private readonly GeometryEditor geometry;
 
-    private bool overview_p_open = true;
-
     public RainEd() {
         level = new();
         

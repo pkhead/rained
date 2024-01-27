@@ -12,7 +12,9 @@ namespace RainEd
             Raylib.InitWindow(1280, 800, "Rained");
             Raylib.SetTargetFPS(144);
 
+            // setup imgui
             rlImGui.Setup(true, true);
+            rlImGui.SetIniFilename("data/imgui.ini");
 
             RainEd app = new();
 

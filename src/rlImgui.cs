@@ -22,6 +22,7 @@ namespace rlImGui_cs
     public static class rlImGui
     {
         internal static IntPtr ImGuiContext = IntPtr.Zero;
+        internal static nint iniFilenameAlloc = 0;
 
         private static ImGuiMouseCursor CurrentMouseCursor = ImGuiMouseCursor.COUNT;
         private static Dictionary<ImGuiMouseCursor, MouseCursor> MouseCursorMap = new Dictionary<ImGuiMouseCursor, MouseCursor>();
@@ -77,6 +78,21 @@ namespace rlImGui_cs
                 ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
             EndInitImGui();
+        }
+
+        public static void SetIniFilename(string iniFilename)
+        {
+            if (iniFilenameAlloc != 0)
+                Marshal.FreeHGlobal(iniFilenameAlloc);
+
+            byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(iniFilename);
+            iniFilenameAlloc = Marshal.AllocHGlobal(nameBytes.Count());
+            Marshal.Copy(nameBytes, 0, iniFilenameAlloc, nameBytes.Count());
+            
+            unsafe
+            {
+                ImGui.GetIO().NativePtr->IniFilename = (byte*) iniFilenameAlloc;
+            }
         }
 
         /// <summary>
@@ -601,6 +617,9 @@ namespace rlImGui_cs
         {
             Raylib.UnloadTexture(FontTexture);
             ImGui.DestroyContext();
+
+            if (iniFilenameAlloc != 0)
+                Marshal.FreeHGlobal(iniFilenameAlloc);
         }
 
         /// <summary>
