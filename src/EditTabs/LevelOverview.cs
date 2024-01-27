@@ -1,3 +1,5 @@
+using ImGuiNET;
+
 namespace RainEd;
 
 public class LevelOverview
@@ -10,5 +12,12 @@ public class LevelOverview
         this.level = level;
     }
 
-    public void Render() {}
+    public void Render() {
+        if (IsWindowOpen && ImGui.Begin("Overview", ref IsWindowOpen))
+        {
+            // TODO
+        }
+
+        ImGui.End();
+    }
 }

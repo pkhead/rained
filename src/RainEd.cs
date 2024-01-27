@@ -76,18 +76,8 @@ class RainEd
             ImGui.EndMainMenuBar();
         }
 
-        
-        if (overview.IsWindowOpen && ImGui.Begin("Overview", ref overview.IsWindowOpen))
-        {
-            overview.Render();
-            ImGui.EndTabItem();
-        }
-
-        if (geometry.IsWindowOpen && ImGui.Begin("Geometry Editor", ref geometry.IsWindowOpen))
-        {
-            geometry.Render();
-            ImGui.EndTabItem();
-        }
+        overview.Render();
+        geometry.Render();
 
         ImGui.ShowDemoWindow();
         rlImGui.End();

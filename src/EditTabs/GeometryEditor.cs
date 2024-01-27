@@ -140,110 +140,114 @@ public class GeometryEditor
 
     public void Render()
     {
-        // work layer
+        if (IsWindowOpen && ImGui.Begin("Geometry Editor", ref IsWindowOpen))
         {
-            var workLayerV = workLayer + 1;
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4);
-            ImGui.InputInt("Work Layer", ref workLayerV);
-            workLayerV = Math.Clamp(workLayerV, 1, 3);    
-            workLayer = workLayerV - 1;
-        }
-
-        // view mode
-        {
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8);
-            if (ImGui.BeginCombo("View Mode", _viewModes[(int)layerViewMode]))
+            // work layer
             {
-                for (int i = 0; i < _viewModes.Count(); i++)
+                var workLayerV = workLayer + 1;
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4);
+                ImGui.InputInt("Work Layer", ref workLayerV);
+                workLayerV = Math.Clamp(workLayerV, 1, 3);    
+                workLayer = workLayerV - 1;
+            }
+
+            // view mode
+            {
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8);
+                if (ImGui.BeginCombo("View Mode", _viewModes[(int)layerViewMode]))
                 {
-                    bool isSelected = i == (int)layerViewMode;
-                    if (ImGui.Selectable(_viewModes[i], isSelected))
+                    for (int i = 0; i < _viewModes.Count(); i++)
                     {
-                        layerViewMode = (GeometryEditor.LayerViewMode) i;
+                        bool isSelected = i == (int)layerViewMode;
+                        if (ImGui.Selectable(_viewModes[i], isSelected))
+                        {
+                            layerViewMode = (GeometryEditor.LayerViewMode) i;
+                        }
+
+                        if (isSelected) ImGui.SetItemDefaultFocus();
                     }
 
-                    if (isSelected) ImGui.SetItemDefaultFocus();
+                    ImGui.EndCombo();
                 }
-
-                ImGui.EndCombo();
             }
-        }
 
-        // toolbar
-        {
-            ImGui.BeginGroup();
-
-            ImGui.Text("Tools");
-
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
-
-            for (int i = 0; i < (int) Tool.ToolCount; i++)
+            // toolbar
             {
-                Tool toolEnum = (Tool) i;
+                ImGui.BeginGroup();
 
-                if (i % 4 > 0) ImGui.SameLine();
+                ImGui.Text("Tools");
 
-                string toolName = ToolNames[toolEnum];
-                Vector2 texOffset = ToolTextureOffsets[toolEnum];
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
-                // highlight selected tool
-                if (toolEnum == selectedTool)
+                for (int i = 0; i < (int) Tool.ToolCount; i++)
                 {
-                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
+                    Tool toolEnum = (Tool) i;
 
-                // tool buttons will have a more transparent hover color
-                } else {
-                    Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
-                        new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                    if (i % 4 > 0) ImGui.SameLine();
+
+                    string toolName = ToolNames[toolEnum];
+                    Vector2 texOffset = ToolTextureOffsets[toolEnum];
+
+                    // highlight selected tool
+                    if (toolEnum == selectedTool)
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
+
+                    // tool buttons will have a more transparent hover color
+                    } else {
+                        Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
+                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
+                            new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                    }
+                    
+                    ImGui.PushID(i);
+                    
+                    // create tool button, select if clicked
+                    if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24)))
+                    {
+                        selectedTool = toolEnum;
+                    }
+
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip(toolName);
+                    }
+
+                    ImGui.PopID();
+                    ImGui.PopStyleColor();
                 }
                 
-                ImGui.PushID(i);
-                
-                // create tool button, select if clicked
-                if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24)))
-                {
-                    selectedTool = toolEnum;
-                }
-
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip(toolName);
-                }
-
-                ImGui.PopID();
+                ImGui.PopStyleVar();
                 ImGui.PopStyleColor();
+
+                // show stats
+                ImGui.Text($"Mouse X: {mouseCx}");
+                ImGui.Text($"Mouse Y: {mouseCy}");
+
+                ImGui.EndGroup();
             }
-            
-            ImGui.PopStyleVar();
-            ImGui.PopStyleColor();
 
-            // show stats
-            ImGui.Text($"Mouse X: {mouseCx}");
-            ImGui.Text($"Mouse Y: {mouseCy}");
-
-            ImGui.EndGroup();
-        }
-
-        // canvas widget
-        ImGui.SameLine();
-        {
-            var regionMax = ImGui.GetWindowContentRegionMax();
-            var regionMin = ImGui.GetCursorPos();
-
-            canvasWidget.Resize((int)(regionMax.X - regionMin.X), (int)(regionMax.Y - regionMin.Y));
-            
-            if (canvasWidget.RenderTexture is not null)
+            // canvas widget
+            ImGui.SameLine();
             {
-                Raylib.BeginTextureMode(canvasWidget.RenderTexture);
-                DrawCanvas();
-                Raylib.EndTextureMode();
-            }
+                var regionMax = ImGui.GetWindowContentRegionMax();
+                var regionMin = ImGui.GetCursorPos();
 
-            canvasWidget.Draw();
+                canvasWidget.Resize((int)(regionMax.X - regionMin.X), (int)(regionMax.Y - regionMin.Y));
+                
+                if (canvasWidget.RenderTexture is not null)
+                {
+                    Raylib.BeginTextureMode(canvasWidget.RenderTexture);
+                    DrawCanvas();
+                    Raylib.EndTextureMode();
+                }
+
+                canvasWidget.Draw();
+            }
         }
+        ImGui.End();
     }
 
     private void Zoom(float factor, Vector2 mpos)
@@ -421,26 +425,34 @@ public class GeometryEditor
                 }
 
                 CellType newType = CellType.Air;
+                int possibleConfigs = 0;
 
                 // figure out how to orient the slope using solid neighbors
                 if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
                 {
                     newType = CellType.SlopeRightUp;
+                    possibleConfigs++;
                 }
-                else if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
+                
+                if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy+1))
                 {
                     newType = CellType.SlopeLeftUp;
+                    possibleConfigs++;
                 }
-                else if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                
+                if (isSolid(level, workLayer, mouseCx-1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
                 {
                     newType = CellType.SlopeRightDown;
+                    possibleConfigs++;
                 }
-                else if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
+                
+                if (isSolid(level, workLayer, mouseCx+1, mouseCy) && isSolid(level, workLayer, mouseCx, mouseCy-1))
                 {
                     newType = CellType.SlopeLeftDown;
+                    possibleConfigs++;
                 }
 
-                if (newType != CellType.Air)
+                if (possibleConfigs == 1)
                     cell.Cell = newType;
 
                 break;
