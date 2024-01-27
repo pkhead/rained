@@ -30,7 +30,7 @@ namespace Lingo
     public class List
     {
         public List<object> values = new();
-        public Dictionary<string, object> pairs = new(); 
+        public Dictionary<string, object> fields = new(); 
     }
 
     public class Table
@@ -439,7 +439,7 @@ namespace Lingo
                     Expect(TokenType.Colon);
                     object? value = ReadValue();
                     if (value is not null)
-                        list.pairs[(string) initTok.Value] = value;
+                        list.fields[(string) initTok.Value] = value;
                 }
                 else if (initTok.Type != TokenType.Void)
                 {

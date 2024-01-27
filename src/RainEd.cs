@@ -4,13 +4,15 @@ using ImGuiNET;
 
 namespace RainEd;
 
-public partial class RainEd
+public class RainEd
 {
     private readonly Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
+    public readonly Tiles.Database TileDatabase;
 
     private readonly LevelOverview overview;
     private readonly GeometryEditor geometry;
+    private readonly TileEditor tiles;
 
     public Level Level { get => level; }
 
@@ -20,11 +22,9 @@ public partial class RainEd
         
         overview = new LevelOverview(this);
         geometry = new GeometryEditor(this);
+        tiles = new TileEditor(this);
 
-        Console.WriteLine("reading tileinit...");
-        var parser = new Lingo.Parser(new StreamReader("data/levelinit.txt"));
-        var tables = parser.Read();
-        Console.WriteLine("tileinit done");
+        TileDatabase = new Tiles.Database();
     }
 
     // TODO: show status thing in ImGui
@@ -93,6 +93,7 @@ public partial class RainEd
 
         overview.Render();
         geometry.Render();
+        tiles.Render();
 
         ImGui.ShowDemoWindow();
         rlImGui.End();
