@@ -10,6 +10,7 @@ public class GeometryEditor
 {
     public bool IsWindowOpen = true;
 
+    private readonly RainEd editor;
     private readonly Level level;
 
     private Vector2 viewOffset = new();
@@ -139,15 +140,14 @@ public class GeometryEditor
         "Overlay", "Stack"
     };
 
-    private const int TILE_SIZE = 20;
-
     private readonly UICanvasWidget canvasWidget;
     private RlManaged.Texture2D toolIcons;
     private RlManaged.Texture2D graphics;
 
-    public GeometryEditor(Level level)
+    public GeometryEditor(RainEd editor)
     {
-        this.level = level;
+        this.editor = editor;
+        level = editor.Level;
         canvasWidget = new(1, 1);
         Width = 72;
         Height = 42;
@@ -288,7 +288,7 @@ public class GeometryEditor
         Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
         
         // draw the layers
         int foregroundAlpha = 255; // this is stored for drawing objects later
@@ -300,7 +300,7 @@ public class GeometryEditor
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
                     var color = LAYER_COLORS[l];
-                    level.RenderLayer(l, TILE_SIZE, color);
+                    level.RenderLayer(l, color);
                 }
 
                 break;
@@ -316,7 +316,7 @@ public class GeometryEditor
 
                     Rlgl.PushMatrix();
                     Rlgl.Translatef(offset, offset, 0f);
-                    level.RenderLayer(l, TILE_SIZE, color);
+                    level.RenderLayer(l, color);
                     Rlgl.PopMatrix();
                 }
 
@@ -340,7 +340,7 @@ public class GeometryEditor
                         Raylib.DrawTextureRec(
                             graphics,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
-                            new Vector2(x, y) * TILE_SIZE,
+                            new Vector2(x, y) * Level.TileSize,
                             objColor
                         );
                     }
@@ -348,7 +348,7 @@ public class GeometryEditor
             }
         }
 
-        level.RenderShortcuts(TILE_SIZE, Color.White);
+        level.RenderShortcuts(Color.White);
 
         // draw grid squares
         for (int x = 0; x < level.Width; x++)
@@ -356,7 +356,7 @@ public class GeometryEditor
             for (int y = 0; y < level.Height; y++)
             {
                 
-                var cellRect = new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
                 Raylib.DrawRectangleLinesEx(
                     cellRect,
                     1.0f / viewZoom,
@@ -371,7 +371,7 @@ public class GeometryEditor
             for (int y = 0; y < level.Height; y += 2)
             {
                 Raylib.DrawRectangleLinesEx(
-                    new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE * 2, TILE_SIZE * 2),
+                    new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2),
                     1.0f / viewZoom,
                     new Color(255, 255, 255, 60)
                 );
@@ -382,8 +382,8 @@ public class GeometryEditor
         int lastMouseCx = mouseCx;
         int lastMouseCy = mouseCy;
 
-        mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / TILE_SIZE;
-        mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / TILE_SIZE;
+        mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
+        mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / Level.TileSize;
         mouseCx = (int) mouseCellFloat.X;
         mouseCy = (int) mouseCellFloat.Y;
 
@@ -400,11 +400,11 @@ public class GeometryEditor
             var wheelMove = Raylib.GetMouseWheelMove();
             if (wheelMove > 0f)
             {
-                Zoom(1.5f, mouseCellFloat * TILE_SIZE);
+                Zoom(1.5f, mouseCellFloat * Level.TileSize);
             }
             else if (wheelMove < 0f)
             {
-                Zoom(1f / 1.5f, mouseCellFloat * TILE_SIZE);
+                Zoom(1f / 1.5f, mouseCellFloat * Level.TileSize);
             }
 
             // if mouse is within level bounds?
@@ -412,7 +412,7 @@ public class GeometryEditor
             {
                 // draw grid cursor
                 Raylib.DrawRectangleLinesEx(
-                    new Rectangle(mouseCx * TILE_SIZE, mouseCy * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                    new Rectangle(mouseCx * Level.TileSize, mouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
                     1f / viewZoom,
                     Color.White
                 );
@@ -561,7 +561,7 @@ public class GeometryEditor
             }
             else
             {
-                RainEd.ShowError($"This object is only placeable on layer 1");
+                editor.ShowError($"This object is only placeable on layer 1");
             }
         }
 

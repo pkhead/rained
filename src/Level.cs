@@ -52,6 +52,8 @@ public struct LevelCell
 
 public class Level
 {
+    private readonly RainEd editor;
+
     public LevelCell[,,] Layers;
     private int _width, _height;
 
@@ -59,13 +61,14 @@ public class Level
     public int Height { get => _height; }
     public const int LayerCount = 3;
 
-    private readonly RlManaged.Texture2D graphics;
+    public const int TileSize = 20;
 
-    public Level()
+    public Level(RainEd editor)
     {
+        this.editor = editor;
+
         _width = 72;
         _height = 42;
-        graphics = new("data/level-graphics.png");
 
         Layers = new LevelCell[LayerCount,Width,Height];
 
@@ -80,8 +83,8 @@ public class Level
             }
         }
     }
-
-    public void RenderLayer(int layer, int tileSize, Color color)
+    
+    public void RenderLayer(int layer, Color color)
     {
         for (int x = 0; x < Width; x++)
         {
@@ -92,49 +95,49 @@ public class Level
                 switch (c.Cell)
                 {
                     case CellType.Solid:
-                        Raylib.DrawRectangle(x * tileSize, y * tileSize, tileSize, tileSize, color);
+                        Raylib.DrawRectangle(x * TileSize, y * TileSize, TileSize, TileSize, color);
                         break;
                         
                     case CellType.Platform:
-                        Raylib.DrawRectangle(x * tileSize, y * tileSize, tileSize, 10, color);
+                        Raylib.DrawRectangle(x * TileSize, y * TileSize, TileSize, 10, color);
                         break;
                     
                     case CellType.Glass:
-                        Raylib.DrawRectangleLines(x * tileSize, y * tileSize, tileSize, tileSize, color);
+                        Raylib.DrawRectangleLines(x * TileSize, y * TileSize, TileSize, TileSize, color);
                         break;
 
                     case CellType.SlopeLeftDown:
                         Raylib.DrawTriangle(
-                            new Vector2(x+1, y+1) * tileSize,
-                            new Vector2(x+1, y) * tileSize,
-                            new Vector2(x, y) * tileSize,
+                            new Vector2(x+1, y+1) * TileSize,
+                            new Vector2(x+1, y) * TileSize,
+                            new Vector2(x, y) * TileSize,
                             color
                         );
                         break;
 
                     case CellType.SlopeLeftUp:
                         Raylib.DrawTriangle(
-                            new Vector2(x, y+1) * tileSize,
-                            new Vector2(x+1, y+1) * tileSize,
-                            new Vector2(x+1, y) * tileSize,
+                            new Vector2(x, y+1) * TileSize,
+                            new Vector2(x+1, y+1) * TileSize,
+                            new Vector2(x+1, y) * TileSize,
                             color
                         );
                         break;
 
                     case CellType.SlopeRightDown:
                         Raylib.DrawTriangle(
-                            new Vector2(x+1, y) * tileSize,
-                            new Vector2(x, y) * tileSize,
-                            new Vector2(x, y+1) * tileSize,
+                            new Vector2(x+1, y) * TileSize,
+                            new Vector2(x, y) * TileSize,
+                            new Vector2(x, y+1) * TileSize,
                             color
                         );
                         break;
 
                     case CellType.SlopeRightUp:
                         Raylib.DrawTriangle(
-                            new Vector2(x+1, y+1) * tileSize,
-                            new Vector2(x, y) * tileSize,
-                            new Vector2(x, y+1) * tileSize,
+                            new Vector2(x+1, y+1) * TileSize,
+                            new Vector2(x, y) * TileSize,
+                            new Vector2(x, y+1) * TileSize,
                             color
                         );
                         break;
@@ -143,19 +146,19 @@ public class Level
                 // draw horizontal beam
                 if ((c.Objects & LevelObject.HorizontalBeam) != 0)
                 {
-                    Raylib.DrawRectangle(x * tileSize, y * tileSize + 8, tileSize, 4, color);
+                    Raylib.DrawRectangle(x * TileSize, y * TileSize + 8, TileSize, 4, color);
                 }
 
                 // draw vertical beam
                 if ((c.Objects & LevelObject.VerticalBeam) != 0)
                 {
-                    Raylib.DrawRectangle(x * tileSize + 8, y * tileSize, 4, tileSize, color);
+                    Raylib.DrawRectangle(x * TileSize + 8, y * TileSize, 4, TileSize, color);
                 }
             }
         }
     }
 
-    public void RenderShortcuts(int tileSize, Color color)
+    public void RenderShortcuts(Color color)
     {
         for (int x = 0; x < Width; x++)
         {
@@ -166,9 +169,9 @@ public class Level
                 if (cell.Has(LevelObject.Shortcut))
                 {
                     Raylib.DrawTextureRec(
-                        graphics,
+                        editor.LevelGraphicsTexture,
                         new Rectangle(2 * 20, 1 * 20, 20, 20),
-                        new Vector2(x, y) * tileSize,
+                        new Vector2(x, y) * TileSize,
                         color
                     );
                 }

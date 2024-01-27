@@ -4,22 +4,26 @@ using ImGuiNET;
 
 namespace RainEd;
 
-class RainEd
+public partial class RainEd
 {
-    public readonly Level level;
+    private readonly Level level;
+    public readonly RlManaged.Texture2D LevelGraphicsTexture;
 
     private readonly LevelOverview overview;
     private readonly GeometryEditor geometry;
 
+    public Level Level { get => level; }
+
     public RainEd() {
-        level = new();
+        level = new(this);
+        LevelGraphicsTexture = new("data/level-graphics.png");
         
-        overview = new LevelOverview(level);
-        geometry = new GeometryEditor(level);
+        overview = new LevelOverview(this);
+        geometry = new GeometryEditor(this);
     }
 
     // TODO: show status thing in ImGui
-    public static void ShowError(string msg)
+    public void ShowError(string msg)
     {
         Console.WriteLine($"ERROR: {msg}");
     }
