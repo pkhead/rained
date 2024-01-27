@@ -85,7 +85,7 @@ namespace rlImGui_cs
             if (iniFilenameAlloc != 0)
                 Marshal.FreeHGlobal(iniFilenameAlloc);
 
-            byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(iniFilename);
+            byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(iniFilename + "\0");
             iniFilenameAlloc = Marshal.AllocHGlobal(nameBytes.Count());
             Marshal.Copy(nameBytes, 0, iniFilenameAlloc, nameBytes.Count());
             
