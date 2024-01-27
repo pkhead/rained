@@ -14,6 +14,19 @@ namespace Lingo
         }
     }
 
+    public struct Rectangle
+    {
+        public float X, Y, Width, Height;
+
+        public Rectangle(float x, float y, float width, float height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
+    }
+
     public class List
     {
         public List<object> values = new();
@@ -49,6 +62,7 @@ namespace Lingo
         Symbol,
         KeywordColor,
         KeywordPoint,
+        KeywordRect
     }
 
     public struct Token
@@ -70,6 +84,7 @@ namespace Lingo
         private int line = 1;
 
         private int savedCharOffset, savedLine;
+        private bool tokenBegan = false;
 
         public List<Token> Tokens { get => tokens; }
 
@@ -83,9 +98,11 @@ namespace Lingo
             tokens.Clear();
             strBuffer.Clear();
 
+            DiscardWhitespace();
             while (!stream.EndOfStream)
             {
                 ReadToken();
+                DiscardWhitespace();
             }
 
             return tokens;
@@ -98,12 +115,18 @@ namespace Lingo
 
         public void BeginToken()
         {
+            if (tokenBegan) throw new Exception("BeginToken already called");
+            tokenBegan = true;
+
             savedCharOffset = charOffset;
             savedLine = line;
         }
 
         public void EndToken(TokenType type, object? value = null)
         {
+            if (!tokenBegan) throw new Exception("BeginToken not called");
+            tokenBegan = false;
+
             tokens.Add(new Token()
             {
                 Type = type,
@@ -122,7 +145,27 @@ namespace Lingo
         private char ReadChar()
         {
             var ch = (char) stream.Read();
-            if (ch == '\n')
+
+            // handle the three different line endings:
+            // Unix: LF
+            // Mac: CR
+            // Windows: CR LF
+            bool isNewline = false;
+            if (ch == '\r')
+            {
+                if ((char) stream.Peek() == '\n')
+                {
+                    stream.Read();
+                    isNewline = true;
+                }
+                else
+                {
+                    isNewline = true;
+                }
+            }
+            else isNewline = ch == '\n';
+
+            if (isNewline)
             {
                 line++;
                 charOffset = 0;
@@ -269,7 +312,10 @@ namespace Lingo
                 }
 
                 else if (char.IsDigit(PeekChar()))
+                {
+                    BeginToken();
                     ParseNumber();
+                }
 
                 // keyword
                 else
@@ -284,6 +330,10 @@ namespace Lingo
                     else if (kw == "color")
                     {
                         EndToken(TokenType.KeywordColor);
+                    }
+                    else if (kw == "rect")
+                    {
+                        EndToken(TokenType.KeywordRect);
                     }
                     else if (kw == "void")
                     {
@@ -455,6 +505,21 @@ namespace Lingo
 
                     Expect(TokenType.CloseParen);
                     return new Vector2(components[0], components[1]);
+                }
+
+                case TokenType.KeywordRect:
+                {
+                    Expect(TokenType.OpenParen);
+                    float[] components = new float[4];
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        components[i] = ExpectNumber();
+                        if (i < 3) Expect(TokenType.Comma);
+                    }
+
+                    Expect(TokenType.CloseParen);
+                    return new Rectangle(components[0], components[1], components[2], components[3]);
                 }
             }
 
