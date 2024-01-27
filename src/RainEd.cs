@@ -6,7 +6,7 @@ namespace RainEd;
 
 class RainEd
 {
-    private readonly Level level;
+    public readonly Level level;
 
     private readonly LevelOverview overview;
     private readonly GeometryEditor geometry;
@@ -16,6 +16,12 @@ class RainEd
         
         overview = new LevelOverview(level);
         geometry = new GeometryEditor(level);
+    }
+
+    // TODO: show status thing in ImGui
+    public static void ShowError(string msg)
+    {
+        Console.WriteLine($"ERROR: {msg}");
     }
 
     public void Draw()

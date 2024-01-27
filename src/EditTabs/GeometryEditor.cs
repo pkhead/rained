@@ -55,7 +55,7 @@ public class GeometryEditor
         ToolCount // not an enum, just the number of tools
     }
 
-    public static readonly Dictionary<Tool, string> ToolNames = new()
+    private static readonly Dictionary<Tool, string> ToolNames = new()
     {
         { Tool.Wall,            "Wall"              },
         { Tool.Air,             "Air"               },
@@ -81,7 +81,7 @@ public class GeometryEditor
         { Tool.WormGrass,       "Worm Grass"        }
     };
 
-    public static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
+    private static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
     {
         { Tool.Wall,            new(1, 0) },
         { Tool.Air,             new(2, 0) },
@@ -107,6 +107,22 @@ public class GeometryEditor
         { Tool.WormGrass,       new(2, 5) }
     };
 
+    private static readonly Dictionary<LevelObject, Vector2> ObjectTextureOffsets = new()
+    {
+        { LevelObject.Rock,             new(0, 0) },
+        { LevelObject.Spear,            new(1, 0) },
+        { LevelObject.Shortcut,         new(2, 1) },
+        { LevelObject.CreatureDen,      new(3, 1) },
+        { LevelObject.Entrance,         new(4, 1) },
+        { LevelObject.Hive,             new(0, 2) },
+        { LevelObject.ForbidFlyChain,   new(1, 2) },
+        { LevelObject.Waterfall,        new(2, 2) },
+        { LevelObject.WhackAMoleHole,   new(3, 2) },
+        { LevelObject.ScavengerHole,    new(4, 2) },
+        { LevelObject.GarbageWorm,      new(0, 3) },
+        { LevelObject.WormGrass,        new(1, 3) },
+    };
+
     private Tool selectedTool = Tool.Wall;
     public LayerViewMode layerViewMode = LayerViewMode.Overlay;
     private int mouseCx = 0;
@@ -127,6 +143,7 @@ public class GeometryEditor
 
     private readonly UICanvasWidget canvasWidget;
     private RlManaged.Texture2D toolIcons;
+    private RlManaged.Texture2D graphics;
 
     public GeometryEditor(Level level)
     {
@@ -136,6 +153,7 @@ public class GeometryEditor
         Height = 42;
 
         toolIcons = new("data/tool-icons.png");
+        graphics = new("data/level-graphics.png");
     }
 
     public void Render()
@@ -225,6 +243,7 @@ public class GeometryEditor
                 // show stats
                 ImGui.Text($"Mouse X: {mouseCx}");
                 ImGui.Text($"Mouse Y: {mouseCy}");
+                ImGui.NewLine();
 
                 ImGui.EndGroup();
             }
@@ -269,9 +288,11 @@ public class GeometryEditor
         Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, Color.White);
+        Raylib.DrawRectangle(0, 0, level.Width * TILE_SIZE, level.Height * TILE_SIZE, new Color(127, 127, 127, 255));
         
         // draw the layers
+        int foregroundAlpha = 255; // this is stored for drawing objects later
+
         switch (layerViewMode)
         {
             // overlay: each layer is drawn over each other with a unique transparent colors
@@ -289,6 +310,7 @@ public class GeometryEditor
                 for (int l = Level.LayerCount-1; l >= 0; l--)
                 {
                     var alpha = l == WorkLayer ? 255 : 50;
+                    if (l == 0) foregroundAlpha = alpha;
                     var color = new Color(LAYER_COLORS[l].R, LAYER_COLORS[l].G, LAYER_COLORS[l].B, alpha);
                     int offset = l * 2;
 
@@ -301,13 +323,42 @@ public class GeometryEditor
                 break;
         }
 
+        // draw object graphics
+        var objColor = new Color(255, 255, 255, foregroundAlpha);
+        for (int x = 0; x < level.Width; x++)
+        {
+            for (int y = 0; y < level.Height; y++)
+            {
+                var cell = level.Layers[0, x, y];
+
+                // draw object graphics
+                for (int i = 1; i < 32; i++)
+                {
+                    LevelObject objType = (LevelObject) (1 << (i-1));
+                    if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
+                    {
+                        Raylib.DrawTextureRec(
+                            graphics,
+                            new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
+                            new Vector2(x, y) * TILE_SIZE,
+                            objColor
+                        );
+                    }
+                }
+            }
+        }
+
+        level.RenderShortcuts(TILE_SIZE, Color.White);
+
         // draw grid squares
         for (int x = 0; x < level.Width; x++)
         {
             for (int y = 0; y < level.Height; y++)
             {
+                
+                var cellRect = new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 Raylib.DrawRectangleLinesEx(
-                    new Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                    cellRect,
                     1.0f / viewZoom,
                     new Color(255, 255, 255, 60)
                 );
@@ -413,6 +464,10 @@ public class GeometryEditor
                 if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
                 cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
                 break;
+
+            case Tool.ShortcutEntrance:
+                if (pressed) cell.Cell = CellType.ShortcutEntrance;
+                break;
             
             case Tool.Slope:
             {
@@ -475,15 +530,39 @@ public class GeometryEditor
             case Tool.Spear:
                 levelObject = LevelObject.Spear;
                 break;
+
+            case Tool.Crack:
+                levelObject = LevelObject.Crack;
+                break;
+
+            case Tool.Shortcut:
+                levelObject = LevelObject.Shortcut;
+                break;
+
+            case Tool.Entrance:
+                levelObject = LevelObject.Entrance;
+                break;
+
+            case Tool.CreatureDen:
+                levelObject = LevelObject.CreatureDen;
+                break;
         }
 
         if (levelObject != LevelObject.None)
         {
-            if (pressed) toolPlaceMode = cell.Has(levelObject);
-            if (toolPlaceMode)
-                cell.Remove(levelObject);
+            // player can only place objects on work layer 1 (except if it's a beam)
+            if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam)
+            {
+                if (pressed) toolPlaceMode = cell.Has(levelObject);
+                if (toolPlaceMode)
+                    cell.Remove(levelObject);
+                else
+                    cell.Add(levelObject);
+            }
             else
-                cell.Add(levelObject);
+            {
+                RainEd.ShowError($"This object is only placeable on layer 1");
+            }
         }
 
         level.Layers[workLayer, mouseCx, mouseCy] = cell;
