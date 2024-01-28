@@ -12,6 +12,8 @@ public class TileEditor : IEditorMode
     private readonly EditorWindow window;
     private Tiles.TileData? selectedTile;
 
+    private string searchQuery = "";
+
     public TileEditor(EditorWindow window) {
         this.window = window;
         selectedTile = null;
@@ -28,17 +30,40 @@ public class TileEditor : IEditorMode
             ImGui.SameLine();
             if (ImGui.Button("Expand All"))
                 headerOpenState = true;
+
+            ImGui.SameLine();
+            var right = ImGui.GetCursorPosX();
+            ImGui.NewLine();
+
+            ImGui.SetNextItemWidth(right - ImGui.GetCursorPosX() - ImGui.GetStyle().ItemSpacing.X);
+            ImGui.InputTextWithHint("##search", "Search...", ref searchQuery, 64, ImGuiInputTextFlags.AlwaysOverwrite);
+            var searchQueryL = searchQuery.ToLower();
             
-            ImGui.Text("Shift+Click to modify geometry");
+            ImGui.Text("Hold G to modify geometry");
+
+            // the tiles in the group that pass search test
+            var tilesInGroup = new List<Tiles.TileData>();
             
             if (ImGui.BeginChild("List", ImGui.GetContentRegionAvail()))
             {
                 foreach (var group in window.Editor.TileDatabase.Categories)
                 {
-                    if (headerOpenState is not null) ImGui.SetNextItemOpen(headerOpenState.GetValueOrDefault());
-                    if (ImGui.CollapsingHeader(group.Name))
+                    bool groupNameInQuery = searchQuery.Length == 0 || group.Name.ToLower().Contains(searchQueryL);
+
+                    // get a list of the tiles that are in query
+                    tilesInGroup.Clear();
+                    foreach (Tiles.TileData tile in group.Tiles)
                     {
-                        foreach (Tiles.TileData tile in group.Tiles)
+                        if (searchQuery.Length == 0 || tile.Name.ToLower().Contains(searchQueryL))
+                        {
+                            tilesInGroup.Add(tile);
+                        }
+                    }
+
+                    if (headerOpenState is not null) ImGui.SetNextItemOpen(headerOpenState.GetValueOrDefault());
+                    if ((groupNameInQuery || tilesInGroup.Count > 0) && ImGui.CollapsingHeader(group.Name))
+                    {
+                        foreach (var tile in tilesInGroup)
                         {
                             if (ImGui.Selectable(tile.Name, selectedTile is not null && selectedTile == tile))
                             {
@@ -217,10 +242,12 @@ public class TileEditor : IEditorMode
                 }
             }
 
+            var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
+            var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
+
             // check if requirements are satisfied
             // first of all, placement is impossible if tile center is out of bounds
             bool isPlacementValid = level.IsInBounds(window.MouseCx, window.MouseCy);
-            var placeGeometry = Raylib.IsKeyDown(KeyboardKey.LeftShift);
             if (isPlacementValid)
             {
                 for (int x = 0; x < selectedTile.Width; x++)
@@ -250,10 +277,10 @@ public class TileEditor : IEditorMode
                             }
                         }
 
-                        // if placeGeometry is true, the editor will place tile geometry
+                        // if modifyGeometry is true, the editor will place tile geometry
                         // that is needed, instead of having to rely on the user doing
                         // that themselves. thus, a geometry check isn't needed
-                        if (!placeGeometry)
+                        if (!modifyGeometry && !forcePlace)
                         {
                             // check first layer geometry
                             if (specInt == -1) continue;
@@ -298,7 +325,7 @@ public class TileEditor : IEditorMode
                         selectedTile,
                         tileOriginX, tileOriginY,
                         window.WorkLayer, window.MouseCx, window.MouseCy,
-                        placeGeometry
+                        modifyGeometry
                     );
                 }
 
@@ -320,7 +347,7 @@ public class TileEditor : IEditorMode
                             tileY = mouseCell.TileRootY;
                         }
 
-                        RemoveTile(tileLayer, tileX, tileY, placeGeometry);
+                        RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                     }
                 }
             }

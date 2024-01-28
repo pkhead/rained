@@ -171,7 +171,7 @@ public class EditorWindow
         Raylib.EndScissorMode();
 
         // keybind to switch layer
-        if (Raylib.IsKeyPressed(KeyboardKey.L))
+        if (!ImGui.GetIO().WantCaptureKeyboard && Raylib.IsKeyPressed(KeyboardKey.L))
         {
             workLayer = (workLayer + 1) % 3;
         }
