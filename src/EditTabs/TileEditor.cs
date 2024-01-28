@@ -77,16 +77,143 @@ public class TileEditor : IEditorMode
         level.RenderGrid(1f / window.ViewZoom);
         level.RenderBorder(1f / window.ViewZoom);
 
+        static void drawTile(int tileInt, int x, int y, float lineWidth, Color color)
+        {
+            if (tileInt == 0)
+            {
+                // air is represented by a cross (OMG ASCEND WITH GORB???)
+                // an empty cell (-1) would mean any tile is accepted
+                Raylib.DrawLineEx(
+                    startPos: new Vector2(x * Level.TileSize + 5, y * Level.TileSize + 5),
+                    endPos: new Vector2((x+1) * Level.TileSize - 5, (y+1) * Level.TileSize - 5),
+                    lineWidth,
+                    color
+                );
+
+                Raylib.DrawLineEx(
+                    startPos: new Vector2((x+1) * Level.TileSize - 5, y * Level.TileSize + 5),
+                    endPos: new Vector2(x * Level.TileSize + 5, (y+1) * Level.TileSize - 5),
+                    lineWidth,
+                    color
+                );
+            }
+            else if (tileInt > 0)
+            {
+                var cellType = (CellType) tileInt;
+                switch (cellType)
+                {
+                    case CellType.Solid:
+                        Raylib.DrawRectangleLinesEx(
+                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                            lineWidth,
+                            color
+                        );
+                        break;
+                    
+                    case CellType.Platform:
+                        Raylib.DrawRectangleLinesEx(
+                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10),
+                            lineWidth,
+                            color
+                        );
+                        break;
+                    
+                    case CellType.Glass:
+                        Raylib.DrawRectangleLinesEx(
+                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                            lineWidth,
+                            color
+                        );
+                        break;
+
+                    case CellType.ShortcutEntrance:
+                        Raylib.DrawRectangleLinesEx(
+                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                            lineWidth,
+                            Color.Red
+                        );
+                        break;
+
+                    case CellType.SlopeLeftDown:
+                        Raylib.DrawTriangleLines(
+                            new Vector2(x+1, y+1) * Level.TileSize,
+                            new Vector2(x+1, y) * Level.TileSize,
+                            new Vector2(x, y) * Level.TileSize,
+                            color
+                        );
+                        break;
+
+                    case CellType.SlopeLeftUp:
+                        Raylib.DrawTriangleLines(
+                            new Vector2(x, y+1) * Level.TileSize,
+                            new Vector2(x+1, y+1) * Level.TileSize,
+                            new Vector2(x+1, y) * Level.TileSize,
+                            color
+                        );
+                        break;
+
+                    case CellType.SlopeRightDown:
+                        Raylib.DrawTriangleLines(
+                            new Vector2(x+1, y) * Level.TileSize,
+                            new Vector2(x, y) * Level.TileSize,
+                            new Vector2(x, y+1) * Level.TileSize,
+                            color
+                        );
+                        break;
+
+                    case CellType.SlopeRightUp:
+                        Raylib.DrawTriangleLines(
+                            new Vector2(x+1, y+1) * Level.TileSize,
+                            new Vector2(x, y) * Level.TileSize,
+                            new Vector2(x, y+1) * Level.TileSize,
+                            color
+                        );
+                        break;
+                }
+            }
+        }
+
+        // render selected tile
         if (selectedTile is not null)
         {
+            // mouse position is at center of tile
+            // tileOrigin is the top-left of the tile, so some math to adjust
             var tileOrigin = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
 
+            // draw tile requirements
+            for (int x = 0; x < selectedTile.Width; x++)
+            {
+                for (int y = 0; y < selectedTile.Height; y++)
+                {
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef((int)tileOrigin.X * Level.TileSize + 2, (int)tileOrigin.Y * Level.TileSize + 2, 0);
+
+                    sbyte tileInt = selectedTile.Requirements2[x,y];
+                    drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                    Rlgl.PopMatrix();
+                }
+            }
+
+            for (int x = 0; x < selectedTile.Width; x++)
+            {
+                for (int y = 0; y < selectedTile.Height; y++)
+                {
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef((int)tileOrigin.X * Level.TileSize, (int)tileOrigin.Y * Level.TileSize, 0);
+
+                    sbyte tileInt = selectedTile.Requirements[x,y];
+                    drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 0, 0, 255));
+                    Rlgl.PopMatrix();
+                }
+            }
+
+            // draw tile preview
             Raylib.DrawTextureEx(
                 selectedTile.PreviewTexture,
-                new Vector2(MathF.Floor(tileOrigin.X), MathF.Floor(tileOrigin.Y)) * Level.TileSize,
+                new Vector2(MathF.Floor(tileOrigin.X), MathF.Floor(tileOrigin.Y)) * Level.TileSize - new Vector2(2, 2),
                 0,
                 (float)Level.TileSize / 16,
-                Color.White
+                new Color(255, 255, 255, 200)
             );
         }
     }

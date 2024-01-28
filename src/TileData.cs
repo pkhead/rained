@@ -18,20 +18,45 @@ public class TileData
     public string Name;
     public int Width;
     public int Height;
-    public byte[,] Requirements;
-    public byte[,] Requirements2;
+    public sbyte[,] Requirements;
+    public sbyte[,] Requirements2;
     public int BfTiles = 0;
     public RlManaged.Texture2D PreviewTexture;
 
-    public TileData(string name, TileType type, int width, int height, int bfTiles, List<int>? repeatL)
+    public TileData(string name, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
     {
         Name = name;
         Width = width;
         Height = height;
         BfTiles = bfTiles;
 
-        Requirements = new byte[width, height];
-        Requirements2 = new byte[width, height];
+        Requirements = new sbyte[width, height];
+        Requirements2 = new sbyte[width, height];
+
+        // fill requirements table
+        int i = 0;
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Requirements[x,y] = (sbyte) specs[i];
+                Requirements2[x,y] = -1;
+                i++;
+            }
+        }
+
+        if (specs2 is not null)
+        {
+            i = 0;
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Requirements2[x, y] = (sbyte) specs2[i];
+                    i++;
+                }
+            }
+        }
 
         // retrieve Y location of preview image
         int rowCount = height + bfTiles * 2;
@@ -141,11 +166,19 @@ public class Database
                 var size = (Vector2) tileInit.fields["sz"];
                 var specsData = (Lingo.List) tileInit.fields["specs"];
                 var bfTiles = (int) tileInit.fields["bfTiles"];
+                Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
                     tileInit.fields.ContainsKey("repeatL") ? (Lingo.List) tileInit.fields["repeatL"] : null;
                 
+                if (tileInit.fields.ContainsKey("specs2") && tileInit.fields["specs2"] is Lingo.List specs2List)
+                {
+                    specs2Data = specs2List;
+                }
+
                 List<int>? repeatL = repeatLayerList?.values.Cast<int>().ToList();
-                
+                List<int> specs = specsData.values.Cast<int>().ToList();
+                List<int>? specs2 = specs2Data?.values.Cast<int>().ToList();
+
                 TileType tileType = tp switch
                 {
                     "voxelStruct" => TileType.VoxelStruct,
@@ -162,7 +195,9 @@ public class Database
                         type: tileType,
                         width: (int)size.X, height: (int)size.Y,
                         bfTiles: bfTiles,
-                        repeatL: repeatL
+                        repeatL: repeatL,
+                        specs: specs,
+                        specs2: specs2
                     );
 
                     group.Tiles.Add(tileData);

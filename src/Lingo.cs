@@ -181,7 +181,7 @@ namespace Lingo
         }
 
         // read either a float or an integer
-        private object ReadNumber(out bool isFloat)
+        private object ReadNumber(bool negative, out bool isFloat)
         {
             isFloat = false;
 
@@ -194,14 +194,14 @@ namespace Lingo
             }
 
             if (isFloat)
-                return float.Parse(string.Join("", strBuffer));
+                return float.Parse(string.Join("", strBuffer)) * (negative ? -1f : 1f);
             else
-                return int.Parse(string.Join("", strBuffer));
+                return int.Parse(string.Join("", strBuffer)) * (negative ? -1 : 1);
         }
 
-        private void ParseNumber()
+        private void ParseNumber(bool negative = false)
         {
-            var num = ReadNumber(out bool isFloat);
+            var num = ReadNumber(negative, out bool isFloat);
 
             if (isFloat)
             {
@@ -303,7 +303,7 @@ namespace Lingo
 
                     if (char.IsDigit(PeekChar()))
                     {
-                        ParseNumber();
+                        ParseNumber(true);
                     }
                     else
                     {
