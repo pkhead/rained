@@ -10,9 +10,7 @@ public class RainEd
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     public readonly Tiles.Database TileDatabase;
 
-    private readonly LevelOverview overview;
-    private readonly GeometryEditor geometry;
-    private readonly TileEditor tiles;
+    private readonly EditorWindow editorWindow;
 
     public Level Level { get => level; }
 
@@ -20,10 +18,7 @@ public class RainEd
         level = new(this);
         LevelGraphicsTexture = new("data/level-graphics.png");
         
-        overview = new LevelOverview(this);
-        geometry = new GeometryEditor(this);
-        tiles = new TileEditor(this);
-
+        editorWindow = new EditorWindow(this);
         TileDatabase = new Tiles.Database();
     }
 
@@ -72,11 +67,8 @@ public class RainEd
 
             if (ImGui.BeginMenu("View"))
             {
-                if (ImGui.MenuItem("Overview", null, overview.IsWindowOpen))
-                    overview.IsWindowOpen = !overview.IsWindowOpen;
-
-                if (ImGui.MenuItem("Geometry Editor", null, geometry.IsWindowOpen))
-                    geometry.IsWindowOpen = !geometry.IsWindowOpen;
+                if (ImGui.MenuItem("Editor", null, editorWindow.IsWindowOpen))
+                    editorWindow.IsWindowOpen = !editorWindow.IsWindowOpen;
                 
                 ImGui.EndMenu();
             }
@@ -91,9 +83,7 @@ public class RainEd
             ImGui.EndMainMenuBar();
         }
 
-        overview.Render();
-        geometry.Render();
-        tiles.Render();
+        editorWindow.Render();
 
         ImGui.ShowDemoWindow();
         rlImGui.End();

@@ -326,17 +326,53 @@ public class Level
                         );
                     }
                 }
-
-                /*if (cell.Has(LevelObject))
-                {
-                    Raylib.DrawTextureRec(
-                        editor.LevelGraphicsTexture,
-                        new Rectangle(2 * 20, 1 * 20, 20, 20),
-                        new Vector2(x, y) * TileSize,
-                        color
-                    );
-                }*/
             }
         }
+    }
+
+    public void RenderGrid(float lineWidth)
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                var cellRect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
+                Raylib.DrawRectangleLinesEx(
+                    cellRect,
+                    lineWidth,
+                    new Color(255, 255, 255, 60)
+                );
+            }
+        }
+
+        // draw bigger grid squares
+        for (int x = 0; x < Width; x += 2)
+        {
+            for (int y = 0; y < Height; y += 2)
+            {
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(x * TileSize, y * TileSize, TileSize * 2, TileSize * 2),
+                    lineWidth,
+                    new Color(255, 255, 255, 60)
+                );
+            }
+        }
+    }
+
+    public void RenderBorder(float lineWidth)
+    {
+        int borderRight = Width - BufferTilesRight;
+        int borderBottom = Height - BufferTilesBot;
+        int borderW = borderRight - BufferTilesLeft;
+        int borderH = borderBottom - BufferTilesTop;
+
+        Raylib.DrawRectangleLinesEx(
+            new Rectangle(
+                BufferTilesLeft * TileSize, BufferTilesTop * TileSize,
+                borderW * TileSize, borderH * TileSize
+            ),
+            lineWidth,
+            Color.White
+        );
     }
 }
