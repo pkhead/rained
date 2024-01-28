@@ -3,16 +3,18 @@ Overall:
 - saving/loading
 - undo/redo
 - what if everything was on one screen?
+- help pages/hints/tooltips/whatever
 
 Level Properties:
 
 Geometry Editor:
 - arrow keys to scroll
 - select and copy/paste
+- ability to view tiles
 
 Tile Editor:
 - tile search
-
+- is it possible to combine geo and tile editor?
 
 
 tile data format (from rwe+):

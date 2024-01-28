@@ -344,7 +344,8 @@ public class Level
             {
                 var cell = Layers[layer, x, y];
                 
-                if (cell.HasTile())
+                //debug render tile data
+                /*if (cell.HasTile())
                 {
                     Tiles.TileData tile = cell.TileHead
                         ?? Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead
@@ -352,12 +353,28 @@ public class Level
                     
                     if (cell.TileHead is null)
                     {
-                        Raylib.DrawRectangleLines(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, alpha));
+                        Raylib.DrawRectangleLines(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, 50));
                     }
                     else
                     {
-                        Raylib.DrawRectangle(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, alpha));
+                        Raylib.DrawRectangle(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, 50));
                     }
+                }*/
+
+                if (cell.TileHead is Tiles.TileData tile)
+                {
+                    var tileLeft = x - tile.CenterX;
+                    var tileTop = y - tile.CenterY;
+                    var col = tile.Category.Color;
+
+                    // draw tile preview
+                    Raylib.DrawTextureEx(
+                        tile.PreviewTexture,
+                        new Vector2(tileLeft, tileTop) * TileSize,
+                        0,
+                        (float)TileSize / 16,
+                        new Color(col.R, col.G, col.B, alpha)
+                    );
                 }
             }
         }    

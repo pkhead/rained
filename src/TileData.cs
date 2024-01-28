@@ -16,7 +16,7 @@ public enum TileType
 public class TileData
 {
     public string Name;
-    public readonly TileCategory category;
+    public readonly TileCategory Category;
     public int Width;
     public int Height;
     public sbyte[,] Requirements;
@@ -34,7 +34,7 @@ public class TileData
         Width = width;
         Height = height;
         BfTiles = bfTiles;
-        this.category = category;
+        Category = category;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;

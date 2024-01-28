@@ -73,7 +73,7 @@ public class TileEditor : IEditorMode
             Rlgl.PushMatrix();
             Rlgl.Translatef(offset, offset, 0f);
             level.RenderLayer(l, color);
-            level.RenderTiles(l, 255);
+            level.RenderTiles(l, alpha);
             Rlgl.PopMatrix();
         }
 
@@ -289,9 +289,9 @@ public class TileEditor : IEditorMode
                 isPlacementValid ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
             );
 
-            // place tile on click
             if (window.IsViewportHovered)
             {
+                // place tile on click
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left) && isPlacementValid)
                 {
                     PlaceTile(
@@ -300,6 +300,28 @@ public class TileEditor : IEditorMode
                         window.WorkLayer, window.MouseCx, window.MouseCy,
                         placeGeometry
                     );
+                }
+
+                // remove tile
+                if (Raylib.IsMouseButtonPressed(MouseButton.Right))
+                {
+                    int tileLayer = window.WorkLayer;
+                    int tileX = window.MouseCx;
+                    int tileY = window.MouseCy;
+                    
+                    var mouseCell = level.Layers[tileLayer, tileX, tileY];
+                    if (mouseCell.HasTile())
+                    {
+                        // if this is a tile body, go to referenced tile head
+                        if (mouseCell.TileHead is null)
+                        {
+                            tileLayer = mouseCell.TileLayer;
+                            tileX = mouseCell.TileRootX;
+                            tileY = mouseCell.TileRootY;
+                        }
+
+                        RemoveTile(tileLayer, tileX, tileY, placeGeometry);
+                    }
                 }
             }
         }
@@ -362,11 +384,11 @@ public class TileEditor : IEditorMode
         level.Layers[layer, tileRootX, tileRootY].TileHead = tile;
     }
 
-    private void RemoveTile(int layer, int tileRootX, int tileRootY)
+    private void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
     {
         var level = window.Editor.Level;
         var tile = level.Layers[layer, tileRootX, tileRootY].TileHead;
-        if (tile == null) return;
+        if (tile == null) throw new Exception("Attempt to remove unknown tile");
 
         int tileLeft = tileRootX - tile.CenterX;
         int tileTop = tileRootY - tile.CenterY;
@@ -395,6 +417,16 @@ public class TileEditor : IEditorMode
                     level.Layers[layer+1, gx, gy].TileRootX = -1;
                     level.Layers[layer+1, gx, gy].TileRootY = -1;
                     level.Layers[layer+1, gx, gy].TileLayer = -1;
+                }
+
+                // remove geometry
+                if (removeGeometry)
+                {
+                    if (specInt >= 0)
+                        level.Layers[layer, gx, gy].Cell = CellType.Air;
+
+                    if (spec2Int >= 0 && layer < 2)
+                        level.Layers[layer+1, gx, gy].Cell = CellType.Air;
                 }
             }
         }
