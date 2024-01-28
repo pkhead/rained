@@ -1,0 +1,4 @@
+[submodule "Drizzle.Data"]
+	path = drizzle/Drizzle.Data
+	url = https://github.com/SlimeCubed/Drizzle.Data
+	branch = community

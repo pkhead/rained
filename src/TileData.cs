@@ -44,7 +44,7 @@ public class Database
         Categories = new();
 
         Console.WriteLine("Reading tile init data...");
-        var parser = new Lingo.Parser(new StreamReader("data/tileinit.txt"));
+        var parser = new Lingo.Parser(new StreamReader("drizzle/Drizzle.Data/Graphics/Init.txt"));
         List<List<object>> dataRoot = parser.Read();
 
         Console.WriteLine("Parsing tile init data...");
