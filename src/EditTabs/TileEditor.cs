@@ -9,9 +9,11 @@ public class TileEditor : IEditorMode
     public string Name { get => "Tiles"; }
 
     private readonly EditorWindow window;
+    private Tiles.TileData? selectedTile;
 
     public TileEditor(EditorWindow window) {
         this.window = window;
+        selectedTile = null;
     }
 
     public void DrawToolbar() {
@@ -33,9 +35,12 @@ public class TileEditor : IEditorMode
                     if (headerOpenState is not null) ImGui.SetNextItemOpen(headerOpenState.GetValueOrDefault());
                     if (ImGui.CollapsingHeader(group.Name))
                     {
-                        foreach (var tile in group.Tiles)
+                        foreach (Tiles.TileData tile in group.Tiles)
                         {
-                            ImGui.Selectable(tile.Name);
+                            if (ImGui.Selectable(tile.Name, selectedTile is not null && selectedTile == tile))
+                            {
+                                selectedTile = tile;
+                            }
                         }
                     }
                 }
@@ -60,5 +65,8 @@ public class TileEditor : IEditorMode
             level.RenderLayer(l, color);
             Rlgl.PopMatrix();
         }
+
+        if (selectedTile is not null)
+            Raylib.DrawTexture(selectedTile.PreviewTexture, window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Color.White);
     }
 }

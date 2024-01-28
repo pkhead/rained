@@ -41,12 +41,58 @@ namespace RlManaged
         public static implicit operator Raylib_cs.RenderTexture2D(RenderTexture2D tex) => tex.raw;
     }
 
+    public class Image : IDisposable
+    {
+        private Raylib_cs.Image raw;
+        private bool _disposed = false;
+
+        public int Width { get => raw.Width; }
+        public int Height { get => raw.Height; }
+        public int Mipmaps { get => raw.Mipmaps; }
+        public PixelFormat PixelFormat { get => raw.Format; }
+
+        public Image(string fileName)
+        {
+            raw = Raylib.LoadImage(fileName);
+        }
+
+        public unsafe void DrawPixel(int x, int y, Color color)
+        {
+            fixed (Raylib_cs.Image* rawPtr = &raw)
+                Raylib.ImageDrawPixel(rawPtr, x, y, color);
+        }
+
+        public Image(Raylib_cs.Image image, Rectangle rec)
+        {
+            raw = Raylib.ImageFromImage(image, rec);
+        }
+
+        ~Image() => Dispose(false);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                Raylib.UnloadImage(raw);
+            }
+        }
+
+        public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
+    }
+
     public class Texture2D : IDisposable
     {
         private Raylib_cs.Texture2D raw;
         private bool _disposed = false;
 
-        public Texture2D(Image image)
+        public Texture2D(Raylib_cs.Image image)
         {
             raw = Raylib.LoadTextureFromImage(image);
         }
