@@ -124,7 +124,7 @@ public class Level
 
         Layers = new LevelCell[LayerCount,Width,Height];
 
-        for (int l = 0; l < LayerCount; l++)
+        /*for (int l = 0; l < LayerCount; l++)
         {
             for (int x = 0; x < Width; x++)
             {
@@ -133,7 +133,7 @@ public class Level
                     Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
                 }
             }
-        }
+        }*/
     }
     
     public void RenderLayer(int layer, Color color)

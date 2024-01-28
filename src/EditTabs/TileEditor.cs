@@ -1,6 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
+using rlImGui_cs;
 
 namespace RainEd;
 
@@ -41,6 +42,13 @@ public class TileEditor : IEditorMode
                             {
                                 selectedTile = tile;
                             }
+
+                            if (ImGui.IsItemHovered())
+                            {
+                                ImGui.BeginTooltip();
+                                rlImGui.Image(tile.PreviewTexture);
+                                ImGui.EndTooltip();
+                            }
                         }
                     }
                 }
@@ -66,7 +74,20 @@ public class TileEditor : IEditorMode
             Rlgl.PopMatrix();
         }
 
+        level.RenderGrid(1f / window.ViewZoom);
+        level.RenderBorder(1f / window.ViewZoom);
+
         if (selectedTile is not null)
-            Raylib.DrawTexture(selectedTile.PreviewTexture, window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Color.White);
+        {
+            var tileOrigin = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
+
+            Raylib.DrawTextureEx(
+                selectedTile.PreviewTexture,
+                new Vector2(MathF.Floor(tileOrigin.X), MathF.Floor(tileOrigin.Y)) * Level.TileSize,
+                0,
+                (float)Level.TileSize / 16,
+                Color.White
+            );
+        }
     }
 }

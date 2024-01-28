@@ -62,6 +62,12 @@ namespace RlManaged
                 Raylib.ImageDrawPixel(rawPtr, x, y, color);
         }
 
+        public unsafe void Format(PixelFormat newFormat)
+        {
+            fixed (Raylib_cs.Image* rawPtr = &raw)
+                Raylib.ImageFormat(rawPtr, newFormat);
+        }
+
         public Image(Raylib_cs.Image image, Rectangle rec)
         {
             raw = Raylib.ImageFromImage(image, rec);
@@ -91,6 +97,9 @@ namespace RlManaged
     {
         private Raylib_cs.Texture2D raw;
         private bool _disposed = false;
+
+        public int Width { get => raw.Width; }
+        public int Height { get => raw.Height; }
 
         public Texture2D(Raylib_cs.Image image)
         {

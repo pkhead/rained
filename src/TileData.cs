@@ -73,22 +73,23 @@ public class TileData
         }
 
         var previewImage = new RlManaged.Image(fullImage, previewRect);
+        previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
         // convert black-and-white image to white-and-transparent, respectively
-        /*for (int x = 0; x < previewImage.Width; x++)
+        for (int x = 0; x < previewImage.Width; x++)
         {
             for (int y = 0; y < previewImage.Height; y++)
             {
                 if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
                 {
-                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 0));
+                    previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
                 }
-                else if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(0, 0, 0, 255)))
+                else
                 {
-                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 1));
+                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
                 }
             }
-        }*/
+        }
 
         PreviewTexture = new RlManaged.Texture2D(previewImage);
 
