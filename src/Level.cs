@@ -135,6 +135,16 @@ public class Level
             }
         }*/
     }
+
+    public bool IsInBounds(int x, int y) =>
+        x >= 0 && y >= 0 && x < Width && y < Height;
+    
+    public LevelCell GetClamped(int layer, int x, int y)
+    {
+        x = Math.Clamp(x, 0, Width - 1);
+        y = Math.Clamp(y, 0, Height - 1);
+        return Layers[layer, x, y];
+    }
     
     public void RenderLayer(int layer, Color color)
     {

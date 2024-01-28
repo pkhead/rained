@@ -38,7 +38,7 @@ public class EditorWindow
     public int MouseCx { get => mouseCx; }
     public int MouseCy { get => mouseCy; }
     public Vector2 MouseCellFloat { get => mouseCellFloat; }
-    public bool IsMouseInLevel() => mouseCx >= 0 && mouseCy >= 0 && mouseCx < Editor.Level.Width && mouseCy < Editor.Level.Height;
+    public bool IsMouseInLevel() => Editor.Level.IsInBounds(mouseCx, mouseCy);
 
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
@@ -119,16 +119,13 @@ public class EditorWindow
 
     private void Zoom(float factor, Vector2 mpos)
     {
-        Console.WriteLine(viewOffset);
-
         viewZoom *= factor;
         viewOffset = -(mpos - viewOffset) / factor + mpos;
-
-        Console.WriteLine(viewOffset);
     }
 
     private void DrawCanvas()
     {
+        var level = Editor.Level;
         Raylib.ClearBackground(new Color(0, 0, 0, 0));
 
         Rlgl.PushMatrix();
@@ -162,7 +159,16 @@ public class EditorWindow
             }
         }
 
+        // keep drawing in level bounds
+        Raylib.BeginScissorMode(
+            (int) (-viewOffset.X * viewZoom),
+            (int) (-viewOffset.Y * viewZoom),
+            (int) (level.Width * Level.TileSize * viewZoom),
+            (int) (level.Height * Level.TileSize * viewZoom)
+        );
+
         editorModes[selectedMode].DrawViewport();
+        Raylib.EndScissorMode();
 
         // keybind to switch layer
         if (Raylib.IsKeyPressed(KeyboardKey.L))

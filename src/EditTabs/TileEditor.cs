@@ -12,6 +12,8 @@ public class TileEditor : IEditorMode
     private readonly EditorWindow window;
     private Tiles.TileData? selectedTile;
 
+    private bool placeGeometry = false;
+
     public TileEditor(EditorWindow window) {
         this.window = window;
         selectedTile = null;
@@ -28,6 +30,11 @@ public class TileEditor : IEditorMode
             ImGui.SameLine();
             if (ImGui.Button("Expand All"))
                 headerOpenState = true;
+
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Place Geometry");
+            ImGui.SameLine();
+            ImGui.Checkbox("##PlaceGeometry", ref placeGeometry);
             
             if (ImGui.BeginChild("List", ImGui.GetContentRegionAvail()))
             {
@@ -178,7 +185,9 @@ public class TileEditor : IEditorMode
         {
             // mouse position is at center of tile
             // tileOrigin is the top-left of the tile, so some math to adjust
-            var tileOrigin = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
+            //var tileOriginFloat = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
+            var tileOriginX = window.MouseCx - (int)MathF.Ceiling((float)selectedTile.Width / 2) + 1;
+            int tileOriginY = window.MouseCy - (int)MathF.Ceiling((float)selectedTile.Height / 2) + 1;
 
             // draw tile requirements
             for (int x = 0; x < selectedTile.Width; x++)
@@ -186,7 +195,7 @@ public class TileEditor : IEditorMode
                 for (int y = 0; y < selectedTile.Height; y++)
                 {
                     Rlgl.PushMatrix();
-                    Rlgl.Translatef((int)tileOrigin.X * Level.TileSize + 2, (int)tileOrigin.Y * Level.TileSize + 2, 0);
+                    Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
 
                     sbyte tileInt = selectedTile.Requirements2[x,y];
                     drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
@@ -199,21 +208,62 @@ public class TileEditor : IEditorMode
                 for (int y = 0; y < selectedTile.Height; y++)
                 {
                     Rlgl.PushMatrix();
-                    Rlgl.Translatef((int)tileOrigin.X * Level.TileSize, (int)tileOrigin.Y * Level.TileSize, 0);
+                    Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
 
                     sbyte tileInt = selectedTile.Requirements[x,y];
-                    drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 0, 0, 255));
+                    drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
                     Rlgl.PopMatrix();
                 }
+            }
+
+            // check if requirements are satisfied
+            bool isPlacementValid = level.IsInBounds(window.MouseCx, window.MouseCy);
+
+            // if placeGeometry is true, the editor will place tile geometry
+            // that is needed, instead of having to rely on the user doing
+            // that themselves. thus, a validation check isn't needed
+            if (isPlacementValid && !placeGeometry)
+            {
+                for (int x = 0; x < selectedTile.Width; x++)
+                {
+                    for (int y = 0; y < selectedTile.Height; y++)
+                    {
+                        int gx = tileOriginX + x;
+                        int gy = tileOriginY + y;
+
+                        // check first layer
+                        var specInt = selectedTile.Requirements[x,y];
+                        if (specInt == -1) continue;
+                        if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
+                        {
+                            isPlacementValid = false;
+                            goto exitRequirementLoop;
+                        }
+
+                        // check second layer
+                        // if we are on layer 3, there is no second layer
+                        // all checks pass
+                        if (window.WorkLayer == 2) continue;
+                        
+                        var spec2Int = selectedTile.Requirements2[x,y];
+                        if (spec2Int == -1) continue;
+                        if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
+                        {
+                            isPlacementValid = false;
+                            goto exitRequirementLoop;
+                        }
+                    }
+                }
+                exitRequirementLoop:;
             }
 
             // draw tile preview
             Raylib.DrawTextureEx(
                 selectedTile.PreviewTexture,
-                new Vector2(MathF.Floor(tileOrigin.X), MathF.Floor(tileOrigin.Y)) * Level.TileSize - new Vector2(2, 2),
+                new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
                 0,
                 (float)Level.TileSize / 16,
-                new Color(255, 255, 255, 200)
+                isPlacementValid ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
             );
         }
     }
