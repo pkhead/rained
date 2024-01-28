@@ -11,7 +11,7 @@ Geometry Editor:
 - select and copy/paste
 
 Tile Editor:
-- tile editor can place required geometry
+- tile search
 
 
 
@@ -21,9 +21,9 @@ tile data format (from rwe+):
     T = Tile index starting from 1
     N = tile name
 
-    {"tp": "tileBody", "data": ["PT", 1]}
+    {"tp": "tileBody", "data": ["PT", L]}
     PT = location of the tile head plus (1, 1)
-    I don't know what the number means im assuming it's always 1
+    L = layer
 
     {"tp": "material", "data": "N"}
     N = material name

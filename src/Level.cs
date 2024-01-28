@@ -4,7 +4,7 @@ using RlManaged;
 
 namespace RainEd;
 
-public enum CellType
+public enum CellType : sbyte
 {
     Air,
     Solid,
@@ -41,30 +41,25 @@ public enum LevelObject : uint
     WormGrass = 524288u,
     ScavengerHole = 1048576u
 }
-/*public enum LevelObject : uint
-{
-    None = 0,
-    HorizontalBeam = 1,
-    VerticalBeam = 2,
-    Rock = 4,
-    Spear = 8,
-    Crack = 16,
-    Shortcut = 32,
-    CreatureDen = 64,
-    Entrance = 128,
-    Hive = 256,
-    ForbidFlyChain = 512,
-    Waterfall = 1024,
-    WhackAMoleHole = 2048,
-    ScavengerHole = 4096,
-    GarbageWorm = 8192,
-    WormGrass = 16384,
-}*/
 
 public struct LevelCell
 {
     public CellType Cell = CellType.Air;
     public LevelObject Objects = 0;
+
+    // X position of the tile root, -1 if there is no tile here
+    public int TileRootX = -1;
+
+    // Y position of the tile root, -1 if there is no tile here
+    public int TileRootY = -1;
+    // Layer of tile root, -1 if there is no tile here
+    public int TileLayer = -1;
+
+    // As the tile root, reference to the tile, or null if no tile here
+    public Tiles.TileData? TileHead = null;
+
+    public readonly bool HasTile() => TileRootX >= 0 || TileRootY >= 0 || TileHead is not null;
+
     public LevelCell() {}
 
     public void Add(LevelObject obj) => Objects |= obj;
@@ -124,16 +119,17 @@ public class Level
 
         Layers = new LevelCell[LayerCount,Width,Height];
 
-        /*for (int l = 0; l < LayerCount; l++)
+        for (int l = 0; l < LayerCount; l++)
         {
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
+                    Layers[l,x,y] = new LevelCell();
+                    //Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
                 }
             }
-        }*/
+        }
     }
 
     public bool IsInBounds(int x, int y) =>
@@ -338,6 +334,33 @@ public class Level
                 }
             }
         }
+    }
+
+    public void RenderTiles(int layer, int alpha)
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                var cell = Layers[layer, x, y];
+                
+                if (cell.HasTile())
+                {
+                    Tiles.TileData tile = cell.TileHead
+                        ?? Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead
+                        ?? throw new NullReferenceException();
+                    
+                    if (cell.TileHead is null)
+                    {
+                        Raylib.DrawRectangleLines(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, alpha));
+                    }
+                    else
+                    {
+                        Raylib.DrawRectangle(x * TileSize, y * TileSize, TileSize, TileSize, new Color(255, 255, 0, alpha));
+                    }
+                }
+            }
+        }    
     }
 
     public void RenderGrid(float lineWidth)

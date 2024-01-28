@@ -16,22 +16,32 @@ public enum TileType
 public class TileData
 {
     public string Name;
+    public readonly TileCategory category;
     public int Width;
     public int Height;
     public sbyte[,] Requirements;
     public sbyte[,] Requirements2;
+    public readonly bool HasSecondLayer;
     public int BfTiles = 0;
     public RlManaged.Texture2D PreviewTexture;
 
-    public TileData(string name, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
+    public readonly int CenterX;
+    public readonly int CenterY;
+
+    public TileData(string name, TileCategory category, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
     {
         Name = name;
         Width = width;
         Height = height;
         BfTiles = bfTiles;
+        this.category = category;
+
+        CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
+        CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
 
         Requirements = new sbyte[width, height];
         Requirements2 = new sbyte[width, height];
+        HasSecondLayer = false;
 
         // fill requirements table
         int i = 0;
@@ -47,6 +57,8 @@ public class TileData
 
         if (specs2 is not null)
         {
+            HasSecondLayer = true;
+            
             i = 0;
             for (int x = 0; x < width; x++)
             {
@@ -126,6 +138,7 @@ public class TileData
 public class TileCategory
 {
     public string Name;
+    public int Index;
     public Color Color;
     public List<TileData> Tiles = new();
 
@@ -149,10 +162,16 @@ public class Database
         List<List<object>> dataRoot = parser.Read();
 
         Console.WriteLine("Parsing tile init data...");
+        int groupIndex = 0;
         foreach (List<object> categoriesTable in dataRoot)
         {
             var header = (Lingo.List) categoriesTable[0];
-            var group = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1]);
+            var group = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
+            {
+                Index = groupIndex
+            };
+
+            groupIndex++;
             Categories.Add(group);
 
             Console.WriteLine($"Register category {group.Name}");
@@ -192,6 +211,7 @@ public class Database
                 try {
                     var tileData = new TileData(
                         name: name,
+                        category: group,
                         type: tileType,
                         width: (int)size.X, height: (int)size.Y,
                         bfTiles: bfTiles,
