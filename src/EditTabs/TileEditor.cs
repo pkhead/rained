@@ -28,9 +28,7 @@ public class TileEditor : IEditorMode
             int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
             ImGui.Combo("##DefaultMaterial", ref defaultMat, Level.MaterialNames, Level.MaterialNames.Length, 999999);
             window.Editor.Level.DefaultMaterial = (Material) defaultMat + 1;
-
-            var defaultMaterialName = Level.MaterialNames[(int)window.Editor.Level.DefaultMaterial - 1];
-            ImGui.Text($"Default Material: {defaultMaterialName}");
+            
             bool? headerOpenState = null;
 
             if (ImGui.Button("Collapse All"))

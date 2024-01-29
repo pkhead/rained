@@ -105,12 +105,19 @@ public class TileData
             previewRect.Y + previewRect.Height > fullImage.Height
         )
         {
-            fullImage.Dispose();
-            throw new Exception("Preview image is out of bounds");
+            Console.WriteLine($"Warning: '{name}' preview image is out of bounds");
         }
 
-        var previewImage = new RlManaged.Image(fullImage, previewRect);
+        var previewImage = new RlManaged.Image(width * 16, height * 16, Color.White);
         previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
+
+        Raylib.ImageDraw(
+            ref previewImage.Ref(),
+            fullImage,
+            previewRect,
+            new Rectangle(0, 0, previewRect.Width, previewRect.Height),
+            Color.White
+        );
 
         // convert black-and-white image to white-and-transparent, respectively
         for (int x = 0; x < previewImage.Width; x++)

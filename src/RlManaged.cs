@@ -56,11 +56,23 @@ namespace RlManaged
             raw = Raylib.LoadImage(fileName);
         }
 
+        public Image(int width, int height, Color color)
+        {
+            raw = Raylib.GenImageColor(width, height, color);
+        }
+
         public unsafe void DrawPixel(int x, int y, Color color)
         {
             fixed (Raylib_cs.Image* rawPtr = &raw)
                 Raylib.ImageDrawPixel(rawPtr, x, y, color);
         }
+
+        /*public unsafe void Draw(Raylib_cs.Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
+        {
+            fixed (Raylib_cs.Image* rawPtr = &raw)
+                Raylib.ImageDraw()
+        }
+        */
 
         public unsafe void Format(PixelFormat newFormat)
         {
@@ -91,6 +103,7 @@ namespace RlManaged
         }
 
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
+        public ref Raylib_cs.Image Ref() => ref raw;
     }
 
     public class Texture2D : IDisposable
