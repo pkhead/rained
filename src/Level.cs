@@ -18,6 +18,34 @@ public enum CellType : sbyte
     Glass = 9,
 }
 
+public enum Material : byte
+{
+    None,
+    Standard,
+    Concrete,
+    RainStone,
+    Bricks,
+    BigMetal,
+    TinySigns,
+    Scaffolding,
+    DensePipes,
+    SuperStructure,
+    SuperStructure2,
+    TiledStone,
+    ChaoticStone,
+    SmallPipes,
+    Trash,
+    Invisible,
+    LargeTrash,
+    ThreeDBricks,
+    RandomMachines,
+    Dirt,
+    CeramicTile,
+    TempleStone,
+    Circuits,
+    Ridge
+};
+
 [Flags]
 public enum LevelObject : uint
 {
@@ -46,6 +74,7 @@ public struct LevelCell
 {
     public CellType Cell = CellType.Air;
     public LevelObject Objects = 0;
+    public Material Material = Material.None;
 
     // X position of the tile root, -1 if there is no tile here
     public int TileRootX = -1;
@@ -75,6 +104,7 @@ public class Level
     private int _width, _height;
     public int BufferTilesLeft, BufferTilesTop;
     public int BufferTilesRight, BufferTilesBot;
+    public Material DefaultMaterial = Material.Standard;
 
     public int Width { get => _width; }
     public int Height { get => _height; }
@@ -96,6 +126,60 @@ public class Level
         { LevelObject.ScavengerHole,    new(4, 2) },
         { LevelObject.GarbageWorm,      new(0, 3) },
         { LevelObject.WormGrass,        new(1, 3) },
+    };
+
+    public static readonly string[] MaterialNames = new string[23]
+    {
+        "Standard",
+        "Concrete",
+        "Rain Stone",
+        "Bricks",
+        "Big Metal",
+        "Tiny Signs",
+        "Scaffolding",
+        "Dense Pipes",
+        "SuperStructure",
+        "SuperStructure2",
+        "Tiled Stone",
+        "Chaotic Stone",
+        "Small Pipes",
+        "Trash",
+        "Invisible",
+        "Large Trash",
+        "3D Bricks",
+        "Random Machines",
+        "Dirt",
+        "Ceramic Tile",
+        "Temple Stone",
+        "Circuits",
+        "Ridge"
+    };
+
+    public static readonly Color[] MaterialColors = new Color[23]
+    {
+        new(148,    148,    148,    255),
+        new(148,    255,    255,    255),
+        new(0,      0,      255,    255),
+        new(206,    148,    99,     255),
+        new(255,    0,      0,      255),
+        new(255,    206,    255,    255),
+        new(57,     57,     41,     255),
+        new(0,      0,      148,    255),
+        new(165,    181,    255,    255),
+        new(189,    165,    0,      255),
+        new(99,     0,      255,    255),
+        new(255,    0,      255,    255),
+        new(255,    255,    0,      255),
+        new(90,     255,    0,      255),
+        new(206,    206,    206,    255),
+        new(173,    24,     255,    255),
+        new(255,    148,    0,      255),
+        new(74,     115,    82,     255),
+        new(123,    74,     49,     255),
+        new(57,     57,     99,     255),
+        new(0,      123,    181,    255),
+        new(0,      148,    0,      255),
+        new(206,    8,      57,     255),
     };
 
     // all objects associated with shortcuts
@@ -126,7 +210,7 @@ public class Level
                 for (int y = 0; y < Height; y++)
                 {
                     Layers[l,x,y] = new LevelCell();
-                    //Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
+                    Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
                 }
             }
         }
@@ -373,6 +457,16 @@ public class Level
                         new Vector2(tileLeft, tileTop) * TileSize,
                         0,
                         (float)TileSize / 16,
+                        new Color(col.R, col.G, col.B, alpha)
+                    );
+
+                // draw material
+                } else if (!cell.HasTile() && cell.Material != Material.None && cell.Cell != CellType.Air)
+                {
+                    var col = MaterialColors[(int) cell.Material - 1];
+                    Raylib.DrawRectangle(
+                        x * TileSize + 8, y * TileSize + 8,
+                        TileSize - 16, TileSize - 16,
                         new Color(col.R, col.G, col.B, alpha)
                     );
                 }

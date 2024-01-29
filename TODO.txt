@@ -12,6 +12,8 @@ Geometry Editor:
 - select and copy/paste
 - ability to view tiles
 - shortcut entrance points towards any shortcut-related object (room entrance, den, scavenger hole,)
+- right-click to remove selected tool
+  (redundancy is good)
 
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 

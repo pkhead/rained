@@ -11,6 +11,7 @@ public class TileEditor : IEditorMode
 
     private readonly EditorWindow window;
     private Tiles.TileData? selectedTile;
+    private int selectedMaterialIdx = 0;
 
     private string searchQuery = "";
 
@@ -22,6 +23,14 @@ public class TileEditor : IEditorMode
     public void DrawToolbar() {
         if (ImGui.Begin("Tile Selector"))
         {
+            // default material dropdown
+            ImGui.Text("Default Material");
+            int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
+            ImGui.Combo("##DefaultMaterial", ref defaultMat, Level.MaterialNames, Level.MaterialNames.Length, 999999);
+            window.Editor.Level.DefaultMaterial = (Material) defaultMat + 1;
+
+            var defaultMaterialName = Level.MaterialNames[(int)window.Editor.Level.DefaultMaterial - 1];
+            ImGui.Text($"Default Material: {defaultMaterialName}");
             bool? headerOpenState = null;
 
             if (ImGui.Button("Collapse All"))
@@ -43,9 +52,33 @@ public class TileEditor : IEditorMode
 
             // the tiles in the group that pass search test
             var tilesInGroup = new List<Tiles.TileData>();
+            var materialsInGroup = new List<int>();
             
             if (ImGui.BeginChild("List", ImGui.GetContentRegionAvail()))
             {
+                // get list of materials that match search
+                for (int i = 0; i < Level.MaterialNames.Length; i++)
+                {
+                    var name = Level.MaterialNames[i];
+                    if (searchQuery.Length == 0 || name.ToLower().Contains(searchQueryL))
+                        materialsInGroup.Add(i);
+                }
+
+                // materials section
+                if (materialsInGroup.Count > 0 && ImGui.CollapsingHeader("Materials"))
+                {
+                    foreach (int i in materialsInGroup)
+                    {
+                        var name = Level.MaterialNames[i];
+                        var isSelected = selectedTile == null && selectedMaterialIdx == i;
+                        if (ImGui.Selectable(name, isSelected))
+                        {
+                            selectedTile = null;
+                            selectedMaterialIdx = i;
+                        }
+                    }
+                }
+
                 foreach (var group in window.Editor.TileDatabase.Categories)
                 {
                     bool groupNameInQuery = searchQuery.Length == 0 || group.Name.ToLower().Contains(searchQueryL);
@@ -201,123 +234,123 @@ public class TileEditor : IEditorMode
             }
         }
 
-        // render selected tile
-        if (selectedTile is not null)
+        if (window.IsViewportHovered)
         {
-            // mouse position is at center of tile
-            // tileOrigin is the top-left of the tile, so some math to adjust
-            //var tileOriginFloat = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
-            var tileOriginX = window.MouseCx - selectedTile.CenterX;
-            int tileOriginY = window.MouseCy - selectedTile.CenterY;
-
-            // draw tile requirements
-            // second layer
-            if (selectedTile.HasSecondLayer)
+            // render selected tile
+            if (selectedTile is not null)
             {
+                // mouse position is at center of tile
+                // tileOrigin is the top-left of the tile, so some math to adjust
+                //var tileOriginFloat = window.MouseCellFloat + new Vector2(0.5f, 0.5f) - new Vector2(selectedTile.Width, selectedTile.Height) / 2f;
+                var tileOriginX = window.MouseCx - selectedTile.CenterX;
+                int tileOriginY = window.MouseCy - selectedTile.CenterY;
+
+                // draw tile requirements
+                // second layer
+                if (selectedTile.HasSecondLayer)
+                {
+                    for (int x = 0; x < selectedTile.Width; x++)
+                    {
+                        for (int y = 0; y < selectedTile.Height; y++)
+                        {
+                            Rlgl.PushMatrix();
+                            Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
+
+                            sbyte tileInt = selectedTile.Requirements2[x,y];
+                            drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                            Rlgl.PopMatrix();
+                        }
+                    }
+                }
+
+                // first layer
                 for (int x = 0; x < selectedTile.Width; x++)
                 {
                     for (int y = 0; y < selectedTile.Height; y++)
                     {
                         Rlgl.PushMatrix();
-                        Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
+                        Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
 
-                        sbyte tileInt = selectedTile.Requirements2[x,y];
-                        drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                        sbyte tileInt = selectedTile.Requirements[x,y];
+                        drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
                         Rlgl.PopMatrix();
                     }
                 }
-            }
 
-            // first layer
-            for (int x = 0; x < selectedTile.Width; x++)
-            {
-                for (int y = 0; y < selectedTile.Height; y++)
+                var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
+                var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
+
+                // check if requirements are satisfied
+                // first of all, placement is impossible if tile center is out of bounds
+                bool isPlacementValid = level.IsInBounds(window.MouseCx, window.MouseCy);
+                if (isPlacementValid)
                 {
-                    Rlgl.PushMatrix();
-                    Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
-
-                    sbyte tileInt = selectedTile.Requirements[x,y];
-                    drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
-                    Rlgl.PopMatrix();
-                }
-            }
-
-            var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
-            var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
-
-            // check if requirements are satisfied
-            // first of all, placement is impossible if tile center is out of bounds
-            bool isPlacementValid = level.IsInBounds(window.MouseCx, window.MouseCy);
-            if (isPlacementValid)
-            {
-                for (int x = 0; x < selectedTile.Width; x++)
-                {
-                    for (int y = 0; y < selectedTile.Height; y++)
+                    for (int x = 0; x < selectedTile.Width; x++)
                     {
-                        int gx = tileOriginX + x;
-                        int gy = tileOriginY + y;
-                        var specInt = selectedTile.Requirements[x,y];
-                        var spec2Int = selectedTile.Requirements2[x,y];
-
-                        // check that there is not already a tile here
-                        if (level.IsInBounds(gx, gy))
+                        for (int y = 0; y < selectedTile.Height; y++)
                         {
-                            // check on first layer
-                            if (specInt >= 0 && level.Layers[window.WorkLayer, gx, gy].HasTile())
+                            int gx = tileOriginX + x;
+                            int gy = tileOriginY + y;
+                            var specInt = selectedTile.Requirements[x,y];
+                            var spec2Int = selectedTile.Requirements2[x,y];
+
+                            // check that there is not already a tile here
+                            if (level.IsInBounds(gx, gy))
                             {
-                                isPlacementValid = false;
-                                goto exitRequirementLoop;
+                                // check on first layer
+                                if (specInt >= 0 && level.Layers[window.WorkLayer, gx, gy].HasTile())
+                                {
+                                    isPlacementValid = false;
+                                    goto exitRequirementLoop;
+                                }
+
+                                // check on second layer
+                                if (window.WorkLayer < 2 && spec2Int >= 0 && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
+                                {
+                                    isPlacementValid = false;
+                                    goto exitRequirementLoop;
+                                }
                             }
 
-                            // check on second layer
-                            if (window.WorkLayer < 2 && spec2Int >= 0 && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
+                            // if modifyGeometry is true, the editor will place tile geometry
+                            // that is needed, instead of having to rely on the user doing
+                            // that themselves. thus, a geometry check isn't needed
+                            if (!modifyGeometry && !forcePlace)
                             {
-                                isPlacementValid = false;
-                                goto exitRequirementLoop;
-                            }
-                        }
+                                // check first layer geometry
+                                if (specInt == -1) continue;
+                                if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
+                                {
+                                    isPlacementValid = false;
+                                    goto exitRequirementLoop;
+                                }
 
-                        // if modifyGeometry is true, the editor will place tile geometry
-                        // that is needed, instead of having to rely on the user doing
-                        // that themselves. thus, a geometry check isn't needed
-                        if (!modifyGeometry && !forcePlace)
-                        {
-                            // check first layer geometry
-                            if (specInt == -1) continue;
-                            if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
-                            {
-                                isPlacementValid = false;
-                                goto exitRequirementLoop;
-                            }
-
-                            // check second layer geometry
-                            // if we are on layer 3, there is no second layer
-                            // all checks pass
-                            if (window.WorkLayer == 2) continue;
-                            
-                            if (spec2Int == -1) continue;
-                            if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
-                            {
-                                isPlacementValid = false;
-                                goto exitRequirementLoop;
+                                // check second layer geometry
+                                // if we are on layer 3, there is no second layer
+                                // all checks pass
+                                if (window.WorkLayer == 2) continue;
+                                
+                                if (spec2Int == -1) continue;
+                                if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
+                                {
+                                    isPlacementValid = false;
+                                    goto exitRequirementLoop;
+                                }
                             }
                         }
                     }
+                    exitRequirementLoop:;
                 }
-                exitRequirementLoop:;
-            }
 
-            // draw tile preview
-            Raylib.DrawTextureEx(
-                selectedTile.PreviewTexture,
-                new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
-                0,
-                (float)Level.TileSize / 16,
-                isPlacementValid ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
-            );
+                // draw tile preview
+                Raylib.DrawTextureEx(
+                    selectedTile.PreviewTexture,
+                    new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
+                    0,
+                    (float)Level.TileSize / 16,
+                    isPlacementValid ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
+                );
 
-            if (window.IsViewportHovered)
-            {
                 // place tile on click
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left) && isPlacementValid)
                 {
@@ -349,6 +382,28 @@ public class TileEditor : IEditorMode
 
                         RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                     }
+                }
+            }
+
+            // render selected material
+            else
+            {
+                Raylib.DrawRectangle(
+                    window.MouseCx * Level.TileSize + 8, window.MouseCy * Level.TileSize + 8,
+                    Level.TileSize - 16, Level.TileSize - 16,
+                    Level.MaterialColors[selectedMaterialIdx]
+                );
+
+                // place material
+                if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                {
+                    level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = (Material) selectedMaterialIdx + 1;
+                }
+
+                // remove material
+                if (Raylib.IsMouseButtonDown(MouseButton.Right))
+                {
+                    level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = Material.None;
                 }
             }
         }
