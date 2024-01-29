@@ -323,7 +323,7 @@ namespace rlImGui_cs
         {
             ImGuiIOPtr io = ImGui.GetIO();
 
-            if (Raylib.IsWindowFullscreen() || Raylib.IsWindowMaximized())
+            if (Raylib.IsWindowFullscreen())
             {
                 int monitor = Raylib.GetCurrentMonitor();
                 io.DisplaySize = new Vector2(Raylib.GetMonitorWidth(monitor), Raylib.GetMonitorHeight(monitor));

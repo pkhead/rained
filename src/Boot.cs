@@ -10,7 +10,7 @@ namespace RainEd
             Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
             Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
             Raylib.InitWindow(1200, 800, "Rained");
-            Raylib.SetTargetFPS(144);
+            Raylib.SetTargetFPS(120);
             Raylib.SetExitKey(KeyboardKey.Null);
 
             // show splash screen
