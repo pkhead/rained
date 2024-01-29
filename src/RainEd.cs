@@ -14,12 +14,21 @@ public class RainEd
 
     public Level Level { get => level; }
 
-    public RainEd() {
-        level = new(this);
+    public RainEd(string levelPath = "") {
+        if (levelPath.Length > 0)
+        {
+            level = LevelSerialization.Load(this, levelPath);
+        }
+        else
+        {
+            level = new(this);
+        }
+
         LevelGraphicsTexture = new("data/level-graphics.png");
         
         editorWindow = new EditorWindow(this);
         TileDatabase = new Tiles.Database();
+
     }
 
     // TODO: show status thing in ImGui

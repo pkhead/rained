@@ -28,8 +28,8 @@ namespace RainEd
             rlImGui.Setup(true, true);
             rlImGui.SetIniFilename("data/imgui.ini");
 
-            RainEd app = new();
-
+            RainEd app = new(args.Length > 0 ? args[0] : "");
+            
             while (!Raylib.WindowShouldClose())
             {
                 Raylib.BeginDrawing();

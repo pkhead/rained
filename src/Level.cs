@@ -190,12 +190,12 @@ public class Level
         LevelObject.WhackAMoleHole, LevelObject.ScavengerHole, LevelObject.GarbageWorm,
     };
 
-    public Level(RainEd editor)
+    public Level(RainEd editor, int width = 72, int height = 42)
     {
         this.editor = editor;
 
-        _width = 72;
-        _height = 42;
+        _width = width;
+        _height = height;
         BufferTilesLeft = 12;
         BufferTilesTop = 3;
         BufferTilesRight = 12;
