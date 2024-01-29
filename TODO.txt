@@ -21,6 +21,10 @@ Tile Editor:
 - can't delete tiles while material is selected
 - material brush size
 - is it possible to combine geo and tile editor?
+- Separate loops for drawing tiles and drawing materials
+  (this decreases draw call count)
+- draw tile previews of the same tile in batches
+  by sorting tiles render list by their ID
 
 
 tile data format (from rwe+):
