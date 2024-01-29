@@ -207,9 +207,10 @@ public class GeometryEditor : IEditorMode
         } ImGui.End();
     }
 
-    public void DrawViewport()
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         var level = window.Editor.Level;
+        var levelRender = window.LevelRenderer;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
@@ -224,7 +225,7 @@ public class GeometryEditor : IEditorMode
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
                     var color = LAYER_COLORS[l];
-                    level.RenderLayer(l, color);
+                    levelRender.RenderGeometry(l, color);
                 }
 
                 break;
@@ -240,7 +241,7 @@ public class GeometryEditor : IEditorMode
 
                     Rlgl.PushMatrix();
                     Rlgl.Translatef(offset, offset, 0f);
-                    level.RenderLayer(l, color);
+                    levelRender.RenderGeometry(l, color);
                     Rlgl.PopMatrix();
                 }
 
@@ -249,10 +250,10 @@ public class GeometryEditor : IEditorMode
 
         // draw object graphics
         var objColor = new Color(255, 255, 255, foregroundAlpha);
-        level.RenderObjects(objColor);
-        level.RenderShortcuts(Color.White);
-        level.RenderGrid(1.0f / window.ViewZoom);
-        level.RenderBorder(1.0f / window.ViewZoom);
+        levelRender.RenderObjects(objColor);
+        levelRender.RenderShortcuts(Color.White);
+        levelRender.RenderGrid(1.0f / window.ViewZoom);
+        levelRender.RenderBorder(1.0f / window.ViewZoom);
         
         if (window.IsViewportHovered)
         {

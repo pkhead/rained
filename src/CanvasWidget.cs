@@ -15,8 +15,8 @@ public class UICanvasWidget
     public float MouseY { get => mouseY; }
     public bool IsHovered { get => hovered; }
 
-    private RlManaged.RenderTexture2D? renderTexture;
-    public RlManaged.RenderTexture2D? RenderTexture { get => renderTexture; }
+    private RlManaged.RenderTexture2D renderTexture;
+    public RlManaged.RenderTexture2D RenderTexture { get => renderTexture; }
 
     int curWidth, curHeight;
 
@@ -36,7 +36,7 @@ public class UICanvasWidget
         }
         else
         {
-            renderTexture = null;
+            renderTexture = new(1, 1);
         }
 
         hovered = false;
@@ -51,13 +51,11 @@ public class UICanvasWidget
     {
         if (newWidth <= 0 || newHeight <= 0)
         {
-            if (renderTexture is not null)
-            {
-                renderTexture.Dispose();
-                renderTexture = null;
-            }
+            newWidth = 1;
+            newHeight = 1;
         }
-        else if (renderTexture is null || curWidth != newWidth || curHeight != newHeight)
+        
+        if (curWidth != newWidth || curHeight != newHeight)
         {
             curWidth = newWidth;
             curHeight = newHeight;
@@ -69,8 +67,6 @@ public class UICanvasWidget
     
     public void Draw()
     {
-        if (renderTexture is null) return;
-
         var windowOrigin = ImGui.GetCursorPos();
         var screenOrigin = ImGui.GetCursorScreenPos();
 

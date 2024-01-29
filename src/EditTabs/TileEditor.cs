@@ -114,27 +114,41 @@ public class TileEditor : IEditorMode
         }
     }
 
-    public void DrawViewport() {
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame) {
         var level = window.Editor.Level;
+        var levelRender = window.LevelRenderer;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
 
+        // draw layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
-            var alpha = l == window.WorkLayer ? 255 : 50;
-            var color = new Color(0, 0, 0, alpha);
-            int offset = l * 2;
+            // draw layer into framebuffer
+            Raylib.BeginTextureMode(layerFrame);
 
+            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+            levelRender.RenderTiles(l, 255);
+            
+            // draw alpha-blended result into main frame
+            Raylib.BeginTextureMode(mainFrame);
             Rlgl.PushMatrix();
-            Rlgl.Translatef(offset, offset, 0f);
-            level.RenderLayer(l, color);
-            level.RenderTiles(l, alpha);
+            Rlgl.LoadIdentity();
+
+            int offset = l * 2;
+            var alpha = l == window.WorkLayer ? 255 : 50;
+            Raylib.DrawTextureRec(
+                layerFrame.Texture,
+                new Rectangle(0f, layerFrame.Texture.Height, layerFrame.Texture.Width, -layerFrame.Texture.Height),
+                Vector2.One * offset,
+                new Color(255, 255, 255, alpha)
+            );
             Rlgl.PopMatrix();
         }
 
-        level.RenderGrid(1f / window.ViewZoom);
-        level.RenderBorder(1f / window.ViewZoom);
+        levelRender.RenderGrid(1f / window.ViewZoom);
+        levelRender.RenderBorder(1f / window.ViewZoom);
 
         static void drawTile(int tileInt, int x, int y, float lineWidth, Color color)
         {
@@ -389,7 +403,7 @@ public class TileEditor : IEditorMode
                 Raylib.DrawRectangle(
                     window.MouseCx * Level.TileSize + 8, window.MouseCy * Level.TileSize + 8,
                     Level.TileSize - 16, Level.TileSize - 16,
-                    Level.MaterialColors[selectedMaterialIdx]
+                    LevelRenderer.MaterialColors[selectedMaterialIdx]
                 );
 
                 // place material

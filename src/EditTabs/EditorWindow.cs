@@ -13,7 +13,7 @@ public interface IEditorMode
     void Unload() {}
 
     void DrawToolbar();
-    void DrawViewport();
+    void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame);
 }
 
 public class EditorWindow
@@ -43,14 +43,21 @@ public class EditorWindow
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
 
-    private List<IEditorMode> editorModes = new();
+    private readonly List<IEditorMode> editorModes = new();
     private int selectedMode = 0;
+
+    // render texture given to each editor mode class
+    private RlManaged.RenderTexture2D layerRenderTexture;
+
+    public readonly LevelRenderer LevelRenderer;
 
     public EditorWindow(RainEd editor)
     {
         Editor = editor;
         canvasWidget = new(1, 1);
+        layerRenderTexture = new(1, 1);
 
+        LevelRenderer = new LevelRenderer(editor);
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));
     }
@@ -101,14 +108,19 @@ public class EditorWindow
                 var regionMax = ImGui.GetWindowContentRegionMax();
                 var regionMin = ImGui.GetCursorPos();
 
-                canvasWidget.Resize((int)(regionMax.X - regionMin.X), (int)(regionMax.Y - regionMin.Y));
-                
-                if (canvasWidget.RenderTexture is not null)
+                int canvasW = (int)(regionMax.X - regionMin.X);
+                int canvasH = (int)(regionMax.Y - regionMin.Y);
+
+                canvasWidget.Resize(canvasW, canvasH);
+                if (layerRenderTexture.Texture.Width != canvasW || layerRenderTexture.Texture.Height != canvasH)
                 {
-                    Raylib.BeginTextureMode(canvasWidget.RenderTexture);
-                    DrawCanvas();
-                    Raylib.EndTextureMode();
+                    layerRenderTexture.Dispose();
+                    layerRenderTexture = new(canvasW, canvasH);
                 }
+                
+                Raylib.BeginTextureMode(canvasWidget.RenderTexture);
+                DrawCanvas();
+                Raylib.EndTextureMode();
 
                 canvasWidget.Draw();
             }
@@ -167,7 +179,7 @@ public class EditorWindow
             (int) (level.Height * Level.TileSize * viewZoom)
         );
 
-        editorModes[selectedMode].DrawViewport();
+        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
         Raylib.EndScissorMode();
 
         // keybind to switch layer
