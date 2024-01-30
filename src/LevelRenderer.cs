@@ -62,6 +62,9 @@ public class LevelRenderer
 
     public bool ViewGrid = true;
 
+    public Vector2 ViewTopLeft;
+    public Vector2 ViewBottomRight;
+
     public LevelRenderer(RainEd editor)
     {
         this.editor = editor;
@@ -69,9 +72,14 @@ public class LevelRenderer
 
     public void RenderGeometry(int layer, Color color)
     {
-        for (int x = 0; x < Level.Width; x++)
+        int viewL = (int) Math.Floor(ViewTopLeft.X);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
+
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 LevelCell c = Level.Layers[layer ,x,y];
 
@@ -151,9 +159,14 @@ public class LevelRenderer
 
     public void RenderObjects(Color color)
     {
-        for (int x = 0; x < Level.Width; x++)
+        int viewL = (int) Math.Floor(ViewTopLeft.X);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
+
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 var cell = Level.Layers[0, x, y];
 
@@ -183,9 +196,14 @@ public class LevelRenderer
             return Level.Layers[0,x,y].Has(LevelObject.Shortcut);
         }
 
-        for (int x = 0; x < Level.Width; x++)
+        int viewL = (int) Math.Floor(ViewTopLeft.X);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
+
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 var cell = Level.Layers[0, x, y];
 
@@ -311,10 +329,15 @@ public class LevelRenderer
     public void RenderGrid(float lineWidth)
     {
         if (!ViewGrid) return;
+
+        int viewL = (int) Math.Floor(ViewTopLeft.X);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
         
-        for (int x = 0; x < Level.Width; x++)
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
                 Raylib.DrawRectangleLinesEx(
@@ -326,9 +349,9 @@ public class LevelRenderer
         }
 
         // draw bigger grid squares
-        for (int x = 0; x < Level.Width; x += 2)
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x += 2)
         {
-            for (int y = 0; y < Level.Height; y += 2)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y += 2)
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2),

@@ -189,6 +189,13 @@ public class EditorWindow
             }
         }
 
+        var viewportW = canvasWidget.RenderTexture.Texture.Width;
+        var viewportH = canvasWidget.RenderTexture.Texture.Height;
+        LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
+        LevelRenderer.ViewBottomRight =
+            (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
+            / Level.TileSize;
+
         // keep drawing in level bounds
         Raylib.BeginScissorMode(
             (int) (-viewOffset.X * viewZoom),
