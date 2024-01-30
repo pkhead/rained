@@ -293,66 +293,12 @@ public class TileEditor : IEditorMode
                 }
 
                 // check if requirements are satisfied
-                // first of all, placement is impossible if tile center is out of bounds
-                bool isPlacementValid = level.IsInBounds(window.MouseCx, window.MouseCy);
-                if (isPlacementValid)
-                {
-                    for (int x = 0; x < selectedTile.Width; x++)
-                    {
-                        for (int y = 0; y < selectedTile.Height; y++)
-                        {
-                            int gx = tileOriginX + x;
-                            int gy = tileOriginY + y;
-                            var specInt = selectedTile.Requirements[x,y];
-                            var spec2Int = selectedTile.Requirements2[x,y];
+                TilePlacementStatus validationStatus = TilePlacementStatus.Success;
 
-                            // check that there is not already a tile here
-                            if (level.IsInBounds(gx, gy))
-                            {
-                                // check on first layer
-                                if (specInt >= 0 && level.Layers[window.WorkLayer, gx, gy].HasTile())
-                                {
-                                    isPlacementValid = false;
-                                    goto exitRequirementLoop;
-                                }
-
-                                // check on second layer
-                                if (window.WorkLayer < 2 && spec2Int >= 0 && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
-                                {
-                                    isPlacementValid = false;
-                                    goto exitRequirementLoop;
-                                }
-                            }
-
-                            // if modifyGeometry is true, the editor will place tile geometry
-                            // that is needed, instead of having to rely on the user doing
-                            // that themselves. thus, a geometry check isn't needed
-                            if (!modifyGeometry && !forcePlace)
-                            {
-                                // check first layer geometry
-                                if (specInt == -1) continue;
-                                if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
-                                {
-                                    isPlacementValid = false;
-                                    goto exitRequirementLoop;
-                                }
-
-                                // check second layer geometry
-                                // if we are on layer 3, there is no second layer
-                                // all checks pass
-                                if (window.WorkLayer == 2) continue;
-                                
-                                if (spec2Int == -1) continue;
-                                if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
-                                {
-                                    isPlacementValid = false;
-                                    goto exitRequirementLoop;
-                                }
-                            }
-                        }
-                    }
-                    exitRequirementLoop:;
-                }
+                if (level.IsInBounds(window.MouseCx, window.MouseCy))
+                    validationStatus = ValidateTilePlacement(selectedTile, tileOriginX, tileOriginY, modifyGeometry || forcePlace);
+                else
+                    validationStatus = TilePlacementStatus.OutOfBounds;
 
                 // draw tile preview
                 Raylib.DrawTextureEx(
@@ -360,18 +306,37 @@ public class TileEditor : IEditorMode
                     new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
                     0,
                     (float)Level.TileSize / 16,
-                    isPlacementValid ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
+                    validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
                 );
 
+                if (modifyGeometry)
+                    ImGui.SetTooltip("Force Geometry");
+                else if (forcePlace)
+                    ImGui.SetTooltip("Force Placement");
+
                 // place tile on click
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left) && isPlacementValid)
+                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
-                    PlaceTile(
-                        selectedTile,
-                        tileOriginX, tileOriginY,
-                        window.WorkLayer, window.MouseCx, window.MouseCy,
-                        modifyGeometry
-                    );
+                    if (validationStatus == TilePlacementStatus.Success)
+                    {
+                        PlaceTile(
+                            selectedTile,
+                            tileOriginX, tileOriginY,
+                            window.WorkLayer, window.MouseCx, window.MouseCy,
+                            modifyGeometry
+                        );
+                    }
+                    else
+                    {
+                        string errStr = validationStatus switch {
+                            TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
+                            TilePlacementStatus.Overlap => "Tile is overlapping another",
+                            TilePlacementStatus.Geometry => "Tile geometry requirements not met",
+                            _ => "Unknown tile placement error"
+                        };
+
+                        window.Editor.ShowError(errStr);
+                    }
                 }
             }
 
@@ -421,6 +386,67 @@ public class TileEditor : IEditorMode
                 }
             }
         }
+    }
+
+    private enum TilePlacementStatus
+    {
+        Success,
+        OutOfBounds,
+        Overlap,
+        Geometry
+    };
+
+    private TilePlacementStatus ValidateTilePlacement(Tiles.TileData tile, int tileLeft, int tileTop, bool force)
+    {
+        var level = window.Editor.Level;
+
+        for (int x = 0; x < tile.Width; x++)
+        {
+            for (int y = 0; y < tile.Height; y++)
+            {
+                int gx = tileLeft + x;
+                int gy = tileTop + y;
+                var specInt = tile.Requirements[x,y];
+                var spec2Int = tile.Requirements2[x,y];
+
+                // check that there is not already a tile here
+                if (level.IsInBounds(gx, gy))
+                {
+                    // check on first layer
+                    var isHead = x == tile.CenterX && y == tile.CenterY;
+
+                    if ((isHead || specInt >= 0) && level.Layers[window.WorkLayer, gx, gy].HasTile())
+                        return TilePlacementStatus.Overlap;
+
+                    // check on second layer
+                    if (window.WorkLayer < 2)
+                    {
+                        if ((isHead || spec2Int >= 0) && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
+                            return TilePlacementStatus.Overlap;
+                    }
+                }
+
+                
+                if (!force)
+                {
+                    // check first layer geometry
+                    if (specInt == -1) continue;
+                    if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
+                        return TilePlacementStatus.Geometry;
+
+                    // check second layer geometry
+                    // if we are on layer 3, there is no second layer
+                    // all checks pass
+                    if (window.WorkLayer == 2) continue;
+                    
+                    if (spec2Int == -1) continue;
+                    if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
+                        return TilePlacementStatus.Geometry;
+                }
+            }
+        }
+        
+        return TilePlacementStatus.Success;
     }
 
     private void PlaceTile(

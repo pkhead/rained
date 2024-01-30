@@ -159,6 +159,7 @@ public class TileCategory
 public class Database
 {
     public readonly List<TileCategory> Categories;
+    private readonly Dictionary<string, TileData> stringToTile = new();
 
     public Database()
     {
@@ -228,6 +229,7 @@ public class Database
                     );
 
                     group.Tiles.Add(tileData);
+                    stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
                     Console.WriteLine($"Could not add '{name}': {e.Message}");
@@ -237,4 +239,7 @@ public class Database
 
         Console.WriteLine("Done!");
     }
+
+    public bool HasTile(string name) => stringToTile.ContainsKey(name);
+    public TileData GetTileFromName(string name) => stringToTile[name];
 }

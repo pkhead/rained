@@ -1,5 +1,6 @@
 Overall:
 - proper splash screen window (make initial borderless undecorated window, then Raylib window with loading)
+- implement ShowError
 - saving/loading
 - undo/redo
 - what if everything was on one screen?

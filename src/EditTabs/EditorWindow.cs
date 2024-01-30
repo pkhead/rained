@@ -160,8 +160,8 @@ public class EditorWindow
         // obtain mouse coordinates
         mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
         mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / Level.TileSize;
-        mouseCx = (int) mouseCellFloat.X;
-        mouseCy = (int) mouseCellFloat.Y;
+        mouseCx = (int) Math.Floor(mouseCellFloat.X);
+        mouseCy = (int) Math.Floor(mouseCellFloat.Y);
 
         if (canvasWidget.IsHovered)
         {

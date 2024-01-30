@@ -113,9 +113,10 @@ public static class LevelSerialization
                             var tileID = (Vector2) data.values[0];
                             var name = (string) data.values[1];
 
-                            var tile = editor.TileDatabase.Categories[(int)tileID.X - 3].Tiles[(int)tileID.Y - 1];
-                            if (tile.Name != name) throw new Exception($"Error parsing tile \"{name}\"");
-
+                            if (!editor.TileDatabase.HasTile(name))
+                                throw new Exception($"Unrecognized tile '{name}'");
+                            
+                            var tile = editor.TileDatabase.GetTileFromName(name);
                             level.Layers[z,x,y].TileHead = tile;
                             break;
                         }

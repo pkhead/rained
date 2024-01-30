@@ -1,5 +1,6 @@
 using Raylib_cs;
 using rlImGui_cs;
+using System.Numerics;
 using ImGuiNET;
 
 namespace RainEd;
@@ -13,6 +14,10 @@ public class RainEd
     private readonly EditorWindow editorWindow;
 
     public Level Level { get => level; }
+
+    private string notification = "";
+    private float notificationTime = 0f;
+    private float notifFlash = 0f;
 
     public RainEd(string levelPath = "") {
         TileDatabase = new Tiles.Database();
@@ -30,13 +35,14 @@ public class RainEd
         editorWindow = new EditorWindow(this);
     }
 
-    // TODO: show status thing in ImGui
     public void ShowError(string msg)
     {
-        Console.WriteLine($"ERROR: {msg}");
+        notification = msg;
+        notificationTime = 3f;
+        notifFlash = 0f;
     }
 
-    public void Draw()
+    public void Draw(float dt)
     {
         Raylib.ClearBackground(Color.DarkGray);
 
@@ -99,6 +105,40 @@ public class RainEd
         editorWindow.Render();
 
         ImGui.ShowDemoWindow();
+
+        // notification window
+        if (notificationTime > 0f) {
+            ImGuiWindowFlags windowFlags =
+                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
+                ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
+            
+            ImGuiViewportPtr viewport = ImGui.GetMainViewport();
+            const float pad = 10f;
+
+            Vector2 windowPos = new(
+                viewport.WorkPos.X + pad,
+                viewport.WorkPos.Y + viewport.WorkSize.Y - pad
+            );
+            Vector2 windowPosPivot = new(0f, 1f);
+            ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always, windowPosPivot);
+
+            var flashValue = (float) (Math.Sin(Math.Min(notifFlash, 0.25f) * 16 * Math.PI) + 1f) / 2f;
+            var windowBg = ImGui.GetStyle().Colors[(int) ImGuiCol.WindowBg];
+
+            if (flashValue > 0.5f)
+                ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(flashValue, flashValue, flashValue, windowBg.W));
+            else
+                ImGui.PushStyleColor(ImGuiCol.WindowBg, windowBg);
+            
+            if (ImGui.Begin("Notification", windowFlags))
+                ImGui.TextUnformatted(notification);
+            ImGui.End();
+
+            ImGui.PopStyleColor();
+
+            notificationTime -= dt;
+            notifFlash += dt;
+        }
         rlImGui.End();
     }
 }

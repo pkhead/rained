@@ -33,7 +33,7 @@ namespace RainEd
             while (!Raylib.WindowShouldClose())
             {
                 Raylib.BeginDrawing();
-                app.Draw();
+                app.Draw(Raylib.GetFrameTime());
                 Raylib.EndDrawing();
             }
 
