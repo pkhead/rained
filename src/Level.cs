@@ -1,3 +1,4 @@
+using System.Numerics;
 namespace RainEd;
 
 public enum CellType : sbyte
@@ -92,6 +93,30 @@ public struct LevelCell
     public readonly bool Has(LevelObject obj) => Objects.HasFlag(obj);
 }
 
+public class Camera
+{
+    // camera size is 70x39 tiles
+    // camera red border is 52.5x35
+    // left black inner border is 1 tile away
+    // game resolution is 1040x800 
+    // render scales up pixels by 1.25 (each tile is 16 pixels )
+    public Vector2 Position;
+
+    public readonly static Vector2 WidescreenSize = new(70f, 40f);
+    public readonly static Vector2 StandardSize = new(52.5f, 40f); 
+
+    public Camera()
+    {
+        // in pixels is (20, 30) (if each tile is 16 pixels wide and tall)
+        Position = new(1f, 1f);
+    }
+
+    public Camera(Vector2 position)
+    {
+        Position = position;
+    }
+}
+
 public class Level
 {
     private readonly RainEd editor;
@@ -101,6 +126,8 @@ public class Level
     public int BufferTilesLeft, BufferTilesTop;
     public int BufferTilesRight, BufferTilesBot;
     public Material DefaultMaterial = Material.Standard;
+
+    public readonly List<Camera> Cameras = new();
 
     public int Width { get => _width; }
     public int Height { get => _height; }
@@ -135,7 +162,7 @@ public class Level
         "Ridge"
     };
 
-    public Level(RainEd editor, int width = 72, int height = 42)
+    public Level(RainEd editor, int width = 72, int height = 43)
     {
         this.editor = editor;
 
@@ -155,10 +182,28 @@ public class Level
                 for (int y = 0; y < Height; y++)
                 {
                     Layers[l,x,y] = new LevelCell();
-                    Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
                 }
             }
         }
+    }
+
+    public static Level NewDefaultLevel(RainEd editor)
+    {
+        var level = new Level(editor, 72, 43);
+        level.Cameras.Add(new Camera());
+
+        for (int l = 0; l < LayerCount; l++)
+        {
+            for (int x = 0; x < level.Width; x++)
+            {
+                for (int y = 0; y < level.Height; y++)
+                {
+                    level.Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
+                }
+            }
+        }
+
+        return level;
     }
 
     public bool IsInBounds(int x, int y) =>

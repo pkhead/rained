@@ -23,7 +23,7 @@ public class RainEd
         }
         else
         {
-            level = new(this);
+            level = Level.NewDefaultLevel(this);
         }
 
         LevelGraphicsTexture = new("data/level-graphics.png");

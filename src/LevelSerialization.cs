@@ -12,6 +12,7 @@ public static class LevelSerialization
 
         Lingo.List levelGeometry = levelData[0];
         Lingo.List levelProperties = levelData[5];
+        Lingo.List levelCameraData = levelData[6];
 
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];
         Lingo.List extraTiles = (Lingo.List) levelProperties.fields["extraTiles"];
@@ -127,6 +128,14 @@ public static class LevelSerialization
                 y++;
             }
             x++;
+        }
+
+        // read camear data
+        var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
+        foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
+        {
+            // unsure why X unit scale is different than Y unit scale
+            level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 30f)));
         }
 
         return level;

@@ -58,7 +58,9 @@ public class LevelRenderer
     };
 
     private readonly RainEd editor;
-    private Level level { get => editor.Level; }
+    private Level Level { get => editor.Level; }
+
+    public bool ViewGrid = true;
 
     public LevelRenderer(RainEd editor)
     {
@@ -67,11 +69,11 @@ public class LevelRenderer
 
     public void RenderGeometry(int layer, Color color)
     {
-        for (int x = 0; x < level.Width; x++)
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
-                LevelCell c = level.Layers[layer ,x,y];
+                LevelCell c = Level.Layers[layer ,x,y];
 
                 switch (c.Cell)
                 {
@@ -149,11 +151,11 @@ public class LevelRenderer
 
     public void RenderObjects(Color color)
     {
-        for (int x = 0; x < level.Width; x++)
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
-                var cell = level.Layers[0, x, y];
+                var cell = Level.Layers[0, x, y];
 
                 // draw object graphics
                 for (int i = 1; i < 32; i++)
@@ -174,18 +176,18 @@ public class LevelRenderer
     }
     public void RenderShortcuts(Color color)
     {
-        static bool isShortcut(Level level, int x, int y)
+        static bool isShortcut(Level Level, int x, int y)
         {
             if (x < 0 || y < 0) return false;
-            if (x >= level.Width || y >= level.Height) return false;
-            return level.Layers[0,x,y].Has(LevelObject.Shortcut);
+            if (x >= Level.Width || y >= Level.Height) return false;
+            return Level.Layers[0,x,y].Has(LevelObject.Shortcut);
         }
 
-        for (int x = 0; x < level.Width; x++)
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
-                var cell = level.Layers[0, x, y];
+                var cell = Level.Layers[0, x, y];
 
                 // shortcut entrance changes appearance
                 // based on neighbor Shortcuts
@@ -196,7 +198,7 @@ public class LevelRenderer
                     int texY = 0;
 
                     // left
-                    if (isShortcut(level, x-1, y))
+                    if (isShortcut(Level, x-1, y))
                     {
                         texX = 1;
                         texY = 1;
@@ -204,7 +206,7 @@ public class LevelRenderer
                     }
 
                     // right
-                    if (isShortcut(level, x+1, y))
+                    if (isShortcut(Level, x+1, y))
                     {
                         texX = 4;
                         texY = 0;
@@ -212,7 +214,7 @@ public class LevelRenderer
                     }
 
                     // up
-                    if (isShortcut(level, x, y-1))
+                    if (isShortcut(Level, x, y-1))
                     {
                         texX = 3;
                         texY = 0;
@@ -220,7 +222,7 @@ public class LevelRenderer
                     }
 
                     // down
-                    if (isShortcut(level, x, y+1))
+                    if (isShortcut(Level, x, y+1))
                     {
                         texX = 0;
                         texY = 1;
@@ -262,11 +264,11 @@ public class LevelRenderer
     public void RenderTiles(int layer, int alpha)
     {
         // draw tile previews
-        for (int x = 0; x < level.Width; x++)
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
-                var cell = level.Layers[layer, x, y];
+                var cell = Level.Layers[layer, x, y];
                 
                 if (cell.TileHead is Tiles.TileData tile)
                 {
@@ -287,11 +289,11 @@ public class LevelRenderer
         }
 
         // draw material color squares
-        for (int x = 0; x < level.Width; x++)
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
-                var cell = level.Layers[layer, x, y];
+                var cell = Level.Layers[layer, x, y];
 
                 if (!cell.HasTile() && cell.Material != Material.None && cell.Cell != CellType.Air)
                 {
@@ -308,9 +310,11 @@ public class LevelRenderer
 
     public void RenderGrid(float lineWidth)
     {
-        for (int x = 0; x < level.Width; x++)
+        if (!ViewGrid) return;
+        
+        for (int x = 0; x < Level.Width; x++)
         {
-            for (int y = 0; y < level.Height; y++)
+            for (int y = 0; y < Level.Height; y++)
             {
                 var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
                 Raylib.DrawRectangleLinesEx(
@@ -322,9 +326,9 @@ public class LevelRenderer
         }
 
         // draw bigger grid squares
-        for (int x = 0; x < level.Width; x += 2)
+        for (int x = 0; x < Level.Width; x += 2)
         {
-            for (int y = 0; y < level.Height; y += 2)
+            for (int y = 0; y < Level.Height; y += 2)
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2),
@@ -337,14 +341,14 @@ public class LevelRenderer
 
     public void RenderBorder(float lineWidth)
     {
-        int borderRight = level.Width - level.BufferTilesRight;
-        int borderBottom = level.Height - level.BufferTilesBot;
-        int borderW = borderRight - level.BufferTilesLeft;
-        int borderH = borderBottom - level.BufferTilesTop;
+        int borderRight = Level.Width - Level.BufferTilesRight;
+        int borderBottom = Level.Height - Level.BufferTilesBot;
+        int borderW = borderRight - Level.BufferTilesLeft;
+        int borderH = borderBottom - Level.BufferTilesTop;
 
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
-                level.BufferTilesLeft * Level.TileSize, level.BufferTilesTop * Level.TileSize,
+                Level.BufferTilesLeft * Level.TileSize, Level.BufferTilesTop * Level.TileSize,
                 borderW * Level.TileSize, borderH * Level.TileSize
             ),
             lineWidth,

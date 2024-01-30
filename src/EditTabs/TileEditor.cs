@@ -248,6 +248,9 @@ public class TileEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
+            var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
+            var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
+
             // render selected tile
             if (selectedTile is not null)
             {
@@ -288,9 +291,6 @@ public class TileEditor : IEditorMode
                         Rlgl.PopMatrix();
                     }
                 }
-
-                var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
-                var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
 
                 // check if requirements are satisfied
                 // first of all, placement is impossible if tile center is out of bounds
@@ -373,32 +373,10 @@ public class TileEditor : IEditorMode
                         modifyGeometry
                     );
                 }
-
-                // remove tile
-                if (Raylib.IsMouseButtonPressed(MouseButton.Right))
-                {
-                    int tileLayer = window.WorkLayer;
-                    int tileX = window.MouseCx;
-                    int tileY = window.MouseCy;
-                    
-                    var mouseCell = level.Layers[tileLayer, tileX, tileY];
-                    if (mouseCell.HasTile())
-                    {
-                        // if this is a tile body, go to referenced tile head
-                        if (mouseCell.TileHead is null)
-                        {
-                            tileLayer = mouseCell.TileLayer;
-                            tileX = mouseCell.TileRootX;
-                            tileY = mouseCell.TileRootY;
-                        }
-
-                        RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
-                    }
-                }
             }
 
             // render selected material
-            else
+            else if (window.IsMouseInLevel())
             {
                 Raylib.DrawRectangle(
                     window.MouseCx * Level.TileSize + 8, window.MouseCy * Level.TileSize + 8,
@@ -413,9 +391,33 @@ public class TileEditor : IEditorMode
                 }
 
                 // remove material
-                if (Raylib.IsMouseButtonDown(MouseButton.Right))
+                if (Raylib.IsMouseButtonDown(MouseButton.Right) &&
+                    !level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].HasTile()
+                )
                 {
                     level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = Material.None;
+                }
+            }
+
+            // remove tile on right click
+            if (window.IsMouseInLevel() && Raylib.IsMouseButtonPressed(MouseButton.Right))
+            {
+                int tileLayer = window.WorkLayer;
+                int tileX = window.MouseCx;
+                int tileY = window.MouseCy;
+                
+                var mouseCell = level.Layers[tileLayer, tileX, tileY];
+                if (mouseCell.HasTile())
+                {
+                    // if this is a tile body, go to referenced tile head
+                    if (mouseCell.TileHead is null)
+                    {
+                        tileLayer = mouseCell.TileLayer;
+                        tileX = mouseCell.TileRootX;
+                        tileY = mouseCell.TileRootY;
+                    }
+
+                    RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                 }
             }
         }
