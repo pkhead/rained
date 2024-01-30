@@ -5,6 +5,8 @@ Overall:
 - what if everything was on one screen?
 - help pages/hints/tooltips/whatever
 - arrow keys to scroll
+- RenderGrid and RenderTile take in window view data instead of being sent it
+  when functions are being called
 
 Level Properties:
 
