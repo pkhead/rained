@@ -24,6 +24,7 @@ public class EditorWindow
 
     private Vector2 viewOffset = new();
     private float viewZoom = 1f;
+    private int zoomSteps = 0;
     private int workLayer = 0;
 
     public float ViewZoom { get => viewZoom; }
@@ -104,6 +105,17 @@ public class EditorWindow
                 workLayer = workLayerV - 1;
             }
 
+            ImGui.SameLine();
+            if (ImGui.Button("Reset View"))
+            {
+                viewOffset = Vector2.Zero;
+                viewZoom = 1f;
+                zoomSteps = 0;
+            }
+
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%");
+
             // canvas widget
             {
                 var regionMax = ImGui.GetWindowContentRegionMax();
@@ -162,13 +174,18 @@ public class EditorWindow
 
             // scroll wheel zooming
             var wheelMove = Raylib.GetMouseWheelMove();
-            if (wheelMove > 0f)
+            var zoomFactor = 1.5;
+            if (wheelMove > 0f && zoomSteps < 5)
             {
-                Zoom(1.5f, mouseCellFloat * Level.TileSize);
+                var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
+                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                zoomSteps++;
             }
-            else if (wheelMove < 0f)
+            else if (wheelMove < 0f && zoomSteps > -5)
             {
-                Zoom(1f / 1.5f, mouseCellFloat * Level.TileSize);
+                var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
+                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                zoomSteps--;
             }
         }
 

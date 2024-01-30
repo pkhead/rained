@@ -6,7 +6,7 @@ namespace RainEd;
 
 public class CameraEditor : IEditorMode
 {
-    public string Name { get => "Camera"; }
+    public string Name { get => "Cameras"; }
     private EditorWindow window;
 
     public CameraEditor(EditorWindow window) {
@@ -37,8 +37,8 @@ public class CameraEditor : IEditorMode
         }
 
         levelRender.RenderShortcuts(Color.White);
-        levelRender.RenderGrid(1f / window.ViewZoom);
-        levelRender.RenderBorder(1f / window.ViewZoom);
+        levelRender.RenderGrid(0.5f / window.ViewZoom);
+        levelRender.RenderBorder(1.0f / window.ViewZoom);
 
         // render cameras
         foreach (Camera camera in level.Cameras)
@@ -71,7 +71,7 @@ public class CameraEditor : IEditorMode
                     (camCenter - innerOutlineSize / 2) * Level.TileSize,
                     innerOutlineSize * Level.TileSize
                 ),
-                2f / window.ViewZoom,
+                1f / window.ViewZoom,
                 new Color(9, 0, 0, 255)
             );
 
@@ -82,8 +82,27 @@ public class CameraEditor : IEditorMode
                     (camCenter - standardResOutlineSize / 2) * Level.TileSize,
                     standardResOutlineSize * Level.TileSize
                 ),
-                2f / window.ViewZoom,
+                1f / window.ViewZoom,
                 new Color(255, 0, 0, 255)
+            );
+
+            // draw center circle
+            Raylib.DrawCircleLines((int)(camCenter.X * Level.TileSize), (int)(camCenter.Y * Level.TileSize), 50f, Color.Black);
+
+            Raylib.DrawLine(
+                (int)(camCenter.X * Level.TileSize),
+                (int)(camera.Position.Y * Level.TileSize),
+                (int)(camCenter.X * Level.TileSize),
+                (int)((camera.Position.Y + Camera.StandardSize.Y) * Level.TileSize),
+                Color.Black
+            );
+
+            Raylib.DrawLine(
+                (int)((camCenter.X - 5f) * Level.TileSize),
+                (int)(camCenter.Y * Level.TileSize),
+                (int)((camCenter.X + 5f) * Level.TileSize),
+                (int)(camCenter.Y * Level.TileSize),
+                Color.Black
             );
         }
     }

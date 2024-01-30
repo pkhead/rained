@@ -18,13 +18,14 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- can't delete tiles while material is selected
 - material brush size
+- tile/material eyedropper
 - is it possible to combine geo and tile editor?
-- Separate loops for drawing tiles and drawing materials
-  (this decreases draw call count)
-- draw tile previews of the same tile in batches
-  by sorting tiles render list by their ID
+- draw culling
+
+Camera Editor:
+- moving cameras, adding cameras,
+- camera corner manipulation, all that jazz
 
 
 tile data format (from rwe+):

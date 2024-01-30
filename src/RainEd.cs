@@ -78,6 +78,11 @@ public class RainEd
                 if (ImGui.MenuItem("Editor", null, editorWindow.IsWindowOpen))
                     editorWindow.IsWindowOpen = !editorWindow.IsWindowOpen;
                 
+                if (ImGui.MenuItem("Grid", null, editorWindow.LevelRenderer.ViewGrid))
+                {
+                    editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;
+                }
+                
                 ImGui.EndMenu();
             }
 

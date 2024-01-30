@@ -333,7 +333,7 @@ public class LevelRenderer
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2),
                     lineWidth,
-                    new Color(255, 255, 255, 60)
+                    new Color(255, 255, 255, 100)
                 );
             }
         }
