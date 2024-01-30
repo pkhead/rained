@@ -102,7 +102,7 @@ public class RainEd
             ImGui.EndMainMenuBar();
         }
 
-        editorWindow.Render();
+        editorWindow.Render(dt);
 
         ImGui.ShowDemoWindow();
 

@@ -64,10 +64,12 @@ public class EditorWindow
         editorModes.Add(new CameraEditor(this));
     }
 
-    public void Render()
+    public void Render(float dt)
     {
         if (IsWindowOpen && ImGui.Begin("Level", ref IsWindowOpen))
         {
+            var newEditMode = selectedMode;
+
             // edit mode
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Edit Mode");
@@ -80,9 +82,7 @@ public class EditorWindow
                     var isSelected = i == selectedMode;
                     if (ImGui.Selectable(editorModes[i].Name, isSelected))
                     {
-                        editorModes[i].Unload();
-                        selectedMode = i;
-                        editorModes[i].Load();
+                        newEditMode = i;
                     }
 
                     if (isSelected)
@@ -116,6 +116,42 @@ public class EditorWindow
             ImGui.SameLine();
             ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%");
 
+            if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
+            {
+                // scroll keybinds
+                var moveX = Raylib.IsKeyDown(KeyboardKey.Right) - Raylib.IsKeyDown(KeyboardKey.Left);
+                var moveY = Raylib.IsKeyDown(KeyboardKey.Down) - Raylib.IsKeyDown(KeyboardKey.Up);
+                var moveSpeed = Raylib.IsKeyDown(KeyboardKey.LeftShift) ? 60f : 30f;
+                viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
+                viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
+
+                // edit mode keybinds
+                if (Raylib.IsKeyPressed(KeyboardKey.One))
+                {} // TODO: show level properties window (seed, light type, and environment)
+                
+                if (Raylib.IsKeyPressed(KeyboardKey.Two))
+                    newEditMode = 0;
+                
+                if (Raylib.IsKeyPressed(KeyboardKey.Three))
+                    newEditMode = 1;
+                
+                if (Raylib.IsKeyPressed(KeyboardKey.Four))
+                    newEditMode = 2;
+                
+                // keybind to switch layer
+                if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+                {
+                    workLayer = (workLayer + 1) % 3;
+                }
+            }
+
+            // change edit mode if requested
+            if (newEditMode != selectedMode)
+            {
+                editorModes[selectedMode].Unload();
+                selectedMode = newEditMode;
+                editorModes[selectedMode].Load();
+            }
             // canvas widget
             {
                 var regionMax = ImGui.GetWindowContentRegionMax();
@@ -156,6 +192,13 @@ public class EditorWindow
         Rlgl.PushMatrix();
         Rlgl.Scalef(viewZoom, viewZoom, 1f);
         Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
+
+        var viewportW = canvasWidget.RenderTexture.Texture.Width;
+        var viewportH = canvasWidget.RenderTexture.Texture.Height;
+        LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
+        LevelRenderer.ViewBottomRight =
+            (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
+            / Level.TileSize;
         
         // obtain mouse coordinates
         mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
@@ -189,13 +232,6 @@ public class EditorWindow
             }
         }
 
-        var viewportW = canvasWidget.RenderTexture.Texture.Width;
-        var viewportH = canvasWidget.RenderTexture.Texture.Height;
-        LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
-        LevelRenderer.ViewBottomRight =
-            (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
-            / Level.TileSize;
-
         // keep drawing in level bounds
         Raylib.BeginScissorMode(
             (int) (-viewOffset.X * viewZoom),
@@ -206,12 +242,6 @@ public class EditorWindow
 
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
         Raylib.EndScissorMode();
-
-        // keybind to switch layer
-        if (!ImGui.GetIO().WantCaptureKeyboard && Raylib.IsKeyPressed(KeyboardKey.L))
-        {
-            workLayer = (workLayer + 1) % 3;
-        }
 
         Rlgl.PopMatrix();
     }

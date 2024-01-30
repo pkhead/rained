@@ -158,7 +158,7 @@ namespace rlImGui_cs
             RaylibKeyMap[KeyboardKey.Space] = ImGuiKey.Space;
             RaylibKeyMap[KeyboardKey.Escape] = ImGuiKey.Escape;
             RaylibKeyMap[KeyboardKey.Enter] = ImGuiKey.Enter;
-            RaylibKeyMap[KeyboardKey.Tab] = ImGuiKey.Tab;
+            //RaylibKeyMap[KeyboardKey.Tab] = ImGuiKey.Tab;  damn tab key is interfering with tab = switch layer, so it's disabled
             RaylibKeyMap[KeyboardKey.Backspace] = ImGuiKey.Backspace;
             RaylibKeyMap[KeyboardKey.Insert] = ImGuiKey.Insert;
             RaylibKeyMap[KeyboardKey.Delete] = ImGuiKey.Delete;
@@ -421,8 +421,8 @@ namespace rlImGui_cs
             while (keyId != 0)
             {
                 KeyboardKey key = (KeyboardKey)keyId;
-                if (RaylibKeyMap.ContainsKey(key))
-                    io.AddKeyEvent(RaylibKeyMap[key], true);
+                    if (RaylibKeyMap.ContainsKey(key))
+                        io.AddKeyEvent(RaylibKeyMap[key], true);
                 keyId = Raylib.GetKeyPressed();
             }
 

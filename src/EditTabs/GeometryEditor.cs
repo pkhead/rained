@@ -126,7 +126,7 @@ public class GeometryEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        if (ImGui.Begin("Build"))
+        if (ImGui.Begin("Build", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // view mode
             {
@@ -254,6 +254,62 @@ public class GeometryEditor : IEditorMode
         levelRender.RenderShortcuts(Color.White);
         levelRender.RenderGrid(0.5f / window.ViewZoom);
         levelRender.RenderBorder(1.0f / window.ViewZoom);
+
+        // WASD navigation
+        if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
+        {
+            int toolRow = (int) selectedTool / 4;
+            int toolCol = (int) selectedTool % 4;
+            int toolCount = (int) Tool.ToolCount;
+
+            static bool keyPressed(KeyboardKey k) => Raylib.IsKeyPressed(k) || Raylib.IsKeyPressedRepeat(k);
+
+            if (keyPressed(KeyboardKey.D))
+            {
+                if ((int) selectedTool == (toolCount-1))
+                {
+                    toolCol = 0;
+                    toolRow = 0;
+                }
+                else if (++toolCol > 4)
+                {
+                    toolCol = 0;
+                    toolRow++;
+                }
+            }
+
+            if (keyPressed(KeyboardKey.A))
+            {
+                toolCol--;
+                if (toolCol < 0)
+                {
+                    toolCol = 3;
+                    toolRow--;
+                }
+            }
+
+            if (keyPressed(KeyboardKey.W))
+            {
+                toolRow--;
+            }
+
+            if (keyPressed(KeyboardKey.S))
+            {
+                // if on the last row, wrap back to first row
+                // else, just go to next row
+                if (toolRow == (toolCount-1) / 4)
+                    toolRow = 0;
+                else
+                    toolRow++;
+            }
+            
+            if (toolRow < 0)
+            {
+                toolRow = (toolCount-1) / 4;
+            }
+
+            selectedTool = (Tool) Math.Clamp(toolRow*4 + toolCol, 0, toolCount-1);
+        }
         
         if (window.IsViewportHovered)
         {

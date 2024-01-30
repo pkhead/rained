@@ -21,7 +21,7 @@ public class TileEditor : IEditorMode
     }
 
     public void DrawToolbar() {
-        if (ImGui.Begin("Tile Selector"))
+        if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // default material dropdown
             ImGui.Text("Default Material");
@@ -45,8 +45,6 @@ public class TileEditor : IEditorMode
             ImGui.SetNextItemWidth(right - ImGui.GetCursorPosX() - ImGui.GetStyle().ItemSpacing.X);
             ImGui.InputTextWithHint("##search", "Search...", ref searchQuery, 64, ImGuiInputTextFlags.AlwaysOverwrite);
             var searchQueryL = searchQuery.ToLower();
-            
-            ImGui.Text("Hold G to modify geometry");
 
             // the tiles in the group that pass search test
             var tilesInGroup = new List<Tiles.TileData>();

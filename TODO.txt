@@ -1,5 +1,6 @@
 Overall:
 - proper splash screen window (make initial borderless undecorated window, then Raylib window with loading)
+  use SFML for the splash screen window
 - implement ShowError
 - saving/loading
 - undo/redo
@@ -8,6 +9,7 @@ Overall:
 - arrow keys to scroll
 - RenderGrid and RenderTile take in window view data instead of being sent it
   when functions are being called
+- need a way for mouse to pan without mmb (accessibility purposes)
 
 Level Properties:
 
@@ -17,7 +19,7 @@ Geometry Editor:
 - shortcut entrance points towards any shortcut-related object (room entrance, den, scavenger hole,)
 - right-click to remove selected tool
   (redundancy is good)
-- possible greedy mesh for faster rendering when rendering large levels
+- OPTIMIZATION: render level in chunks, only re-render updated chunks
 
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
@@ -46,3 +48,25 @@ tile data format (from rwe+):
     N = material name
 
     {"tp": "default": "data": 0}
+
+KEYBINDS:
+  General:
+    Tab - Switch Layer
+    Arrow Keys - Scroll
+    Scroll Wheel - Zoom
+    Middle Mouse Button - Pan
+    1 - Toggle Level Properties
+    2 - Geometry Editor
+    3 - Tile Editor
+  
+  Geometry Editor:
+    WASD - Select
+    LMB - Place/Remove
+    Shift+LMB - Rect Fill (Context-Specific)
+
+  Tile Editor:
+    LMB - Place Tile/Material
+    RMB - Remove Tile/Material
+    G+RMB - Remove Tile and Geometry
+    F+LMB - Force Place
+    G+LMB - Force Geometry 
