@@ -100,20 +100,43 @@ public class Camera
     // left black inner border is 1 tile away
     // game resolution is 1040x800 
     // render scales up pixels by 1.25 (each tile is 16 pixels )
+    // quad save format: [A, O]
+    //  A: clockwise angle in degrees, where 0 is up
+    //  O: offset number from 0 to 1 (1.0 translate to 4 tiles) 
     public Vector2 Position;
+    public float[] CornerOffsets = new float[4];
+    public float[] CornerAngles = new float[4];
 
     public readonly static Vector2 WidescreenSize = new(70f, 40f);
-    public readonly static Vector2 StandardSize = new(52.5f, 40f); 
-
-    public Camera()
-    {
-        // in pixels is (20, 30) (if each tile is 16 pixels wide and tall)
-        Position = new(1f, 1f);
-    }
+    public readonly static Vector2 StandardSize = new(52.5f, 40f);
 
     public Camera(Vector2 position)
     {
         Position = position;
+    }
+
+    public Camera() : this(new(1f, 1f))
+    {}
+
+
+    public Vector2 GetCornerOffset(int cornerIndex)
+    {
+        return new Vector2(
+            MathF.Sin(CornerAngles[cornerIndex]),
+            -MathF.Cos(CornerAngles[cornerIndex])
+        ) * CornerOffsets[cornerIndex] * 4f;
+    }
+
+    public Vector2 GetCornerPosition(int cornerIndex, bool offset)
+    {
+        // bit trick to get the X and Y percentage from the cornerIndex
+        int x = cornerIndex & 1;
+        int y = (cornerIndex & 2) >> 1;
+
+        return offset ?
+            Position + new Vector2(WidescreenSize.X * x, WidescreenSize.Y * y) + GetCornerOffset(cornerIndex)
+        :
+            Position + new Vector2(WidescreenSize.X * x, WidescreenSize.Y * y);
     }
 }
 

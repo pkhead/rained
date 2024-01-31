@@ -116,7 +116,7 @@ public class EditorWindow
             ImGui.SameLine();
             ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%");
 
-            if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
+            if (!ImGui.GetIO().WantTextInput)
             {
                 // scroll keybinds
                 var moveX = Raylib.IsKeyDown(KeyboardKey.Right) - Raylib.IsKeyDown(KeyboardKey.Left);

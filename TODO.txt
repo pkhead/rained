@@ -69,4 +69,9 @@ KEYBINDS:
     RMB - Remove Tile/Material
     G+RMB - Remove Tile and Geometry
     F+LMB - Force Place
-    G+LMB - Force Geometry 
+    G+LMB - Force Geometry
+
+  Camera Editor:
+    N - New Camera
+    RMB/Backspace/Delete - Delete Camera/Reset Corner
+    LMB - Move Camera/Corner 
