@@ -336,6 +336,7 @@ public class GeometryEditor : IEditorMode
                 if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 {
                     ApplyToolRect();
+                    window.Editor.EndChange();
                 }
             }
             
@@ -354,12 +355,18 @@ public class GeometryEditor : IEditorMode
 
                 // activate tool on click
                 // or if user moves mouse on another tile space
+                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    window.Editor.BeginChange();
+                    
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left) ||
                     (Raylib.IsMouseButtonDown(MouseButton.Left) && (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)))
                 {
                     if (!isToolRectActive)
                         ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
                 }
+
+                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                    window.Editor.EndChange();
             }
         }
         

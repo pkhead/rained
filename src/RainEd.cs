@@ -67,7 +67,7 @@ public class RainEd
 
             if (ImGui.BeginMenu("Edit"))
             {
-                ImGui.MenuItem("Undo");
+                ImGui.MenuItem("Undo", "Ctrl+Z");
                 ImGui.MenuItem("Redo");
                 ImGui.Separator();
                 ImGui.MenuItem("Cut");
@@ -141,4 +141,105 @@ public class RainEd
         }
         rlImGui.End();
     }
+
+#region Change History
+    private struct CellChange
+    {
+        public int X, Y, Layer;
+        public LevelCell OldState, NewState;
+    };
+
+    private struct ChangeRecord
+    {
+        public List<CellChange> CellChanges = new();
+
+        public ChangeRecord() {}
+
+        public readonly bool HasChange()
+        {
+            return CellChanges.Count > 0;
+        }
+    }
+
+    private Stack<ChangeRecord> undoStack = new();
+    private Stack<ChangeRecord> redoStack = new();
+
+    private bool trackingChange = false;
+    private LevelCell[,,]? oldLayers = null;
+
+    public void BeginChange()
+    {
+        if (trackingChange) throw new Exception("BeginChange() already called");
+        trackingChange = true;
+
+        oldLayers = (LevelCell[,,]) level.Layers.Clone();
+    }
+
+    public void TryEndChange()
+    {
+        if (!trackingChange || oldLayers is null) return;
+        EndChange();
+    }
+
+    public void EndChange()
+    {
+        if (!trackingChange || oldLayers is null) throw new Exception("EndChange() already called");
+        trackingChange = false;
+        redoStack.Clear();
+
+        // find changes made to layers
+        ChangeRecord changes = new();
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            for (int x = 0; x < level.Width; x++)
+            {
+                for (int y = 0; y < level.Height; y++)
+                {
+                    if (!oldLayers[l,x,y].Equals(level.Layers[l,x,y]))
+                    {
+                        changes.CellChanges.Add(new CellChange()
+                        {
+                            X = x, Y = y, Layer = l,
+                            OldState = oldLayers[l,x,y],
+                            NewState = level.Layers[l,x,y]
+                        });
+                    }
+                }
+            }
+        }
+
+        // record changes
+        if (changes.HasChange())
+            undoStack.Push(changes);
+
+        oldLayers = null;
+    }
+
+    public void Undo()
+    {
+        if (undoStack.Count == 0) return;
+        var record = undoStack.Pop();
+        redoStack.Push(record);
+
+        // apply changes
+        foreach (CellChange change in record.CellChanges)
+        {
+            level.Layers[change.Layer, change.X, change.Y] = change.OldState;
+        }
+    }
+
+    public void Redo()
+    {
+        if (redoStack.Count == 0) return;
+        var record = redoStack.Pop();
+        undoStack.Push(record);
+
+        // apply changes
+        foreach (CellChange change in record.CellChanges)
+        {
+            level.Layers[change.Layer, change.X, change.Y] = change.NewState;
+        }
+    }
+#endregion
+
 }

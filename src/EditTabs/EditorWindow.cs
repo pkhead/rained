@@ -143,15 +143,25 @@ public class EditorWindow
                 {
                     workLayer = (workLayer + 1) % 3;
                 }
+
+                // undo
+                if (Raylib.IsKeyPressed(KeyboardKey.Z) && Raylib.IsKeyDown(KeyboardKey.LeftControl))
+                    Editor.Undo();
+
+                // redo
+                if (Raylib.IsKeyPressed(KeyboardKey.Y) && Raylib.IsKeyDown(KeyboardKey.LeftControl))
+                    Editor.Redo();
             }
 
             // change edit mode if requested
             if (newEditMode != selectedMode)
             {
                 editorModes[selectedMode].Unload();
+                Editor.TryEndChange();
                 selectedMode = newEditMode;
                 editorModes[selectedMode].Load();
             }
+
             // canvas widget
             {
                 var regionMax = ImGui.GetWindowContentRegionMax();

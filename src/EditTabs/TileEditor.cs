@@ -12,6 +12,7 @@ public class TileEditor : IEditorMode
     private readonly EditorWindow window;
     private Tiles.TileData? selectedTile;
     private int selectedMaterialIdx = 0;
+    private bool isToolActive = false;
 
     private string searchQuery = "";
 
@@ -113,6 +114,9 @@ public class TileEditor : IEditorMode
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame) {
+        var wasToolActive = isToolActive;
+        isToolActive = false;
+
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
 
@@ -317,12 +321,16 @@ public class TileEditor : IEditorMode
                 {
                     if (validationStatus == TilePlacementStatus.Success)
                     {
+                        window.Editor.BeginChange();
+
                         PlaceTile(
                             selectedTile,
                             tileOriginX, tileOriginY,
                             window.WorkLayer, window.MouseCx, window.MouseCy,
                             modifyGeometry
                         );
+
+                        window.Editor.EndChange();
                     }
                     else
                     {
@@ -351,6 +359,8 @@ public class TileEditor : IEditorMode
                 // place material
                 if (Raylib.IsMouseButtonDown(MouseButton.Left))
                 {
+                    if (!wasToolActive) window.Editor.BeginChange();
+                    isToolActive = true;
                     level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = (Material) selectedMaterialIdx + 1;
                 }
 
@@ -359,6 +369,8 @@ public class TileEditor : IEditorMode
                     !level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].HasTile()
                 )
                 {
+                    if (!wasToolActive) window.Editor.BeginChange();
+                    isToolActive = true;
                     level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = Material.None;
                 }
             }
@@ -381,10 +393,15 @@ public class TileEditor : IEditorMode
                         tileY = mouseCell.TileRootY;
                     }
 
+                    window.Editor.BeginChange();
                     RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
+                    window.Editor.EndChange();
                 }
             }
         }
+
+        if (wasToolActive && !isToolActive)
+            window.Editor.EndChange();
     }
 
     private enum TilePlacementStatus
