@@ -35,6 +35,8 @@ public class RainEd
         LevelGraphicsTexture = new("data/level-graphics.png");
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
+
+        FileBrowser.Open(FileBrowser.OpenMode.Write);
     }
 
     public void ShowError(string msg)
@@ -112,6 +114,11 @@ public class RainEd
         editorWindow.Render(dt);
 
         ImGui.ShowDemoWindow();
+
+        if (FileBrowser.Singleton is not null)
+        {
+            FileBrowser.Singleton.Render();
+        }
 
         // notification window
         if (notificationTime > 0f) {
