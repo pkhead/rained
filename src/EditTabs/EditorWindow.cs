@@ -46,6 +46,12 @@ public class EditorWindow
 
     private readonly List<IEditorMode> editorModes = new();
     private int selectedMode = 0;
+    private int queuedEditMode = -1;
+
+    public int EditMode {
+        get => selectedMode;
+        set => queuedEditMode = value;
+    }
 
     // render texture given to each editor mode class
     private RlManaged.RenderTexture2D layerRenderTexture;
@@ -66,6 +72,14 @@ public class EditorWindow
 
     public void Render(float dt)
     {
+        if (queuedEditMode >= 0)
+        {
+            editorModes[selectedMode].Unload();
+            selectedMode = queuedEditMode;
+            editorModes[selectedMode].Load();
+            queuedEditMode = -1;
+        }
+        
         if (IsWindowOpen && ImGui.Begin("Level", ref IsWindowOpen))
         {
             var newEditMode = selectedMode;

@@ -69,7 +69,10 @@ public class CameraEditor : IEditorMode
                 }
 
                 if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                {
                     activeCamera = null;
+                    window.Editor.EndChange();
+                }
             }
 
             // no active cameras, so mouse-pick cameras
@@ -113,18 +116,21 @@ public class CameraEditor : IEditorMode
                     mouseOffset = window.MouseCellFloat - cameraHoveredOver.Position;
                     activeCamera = cameraHoveredOver;
                     activeCorner = cornerHover;
+                    window.Editor.BeginChange();
                 }
             }
         }
 
         // keybinds
-        if (!ImGui.GetIO().WantCaptureKeyboard)
+        if (!ImGui.GetIO().WantCaptureKeyboard && activeCamera is null)
         {
             // N to create new camera
             if (Raylib.IsKeyPressed(KeyboardKey.N) && level.Cameras.Count < Level.MaxCameraCount)
             {
+                window.Editor.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
                 level.Cameras.Add(cam);
+                window.Editor.EndChange();
             }
 
             // Right-Click, Delete, or Backspace to delete camera
@@ -137,6 +143,7 @@ public class CameraEditor : IEditorMode
                     || Raylib.IsMouseButtonPressed(MouseButton.Right)
                 )
                 {
+                    window.Editor.BeginChange();
                     if (cornerHover == -1 && level.Cameras.Count > 1)
                     {
                         level.Cameras.Remove(cameraHoveredOver);
@@ -147,6 +154,7 @@ public class CameraEditor : IEditorMode
                         cameraHoveredOver.CornerAngles[cornerHover] = 0f;
                         cameraHoveredOver.CornerOffsets[cornerHover] = 0f;
                     }
+                    window.Editor.EndChange();
                 }
             }
         }
