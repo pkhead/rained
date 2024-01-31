@@ -26,8 +26,8 @@ public class CameraEditor : IEditorMode
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
-            var alpha = l == window.WorkLayer ? 255 : 50;
-            var color = new Color(0, 0, 0, alpha);
+            var alpha = l == 0 ? 255 : 50;
+            var color = new Color(30, 30, 30, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
@@ -36,8 +36,7 @@ public class CameraEditor : IEditorMode
             Rlgl.PopMatrix();
         }
 
-        levelRender.RenderShortcuts(Color.White);
-        levelRender.RenderGrid(0.5f / window.ViewZoom);
+        // levelRender.RenderGrid(0.5f / window.ViewZoom);
         levelRender.RenderBorder(1.0f / window.ViewZoom);
 
         // render cameras
@@ -51,7 +50,7 @@ public class CameraEditor : IEditorMode
                     camera.Position * Level.TileSize,
                     Camera.WidescreenSize * Level.TileSize
                 ),
-                new Color(50, 255, 50, 80)       
+                new Color(50, 255, 50, 30)       
             );
 
             // draw full rect ouline
@@ -60,7 +59,7 @@ public class CameraEditor : IEditorMode
                     camera.Position * Level.TileSize,
                     Camera.WidescreenSize * Level.TileSize
                 ),
-                4f / window.ViewZoom,
+                2f / window.ViewZoom,
                 new Color(0, 0, 0, 255)       
             );
 
@@ -71,7 +70,7 @@ public class CameraEditor : IEditorMode
                     (camCenter - innerOutlineSize / 2) * Level.TileSize,
                     innerOutlineSize * Level.TileSize
                 ),
-                1f / window.ViewZoom,
+                2f / window.ViewZoom,
                 new Color(9, 0, 0, 255)
             );
 
@@ -82,7 +81,7 @@ public class CameraEditor : IEditorMode
                     (camCenter - standardResOutlineSize / 2) * Level.TileSize,
                     standardResOutlineSize * Level.TileSize
                 ),
-                1f / window.ViewZoom,
+                2f / window.ViewZoom,
                 new Color(255, 0, 0, 255)
             );
 

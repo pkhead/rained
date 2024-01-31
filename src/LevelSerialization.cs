@@ -135,8 +135,7 @@ public static class LevelSerialization
         var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
         foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
         {
-            // unsure why X unit scale is different than Y unit scale
-            level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 30f)));
+            level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 20f)));
         }
 
         return level;

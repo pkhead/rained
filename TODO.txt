@@ -25,8 +25,8 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 
 Tile Editor:
 - material brush size
-- tile/material eyedropper
-- is it possible to combine geo and tile editor?
+- press E for tile/material eyedropper
+- WASD tile palette navigation (emulates joar editor controls)
 - draw culling
 
 Camera Editor:

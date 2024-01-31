@@ -317,8 +317,8 @@ public class LevelRenderer
                 {
                     var col = MaterialColors[(int) cell.Material - 1];
                     Raylib.DrawRectangle(
-                        x * Level.TileSize + 8, y * Level.TileSize + 8,
-                        Level.TileSize - 16, Level.TileSize - 16,
+                        x * Level.TileSize + 7, y * Level.TileSize + 7,
+                        Level.TileSize - 14, Level.TileSize - 14,
                         new Color(col.R, col.G, col.B, alpha)
                     );
                 }

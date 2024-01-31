@@ -341,9 +341,10 @@ public class TileEditor : IEditorMode
             // render selected material
             else if (window.IsMouseInLevel())
             {
-                Raylib.DrawRectangle(
-                    window.MouseCx * Level.TileSize + 8, window.MouseCy * Level.TileSize + 8,
-                    Level.TileSize - 16, Level.TileSize - 16,
+                // draw grid cursor
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
+                    1f / window.ViewZoom,
                     LevelRenderer.MaterialColors[selectedMaterialIdx]
                 );
 
