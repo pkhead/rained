@@ -61,6 +61,7 @@ public class LevelRenderer
     private Level Level { get => editor.Level; }
 
     public bool ViewGrid = true;
+    public bool ViewObscuredBeams = true;
 
     public Vector2 ViewTopLeft;
     public Vector2 ViewBottomRight;
@@ -83,10 +84,45 @@ public class LevelRenderer
             {
                 LevelCell c = Level.Layers[layer ,x,y];
 
+                var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
+                var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
+
                 switch (c.Cell)
                 {
                     case CellType.Solid:
-                        Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                        if (ViewObscuredBeams)
+                        {
+                            // extra logic to signify that there is a beam here
+                            // when beam is completely covered
+                            // this is done by not drawing on the space where there is a beam
+                            if (hasHBeam && hasVBeam)
+                            {
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, 8, 8, color);
+                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, color);
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, color);
+                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, color);
+                            }
+                            else if (hasHBeam)
+                            {
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, color);
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, color);
+                            }
+                            else if (hasVBeam)
+                            {
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, color);
+                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, color);
+                            }
+                            else
+                            {
+                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                            }
+                        }
+                        else
+                        {
+                            // view obscured beams is off, draw as normal
+                            Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                        }
+
                         break;
                         
                     case CellType.Platform:
@@ -142,16 +178,19 @@ public class LevelRenderer
                         break;
                 }
 
-                // draw horizontal beam
-                if ((c.Objects & LevelObject.HorizontalBeam) != 0)
+                if (c.Cell != CellType.Solid)
                 {
-                    Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, color);
-                }
+                    // draw horizontal beam
+                    if (hasHBeam)
+                    {
+                        Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, color);
+                    }
 
-                // draw vertical beam
-                if ((c.Objects & LevelObject.VerticalBeam) != 0)
-                {
-                    Raylib.DrawRectangle(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, color);
+                    // draw vertical beam
+                    if (hasVBeam)
+                    {
+                        Raylib.DrawRectangle(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, color);
+                    }
                 }
             }
         }

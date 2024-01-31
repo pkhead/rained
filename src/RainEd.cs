@@ -90,6 +90,11 @@ public class RainEd
                 {
                     editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;
                 }
+
+                if (ImGui.MenuItem("Obscured Beams", null, editorWindow.LevelRenderer.ViewObscuredBeams))
+                {
+                    editorWindow.LevelRenderer.ViewObscuredBeams = !editorWindow.LevelRenderer.ViewObscuredBeams;
+                }
                 
                 ImGui.EndMenu();
             }
