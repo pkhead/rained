@@ -134,6 +134,7 @@ public class Level
 
     public const int LayerCount = 3;
     public const int TileSize = 20;
+    public const int MaxCameraCount = 20;
 
     public static readonly string[] MaterialNames = new string[23]
     {
