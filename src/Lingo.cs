@@ -3,6 +3,13 @@ using System.Numerics;
 
 namespace Lingo
 {
+    public class ParseException : Exception
+    {
+        public ParseException() {}
+        public ParseException(string message) : base(message) {}
+        public ParseException(string message, Exception inner) : base(message, inner) {}
+    }
+
     public struct Color
     {
         public int R, G, B;
@@ -110,12 +117,12 @@ namespace Lingo
 
         private void Error(string msg)
         {
-            throw new Exception($"{savedLine}:{savedCharOffset}: {msg}");
+            throw new ParseException($"{savedLine}:{savedCharOffset}: {msg}");
         }
 
         public void BeginToken()
         {
-            if (tokenBegan) throw new Exception("BeginToken already called");
+            if (tokenBegan) throw new ParseException("BeginToken already called");
             tokenBegan = true;
 
             savedCharOffset = charOffset;
@@ -124,7 +131,7 @@ namespace Lingo
 
         public void EndToken(TokenType type, object? value = null)
         {
-            if (!tokenBegan) throw new Exception("BeginToken not called");
+            if (!tokenBegan) throw new ParseException("BeginToken not called");
             tokenBegan = false;
 
             tokens.Add(new Token()
@@ -391,7 +398,7 @@ namespace Lingo
         /*private void Error(string msg)
         {
             var tok = lastProcessedToken;
-            throw new Exception($"{tok.Line}:{tok.CharOffset}: {msg});
+            throw new ParseException($"{tok.Line}:{tok.CharOffset}: {msg});
         }*/
 
         private Token Expect(TokenType type)
@@ -399,7 +406,7 @@ namespace Lingo
             var tok = PopToken();
             if (tok.Type != type)
             {
-                throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected {type}, got {tok.Type}");
+                throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected {type}, got {tok.Type}");
             }
             return tok;
         }
@@ -409,7 +416,7 @@ namespace Lingo
             var tok = PopToken();
             if (tok.Type != TokenType.Integer && tok.Type != TokenType.Float)
             {
-                throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
+                throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
             }
 
             if (tok.Value is null) throw new NullReferenceException();
@@ -524,7 +531,7 @@ namespace Lingo
             }
 
             
-            throw new Exception($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
+            throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
         }
 
         private List<object> ReadTable()

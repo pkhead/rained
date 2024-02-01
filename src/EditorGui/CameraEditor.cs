@@ -149,7 +149,7 @@ public class CameraEditor : IEditorMode
                         level.Cameras.Remove(cameraHoveredOver);
                         cameraHoveredOver = null;
                         activeCamera = null;
-                    } else
+                    } else if (cornerHover >= 0)
                     {
                         cameraHoveredOver.CornerAngles[cornerHover] = 0f;
                         cameraHoveredOver.CornerOffsets[cornerHover] = 0f;

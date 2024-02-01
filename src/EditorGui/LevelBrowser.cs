@@ -432,7 +432,10 @@ public class LevelBrowser
             }
 
             if (isDone)
+            {
+                icons.Dispose();
                 ImGui.CloseCurrentPopup();
+            }
 
             // show error popup if necessary
             if (openErrorPopup)
@@ -446,8 +449,10 @@ public class LevelBrowser
             {
                 ImGui.Text(errorMsg);
                 if (ImGui.Button("OK"))
+                {
                     ImGui.CloseCurrentPopup();
-                
+                }
+
                 ImGui.EndPopup();
             }
 

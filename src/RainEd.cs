@@ -50,8 +50,10 @@ public class RainEd
         {
             level = LevelSerialization.Load(this, path);
         }
-        catch
+        catch (Exception e)
         {
+            Console.WriteLine("Error loading file " + path);
+            Console.WriteLine(e);
             ShowError("Could not load level");
         }
     }
