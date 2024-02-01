@@ -36,7 +36,7 @@ public class RainEd
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
 
-        FileBrowser.Open(FileBrowser.OpenMode.Write);
+        LevelBrowser.Open(LevelBrowser.OpenMode.Write, (string a) => Console.Write(a));
     }
 
     public void ShowError(string msg)
@@ -115,9 +115,9 @@ public class RainEd
 
         ImGui.ShowDemoWindow();
 
-        if (FileBrowser.Singleton is not null)
+        if (LevelBrowser.Singleton is not null)
         {
-            FileBrowser.Singleton.Render();
+            LevelBrowser.Singleton.Render();
         }
 
         // notification window
