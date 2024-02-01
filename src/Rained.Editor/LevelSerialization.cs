@@ -5,7 +5,7 @@ public static class LevelSerialization
 {
     public static Level Load(RainEd editor, string path)
     {
-        var parser = new Lingo.Parser(new StreamReader(path));
+        var parser = new Lingo.LingoParser(new StreamReader(path));
         List<List<object>> dataTables = parser.Read();
 
         List<Lingo.List> levelData = dataTables[0].Cast<Lingo.List>().ToList();

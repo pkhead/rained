@@ -1,6 +1,6 @@
 # MSBuild output
-/src/bin
-/src/obj
+**/bin
+**/obj
 
 # Visual Studio Code fieles
 /.vscode
