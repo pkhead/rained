@@ -9,9 +9,9 @@ git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-Build the rained.csproj file which is in the `src/` directory. Run it from the root directory.
+Build and run the .sln file from the root directory.
 ```bash
-dotnet run --project src/rained.csproj
+dotnet run
 ```
 
 ## Contributing
