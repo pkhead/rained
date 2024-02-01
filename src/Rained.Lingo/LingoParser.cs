@@ -57,7 +57,7 @@ public class LingoParser
             
             return ReadValue();
         }
-        
+
         // do this because even level file reading is janky
         catch (ParseException)
         {
@@ -153,7 +153,7 @@ public class LingoParser
             case TokenType.Float:
             case TokenType.Integer:
                 return tok.Value;
-
+            
             case TokenType.OpenBracket:
                 return ReadList();
             

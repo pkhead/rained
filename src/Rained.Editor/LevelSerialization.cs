@@ -140,9 +140,31 @@ public static class LevelSerialization
         if (levelCameraData is not null)
         {
             var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
+            var quadsList = (Lingo.List) levelCameraData.fields["quads"];
+
             foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
             {
                 level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 20f)));
+            }
+
+            int camIndex = 0;
+            foreach (Lingo.List quad in quadsList.values.Cast<Lingo.List>())
+            {
+                var ptsList = quad.values.Cast<Lingo.List>().ToArray();
+                
+                for (int i = 0; i < 4; i++)
+                {
+                    var a = ptsList[i].values[0];
+                    var b = ptsList[i].values[1];
+
+                    // i did not think this through
+                    // although, i'm not sure how to do Newtonsoft.Json-esque
+                    float angle = (a is float v0) ? v0 : (int)a;
+                    float offset = (b is float v1) ? v1 : (int)b;
+                    level.Cameras[camIndex].CornerAngles[i] = angle / 180f * MathF.PI; 
+                    level.Cameras[camIndex].CornerOffsets[i] = offset;
+                }
+                camIndex++;
             }
         }
         else
