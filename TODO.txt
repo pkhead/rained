@@ -24,6 +24,19 @@ Tile Editor:
 - WASD tile palette navigation (emulates joar editor controls)
 - draw culling
 
+Environment Editor:
+- seed, water level, light type, etc
+Light Editor:
+Effects Editor:
+Prop Editor:
+- instead of using keys to rotate/scale props, user will place them down first
+  and then use handles on the edge of the prop to rotate/scale them.
+  (i think this is fine, although i haven't done much prop editing myself
+  ...or much leditor experience in general...)
+- rope-type props will have a "Simulate" button in an always-visible prop properties field.
+  holding down this button will perform the simulation for as long as it is held.
+
+
 tile data format (from rwe+):
     {"tp": "tileHead", "data": ["point(C, T)", "N"]}
     C = Category ID (starting from 1) plus 2 (Stone = 3, Machinery = 15, Misc = 12)
