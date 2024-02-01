@@ -24,6 +24,9 @@ Tile Editor:
 - WASD tile palette navigation (emulates joar editor controls)
 - draw culling
 
+Camera Editor:
+- load camera corner transforms
+
 Environment Editor:
 - seed, water level, light type, etc
 Light Editor:

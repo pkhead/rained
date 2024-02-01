@@ -437,7 +437,7 @@ public class TileEditor : IEditorMode
                     // check on second layer
                     if (window.WorkLayer < 2)
                     {
-                        if ((isHead || spec2Int >= 0) && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
+                        if (spec2Int >= 0 && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
                             return TilePlacementStatus.Overlap;
                     }
                 }
