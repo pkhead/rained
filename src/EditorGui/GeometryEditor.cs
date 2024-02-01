@@ -98,7 +98,7 @@ public class GeometryEditor : IEditorMode
     };
 
     private Tool selectedTool = Tool.Wall;
-
+    private bool isToolActive = false;
     private readonly RlManaged.Texture2D toolIcons;
 
     // tool rect - for wall/air/inverse/geometry tools
@@ -356,17 +356,25 @@ public class GeometryEditor : IEditorMode
                 // activate tool on click
                 // or if user moves mouse on another tile space
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
-                    window.Editor.BeginChange();
-                    
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left) ||
-                    (Raylib.IsMouseButtonDown(MouseButton.Left) && (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)))
                 {
-                    if (!isToolRectActive)
-                        ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
+                    isToolActive = true;
+                    window.Editor.BeginChange();
                 }
+                
+                if (isToolActive)
+                {
+                    if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                    {
+                        isToolActive = false;
+                        window.Editor.EndChange();
+                    }
 
-                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
-                    window.Editor.EndChange();
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
+                    {
+                        if (!isToolRectActive)
+                            ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
+                    }
+                }
             }
         }
         
@@ -601,5 +609,6 @@ public class GeometryEditor : IEditorMode
         }
         
         isToolRectActive = false;
+        isToolActive = false;
     }
 }

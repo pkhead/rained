@@ -229,7 +229,10 @@ public class LevelBrowser
                 {
                     var oldDir = cwd;
                     if (SetPath(newPath))
+                    {
                         forwardStack.Push(oldDir);
+                        selected = -1;
+                    }
                 }
 
             } ImGui.SameLine();
@@ -241,7 +244,10 @@ public class LevelBrowser
                 {
                     var oldDir = cwd;
                     if (SetPath(newPath))
+                    {
                         backStack.Push(oldDir);
+                        selected = -1;
+                    }
                 }  
             } ImGui.SameLine();
 
@@ -250,6 +256,7 @@ public class LevelBrowser
                 var oldDir = cwd;
                 if (SetPath(cwd.Join("..")))
                 {
+                    selected = -1;
                     backStack.Push(oldDir);
                     forwardStack.Clear();
                 }
@@ -335,12 +342,18 @@ public class LevelBrowser
                         rlImGui.ImageRect(icons, 13, 13, new Rectangle(fileTypeIcon * 13, 0, 13, 13));
                         ImGui.SameLine();
                         
-                        if (ImGui.Selectable(entry.Name, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
+                        var entryName = Path.GetFileNameWithoutExtension(entry.Name);
+                        if (ImGui.Selectable(entryName, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
                         {
                             selected = i;
 
                             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                                 ok = true;
+                        }
+
+                        if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
+                        {
+                            nameBuf = entryName;
                         }
                     }
                 }
@@ -356,44 +369,64 @@ public class LevelBrowser
             }
             ImGui.SameLine();
 
-            if (mode == OpenMode.Write)
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(-0.0001f);
+
+            var oldName = nameBuf;
+            var enterPressed = ImGui.InputTextWithHint("##Name", "Level Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
+        
+            // find a file/directory that has the same name
+            if (nameBuf != oldName)
             {
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(-0.0001f);
+                // modify name to match current filter (txt files)
+                string name = nameBuf;
+                if (name.Length <= 4 || name.Substring(name.Length - 4, 4) != ".txt")
+                    name += ".txt";
+                
+                selected = -1;
 
-                var oldName = nameBuf;
-                var enterPressed = ImGui.InputTextWithHint("##Name", "Level Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
-            
-                // find a file/directory that has the same name
-                if (nameBuf != oldName)
+                for (int i = 0; i < entries.Count; i++)
                 {
-                    selected = -1;
-
-                    for (int i = 0; i < entries.Count; i++)
+                    if (entries[i].Name == name)
                     {
-                        if (entries[i].Name == nameBuf)
-                        {
-                            selected = i;
-                            scrollToSelected = true;
-                            break;
-                        }
+                        selected = i;
+                        scrollToSelected = true;
+                        break;
                     }
-
-                    if (enterPressed) ok = true;
                 }
+
+                if (enterPressed) ok = true;
             }
 
             if (ok)
             {
                 if (mode == OpenMode.Write)
                 {
-                    if (selected >= 0)
+                    if (selected >= 0 && entries[selected].Type == EntryType.Directory)
+                        ActivateEntry(entries[selected]);
+                    else
                     {
-                        var entry = entries[selected];
-                        if (entry.Type == EntryType.Directory)
+                        if (nameBuf != "" && nameBuf != "." && nameBuf != "..")
                         {
-                            ActivateEntry(entry);
+                            // modify name to match current filter (txt files)
+                            string name = nameBuf;
+                            if (name.Length <= 4 || name.Substring(name.Length - 4, 4) != ".txt")
+                                name += ".txt";
+                            
+                            isDone = true;
+                            callback(Path.Join(cwd.ToSystemPath(root), name));
                         }
+                    }
+                }
+                else if (mode == OpenMode.Read && selected >= 0)
+                {
+                    var ent = entries[selected];
+                    if (ent.Type == EntryType.Directory)
+                        ActivateEntry(ent);
+                    else
+                    {
+                        isDone = true;
+                        callback(Path.Join(cwd.ToSystemPath(root), ent.Name));
                     }
                 }
             }

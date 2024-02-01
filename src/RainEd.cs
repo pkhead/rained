@@ -7,7 +7,7 @@ namespace RainEd;
 
 public class RainEd
 {
-    private readonly Level level;
+    private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     public readonly Tiles.Database TileDatabase;
     private readonly ChangeHistory changeHistory;
@@ -35,8 +35,6 @@ public class RainEd
         LevelGraphicsTexture = new("data/level-graphics.png");
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
-
-        LevelBrowser.Open(LevelBrowser.OpenMode.Write, (string a) => Console.Write(a));
     }
 
     public void ShowError(string msg)
@@ -44,6 +42,18 @@ public class RainEd
         notification = msg;
         notificationTime = 3f;
         notifFlash = 0f;
+    }
+
+    private void LoadLevel(string path)
+    {
+        try
+        {
+            level = LevelSerialization.Load(this, path);
+        }
+        catch
+        {
+            ShowError("Could not load level");
+        }
     }
 
     public void Draw(float dt)
@@ -58,7 +68,10 @@ public class RainEd
             if (ImGui.BeginMenu("File"))
             {
                 ImGui.MenuItem("New");
-                ImGui.MenuItem("Open");
+                if (ImGui.MenuItem("Open"))
+                {
+                    LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel);
+                }
                 ImGui.MenuItem("Save");
                 ImGui.MenuItem("Save As...");
                 ImGui.Separator();
