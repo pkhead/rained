@@ -167,7 +167,7 @@ public class Database
 
         Console.WriteLine("Reading tile init data...");
         var parser = new Lingo.LingoParser(new StreamReader("drizzle/Drizzle.Data/Graphics/Init.txt"));
-        List<List<object>> dataRoot = parser.Read();
+        List<List<object>> dataRoot = parser.ReadTileInitFormat();
 
         Console.WriteLine("Parsing tile init data...");
         int groupIndex = 0;

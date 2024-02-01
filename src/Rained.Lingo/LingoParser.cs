@@ -19,7 +19,9 @@ public class LingoParser
         tokenParser = new TokenParser(reader);
     }
 
-    public List<List<object>> Read()
+    // this reads in the tile init format
+    // TODO: include this code in TileDatabase instead of here 
+    public List<List<object>> ReadTileInitFormat()
     {
         tokens.Clear();
         foreach (Token tok in tokenParser.Read())
@@ -42,6 +44,28 @@ public class LingoParser
 
         return tables;
     }
+
+    private object? Read()
+    {
+        try
+        {
+            tokens.Clear();
+            foreach (Token tok in tokenParser.Read())
+            {
+                tokens.Enqueue(tok);
+            }
+            
+            return ReadValue();
+        }
+        
+        // do this because even level file reading is janky
+        catch (ParseException)
+        {
+            return null;
+        }
+    }
+
+    public static object? Read(string str) => new LingoParser(str).Read();
 
     private Token PeekToken() => tokens.Peek();
     private Token PopToken() => tokens.Dequeue();

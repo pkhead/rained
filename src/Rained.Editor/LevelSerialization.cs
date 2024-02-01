@@ -5,15 +5,21 @@ public static class LevelSerialization
 {
     public static Level Load(RainEd editor, string path)
     {
-        var parser = new Lingo.LingoParser(new StreamReader(path));
-        List<List<object>> dataTables = parser.Read();
+        var levelData = File.ReadAllLines(path);
+        
+        // obtain level data from lines
+        Lingo.List levelGeometry = (Lingo.List)
+            (Lingo.LingoParser.Read(levelData[0]) ?? throw new Exception("No geometry data"));
+        
+        Lingo.List levelTileData = (Lingo.List)
+            (Lingo.LingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
+        
+        Lingo.List levelProperties = (Lingo.List)
+            (Lingo.LingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
+        
+        Lingo.List? levelCameraData = (Lingo.List?) Lingo.LingoParser.Read(levelData[6]);
 
-        List<Lingo.List> levelData = dataTables[0].Cast<Lingo.List>().ToList();
-
-        Lingo.List levelGeometry = levelData[0];
-        Lingo.List levelProperties = levelData[5];
-        Lingo.List levelCameraData = levelData[6];
-
+        // get level dimensions
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];
         Lingo.List extraTiles = (Lingo.List) levelProperties.fields["extraTiles"];
 
@@ -53,7 +59,6 @@ public static class LevelSerialization
         }
 
         // read tile data
-        Lingo.List levelTileData = levelData[1];
         Lingo.List tileMatrix = (Lingo.List) levelTileData.fields["tlMatrix"];
 
         // get default material
@@ -132,10 +137,17 @@ public static class LevelSerialization
         }
 
         // read camear data
-        var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
-        foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
+        if (levelCameraData is not null)
         {
-            level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 20f)));
+            var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
+            foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
+            {
+                level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 20f)));
+            }
+        }
+        else
+        {
+            level.Cameras.Add(new Camera());   
         }
 
         return level;
