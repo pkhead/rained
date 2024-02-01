@@ -177,7 +177,7 @@ public class Level
         "Trash",
         "Invisible",
         "LargeTrash",
-        "3D Bricks",
+        "3DBricks",
         "Random Machines",
         "Dirt",
         "Ceramic Tile",
