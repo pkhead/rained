@@ -8,46 +8,43 @@ namespace RainEd
 {
     public class Boot
     {
-        static void SplashScreen()
-        {
-            /*Raylib.InitWindow(480, 360, "Rained");
-            var splashScreen = new RlManaged.Texture2D("data/splash-screen.png");
-            Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.Gray);
-            Raylib.DrawTexture(
-                splashScreen,
-                (int)((1280f - splashScreen.Width) / 2f), (int)((800 - splashScreen.Height) / 2f),
-                Color.White
-            );
-            Raylib.EndDrawing();*/
-            var win = new RenderWindow(new VideoMode(480, 360), "Rained Splash Screen", Styles.None);
-            Texture texture = new("data/splash-screen.png");
-            var sprite = new Sprite(texture);
-
-            while (win.IsOpen)
-            {
-                win.DispatchEvents();
-                win.Clear();
-                win.Draw(sprite);
-                win.Display();
-            }
-        }
-
         static void Main(string[] args)
         {
+            // parse command arguments
+            bool showSplashScreen = true;
+            string levelToLoad = string.Empty;
+
+            foreach (var str in args)
+            {
+                if (str[0] == '-')
+                {
+                    if (str == "--no-splash-screen")
+                        showSplashScreen = false;
+                }
+                else
+                {
+                    levelToLoad = str;
+                }
+            }
+            
+            RenderWindow? splashScreenWindow = null;
+
             // create splash screen window using sfml
             // to display while editor is loading
             // funny how i have to use two separate window/graphics libraries
             // cus raylib doesn't have multi-window support
             // I was originally going to use only SFML, but it didn't have any
             // good C# ImGui integration libraries. (Raylib did, though)
-            var splashScreenWindow = new RenderWindow(new VideoMode(480, 360), "Rained Splash Screen", Styles.None);
-            Texture texture = new("data/splash-screen.png");
-            var sprite = new Sprite(texture);
+            if (showSplashScreen)
+            {
+                splashScreenWindow = new RenderWindow(new VideoMode(480, 360), "Rained Splash Screen", Styles.None);
+                Texture texture = new("data/splash-screen.png");
+                var sprite = new Sprite(texture);
 
-            splashScreenWindow.Clear();
-            splashScreenWindow.Draw(sprite);
-            splashScreenWindow.Display();
+                splashScreenWindow.Clear();
+                splashScreenWindow.Draw(sprite);
+                splashScreenWindow.Display();
+            }
 
             Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow);
             Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
@@ -59,13 +56,13 @@ namespace RainEd
             rlImGui.Setup(true, true);
             rlImGui.SetIniFilename("data/imgui.ini");
 
-            RainEd app = new(args.Length > 0 ? args[0] : "");
+            RainEd app = new(levelToLoad);
             Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
             
             // for some reason, closing the window bugs
             // out raylib, so i just set it invisible
             // and close it when the program ends
-            splashScreenWindow.SetVisible(false);
+            if (splashScreenWindow is not null) splashScreenWindow.SetVisible(false);
             
             while (!Raylib.WindowShouldClose())
             {
@@ -76,7 +73,7 @@ namespace RainEd
 
             rlImGui.Shutdown();
             Raylib.CloseWindow();
-            splashScreenWindow.Close();
+            if (splashScreenWindow is not null) splashScreenWindow.Close();
         }
     }
 }
