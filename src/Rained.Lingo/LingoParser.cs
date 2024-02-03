@@ -4,49 +4,14 @@ namespace Lingo;
 
 public class LingoParser
 {
-    private readonly TokenParser tokenParser;
     private readonly Queue<Token> tokens = new();
 
-    public LingoParser(StreamReader stream)
-    {
-        tokenParser = new TokenParser(stream);
-    }
-
-    public LingoParser(string str)
+    public object? Read(string str)
     {
         var stream = new MemoryStream(Encoding.ASCII.GetBytes(str));
         var reader = new StreamReader(stream);
-        tokenParser = new TokenParser(reader);
-    }
-
-    // this reads in the tile init format
-    // TODO: include this code in TileDatabase instead of here 
-    public List<List<object>> ReadTileInitFormat()
-    {
-        tokens.Clear();
-        foreach (Token tok in tokenParser.Read())
-        {
-            tokens.Enqueue(tok);
-        }
-
-        var tables = new List<List<object>>();
+        var tokenParser = new TokenParser(reader);
         
-        if (PeekToken().Type == TokenType.Hyphen)
-            PopToken();
-        
-        while (tokens.Count > 0)
-        {
-            tables.Add(ReadTable());
-
-            if (tokens.Count > 0 && PeekToken().Type == TokenType.Hyphen)
-                PopToken();
-        }
-
-        return tables;
-    }
-
-    private object? Read()
-    {
         try
         {
             tokens.Clear();
@@ -64,8 +29,6 @@ public class LingoParser
             return null;
         }
     }
-
-    public static object? Read(string str) => new LingoParser(str).Read();
 
     private Token PeekToken() => tokens.Peek();
     private Token PopToken() => tokens.Dequeue();
@@ -207,25 +170,5 @@ public class LingoParser
 
         
         throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
-    }
-
-    private List<object> ReadTable()
-    {
-        List<object> items = new();
-
-        while (tokens.Count > 0 && PeekToken().Type != TokenType.Hyphen)
-        {
-            var val = ReadValue();
-            if (val is not null)
-                items.Add(val);
-            
-            // for some reason in the Custom/DSMachines section,
-            // there are unmatched closing brackets. but editors still parse it correctly?
-            // im not sure what that's supposed to mean, so i just ignore dangling closing brackets
-            if (tokens.Count > 0 && PeekToken().Type == TokenType.CloseBracket)
-                PopToken();
-        }
-
-        return items;
     }
 }

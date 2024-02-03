@@ -177,8 +177,8 @@ public class CameraEditor : IEditorMode
         var p3 = camera.GetCornerPosition(3, true) * Level.TileSize;
         var quadColor = isHovered ? new Color(50, 255, 50, 60) : new Color(50, 255, 50, 30);
 
-        Raylib.DrawTriangle(p0, p2, p1, quadColor);
-        Raylib.DrawTriangle(p2, p3, p1, quadColor);
+        Raylib.DrawTriangle(p0, p3, p1, quadColor);
+        Raylib.DrawTriangle(p3, p2, p1, quadColor);
         
         // draw full rect ouline
         Raylib.DrawRectangleLinesEx(

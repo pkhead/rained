@@ -6,18 +6,19 @@ public static class LevelSerialization
     public static Level Load(RainEd editor, string path)
     {
         var levelData = File.ReadAllLines(path);
-        
+        var lingoParser = new Lingo.LingoParser();
+           
         // obtain level data from lines
         Lingo.List levelGeometry = (Lingo.List)
-            (Lingo.LingoParser.Read(levelData[0]) ?? throw new Exception("No geometry data"));
+            (lingoParser.Read(levelData[0]) ?? throw new Exception("No geometry data"));
         
         Lingo.List levelTileData = (Lingo.List)
-            (Lingo.LingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
+            (lingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
         
         Lingo.List levelProperties = (Lingo.List)
-            (Lingo.LingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
+            (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
         
-        Lingo.List? levelCameraData = (Lingo.List?) Lingo.LingoParser.Read(levelData[6]);
+        Lingo.List? levelCameraData = (Lingo.List?) lingoParser.Read(levelData[6]);
 
         // get level dimensions
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];

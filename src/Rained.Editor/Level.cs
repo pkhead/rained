@@ -103,6 +103,7 @@ public class Camera
     // quad save format: [A, O]
     //  A: clockwise angle in degrees, where 0 is up
     //  O: offset number from 0 to 1 (1.0 translate to 4 tiles) 
+    // corner order is: TL, TR, BR, BL
     public Vector2 Position;
     public float[] CornerOffsets = new float[4];
     public float[] CornerAngles = new float[4];
@@ -129,10 +130,9 @@ public class Camera
 
     public Vector2 GetCornerPosition(int cornerIndex, bool offset)
     {
-        // bit trick to get the X and Y percentage from the cornerIndex
-        int x = cornerIndex & 1;
+        int x = (cornerIndex == 1 || cornerIndex == 2) ? 1 : 0;
         int y = (cornerIndex & 2) >> 1;
-
+        
         return offset ?
             Position + new Vector2(WidescreenSize.X * x, WidescreenSize.Y * y) + GetCornerOffset(cornerIndex)
         :

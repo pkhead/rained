@@ -56,7 +56,6 @@ public enum TokenType
     CloseParen,
     OpenParen,
     Comma,
-    Hyphen,
     Colon,
     
     Void,

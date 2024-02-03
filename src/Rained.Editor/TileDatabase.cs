@@ -166,27 +166,33 @@ public class Database
         Categories = new();
 
         Console.WriteLine("Reading tile init data...");
-        var parser = new Lingo.LingoParser(new StreamReader("drizzle/Drizzle.Data/Graphics/Init.txt"));
-        List<List<object>> dataRoot = parser.ReadTileInitFormat();
+        var lingoParser = new Lingo.LingoParser();
 
-        Console.WriteLine("Parsing tile init data...");
+        TileCategory? curGroup = null;
         int groupIndex = 0;
-        foreach (List<object> categoriesTable in dataRoot)
+        foreach (var line in File.ReadLines("drizzle/Drizzle.Data/Graphics/Init.txt"))
         {
-            var header = (Lingo.List) categoriesTable[0];
-            var group = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            
+            // read header
+            if (line[0] == '-')
             {
-                Index = groupIndex
-            };
+                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Invalid header"));
+                curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
+                {
+                    Index = groupIndex
+                };
 
-            groupIndex++;
-            Categories.Add(group);
-
-            Console.WriteLine($"Register category {group.Name}");
-
-            for (int i = 1; i < categoriesTable.Count; i++)
+                groupIndex++;
+                Categories.Add(curGroup);
+                
+                Console.WriteLine($"Register category {curGroup.Name}");
+            }
+            else
             {
-                if (categoriesTable[i] is not Lingo.List tileInit) throw new Exception("Invalid tile init file");
+                if (curGroup is null) throw new Exception("Invalid tile init file");
+
+                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Invalid tile init file"));
 
                 var name = (string) tileInit.fields["nm"];
                 var tp = (string) tileInit.fields["tp"];
@@ -219,7 +225,7 @@ public class Database
                 try {
                     var tileData = new TileData(
                         name: name,
-                        category: group,
+                        category: curGroup,
                         type: tileType,
                         width: (int)size.X, height: (int)size.Y,
                         bfTiles: bfTiles,
@@ -228,7 +234,7 @@ public class Database
                         specs2: specs2
                     );
 
-                    group.Tiles.Add(tileData);
+                    curGroup.Tiles.Add(tileData);
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {

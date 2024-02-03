@@ -76,7 +76,7 @@ internal class TokenParser
         // Unix: LF
         // Mac: CR
         // Windows: CR LF
-        bool isNewline = false;
+        bool isNewline;
         if (ch == '\r')
         {
             if ((char) stream.Peek() == '\n')
@@ -233,7 +233,7 @@ internal class TokenParser
                 }
                 else
                 {
-                    EndToken(TokenType.Hyphen);
+                    throw new ParseException("Unexpected hyphen");
                 }
             }
 
