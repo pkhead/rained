@@ -67,6 +67,7 @@ public class EditorWindow
         LevelRenderer = new LevelRenderer(editor);
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));
+        editorModes.Add(new LightEditor(this));
         editorModes.Add(new CameraEditor(this));
     }
 

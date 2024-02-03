@@ -7,7 +7,7 @@ namespace RainEd;
 public class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
-    private EditorWindow window;
+    private readonly EditorWindow window;
     private Camera? activeCamera = null;
     private int activeCorner = -1;
     private Vector2 mouseOffset = new(); // mouse offset from camera position when drag starts

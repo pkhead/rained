@@ -3,8 +3,6 @@ Overall:
   (i assume this is because the editor is supposed to ignore erroneous lines...)
 - saving
 - help pages/hints/tooltips/whatever
-- RenderGrid and RenderTile take in window view data instead of being sent it
-  when functions are being called
 
 Level Properties:
 

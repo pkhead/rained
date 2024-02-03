@@ -114,6 +114,9 @@ namespace RlManaged
         public int Width { get => raw.Width; }
         public int Height { get => raw.Height; }
 
+        public Texture2D()
+        {}
+
         public Texture2D(Raylib_cs.Image image)
         {
             raw = Raylib.LoadTextureFromImage(image);

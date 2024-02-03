@@ -1,0 +1,14 @@
+# this file is a listing of all available light images.
+# i've done it this way so that each light image appears
+# in a predetermined order.
+pxl.png
+bigCircle.png
+leaves.png
+oilyLight.png
+directionalLight.png
+blobLight1.png
+blobLight2.png
+wormsLight.png
+crackLight.png
+holeLight.png
+roundedRectLight.png
