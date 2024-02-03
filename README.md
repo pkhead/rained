@@ -9,9 +9,10 @@ git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-Build and run the .sln file from the root directory.
+Build and run Rained.Editor from the root directory
 ```bash
-dotnet run
+dotnet build
+dotnet run --project src/Rained.Editor/Rained.Editor.csproj
 ```
 
 ## Contributing
