@@ -149,8 +149,8 @@ public class TileEditor : IEditorMode
             Rlgl.PopMatrix();
         }
 
-        levelRender.RenderGrid(0.5f / window.ViewZoom);
-        levelRender.RenderBorder(1.0f / window.ViewZoom);
+        levelRender.RenderGrid();
+        levelRender.RenderBorder();
 
         static void drawTile(int tileInt, int x, int y, float lineWidth, Color color)
         {

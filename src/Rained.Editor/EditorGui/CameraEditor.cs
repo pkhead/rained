@@ -41,7 +41,7 @@ public class CameraEditor : IEditorMode
         }
 
         // levelRender.RenderGrid(0.5f / window.ViewZoom);
-        levelRender.RenderBorder(1.0f / window.ViewZoom);
+        levelRender.RenderBorder();
 
         // mouse-pick cameras
         Camera? cameraHoveredOver = null;

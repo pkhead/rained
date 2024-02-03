@@ -11,9 +11,7 @@ Level Properties:
 Geometry Editor:
 - select and copy/paste
 - ability to view tiles
-- shortcut entrance points towards any shortcut-related object (room entrance, den, scavenger hole,)
-- right-click to remove selected tool
-  (redundancy is good)
+- right-click to remove cells/objects
 - OPTIMIZATION: render level in chunks, only re-render updated chunks
 
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
@@ -22,16 +20,21 @@ Tile Editor:
 - material brush size
 - press E for tile/material eyedropper
 - WASD tile palette navigation (emulates joar editor controls)
+- copy henry
+  (use two selectable lists for tile category and tile name)
 - draw culling
 
 Camera Editor:
-- camera corner transform seems to load incorrectly
+- way to duplicate camera corner transform
 
 Environment Editor:
 - seed, water level, light type, etc
-Light Editor:
-Effects Editor:
-Prop Editor:
+
+Light Editor: (TODO)
+
+Effects Editor: (TODO)
+
+Prop Editor: (TODO)
 - instead of using keys to rotate/scale props, user will place them down first
   and then use handles on the edge of the prop to rotate/scale them.
   (i think this is fine, although i haven't done much prop editing myself

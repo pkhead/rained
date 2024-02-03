@@ -252,8 +252,8 @@ public class GeometryEditor : IEditorMode
         var objColor = new Color(255, 255, 255, foregroundAlpha);
         levelRender.RenderObjects(objColor);
         levelRender.RenderShortcuts(Color.White);
-        levelRender.RenderGrid(0.5f / window.ViewZoom);
-        levelRender.RenderBorder(1.0f / window.ViewZoom);
+        levelRender.RenderGrid();
+        levelRender.RenderBorder();
 
         // WASD navigation
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)

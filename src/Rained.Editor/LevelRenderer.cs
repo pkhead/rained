@@ -1,5 +1,4 @@
 using Raylib_cs;
-using RlManaged;
 using System.Numerics;
 
 namespace RainEd;
@@ -61,14 +60,46 @@ public class LevelRenderer
     private Level Level { get => editor.Level; }
 
     public bool ViewGrid = true;
-    public bool ViewObscuredBeams = true;
+    public bool ViewObscuredBeams = false;
 
     public Vector2 ViewTopLeft;
     public Vector2 ViewBottomRight;
+    public float ViewZoom = 1f;
+    private float lastViewZoom = 0f;
+
+    private RlManaged.Texture2D? gridTexture;
 
     public LevelRenderer(RainEd editor)
     {
         this.editor = editor;
+
+        ReloadGridTexture();
+    }
+
+    public void ReloadGridTexture()
+    {
+        if (ViewZoom == lastViewZoom) return;
+        lastViewZoom = ViewZoom;
+
+        var imageW = (int)(Level.TileSize * ViewZoom * 2); 
+        var imageH = (int)(Level.TileSize * ViewZoom * 2);
+        var image = new RlManaged.Image(imageW, imageH, new Color(0, 0, 0, 0));
+
+        var majorLineCol = new Color(255, 255, 255, 100);
+        var minorLineCol = new Color(255, 255, 255, 60);
+        //var majorLineCol = new Color(255, 255, 255, 255);
+
+        // minor grid lines
+        Raylib.ImageDrawLine(ref image.Ref(), imageW / 2, 0, imageW / 2, imageH, minorLineCol);
+        Raylib.ImageDrawLine(ref image.Ref(), 0, imageH / 2, imageW, imageH / 2, minorLineCol);
+
+        // major lines
+        Raylib.ImageDrawLine(ref image.Ref(), 0, 0, imageW, 0, majorLineCol);
+        Raylib.ImageDrawLine(ref image.Ref(), 0, 0, 0, imageH, majorLineCol);
+
+        gridTexture?.Dispose();
+        gridTexture = new RlManaged.Texture2D(image);
+        image.Dispose();
     }
 
     public void RenderGeometry(int layer, Color color)
@@ -232,7 +263,11 @@ public class LevelRenderer
         {
             if (x < 0 || y < 0) return false;
             if (x >= Level.Width || y >= Level.Height) return false;
-            return Level.Layers[0,x,y].Has(LevelObject.Shortcut);
+
+            foreach (var objType in ShortcutObjects)
+                if (Level.Layers[0,x,y].Has(objType)) return true;
+
+            return false;
         }
 
         int viewL = (int) Math.Floor(ViewTopLeft.X);
@@ -365,10 +400,26 @@ public class LevelRenderer
         }
     }
 
-    public void RenderGrid(float lineWidth)
+    public void RenderGrid()
     {
         if (!ViewGrid) return;
 
+        ReloadGridTexture();
+        if (gridTexture is null) throw new NullReferenceException();
+
+        var levelW = editor.Level.Width;
+        var levelH = editor.Level.Height;
+
+        Raylib.DrawTexturePro(
+            texture:    gridTexture,
+            source:     new Rectangle(0, 0, gridTexture.Width * levelW, gridTexture.Height * levelH),
+            dest:       new Rectangle(0, 0, Level.TileSize * levelW * 2, Level.TileSize * levelH * 2),
+            origin:     Vector2.Zero,
+            rotation:   0f,
+            tint:       Color.White
+        );
+        
+        /*var lineWidth = 0.5f / ViewZoom;
         int viewL = (int) Math.Floor(ViewTopLeft.X);
         int viewT = (int) Math.Floor(ViewTopLeft.Y);
         int viewR = (int) Math.Ceiling(ViewBottomRight.X);
@@ -398,11 +449,13 @@ public class LevelRenderer
                     new Color(255, 255, 255, 100)
                 );
             }
-        }
+        }*/
     }
 
-    public void RenderBorder(float lineWidth)
+    public void RenderBorder()
     {
+        var lineWidth = 1f / ViewZoom;
+
         int borderRight = Level.Width - Level.BufferTilesRight;
         int borderBottom = Level.Height - Level.BufferTilesBot;
         int borderW = borderRight - Level.BufferTilesLeft;

@@ -217,13 +217,15 @@ public class EditorWindow
         Rlgl.Scalef(viewZoom, viewZoom, 1f);
         Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
 
+        // send view info to the level renderer
         var viewportW = canvasWidget.RenderTexture.Texture.Width;
         var viewportH = canvasWidget.RenderTexture.Texture.Height;
         LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
         LevelRenderer.ViewBottomRight =
             (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
             / Level.TileSize;
-        
+        LevelRenderer.ViewZoom = viewZoom;
+
         // obtain mouse coordinates
         mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
         mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / Level.TileSize;
