@@ -11,6 +11,8 @@ public class LightEditor : IEditorMode
 
     public List<RlManaged.Texture2D> lightTextures;
 
+    private RlManaged.RenderTexture2D? lightmapRt;
+
     public LightEditor(EditorWindow window)
     {
         this.window = window;
@@ -34,6 +36,31 @@ public class LightEditor : IEditorMode
         }
 
         Console.WriteLine("Done!");
+    }
+
+    public void Load()
+    {
+        lightmapRt?.Dispose();
+
+        var lightmapImg = window.Editor.Level.LightMap;
+
+        // get texture of lightmap image
+        var lightmapTex = new RlManaged.Texture2D(lightmapImg);
+
+        // get into a render texture
+        lightmapRt = new RlManaged.RenderTexture2D(lightmapImg.Width, lightmapImg.Height);
+        Raylib.BeginTextureMode(lightmapRt);
+        Raylib.ClearBackground(Color.Black);
+        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
+        Raylib.EndTextureMode();
+
+        lightmapTex.Dispose();
+    }
+
+    public void Unload()
+    {
+        lightmapRt?.Dispose();
+        lightmapRt = null;
     }
 
     public void DrawToolbar()
@@ -80,5 +107,16 @@ public class LightEditor : IEditorMode
         }
 
         levelRender.RenderBorder();
+
+        // render light
+        if (lightmapRt is not null)
+        {
+            Raylib.DrawTextureRec(
+                texture: lightmapRt.Texture,
+                new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
+                new Vector2(-150, -150),
+                new Color(255, 255, 255, 100)
+            );
+        }
     }
 }

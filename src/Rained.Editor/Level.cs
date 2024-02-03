@@ -1,4 +1,5 @@
 using System.Numerics;
+using Raylib_cs;
 namespace RainEd;
 
 public enum CellType : sbyte
@@ -186,6 +187,19 @@ public class Level
         "Ridge"
     };
 
+    private RlManaged.Image lightMap;
+    public RlManaged.Image LightMap {
+        get => lightMap;
+        set
+        {
+            if (value.Width != lightMap.Width || value.Height != lightMap.Height)
+                throw new Exception("Mismatched lightmap size");
+
+            lightMap.Dispose();
+            lightMap = value;
+        }
+    }
+
     public Level(RainEd editor, int width = 72, int height = 43)
     {
         this.editor = editor;
@@ -197,8 +211,8 @@ public class Level
         BufferTilesRight = 12;
         BufferTilesBot = 5;
 
+        // initialize layers
         Layers = new LevelCell[LayerCount,Width,Height];
-
         for (int l = 0; l < LayerCount; l++)
         {
             for (int x = 0; x < Width; x++)
@@ -209,6 +223,9 @@ public class Level
                 }
             }
         }
+
+        // initialize light map
+        lightMap = new RlManaged.Image(Width * 20 + 300, Height * 20 + 300, Color.Black);
     }
 
     public static Level NewDefaultLevel(RainEd editor)

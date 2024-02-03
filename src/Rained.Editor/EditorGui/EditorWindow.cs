@@ -259,17 +259,17 @@ public class EditorWindow
             }
         }
 
-        // keep drawing in level bounds
+        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
+        Rlgl.PopMatrix();
+    }
+
+    public void BeginLevelScissorMode()
+    {
         Raylib.BeginScissorMode(
             (int) (-viewOffset.X * viewZoom),
             (int) (-viewOffset.Y * viewZoom),
-            (int) (level.Width * Level.TileSize * viewZoom),
-            (int) (level.Height * Level.TileSize * viewZoom)
+            (int) (Editor.Level.Width * Level.TileSize * viewZoom),
+            (int) (Editor.Level.Height * Level.TileSize * viewZoom)
         );
-
-        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
-        Raylib.EndScissorMode();
-
-        Rlgl.PopMatrix();
     }
 }

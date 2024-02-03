@@ -113,7 +113,10 @@ public class TileEditor : IEditorMode
         }
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame) {
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    {
+        window.BeginLevelScissorMode();
+
         var wasToolActive = isToolActive;
         isToolActive = false;
 
@@ -402,6 +405,8 @@ public class TileEditor : IEditorMode
 
         if (wasToolActive && !isToolActive)
             window.Editor.EndChange();
+        
+        Raylib.EndScissorMode();
     }
 
     private enum TilePlacementStatus

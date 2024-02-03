@@ -209,6 +209,8 @@ public class GeometryEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
+        window.BeginLevelScissorMode();
+
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
 
@@ -380,6 +382,8 @@ public class GeometryEditor : IEditorMode
         
         lastMouseX = window.MouseCx;
         lastMouseY = window.MouseCy;
+
+        Raylib.EndScissorMode();
     }
 
     private bool toolPlaceMode;

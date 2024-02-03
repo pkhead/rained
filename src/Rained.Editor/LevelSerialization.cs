@@ -173,6 +173,13 @@ public static class LevelSerialization
             level.Cameras.Add(new Camera());   
         }
 
+        // read light data
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        if (File.Exists(lightPath))
+        {
+            level.LightMap = new RlManaged.Image(lightPath);
+        }
+
         return level;
     }
 }
