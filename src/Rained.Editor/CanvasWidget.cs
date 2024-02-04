@@ -32,11 +32,11 @@ public class UICanvasWidget
 
         if (width > 0 && height > 0)
         {
-            renderTexture = new(width, height);
+            renderTexture = RlManaged.RenderTexture2D.Load(width, height);
         }
         else
         {
-            renderTexture = new(1, 1);
+            renderTexture = RlManaged.RenderTexture2D.Load(1, 1);
         }
 
         hovered = false;
@@ -61,7 +61,7 @@ public class UICanvasWidget
             curHeight = newHeight;
 
             renderTexture?.Dispose();
-            renderTexture = new(curWidth, curHeight);
+            renderTexture = RlManaged.RenderTexture2D.Load(curWidth, curHeight);
         }
     }
     

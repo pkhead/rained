@@ -91,7 +91,7 @@ public class TileData
                 break;
         }
         
-        var fullImage = new RlManaged.Image($"drizzle/Drizzle.Data/Graphics/{name}.png");
+        var fullImage = RlManaged.Image.Load($"drizzle/Drizzle.Data/Graphics/{name}.png");
         var previewRect = new Rectangle(
             0,
             rowCount * 20 + imageOffset,
@@ -108,7 +108,7 @@ public class TileData
             Console.WriteLine($"Warning: '{name}' preview image is out of bounds");
         }
 
-        var previewImage = new RlManaged.Image(width * 16, height * 16, Color.White);
+        var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
         previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
         Raylib.ImageDraw(
@@ -135,7 +135,7 @@ public class TileData
             }
         }
 
-        PreviewTexture = new RlManaged.Texture2D(previewImage);
+        PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
 
         fullImage.Dispose();
         previewImage.Dispose();

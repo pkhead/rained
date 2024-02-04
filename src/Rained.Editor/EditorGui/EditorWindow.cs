@@ -63,7 +63,7 @@ public class EditorWindow
     {
         Editor = editor;
         canvasWidget = new(1, 1);
-        layerRenderTexture = new(1, 1);
+        layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
 
         LevelRenderer = new LevelRenderer(editor);
         editorModes.Add(new GeometryEditor(this));
@@ -92,9 +92,13 @@ public class EditorWindow
     {
         if (queuedEditMode >= 0)
         {
-            editorModes[selectedMode].Unload();
-            selectedMode = queuedEditMode;
-            editorModes[selectedMode].Load();
+            if (queuedEditMode != selectedMode)
+            {
+                editorModes[selectedMode].Unload();
+                selectedMode = queuedEditMode;
+                editorModes[selectedMode].Load();
+            }
+
             queuedEditMode = -1;
         }
         
@@ -206,7 +210,7 @@ public class EditorWindow
                 if (layerRenderTexture.Texture.Width != canvasW || layerRenderTexture.Texture.Height != canvasH)
                 {
                     layerRenderTexture.Dispose();
-                    layerRenderTexture = new(canvasW, canvasH);
+                    layerRenderTexture = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
                 }
                 
                 Raylib.BeginTextureMode(canvasWidget.RenderTexture);

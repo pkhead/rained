@@ -110,7 +110,7 @@ public class GeometryEditor : IEditorMode
     public GeometryEditor(EditorWindow editorWindow)
     {
         window = editorWindow;
-        toolIcons = new("data/tool-icons.png");
+        toolIcons = RlManaged.Texture2D.Load("data/tool-icons.png");
     }
 
     public enum LayerViewMode : int

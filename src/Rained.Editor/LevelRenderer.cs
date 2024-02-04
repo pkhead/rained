@@ -83,7 +83,7 @@ public class LevelRenderer
 
         var imageW = (int)(Level.TileSize * ViewZoom * 2); 
         var imageH = (int)(Level.TileSize * ViewZoom * 2);
-        var image = new RlManaged.Image(imageW, imageH, new Color(0, 0, 0, 0));
+        var image = RlManaged.Image.GenColor(imageW, imageH, new Color(0, 0, 0, 0));
 
         var majorLineCol = new Color(255, 255, 255, 100);
         var minorLineCol = new Color(255, 255, 255, 60);
@@ -98,7 +98,7 @@ public class LevelRenderer
         Raylib.ImageDrawLine(ref image.Ref(), 0, 0, 0, imageH, majorLineCol);
 
         gridTexture?.Dispose();
-        gridTexture = new RlManaged.Texture2D(image);
+        gridTexture = RlManaged.Texture2D.LoadFromImage(image);
         image.Dispose();
     }
 

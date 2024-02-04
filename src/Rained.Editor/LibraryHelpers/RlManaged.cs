@@ -9,10 +9,13 @@ namespace RlManaged
         private Raylib_cs.RenderTexture2D raw;
         private bool _disposed = false;
 
-        public RenderTexture2D(int width, int height)
+        private RenderTexture2D(Raylib_cs.RenderTexture2D raw)
         {
-            raw = Raylib.LoadRenderTexture(width, height);
+            this.raw = raw;
         }
+
+        public static RenderTexture2D Load(int width, int height)
+            => new(Raylib.LoadRenderTexture(width, height));
 
         ~RenderTexture2D() => Dispose(false);
 
@@ -53,20 +56,19 @@ namespace RlManaged
         public int Mipmaps { get => raw.Mipmaps; }
         public PixelFormat PixelFormat { get => raw.Format; }
 
-        public Image(Raylib_cs.Image raw)
+        private Image(Raylib_cs.Image raw)
         {
             this.raw = raw;
         }
 
-        public Image(string fileName)
-        {
-            raw = Raylib.LoadImage(fileName);
-        }
+        public static Image Load(string fileName)
+            => new(Raylib.LoadImage(fileName));
 
-        public Image(int width, int height, Color color)
-        {
-            raw = Raylib.GenImageColor(width, height, color);
-        }
+        public static Image LoadFromTexture(Raylib_cs.Texture2D texture)
+            => new (Raylib.LoadImageFromTexture(texture));
+        
+        public static Image GenColor(int width, int height, Color color)
+            => new(Raylib.GenImageColor(width, height, color));
 
         public unsafe void DrawPixel(int x, int y, Color color)
         {
@@ -143,18 +145,16 @@ namespace RlManaged
         public int Width { get => raw.Width; }
         public int Height { get => raw.Height; }
 
-        public Texture2D()
-        {}
-
-        public Texture2D(Raylib_cs.Image image)
+        private Texture2D(Raylib_cs.Texture2D raw)
         {
-            raw = Raylib.LoadTextureFromImage(image);
+            this.raw = raw;
         }
 
-        public Texture2D(string fileName)
-        {
-            raw = Raylib.LoadTexture(fileName);
-        }
+        public static Texture2D LoadFromImage(Raylib_cs.Image image)
+            => new(Raylib.LoadTextureFromImage(image));
+
+        public static Texture2D Load(string fileName)
+            => new(Raylib.LoadTexture(fileName));
 
         ~Texture2D() => Dispose(false);
 

@@ -148,7 +148,7 @@ public class LevelBrowser
     private LevelBrowser(OpenMode mode, Action<string> callback, string fileRoot)
     {
         root = fileRoot;
-        icons = new RlManaged.Texture2D("data/filebrowser-icons.png");
+        icons = RlManaged.Texture2D.Load("data/filebrowser-icons.png");
 
         this.mode = mode;
         this.callback = callback;

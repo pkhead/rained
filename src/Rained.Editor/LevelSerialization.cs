@@ -184,7 +184,7 @@ public static class LevelSerialization
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         if (File.Exists(lightPath))
         {
-            var img = new RlManaged.Image(lightPath);
+            var img = RlManaged.Image.Load(lightPath);
             Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
             level.LightMap = img;
         }

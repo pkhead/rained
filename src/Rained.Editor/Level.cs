@@ -227,7 +227,7 @@ public class Level
         // initialize light map
         int lightMapWidth = Width * 20 + 300;
         int lightMapHeight = Height * 20 + 300;
-        lightMap = new RlManaged.Image(lightMapWidth, lightMapHeight, new Color(0, 0, 0, 255));
+        lightMap = RlManaged.Image.GenColor(lightMapWidth, lightMapHeight, new Color(0, 0, 0, 255));
         Raylib.ImageFormat(ref lightMap.Ref(), PixelFormat.UncompressedGrayscale);
     }
 

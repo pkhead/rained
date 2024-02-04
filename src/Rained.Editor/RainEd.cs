@@ -34,7 +34,7 @@ public class RainEd
             level = Level.NewDefaultLevel(this);
         }
 
-        LevelGraphicsTexture = new("data/level-graphics.png");
+        LevelGraphicsTexture = RlManaged.Texture2D.Load("data/level-graphics.png");
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
     }
