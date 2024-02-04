@@ -13,14 +13,61 @@ public class LightEditor : IEditorMode
         public RlManaged.Texture2D Texture;
     }
 
+    private struct StrokeAtom
+    {
+        public float rotation;
+        public Rectangle rect;
+        public int brush;
+        public bool mode;
+    }
+
+    private class Stroke : IChangeRecord
+    {
+        public LightEditor lightEditor;
+
+        public StrokeAtom[] atoms;
+        public Stroke? previous = null;
+
+        public Stroke(StrokeAtom[] atoms, LightEditor lightEditor)
+        {
+            this.lightEditor = lightEditor;
+            this.atoms = atoms;
+            previous = lightEditor.lastStroke;
+        }
+
+        public bool HasChange() => true;
+        public void Apply(RainEd editor, bool useNew)
+        {
+            if (lightEditor is null) throw new NullReferenceException();
+
+            // redo call
+            if (useNew)
+            {
+                lightEditor.lastStroke = this;
+                lightEditor.Retrace();
+            }
+
+            // undo call
+            else
+            {
+                lightEditor.lastStroke = previous;
+                lightEditor.Retrace();
+            }
+        }
+    }
+
     public string Name { get => "Light"; }
     private readonly EditorWindow window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
-    private List<LightBrush> lightBrushes;
+    private readonly List<LightBrush> lightBrushes;
     private RlManaged.RenderTexture2D? lightmapRt;
+    private RlManaged.Texture2D origLightmap; // for change history
     private int selectedBrush = 0;
+
+    private List<StrokeAtom> currentStrokeData = new();
+    private Stroke? lastStroke = null;
 
     private bool isCursorEnabled = true;
     private bool isDrawing = false;
@@ -76,10 +123,23 @@ public class LightEditor : IEditorMode
         }
 
         Console.WriteLine("Done!");
+
+        ReloadLevel();
+        if (origLightmap == null) throw new Exception();
+    }
+
+    public void ReloadLevel()
+    {
+        lastStroke = null;
+
+        // get light map as a texture
+        var lightmapImg = window.Editor.Level.LightMap;
+        origLightmap = new RlManaged.Texture2D(lightmapImg);
     }
 
     public void Load()
     {
+        currentStrokeData = new();
         lightmapRt?.Dispose();
 
         // get light map as a texture
@@ -279,16 +339,28 @@ public class LightEditor : IEditorMode
                 Raylib.BeginTextureMode(lightmapRt);
 
                 // draw on brush plane
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    new Rectangle(
+                StrokeAtom atom = new()
+                {
+                    rect = new Rectangle(
                         mpos.X * Level.TileSize - lightMapOffset.X,
                         mpos.Y * Level.TileSize - lightMapOffset.Y,
                         screenSize.X, screenSize.Y
                     ),
+                    rotation = brushRotation,
+                    mode = lmb,
+                    brush = selectedBrush
+                };
+
+                // record brush "atom" if last atom is different
+                if (currentStrokeData.Count == 0 || !atom.Equals(currentStrokeData[^1]))
+                    currentStrokeData.Add(atom);
+
+                Raylib.DrawTexturePro(
+                    tex,
+                    new Rectangle(0, 0, tex.Width, tex.Height),
+                    atom.rect,
                     screenSize / 2f,
-                    brushRotation,
+                    atom.rotation,
                     lmb ? Color.Black : Color.White
                 );
                 
@@ -354,6 +426,12 @@ public class LightEditor : IEditorMode
         }
 
         Raylib.EndShaderMode();
+        
+        // record stroke data at the end of the stroke
+        if (wasDrawing && !isDrawing)
+        {
+            EndStroke();
+        }
 
         // handle cursor lock when transforming brush
         if (!isCursorEnabled)
@@ -375,15 +453,56 @@ public class LightEditor : IEditorMode
         }
     }
 
+    private void EndStroke()
+    {
+        if (currentStrokeData.Count == 0) return;
+
+        var stroke = new Stroke(currentStrokeData.ToArray(), this);
+        currentStrokeData.Clear();
+
+        window.Editor.ChangeHistory.PushCustom(stroke);
+        lastStroke = stroke;
+    }
+
     private void UpdateLightMap()
     {
         if (lightmapRt is null) return;
-        Console.WriteLine("Read pixels from GPU");
-
+        Console.WriteLine("Update light map");
         var level = window.Editor.Level;
+
         var lightMapImage = new RlManaged.Image(Raylib.LoadImageFromTexture(lightmapRt.Texture));
         Raylib.ImageFlipVertical(ref lightMapImage.Ref());
         Raylib.ImageFormat(ref lightMapImage.Ref(), PixelFormat.UncompressedGrayscale);
         level.LightMap = lightMapImage;
+    }
+
+    private void Retrace()
+    {
+        if (lightmapRt is null) throw new Exception();
+
+        void recurse(Stroke? thisStroke)
+        {
+            if (thisStroke is null) return;
+            recurse(thisStroke.previous);
+
+            foreach (var atom in thisStroke.atoms)
+            {
+                var tex = lightBrushes[atom.brush].Texture;
+                Raylib.DrawTexturePro(
+                    tex,
+                    new Rectangle(0, 0, tex.Width, tex.Height),
+                    atom.rect,
+                    new Vector2(atom.rect.Width, atom.rect.Height) / 2f,
+                    atom.rotation,
+                    atom.mode ? Color.Black : Color.White
+                );
+            }
+        }
+
+        Raylib.BeginTextureMode(lightmapRt);
+        Raylib.ClearBackground(Color.Black);
+        Raylib.DrawTexture(origLightmap, 0, 0, Color.White);
+        recurse(lastStroke);
+        Raylib.EndTextureMode();
     }
 }

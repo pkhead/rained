@@ -11,7 +11,7 @@ public class RainEd
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     public readonly Tiles.Database TileDatabase;
     private readonly ChangeHistory changeHistory;
-    private readonly EditorWindow editorWindow;
+    private EditorWindow editorWindow;
 
     public Level Level { get => level; }
     public EditorWindow Window { get => editorWindow; }
@@ -19,6 +19,8 @@ public class RainEd
     private string notification = "";
     private float notificationTime = 0f;
     private float notifFlash = 0f;
+
+    public ChangeHistory ChangeHistory { get => changeHistory; }
 
     public RainEd(string levelPath = "") {
         TileDatabase = new Tiles.Database();
@@ -46,14 +48,13 @@ public class RainEd
 
     private void LoadLevel(string path)
     {
+        editorWindow.UnloadView();
+
         try
         {
-            editorWindow.UnloadView();
             level = LevelSerialization.Load(this, path);
-            editorWindow.LoadView();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            editorWindow.ReloadLevel();
+            changeHistory.Clear();
         }
         catch (Exception e)
         {
@@ -61,6 +62,10 @@ public class RainEd
             Console.WriteLine(e);
             ShowError("Could not load level");
         }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        editorWindow.LoadView();
     }
 
     public void Draw(float dt)

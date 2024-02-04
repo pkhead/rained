@@ -1,14 +1,32 @@
 using System.Numerics;
 namespace RainEd;
 
+public interface IChangeRecord
+{
+    bool HasChange();
+    void Apply(RainEd editor, bool useNew);
+}
+
 public class ChangeHistory
 {
     private readonly RainEd editor;
     public Level Level { get => editor.Level; }
 
+    private readonly Stack<IChangeRecord> undoStack = new();
+    private readonly Stack<IChangeRecord> redoStack = new();
+    private Snapshot? oldSnapshot = null;
+
     public ChangeHistory(RainEd editor)
     {
         this.editor = editor;
+    }
+
+    public void Clear()
+    {
+        undoStack.Clear();
+        redoStack.Clear();
+        if (oldSnapshot is not null)
+            oldSnapshot = null;
     }
     
     private struct CellChange
@@ -60,22 +78,38 @@ public class ChangeHistory
         }
     }
 
-    private struct ChangeRecord
+    private class LightmapChange
+    {
+        public RlManaged.Image Old;
+        public RlManaged.Image New;
+
+        public LightmapChange(RlManaged.Image oldImg, RlManaged.Image newImg)
+        {
+            Old = oldImg;
+            New = newImg;
+        }
+    }
+
+    private class ChangeRecord : IChangeRecord
     {
         public int EditMode;
 
         public List<CellChange> CellChanges = new();
         public CameraChange? CameraChange = null;
+        public LightmapChange? LightmapChange = null;
 
         public ChangeRecord() {}
 
-        public readonly bool HasChange()
+        public bool HasChange()
         {
-            return CellChanges.Count > 0 || CameraChange is not null;
+            return CellChanges.Count > 0 || CameraChange is not null || LightmapChange is not null;
         }
 
-        public readonly void Apply(Level level, bool useNew)
+        public void Apply(RainEd editor, bool useNew)
         {
+            var level = editor.Level;
+            editor.Window.EditMode = EditMode;
+
             // apply cell changes
             foreach (CellChange change in CellChanges)
             {
@@ -99,6 +133,13 @@ public class ChangeHistory
                         level.Cameras.Add(cam);
                     }
                 }
+            }
+
+            // apply lightmap changes
+            if (LightmapChange is not null)
+            {
+                Console.WriteLine("apply lightmap change");
+                level.LightMap = useNew ? LightmapChange.New : LightmapChange.Old;
             }
         }
     }
@@ -125,10 +166,6 @@ public class ChangeHistory
         }
 
     }
-
-    private readonly Stack<ChangeRecord> undoStack = new();
-    private readonly Stack<ChangeRecord> redoStack = new();
-    private Snapshot? oldSnapshot = null;
 
     public void BeginChange()
     {
@@ -199,13 +236,18 @@ public class ChangeHistory
         oldSnapshot = null;
     }
 
+    public void PushCustom(IChangeRecord record)
+    {
+        redoStack.Clear();
+        undoStack.Push(record);
+    }
+
     public void Undo()
     {
         if (undoStack.Count == 0) return;
         var record = undoStack.Pop();
         redoStack.Push(record);
-        editor.Window.EditMode = record.EditMode;
-        record.Apply(Level, false);
+        record.Apply(editor, false);
     }
 
     public void Redo()
@@ -213,7 +255,6 @@ public class ChangeHistory
         if (redoStack.Count == 0) return;
         var record = redoStack.Pop();
         undoStack.Push(record);
-        editor.Window.EditMode = record.EditMode;
-        record.Apply(Level, true);
+        record.Apply(editor, true);
     }
 }

@@ -11,6 +11,7 @@ public interface IEditorMode
 
     void Load() {}
     void Unload() {}
+    void ReloadLevel() {}
 
     void DrawToolbar();
     void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame);
@@ -79,6 +80,12 @@ public class EditorWindow
     public void LoadView()
     {
         editorModes[selectedMode].Load();
+    }
+
+    public void ReloadLevel()
+    {
+        foreach (var mode in editorModes)
+            mode.ReloadLevel();
     }
 
     public void Render(float dt)
