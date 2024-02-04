@@ -48,7 +48,9 @@ public class RainEd
     {
         try
         {
+            editorWindow.UnloadView();
             level = LevelSerialization.Load(this, path);
+            editorWindow.LoadView();
         }
         catch (Exception e)
         {

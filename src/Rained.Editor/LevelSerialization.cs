@@ -14,6 +14,9 @@ public static class LevelSerialization
         
         Lingo.List levelTileData = (Lingo.List)
             (lingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
+
+        Lingo.List levelLightData = (Lingo.List)
+            (lingoParser.Read(levelData[3]) ?? throw new Exception("No light data"));
         
         Lingo.List levelProperties = (Lingo.List)
             (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
@@ -178,6 +181,19 @@ public static class LevelSerialization
         if (File.Exists(lightPath))
         {
             level.LightMap = new RlManaged.Image(lightPath);
+        }
+
+        // read light parameters
+        {
+            // i did not think this through
+            // although, i'm not sure how to do Newtonsoft.Json-esque
+            var angleData = levelLightData.fields["lightAngle"];
+            var flatnessData = levelLightData.fields["flatness"];
+
+            float angle = (angleData is float v0) ? v0 : (int)angleData;
+            float offset = (flatnessData is float v1) ? v1 : (int)flatnessData;
+            level.LightAngle = angle / 180f * MathF.PI;
+            level.LightDistance = offset;
         }
 
         return level;

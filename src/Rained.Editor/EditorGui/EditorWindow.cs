@@ -71,6 +71,16 @@ public class EditorWindow
         editorModes.Add(new CameraEditor(this));
     }
 
+    public void UnloadView()
+    {
+        editorModes[selectedMode].Unload();
+    }
+
+    public void LoadView()
+    {
+        editorModes[selectedMode].Load();
+    }
+
     public void Render(float dt)
     {
         if (queuedEditMode >= 0)
@@ -233,6 +243,10 @@ public class EditorWindow
         mouseCx = (int) Math.Floor(mouseCellFloat.X);
         mouseCy = (int) Math.Floor(mouseCellFloat.Y);
 
+        // draw viewport
+        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
+
+        // view controls
         if (canvasWidget.IsHovered)
         {
             // middle click pan
@@ -259,7 +273,6 @@ public class EditorWindow
             }
         }
 
-        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
         Rlgl.PopMatrix();
     }
 

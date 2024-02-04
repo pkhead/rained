@@ -105,7 +105,11 @@ public class LightEditor : IEditorMode
         lightmapRt = null;
 
         if (!isCursorEnabled)
-            Raylib.EnableCursor();
+        {
+            Raylib.ShowCursor();
+            Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
+            isCursorEnabled = true;
+        }
     }
 
     public void DrawToolbar()
@@ -176,6 +180,20 @@ public class LightEditor : IEditorMode
         }
     }
 
+    private void DrawOcclusionPlane()
+    {
+        if (lightmapRt is null) return;
+        var level = window.Editor.Level;
+        
+        // render light plane
+        Raylib.DrawTextureRec(
+            lightmapRt.Texture,
+            new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
+            new Vector2(-300, -300),
+            new Color(255, 0, 0, 100)
+        );
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         if (lightmapRt is null) return;
@@ -224,14 +242,6 @@ public class LightEditor : IEditorMode
             new Color(0, 0, 0, 80)
         );
 
-        // render light plane
-        Raylib.DrawTextureRec(
-            lightmapRt.Texture,
-            new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
-            new Vector2(-300, -300),
-            new Color(255, 0, 0, 100)
-        );
-
         // Render mouse cursor
         if (window.IsViewportHovered)
         {
@@ -241,6 +251,7 @@ public class LightEditor : IEditorMode
 
             var screenSize = brushSize / window.ViewZoom;
 
+            // render brush preview
             // if drawing, draw on light texture instead of screen
             var lmb = Raylib.IsMouseButtonDown(MouseButton.Left);
             var rmb = Raylib.IsMouseButtonDown(MouseButton.Right);
@@ -248,9 +259,12 @@ public class LightEditor : IEditorMode
             {
                 isDrawing = true;
 
+                DrawOcclusionPlane();
+
                 Rlgl.LoadIdentity(); // why the hell do i have to call this
                 Raylib.BeginTextureMode(lightmapRt);
 
+                // draw on brush plane
                 Raylib.DrawTexturePro(
                     tex,
                     new Rectangle(0, 0, tex.Width, tex.Height),
@@ -268,6 +282,23 @@ public class LightEditor : IEditorMode
             }
             else
             {
+                // cast of brush preview
+                Raylib.DrawTexturePro(
+                    tex,
+                    new Rectangle(0, 0, tex.Width, tex.Height),
+                    new Rectangle(
+                        mpos.X * Level.TileSize + castOffset.X,
+                        mpos.Y * Level.TileSize + castOffset.Y,
+                        screenSize.X, screenSize.Y
+                    ),
+                    screenSize / 2f,
+                    brushRotation,
+                    new Color(0, 0, 0, 80)
+                );
+                
+                DrawOcclusionPlane();
+
+                // draw preview on on occlusion plane
                 Raylib.DrawTexturePro(
                     tex,
                     new Rectangle(0, 0, tex.Width, tex.Height),
@@ -278,7 +309,7 @@ public class LightEditor : IEditorMode
                     ),
                     screenSize / 2f,
                     brushRotation,
-                    Color.White
+                    new Color(255, 0, 0, 100)
                 );
             }
 
@@ -303,6 +334,10 @@ public class LightEditor : IEditorMode
             brushSize.X = MathF.Max(0f, brushSize.X);
             brushSize.Y  = MathF.Max(0f, brushSize.Y);
         }
+        else
+        {
+            DrawOcclusionPlane();
+        }
 
         Raylib.EndShaderMode();
 
@@ -312,13 +347,21 @@ public class LightEditor : IEditorMode
             UpdateLightMap();
 
         // handle cursor lock when transforming brush
-        if (!isCursorEnabled) Raylib.DisableCursor();
+        if (!isCursorEnabled)
+        {
+            Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);    
+        }
+        
         if (wasCursorEnabled != isCursorEnabled)
         {
             if (isCursorEnabled)
             {
-                Raylib.EnableCursor();
+                Raylib.ShowCursor();
                 Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
+            }
+            else
+            {
+                Raylib.HideCursor();
             }
         }
     }
