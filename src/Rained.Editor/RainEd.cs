@@ -51,6 +51,9 @@ public class RainEd
             editorWindow.UnloadView();
             level = LevelSerialization.Load(this, path);
             editorWindow.LoadView();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
         catch (Exception e)
         {

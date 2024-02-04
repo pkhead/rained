@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using System.Text;
 using Raylib_cs;
 
 namespace RlManaged
@@ -70,6 +72,27 @@ namespace RlManaged
         {
             fixed (Raylib_cs.Image* rawPtr = &raw)
                 Raylib.ImageDrawPixel(rawPtr, x, y, color);
+        }
+
+        public unsafe byte[] ExportToMemory(string format)
+        {
+            int fileSize = 0;
+            byte[] formatBytes = Encoding.ASCII.GetBytes(format);
+            char* memBuf = null;
+
+            fixed (byte* formatBytesPtr = formatBytes)
+            {
+                memBuf = Raylib.ExportImageToMemory(raw, (sbyte*) formatBytesPtr, &fileSize);
+            }
+
+            if (memBuf == null)
+                throw new Exception();
+            
+            byte[] result = new byte[fileSize];
+            Marshal.Copy((nint)memBuf, result, 0, fileSize);
+            Raylib.MemFree(memBuf);
+
+            return result;
         }
 
         /*public unsafe void Draw(Raylib_cs.Image src, Rectangle srcRec, Rectangle dstRec, Color tint)

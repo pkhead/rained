@@ -1,4 +1,5 @@
 using System.Numerics;
+using Raylib_cs;
 namespace RainEd;
 
 public static class LevelSerialization
@@ -180,7 +181,9 @@ public static class LevelSerialization
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         if (File.Exists(lightPath))
         {
-            level.LightMap = new RlManaged.Image(lightPath);
+            var img = new RlManaged.Image(lightPath);
+            Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+            level.LightMap = img;
         }
 
         // read light parameters

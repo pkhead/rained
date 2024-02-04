@@ -82,12 +82,11 @@ public class LightEditor : IEditorMode
     {
         lightmapRt?.Dispose();
 
+        // get light map as a texture
         var lightmapImg = window.Editor.Level.LightMap;
-
-        // get texture of lightmap image
         var lightmapTex = new RlManaged.Texture2D(lightmapImg);
 
-        // get into a render texture
+        // put into a render texture
         lightmapRt = new RlManaged.RenderTexture2D(lightmapImg.Width, lightmapImg.Height);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
@@ -341,11 +340,6 @@ public class LightEditor : IEditorMode
 
         Raylib.EndShaderMode();
 
-        // write light map change from gpu to ram
-        // when drawing ends
-        if (wasDrawing && !isDrawing)
-            UpdateLightMap();
-
         // handle cursor lock when transforming brush
         if (!isCursorEnabled)
         {
@@ -372,11 +366,9 @@ public class LightEditor : IEditorMode
         Console.WriteLine("Read pixels from GPU");
 
         var level = window.Editor.Level;
-        var oldLightMap = level.LightMap;
-        var newLightMap = new RlManaged.Image(Raylib.LoadImageFromTexture(lightmapRt.Texture));
-        Raylib.ImageFlipVertical(ref newLightMap.Ref());
-        level.LightMap = newLightMap;
-
-        oldLightMap.Dispose();
+        var lightMapImage = new RlManaged.Image(Raylib.LoadImageFromTexture(lightmapRt.Texture));
+        Raylib.ImageFlipVertical(ref lightMapImage.Ref());
+        Raylib.ImageFormat(ref lightMapImage.Ref(), PixelFormat.UncompressedGrayscale);
+        level.LightMap = lightMapImage;
     }
 }

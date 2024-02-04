@@ -188,21 +188,16 @@ public class Level
     };
 
     private RlManaged.Image lightMap;
+
     public float LightAngle = MathF.PI;
     public float LightDistance = 1f;
     public const float MaxLightDistance = 10f;
     
     public RlManaged.Image LightMap {
-        get => lightMap;
-        set
-        {
-            if (value.Width != lightMap.Width || value.Height != lightMap.Height)
-                throw new Exception("Mismatched lightmap size");
-
-            lightMap.Dispose();
-            lightMap = value;
-        }
+        get => GetLightImage();
+        set => SetLightImage(value);
     }
+
     public ref Image LightMapRef { get => ref lightMap.Ref(); }
 
     public Level(RainEd editor, int width = 72, int height = 43)
@@ -230,7 +225,10 @@ public class Level
         }
 
         // initialize light map
-        lightMap = new RlManaged.Image(Width * 20 + 300, Height * 20 + 300, Color.Black);
+        int lightMapWidth = Width * 20 + 300;
+        int lightMapHeight = Height * 20 + 300;
+        lightMap = new RlManaged.Image(lightMapWidth, lightMapHeight, new Color(0, 0, 0, 255));
+        Raylib.ImageFormat(ref lightMap.Ref(), PixelFormat.UncompressedGrayscale);
     }
 
     public static Level NewDefaultLevel(RainEd editor)
@@ -260,5 +258,23 @@ public class Level
         x = Math.Clamp(x, 0, Width - 1);
         y = Math.Clamp(y, 0, Height - 1);
         return Layers[layer, x, y];
+    }
+
+    // get light map as a Raylib image
+    private RlManaged.Image GetLightImage()
+    {
+        return lightMap;
+    }
+
+    private void SetLightImage(RlManaged.Image srcImage)
+    {
+        if (srcImage.Width != lightMap.Width || srcImage.Height != lightMap.Height)
+            throw new Exception("Mismatched lightmap size");
+        
+        if (srcImage.PixelFormat != lightMap.PixelFormat)
+            throw new Exception("Mismatched format");
+
+        lightMap.Dispose();
+        lightMap = srcImage;
     }
 }
