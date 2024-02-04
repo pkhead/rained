@@ -51,6 +51,11 @@ namespace RlManaged
         public int Mipmaps { get => raw.Mipmaps; }
         public PixelFormat PixelFormat { get => raw.Format; }
 
+        public Image(Raylib_cs.Image raw)
+        {
+            this.raw = raw;
+        }
+
         public Image(string fileName)
         {
             raw = Raylib.LoadImage(fileName);
@@ -103,6 +108,7 @@ namespace RlManaged
         }
 
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
+
         public ref Raylib_cs.Image Ref() => ref raw;
     }
 

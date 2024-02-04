@@ -203,6 +203,7 @@ public class Level
             lightMap = value;
         }
     }
+    public ref Image LightMapRef { get => ref lightMap.Ref(); }
 
     public Level(RainEd editor, int width = 72, int height = 43)
     {

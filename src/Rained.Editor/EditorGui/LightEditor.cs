@@ -17,6 +17,7 @@ public class LightEditor : IEditorMode
     private int selectedBrush = 0;
 
     private bool isCursorEnabled = true;
+    private bool isDrawing = false;
     private Vector2 savedMouseGp = new();
     private Vector2 savedMousePos = new();
 
@@ -88,6 +89,8 @@ public class LightEditor : IEditorMode
 
     public void Unload()
     {
+        UpdateLightMap();
+
         lightmapRt?.Dispose();
         lightmapRt = null;
 
@@ -110,7 +113,7 @@ public class LightEditor : IEditorMode
 
             level.LightAngle = lightDeg / 180f * MathF.PI;
 
-            if (ImGui.Button("Reset Transform"))
+            if (ImGui.Button("Reset Brush Transform") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.R)))
             {
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;
@@ -163,7 +166,9 @@ public class LightEditor : IEditorMode
         if (lightmapRt is null) return;
 
         var wasCursorEnabled = isCursorEnabled;
+        var wasDrawing = isDrawing;
         isCursorEnabled = true;
+        isDrawing = false;
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
@@ -222,10 +227,12 @@ public class LightEditor : IEditorMode
             var screenSize = brushSize / window.ViewZoom;
 
             // if drawing, draw on light texture instead of screen
-            var isDrawing = Raylib.IsMouseButtonDown(MouseButton.Left);
-            var isErasing = Raylib.IsMouseButtonDown(MouseButton.Right);
-            if (isDrawing || isErasing)
+            var lmb = Raylib.IsMouseButtonDown(MouseButton.Left);
+            var rmb = Raylib.IsMouseButtonDown(MouseButton.Right);
+            if (lmb || rmb)
             {
+                isDrawing = true;
+
                 Rlgl.LoadIdentity(); // why the hell do i have to call this
                 Raylib.BeginTextureMode(lightmapRt);
 
@@ -239,7 +246,7 @@ public class LightEditor : IEditorMode
                     ),
                     screenSize / 2f,
                     brushRotation,
-                    isDrawing ? Color.Black : Color.White
+                    lmb ? Color.Black : Color.White
                 );
                 
                 Raylib.BeginTextureMode(mainFrame);
@@ -284,6 +291,12 @@ public class LightEditor : IEditorMode
 
         Raylib.EndShaderMode();
 
+        // write light map change from gpu to ram
+        // when drawing ends
+        if (wasDrawing && !isDrawing)
+            UpdateLightMap();
+
+        // handle cursor lock when transforming brush
         if (!isCursorEnabled) Raylib.DisableCursor();
         if (wasCursorEnabled != isCursorEnabled)
         {
@@ -293,5 +306,19 @@ public class LightEditor : IEditorMode
                 Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
             }
         }
+    }
+
+    private void UpdateLightMap()
+    {
+        if (lightmapRt is null) return;
+        Console.WriteLine("Read pixels from GPU");
+
+        var level = window.Editor.Level;
+        var oldLightMap = level.LightMap;
+        var newLightMap = new RlManaged.Image(Raylib.LoadImageFromTexture(lightmapRt.Texture));
+        Raylib.ImageFlipVertical(ref newLightMap.Ref());
+        level.LightMap = newLightMap;
+
+        oldLightMap.Dispose();
     }
 }
