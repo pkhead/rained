@@ -269,7 +269,9 @@ public class Level
     private void SetLightImage(RlManaged.Image srcImage)
     {
         if (srcImage.Width != lightMap.Width || srcImage.Height != lightMap.Height)
-            throw new Exception("Mismatched lightmap size");
+        {
+            Console.WriteLine("WARNING: Light map size is not LevelSize * 20 + (300, 300)");
+        }
         
         if (srcImage.PixelFormat != lightMap.PixelFormat)
             throw new Exception("Mismatched format");

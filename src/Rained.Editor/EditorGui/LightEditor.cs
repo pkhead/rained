@@ -185,10 +185,12 @@ public class LightEditor : IEditorMode
         var level = window.Editor.Level;
         
         // render light plane
+        var levelBoundsW = level.Width * 20;
+        var levelBoundsH = level.Height * 20;
         Raylib.DrawTextureRec(
             lightmapRt.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
-            new Vector2(-300, -300),
+            new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
             new Color(255, 0, 0, 100)
         );
     }
@@ -196,17 +198,30 @@ public class LightEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         if (lightmapRt is null) return;
+        var level = window.Editor.Level;
+        var levelRender = window.LevelRenderer;
+
+        var levelBoundsW = level.Width * 20;
+        var levelBoundsH = level.Height * 20;
+        var lightMapOffset = new Vector2(
+            levelBoundsW - level.LightMap.Width,
+            levelBoundsH - level.LightMap.Height
+        );
 
         var wasCursorEnabled = isCursorEnabled;
         var wasDrawing = isDrawing;
         isCursorEnabled = true;
         isDrawing = false;
 
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
 
         // draw light background
-        Raylib.DrawRectangle(-300, -300, level.Width * Level.TileSize + 300, level.Height * Level.TileSize + 300, Color.White);
+        Raylib.DrawRectangle(
+            (int)lightMapOffset.X,
+            (int)lightMapOffset.Y,
+            level.Width * Level.TileSize - (int)lightMapOffset.X,
+            level.Height * Level.TileSize - (int)lightMapOffset.Y,
+            Color.White
+        );
         
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize - 30, level.Height * Level.TileSize - 30, new Color(127, 127, 127, 255));
@@ -237,7 +252,7 @@ public class LightEditor : IEditorMode
         Raylib.DrawTextureRec(
             lightmapRt.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
-            new Vector2(-300, -300) + castOffset,
+            lightMapOffset + castOffset,
             new Color(0, 0, 0, 80)
         );
 
@@ -268,8 +283,8 @@ public class LightEditor : IEditorMode
                     tex,
                     new Rectangle(0, 0, tex.Width, tex.Height),
                     new Rectangle(
-                        mpos.X * Level.TileSize + 300f,
-                        mpos.Y * Level.TileSize + 300f,
+                        mpos.X * Level.TileSize - lightMapOffset.X,
+                        mpos.Y * Level.TileSize - lightMapOffset.Y,
                         screenSize.X, screenSize.Y
                     ),
                     screenSize / 2f,
