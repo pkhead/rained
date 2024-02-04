@@ -146,4 +146,40 @@ namespace RlManaged
 
         public static implicit operator Raylib_cs.Texture2D(Texture2D tex) => tex.raw;
     }
+
+    public class Shader : IDisposable
+    {
+        private Raylib_cs.Shader raw;
+        private bool _disposed = false;
+
+        private Shader(Raylib_cs.Shader src)
+        {
+            raw = src;
+        }
+
+        public static Shader LoadFromMemory(string? vsCode, string? fsCode)
+            => new(Raylib.LoadShaderFromMemory(vsCode, fsCode));
+        
+        public static Shader Load(string? vsFileName, string? fsFileName)
+            => new(Raylib.LoadShader(vsFileName, fsFileName));
+
+        ~Shader() => Dispose(false);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                Raylib.UnloadShader(raw);
+            }
+        }
+
+        public static implicit operator Raylib_cs.Shader(Shader tex) => tex.raw;
+    }
 }

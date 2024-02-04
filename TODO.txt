@@ -28,7 +28,10 @@ Camera Editor:
 Environment Editor:
 - seed, water level, light type, etc
 
-Light Editor: (TODO)
+Light Editor:
+- painting
+- change light parameters
+- store light data as one bit per pixel instead of RGBA8888 or wha
 
 Effects Editor: (TODO)
 

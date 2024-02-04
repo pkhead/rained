@@ -188,6 +188,10 @@ public class Level
     };
 
     private RlManaged.Image lightMap;
+    public float LightAngle = MathF.PI;
+    public float LightDistance = 1f;
+    public const float MaxLightDistance = 10f;
+    
     public RlManaged.Image LightMap {
         get => lightMap;
         set

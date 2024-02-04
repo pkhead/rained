@@ -13,9 +13,31 @@ public class LightEditor : IEditorMode
 
     private RlManaged.RenderTexture2D? lightmapRt;
 
+    private static string levelLightShaderSrc = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
+        }
+    ";
+
+    private readonly RlManaged.Shader levelLightShader;
+
     public LightEditor(EditorWindow window)
     {
         this.window = window;
+
+        levelLightShader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
 
         // load light textures
         Console.WriteLine("Initializing light cast catalog...");
@@ -87,11 +109,16 @@ public class LightEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
+        if (lightmapRt is null) return;
+
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
 
+        // draw light background
+        Raylib.DrawRectangle(-300, -300, level.Width * Level.TileSize + 300, level.Height * Level.TileSize + 300, Color.White);
+        
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize - 30, level.Height * Level.TileSize - 30, new Color(127, 127, 127, 255));
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -108,15 +135,29 @@ public class LightEditor : IEditorMode
 
         levelRender.RenderBorder();
 
-        // render light
-        if (lightmapRt is not null)
-        {
-            Raylib.DrawTextureRec(
-                texture: lightmapRt.Texture,
-                new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
-                new Vector2(-150, -150),
-                new Color(255, 255, 255, 100)
-            );
-        }
+        Raylib.BeginShaderMode(levelLightShader);
+
+        // render cast
+        Vector2 castOffset = new(
+            MathF.Sin(level.LightAngle) * level.LightDistance * Level.TileSize,
+            -MathF.Cos(level.LightAngle) * level.LightDistance * Level.TileSize
+        );
+
+        Raylib.DrawTextureRec(
+            lightmapRt.Texture,
+            new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
+            new Vector2(-300, -300) + castOffset,
+            new Color(0, 0, 0, 80)
+        );
+
+        // render light plane
+        Raylib.DrawTextureRec(
+            lightmapRt.Texture,
+            new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
+            new Vector2(-300, -300),
+            new Color(255, 0, 0, 100)
+        );
+
+        Raylib.EndShaderMode();
     }
 }
