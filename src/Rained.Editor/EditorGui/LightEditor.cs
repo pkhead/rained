@@ -7,12 +7,18 @@ namespace RainEd;
 
 public class LightEditor : IEditorMode
 {
+    private struct LightBrush
+    {
+        public string Name;
+        public RlManaged.Texture2D Texture;
+    }
+
     public string Name { get => "Light"; }
     private readonly EditorWindow window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
-    public List<RlManaged.Texture2D> lightTextures;
+    private List<LightBrush> lightBrushes;
     private RlManaged.RenderTexture2D? lightmapRt;
     private int selectedBrush = 0;
 
@@ -50,7 +56,7 @@ public class LightEditor : IEditorMode
         // load light textures
         Console.WriteLine("Initializing light cast catalog...");
 
-        lightTextures = new List<RlManaged.Texture2D>();
+        lightBrushes = new List<LightBrush>();
 
         foreach (var fileName in File.ReadLines("data/light/init.txt"))
         {
@@ -62,7 +68,11 @@ public class LightEditor : IEditorMode
             
             // load light texture
             var tex = new RlManaged.Texture2D($"data/light/{fileName.Trim()}");
-            lightTextures.Add(tex);
+            lightBrushes.Add(new LightBrush()
+            {
+                Name = fileName.Trim(),
+                Texture = tex
+            });
         }
 
         Console.WriteLine("Done!");
@@ -127,8 +137,10 @@ public class LightEditor : IEditorMode
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
             int i = 0;
-            foreach (var texture in lightTextures)
+            foreach (var brush in lightBrushes)
             {
+                var texture = brush.Texture;
+                
                 // highlight selected brush
                 if (i == selectedBrush)
                 {
@@ -146,6 +158,9 @@ public class LightEditor : IEditorMode
                 {
                     selectedBrush = i;
                 }
+
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(brush.Name);
 
                 ImGui.PopStyleColor();
 
@@ -220,7 +235,7 @@ public class LightEditor : IEditorMode
         // Render mouse cursor
         if (window.IsViewportHovered)
         {
-            var tex = lightTextures[selectedBrush];
+            var tex = lightBrushes[selectedBrush].Texture;
             var mpos = window.MouseCellFloat;
             if (!wasCursorEnabled) mpos = savedMouseGp;
 
