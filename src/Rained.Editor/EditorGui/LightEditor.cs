@@ -2,6 +2,7 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
+
 namespace RainEd;
 
 public class LightEditor : IEditorMode
@@ -9,11 +10,17 @@ public class LightEditor : IEditorMode
     public string Name { get => "Light"; }
     private readonly EditorWindow window;
 
+    private Vector2 brushSize = new(50f, 70f);
+    private float brushRotation = 0f;
     public List<RlManaged.Texture2D> lightTextures;
-
     private RlManaged.RenderTexture2D? lightmapRt;
+    private int selectedBrush = 0;
 
-    private static string levelLightShaderSrc = @"
+    private bool isCursorEnabled = true;
+    private Vector2 savedMouseGp = new();
+    private Vector2 savedMousePos = new();
+
+    private readonly static string levelLightShaderSrc = @"
         #version 330
 
         in vec2 fragTexCoord;
@@ -83,26 +90,70 @@ public class LightEditor : IEditorMode
     {
         lightmapRt?.Dispose();
         lightmapRt = null;
+
+        if (!isCursorEnabled)
+            Raylib.EnableCursor();
     }
 
     public void DrawToolbar()
     {
-        if (ImGui.Begin("Catalog###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
+        var level = window.Editor.Level;
+
+        if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, 0f);
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0f, 0f, 0f, 0f));
+            float lightDeg = level.LightAngle / MathF.PI * 180f;
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
+            ImGui.SliderFloat("Light Angle", ref lightDeg, 0f, 360f, "%.1f deg");
+            ImGui.SliderFloat("Light Dist", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+            ImGui.PopItemWidth();
+
+            level.LightAngle = lightDeg / 180f * MathF.PI;
+
+            if (ImGui.Button("Reset Transform"))
+            {
+                brushSize = new(50f, 70f);
+                brushRotation = 0f;
+            }
+
+            // paint brushes
+            ImGui.Text("Brushes");
+
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
             int i = 0;
             foreach (var texture in lightTextures)
             {
+                // highlight selected brush
+                if (i == selectedBrush)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
+                
+                // buttons will have a more transparent hover color
+                } else {
+                    Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
+                        new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                }
+
                 ImGui.PushID(i);
-                rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height));
+                if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                {
+                    selectedBrush = i;
+                }
+
+                ImGui.PopStyleColor();
+
                 ImGui.PopID();
 
                 i++;
+
+                if (!(i % 3 == 0)) ImGui.SameLine();
             }
 
-            ImGui.PopStyleVar();
+            ImGui.PopStyleVar(2);
             ImGui.PopStyleColor();
         }
     }
@@ -110,6 +161,9 @@ public class LightEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         if (lightmapRt is null) return;
+
+        var wasCursorEnabled = isCursorEnabled;
+        isCursorEnabled = true;
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
@@ -158,6 +212,86 @@ public class LightEditor : IEditorMode
             new Color(255, 0, 0, 100)
         );
 
+        // Render mouse cursor
+        if (window.IsViewportHovered)
+        {
+            var tex = lightTextures[selectedBrush];
+            var mpos = window.MouseCellFloat;
+            if (!wasCursorEnabled) mpos = savedMouseGp;
+
+            var screenSize = brushSize / window.ViewZoom;
+
+            // if drawing, draw on light texture instead of screen
+            var isDrawing = Raylib.IsMouseButtonDown(MouseButton.Left);
+            var isErasing = Raylib.IsMouseButtonDown(MouseButton.Right);
+            if (isDrawing || isErasing)
+            {
+                Rlgl.LoadIdentity(); // why the hell do i have to call this
+                Raylib.BeginTextureMode(lightmapRt);
+
+                Raylib.DrawTexturePro(
+                    tex,
+                    new Rectangle(0, 0, tex.Width, tex.Height),
+                    new Rectangle(
+                        mpos.X * Level.TileSize + 300f,
+                        mpos.Y * Level.TileSize + 300f,
+                        screenSize.X, screenSize.Y
+                    ),
+                    screenSize / 2f,
+                    brushRotation,
+                    isDrawing ? Color.Black : Color.White
+                );
+                
+                Raylib.BeginTextureMode(mainFrame);
+            }
+            else
+            {
+                Raylib.DrawTexturePro(
+                    tex,
+                    new Rectangle(0, 0, tex.Width, tex.Height),
+                    new Rectangle(
+                        mpos.X * Level.TileSize,
+                        mpos.Y * Level.TileSize,
+                        screenSize.X, screenSize.Y
+                    ),
+                    screenSize / 2f,
+                    brushRotation,
+                    Color.White
+                );
+            }
+
+            var isShiftDown = Raylib.IsKeyDown(KeyboardKey.LeftShift);
+            var isCtrlDown = Raylib.IsKeyDown(KeyboardKey.LeftControl);
+
+            if (isShiftDown || isCtrlDown)
+            {
+                if (wasCursorEnabled)
+                {
+                    savedMouseGp = mpos;
+                    savedMousePos = Raylib.GetMousePosition();
+                }
+                isCursorEnabled = false;
+
+                if (isShiftDown)
+                    brushSize += Raylib.GetMouseDelta();
+                if (isCtrlDown)
+                    brushRotation -= Raylib.GetMouseDelta().Y / 2f;
+            }
+
+            brushSize.X = MathF.Max(0f, brushSize.X);
+            brushSize.Y  = MathF.Max(0f, brushSize.Y);
+        }
+
         Raylib.EndShaderMode();
+
+        if (!isCursorEnabled) Raylib.DisableCursor();
+        if (wasCursorEnabled != isCursorEnabled)
+        {
+            if (isCursorEnabled)
+            {
+                Raylib.EnableCursor();
+                Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
+            }
+        }
     }
 }

@@ -29,9 +29,13 @@ Environment Editor:
 - seed, water level, light type, etc
 
 Light Editor:
-- painting
-- change light parameters
-- store light data as one bit per pixel instead of RGBA8888 or wha
+- store light data as one bit per pixel instead of RGBA8888 or whatever
+- light ring
+- IJKL light parameter changing
+- save texture to image
+- undo/redo
+- R to reset transform
+- WASD catalog navigation
 
 Effects Editor: (TODO)
 
@@ -84,4 +88,10 @@ KEYBINDS:
   Camera Editor:
     N - New Camera
     RMB/Backspace/Delete - Delete Camera/Reset Corner
-    LMB - Move Camera/Corner 
+    LMB - Move Camera/Corner
+
+  Light Editor:
+    WASD - Navigate catalog
+    Shift + Mouse - Scale brush
+    Shift + Ctrl - Rotate brush
+    R - Reset transform
