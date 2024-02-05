@@ -19,10 +19,14 @@ public static class LevelSerialization
         Lingo.List levelLightData = (Lingo.List)
             (lingoParser.Read(levelData[3]) ?? throw new Exception("No light data"));
         
+        Lingo.List levelMiscData = (Lingo.List)
+            (lingoParser.Read(levelData[4]) ?? throw new Exception("No misc data"));
+        
         Lingo.List levelProperties = (Lingo.List)
             (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
         
         Lingo.List? levelCameraData = (Lingo.List?) lingoParser.Read(levelData[6]);
+        Lingo.List? levelWaterData = (Lingo.List?) lingoParser.Read(levelData[7]);
 
         // get level dimensions
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];
@@ -33,7 +37,8 @@ public static class LevelSerialization
             BufferTilesLeft = (int) extraTiles.values[0],
             BufferTilesTop = (int) extraTiles.values[1],
             BufferTilesRight = (int) extraTiles.values[2],
-            BufferTilesBot = (int) extraTiles.values[3]
+            BufferTilesBot = (int) extraTiles.values[3],
+            DefaultMedium = (int) levelMiscData.fields["defaultTerrain"] != 0
         };
 
         // read level geometry
@@ -178,6 +183,21 @@ public static class LevelSerialization
         else
         {
             level.Cameras.Add(new Camera());   
+        }
+
+        // read water data
+        if (levelWaterData is not null)
+        {
+            var waterLevel = (int) levelWaterData.fields["waterLevel"];
+            var waterInFront = (int) levelWaterData.fields["waterInFront"];
+
+            if (waterLevel >= 0)
+            {
+                level.HasWater = true;
+                level.WaterLevel = waterLevel;
+            }
+
+            level.IsWaterInFront = waterInFront != 0;
         }
 
         // read light data

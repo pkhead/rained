@@ -27,7 +27,8 @@ Camera Editor:
 - way to duplicate camera corner transform
 
 Environment Editor:
-- seed, water level, light type, etc
+- load seed and light type
+- undo/redo
 
 Light Editor:
 - store light data as one bit per pixel instead of RGBA8888 or whatever
