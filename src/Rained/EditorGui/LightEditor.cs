@@ -177,7 +177,7 @@ public class LightEditor : IEditorMode
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
             ImGui.SliderFloat("Light Angle", ref lightDeg, 0f, 360f, "%.1f deg");
-            ImGui.SliderFloat("Light Dist", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+            ImGui.SliderFloat("Shadow Dist", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
             ImGui.PopItemWidth();
 
             level.LightAngle = lightDeg / 180f * MathF.PI;

@@ -3,6 +3,9 @@ Overall:
   (i assume this is because the editor is supposed to ignore erroneous lines...)
 - saving
 - help pages/hints/tooltips/whatever
+- Edit/View menu buttons for specific editors
+  e.g. New Camera button in camera editor,
+  no copy/paste in light/effects editor
 
 Level Properties:
 
@@ -25,17 +28,20 @@ Tile Editor:
 
 Camera Editor:
 - way to duplicate camera corner transform
+- Select a camera first, then transform corners
 
 Environment Editor:
 - load seed and light type
 - undo/redo
 
 Light Editor:
+- light parameters undo/redo
 - light ring
 - IJKL light parameter changing
 - WASD catalog navigation
 - save intermediate textures for change history
   (i guess once per every 1000 stroke atoms or something)
+- toggle view shadow plane and occlusion plane
 
 Effects Editor: (TODO)
 
