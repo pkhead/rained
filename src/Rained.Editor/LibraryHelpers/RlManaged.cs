@@ -142,6 +142,7 @@ namespace RlManaged
         private Raylib_cs.Texture2D raw;
         private bool _disposed = false;
 
+        public uint Id { get => raw.Id; }
         public int Width { get => raw.Width; }
         public int Height { get => raw.Height; }
 
@@ -166,6 +167,11 @@ namespace RlManaged
 
         protected virtual void Dispose(bool disposing)
         {
+            if (!disposing)
+            {
+                throw new Exception("Must manually call Dispose");
+            }
+            
             if (!_disposed)
             {
                 _disposed = true;

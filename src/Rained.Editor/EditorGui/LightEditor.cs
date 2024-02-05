@@ -66,6 +66,8 @@ public class LightEditor : IEditorMode
     private RlManaged.Texture2D origLightmap; // for change history
     private int selectedBrush = 0;
 
+    private int thisEditMode = -1;
+
     private List<StrokeAtom> currentStrokeData = new();
     private Stroke? lastStroke = null;
 
@@ -114,7 +116,7 @@ public class LightEditor : IEditorMode
             if (fileName[0] == '#') continue;
             
             // load light texture
-            var tex = new RlManaged.Texture2D($"data/light/{fileName.Trim()}");
+            var tex = RlManaged.Texture2D.Load($"data/light/{fileName.Trim()}");
             lightBrushes.Add(new LightBrush()
             {
                 Name = fileName.Trim(),
@@ -131,37 +133,31 @@ public class LightEditor : IEditorMode
     public void ReloadLevel()
     {
         lastStroke = null;
+        lightmapRt?.Dispose();
+        origLightmap?.Dispose();
 
         // get light map as a texture
         var lightmapImg = window.Editor.Level.LightMap;
-        origLightmap = new RlManaged.Texture2D(lightmapImg);
+        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightmapImg);
+        origLightmap = lightmapTex;
+
+        // put into a render texture
+        lightmapRt = RlManaged.RenderTexture2D.Load(lightmapImg.Width, lightmapImg.Height);
+        Raylib.BeginTextureMode(lightmapRt);
+        Raylib.ClearBackground(Color.Black);
+        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
+        Raylib.EndTextureMode();
     }
 
     public void Load()
     {
         currentStrokeData = new();
-        lightmapRt?.Dispose();
-
-        // get light map as a texture
-        var lightmapImg = window.Editor.Level.LightMap;
-        var lightmapTex = new RlManaged.Texture2D(lightmapImg);
-
-        // put into a render texture
-        lightmapRt = new RlManaged.RenderTexture2D(lightmapImg.Width, lightmapImg.Height);
-        Raylib.BeginTextureMode(lightmapRt);
-        Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
-        Raylib.EndTextureMode();
-
-        lightmapTex.Dispose();
+        thisEditMode = window.EditMode;
     }
 
     public void Unload()
     {
         UpdateLightMap();
-
-        lightmapRt?.Dispose();
-        lightmapRt = null;
 
         if (!isCursorEnabled)
         {
@@ -470,7 +466,7 @@ public class LightEditor : IEditorMode
         Console.WriteLine("Update light map");
         var level = window.Editor.Level;
 
-        var lightMapImage = new RlManaged.Image(Raylib.LoadImageFromTexture(lightmapRt.Texture));
+        var lightMapImage = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
         Raylib.ImageFlipVertical(ref lightMapImage.Ref());
         Raylib.ImageFormat(ref lightMapImage.Ref(), PixelFormat.UncompressedGrayscale);
         level.LightMap = lightMapImage;
@@ -479,6 +475,7 @@ public class LightEditor : IEditorMode
     private void Retrace()
     {
         if (lightmapRt is null) throw new Exception();
+        window.EditMode = thisEditMode;
 
         void recurse(Stroke? thisStroke)
         {
@@ -502,7 +499,9 @@ public class LightEditor : IEditorMode
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(origLightmap, 0, 0, Color.White);
+        Raylib.BeginShaderMode(levelLightShader);
         recurse(lastStroke);
+        Raylib.EndShaderMode();
         Raylib.EndTextureMode();
     }
 }

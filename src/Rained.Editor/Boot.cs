@@ -46,34 +46,40 @@ namespace RainEd
                 splashScreenWindow.Display();
             }
 
-            Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow);
-            Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
-            Raylib.InitWindow(1200, 800, "Rained");
-            Raylib.SetTargetFPS(120);
-            Raylib.SetExitKey(KeyboardKey.Null);
-
-            // setup imgui
-            rlImGui.Setup(true, true);
-            rlImGui.SetIniFilename("data/imgui.ini");
-
-            RainEd app = new(levelToLoad);
-            Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-            
-            // for some reason, closing the window bugs
-            // out raylib, so i just set it invisible
-            // and close it when the program ends
-            if (splashScreenWindow is not null) splashScreenWindow.SetVisible(false);
-            
-            while (!Raylib.WindowShouldClose())
             {
-                Raylib.BeginDrawing();
-                app.Draw(Raylib.GetFrameTime());
-                Raylib.EndDrawing();
+                Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow);
+                Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+                Raylib.InitWindow(1200, 800, "Rained");
+                Raylib.SetTargetFPS(120);
+                Raylib.SetExitKey(KeyboardKey.Null);
+
+                // setup imgui
+                rlImGui.Setup(true, true);
+                rlImGui.SetIniFilename("data/imgui.ini");
+
+                RainEd app = new(levelToLoad);
+                Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                
+                // for some reason, closing the window bugs
+                // out raylib, so i just set it invisible
+                // and close it when the program ends
+                splashScreenWindow?.SetVisible(false);
+                
+                while (!Raylib.WindowShouldClose())
+                {
+                    Raylib.BeginDrawing();
+                    app.Draw(Raylib.GetFrameTime());
+                    Raylib.EndDrawing();
+                }
+
+                rlImGui.Shutdown();
             }
 
-            rlImGui.Shutdown();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             Raylib.CloseWindow();
-            if (splashScreenWindow is not null) splashScreenWindow.Close();
+            splashScreenWindow?.Close();
         }
     }
 }
