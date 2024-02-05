@@ -12,7 +12,7 @@ cd rained
 Build and run Rained.Editor from the root directory
 ```bash
 dotnet build
-dotnet run --project src/Rained.Editor/Rained.Editor.csproj
+dotnet run --project src/Rained/Rained.csproj
 ```
 
 ## Contributing
