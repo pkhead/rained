@@ -5,9 +5,9 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B16D0F71-B9B3-4A94-BADD-508F7E2911CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rained.Editor", "src\Rained.Editor\Rained.Editor.csproj", "{A1D21178-3516-4A76-9093-B79A3A628869}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rained.Lingo", "src\Rained.Lingo\Rained.Lingo.csproj", "{1E812506-E222-4359-B6DC-759B080B0CBE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rained", "src\Rained\Rained.csproj", "{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,17 +18,17 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A1D21178-3516-4A76-9093-B79A3A628869}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A1D21178-3516-4A76-9093-B79A3A628869}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A1D21178-3516-4A76-9093-B79A3A628869}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A1D21178-3516-4A76-9093-B79A3A628869}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1E812506-E222-4359-B6DC-759B080B0CBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1E812506-E222-4359-B6DC-759B080B0CBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E812506-E222-4359-B6DC-759B080B0CBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E812506-E222-4359-B6DC-759B080B0CBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{A1D21178-3516-4A76-9093-B79A3A628869} = {B16D0F71-B9B3-4A94-BADD-508F7E2911CF}
 		{1E812506-E222-4359-B6DC-759B080B0CBE} = {B16D0F71-B9B3-4A94-BADD-508F7E2911CF}
+		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A} = {B16D0F71-B9B3-4A94-BADD-508F7E2911CF}
 	EndGlobalSection
 EndGlobal
