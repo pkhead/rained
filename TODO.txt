@@ -15,7 +15,7 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- correct tile rendering
+- correct tile rendering (render tile bodies instead of only tile heads)
 - material brush size
 - press E for tile/material eyedropper
 - WASD tile palette navigation (emulates joar editor controls)
@@ -31,13 +31,11 @@ Environment Editor:
 - undo/redo
 
 Light Editor:
-- store light data as one bit per pixel instead of RGBA8888 or whatever
 - light ring
 - IJKL light parameter changing
-- save texture to image
-- undo/redo
-- R to reset transform
 - WASD catalog navigation
+- save intermediate textures for change history
+  (i guess once per every 1000 stroke atoms or something)
 
 Effects Editor: (TODO)
 

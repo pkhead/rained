@@ -182,7 +182,7 @@ public class LightEditor : IEditorMode
 
             level.LightAngle = lightDeg / 180f * MathF.PI;
 
-            if (ImGui.Button("Reset Brush Transform") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.R)))
+            if (ImGui.Button("Reset Brush") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.R)))
             {
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;
