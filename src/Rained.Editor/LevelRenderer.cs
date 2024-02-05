@@ -412,8 +412,8 @@ public class LevelRenderer
 
         Raylib.DrawTexturePro(
             texture:    gridTexture,
-            source:     new Rectangle(0, 0, gridTexture.Width * levelW, gridTexture.Height * levelH),
-            dest:       new Rectangle(0, 0, Level.TileSize * levelW * 2, Level.TileSize * levelH * 2),
+            source:     new Rectangle(0, 0, gridTexture.Width * levelW / 2f, gridTexture.Height * levelH / 2f),
+            dest:       new Rectangle(0, 0, Level.TileSize * levelW, Level.TileSize * levelH),
             origin:     Vector2.Zero,
             rotation:   0f,
             tint:       Color.White
@@ -469,5 +469,17 @@ public class LevelRenderer
             lineWidth,
             Color.White
         );
+
+        // draw water height
+        if (Level.HasWater)
+        {
+            float waterHeight = Level.WaterLevel + Level.BufferTilesBot + 0.5f;
+            int waterDrawY = (int)((Level.Height - waterHeight) * Level.TileSize);
+            Raylib.DrawLine(
+                0, waterDrawY,
+                Level.Width * Level.TileSize, waterDrawY,
+                Color.Blue
+            );
+        }
     }
 }

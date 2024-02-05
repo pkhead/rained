@@ -200,6 +200,13 @@ public class Level
 
     public ref Image LightMapRef { get => ref lightMap.Ref(); }
 
+    public int TileSeed = 200;
+    public bool DefaultMedium = false; // idk what the hell this does
+    public bool HasSunlight = true;
+    public bool HasWater = false;
+    public int WaterLevel = -1;
+    public bool IsWaterInFront = true; 
+
     public Level(RainEd editor, int width = 72, int height = 43)
     {
         this.editor = editor;
@@ -210,6 +217,8 @@ public class Level
         BufferTilesTop = 3;
         BufferTilesRight = 12;
         BufferTilesBot = 5;
+
+        WaterLevel = height / 2;
 
         // initialize layers
         Layers = new LevelCell[LayerCount,Width,Height];

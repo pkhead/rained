@@ -66,10 +66,11 @@ public class EditorWindow
         layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
 
         LevelRenderer = new LevelRenderer(editor);
+        editorModes.Add(new EnvironmentEditor(this));
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));
-        editorModes.Add(new LightEditor(this));
         editorModes.Add(new CameraEditor(this));
+        editorModes.Add(new LightEditor(this));
     }
 
     public void UnloadView()
@@ -102,7 +103,7 @@ public class EditorWindow
             queuedEditMode = -1;
         }
         
-        if (IsWindowOpen && ImGui.Begin("Level", ref IsWindowOpen))
+        if (IsWindowOpen && ImGui.Begin("Level"))
         {
             var newEditMode = selectedMode;
 
@@ -163,16 +164,19 @@ public class EditorWindow
 
                 // edit mode keybinds
                 if (Raylib.IsKeyPressed(KeyboardKey.One))
-                {} // TODO: show level properties window (seed, light type, and environment)
-                
-                if (Raylib.IsKeyPressed(KeyboardKey.Two))
                     newEditMode = 0;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Three))
+                if (Raylib.IsKeyPressed(KeyboardKey.Two))
                     newEditMode = 1;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Four))
+                if (Raylib.IsKeyPressed(KeyboardKey.Three))
                     newEditMode = 2;
+                
+                if (Raylib.IsKeyPressed(KeyboardKey.Four))
+                    newEditMode = 3;
+                
+                if (Raylib.IsKeyPressed(KeyboardKey.Five))
+                    newEditMode = 4;
                 
                 // keybind to switch layer
                 if (Raylib.IsKeyPressed(KeyboardKey.Tab))
