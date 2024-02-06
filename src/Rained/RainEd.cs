@@ -65,6 +65,24 @@ public class RainEd
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        editorWindow.ReloadLevel();
+        editorWindow.LoadView();
+    }
+
+    private void SaveLevel(string path)
+    {
+        editorWindow.UnloadView();
+
+        try
+        {
+            LevelSerialization.Save(this, path);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            ShowError("Could not write level file");
+        }
+
         editorWindow.LoadView();
     }
 
@@ -79,12 +97,24 @@ public class RainEd
         {
             if (ImGui.BeginMenu("File"))
             {
-                ImGui.MenuItem("New");
+                if (ImGui.MenuItem("New"))
+                {
+                    editorWindow.UnloadView();
+                    level = Level.NewDefaultLevel(this);
+                    editorWindow.ReloadLevel();
+                    editorWindow.LoadView();
+                }
+
                 if (ImGui.MenuItem("Open"))
                 {
                     LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel);
                 }
-                ImGui.MenuItem("Save");
+
+                if (ImGui.MenuItem("Save"))
+                {
+                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel);
+                }
+                
                 ImGui.MenuItem("Save As...");
                 ImGui.Separator();
                 ImGui.MenuItem("Render");

@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text;
 using Raylib_cs;
 namespace RainEd;
 
@@ -223,5 +224,205 @@ public static class LevelSerialization
         }
 
         return level;
+    }
+    public static void Save(RainEd editor, string path)
+    {
+        // open text file
+        var outputTxtFile = new StreamWriter(path);
+
+        var level = editor.Level;
+
+        StringBuilder output = new();
+        var newLine = Environment.NewLine;
+        var workLayer = editor.Window.WorkLayer + 1;
+
+        // geometry data
+        output.Append('[');
+        for (int x = 0; x < level.Width; x++)
+        {
+            if (x > 0) output.Append(", ");
+            output.Append('[');
+            for (int y = 0; y < level.Height; y++)
+            {
+                if (y > 0) output.Append(", ");
+                output.Append('[');
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    if (l > 0) output.Append(", ");
+                    output.Append('[');
+
+                    var cell = level.Layers[l,x,y];
+                    output.Append((int)cell.Cell);
+                    output.Append(", [");
+
+                    // objects
+                    bool hasObject = false;
+                    if (cell.Cell == CellType.ShortcutEntrance)
+                    {
+                        hasObject = true;
+                        output.Append('4');
+                    }
+                    
+                    for (int i = 0; i < 32; i++)
+                    {
+                        if (cell.Has((LevelObject) (1 << i)))
+                        {
+                            if (hasObject) output.Append(", ");
+                            hasObject = true;
+                            output.Append(i+1);
+                        }
+                    }
+
+                    output.Append("]]");
+                }
+                output.Append(']');
+            }
+            output.Append(']');
+        }
+        output.Append(']');
+        output.Append(newLine);
+
+        // tiles
+        output.Append($"[#lastKeys: [], #Keys: [], #workLayer: {workLayer}, #lstMsPs: point(0, 0), #tlMatrix: [");
+        for (int x = 0; x < level.Width; x++)
+        {
+            if (x > 0) output.Append(", ");
+            output.Append('[');
+            for (int y = 0; y < level.Height; y++)
+            {
+                if (y > 0) output.Append(", ");
+                output.Append('[');
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    if (l > 0) output.Append(", ");
+                    var cell = level.Layers[l,x,y];
+
+                    // tile head
+                    if (cell.TileHead is not null)
+                    {
+                        int group = cell.TileHead.Category.Index + 3;
+                        int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
+                        string name = cell.TileHead.Name;
+                        output.AppendFormat("[#tp: \"tileHead\", #data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
+                    }
+                    // tile body
+                    else if (cell.HasTile())
+                    {
+                        output.AppendFormat(
+                            "[#tp: \"tileBody\", #data: [point({0}, {1}), {2}]]",
+                            cell.TileRootX + 1,
+                            cell.TileRootY + 1,
+                            cell.TileLayer + 1
+                        );
+                    }
+                    // material
+                    else if (cell.Material != Material.None)
+                    {
+                        output.AppendFormat("[#tp: \"material\", #data: \"{0}\"]", Level.MaterialNames[(int)cell.Material-1]);
+                    }
+                    // no tile/material data here
+                    else
+                        output.Append("[#tp: \"default\", #data: 0]");
+                }
+                output.Append(']');
+            }
+            output.Append(']');
+        }
+        output.AppendFormat("], #defaultMaterial: \"{0}\", ", Level.MaterialNames[(int)level.DefaultMaterial-1]);
+
+        // some lingo tile editor data, irrelevant to this editor
+        output.Append("#toolType: \"material\", #toolData: \"Big Metal\", #tmPos: point(1, 1), #tmSavPosL: [], #specialEdit: 0]");
+        output.Append(newLine);
+
+        // effect editor data
+        output.Append("[#lastKeys: [], #Keys: [], #lstMsPs: point(0, 0), #effects: [], #emPos: point(1, 1), #editEffect: 1, #selectEditEffect: 1, #mode: \"createNew\", #brushSize: 5]");
+        output.Append(newLine);
+
+        // light data
+        output.Append("[#pos: point(0, 0), #rot: 0, #sz: point(50, 70), #col: 1, #Keys: 0, #lastKeys: 0, #lastTm: 0, ");
+        output.AppendFormat("#lightAngle: {0}, #flatness: {1}, ", level.LightAngle / MathF.PI * 180f, level.LightDistance);
+        output.Append("#lightRect: rect(1000, 1000, -1000, -1000), #paintShape: \"px1\"]");
+        output.Append(newLine);
+
+        // default medium and light type
+        // otherwise, filled with useless data
+        output.AppendFormat(
+            "[#timeLimit: 4800, #defaultTerrain: {0}, #maxFlies: 10, #flySpawnRate: 50, #lizards: [], #ambientSounds: [], #music: \"NONE\", #tags: [], #lightType: \"{1}\", #waterDrips: 1, #lightRect: rect(0, 0, 1040, 800), #Matrix: []]]",
+            level.DefaultMedium ? 1 : 0,
+            "Static"    
+        );
+        output.Append(newLine);
+
+        // level properties
+        output.AppendFormat(
+            "[#mouse: 1, #lastMouse: 0, #mouseClick: 0, #pal: 1, #pals: [[#detCol: color( 255, 0, 0 )]], #eCol1: 1, #eCol2: 2, #totEcols: 5, #tileSeed: {0}, #colGlows: [0, 0], #size: point({1}, {2}), #extraTiles: [{3}, {4}, {5}, {6}], #light: {7}]",
+            level.TileSeed,
+            level.Width, level.Height,
+            level.BufferTilesLeft,
+            level.BufferTilesTop,
+            level.BufferTilesRight,
+            level.BufferTilesBot,
+            level.HasSunlight ? 1 : 0
+        );
+        output.Append(newLine);
+
+        // cameras
+        output.Append("[#cameras: [");
+        for (int i = 0; i < level.Cameras.Count; i++)
+        {
+            var cam = level.Cameras[i];
+            output.AppendFormat("point({0}, {1})", cam.Position.X * 20f, cam.Position.Y * 20f);
+            if (i < level.Cameras.Count - 1)
+                output.Append(", ");
+        }
+        output.Append("], #selectedCamera: 0, #Keys: [#n: 0, #d: 0, #e: 0, #p: 0], #lastKeys: [#n: 0, #d: 0, #e: 0, #p: 0], ");
+
+        // camera corner data
+        output.Append("#quads: [");
+        for (int i = 0; i < level.Cameras.Count; i++)
+        {
+            var cam = level.Cameras[i];
+            output.Append('[');
+
+            for (int j = 0; j < 4; j++)
+            {
+                output.AppendFormat(
+                    "[{0}, {1}]",
+                    cam.CornerAngles[j] / MathF.PI * 180f,
+                    cam.CornerOffsets[j]
+                );
+
+                if (j < 3) output.Append(", ");
+            }
+
+            output.Append(']');
+            if (i < level.Cameras.Count - 1)
+                output.Append(", ");
+        }
+        output.Append("]]");
+        output.Append(newLine);
+
+        // water data
+        output.AppendFormat(
+            "[#waterLevel: {0}, #waterInFront: {1}, #waveLength: 60, #waveAmplitude: 5, #waveSpeed: 10]",
+            level.HasWater ? level.WaterLevel : -1,
+            level.IsWaterInFront ? 1 : 0
+        );
+        output.Append(newLine);
+
+        // props data
+        output.AppendFormat(
+            "[#props: [], #lastKeys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #Keys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #workLayer: {0}, #lstMsPs: point(0, 0), #pmPos: point(1, 1), #pmSavPosL: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], #propRotation: 325, #propStretchX: 1, #propStretchY: 1, #propFlipX: 1, #propFlipY: 1, #depth: 0, #color: 0]",
+            workLayer
+        );
+        output.Append(newLine);
+
+        // finish writing to txt file
+        outputTxtFile.Write(output);
+        outputTxtFile.Close();
+
+        // write light image
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        Raylib.ExportImage(level.LightMap, lightPath);
     }
 }
