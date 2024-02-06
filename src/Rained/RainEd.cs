@@ -418,6 +418,7 @@ public class RainEd
         bool unused = true;
         if (ImGui.BeginPopupModal("About Rained", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
+            // TODO: version number, build date, os/runtime information, library licenses
             rlImGui.Image(rainedLogo);
             ImGui.Text("A Rain World level editor - Beta 1.0.0");
             ImGui.NewLine();
