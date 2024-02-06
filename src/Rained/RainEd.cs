@@ -2,6 +2,8 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 using ImGuiNET;
+using System.Text;
+using System.Runtime.InteropServices;
 
 namespace RainEd;
 
@@ -41,6 +43,7 @@ public class RainEd
         changeHistory = new ChangeHistory(this);
 
         UpdateTitle();
+        RegisterShortcuts();
     }
 
     public void ShowError(string msg)
@@ -103,9 +106,150 @@ public class RainEd
         Raylib.SetWindowTitle($"Rained - {levelName}");
     }
 
+#region Shortcuts
+    private class KeyShortcut
+    {
+        public string Name;
+        public string ShortcutString;
+        public ImGuiKey Key;
+        public ImGuiModFlags Mods;
+        public bool IsActivated = false;
+
+        public KeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods)
+        {
+            // build shortcut string
+            var str = new List<string>();
+
+            if (mods.HasFlag(ImGuiModFlags.Ctrl))
+                str.Add("Ctrl");
+            
+            if (mods.HasFlag(ImGuiModFlags.Shift))
+                str.Add("Shift");
+            
+            if (mods.HasFlag(ImGuiModFlags.Alt))
+                str.Add("Alt");
+            
+            if (mods.HasFlag(ImGuiModFlags.Super))
+                str.Add("Super");
+            
+            str.Add(ImGui.GetKeyName(key));
+
+            ShortcutString = string.Join('+', str);
+
+            // initialize other properties
+            Name = name;
+            Key = key;
+            Mods = mods;
+        }
+
+        public bool IsKeyPressed()
+            =>
+                ImGui.IsKeyPressed(Key) &&
+                (Mods.HasFlag(ImGuiModFlags.Ctrl) == ImGui.IsKeyDown(ImGuiKey.ModCtrl)) &&
+                (Mods.HasFlag(ImGuiModFlags.Shift) == ImGui.IsKeyDown(ImGuiKey.ModShift)) &&
+                (Mods.HasFlag(ImGuiModFlags.Alt) == ImGui.IsKeyDown(ImGuiKey.ModAlt)) &&
+                (Mods.HasFlag(ImGuiModFlags.Super) == ImGui.IsKeyDown(ImGuiKey.ModSuper));
+    }
+    private readonly Dictionary<string, KeyShortcut> keyShortcuts = new();
+
+    public void RegisterKeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods)
+    {
+        keyShortcuts.Add(name, new KeyShortcut(name, key, mods));
+    }
+
+    public bool IsShortcutActivated(string id)
+        => keyShortcuts[id].IsActivated;
+
+    public void ImGuiMenuItemShortcut(string shortcutId, string name)
+    {
+        var shortcutData = keyShortcuts[shortcutId];
+        if (ImGui.MenuItem(name, shortcutData.ShortcutString))
+            shortcutData.IsActivated = true;
+    }
+
+    private void RegisterShortcuts()
+    {
+        RegisterKeyShortcut("NavUp", ImGuiKey.W, ImGuiModFlags.None);
+        RegisterKeyShortcut("NavLeft", ImGuiKey.A, ImGuiModFlags.None);
+        RegisterKeyShortcut("NavDown", ImGuiKey.S, ImGuiModFlags.None);
+        RegisterKeyShortcut("NavRight", ImGuiKey.D, ImGuiModFlags.None);
+
+        RegisterKeyShortcut("New", ImGuiKey.N, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("Open", ImGuiKey.O, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("Save", ImGuiKey.S, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("SaveAs", ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+
+        RegisterKeyShortcut("Cut", ImGuiKey.X, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("Copy", ImGuiKey.C, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("Paste", ImGuiKey.V, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut("Undo", ImGuiKey.Z, ImGuiModFlags.Ctrl);
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            RegisterKeyShortcut("Redo", ImGuiKey.Y, ImGuiModFlags.Ctrl);
+        else
+            RegisterKeyShortcut("Redo", ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+    }
+
+    private void HandleShortcuts()
+    {
+        // activate shortcuts on key press
+        if (!ImGui.GetIO().WantTextInput)
+        {
+            foreach (var shortcut in keyShortcuts.Values)
+            {
+                if (shortcut.IsKeyPressed())
+                    shortcut.IsActivated = true;
+            }
+        }
+
+        if (IsShortcutActivated("New"))
+        {
+            editorWindow.UnloadView();
+            level = Level.NewDefaultLevel(this);
+            editorWindow.ReloadLevel();
+            changeHistory.Clear();
+            editorWindow.LoadView();
+
+            currentFilePath = string.Empty;
+            UpdateTitle();
+        }
+
+        if (IsShortcutActivated("Open"))
+        {
+            LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath);
+        }
+
+        if (IsShortcutActivated("Save"))
+        {
+            if (string.IsNullOrEmpty(currentFilePath))
+                LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+            else
+                SaveLevel(currentFilePath);
+        }
+
+        if (IsShortcutActivated("SaveAs"))
+        {
+            LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+        }
+
+        if (IsShortcutActivated("Undo"))
+        {
+            Undo();
+        }
+
+        if (IsShortcutActivated("Redo"))
+        {
+            Redo();
+        }
+    }
+#endregion
+
     public void Draw(float dt)
     {
         Raylib.ClearBackground(Color.DarkGray);
+        
+        foreach (var shortcut in keyShortcuts.Values)
+            shortcut.IsActivated = false;
 
         rlImGui.Begin();
         ImGui.DockSpaceOverViewport();
@@ -114,35 +258,10 @@ public class RainEd
         {
             if (ImGui.BeginMenu("File"))
             {
-                if (ImGui.MenuItem("New"))
-                {
-                    editorWindow.UnloadView();
-                    level = Level.NewDefaultLevel(this);
-                    editorWindow.ReloadLevel();
-                    changeHistory.Clear();
-                    editorWindow.LoadView();
-
-                    currentFilePath = string.Empty;
-                    UpdateTitle();
-                }
-
-                if (ImGui.MenuItem("Open", "Ctrl+O"))
-                {
-                    LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath);
-                }
-
-                if (ImGui.MenuItem("Save", "Ctrl+S"))
-                {
-                    if (string.IsNullOrEmpty(currentFilePath))
-                        LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
-                    else
-                        SaveLevel(currentFilePath);
-                }
-                
-                if (ImGui.MenuItem("Save As...", "Ctrl+Shift+S"))
-                {
-                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
-                }
+                ImGuiMenuItemShortcut("New", "New");
+                ImGuiMenuItemShortcut("Open", "Open");
+                ImGuiMenuItemShortcut("Save", "Save");
+                ImGuiMenuItemShortcut("SaveAs", "Save As...");
 
                 ImGui.Separator();
                 ImGui.MenuItem("Render");
@@ -154,14 +273,12 @@ public class RainEd
 
             if (ImGui.BeginMenu("Edit"))
             {
-                ImGui.MenuItem("Undo", "Ctrl+Z");
-                ImGui.MenuItem("Redo");
+                ImGuiMenuItemShortcut("Undo", "Undo");
+                ImGuiMenuItemShortcut("Redo", "Redo");
                 ImGui.Separator();
-                ImGui.MenuItem("Cut");
-                ImGui.MenuItem("Copy");
-                ImGui.MenuItem("Paste");
-                ImGui.Separator();
-                ImGui.MenuItem("Level Properties");
+                ImGuiMenuItemShortcut("Cut", "Cut");
+                ImGuiMenuItemShortcut("Copy", "Copy");
+                ImGuiMenuItemShortcut("Paste", "Paste");
 
                 ImGui.EndMenu();
             }
@@ -190,6 +307,8 @@ public class RainEd
 
             ImGui.EndMainMenuBar();
         }
+
+        HandleShortcuts();
 
         editorWindow.Render(dt);
 
