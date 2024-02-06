@@ -35,6 +35,7 @@ Environment Editor:
 - undo/redo
 
 Light Editor:
+- light offset seems incorrect
 - light parameters undo/redo
 - light ring
 - IJKL light parameter changing
@@ -98,6 +99,6 @@ KEYBINDS:
 
   Light Editor:
     WASD - Navigate catalog
-    Shift + Mouse - Scale brush
-    Shift + Ctrl - Rotate brush
+    Q + Mouse - Scale brush
+    E + Mouse - Rotate brush
     R - Reset transform

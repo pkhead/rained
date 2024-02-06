@@ -395,10 +395,10 @@ public class LightEditor : IEditorMode
                 );
             }
 
-            var isShiftDown = Raylib.IsKeyDown(KeyboardKey.LeftShift);
-            var isCtrlDown = Raylib.IsKeyDown(KeyboardKey.LeftControl);
+            var doScale = Raylib.IsKeyDown(KeyboardKey.Q);
+            var doRotate = Raylib.IsKeyDown(KeyboardKey.E);
 
-            if (isShiftDown || isCtrlDown)
+            if (doScale || doRotate)
             {
                 if (wasCursorEnabled)
                 {
@@ -407,9 +407,9 @@ public class LightEditor : IEditorMode
                 }
                 isCursorEnabled = false;
 
-                if (isShiftDown)
+                if (doScale)
                     brushSize += Raylib.GetMouseDelta();
-                if (isCtrlDown)
+                if (doRotate)
                     brushRotation -= Raylib.GetMouseDelta().Y / 2f;
             }
 
