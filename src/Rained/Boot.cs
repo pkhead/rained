@@ -38,7 +38,7 @@ namespace RainEd
             // good C# ImGui integration libraries. (Raylib did, though)
             if (showSplashScreen)
             {
-                splashScreenWindow = new RenderWindow(new VideoMode(480, 360), "Rained Splash Screen", Styles.None);
+                splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
                 Texture texture = new("data/splash-screen.png");
                 var sprite = new Sprite(texture);
 

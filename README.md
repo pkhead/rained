@@ -1,6 +1,7 @@
 # Rained
-Another Rain World level editor. Currently in development.
+![Fancy Logoe](rained-logo.png)
 
+Another Rain World level editor. Currently in development.
 ## Building
 ### .NET CLI
 Clone with Git:
