@@ -144,11 +144,11 @@ public class LevelBrowser
         int IComparer<Entry>.Compare(Entry a, Entry b) => a.Name.CompareTo(b.Name);
     }
     
-    private readonly RlManaged.Texture2D icons;
+    private static RlManaged.Texture2D icons;
     private LevelBrowser(OpenMode mode, Action<string> callback, string fileRoot)
     {
         root = fileRoot;
-        icons = RlManaged.Texture2D.Load("data/filebrowser-icons.png");
+        icons ??= RlManaged.Texture2D.Load("data/filebrowser-icons.png");
 
         this.mode = mode;
         this.callback = callback;
@@ -157,6 +157,9 @@ public class LevelBrowser
         pathBuf = cwd.PathString;
         nameBuf = string.Empty;
     }
+
+    private Rectangle GetIconRect(int index)
+        => new Rectangle(index * 13, 0, 13, 13);
 
     private bool SetPath(LevelPath newPath)
     {
@@ -211,19 +214,21 @@ public class LevelBrowser
 
     public void Render()
     {
+        var winName = mode == OpenMode.Write ? "Save Level" : "Open Level";
+
         if (!isOpen)
         {
             isOpen = true;
-            ImGui.OpenPopup("File Browser");
+            ImGui.OpenPopup(winName + "###File Browser");
         }
 
         ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
-        if (ImGui.BeginPopupModal("File Browser"))
+        if (ImGui.BeginPopupModal(winName + "###File Browser"))
         {
             var windowSize = ImGui.GetWindowSize();
 
             // back button
-            if (ImGui.Button("<"))
+            if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0)))
             {
                 if (backStack.TryPop(out LevelPath newPath))
                 {
@@ -238,7 +243,7 @@ public class LevelBrowser
             } ImGui.SameLine();
 
             // forward button
-            if (ImGui.Button(">"))
+            if (rlImGui.ImageButtonRect(">", icons, 13, 13, GetIconRect(1)))
             {
                 if (forwardStack.TryPop(out LevelPath newPath))
                 {
@@ -251,7 +256,7 @@ public class LevelBrowser
                 }  
             } ImGui.SameLine();
 
-            if (ImGui.Button("^") && cwd.PathString != "/")
+            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2)) && cwd.PathString != "/")
             {
                 var oldDir = cwd;
                 if (SetPath(cwd.Join("..")))
@@ -262,7 +267,7 @@ public class LevelBrowser
                 }
             }
             ImGui.SameLine();
-            ImGui.Button("Refresh");
+            rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4));
 
             // current path
             ImGui.SameLine();
@@ -339,7 +344,7 @@ public class LevelBrowser
                         // this is the offset into the file icon texture
                         int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
 
-                        rlImGui.ImageRect(icons, 13, 13, new Rectangle(fileTypeIcon * 13, 0, 13, 13));
+                        rlImGui.ImageRect(icons, 13, 13, GetIconRect(fileTypeIcon));
                         ImGui.SameLine();
                         
                         var entryName = Path.GetFileNameWithoutExtension(entry.Name);
@@ -363,7 +368,7 @@ public class LevelBrowser
 
             if (ImGui.Button("OK")) ok = true;
             ImGui.SameLine();
-            if (ImGui.Button("Cancel"))
+            if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.Escape)))
             {
                 isDone = true;
             }
@@ -394,10 +399,9 @@ public class LevelBrowser
                         break;
                     }
                 }
-
-                if (enterPressed) ok = true;
             }
 
+            if (enterPressed) ok = true;
             if (ok)
             {
                 if (mode == OpenMode.Write)
@@ -433,7 +437,6 @@ public class LevelBrowser
 
             if (isDone)
             {
-                icons.Dispose();
                 ImGui.CloseCurrentPopup();
             }
 
