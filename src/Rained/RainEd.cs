@@ -12,6 +12,7 @@ public class RainEd
     public bool Running = true;
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
+    private readonly RlManaged.Texture2D rainedLogo;
     public readonly Tiles.Database TileDatabase;
     private readonly ChangeHistory changeHistory;
     private readonly EditorWindow editorWindow;
@@ -25,9 +26,12 @@ public class RainEd
     private float notificationTime = 0f;
     private float notifFlash = 0f;
 
+    private bool promptAbout = false;
+
     public ChangeHistory ChangeHistory { get => changeHistory; }
 
     public RainEd(string levelPath = "") {
+        rainedLogo = RlManaged.Texture2D.Load("data/rained-logo.png");
         TileDatabase = new Tiles.Database();
         
         if (levelPath.Length > 0)
@@ -346,7 +350,8 @@ public class RainEd
 
             if (ImGui.BeginMenu("Help"))
             {
-                ImGui.MenuItem("About...");
+                if (ImGui.MenuItem("About..."))
+                    promptAbout = true;
                 
                 ImGui.EndMenu();
             }
@@ -399,6 +404,27 @@ public class RainEd
             notifFlash += dt;
         }
 
+        // about screen
+        if (promptAbout)
+        {
+            promptAbout = false;
+            ImGui.OpenPopup("About Rained");
+
+            // center popup modal
+            var viewport = ImGui.GetMainViewport();
+            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+        }
+
+        bool unused = true;
+        if (ImGui.BeginPopupModal("About Rained", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            rlImGui.Image(rainedLogo);
+            ImGui.Text("A Rain World level editor - Beta 1.0.0");
+            ImGui.NewLine();
+            ImGui.Text("(c) 2024 pkhead - MIT License");
+            ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");
+        }
+
         // prompt unsaved changes
         if (promptUnsavedChanges)
         {
@@ -410,7 +436,7 @@ public class RainEd
             ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         }
 
-        bool unused = true;
+        unused = true;
         if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
             ImGui.Text("Do you want to save your changes before proceeding?");
