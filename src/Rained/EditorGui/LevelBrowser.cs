@@ -88,7 +88,7 @@ public class LevelBrowser
 
     private static LevelBrowser? singleton = null;
     public static LevelBrowser? Singleton { get => singleton; }
-    public static void Open(OpenMode openMode, Action<string> callback)
+    public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
     {
         singleton = new LevelBrowser(openMode, callback, "drizzle/Drizzle.Data/LevelEditorProjects");
     }

@@ -11,7 +11,9 @@ public class RainEd
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     public readonly Tiles.Database TileDatabase;
     private readonly ChangeHistory changeHistory;
-    private EditorWindow editorWindow;
+    private readonly EditorWindow editorWindow;
+
+    private string currentFilePath = string.Empty;
 
     public Level Level { get => level; }
     public EditorWindow Window { get => editorWindow; }
@@ -37,6 +39,8 @@ public class RainEd
         LevelGraphicsTexture = RlManaged.Texture2D.Load("data/level-graphics.png");
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
+
+        UpdateTitle();
     }
 
     public void ShowError(string msg)
@@ -55,6 +59,8 @@ public class RainEd
             level = LevelSerialization.Load(this, path);
             editorWindow.ReloadLevel();
             changeHistory.Clear();
+            currentFilePath = path;
+            UpdateTitle();
         }
         catch (Exception e)
         {
@@ -76,6 +82,8 @@ public class RainEd
         try
         {
             LevelSerialization.Save(this, path);
+            currentFilePath = path;
+            UpdateTitle();
         }
         catch (Exception e)
         {
@@ -84,6 +92,15 @@ public class RainEd
         }
 
         editorWindow.LoadView();
+    }
+
+    private void UpdateTitle()
+    {
+        var levelName =
+            string.IsNullOrEmpty(currentFilePath) ? "Untitled" :
+            Path.GetFileNameWithoutExtension(currentFilePath);
+        
+        Raylib.SetWindowTitle($"Rained - {levelName}");
     }
 
     public void Draw(float dt)
@@ -102,20 +119,31 @@ public class RainEd
                     editorWindow.UnloadView();
                     level = Level.NewDefaultLevel(this);
                     editorWindow.ReloadLevel();
+                    changeHistory.Clear();
                     editorWindow.LoadView();
+
+                    currentFilePath = string.Empty;
+                    UpdateTitle();
                 }
 
-                if (ImGui.MenuItem("Open"))
+                if (ImGui.MenuItem("Open", "Ctrl+O"))
                 {
-                    LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel);
+                    LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath);
                 }
 
-                if (ImGui.MenuItem("Save"))
+                if (ImGui.MenuItem("Save", "Ctrl+S"))
                 {
-                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel);
+                    if (string.IsNullOrEmpty(currentFilePath))
+                        LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                    else
+                        SaveLevel(currentFilePath);
                 }
                 
-                ImGui.MenuItem("Save As...");
+                if (ImGui.MenuItem("Save As...", "Ctrl+Shift+S"))
+                {
+                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                }
+
                 ImGui.Separator();
                 ImGui.MenuItem("Render");
                 ImGui.Separator();

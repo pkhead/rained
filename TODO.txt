@@ -1,7 +1,7 @@
 Overall:
 - some levels fail to load
   (i assume this is because the editor is supposed to ignore erroneous lines...)
-- saving
+- open file browser in directory of current level
 - help pages/hints/tooltips/whatever
 - Edit/View menu buttons for specific editors
   e.g. New Camera button in camera editor,
