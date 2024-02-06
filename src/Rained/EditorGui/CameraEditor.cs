@@ -125,7 +125,7 @@ public class CameraEditor : IEditorMode
         if (!ImGui.GetIO().WantCaptureKeyboard && activeCamera is null)
         {
             // N to create new camera
-            if (Raylib.IsKeyPressed(KeyboardKey.N) && level.Cameras.Count < Level.MaxCameraCount)
+            if (window.IsShortcutActivated("NewObject") && level.Cameras.Count < Level.MaxCameraCount)
             {
                 window.Editor.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);

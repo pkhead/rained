@@ -263,10 +263,8 @@ public class GeometryEditor : IEditorMode
             int toolRow = (int) selectedTool / 4;
             int toolCol = (int) selectedTool % 4;
             int toolCount = (int) Tool.ToolCount;
-
-            static bool keyPressed(KeyboardKey k) => Raylib.IsKeyPressed(k) || Raylib.IsKeyPressedRepeat(k);
-
-            if (keyPressed(KeyboardKey.D))
+            
+            if (window.IsShortcutActivated("NavRight"))
             {
                 if ((int) selectedTool == (toolCount-1))
                 {
@@ -280,7 +278,7 @@ public class GeometryEditor : IEditorMode
                 }
             }
 
-            if (keyPressed(KeyboardKey.A))
+            if (window.IsShortcutActivated("NavLeft"))
             {
                 toolCol--;
                 if (toolCol < 0)
@@ -290,12 +288,12 @@ public class GeometryEditor : IEditorMode
                 }
             }
 
-            if (keyPressed(KeyboardKey.W))
+            if (window.IsShortcutActivated("NavUp"))
             {
                 toolRow--;
             }
 
-            if (keyPressed(KeyboardKey.S))
+            if (window.IsShortcutActivated("NavDown"))
             {
                 // if on the last row, wrap back to first row
                 // else, just go to next row

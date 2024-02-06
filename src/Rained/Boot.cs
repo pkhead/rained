@@ -3,6 +3,7 @@ using rlImGui_cs;
 
 using SFML.Window;
 using SFML.Graphics;
+using ImGuiNET;
 
 namespace RainEd
 {
@@ -56,6 +57,8 @@ namespace RainEd
                 // setup imgui
                 rlImGui.Setup(true, true);
                 rlImGui.SetIniFilename("data/imgui.ini");
+                ImGui.GetIO().KeyRepeatDelay = 0.5f;
+                ImGui.GetIO().KeyRepeatRate = 0.03f;
 
                 RainEd app = new(levelToLoad);
                 Raylib.ClearWindowState(ConfigFlags.HiddenWindow);

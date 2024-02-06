@@ -114,8 +114,9 @@ public class RainEd
         public ImGuiKey Key;
         public ImGuiModFlags Mods;
         public bool IsActivated = false;
+        public bool AllowRepeat = false;
 
-        public KeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods)
+        public KeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
         {
             // build shortcut string
             var str = new List<string>();
@@ -140,11 +141,12 @@ public class RainEd
             Name = name;
             Key = key;
             Mods = mods;
+            AllowRepeat = allowRepeat;
         }
 
         public bool IsKeyPressed()
             =>
-                ImGui.IsKeyPressed(Key) &&
+                ImGui.IsKeyPressed(Key, AllowRepeat) &&
                 (Mods.HasFlag(ImGuiModFlags.Ctrl) == ImGui.IsKeyDown(ImGuiKey.ModCtrl)) &&
                 (Mods.HasFlag(ImGuiModFlags.Shift) == ImGui.IsKeyDown(ImGuiKey.ModShift)) &&
                 (Mods.HasFlag(ImGuiModFlags.Alt) == ImGui.IsKeyDown(ImGuiKey.ModAlt)) &&
@@ -152,9 +154,9 @@ public class RainEd
     }
     private readonly Dictionary<string, KeyShortcut> keyShortcuts = new();
 
-    public void RegisterKeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods)
+    public void RegisterKeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
     {
-        keyShortcuts.Add(name, new KeyShortcut(name, key, mods));
+        keyShortcuts.Add(name, new KeyShortcut(name, key, mods, allowRepeat));
     }
 
     public bool IsShortcutActivated(string id)
@@ -169,10 +171,11 @@ public class RainEd
 
     private void RegisterShortcuts()
     {
-        RegisterKeyShortcut("NavUp", ImGuiKey.W, ImGuiModFlags.None);
-        RegisterKeyShortcut("NavLeft", ImGuiKey.A, ImGuiModFlags.None);
-        RegisterKeyShortcut("NavDown", ImGuiKey.S, ImGuiModFlags.None);
-        RegisterKeyShortcut("NavRight", ImGuiKey.D, ImGuiModFlags.None);
+        RegisterKeyShortcut("NavUp", ImGuiKey.W, ImGuiModFlags.None, true);
+        RegisterKeyShortcut("NavLeft", ImGuiKey.A, ImGuiModFlags.None, true);
+        RegisterKeyShortcut("NavDown", ImGuiKey.S, ImGuiModFlags.None, true);
+        RegisterKeyShortcut("NavRight", ImGuiKey.D, ImGuiModFlags.None, true);
+        RegisterKeyShortcut("NewObject", ImGuiKey.N, ImGuiModFlags.None, true);
 
         RegisterKeyShortcut("New", ImGuiKey.N, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut("Open", ImGuiKey.O, ImGuiModFlags.Ctrl);
