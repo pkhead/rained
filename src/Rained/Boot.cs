@@ -68,7 +68,7 @@ namespace RainEd
                 // and close it when the program ends
                 splashScreenWindow?.SetVisible(false);
                 
-                while (!Raylib.WindowShouldClose())
+                while (app.Running)
                 {
                     Raylib.BeginDrawing();
                     app.Draw(Raylib.GetFrameTime());

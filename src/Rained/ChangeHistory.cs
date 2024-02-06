@@ -15,6 +15,7 @@ public class ChangeHistory
     private readonly Stack<IChangeRecord> undoStack = new();
     private readonly Stack<IChangeRecord> redoStack = new();
     private Snapshot? oldSnapshot = null;
+    private IChangeRecord? upToDate = null;
 
     public ChangeHistory(RainEd editor)
     {
@@ -256,5 +257,20 @@ public class ChangeHistory
         var record = redoStack.Pop();
         undoStack.Push(record);
         record.Apply(editor, true);
+    }
+
+    public void MarkUpToDate()
+    {
+        upToDate = undoStack.Count == 0 ? null : undoStack.Peek();
+    }
+
+    public bool HasChanges {
+        get
+        {
+            if (upToDate is null)
+                return undoStack.Count > 0;
+            else
+                return undoStack.Count == 0 || undoStack.Peek() != upToDate;
+        }
     }
 }

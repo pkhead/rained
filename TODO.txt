@@ -22,6 +22,7 @@ Tile Editor:
 - material brush size
 - press E for tile/material eyedropper
 - WASD tile palette navigation (emulates joar editor controls)
+- rect material place
 - copy henry
   (use two selectable lists for tile category and tile name)
 - draw culling

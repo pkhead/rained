@@ -220,6 +220,7 @@ public class LevelBrowser
         {
             isOpen = true;
             ImGui.OpenPopup(winName + "###File Browser");
+            ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         }
 
         ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
@@ -438,6 +439,7 @@ public class LevelBrowser
             if (isDone)
             {
                 ImGui.CloseCurrentPopup();
+                callback(string.Empty);
             }
 
             // show error popup if necessary

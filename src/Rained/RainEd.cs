@@ -9,6 +9,7 @@ namespace RainEd;
 
 public class RainEd
 {
+    public bool Running = true;
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     public readonly Tiles.Database TileDatabase;
@@ -55,46 +56,76 @@ public class RainEd
 
     private void LoadLevel(string path)
     {
-        editorWindow.UnloadView();
-
-        try
+        if (!string.IsNullOrEmpty(path))
         {
-            level = LevelSerialization.Load(this, path);
+            editorWindow.UnloadView();
+
+            try
+            {
+                level = LevelSerialization.Load(this, path);
+                editorWindow.ReloadLevel();
+                changeHistory.Clear();
+                changeHistory.MarkUpToDate();
+                currentFilePath = path;
+                UpdateTitle();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error loading file " + path);
+                Console.WriteLine(e);
+                ShowError("Could not load level");
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
             editorWindow.ReloadLevel();
-            changeHistory.Clear();
-            currentFilePath = path;
-            UpdateTitle();
+            editorWindow.LoadView();
         }
-        catch (Exception e)
-        {
-            Console.WriteLine("Error loading file " + path);
-            Console.WriteLine(e);
-            ShowError("Could not load level");
-        }
-
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        editorWindow.ReloadLevel();
-        editorWindow.LoadView();
     }
 
     private void SaveLevel(string path)
     {
-        editorWindow.UnloadView();
-
-        try
+        if (!string.IsNullOrEmpty(path))
         {
-            LevelSerialization.Save(this, path);
-            currentFilePath = path;
-            UpdateTitle();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            ShowError("Could not write level file");
+            editorWindow.UnloadView();
+
+            try
+            {
+                LevelSerialization.Save(this, path);
+                currentFilePath = path;
+                UpdateTitle();
+                changeHistory.MarkUpToDate();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                ShowError("Could not write level file");
+            }
+
+            editorWindow.LoadView();
+            
+            if (unsavedChangesCallback is not null)
+            {
+                unsavedChangesCallback();
+            }
         }
 
-        editorWindow.LoadView();
+        unsavedChangesCallback = null;
+    }
+
+    private Action? unsavedChangesCallback;
+    private bool promptUnsavedChanges;
+    private void PromptUnsavedChanges(Action callback)
+    {
+        if (changeHistory.HasChanges)
+        {
+            promptUnsavedChanges = true;
+            unsavedChangesCallback = callback;
+        }
+        else
+        {
+            callback();
+        }
     }
 
     private void UpdateTitle()
@@ -207,19 +238,25 @@ public class RainEd
 
         if (IsShortcutActivated("New"))
         {
-            editorWindow.UnloadView();
-            level = Level.NewDefaultLevel(this);
-            editorWindow.ReloadLevel();
-            changeHistory.Clear();
-            editorWindow.LoadView();
+            PromptUnsavedChanges(() =>
+            {
+                editorWindow.UnloadView();
+                level = Level.NewDefaultLevel(this);
+                editorWindow.ReloadLevel();
+                changeHistory.Clear();
+                changeHistory.MarkUpToDate();
+                editorWindow.LoadView();
 
-            currentFilePath = string.Empty;
-            UpdateTitle();
+                currentFilePath = string.Empty;
+                UpdateTitle();
+            });
         }
 
         if (IsShortcutActivated("Open"))
         {
-            LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath);
+            PromptUnsavedChanges(() =>
+                LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath)
+            );
         }
 
         if (IsShortcutActivated("Save"))
@@ -249,6 +286,9 @@ public class RainEd
 
     public void Draw(float dt)
     {
+        if (Raylib.WindowShouldClose())
+            PromptUnsavedChanges(() => Running = false);
+        
         Raylib.ClearBackground(Color.DarkGray);
         
         foreach (var shortcut in keyShortcuts.Values)
@@ -269,7 +309,10 @@ public class RainEd
                 ImGui.Separator();
                 ImGui.MenuItem("Render");
                 ImGui.Separator();
-                ImGui.MenuItem("Quit");
+                if (ImGui.MenuItem("Quit", "Alt+F4"))
+                {
+                    PromptUnsavedChanges(() => Running = false);
+                }
 
                 ImGui.EndMenu();
             }
@@ -355,6 +398,55 @@ public class RainEd
             notificationTime -= dt;
             notifFlash += dt;
         }
+
+        // prompt unsaved changes
+        if (promptUnsavedChanges)
+        {
+            promptUnsavedChanges = false;
+            ImGui.OpenPopup("Unsaved Changes");
+
+            // center popup modal
+            var viewport = ImGui.GetMainViewport();
+            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+        }
+
+        bool unused = true;
+        if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            ImGui.Text("Do you want to save your changes before proceeding?");
+
+            if (ImGui.Button("Yes"))
+            {
+                ImGui.CloseCurrentPopup();
+
+                // unsaved change callback is run in SaveLevel
+                if (string.IsNullOrEmpty(currentFilePath))
+                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                else
+                    SaveLevel(currentFilePath);
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("No"))
+            {
+                ImGui.CloseCurrentPopup();
+
+                if (unsavedChangesCallback is not null)
+                {
+                    unsavedChangesCallback();
+                    unsavedChangesCallback = null;
+                }
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape))
+            {
+                ImGui.CloseCurrentPopup();
+                unsavedChangesCallback = null;
+            }
+
+            ImGui.EndPopup();
+        } 
         rlImGui.End();
     }
     
