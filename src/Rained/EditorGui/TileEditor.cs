@@ -433,16 +433,21 @@ public class TileEditor : IEditorMode
                 // check that there is not already a tile here
                 if (level.IsInBounds(gx, gy))
                 {
+                    // placing it on a tile head can introduce a bugged state,
+                    // soo... even when forced... no
+                    if (level.Layers[window.WorkLayer, gx, gy].TileHead is not null)
+                        return TilePlacementStatus.Overlap;
+                    
                     // check on first layer
                     var isHead = x == tile.CenterX && y == tile.CenterY;
 
-                    if ((isHead || specInt >= 0) && level.Layers[window.WorkLayer, gx, gy].HasTile())
+                    if ((isHead || specInt >= 0) && !force && level.Layers[window.WorkLayer, gx, gy].HasTile())
                         return TilePlacementStatus.Overlap;
 
                     // check on second layer
                     if (window.WorkLayer < 2)
                     {
-                        if (spec2Int >= 0 && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
+                        if (spec2Int >= 0 && !force && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
                             return TilePlacementStatus.Overlap;
                     }
                 }
@@ -530,9 +535,8 @@ public class TileEditor : IEditorMode
     private void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
     {
         var level = window.Editor.Level;
-        var tile = level.Layers[layer, tileRootX, tileRootY].TileHead;
-        if (tile == null) throw new Exception("Attempt to remove unknown tile");
-
+        var tile = level.Layers[layer, tileRootX, tileRootY].TileHead
+            ?? throw new Exception("Attempt to remove unknown tile");
         int tileLeft = tileRootX - tile.CenterX;
         int tileTop = tileRootY - tile.CenterY;
 

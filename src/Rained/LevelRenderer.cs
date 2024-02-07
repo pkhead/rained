@@ -355,28 +355,51 @@ public class LevelRenderer
 
     public void RenderTiles(int layer, int alpha)
     {
+        int viewL = (int) Math.Floor(ViewTopLeft.X);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
+
         // draw tile previews
-        for (int x = 0; x < Level.Width; x++)
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 var cell = Level.Layers[layer, x, y];
-                
-                if (cell.TileHead is Tiles.TileData tile)
-                {
-                    var tileLeft = x - tile.CenterX;
-                    var tileTop = y - tile.CenterY;
-                    var col = tile.Category.Color;
+                if (!cell.HasTile()) continue;
 
-                    Raylib.DrawTextureEx(
-                        tile.PreviewTexture,
-                        new Vector2(tileLeft, tileTop) * Level.TileSize,
-                        0,
-                        (float)Level.TileSize / 16,
-                        new Color(col.R, col.G, col.B, alpha)
-                    );
-                
+                Tiles.TileData? tile;
+                int tx;
+                int ty;
+
+                if (cell.TileHead is not null)
+                {
+                    tile = cell.TileHead;
+                    tx = x;
+                    ty = y;
                 }
+                else
+                {
+                    tile = Level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
+                    tx = cell.TileRootX;
+                    ty = cell.TileRootY;
+                }
+
+                // TODO: why can this happen?
+                if (tile == null) continue;
+
+                var tileLeft = tx - tile.CenterX;
+                var tileTop = ty - tile.CenterY;
+                var col = tile.Category.Color;
+
+                Raylib.DrawTexturePro(
+                    tile.PreviewTexture,
+                    new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16),
+                    new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                    Vector2.Zero,
+                    0f,
+                    new Color(col.R, col.G, col.B, alpha)
+                );
             }
         }
 
