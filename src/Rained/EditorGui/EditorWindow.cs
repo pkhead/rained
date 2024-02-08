@@ -179,6 +179,9 @@ public class EditorWindow
                 if (Raylib.IsKeyPressed(KeyboardKey.Five))
                     newEditMode = 4;
                 
+                if (Raylib.IsKeyPressed(KeyboardKey.Six))
+                    newEditMode = 5;
+                
                 // keybind to switch layer
                 if (Raylib.IsKeyPressed(KeyboardKey.Tab))
                 {

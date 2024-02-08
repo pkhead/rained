@@ -141,6 +141,56 @@ public class Camera
     }
 }
 
+public class Effect
+{
+    public enum LayerMode
+    {
+        All = 0,
+        First, Second, Third,
+        FirstAndSecond, SecondAndThird
+    };
+
+    public readonly EffectInit Data;
+    public LayerMode Layer = LayerMode.All;
+    public bool Is3D = false;
+    public int CustomValue = 0;
+    public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
+
+    public readonly int Width, Height;
+    public float[,] Matrix;
+
+    public Effect(Level level, EffectInit init)
+    {
+        Data = init;
+
+        if (!string.IsNullOrEmpty(init.customSwitchName))
+        {
+            // find index of default value
+            for (int i = 0; i < init.customSwitchOptions.Length; i++)
+            {
+                if (init.customSwitchOptions[i] == init.customSwitchDefault)
+                {
+                    CustomValue = i;
+                    break;
+                }
+            }
+        }
+
+        // create matrix
+        Width = level.Width;
+        Height = level.Height;
+        Matrix = new float[Width, Height];
+        
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                Matrix[x,y] = init.fillWith;
+            }
+        }
+    }
+}
+
 public class Level
 {
     private readonly RainEd editor;
@@ -192,6 +242,8 @@ public class Level
     public float LightAngle = MathF.PI;
     public float LightDistance = 1f;
     public const float MaxLightDistance = 10f;
+
+    public readonly List<Effect> Effects = new();
     
     public RlManaged.Image LightMap {
         get => GetLightImage();

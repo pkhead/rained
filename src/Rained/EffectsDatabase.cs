@@ -16,14 +16,14 @@ public record EffectInit
     public int repeats;
     public float affectOpenAreas;
 
-    public int fillWith = 0; // only effect to change this is BlackGoo, which sets fx matrix values to 100 (max) on creation
+    public float fillWith = 0f; // only effect to change this is BlackGoo, which sets fx matrix values to 100 (max) on creation
     public bool useLayers = false;
     public bool use3D = false;
     public bool usePlantColors = false;
 
     public string customSwitchName = string.Empty;
     public string customSwitchDefault = string.Empty;
-    public string[]? customSwitchOptions = null;
+    public string[] customSwitchOptions = Array.Empty<string>();
 
     public EffectInit(string name, EffectType type)
     {
@@ -337,7 +337,7 @@ public class EffectsDatabase
         {
             CreateEffect(new EffectInit("BlackGoo", EffectType.NN)
             {
-                fillWith = 100
+                fillWith = 100f
             });
 
             CreateEffect(new EffectInit("DarkSlime", EffectType.NN));
