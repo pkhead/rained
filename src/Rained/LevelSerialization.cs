@@ -16,6 +16,9 @@ public static class LevelSerialization
         
         Lingo.List levelTileData = (Lingo.List)
             (lingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
+        
+        Lingo.List levelEffectData = (Lingo.List)
+            (lingoParser.Read(levelData[2]) ?? throw new Exception("No effects data"));
 
         Lingo.List levelLightData = (Lingo.List)
             (lingoParser.Read(levelData[3]) ?? throw new Exception("No light data"));
@@ -145,6 +148,116 @@ public static class LevelSerialization
                 y++;
             }
             x++;
+        }
+
+        // read effects data
+        {
+            var effectsList = (Lingo.List) levelEffectData.fields["effects"];
+            foreach (var effectData in effectsList.values.Cast<Lingo.List>())
+            {
+                var nameStr = (string) effectData.fields["nm"];
+                var type = (string) effectData.fields["tp"];
+                var effectInit = editor.EffectsDatabase.GetEffectFromName(nameStr);
+                var effect = new Effect(level, effectInit);
+                level.Effects.Add(effect);
+
+                // validate data
+                var requiredType = effect.Data.type switch
+                {
+                    EffectType.NN => "nn",
+                    EffectType.StandardErosion => "standardErosion",
+                    _ => throw new Exception("Internal error: invalid EffectType")
+                };
+
+                // check type
+                if (requiredType != (string) effectData.fields["tp"])
+                    throw new Exception($"Effect '{nameStr}' has incompatible parameters");
+                
+                // check crossScreen
+                int crossScreen = effect.Data.crossScreen ? 1 : 0;
+                if (crossScreen != (int) effectData.fields["crossScreen"])
+                    throw new Exception($"Effect '{nameStr}' has incompatible parameters");
+
+                // check repeats
+                if (effect.Data.type == EffectType.StandardErosion)
+                {
+                    if (effect.Data.repeats != (int) effectData.fields["repeats"])
+                        throw new Exception($"Effect '{nameStr}' has incompatible parameters");
+                    
+                    if (effect.Data.affectOpenAreas != (float) effectData.fields["affectOpenAreas"])
+                        throw new Exception($"Effect '{nameStr}' has incompatible parameters");
+                }
+                
+                // read effect matrix
+                var mtrxData = (Lingo.List) effectData.fields["mtrx"];
+                x = 0;
+                foreach (var xv in mtrxData.values.Cast<Lingo.List>())
+                {
+                    y = 0;
+                    foreach (var vo in xv.values)
+                    {
+                        effect.Matrix[x,y] = vo is int v ? v : (float)vo;
+                        y++;
+                    }
+                    x++;
+                }
+
+                // read effect options
+                if (!effectData.fields.TryGetValue("options", out object? optionsObj))
+                {
+                    optionsObj = effectData.fields["Options"]; // wtf??? again???
+                }
+                var optionsData = (Lingo.List) (optionsObj ?? throw new NullReferenceException());
+
+                foreach (var optionData in optionsData.values.Cast<Lingo.List>())
+                {
+                    var optionName = (string) optionData.values[0];
+
+                    if (optionName == "Seed")
+                    {
+                        var value = (int) optionData.values[2];
+                        effect.Seed = value;
+                    }
+                    else if (optionName != "Delete/Move")
+                    {
+                        // the list of options are stored in the level file
+                        // alongside the selected option as a string
+                        var optionValues = ((Lingo.List) optionData.values[1]).values.Cast<string>().ToList();
+                        var selectedValue = (string) optionData.values[2];
+                        var optionIndex = 0;
+
+                        if (optionValues.Count > 0)
+                        {
+                            optionIndex = optionValues.IndexOf(selectedValue);
+                            if (optionIndex == -1) throw new Exception("Invalid option value in effect");
+                        }
+
+                        switch (optionName)
+                        {
+                            case "Layers":
+                                effect.Layer = (Effect.LayerMode) optionIndex;
+                                break;
+                            case "Color":
+                                effect.PlantColor = optionIndex;
+                                break;
+                            case "3D":
+                                effect.Is3D = optionIndex != 0;
+                                break;
+                            default:
+                                if (optionName == effect.Data.customSwitchName)
+                                {
+                                    effect.CustomValue = optionIndex;
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"WARNING: Unknown option '{optionName}' in effect '{nameStr}'");
+                                }
+                                
+                                break;
+                        }
+                    }
+                }
+            }
         }
 
         // read camear data

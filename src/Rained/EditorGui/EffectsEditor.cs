@@ -245,6 +245,9 @@ public class EffectsEditor : IEditorMode
                     }
                 }
 
+                // seed
+                ImGui.SliderInt("Seed", ref effect.Seed, 0, 500);
+
                 ImGui.PopItemWidth();
 
                 // if user requested delete, do it here

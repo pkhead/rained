@@ -6,7 +6,7 @@ public enum EffectType
     StandardErosion
 }
 
-public record EffectInit
+public class EffectInit
 {
     public string name;
     public EffectType type;
@@ -362,6 +362,20 @@ public class EffectsDatabase
         }
 
         // TODO: community effects
+    }
+
+    public EffectInit GetEffectFromName(string name)
+    {
+        foreach (var group in groups)
+        {
+            foreach (var effect in group.effects)
+            {
+                if (effect.name == name)
+                    return effect;
+            }
+        }
+
+        throw new Exception($"Effect '{name}' not found");
     }
 
 #region Helpers

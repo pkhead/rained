@@ -155,6 +155,7 @@ public class Effect
     public bool Is3D = false;
     public int CustomValue = 0;
     public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
+    public int Seed;
 
     public readonly int Width, Height;
     public float[,] Matrix;
@@ -162,6 +163,7 @@ public class Effect
     public Effect(Level level, EffectInit init)
     {
         Data = init;
+        Seed = Raylib.GetRandomValue(0, 500);
 
         if (!string.IsNullOrEmpty(init.customSwitchName))
         {
