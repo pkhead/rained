@@ -11,6 +11,7 @@ public class EffectsEditor : IEditorMode
 
     private int selectedGroup = 0;
     private int selectedEffect = -1;
+    private string searchQuery = string.Empty;
 
     public EffectsEditor(EditorWindow window)
     {
@@ -38,13 +39,39 @@ public class EffectsEditor : IEditorMode
 
             var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
             var boxHeight = ImGui.GetTextLineHeight() * 20.0f;
+
+            // search bar
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite);
+
+            var groupsPassingSearch = new List<int>();
+            var queryLower = searchQuery.ToLower();
+
+            // find groups that have any entries that pass the search query
+            for (int i = 0; i < fxDatabase.Groups.Count; i++)
+            {
+                if (searchQuery == "")
+                {
+                    groupsPassingSearch.Add(i);
+                    continue;
+                }
+
+                for (int j = 0; j < fxDatabase.Groups[i].effects.Count; j++)
+                {
+                    if (fxDatabase.Groups[i].effects[j].name.ToLower().Contains(queryLower))
+                    {
+                        groupsPassingSearch.Add(i);
+                        break;
+                    }
+                }
+            }
+
             // group list box
             if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
             {
-                for (int i = 0; i < fxDatabase.Groups.Count; i++)
+                foreach (int i in groupsPassingSearch)
                 {
-                    var group = fxDatabase.Groups[i];
-                    if (ImGui.Selectable(group.name, i == selectedGroup))
+                    if (ImGui.Selectable(fxDatabase.Groups[i].name, i == selectedGroup) || groupsPassingSearch.Count == 1)
                         selectedGroup = i;
                 }
                 
@@ -60,6 +87,8 @@ public class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
+                    if (searchQuery != "" && !effectData.name.ToLower().Contains(queryLower)) continue;
+
                     if (ImGui.Selectable(effectData.name))
                     {
                         AddEffect(effectData);
@@ -79,15 +108,43 @@ public class EffectsEditor : IEditorMode
                 }
                 else
                 {
+                    int deleteRequest = -1;
+
                     for (int i = 0; i < level.Effects.Count; i++)
                     {
-                        ImGui.PushID(i);
-                        
                         var effect = level.Effects[i];
+                        
+                        ImGui.PushID(effect.GetHashCode());
+                        
                         if (ImGui.Selectable(effect.Data.name, selectedEffect == i))
                             selectedEffect = i;
-                        
+
+                        // drag to reorder items
+                        if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
+                        {
+                            var inext = i + (ImGui.GetMouseDragDelta(0).Y < 0f ? -1 : 1);
+                            if (inext >= 0 && inext < level.Effects.Count)
+                            {
+                                level.Effects[i] = level.Effects[inext];
+                                level.Effects[inext] = effect;
+                                ImGui.ResetMouseDragDelta();
+
+                                if (selectedEffect == i) selectedEffect = inext;
+                                else if (selectedEffect == inext) selectedEffect = i;
+                            }   
+                        }
+
+                        // right-click to delete
+                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                            deleteRequest = i;
+
                         ImGui.PopID();
+                    }
+
+                    if (deleteRequest >= 0)
+                    {
+                        level.Effects.RemoveAt(deleteRequest);
+                        selectedEffect = -1;
                     }
                 }
 

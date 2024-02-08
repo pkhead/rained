@@ -5,6 +5,9 @@ Overall:
 - Edit/View menu buttons for specific editors
   e.g. New Camera button in camera editor,
   no copy/paste in light/effects editor
+- copy henry
+  (if i were to add a new level config screen, add bool toggle to auto-place cameras)
+  (that is the specific thing i want to copy)
 
 Level Properties:
 
@@ -17,7 +20,6 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- correct tile rendering (render tile bodies instead of only tile heads)
 - material brush size
 - press E for tile/material eyedropper
 - WASD tile palette navigation (emulates joar editor controls)
@@ -35,7 +37,6 @@ Environment Editor:
 - undo/redo
 
 Light Editor:
-- light offset seems incorrect
 - light parameters undo/redo
 - light ring
 - IJKL light parameter changing
@@ -44,7 +45,8 @@ Light Editor:
   (i guess once per every 1000 stroke atoms or something)
 - toggle view shadow plane and occlusion plane
 
-Effects Editor: (TODO)
+Effects Editor:
+- undo/redo
 
 Prop Editor: (TODO)
 - instead of using keys to rotate/scale props, user will place them down first
@@ -53,7 +55,7 @@ Prop Editor: (TODO)
   ...or much leditor experience in general...)
 - rope-type props will have a "Simulate" button in an always-visible prop properties field.
   holding down this button will perform the simulation for as long as it is held.
-
+- for rope-type props, copy henry's design
 
 tile data format (from rwe+):
     {"tp": "tileHead", "data": ["point(C, T)", "N"]}
