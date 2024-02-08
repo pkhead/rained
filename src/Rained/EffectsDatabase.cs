@@ -70,7 +70,7 @@ public class EffectsDatabase
                 affectOpenAreas = 0.5f
             });
 
-            CreateEffect(new EffectInit("Melt", EffectType.StandardErosion)
+            CreateEffect(new EffectInit("Rust", EffectType.StandardErosion)
             {
                 repeats = 60,
                 affectOpenAreas = 0.2f,
@@ -102,7 +102,7 @@ public class EffectsDatabase
         /////////////
         BeginGroup("Erosion");
         {
-            CreateEffect(new EffectInit("Melt", EffectType.StandardErosion)
+            CreateEffect(new EffectInit("Roughen", EffectType.StandardErosion)
             {
                 repeats = 30,
                 affectOpenAreas = 0.05f

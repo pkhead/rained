@@ -23,7 +23,18 @@ public class EffectsEditor : IEditorMode
             ImGui.TextDisabled("(none)");
             ImGui.Separator();
             ImGui.Text("Add Effect");
-        }
+
+            foreach (var group in window.Editor.EffectsDatabase.Groups)
+            {
+                if (ImGui.CollapsingHeader(group.name))
+                {
+                    foreach (var effectInit in group.effects)
+                    {
+                        ImGui.Selectable(effectInit.name);
+                    }
+                }
+            }
+        } ImGui.End();
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -47,7 +58,6 @@ public class EffectsEditor : IEditorMode
             Rlgl.PopMatrix();
         }
 
-        levelRender.RenderGrid();
         levelRender.RenderBorder();
     }
 }
