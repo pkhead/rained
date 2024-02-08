@@ -1,12 +1,12 @@
 namespace RainEd;
 
-public enum EffectType
+enum EffectType
 {
     NN, // i have no idea what this abbreviates, lol
     StandardErosion
 }
 
-public class EffectInit
+class EffectInit
 {
     public string name;
     public EffectType type;
@@ -32,7 +32,7 @@ public class EffectInit
     }
 }
 
-public struct EffectGroup
+struct EffectGroup
 {
     public string name;
     public List<EffectInit> effects;
@@ -43,7 +43,7 @@ public struct EffectGroup
 * hardcoded cus, that's the way it is in the rain world level editor,
 * and to create new effects you'd have to modify the renderer code anyway.
 */
-public class EffectsDatabase
+class EffectsDatabase
 {
     private readonly List<EffectGroup> groups;
     public List<EffectGroup> Groups { get => groups; }

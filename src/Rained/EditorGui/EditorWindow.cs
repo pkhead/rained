@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-public interface IEditorMode
+interface IEditorMode
 {
     string Name { get; }
 
@@ -17,7 +17,7 @@ public interface IEditorMode
     void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame);
 }
 
-public class EditorWindow
+class EditorWindow
 {
     public bool IsWindowOpen = true;
 

@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-public class CameraEditor : IEditorMode
+class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
     private readonly EditorWindow window;

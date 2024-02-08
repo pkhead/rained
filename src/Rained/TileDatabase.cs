@@ -13,7 +13,7 @@ public enum TileType
     Box
 }
 
-public class TileData
+class TileData
 {
     public string Name;
     public readonly TileCategory Category;
@@ -142,7 +142,7 @@ public class TileData
     }
 }
 
-public class TileCategory
+class TileCategory
 {
     public string Name;
     public int Index;
@@ -156,7 +156,7 @@ public class TileCategory
     }
 }
 
-public class Database
+class Database
 {
     public readonly List<TileCategory> Categories;
     private readonly Dictionary<string, TileData> stringToTile = new();

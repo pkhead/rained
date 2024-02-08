@@ -4,7 +4,7 @@ using Raylib_cs;
 using rlImGui_cs;
 namespace RainEd;
 
-public class UICanvasWidget
+class UICanvasWidget
 {
     public string ID;
     private float mouseX;

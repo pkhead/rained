@@ -7,7 +7,7 @@ using ImGuiNET;
 
 namespace RainEd
 {
-    public class Boot
+    class Boot
     {
         static void Main(string[] args)
         {

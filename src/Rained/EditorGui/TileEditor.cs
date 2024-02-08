@@ -5,7 +5,7 @@ using rlImGui_cs;
 
 namespace RainEd;
 
-public class TileEditor : IEditorMode
+class TileEditor : IEditorMode
 {
     public string Name { get => "Tiles"; }
 

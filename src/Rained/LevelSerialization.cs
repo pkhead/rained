@@ -3,7 +3,7 @@ using System.Text;
 using Raylib_cs;
 namespace RainEd;
 
-public static class LevelSerialization
+static class LevelSerialization
 {
     public static Level Load(RainEd editor, string path)
     {

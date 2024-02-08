@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-public class LevelRenderer
+class LevelRenderer
 {
     private static readonly Dictionary<LevelObject, Vector2> ObjectTextureOffsets = new()
     {

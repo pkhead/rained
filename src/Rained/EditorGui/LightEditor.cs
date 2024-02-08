@@ -5,7 +5,7 @@ using rlImGui_cs;
 
 namespace RainEd;
 
-public class LightEditor : IEditorMode
+class LightEditor : IEditorMode
 {
     private struct LightBrush
     {

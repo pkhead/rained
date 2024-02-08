@@ -4,7 +4,7 @@ using Raylib_cs;
 
 namespace RlManaged
 {
-    public class RenderTexture2D : IDisposable
+    class RenderTexture2D : IDisposable
     {
         private Raylib_cs.RenderTexture2D raw;
         private bool _disposed = false;
@@ -46,7 +46,7 @@ namespace RlManaged
         public static implicit operator Raylib_cs.RenderTexture2D(RenderTexture2D tex) => tex.raw;
     }
 
-    public class Image : IDisposable
+    class Image : IDisposable
     {
         private Raylib_cs.Image raw;
         private bool _disposed = false;
@@ -137,7 +137,7 @@ namespace RlManaged
         public ref Raylib_cs.Image Ref() => ref raw;
     }
 
-    public class Texture2D : IDisposable
+    class Texture2D : IDisposable
     {
         private Raylib_cs.Texture2D raw;
         private bool _disposed = false;
@@ -182,7 +182,7 @@ namespace RlManaged
         public static implicit operator Raylib_cs.Texture2D(Texture2D tex) => tex.raw;
     }
 
-    public class Shader : IDisposable
+    class Shader : IDisposable
     {
         private Raylib_cs.Shader raw;
         private bool _disposed = false;

@@ -68,7 +68,7 @@ public enum LevelObject : uint
     ScavengerHole = 1048576u
 }
 
-public struct LevelCell
+struct LevelCell
 {
     public CellType Cell = CellType.Air;
     public LevelObject Objects = 0;
@@ -94,7 +94,7 @@ public struct LevelCell
     public readonly bool Has(LevelObject obj) => Objects.HasFlag(obj);
 }
 
-public class Camera
+class Camera
 {
     // camera size is 70x39 tiles
     // camera red border is 52.5x35
@@ -141,7 +141,7 @@ public class Camera
     }
 }
 
-public class Effect
+class Effect
 {
     public enum LayerMode
     {
@@ -193,7 +193,7 @@ public class Effect
     }
 }
 
-public class Level
+class Level
 {
     private readonly RainEd editor;
 

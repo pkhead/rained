@@ -1,13 +1,13 @@
 using System.Numerics;
 namespace RainEd;
 
-public interface IChangeRecord
+interface IChangeRecord
 {
     bool HasChange();
     void Apply(RainEd editor, bool useNew);
 }
 
-public class ChangeHistory
+class ChangeHistory
 {
     private readonly RainEd editor;
     public Level Level { get => editor.Level; }

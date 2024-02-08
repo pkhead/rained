@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-public class GeometryEditor : IEditorMode
+class GeometryEditor : IEditorMode
 {
     public string Name { get => "Geometry"; }
 

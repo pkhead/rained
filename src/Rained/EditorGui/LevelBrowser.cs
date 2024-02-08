@@ -6,7 +6,7 @@ using rlImGui_cs;
 
 namespace RainEd;
 
-public class LevelBrowser
+class LevelBrowser
 {
     private struct LevelPath
     {

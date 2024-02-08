@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-public class EffectsEditor : IEditorMode
+class EffectsEditor : IEditorMode
 {
     public string Name { get => "Effects"; }
     private readonly EditorWindow window;

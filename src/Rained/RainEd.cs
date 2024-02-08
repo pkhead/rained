@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace RainEd;
 
-public class RainEd
+class RainEd
 {
     public bool Running = true;
     private Level level;

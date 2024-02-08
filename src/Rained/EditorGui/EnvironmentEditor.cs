@@ -3,7 +3,7 @@ using Raylib_cs;
 
 namespace RainEd;
 
-public class EnvironmentEditor : IEditorMode
+class EnvironmentEditor : IEditorMode
 {
     public string Name { get => "Environment"; }
     private readonly EditorWindow window;
