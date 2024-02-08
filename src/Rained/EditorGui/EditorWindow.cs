@@ -255,7 +255,16 @@ class EditorWindow
         mouseCy = (int) Math.Floor(mouseCellFloat.Y);
 
         // draw viewport
+        // the blending functions here are some stupid hack
+        // to fix transparent object writing to the fbo's alpha value
+        // when being drawn, thus making the render texture at those areas
+        // blend into the imgui background when rendered.
+        // Good thing I downloaded renderdoc, otherwise there was no way
+        // I would've figured that was the problem!
+        Rlgl.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+        Raylib.BeginBlendMode(BlendMode.CustomSeparate);
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
+        Raylib.EndBlendMode();
 
         // view controls
         if (canvasWidget.IsHovered)

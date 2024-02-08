@@ -14,8 +14,51 @@ namespace RlManaged
             this.raw = raw;
         }
 
-        public static RenderTexture2D Load(int width, int height)
+        public static RenderTexture2D Load(int width, int height, bool alpha = true)
+            => alpha ? LoadWithAlpha(width, height) : LoadNoAlpha(width, height);
+
+        private static RenderTexture2D LoadWithAlpha(int width, int height)
             => new(Raylib.LoadRenderTexture(width, height));
+
+        // copied from raylib source code, but with a different pixel format
+        private unsafe static RenderTexture2D LoadNoAlpha(int width, int height)
+        {
+            Raylib_cs.RenderTexture2D raw = new()
+            {
+                Id = Rlgl.LoadFramebuffer(width, height)
+            };
+
+            if (raw.Id > 0)
+            {
+                Rlgl.EnableFramebuffer(raw.Id);
+
+                // create color texture
+                raw.Texture.Id = Rlgl.LoadTexture(null, width, height, PixelFormat.UncompressedR8G8B8, 1);
+                raw.Texture.Width = width;
+                raw.Texture.Height = height;
+                raw.Texture.Format = PixelFormat.UncompressedR8G8B8;
+                raw.Texture.Mipmaps = 1;
+
+                // create depth renderbuffer/texture
+                raw.Depth.Id = Rlgl.LoadTextureDepth(width, height, true);
+                raw.Depth.Width = width;
+                raw.Depth.Height = height;
+                raw.Depth.Format = PixelFormat.CompressedPvrtRgba;
+                raw.Depth.Mipmaps = 1;
+
+                Rlgl.FramebufferAttach(raw.Id, raw.Texture.Id, FramebufferAttachType.ColorChannel0, FramebufferAttachTextureType.Texture2D, 0);
+                Rlgl.FramebufferAttach(raw.Id, raw.Depth.Id, FramebufferAttachType.Depth, FramebufferAttachTextureType.Renderbuffer, 0);
+
+                // check if fbo is complete with attachments (valid)
+                if (Rlgl.FramebufferComplete(raw.Id))
+                    Raylib.TraceLog(TraceLogLevel.Info, $"FBO: [ID {raw.Id}] Framebuffer object created successfully");
+                
+                Rlgl.DisableFramebuffer();
+            }
+            else Raylib.TraceLog(TraceLogLevel.Warning, "FBO: Framebuffer object can not be created");
+
+            return new RenderTexture2D(raw);
+        }
 
         ~RenderTexture2D() => Dispose(false);
 
