@@ -174,6 +174,9 @@ static class LevelSerialization
                     throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                 
                 // check crossScreen
+                // actually, nevermind. must maintain compatibility with all erroneously generated level files
+                // that may or may not have missing data
+                /*
                 int crossScreen = effect.Data.crossScreen ? 1 : 0;
                 if (crossScreen != (int) effectData.fields["crossScreen"])
                     throw new Exception($"Effect '{nameStr}' has incompatible parameters");
@@ -187,6 +190,7 @@ static class LevelSerialization
                     if (effect.Data.affectOpenAreas != (float) effectData.fields["affectOpenAreas"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                 }
+                */
                 
                 // read effect matrix
                 var mtrxData = (Lingo.List) effectData.fields["mtrx"];
