@@ -1,6 +1,7 @@
 using ImGuiNET;
 using Raylib_cs;
-using RainEd;
+
+namespace RainEd;
 
 public class EnvironmentEditor : IEditorMode
 {

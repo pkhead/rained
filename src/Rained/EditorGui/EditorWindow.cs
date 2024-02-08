@@ -71,6 +71,7 @@ public class EditorWindow
         editorModes.Add(new TileEditor(this));
         editorModes.Add(new CameraEditor(this));
         editorModes.Add(new LightEditor(this));
+        editorModes.Add(new EffectsEditor(this));
     }
 
     public void UnloadView()

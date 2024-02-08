@@ -1,6 +1,5 @@
 Overall:
-- some levels fail to load
-  (i assume this is because the editor is supposed to ignore erroneous lines...)
+- use c#10 records for some cases? they seem to fit my needs
 - open file browser in directory of current level
 - help pages/hints/tooltips/whatever
 - Edit/View menu buttons for specific editors
@@ -70,6 +69,26 @@ tile data format (from rwe+):
     N = material name
 
     {"tp": "default": "data": 0}
+
+effects matrix format
+  {
+    #nm: string
+    #tp: "nn" | "standardErosion" (don't really know what this means),
+    #crossScreen: 0 (idk what this means, but it is effect-specific),
+    #mtrx: (2d array with values ranging from 0 to 100)
+    #Options: [
+      [
+        section Header as string,
+        options as string array (no options = empty array),
+        selected value? (string, but a number is used for seed)
+      ]
+    ],
+
+    [if #tp == "standardErosion"] (
+      #repeats: number (idk what this does, but it is effect-specific)
+      #affectOpenAreas: number (idk what this does either, but it is effect-specific)
+    )
+  }
 
 KEYBINDS:
   General:

@@ -14,6 +14,7 @@ public class RainEd
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private readonly RlManaged.Texture2D rainedLogo;
     public readonly Tiles.Database TileDatabase;
+    public readonly EffectsDatabase EffectsDatabase;
     private readonly ChangeHistory changeHistory;
     private readonly EditorWindow editorWindow;
 
@@ -33,6 +34,7 @@ public class RainEd
     public RainEd(string levelPath = "") {
         rainedLogo = RlManaged.Texture2D.Load("data/rained-logo.png");
         TileDatabase = new Tiles.Database();
+        EffectsDatabase = new EffectsDatabase();
         
         if (levelPath.Length > 0)
         {
