@@ -22,6 +22,7 @@ class DrizzleRenderWindow
             ImGui.Button("Cancel");
             ImGui.SameLine();
             ImGui.ProgressBar(drizzleRenderer.RenderProgress, new Vector2(-1.0f, 0.0f));
+
             if (drizzleRenderer.State == RenderState.Finished)
             {
                 ImGui.Text("Done!");
@@ -32,8 +33,10 @@ class DrizzleRenderWindow
             }
             else
             {
-                ImGui.Text("Rendering...");
+                ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");
             }
+
+            ImGui.TextUnformatted(drizzleRenderer.DisplayString);
 
         } ImGui.End();
     }

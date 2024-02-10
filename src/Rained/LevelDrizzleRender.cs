@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Text;
 using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
 using Drizzle.Logic.Rendering;
@@ -9,7 +10,7 @@ namespace RainEd;
 
 class LevelDrizzleRender
 {
-    private record ThreadMessage;
+    private abstract record ThreadMessage;
 
     private record MessageRenderStarted : ThreadMessage;
     private record MessageRenderFailed(Exception Exception) : ThreadMessage;
@@ -21,42 +22,12 @@ class LevelDrizzleRender
         public ConcurrentQueue<ThreadMessage> Queue;
         public string filePath;
         public LevelRenderer? Renderer;
-        private int cameraCount;
+        public Action<RenderStatus>? StatusChanged = null;
 
-        public RenderThread(string filePath, int cameraCount)
+        public RenderThread(string filePath)
         {
-            this.cameraCount = cameraCount;
             Queue = new ConcurrentQueue<ThreadMessage>();
             this.filePath = filePath;
-        }
-
-        private void StatusChanged(RenderStatus status)
-        {
-            Console.WriteLine("Status changed");
-
-            var camIndex = status.CameraIndex;
-            var stageEnum = status.Stage.Stage;
-
-            // send progress
-            var renderProgress = status.CountCamerasDone * 10 + stageEnum switch
-            {
-                RenderStage.Start => 0,
-                RenderStage.CameraSetup => 0,
-                RenderStage.RenderLayers => 1,
-                RenderStage.RenderPropsPreEffects => 2,
-                RenderStage.RenderEffects => 3,
-                RenderStage.RenderPropsPostEffects => 4,
-                RenderStage.RenderLight => 5,
-                RenderStage.Finalize => 6,
-                RenderStage.RenderColors => 7,
-                RenderStage.Finished => 8,
-                RenderStage.SaveFile => 9,
-                _ => throw new ArgumentOutOfRangeException()
-            };
-
-            Queue.Enqueue(new MessageRenderProgress(
-                (float)renderProgress / (cameraCount * 10f))
-            );
         }
 
         public void ThreadProc()
@@ -70,7 +41,6 @@ class LevelDrizzleRender
 
                 Renderer = new LevelRenderer(runtime, null);
                 Renderer.StatusChanged += StatusChanged;
-
                 Queue.Enqueue(new MessageRenderStarted());
 
                 Console.Write("Begin Render");
@@ -97,12 +67,23 @@ class LevelDrizzleRender
     };
 
     private RenderState state;
+    private RenderStage currentStage;
     private float progress = 0.0f;
     public RenderState State { get => state; }
+    public RenderStage Stage { get => currentStage; }
     public float RenderProgress { get => progress; }
+
+    private readonly int cameraCount;
+    private int camsDone = 0;
+
+    public string DisplayString = string.Empty;
+    public int CameraCount { get => cameraCount; }
+    public int CamerasDone { get => camsDone; }
 
     public LevelDrizzleRender(RainEd editor)
     {
+        cameraCount = editor.Level.Cameras.Count;
+
         state = RenderState.Initializing;
         var filePath = editor.CurrentFilePath;
         if (string.IsNullOrEmpty(filePath)) throw new Exception("Render called but level wasn't saved");
@@ -110,9 +91,95 @@ class LevelDrizzleRender
         LevelSerialization.Save(editor, filePath);
         Configuration.Default.PreferContiguousImageBuffers = true;
 
-        threadState = new RenderThread(filePath, editor.Level.Cameras.Count);
+        threadState = new RenderThread(filePath);
+        threadState.StatusChanged += StatusChanged;
         thread = new Thread(new ThreadStart(threadState.ThreadProc));
         thread.Start();
+    }
+
+    private void StatusChanged(RenderStatus status)
+    {
+        var renderer = threadState.Renderer ?? throw new NullReferenceException();
+
+        Console.WriteLine("Status changed");
+
+        var camIndex = status.CameraIndex;
+        var stageEnum = status.Stage.Stage;
+
+        camsDone = status.CountCamerasDone;
+
+        switch (status.Stage)
+        {
+            case RenderStageStatusLayers layers:
+            {
+                DisplayString = $"Rendering tiles...\nLayer: {layers.CurrentLayer}";
+                break;
+            }
+
+            case RenderStageStatusProps:
+            {
+                DisplayString = "Rendering props...";
+                break;
+            }
+
+            case RenderStageStatusLight light:
+            {
+                DisplayString = $"Rendering light...\nLayer: {light.CurrentLayer}";
+                break;
+            }
+
+            case RenderStageStatusRenderColors:
+            {
+                DisplayString = "Rendering colors...";
+                break;
+            }
+
+            case RenderStageStatusFinalize:
+            {
+                DisplayString = "Finalizing...";
+                break;
+            }
+
+            case RenderStageStatusEffects effects:
+            {
+                var builder = new StringBuilder();
+                builder.Append("Rendering effects...\n");
+                
+                for (int i = 0; i < effects.EffectNames.Count; i++)
+                {
+                    if (i == effects.CurrentEffect)
+                        builder.Append("> ");
+                    else
+                        builder.Append("  ");
+
+                    builder.Append(effects.EffectNames[i]);
+                    builder.Append('\n');
+                }
+
+                DisplayString = builder.ToString();
+                break;
+            }
+        }
+
+        // send progress
+        currentStage = stageEnum;
+        var renderProgress = status.CountCamerasDone * 10 + stageEnum switch
+        {
+            RenderStage.Start => 0,
+            RenderStage.CameraSetup => 0,
+            RenderStage.RenderLayers => 1,
+            RenderStage.RenderPropsPreEffects => 2,
+            RenderStage.RenderEffects => 3,
+            RenderStage.RenderPropsPostEffects => 4,
+            RenderStage.RenderLight => 5,
+            RenderStage.Finalize => 6,
+            RenderStage.RenderColors => 7,
+            RenderStage.Finished => 8,
+            RenderStage.SaveFile => 9,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+        progress = renderProgress / (cameraCount * 10f);
     }
 
     public void Update(RainEd editor)
@@ -130,6 +197,7 @@ class LevelDrizzleRender
                     state = RenderState.Finished;
                     Console.WriteLine("Thread is done!");
                     progress = 1f;
+                    DisplayString = "";
                     break;
                 
                 case MessageRenderStarted:
