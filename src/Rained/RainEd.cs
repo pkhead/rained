@@ -404,7 +404,10 @@ class RainEd
         {
             // if this returns true, the render window had closed
             if (drizzleRenderWindow.DrawWindow())
+            {
+                drizzleRenderWindow.Dispose();
                 drizzleRenderWindow = null;
+            }
         }
         
         // notification window

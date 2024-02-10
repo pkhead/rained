@@ -1,3 +1,7 @@
+KNOWN BUGS:
+  App always assume Drizzle data directory is in src/Data.
+  When published, there should not be a src directory...
+
 Overall:
 - use c#10 records for some cases? they seem to fit my needs
 - open file browser in directory of current level
@@ -47,6 +51,9 @@ Light Editor:
 
 Effects Editor:
 - undo/redo
+- show light render stage
+- if possible, show coloring stage, although i don't think
+  drizzle has the code required to show that?
 
 Prop Editor: (TODO)
 - instead of using keys to rotate/scale props, user will place them down first
@@ -56,6 +63,9 @@ Prop Editor: (TODO)
 - rope-type props will have a "Simulate" button in an always-visible prop properties field.
   holding down this button will perform the simulation for as long as it is held.
 - for rope-type props, copy henry's design
+
+Render:
+- show time elapsed
 
 tile data format (from rwe+):
     {"tp": "tileHead", "data": ["point(C, T)", "N"]}

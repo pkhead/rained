@@ -1,5 +1,5 @@
-using System.Collections;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Text;
 using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
@@ -18,6 +18,7 @@ class LevelDrizzleRender
     private record MessageRenderFinished : ThreadMessage;
     private record MessageRenderProgress(float Percentage) : ThreadMessage;
     private record MessageDoCancel : ThreadMessage;
+    private record MessageReceievePreview(RenderPreview Preview) : ThreadMessage;
 
     private class RenderThread
     {
@@ -46,6 +47,7 @@ class LevelDrizzleRender
 
                 Renderer = new LevelRenderer(runtime, null);
                 Renderer.StatusChanged += StatusChanged;
+                Renderer.PreviewSnapshot += PreviewSnapshot;
                 Queue.Enqueue(new MessageRenderStarted());
 
                 // process user cancel if cancelled while init
@@ -71,7 +73,13 @@ class LevelDrizzleRender
                 Queue.Enqueue(new MessageRenderFailed(e));
             }
         }
+
+        private void PreviewSnapshot(RenderPreview renderPreview)
+        {
+            Queue.Enqueue(new MessageReceievePreview(renderPreview));
+        }
     }
+
     private readonly RenderThread threadState;
     private readonly Thread thread;
 
@@ -99,6 +107,9 @@ class LevelDrizzleRender
     public int CameraCount { get => cameraCount; }
     public int CamerasDone { get => camsDone; }
 
+    public readonly RlManaged.Image[] RenderLayerPreviews;
+    public Action? PreviewUpdated;
+
     public LevelDrizzleRender(RainEd editor)
     {
         cameraCount = editor.Level.Cameras.Count;
@@ -107,11 +118,21 @@ class LevelDrizzleRender
         var filePath = editor.CurrentFilePath;
         if (string.IsNullOrEmpty(filePath)) throw new Exception("Render called but level wasn't saved");
 
+        // create render layer preview images
+        var renderW = 2000;
+        var renderH = 1200;
+        RenderLayerPreviews = new RlManaged.Image[30];
+
+        for (int i = 0; i < 30; i++)
+        {
+            RenderLayerPreviews[i] = RlManaged.Image.GenColor((int)renderW, (int)renderH, Raylib_cs.Color.Black);
+        } 
+
         LevelSerialization.Save(editor, filePath);
-        Configuration.Default.PreferContiguousImageBuffers = true;
 
         threadState = new RenderThread(filePath);
         threadState.StatusChanged += StatusChanged;
+        Configuration.Default.PreferContiguousImageBuffers = true;
         thread = new Thread(new ThreadStart(threadState.ThreadProc));
         thread.Start();
     }
@@ -249,6 +270,66 @@ class LevelDrizzleRender
                     state = RenderState.Canceled;
                     thread.Join();
                     break;
+                
+                case MessageReceievePreview preview:
+                    ProcessPreview(preview.Preview);
+                    break;
+            }
+            
+            threadState.Renderer?.RequestPreview();
+        }
+    }
+
+    private void ProcessPreview(RenderPreview renderPreview)
+    {
+        Console.WriteLine("Recieve preview");
+
+        switch (renderPreview)
+        {
+            case RenderPreviewEffects effects:
+            {
+                ProcessLingoImageLayers(effects.Layers);
+                break;
+            }
+
+            case RenderPreviewLights lights:
+            {
+                // TODO: light stage uses a differently sized image buffer
+                // ProcessLingoImageLayers(lights.Layers);
+                break;
+            }
+        }
+
+        PreviewUpdated?.Invoke();
+    }
+
+    private void ProcessLingoImageLayers(LingoImage[] layers)
+    {
+        var srcImage = layers[0];
+
+        /*
+        Console.WriteLine(srcImage.width);
+        Console.WriteLine(PreviewImage.Width);
+
+        Console.WriteLine(srcImage.height);
+        Console.WriteLine(PreviewImage.Height);
+        */
+
+        // Lingo Image:
+        // 2000, 1200
+        // Output:
+        // 1400, 800
+        if (layers.Length != 30)
+            throw new Exception("Count of layers is not 30");
+        
+        for (int i = 0; i < layers.Length; i++)
+        {
+            var img = layers[i];
+            var dstImage = RenderLayerPreviews[i];
+
+            unsafe
+            {
+                Marshal.Copy(img.ImageBuffer, 0, (nint) dstImage.Data, dstImage.Width * dstImage.Height * 4);
             }
         }
     }

@@ -98,7 +98,8 @@ namespace RlManaged
         public int Height { get => raw.Height; }
         public int Mipmaps { get => raw.Mipmaps; }
         public PixelFormat PixelFormat { get => raw.Format; }
-
+        public unsafe void* Data { get => raw.Data; }
+        
         private Image(Raylib_cs.Image raw)
         {
             this.raw = raw;
