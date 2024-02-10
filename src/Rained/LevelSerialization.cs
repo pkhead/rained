@@ -342,6 +342,17 @@ static class LevelSerialization
 
         return level;
     }
+
+    private readonly static string[] layerEnums = new string[]
+    {
+        "All", "1", "2", "3", "1:st and 2:nd", "2:nd and 3:rd"
+    };
+
+    private readonly static string[] plantColorEnums = new string[]
+    {
+        "Color1", "Color2", "Dead"
+    };
+
     public static void Save(RainEd editor, string path)
     {
         // open text file
@@ -451,8 +462,80 @@ static class LevelSerialization
         output.Append("#toolType: \"material\", #toolData: \"Big Metal\", #tmPos: point(1, 1), #tmSavPosL: [], #specialEdit: 0]");
         output.Append(newLine);
 
-        // effect editor data
-        output.Append("[#lastKeys: [], #Keys: [], #lstMsPs: point(0, 0), #effects: [], #emPos: point(1, 1), #editEffect: 1, #selectEditEffect: 1, #mode: \"createNew\", #brushSize: 5]");
+        // effect data
+        output.Append("[#lastKeys: [], #Keys: [], #lstMsPs: point(0, 0), #effects: [");
+
+        for (int i = 0; i < level.Effects.Count; i++)
+        {
+            if (i > 0) output.Append(", ");
+            var effect = level.Effects[i];
+            output.Append('[');
+
+            output.AppendFormat("#nm: \"{0}\", #tp: \"{1}\", #crossScreen: {2}, #mtrx: [",
+                effect.Data.name, effect.Data.type == EffectType.StandardErosion ? "standardErosion" : "nn",
+                effect.Data.crossScreen ? 1 : 0
+            );
+
+            // matrix data
+            for (int x = 0; x < level.Width; x++)
+            {
+                if (x > 0) output.Append(", ");
+                output.Append('[');
+                for (int y = 0; y < level.Height; y++)
+                {
+                    if (y > 0) output.Append(", ");
+                    output.Append(effect.Matrix[x,y].ToString("0.0000"));
+                }
+                output.Append(']');
+            }
+            output.Append("], ");
+
+            // effect options
+            output.Append("#Options: [[\"Delete/Move\", [\"Delete\", \"Move Back\", \"Move Forth\"], \"\"]");
+            if (effect.Data.useLayers)
+            {
+                output.AppendFormat(", [\"Layers\", [\"All\", \"1\", \"2\", \"3\", \"1:st and 2:nd\", \"2:nd and 3:rd\"], \"{0}\"]",
+                    layerEnums[(int) effect.Layer]
+                );
+            }
+
+            if (effect.Data.use3D)
+            {
+                output.AppendFormat(", [\"3D\", [\"Off\", \"On\"], \"{0}\"]", effect.Is3D ? "On" : "Off");
+            }
+
+            if (effect.Data.usePlantColors)
+            {
+                output.AppendFormat(", [\"Color\", [\"Color1\", \"Color2\", \"Dead\"], \"{0}\"]", plantColorEnums[effect.PlantColor]);
+            }
+
+            // custom option
+            if (!string.IsNullOrEmpty(effect.Data.customSwitchName))
+            {
+                output.AppendFormat(", [\"{0}\", [", effect.Data.customSwitchName);
+
+                for (int j = 0; j < effect.Data.customSwitchOptions.Length; j++)
+                {
+                    if (j > 0) output.Append(", ");
+                    output.Append('"');
+                    output.Append(effect.Data.customSwitchOptions[j]);
+                    output.Append('"');
+                }
+
+                output.AppendFormat("], \"{0}\"]", effect.Data.customSwitchOptions[effect.CustomValue]);
+            }
+
+            // seed
+            output.AppendFormat(", [\"Seed\", [], {0}]", effect.Seed);
+
+            // end effects options
+            output.Append("], ");
+
+            // effect parameters & end effect
+            output.AppendFormat("#repeats: {0}, #affectOpenAreas: {1}]", effect.Data.repeats, effect.Data.affectOpenAreas);
+        }
+
+        output.Append("], #emPos: point(1, 1), #editEffect: 1, #selectEditEffect: 1, #mode: \"createNew\", #brushSize: 5]");
         output.Append(newLine);
 
         // light data
