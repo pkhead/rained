@@ -13,9 +13,49 @@ class EffectsEditor : IEditorMode
     private int selectedEffect = -1;
     private string searchQuery = string.Empty;
 
+    private RlManaged.Texture2D matrixTexture;
+    private RlManaged.Image matrixImage;
+
+    private readonly static string MatrixTextureShaderSource = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * fragColor * colDiffuse;
+        }
+    ";
+    private readonly RlManaged.Shader matrixTexShader;
+
     public EffectsEditor(EditorWindow window)
     {
         this.window = window;
+
+        // create shader
+        matrixTexShader = RlManaged.Shader.LoadFromMemory(null, MatrixTextureShaderSource);
+
+        // create matrix texture
+        var level = window.Editor.Level;
+        matrixImage = RlManaged.Image.GenColor(level.Width, level.Height, Color.Black);
+        matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
+    }
+
+    public void ReloadLevel()
+    {
+        var level = window.Editor.Level;
+        matrixImage.Dispose();
+        matrixTexture.Dispose();
+        
+        matrixImage = RlManaged.Image.GenColor(level.Width, level.Height, Color.Black);
+        matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
     }
 
     private static string[] layerModeNames = new string[]
@@ -283,6 +323,34 @@ class EffectsEditor : IEditorMode
         }
 
         levelRender.RenderBorder();
+
+        // update and draw matrix
+        if (selectedEffect >= 0)
+        {
+            var effect = level.Effects[selectedEffect];
+
+            // update image and send to gpu
+            for (int x = 0; x < level.Width; x++)
+            {
+                for (int y = 0; y < level.Height; y++)
+                {
+                    int v = (int)(effect.Matrix[x,y] / 100f * 255f);
+                    Raylib.ImageDrawPixel(ref matrixImage.Ref(), x, y, new Color(v, v, v, 255));
+                }
+            }
+            matrixImage.UpdateTexture(matrixTexture);
+
+            // draw matrix texture
+            Raylib.BeginShaderMode(matrixTexShader);
+            Raylib.DrawTextureEx(
+                matrixTexture,
+                Vector2.Zero,
+                0f,
+                Level.TileSize,
+                new Color(255, 255, 255, 100)
+            );
+            Raylib.EndShaderMode();
+        }
     }
 
     private void AddEffect(EffectInit init)

@@ -112,6 +112,9 @@ namespace RlManaged
         
         public static Image GenColor(int width, int height, Color color)
             => new(Raylib.GenImageColor(width, height, color));
+        
+        public static Image FromImage(Raylib_cs.Image image, Rectangle rec)
+            => new(Raylib.ImageFromImage(image, rec));
 
         public unsafe void DrawPixel(int x, int y, Color color)
         {
@@ -139,23 +142,16 @@ namespace RlManaged
 
             return result;
         }
-
-        /*public unsafe void Draw(Raylib_cs.Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
+        
+        public unsafe void UpdateTexture(Raylib_cs.Texture2D texture)
         {
-            fixed (Raylib_cs.Image* rawPtr = &raw)
-                Raylib.ImageDraw()
+            Raylib.UpdateTexture(texture, raw.Data);
         }
-        */
-
+        
         public unsafe void Format(PixelFormat newFormat)
         {
             fixed (Raylib_cs.Image* rawPtr = &raw)
                 Raylib.ImageFormat(rawPtr, newFormat);
-        }
-
-        public Image(Raylib_cs.Image image, Rectangle rec)
-        {
-            raw = Raylib.ImageFromImage(image, rec);
         }
 
         ~Image() => Dispose(false);
