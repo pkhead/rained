@@ -400,8 +400,13 @@ class RainEd
         LevelBrowser.Singleton?.Render();
 
         // render drizzle render, if in progress
-        drizzleRenderWindow?.DrawWindow();
-
+        if (drizzleRenderWindow is not null)
+        {
+            // if this returns true, the render window had closed
+            if (drizzleRenderWindow.DrawWindow())
+                drizzleRenderWindow = null;
+        }
+        
         // notification window
         if (notificationTime > 0f) {
             ImGuiWindowFlags windowFlags =

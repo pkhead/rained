@@ -14,12 +14,16 @@ class LevelDrizzleRender
 
     private record MessageRenderStarted : ThreadMessage;
     private record MessageRenderFailed(Exception Exception) : ThreadMessage;
+    private record MessageRenderCancelled : ThreadMessage;
     private record MessageRenderFinished : ThreadMessage;
     private record MessageRenderProgress(float Percentage) : ThreadMessage;
+    private record MessageDoCancel : ThreadMessage;
 
     private class RenderThread
     {
         public ConcurrentQueue<ThreadMessage> Queue;
+        public ConcurrentQueue<ThreadMessage> InQueue;
+
         public string filePath;
         public LevelRenderer? Renderer;
         public Action<RenderStatus>? StatusChanged = null;
@@ -27,6 +31,7 @@ class LevelDrizzleRender
         public RenderThread(string filePath)
         {
             Queue = new ConcurrentQueue<ThreadMessage>();
+            InQueue = new ConcurrentQueue<ThreadMessage>();
             this.filePath = filePath;
         }
 
@@ -43,13 +48,24 @@ class LevelDrizzleRender
                 Renderer.StatusChanged += StatusChanged;
                 Queue.Enqueue(new MessageRenderStarted());
 
+                // process user cancel if cancelled while init
+                // zygote runtime
+                if (InQueue.TryDequeue(out ThreadMessage? msg))
+                {
+                    if (msg is MessageDoCancel)
+                        throw new RenderCancelledException();
+                }
+
                 Console.Write("Begin Render");
                 Renderer.DoRender();
                 Console.WriteLine("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
             }
             catch (RenderCancelledException)
-            {}
+            {
+                Console.WriteLine("Render cancelled");
+                Queue.Enqueue(new MessageRenderCancelled());
+            }
             catch (Exception e)
             {
                 Queue.Enqueue(new MessageRenderFailed(e));
@@ -63,7 +79,9 @@ class LevelDrizzleRender
     {
         Initializing,
         Rendering,
-        Finished
+        Finished,
+        Cancelling,
+        Canceled
     };
 
     private RenderState state;
@@ -72,6 +90,7 @@ class LevelDrizzleRender
     public RenderState State { get => state; }
     public RenderStage Stage { get => currentStage; }
     public float RenderProgress { get => progress; }
+    public bool IsDone { get => state == RenderState.Canceled || state == RenderState.Finished; }
 
     private readonly int cameraCount;
     private int camsDone = 0;
@@ -182,6 +201,20 @@ class LevelDrizzleRender
         progress = renderProgress / (cameraCount * 10f);
     }
 
+    public void Cancel()
+    {
+        state = RenderState.Cancelling;
+
+        if (threadState.Renderer is not null)
+        {
+            threadState.Renderer.CancelRender();
+        }
+        else
+        {
+            threadState.InQueue.Enqueue(new MessageDoCancel());
+        }
+    }
+
     public void Update(RainEd editor)
     {
         while (threadState.Queue.TryDequeue(out ThreadMessage? messageGeneral))
@@ -193,11 +226,13 @@ class LevelDrizzleRender
                 case MessageRenderProgress msgProgress:
                     progress = msgProgress.Percentage;
                     break;
+                
                 case MessageRenderFinished:
                     state = RenderState.Finished;
                     Console.WriteLine("Thread is done!");
                     progress = 1f;
                     DisplayString = "";
+                    thread.Join();
                     break;
                 
                 case MessageRenderStarted:
@@ -209,20 +244,12 @@ class LevelDrizzleRender
                     Console.WriteLine("Error occured when rendering level");
                     Console.WriteLine(msgFail.Exception);
                     break;
+                
+                case MessageRenderCancelled:
+                    state = RenderState.Canceled;
+                    thread.Join();
+                    break;
             }
-
-            /*if (messageGeneral is MessageRenderFinished)
-            {
-                state = RenderState.Finished;
-                Console.WriteLine("Thread is done!");
-            }
-            else if (messageGeneral is MessageRenderStarted)
-            {
-                state = RenderState.Rendering;
-            }
-            else if (messageGeneral is MessageRenderFailed msgFail)
-            {
-            }*/
         }
     }
 }
