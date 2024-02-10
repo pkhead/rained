@@ -124,3 +124,9 @@ KEYBINDS:
     Q + Mouse - Scale brush
     E + Mouse - Rotate brush
     R - Reset transform
+
+  Effects Editor:
+    LMB - Paint effect
+    Space + LMB - Paint effect stronger
+    RMB - Erase effect
+    Shift + MouseWheel - Change brush size

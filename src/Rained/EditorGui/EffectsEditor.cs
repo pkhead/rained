@@ -315,26 +315,39 @@ class EffectsEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
+        window.BeginLevelScissorMode();
+
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
         
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
-        
-        // draw the layers
+
+        // draw layers, including tiles
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
-            var alpha = l == 0 ? 255 : 50;
-            var color = new Color(30, 30, 30, alpha);
-            int offset = l * 2;
+            // draw layer into framebuffer
+            Raylib.BeginTextureMode(layerFrame);
 
+            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+            levelRender.RenderTiles(l, 255);
+            
+            // draw alpha-blended result into main frame
+            Raylib.BeginTextureMode(mainFrame);
             Rlgl.PushMatrix();
-            Rlgl.Translatef(offset, offset, 0f);
-            levelRender.RenderGeometry(l, color);
+            Rlgl.LoadIdentity();
+
+            int offset = l * 2;
+            var alpha = l == window.WorkLayer ? 255 : 50;
+            Raylib.DrawTextureRec(
+                layerFrame.Texture,
+                new Rectangle(0f, layerFrame.Texture.Height, layerFrame.Texture.Width, -layerFrame.Texture.Height),
+                Vector2.One * offset,
+                new Color(255, 255, 255, alpha)
+            );
             Rlgl.PopMatrix();
         }
-
-        levelRender.RenderBorder();
 
         if (selectedEffect >= 0)
         {
@@ -346,6 +359,7 @@ class EffectsEditor : IEditorMode
             var brushStrength = ImGui.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
             if (effect.Data.binary) brushStrength = 100000000f;
 
+            float brushFac = 0.0f;
             int bcx = window.MouseCx;
             int bcy = window.MouseCy;
 
@@ -374,13 +388,12 @@ class EffectsEditor : IEditorMode
                     lastBrushPos = new(-9999, -9999);
                 
                 // paint when user's mouse is down and moving
-                float fac = 0.0f;
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                    fac = 1.0f;
+                    brushFac = 1.0f;
                 else if (ImGui.IsMouseDown(ImGuiMouseButton.Right))
-                    fac = -1.0f;
+                    brushFac = -1.0f;
                 
-                if (fac != 0.0f)
+                if (brushFac != 0.0f)
                 {
                     if (new Vector2(bcx, bcy) != lastBrushPos)
                     {
@@ -396,7 +409,7 @@ class EffectsEditor : IEditorMode
 
                                 if (brushP > 0f)
                                 {
-                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * fac, 0f, 100f);                            
+                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
                                 }
                             }
                         }
@@ -428,7 +441,7 @@ class EffectsEditor : IEditorMode
             Raylib.EndShaderMode();
 
             // draw brush outline
-            if (window.IsViewportHovered && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            if (window.IsViewportHovered && brushFac == 0.0f)
             {
                 // draw brush outline
                 for (int x = bLeft; x <= bRight; x++)
@@ -473,6 +486,9 @@ class EffectsEditor : IEditorMode
                 }
             }
         }
+
+        levelRender.RenderBorder();
+        Raylib.EndScissorMode();
     }
 
     private void AddEffect(EffectInit init)
