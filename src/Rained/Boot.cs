@@ -39,7 +39,7 @@ namespace RainEd
             if (showSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                Texture texture = new("data/splash-screen.png");
+                Texture texture = new("assets/splash-screen.png");
                 var sprite = new Sprite(texture);
 
                 splashScreenWindow.Clear();
@@ -56,7 +56,7 @@ namespace RainEd
 
                 // setup imgui
                 rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename("data/imgui.ini");
+                rlImGui.SetIniFilename("assets/imgui.ini");
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 

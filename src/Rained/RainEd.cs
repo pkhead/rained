@@ -35,7 +35,7 @@ class RainEd
     private DrizzleRenderWindow? drizzleRenderWindow = null;
 
     public RainEd(string levelPath = "") {
-        rainedLogo = RlManaged.Texture2D.Load("data/rained-logo.png");
+        rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
         TileDatabase = new Tiles.Database();
         EffectsDatabase = new EffectsDatabase();
         
@@ -48,7 +48,7 @@ class RainEd
             level = Level.NewDefaultLevel(this);
         }
 
-        LevelGraphicsTexture = RlManaged.Texture2D.Load("data/level-graphics.png");
+        LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
         editorWindow = new EditorWindow(this);
         changeHistory = new ChangeHistory(this);
 

@@ -107,7 +107,7 @@ class LightEditor : IEditorMode
 
         lightBrushes = new List<LightBrush>();
 
-        foreach (var fileName in File.ReadLines("data/light/init.txt"))
+        foreach (var fileName in File.ReadLines("assets/light/init.txt"))
         {
             // if this line is empty, skip
             if (string.IsNullOrWhiteSpace(fileName)) continue;
@@ -116,7 +116,7 @@ class LightEditor : IEditorMode
             if (fileName[0] == '#') continue;
             
             // load light texture
-            var tex = RlManaged.Texture2D.Load($"data/light/{fileName.Trim()}");
+            var tex = RlManaged.Texture2D.Load($"assets/light/{fileName.Trim()}");
             lightBrushes.Add(new LightBrush()
             {
                 Name = fileName.Trim(),
