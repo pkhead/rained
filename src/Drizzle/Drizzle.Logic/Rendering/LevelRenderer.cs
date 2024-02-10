@@ -86,6 +86,7 @@ public sealed partial class LevelRenderer : ILingoRuntimeManager
                         exec.Action();
                         break;
                     case RenderCmdReqPreview:
+                        Console.WriteLine("PreviewRequest");
                         _previewRequested = true;
                         break;
                 }

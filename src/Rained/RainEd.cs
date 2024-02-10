@@ -144,7 +144,7 @@ class RainEd
     {
         promptUnsavedChangesCancelable = canCancel;
 
-        if (changeHistory.HasChanges)
+        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(currentFilePath)))
         {
             promptUnsavedChanges = true;
             promptCallback = callback;
@@ -401,7 +401,7 @@ class RainEd
 
         // render drizzle render, if in progress
         drizzleRenderWindow?.DrawWindow();
-        
+
         // notification window
         if (notificationTime > 0f) {
             ImGuiWindowFlags windowFlags =

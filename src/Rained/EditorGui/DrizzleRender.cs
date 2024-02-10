@@ -1,5 +1,6 @@
+using System.Numerics;
 using ImGuiNET;
-
+using RenderState = RainEd.LevelDrizzleRender.RenderState;
 namespace RainEd;
 
 class DrizzleRenderWindow
@@ -18,14 +19,22 @@ class DrizzleRenderWindow
 
         if (ImGui.Begin("Drizzle Render"))
         {
-            if (drizzleRenderer.IsDone)
+            ImGui.Button("Cancel");
+            ImGui.SameLine();
+            ImGui.ProgressBar(drizzleRenderer.RenderProgress, new Vector2(-1.0f, 0.0f));
+            if (drizzleRenderer.State == RenderState.Finished)
             {
-                ImGui.Text("done");
+                ImGui.Text("Done!");
+            }
+            else if (drizzleRenderer.State == RenderState.Initializing)
+            {
+                ImGui.Text("Initializing Zygote runtime...");
             }
             else
             {
-                ImGui.Text("not done");
+                ImGui.Text("Rendering...");
             }
-        }
+
+        } ImGui.End();
     }
 }
