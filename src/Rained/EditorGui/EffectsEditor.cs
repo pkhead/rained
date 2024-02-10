@@ -35,6 +35,9 @@ class EffectsEditor : IEditorMode
     ";
     private readonly RlManaged.Shader matrixTexShader;
 
+    private int brushSize = 4;
+    private Vector2 lastBrushPos = new();
+
     public EffectsEditor(EditorWindow window)
     {
         this.window = window;
@@ -50,6 +53,8 @@ class EffectsEditor : IEditorMode
 
     public void ReloadLevel()
     {
+        selectedEffect = -1;
+
         var level = window.Editor.Level;
         matrixImage.Dispose();
         matrixTexture.Dispose();
@@ -301,6 +306,13 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
     }
 
+    private float GetBrushPower(int cx, int cy, int x, int y)
+    {
+        var dx = x - cx;
+        var dy = y - cy;
+        return 1.0f - (MathF.Sqrt(dx*dx + dy*dy) / brushSize);
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         var level = window.Editor.Level;
@@ -324,12 +336,72 @@ class EffectsEditor : IEditorMode
 
         levelRender.RenderBorder();
 
-        // update and draw matrix
         if (selectedEffect >= 0)
         {
             var effect = level.Effects[selectedEffect];
 
-            // update image and send to gpu
+            var brushStrength = 10f;
+
+            int bcx = window.MouseCx;
+            int bcy = window.MouseCy;
+
+            var bLeft = bcx - brushSize;
+            var bTop = bcy - brushSize;
+            var bRight = bcx + brushSize;
+            var bBot = bcy + brushSize;
+
+            // user painting
+            if (window.IsViewportHovered)
+            {
+                // shift + scroll to change brush size
+                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                {
+                    window.OverrideMouseWheel = true;
+
+                    if (Raylib.GetMouseWheelMove() > 0.0f)
+                        brushSize += 1;
+                    else if (Raylib.GetMouseWheelMove() < 0.0f)
+                        brushSize -= 1;
+                    
+                    brushSize = Math.Clamp(brushSize, 1, 10);
+                }
+
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                    lastBrushPos = new(-9999, -9999);
+                
+                // paint when user's mouse is down and moving
+                float fac = 0.0f;
+                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    fac = 1.0f;
+                else if (ImGui.IsMouseDown(ImGuiMouseButton.Right))
+                    fac = -1.0f;
+                
+                if (fac != 0.0f)
+                {
+                    if (new Vector2(bcx, bcy) != lastBrushPos)
+                    {
+                        lastBrushPos.X = bcx;
+                        lastBrushPos.Y = bcy;
+
+                        for (int x = bLeft; x <= bRight; x++)
+                        {
+                            for (int y = bTop; y <= bBot; y++)
+                            {
+                                if (!level.IsInBounds(x, y)) continue;
+                                var brushP = GetBrushPower(bcx, bcy, x, y);
+
+                                if (brushP > 0f)
+                                {
+                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * fac, 0f, 100f);                            
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // update and draw matrix
+            // first, update data on the gpu
             for (int x = 0; x < level.Width; x++)
             {
                 for (int y = 0; y < level.Height; y++)
@@ -340,7 +412,7 @@ class EffectsEditor : IEditorMode
             }
             matrixImage.UpdateTexture(matrixTexture);
 
-            // draw matrix texture
+            // then, draw the matrix texture
             Raylib.BeginShaderMode(matrixTexShader);
             Raylib.DrawTextureEx(
                 matrixTexture,
@@ -350,6 +422,52 @@ class EffectsEditor : IEditorMode
                 new Color(255, 255, 255, 100)
             );
             Raylib.EndShaderMode();
+
+            // draw brush outline
+            if (window.IsViewportHovered && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            {
+                // draw brush outline
+                for (int x = bLeft; x <= bRight; x++)
+                {
+                    for (int y = bTop; y <= bBot; y++)
+                    {
+                        if (!level.IsInBounds(x, y)) continue;
+                        if (GetBrushPower(bcx, bcy, x, y) <= 0f) continue;
+                        
+                        // left
+                        if (GetBrushPower(bcx, bcy, x - 1, y) <= 0f)
+                            Raylib.DrawLine(
+                                x * Level.TileSize, y * Level.TileSize,
+                                x * Level.TileSize, (y+1) * Level.TileSize,
+                                Color.White
+                            );
+
+                        // top
+                        if (GetBrushPower(bcx, bcy, x, y - 1) <= 0f)
+                            Raylib.DrawLine(
+                                x * Level.TileSize, y * Level.TileSize,
+                                (x+1) * Level.TileSize, y * Level.TileSize,
+                                Color.White
+                            );
+                        
+                        // right
+                        if (GetBrushPower(bcx, bcy, x + 1, y) <= 0f)
+                            Raylib.DrawLine(
+                                (x+1) * Level.TileSize, y * Level.TileSize,
+                                (x+1) * Level.TileSize, (y+1) * Level.TileSize,
+                                Color.White
+                            );
+
+                        // bottom
+                        if (GetBrushPower(bcx, bcy, x, y + 1) <= 0f)
+                            Raylib.DrawLine(
+                                x * Level.TileSize, (y+1) * Level.TileSize,
+                                (x+1) * Level.TileSize, (y+1) * Level.TileSize,
+                                Color.White
+                            );
+                    }
+                }
+            }
         }
     }
 

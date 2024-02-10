@@ -41,6 +41,7 @@ class EditorWindow
     public int MouseCy { get => mouseCy; }
     public Vector2 MouseCellFloat { get => mouseCellFloat; }
     public bool IsMouseInLevel() => Editor.Level.IsInBounds(mouseCx, mouseCy);
+    public bool OverrideMouseWheel = false;
 
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
@@ -56,7 +57,6 @@ class EditorWindow
 
     // render texture given to each editor mode class
     private RlManaged.RenderTexture2D layerRenderTexture;
-
     public readonly LevelRenderer LevelRenderer;
 
     public EditorWindow(RainEd editor)
@@ -232,7 +232,7 @@ class EditorWindow
 
     private void DrawCanvas()
     {
-        var level = Editor.Level;
+        OverrideMouseWheel = false;
         Raylib.ClearBackground(new Color(0, 0, 0, 0));
 
         Rlgl.PushMatrix();
@@ -277,19 +277,22 @@ class EditorWindow
             }
 
             // scroll wheel zooming
-            var wheelMove = Raylib.GetMouseWheelMove();
-            var zoomFactor = 1.5;
-            if (wheelMove > 0f && zoomSteps < 5)
+            if (!OverrideMouseWheel)
             {
-                var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
-                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                zoomSteps++;
-            }
-            else if (wheelMove < 0f && zoomSteps > -5)
-            {
-                var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
-                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                zoomSteps--;
+                var wheelMove = Raylib.GetMouseWheelMove();
+                var zoomFactor = 1.5;
+                if (wheelMove > 0f && zoomSteps < 5)
+                {
+                    var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
+                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                    zoomSteps++;
+                }
+                else if (wheelMove < 0f && zoomSteps > -5)
+                {
+                    var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
+                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                    zoomSteps--;
+                }
             }
         }
 
