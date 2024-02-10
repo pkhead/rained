@@ -3,10 +3,10 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <PublishSingleFile>true</PublishSingleFile>
     <Nullable>enable</Nullable>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../Rained.Lingo/Rained.Lingo.csproj" />
+    <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
+    <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
+    <ProjectReference Include="../Drizzle/Drizzle.Ported/Drizzle.Ported.csproj" />
   </ItemGroup>
 
 </Project>

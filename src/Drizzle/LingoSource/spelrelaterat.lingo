@@ -1,0 +1,570 @@
+
+on giveGridPos(pos: point)
+  type return: point
+  -- pos = pos + point(8, 8)
+  return point(((pos.locH.float/20.0)+0.4999).integer, ((pos.locV.float/20.0)+0.4999).integer)
+end
+
+on giveMiddleOfTile(pos: point)
+  type return: point
+  --pos = pos - point(8, 8)
+  return point((pos.locH*20)-10, (pos.locV*20)-10)-- - point(8,8)
+end
+
+on giveCorner1(pos)
+  return point((pos.locH*20), (pos.locV*20))
+end
+
+on giveCorner2(pos)
+  return point((pos.locH*20)-20, (pos.locV*20)-20)
+end
+
+on giveCorner3(pos)
+  return point((pos.locH*20), (pos.locV*20)-20)
+end
+
+on giveCorner4(pos)
+  return point((pos.locH*20)-20, (pos.locV*20))
+end
+
+on restrict(val, low, high)
+  if val<low then
+    return low
+  else if val > high then
+    return high
+  else
+    return val
+  end if
+end
+
+on restrictWithFlip(val: number, low: number, high: number)
+  type return: number
+  if val<low then
+    return val + (high-low)+1
+  else if val > high then
+    return val - (high-low)-1
+  else
+    return val
+  end if
+end
+
+--/ Get the tile type of the tile on the specified position & layer.
+on afaMvLvlEdit(pos: point, layer: number)
+  type return: number
+
+  global gLEProps, gLOprops
+  if pos.inside(rect(1,1,gLOprops.size.loch+1,gLOprops.size.locv+1)) then
+    --put gMatrix[pos.locH][pos.locV]
+    return gLEProps.matrix[pos.locH][pos.locV][layer][1]
+  else
+    return 1
+  end if
+end
+
+
+
+on solidAfaMv(pos: point, layer: number)
+  type return: number
+  global solidMtrx, gLOprops
+  if pos.inside(rect(1,1,gLOprops.size.loch+1,gLOprops.size.locv+1)) then
+    --put gMatrix[pos.locH][pos.locV]
+    return solidMtrx[pos.locH][pos.locV][layer]
+  else
+    return 1
+  end if
+end
+
+
+on drawGraph()
+  member("grafImg").image = image(300, 100, 1)
+  repeat with q = 1 to 300 then
+    fc: number = q/300.0
+    
+    fc = 1.0-fc
+    fc = fc*fc
+    fc = 1.0-fc
+    
+    val: number = sin(fc*PI)
+    
+    
+    
+    member("grafImg").image.setPixel(q, 100-val*100, color(0,0,0))
+  end repeat
+end
+
+
+on depthPnt(pnt: point, dpt: number)
+  type return: point
+  --return pnt + point(-dpt, -dpt)
+  dpt = dpt * -0.025
+  pnt = pnt - point(1400/2, 800/3)
+  dpt = (10 - dpt)*0.1
+  pnt = pnt / dpt
+  pnt = pnt + point(1400/2, 800/3)
+  return pnt
+end
+
+on antiDepthPnt(pnt: point, dpt: number)
+  type return: point
+  --return pnt - point(dpt, dpt)
+  dpt = dpt * -0.025
+  pnt = pnt - point(1400/2, 800/3)
+  dpt = (10 - dpt)*0.1
+  pnt = pnt * dpt
+  pnt = pnt + point(1400/2, 800/3)
+  return pnt
+end
+
+on seedForTile(tile: point, effectSeed: number)
+  type return: number
+  global gLEprops
+  return effectSeed + tile.locH + tile.locV * gLEprops.matrix.count
+end
+
+
+
+on copyPixelsToEffectColor(gdLayer: string, lr: number, rct, getMember, gtRect: rect, zbleed: number, blnd: number)
+  
+  if(blnd = void) then
+    blnd = 1.0
+  end if
+  
+  if (gdLayer <> "C")and(blnd > 0)then
+    lr = lr.integer
+    if lr < 0 then lr = 0
+    else if lr > 29 then lr = 29
+    
+    gtImg: image = member(getMember).image
+    if (blnd <> 0)and(blnd <> void) then
+      dmpImg: image = gtImg.duplicate()
+      dmpImg.copyPixels(member("pxl").image, dmpImg.rect, rect(0,0,1,1), {#blend:100.0*(1.0-blnd), #color:color(255, 255, 255)})
+      gtImg = dmpImg
+    end if
+    
+    member("gradient"&gdLayer&string(lr)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+    
+    if(zbleed > 0) then
+      if (zbleed < 1)then
+        dmpImg = gtImg.duplicate()
+        dmpImg.copyPixels(member("pxl").image, dmpImg.rect, rect(0,0,1,1), {#blend:100.0*(1.0-zbleed), #color:color(255, 255, 255)})
+        gtImg = dmpImg
+      end if
+      nxt: number = lr + 1
+      if nxt > 29 then nxt = 29
+      member("gradient"&gdLayer&string(nxt)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+      nxt = lr - 1
+      if nxt < 0 then nxt = 0
+      member("gradient"&gdLayer&string(nxt)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+    end if
+  end if
+end
+
+
+
+
+on copyPixelsToRootEffectColor(gdLayer, lr, rct, getMember, gtRect, zbleed, blnd)
+  --use: copyPixelsToRootEffectColor(effect color letter from "Color" option (A, B, C=none), depth layer (from 0 to 29), final rectangle, gradient image name, source rectangle, blend modifier(from 0 to 1))
+  --why: because copyPixelsToEffectColor is limited
+  if(blnd = void) then
+    blnd = 1.0
+  end if
+  
+  if (gdLayer <> "C")and(blnd > 0)then
+    lr = lr.integer
+    if lr < 0 then lr = 0
+    else if lr > 29 then lr = 29
+    
+    gtImg = member(getMember).image
+    if (blnd <> 0)and(blnd <> void) then
+      dmpImg = gtImg.duplicate()
+      dmpImg.copyPixels(member("pxl").image, dmpImg.rect, rect(0,0,1,1), {#blend:100.0*(1.0-blnd), #color:color(255, 255, 255)})
+      gtImg = dmpImg
+    end if
+    
+    member("gradient"&gdLayer&string(lr)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+    
+    if(zbleed > 0) then
+      if (zbleed < 1)then
+        dmpImg = gtImg.duplicate()
+        dmpImg.copyPixels(member("pxl").image, dmpImg.rect, rect(0,0,1,1), {#blend:100.0*(1.0-zbleed), #color:color(255, 255, 255)})
+        gtImg = dmpImg
+      end if
+      repeat with nxtAdd = 1 to 3 then
+        nxt = lr + nxtAdd
+        if nxt > 29 then nxt = 29
+        member("gradient"&gdLayer&string(nxt)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+        nxt = lr - nxtAdd
+        if nxt < 0 then nxt = 0
+        member("gradient"&gdLayer&string(nxt)).image.copyPixels(gtImg, rct, gtRect, {#ink:39})
+      end repeat
+    end if
+  end if
+end
+
+
+
+
+
+
+
+
+on recolor(img: image, palOffset: number)
+  type return: image
+  -- member("currentPalette").image = image(member("palette"&string(pal)).image.width, member("palette"&string(pal)).image.height, 16)
+  -- member("currentPalette").image.copyPixels(member("palette"&string(pal)).image,  member("currentPalette").image.rect, member("palette"&string(pal)).image.rect)
+  
+  -- member("currentPalette").image.copyPixels(member("palette"&string(pal2)).image,  member("currentPalette").image.rect, member("palette"&string(pal2)).image.rect, {#blend:blnd})
+  
+  -- cXtraGEAdjustRGB("currentPalette","",rgbChange[1].integer,rgbChange[2].integer,rgbChange[3].integer)
+  
+  -- img = mem.image
+  col1: color = member("currentPalette").image.getPixel(0+palOffset, 0)
+  col2: color = member("currentPalette").image.getPixel(1+palOffset, 0)
+  col3: color = member("currentPalette").image.getPixel(2+palOffset, 0)
+  col4: color = member("currentPalette").image.getPixel(3+palOffset, 0)
+  col5: color = member("currentPalette").image.getPixel(4+palOffset, 0)
+  --put col1
+  repeat with c = 1 to img.width then
+    repeat with r = 1 to img.height then
+      --  put string(img.getPixel(c-1, r-1))
+      case string(img.getPixel(c-1, r-1)) of
+        "color( 248, 0, 0 )":
+          img.setPixel(c-1, r-1, col1)
+        "color( 0, 248, 0 )":
+          img.setPixel(c-1, r-1, col2)
+        "color( 0, 0, 248 )":
+          img.setPixel(c-1, r-1, col3)
+        "color( 248, 248, 0 )":
+          img.setPixel(c-1, r-1, col4)
+        "color( 0, 248, 248 )":
+          img.setPixel(c-1, r-1, col5)
+      end case
+      -- col = img.getPixel(c, r)
+      -- put col
+    end repeat
+  end repeat
+  
+  return img
+end
+
+
+
+on txtToImg(txt: string)
+  type return: image
+  totChars: number = txt.length
+  
+  rws: number = ((totChars/1040.0)+0.5).integer
+  img: image = image(1040, rws, 32)
+  
+  pos: point = point(0,1)
+  repeat with q = 1 to txt.length then
+    pos.locH = pos.locH + 1
+    if pos.locH > 1040 then
+      pos.locH = 1
+      pos.locV = pos.locV + 1
+    end if
+    --  put txt.char[q..q].charToNum
+    img.setPixel(pos.locH-1, pos.locV-1,  color((txt.char[q..q]).charToNum, 0, 0) )
+    -- put (txt.char[q..q]).charToNum
+  end repeat
+  
+  return img
+end
+
+on imgToTxt(img: image)
+  type return: string
+  --pos = point(1,1)
+  txt: string = ""
+  repeat with c = 1 to img.rect.height then
+    repeat with q = 1 to 1040 then
+      col: color = img.getPixel(q-1, c-1)
+      if col = color(255, 255, 255) then
+        exit repeat
+      else
+        --put col.red
+        put numToChar(col.red) after txt 
+      end if
+    end repeat
+  end repeat
+  
+  return txt
+end
+
+
+
+on giveDpFromLr(lr: number)
+  type return: number
+  rtrn: number = 1
+  if lr >= 12 then
+    rtrn = 4
+  else if lr >= 8 then
+    rtrn = 3
+  else if lr >= 4 then
+    rtrn = 2
+  end if
+  return rtrn
+end 
+
+
+on makeSilhoutteFromImg(img: image, inverted: number)
+  type return: image
+  --/ I don't even know if this function gets used with anything with a depth != 32
+  --/ but if it does let's just guard this since makeSilhouette can't handle anything else.
+  if img.depth = 32 or img.depth = 1 then
+    return img.makeSilhouette(inverted)
+  end if
+
+  inv: image = image(img.width, img.height, 1)
+  inv.copyPixels(member("pxl").image, img.rect, rect(0,0,1,1), {#color:255})
+  inv.copyPixels(img,img.rect,img.rect, {#ink:36, #color:color(255,255,255)})
+  if inverted=0 then
+    inv = makeSilhoutteFromImg( inv, 1)
+  end if
+  return inv
+end
+
+
+on blurImage(img: image, blurBlend: number)
+  type return: image
+  opImg: image = image(img.width, img.height, 32)
+  -- opImg.copyPixels(img, img.rect, img+rect(h,v,h,v), {#blend:(member("blurShape").image.getPixel(h+2,v+2).red/255.0)*100})
+  --pnt = point(-2,-2)
+  -- l = [point(-2,-2), point(-1,-2), point(0,-2), point(1,-2), point(2,-2), point(2,-1), point(2,0), point(2,1), point(2,2), point(1,2), point(0,2),\
+  point(-1,2),point(-2,2),point(-2,1),point(-2,0),point(-2,-1),point(-1,-1),point(0,-1),point(1,-1),point(1,0),point(0,0)]
+  l: list = []
+  repeat with h = -3 to 3 then
+    repeat with v = -3 to 3 then
+      l.add([100-(diag(point(h,v), point(0,0))*10)+random(9), point(h,v)])
+    end repeat
+  end repeat
+  l.sort()
+  repeat with pnt in l then
+    type pnt: list
+    opImg.copyPixels(img, img.rect, img.rect+rect(pnt[2],pnt[2]), {#blend:(member("blurShape").image.getPixel(pnt[2].locH+3,pnt[2].locV+3).red/255.0)*blurBlend})
+  end repeat
+  -- end repeat
+  return opImg
+end
+
+on blurOnBlack(img: image, blurBlend: number)
+  type return: image
+  opImg: image = image(img.width, img.height, 32)
+  opImg.copyPixels(member("pxl").image, opImg.rect, rect(0,0,1,1))
+  -- opImg.copyPixels(img, img.rect, img+rect(h,v,h,v), {#blend:(member("blurShape").image.getPixel(h+2,v+2).red/255.0)*100})
+  --pnt: list = point(-2,-2)
+  -- l: list = [point(-2,-2), point(-1,-2), point(0,-2), point(1,-2), point(2,-2), point(2,-1), point(2,0), point(2,1), point(2,2), point(1,2), point(0,2),\
+point(-1,2),point(-2,2),point(-2,1),point(-2,0),point(-2,-1),point(-1,-1),point(0,-1),point(1,-1),point(1,0),point(0,0)]
+  l: list = []
+  repeat with h = -3 to 3 then
+    repeat with v = -3 to 3 then
+      l.add([100-(diag(point(h,v), point(0,0))*10)+random(9), point(h,v)])
+    end repeat
+  end repeat
+  l.sort()
+  repeat with pnt in l then
+    type pnt: list
+    opImg.copyPixels(img, img.rect, img.rect+rect(pnt[2],pnt[2]), {#ink:36, #blend:(member("blurShape").image.getPixel(pnt[2].locH+3,pnt[2].locV+3).red/255.0)*blurBlend})
+  end repeat
+  -- end repeat
+  return opImg
+end
+
+
+
+on rotateToQuad(rct: rect, deg: number)
+  type return: list
+
+  dir: point = degToVec(deg.float)
+  
+  midPnt   : point = point((rct.left+rct.right)*0.5, (rct.top+rct.bottom)*0.5)
+  topPnt   : point = midPnt + (dir*rct.height*0.5)
+  bottomPnt: point = midPnt - (dir*rct.height*0.5)
+  
+  crossDir: point = giveDirFor90degrToLine(-dir, dir)
+  pnt1: point = topPnt + (crossDir*rct.width*0.5)
+  pnt2: point = topPnt - (crossDir*rct.width*0.5)
+  pnt3: point = bottomPnt - (crossDir*rct.width*0.5)
+  pnt4: point = bottomPnt + (crossDir*rct.width*0.5)
+  
+  return [pnt1, pnt2, pnt3, pnt4]
+end
+
+
+
+on flipQuadH(qd: list)
+  type return: list
+
+  return [qd[2], qd[1], qd[4], qd[3]]
+end
+
+on InverseKinematic(va: point, vc: point, A: number, B: number, flip: number)
+  type return: point
+  R: number = diag(va, vc)
+  
+  
+  alph: number = acos(restrict(((R * R) + (A * A) - (B * B)) / (2.0 * R * A), 0.1, 0.99)) * (flip * 180.0 / PI)
+  return va + degToVec(lookAtPoint(va, vc) + alph) * A
+  
+end
+
+
+on acos(a: number) 
+  type return: number
+  return 2*atan( sqrt(1-a*a)/(1+a) )
+end
+
+on depthChangeImage(img: image, dp: number)
+  type return: image
+  newImg: image = image(img.rect.width, img.rect.height, dp)
+  newImg.copyPixels(img, img.rect, img.rect)
+  return newImg
+end
+
+
+
+
+on pasteShortCutHole(mem: string, pnt: point, dp: number, cl)
+  --cl here takes both string and color input
+  global gLEProps, gLOprops, gCameraProps, gCurrentRenderCamera, gRenderCameraTilePos, gRenderCameraPixelPos
+  rctCenter: point = giveMiddleOfTile(pnt) - (gRenderCameraTilePos*20) - gRenderCameraPixelPos
+  rctCenter = depthPnt(rctCenter, dp)
+  rct: rect = rect(rctCenter,rctCenter)+rect(-10, -10, 10, 10)
+  
+  idString: string = ""
+  repeat with dr in [point(-1,0), point(0,-1), point(1,0), point(0,1)] then
+  type dr: point
+    if (pnt+dr).inside(rect(1,1,gLOprops.size.loch,gLOprops.size.locv)) then
+      if (gLEProps.matrix[pnt.locH+dr.locH][pnt.locV+dr.locV][1][2].getPos(5)>0)or(gLEProps.matrix[pnt.locH+dr.locH][pnt.locV+dr.locV][1][2].getPos(4)>0)then
+        idString = idString & "1"
+      else
+        idString = idString & "0"
+      end if
+    else
+      idString = idString & "0"
+    end if
+  end repeat
+  
+  ps: number = ["0101", "1010", "1111", "1100", "0110", "0011", "1001", "1110", "0111", "1011", "1101", "0000"].getPos(idString)
+  
+  if cl = "BORDER" then
+    clL: list = []
+    clL.add([color(255, 0, 0), point(-1,0)])
+    clL.add([color(255, 0, 0), point(0,-1)])
+    clL.add([color(255, 0, 0), point(-1,-1)])
+    clL.add([color(255, 0, 0), point(-2,0)])
+    clL.add([color(255, 0, 0), point(0,-2)])
+    clL.add([color(255, 0, 0), point(-2,-2)])
+    
+    clL.add([color(0, 0, 255), point(1,0)])
+    clL.add([color(0, 0, 255), point(0,1)])
+    clL.add([color(0, 0, 255), point(1,1)])
+    clL.add([color(0, 0, 255), point(2,0)])
+    clL.add([color(0, 0, 255), point(0,2)])
+    clL.add([color(0, 0, 255), point(2,2)])
+  else
+    clL = [[cl, point(0,0)]]
+  end if
+  
+  repeat with c in clL then
+  type c: list
+    member(mem).image.copyPixels(member("shortCutsGraf").image, rct+rect(c[2], c[2]), rect(20*(ps-1),1,20*ps,21), {#ink:36, #color:c[1]})
+  end repeat
+end
+
+
+
+
+on resizeLevel(sze: point, addTilesLeft: number, addTilesTop: number)
+  global gLEprops, gLOProps, gTEprops, gEEprops
+  newMatrix: list = []
+  newTEmatrix: list = []
+  
+  repeat with q = 1 to sze.locH + addTilesLeft then
+    ql: list = []
+    repeat with c = 1 to sze.locV + addTilesTop then
+      if (q-addTilesLeft<=gLEprops.matrix.count)and(c-addTilesTop<=gLEprops.matrix[1].count)and(q-addTilesLeft>0)and(c-addTilesTop>0)then
+        adder = gLEprops.matrix[q-addTilesLeft][c-addTilesTop]
+      else
+        adder: list = [[1, []], [1, []], [1, []]]
+      end if
+      ql.add(adder)
+    end repeat
+    newMatrix.add(ql)
+  end repeat
+  
+  repeat with q = 1 to sze.locH + addTilesLeft then
+    ql = []
+    repeat with c = 1 to sze.locV + addTilesTop then
+      if (q+addTilesLeft<=gTEprops.tlMatrix.count)and(c+addTilesTop<=gTEprops.tlMatrix[1].count)and(q-addTilesLeft>0)and(c-addTilesTop>0)then
+        adder = gTEprops.tlMatrix[q-addTilesLeft][c-addTilesTop]
+      else
+        adder = [[#tp:"default", #data:0], [#tp:"default", #data:0], [#tp:"default", #data:0]]
+      end if
+      ql.add(adder)
+    end repeat
+    newTEmatrix.add(ql)
+  end repeat
+  
+  
+  repeat with effect in gEEprops.effects then
+    newEffMtrx: list = []
+    
+    repeat with q = 1 to sze.locH + addTilesLeft then
+      ql = []
+      repeat with c = 1 to sze.locV + addTilesTop then
+        if (q+addTilesLeft<=effect.mtrx.count)and(c+addTilesTop<=effect.mtrx[1].count)and(q-addTilesLeft>0)and(c-addTilesTop>0)then
+          adder = effect.mtrx[q-addTilesLeft][c-addTilesTop]
+          ql.add(adder)
+        else
+          ql.add(0)
+        end if
+      end repeat
+      newEffMtrx.add(ql)
+    end repeat
+    
+    effect.mtrx = newEffMtrx
+  end repeat
+  
+  
+  gLEprops.matrix = newMatrix
+  gTEprops.tlMatrix = newTEmatrix
+  gLOprops.size = sze + point(addTilesLeft, addTilesTop) --- (rmvTilesLeft, rmvTilesTop)
+  
+  global gLASTDRAWWASFULLANDMINI
+  gLASTDRAWWASFULLANDMINI = 0
+  
+  oldimg: image = member("lightImage").image.duplicate()
+  member("lightImage").image = image((gLOprops.size.locH*20)+300,(gLOprops.size.locV*20)+300, 1)
+  member("lightImage").image.copypixels(oldimg, oldimg.rect, oldimg.rect)
+end
+
+
+
+
+
+
+on ResetgEnvEditorProps()
+  
+  global gEnvEditorProps
+  gEnvEditorProps = [#waterLevel:-1, #waterInFront:1, #waveLength:60, #waveAmplitude:5, #waveSpeed:10]
+  
+  
+end
+
+on resetPropEditorProps()
+  global gPEprops
+  gPEprops = [#props:[], #lastKeys:[], #keys:[], #workLayer:1, #lstMsPs:point(0,0), pmPos:point(1,1), #pmSavPosL:[], #propRotation:0, #propStretchX:1, #propStretchY:1, #propFlipX:1, #propFlipY:1, #depth:0, #color:0]
+end
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Drizzle.Lingo.Runtime\Drizzle.Lingo.Runtime.csproj" />
+        <ProjectReference Include="..\Drizzle.Ported\Drizzle.Ported.csproj" />
+    </ItemGroup>
+</Project>

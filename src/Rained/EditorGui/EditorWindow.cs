@@ -57,7 +57,7 @@ class EditorWindow
 
     // render texture given to each editor mode class
     private RlManaged.RenderTexture2D layerRenderTexture;
-    public readonly LevelRenderer LevelRenderer;
+    public readonly LevelEditRender LevelRenderer;
 
     public EditorWindow(RainEd editor)
     {
@@ -65,7 +65,7 @@ class EditorWindow
         canvasWidget = new(1, 1);
         layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
 
-        LevelRenderer = new LevelRenderer(editor);
+        LevelRenderer = new LevelEditRender(editor);
         editorModes.Add(new EnvironmentEditor(this));
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));

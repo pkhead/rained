@@ -1,0 +1,85 @@
+global c, gSkyColor, lightRects, gLevel, gImgXtra, gLoadedName, gCurrentRenderCamera, lvlPropOutput
+
+on exitFrame me
+  if _key.keyPressed(56) and _key.keyPressed(48) and _movie.window.sizeState <> #minimized then
+    _player.appMinimize()
+    
+  end if
+  if checkExit() then
+    _player.quit()
+  end if
+  if checkExitRender() then
+    _movie.go(9)
+  end if
+  
+  --  if _key.keyPressed(48) then
+  --    _movie.go(9)
+  --  end if
+  --  if (gLevel.lightType<>"No Light")and(1<>1) then
+  --    repeat with c = 1 to 800 then
+  --      repeat with q = 1 to 1040 then
+  --        cl = member("shadowImage").image.getPixel(q-1, c-1)
+  --        if cl = color( 255, 255, 255 ) then
+  --          repeat with dir in [point(-1, 0), point(0,-1), point(1,0), point(0,1)]then--,point(-1, -1), point(1,-1), point(1,1), point(-1,1)]then
+  --            if member("shadowImage").image.getPixel(q-1 + dir.locH*2, c-1 + dir.locV*2) = cl then
+  --              --   if member("shadowImg").image.getPixel(q-1 + dir.locH, c-1 + dir.locV) <> color(255, 255, 255) then
+  --              member("shadowImage").image.setPixel(q-1 + dir.locH, c-1 + dir.locV, cl)
+  --              --  end if
+  --            end if
+  --          end repeat
+  --        end if
+  --        
+  --      end repeat
+  --      
+  --    end repeat
+  --  end if
+  --  
+  --  sprite(3).rect = rect(0, c-8, 1040, c+1-8)
+  --  
+  --  
+  --  -- c = c + 1 + (1000*(gLevel.lightType="No Light"))
+  --  member("rainBowImage").image = image(1040, 800, 32)
+  --  member("rainBowMask").image = image(1040, 800, 1)
+  --  member("tempRainBowImage").image = image(1040, 800, 32)
+  --  
+  --  member("rainBowImage").image.copyPixels(member("pxl").image, rect(0,0,1040,800),rect(0,0,1,1), {#color:color(255,255,255)})
+  --  member("rainBowMask").image.copyPixels(member("pxl").image, rect(0,0,1040,800),rect(0,0,1,1), {#color:color(0,0,0)})
+  --  
+  --  
+  --  -- if c > 800 then
+  --  c = 1
+  --  -- gSkyColor = color(122, 122, 122)
+  --  sprite(1).color = gSkyColor
+  --  
+  --  member("blurredLight").image = image(1040,800,32)
+  --  --  member("blurredLight").image.copypixels(member("pxl").image, rect(0,0,1040,800), rect(0,0,1,1))
+  --  
+  --  lightRects = [rect(1000, 1000, -1000, -1000), rect(1000, 1000, -1000, -1000)]
+  --  --  else
+  --  --    go the frame
+  --  --  end if
+  q = QUOTE
+  if (lvlPropOutput = true) then
+    member("GradientOutput").image = image(2800, 801, 32)
+    member("GradientOutput").image.copyPixels(member("finalImage").image, rect(0, 1, 1400, 801), member("finalImage").image.rect, {#ink:36})
+    member("GradientOutput").image.copyPixels(member("flattenedGradientA").image, rect(1400, 1, 2800, 801), member("flattenedGradientA").image.rect, {#ink:36})
+    member("GradientOutput").image.copyPixels(member("flattenedGradientB").image, rect(1400, 1, 2800, 801), member("flattenedGradientB").image.rect, {#ink:36}) 
+    member("GradientOutput").image.copyPixels(member("pxl").image, rect(0, 0, 1, 1), member("pxl").image.rect, {#color:color(0, 0, 0), #ink:36}) 
+    props = ["image": member("GradientOutput").image, "filename":_movie.path&"Props/"&gLoadedName & "_" & gCurrentRenderCamera & "_Prop.png"]
+    ok = gImgXtra.ix_saveImage(props)
+    
+    objFileio = new xtra("fileio")
+    objFileio.createFile(the moviePath & "Props/"&gLoadedName & "_" & gCurrentRenderCamera & "_Prop_Init.txt")
+    objFileio.closeFile()
+    
+    fileOpener = new xtra("fileio")
+    fileOpener.openFile(the moviePath & "Props/"&gLoadedName & "_" & gCurrentRenderCamera & "_Prop_Init.txt", 0)
+    fileOpener.writeString("[#nm:" &q& gLoadedName & "_" & gCurrentRenderCamera & "_Prop"&q&", #tp:"&q& "standard" &q&", #colorTreatment:"&q&"standard"&q&", #bevel:1, #sz:point(70, 40), #repeatL:[1], #tags:["&q&"effectColorA"&q&", "&q&"effectColorB"&q&", "&q&"notTrashProp"&q&"], #layerExceptions:[], #notes:[]]")
+    fileOpener.writeReturn(#windows)
+  end if
+end
+
+
+
+
+

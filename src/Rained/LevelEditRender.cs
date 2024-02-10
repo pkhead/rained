@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace RainEd;
 
-class LevelRenderer
+class LevelEditRender
 {
     private static readonly Dictionary<LevelObject, Vector2> ObjectTextureOffsets = new()
     {
@@ -69,7 +69,7 @@ class LevelRenderer
 
     private RlManaged.Texture2D? gridTexture;
 
-    public LevelRenderer(RainEd editor)
+    public LevelEditRender(RainEd editor)
     {
         this.editor = editor;
 

@@ -20,6 +20,7 @@ class RainEd
 
     private string currentFilePath = string.Empty;
 
+    public string CurrentFilePath { get => currentFilePath; }
     public Level Level { get => level; }
     public EditorWindow Window { get => editorWindow; }
 
@@ -89,6 +90,20 @@ class RainEd
         }
     }
 
+    public void SaveLevelToFile(string path)
+    {
+        editorWindow.UnloadView();
+
+        try
+        {
+            LevelSerialization.Save(this, path);
+        }
+        finally
+        {
+            editorWindow.LoadView();
+        }
+    }
+
     private void SaveLevel(string path)
     {
         if (!string.IsNullOrEmpty(path))
@@ -110,23 +125,27 @@ class RainEd
 
             editorWindow.LoadView();
             
-            if (unsavedChangesCallback is not null)
+            if (promptCallback is not null)
             {
-                unsavedChangesCallback();
+                promptCallback();
             }
         }
 
-        unsavedChangesCallback = null;
+        promptCallback = null;
     }
 
-    private Action? unsavedChangesCallback;
+    private Action? promptCallback;
     private bool promptUnsavedChanges;
-    private void PromptUnsavedChanges(Action callback)
+    private bool promptUnsavedChangesCancelable;
+
+    private void PromptUnsavedChanges(Action callback, bool canCancel = true)
     {
+        promptUnsavedChangesCancelable = canCancel;
+
         if (changeHistory.HasChanges)
         {
             promptUnsavedChanges = true;
-            unsavedChangesCallback = callback;
+            promptCallback = callback;
         }
         else
         {
@@ -313,7 +332,15 @@ class RainEd
                 ImGuiMenuItemShortcut("SaveAs", "Save As...");
 
                 ImGui.Separator();
-                ImGui.MenuItem("Render");
+                
+                if (ImGui.MenuItem("Render"))
+                {
+                    PromptUnsavedChanges(() =>
+                    {
+                        LevelDrizzleRender.Render(this);
+                    }, false);
+                }
+
                 ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))
                 {
@@ -442,7 +469,14 @@ class RainEd
         unused = true;
         if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            ImGui.Text("Do you want to save your changes before proceeding?");
+            if (promptUnsavedChangesCancelable)
+            {
+                ImGui.Text("Do you want to save your changes before proceeding?");
+            }
+            else
+            {
+                ImGui.Text("You must save before proceeding.\nDo you want to save now?");
+            }
 
             if (ImGui.Button("Yes"))
             {
@@ -456,26 +490,33 @@ class RainEd
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("No"))
+            if (ImGui.Button("No") || (!promptUnsavedChangesCancelable && ImGui.IsKeyPressed(ImGuiKey.Escape)))
             {
                 ImGui.CloseCurrentPopup();
 
-                if (unsavedChangesCallback is not null)
+                if (promptUnsavedChangesCancelable)
                 {
-                    unsavedChangesCallback();
-                    unsavedChangesCallback = null;
+                    if (promptCallback is not null)
+                    {
+                        promptCallback();
+                        promptCallback = null;
+                    }
                 }
             }
 
-            ImGui.SameLine();
-            if (ImGui.Button("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape))
+            if (promptUnsavedChangesCancelable)
             {
-                ImGui.CloseCurrentPopup();
-                unsavedChangesCallback = null;
+                ImGui.SameLine();
+                if (ImGui.Button("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape))
+                {
+                    ImGui.CloseCurrentPopup();
+                    promptCallback = null;
+                }
             }
 
             ImGui.EndPopup();
-        } 
+        }
+
         rlImGui.End();
     }
     

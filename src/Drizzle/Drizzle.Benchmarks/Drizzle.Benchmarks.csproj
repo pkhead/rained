@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BenchmarkDotNet" Version="0.13.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Drizzle.Lingo.Runtime\Drizzle.Lingo.Runtime.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="BenchmarkDotNet.Artifacts\results\Drizzle.Benchmarks.ImageQuadCopy-report.html" />
+      <None Remove="BenchmarkDotNet.Artifacts\results\Drizzle.Benchmarks.ImageQuadCopy-report.csv" />
+      <None Remove="BenchmarkDotNet.Artifacts\Drizzle.Benchmarks.ImageQuadCopy-20211212-011059.log" />
+      <None Remove="BenchmarkDotNet.Artifacts\Drizzle.Benchmarks.ImageQuadCopy-20211212-010835.log" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="BenchmarkDotNet.Artifacts\results" />
+    </ItemGroup>
+
+</Project>

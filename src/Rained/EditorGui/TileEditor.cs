@@ -356,7 +356,7 @@ class TileEditor : IEditorMode
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
                     1f / window.ViewZoom,
-                    LevelRenderer.MaterialColors[selectedMaterialIdx]
+                    LevelEditRender.MaterialColors[selectedMaterialIdx]
                 );
 
                 // place material

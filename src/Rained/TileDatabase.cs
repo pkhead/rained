@@ -91,7 +91,7 @@ class TileData
                 break;
         }
         
-        var fullImage = RlManaged.Image.Load($"Drizzle/Data/Graphics/{name}.png");
+        var fullImage = RlManaged.Image.Load($"src/Data/Graphics/{name}.png");
         var previewRect = new Rectangle(
             0,
             rowCount * 20 + imageOffset,
@@ -170,7 +170,7 @@ class Database
 
         TileCategory? curGroup = null;
         int groupIndex = 0;
-        foreach (var line in File.ReadLines("Drizzle/Data/Graphics/Init.txt"))
+        foreach (var line in File.ReadLines("src/Data/Graphics/Init.txt"))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
             
