@@ -32,6 +32,8 @@ class RainEd
 
     public ChangeHistory ChangeHistory { get => changeHistory; }
 
+    private DrizzleRenderWindow? drizzleRenderWindow = null;
+
     public RainEd(string levelPath = "") {
         rainedLogo = RlManaged.Texture2D.Load("data/rained-logo.png");
         TileDatabase = new Tiles.Database();
@@ -337,7 +339,7 @@ class RainEd
                 {
                     PromptUnsavedChanges(() =>
                     {
-                        LevelDrizzleRender.Render(this);
+                        drizzleRenderWindow = new DrizzleRenderWindow(this);
                     }, false);
                 }
 
@@ -394,11 +396,12 @@ class RainEd
 
         ImGui.ShowDemoWindow();
 
-        if (LevelBrowser.Singleton is not null)
-        {
-            LevelBrowser.Singleton.Render();
-        }
+        // render level browser
+        LevelBrowser.Singleton?.Render();
 
+        // render drizzle render, if in progress
+        drizzleRenderWindow?.DrawWindow();
+        
         // notification window
         if (notificationTime > 0f) {
             ImGuiWindowFlags windowFlags =
