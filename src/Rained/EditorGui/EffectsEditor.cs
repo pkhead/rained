@@ -306,11 +306,11 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
     }
 
-    private float GetBrushPower(int cx, int cy, int x, int y)
+    private float GetBrushPower(int cx, int cy, int bsize, int x, int y)
     {
         var dx = x - cx;
         var dy = y - cy;
-        return 1.0f - (MathF.Sqrt(dx*dx + dy*dy) / brushSize);
+        return 1.0f - (MathF.Sqrt(dx*dx + dy*dy) / bsize);
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -340,15 +340,19 @@ class EffectsEditor : IEditorMode
         {
             var effect = level.Effects[selectedEffect];
 
-            var brushStrength = 10f;
+            var bsize = brushSize;
+            if (effect.Data.single) bsize = 1;
+
+            var brushStrength = ImGui.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
+            if (effect.Data.binary) brushStrength = 100000000f;
 
             int bcx = window.MouseCx;
             int bcy = window.MouseCy;
 
-            var bLeft = bcx - brushSize;
-            var bTop = bcy - brushSize;
-            var bRight = bcx + brushSize;
-            var bBot = bcy + brushSize;
+            var bLeft = bcx - bsize;
+            var bTop = bcy - bsize;
+            var bRight = bcx + bsize;
+            var bBot = bcy + bsize;
 
             // user painting
             if (window.IsViewportHovered)
@@ -388,7 +392,7 @@ class EffectsEditor : IEditorMode
                             for (int y = bTop; y <= bBot; y++)
                             {
                                 if (!level.IsInBounds(x, y)) continue;
-                                var brushP = GetBrushPower(bcx, bcy, x, y);
+                                var brushP = GetBrushPower(bcx, bcy, bsize, x, y);
 
                                 if (brushP > 0f)
                                 {
@@ -432,10 +436,10 @@ class EffectsEditor : IEditorMode
                     for (int y = bTop; y <= bBot; y++)
                     {
                         if (!level.IsInBounds(x, y)) continue;
-                        if (GetBrushPower(bcx, bcy, x, y) <= 0f) continue;
+                        if (GetBrushPower(bcx, bcy, bsize, x, y) <= 0f) continue;
                         
                         // left
-                        if (GetBrushPower(bcx, bcy, x - 1, y) <= 0f)
+                        if (GetBrushPower(bcx, bcy, bsize, x - 1, y) <= 0f)
                             Raylib.DrawLine(
                                 x * Level.TileSize, y * Level.TileSize,
                                 x * Level.TileSize, (y+1) * Level.TileSize,
@@ -443,7 +447,7 @@ class EffectsEditor : IEditorMode
                             );
 
                         // top
-                        if (GetBrushPower(bcx, bcy, x, y - 1) <= 0f)
+                        if (GetBrushPower(bcx, bcy, bsize, x, y - 1) <= 0f)
                             Raylib.DrawLine(
                                 x * Level.TileSize, y * Level.TileSize,
                                 (x+1) * Level.TileSize, y * Level.TileSize,
@@ -451,7 +455,7 @@ class EffectsEditor : IEditorMode
                             );
                         
                         // right
-                        if (GetBrushPower(bcx, bcy, x + 1, y) <= 0f)
+                        if (GetBrushPower(bcx, bcy, bsize, x + 1, y) <= 0f)
                             Raylib.DrawLine(
                                 (x+1) * Level.TileSize, y * Level.TileSize,
                                 (x+1) * Level.TileSize, (y+1) * Level.TileSize,
@@ -459,7 +463,7 @@ class EffectsEditor : IEditorMode
                             );
 
                         // bottom
-                        if (GetBrushPower(bcx, bcy, x, y + 1) <= 0f)
+                        if (GetBrushPower(bcx, bcy, bsize, x, y + 1) <= 0f)
                             Raylib.DrawLine(
                                 x * Level.TileSize, (y+1) * Level.TileSize,
                                 (x+1) * Level.TileSize, (y+1) * Level.TileSize,

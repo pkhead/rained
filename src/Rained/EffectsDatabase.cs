@@ -11,6 +11,8 @@ class EffectInit
     public string name;
     public EffectType type;
     public bool crossScreen = false;
+    public bool binary = false; // if brush should only place 0s or 100s
+    public bool single = false; // if brush size is fixed to 1 pixel
 
     // these properties are valid only for StandardErosion effect types
     public int repeats;
@@ -291,40 +293,54 @@ class EffectsDatabase
         {
             CreateEffect(new EffectInit("Fungi Flowers", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true
             });
 
             CreateEffect(new EffectInit("Lighthouse Flowers", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true
             });
 
             CreateEffect(new EffectInit("Fern", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true,
                 usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Giant Mushroom", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true,
                 usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Sprawlbush", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true,
                 usePlantColors = true
             });
 
             CreateEffect(new EffectInit("featherFern", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true,
                 usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Fungus Tree", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true,
                 usePlantColors = true
             });
@@ -337,6 +353,7 @@ class EffectsDatabase
         {
             CreateEffect(new EffectInit("BlackGoo", EffectType.NN)
             {
+                binary = true,
                 fillWith = 100f
             });
 
@@ -350,6 +367,8 @@ class EffectsDatabase
         {
             CreateEffect(new EffectInit("Restore As Scaffolding", EffectType.NN)
             {
+                binary = true,
+                single = true,
                 useLayers = true
             });
 
@@ -359,6 +378,15 @@ class EffectsDatabase
                 customSwitchOptions = new string[] { "None", "White" },
                 customSwitchDefault = "White"
             });
+
+            /* AN UNUSED EFFECT
+            CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN)
+            {
+                binary = true,
+                single = true,
+                useLayers = true
+            });
+            */
         }
 
         // TODO: community effects
