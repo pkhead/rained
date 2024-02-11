@@ -21,6 +21,11 @@ class TileEditor : IEditorMode
         selectedTile = null;
     }
 
+    public void Load()
+    {
+        isToolActive = false;
+    }
+
     public void DrawToolbar() {
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -298,7 +303,7 @@ class TileEditor : IEditorMode
                 }
 
                 // check if requirements are satisfied
-                TilePlacementStatus validationStatus = TilePlacementStatus.Success;
+                TilePlacementStatus validationStatus;
 
                 if (level.IsInBounds(window.MouseCx, window.MouseCy))
                     validationStatus = ValidateTilePlacement(selectedTile, tileOriginX, tileOriginY, modifyGeometry || forcePlace);
@@ -320,22 +325,21 @@ class TileEditor : IEditorMode
                     ImGui.SetTooltip("Force Placement");
 
                 // place tile on click
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (Raylib.IsMouseButtonDown(MouseButton.Left))
                 {
+                    if (!wasToolActive) window.Editor.BeginChange();
+                    isToolActive = true;
+
                     if (validationStatus == TilePlacementStatus.Success)
                     {
-                        window.Editor.BeginChange();
-
                         PlaceTile(
                             selectedTile,
                             tileOriginX, tileOriginY,
                             window.WorkLayer, window.MouseCx, window.MouseCy,
                             modifyGeometry
                         );
-
-                        window.Editor.EndChange();
                     }
-                    else
+                    else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         string errStr = validationStatus switch {
                             TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
@@ -379,7 +383,7 @@ class TileEditor : IEditorMode
             }
 
             // remove tile on right click
-            if (window.IsMouseInLevel() && Raylib.IsMouseButtonPressed(MouseButton.Right))
+            if (window.IsMouseInLevel() && Raylib.IsMouseButtonDown(MouseButton.Right))
             {
                 int tileLayer = window.WorkLayer;
                 int tileX = window.MouseCx;
@@ -388,6 +392,9 @@ class TileEditor : IEditorMode
                 var mouseCell = level.Layers[tileLayer, tileX, tileY];
                 if (mouseCell.HasTile())
                 {
+                    if (!wasToolActive) window.Editor.BeginChange();
+                    isToolActive = true;
+
                     // if this is a tile body, go to referenced tile head
                     if (mouseCell.TileHead is null)
                     {
@@ -396,9 +403,7 @@ class TileEditor : IEditorMode
                         tileY = mouseCell.TileRootY;
                     }
 
-                    window.Editor.BeginChange();
                     RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
-                    window.Editor.EndChange();
                 }
             }
         }
