@@ -3,6 +3,7 @@ KNOWN BUGS:
   When published, there should not be a src directory...
 
 Overall:
+- undo/redo for level resize
 - use c#10 records for some cases? they seem to fit my needs
 - open file browser in directory of current level
 - help pages/hints/tooltips/whatever

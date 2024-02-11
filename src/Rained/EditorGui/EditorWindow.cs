@@ -274,6 +274,45 @@ class EditorWindow
         Rlgl.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
         Raylib.BeginBlendMode(BlendMode.CustomSeparate);
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
+
+        // drwa resize preview
+        if (Editor.LevelResizeWindow is LevelResizeWindow resizeData)
+        {
+            var level = Editor.Level;
+
+            var lineWidth = 1f / ViewZoom;
+
+            // calculate new level origin based on input anchor
+            Vector2 newOrigin = new Vector2(resizeData.InputWidth - level.Width, resizeData.InputHeight - level.Height) * -resizeData.InputAnchor;
+
+            // draw preview level dimensions
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    (int)newOrigin.X * Level.TileSize, (int)newOrigin.Y * Level.TileSize,
+                    resizeData.InputWidth * Level.TileSize, resizeData.InputHeight * Level.TileSize
+                ),
+                lineWidth,
+                Color.White
+            );
+
+            // draw preview level buffer tiles
+            int borderRight = resizeData.InputWidth - resizeData.InputBufferRight;
+            int borderBottom = resizeData.InputHeight - resizeData.InputBufferBottom;
+            int borderW = borderRight - resizeData.InputBufferLeft;
+            int borderH = borderBottom - resizeData.InputBufferTop;
+            int borderLeft = resizeData.InputBufferLeft + (int)newOrigin.X;
+            int borderTop = resizeData.InputBufferTop + (int)newOrigin.Y;
+            
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    borderLeft * Level.TileSize, borderTop * Level.TileSize,
+                    borderW * Level.TileSize, borderH * Level.TileSize
+                ),
+                lineWidth,
+                new Color(255, 0, 255, 255)
+            );
+        }
+
         Raylib.EndBlendMode();
 
         // view controls

@@ -35,6 +35,8 @@ class RainEd
     private DrizzleRenderWindow? drizzleRenderWindow = null;
     private LevelResizeWindow? levelResizeWin = null;
 
+    public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
+
     public RainEd(string levelPath = "") {
         rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
         TileDatabase = new Tiles.Database();
@@ -128,6 +130,7 @@ class RainEd
         Window.FlushDirty();
         level.Resize(newWidth, newHeight, anchorX, anchorY);
         Window.ReloadLevel();
+        changeHistory.Clear();
     }
 
     private Action? promptCallback;

@@ -17,11 +17,12 @@ class LevelResizeWindow
     private float screenW, screenH;
 
     public int InputWidth { get => newWidth; }
-    public int InputHeight { get => newWidth; }
+    public int InputHeight { get => newHeight; }
     public int InputBufferLeft { get => newBufL; }
     public int InputBufferRight { get => newBufR; }
     public int InputBufferTop { get => newBufT; }
     public int InputBufferBottom { get => newBufB; }
+    public Vector2 InputAnchor { get => new(anchorX / 2f, anchorY / 2f); }
 
     public LevelResizeWindow(RainEd rained)
     {
@@ -187,6 +188,8 @@ class LevelResizeWindow
                 {
                     IsWindowOpen = false;
                 }
+
+                ImGui.Text("Note: This cannot be undone");
             }
         } ImGui.End();
     }
