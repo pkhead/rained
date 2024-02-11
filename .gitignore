@@ -6,11 +6,12 @@
 # Visual Studio Code fieles
 /.vscode
 
-# Visual Studio folder
+# Visual Studio files
 /.vs
+/src/Rained/Properties
 
 # ImGui ini file
-/data/imgui.ini
+/assets/imgui.ini
 
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated

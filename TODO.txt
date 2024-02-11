@@ -16,6 +16,7 @@ Overall:
 Level Properties:
 
 Geometry Editor:
+- Fissure
 - select and copy/paste
 - ability to view tiles
 - right-click to remove cells/objects
