@@ -403,8 +403,8 @@ class Level
                         // first, check if this is a tile body
                         if (oldCell.HasTile() && oldCell.TileHead is null)
                         {
-                            var rootX = oldCell.TileRootX;
-                            var rootY = oldCell.TileRootY;
+                            var rootX = oldCell.TileRootX + dstOriginX;
+                            var rootY = oldCell.TileRootY + dstOriginY;
                             
                             // if the tile head is out of bounds, clear tile data here
                             if (rootX < 0 || rootY < 0 || rootX >= newWidth || rootY >= newHeight)
@@ -412,6 +412,11 @@ class Level
                                 Layers[l,x,y].TileLayer = -1;
                                 Layers[l,x,y].TileRootX = -1;
                                 Layers[l,x,y].TileRootY = -1;
+                            }
+                            else
+                            {
+                                Layers[l,x,y].TileRootX = rootX;
+                                Layers[l,x,y].TileRootY = rootY;
                             }
                         }
                     }
@@ -441,6 +446,13 @@ class Level
         foreach (var effect in Effects)
         {
             effect.Resize(newWidth, newHeight, dstOriginX, dstOriginY);
+        }
+
+        // update cameras
+        foreach (var camera in Cameras)
+        {
+            camera.Position.X += dstOriginX;
+            camera.Position.Y += dstOriginY;
         }
 
         // TODO: resize props
