@@ -93,25 +93,11 @@ class RainEd
         }
     }
 
-    public void SaveLevelToFile(string path)
-    {
-        editorWindow.UnloadView();
-
-        try
-        {
-            LevelSerialization.Save(this, path);
-        }
-        finally
-        {
-            editorWindow.LoadView();
-        }
-    }
-
     private void SaveLevel(string path)
     {
         if (!string.IsNullOrEmpty(path))
         {
-            editorWindow.UnloadView();
+            editorWindow.FlushDirty();
 
             try
             {
@@ -125,8 +111,6 @@ class RainEd
                 Console.WriteLine(e);
                 ShowError("Could not write level file");
             }
-
-            editorWindow.LoadView();
             
             if (promptCallback is not null)
             {
@@ -135,6 +119,15 @@ class RainEd
         }
 
         promptCallback = null;
+    }
+
+    public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
+    {
+        if (newWidth == level.Width && newHeight == level.Height) return;
+
+        Window.FlushDirty();
+        level.Resize(newWidth, newHeight, anchorX, anchorY);
+        Window.ReloadLevel();
     }
 
     private Action? promptCallback;
@@ -343,6 +336,8 @@ class RainEd
                         drizzleRenderWindow = new DrizzleRenderWindow(this);
                     }, false);
                 }
+
+                ImGui.MenuItem("Mass Render", false);
 
                 ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))

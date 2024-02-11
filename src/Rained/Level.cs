@@ -157,7 +157,9 @@ class Effect
     public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
     public int Seed;
 
-    public readonly int Width, Height;
+    public int width, height;
+    public int Width { get => width; }
+    public int Height { get => height; }
     public float[,] Matrix;
 
     public Effect(Level level, EffectInit init)
@@ -179,17 +181,44 @@ class Effect
         }
 
         // create matrix
-        Width = level.Width;
-        Height = level.Height;
-        Matrix = new float[Width, Height];
+        width = level.Width;
+        height = level.Height;
+        Matrix = new float[width, height];
         
-        for (int x = 0; x < Width; x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < Height; y++)
+            for (int y = 0; y < height; y++)
             {
                 Matrix[x,y] = init.fillWith;
             }
         }
+    }
+
+    public void Resize(int newWidth, int newHeight, int oldDstX, int oldDstY)
+    {
+        var oldMatrix = Matrix;
+        Matrix = new float[newWidth, newHeight];
+
+        for (int x = 0; x < newWidth; x++)
+        {
+            for (int y = 0; y < newHeight; y++)
+            {
+                int oldX = x - oldDstX;
+                int oldY = y - oldDstY;
+
+                if (oldX >= 0 && oldY >= 0 && oldX < width && oldY < height)
+                {
+                    Matrix[x,y] = oldMatrix[oldX,oldY];
+                }
+                else
+                {
+                    Matrix[x,y] = Data.fillWith;
+                }
+            }
+        }
+
+        width = newWidth;
+        height = newHeight;
     }
 }
 
@@ -341,5 +370,82 @@ class Level
             throw new Exception("Mismatched format");
 
         lightMap = srcImage;
+    }
+
+    public void Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
+    {
+        if (newWidth == _width && newHeight == _height) return;
+
+        // resize geometry
+        var oldLayers = Layers;
+        Layers = new LevelCell[LayerCount, newWidth, newHeight];
+        
+        int dstOriginX = (int)((newWidth - _width) * ((anchorX + 1) / 2f));
+        int dstOriginY = (int)((newHeight - _height) * ((anchorY + 1) / 2f));
+        
+        for (int l = 0; l < LayerCount; l++)
+        {
+            for (int x = 0; x < newWidth; x++)
+            {
+                for (int y = 0; y < newHeight; y++)
+                {
+                    var oldX = x - dstOriginX;
+                    var oldY = y - dstOriginY;
+
+                    // copy the cell data from the old level
+                    if (IsInBounds(oldX, oldY))
+                    {
+                        ref var oldCell = ref oldLayers[l,oldX,oldY];
+                        Layers[l,x,y] = oldCell;
+
+                        // completely remove any tiles where the tile head
+                        // is now out of bounds
+                        // first, check if this is a tile body
+                        if (oldCell.HasTile() && oldCell.TileHead is null)
+                        {
+                            var rootX = oldCell.TileRootX;
+                            var rootY = oldCell.TileRootY;
+                            
+                            // if the tile head is out of bounds, clear tile data here
+                            if (rootX < 0 || rootY < 0 || rootX >= newWidth || rootY >= newHeight)
+                            {
+                                Layers[l,x,y].TileLayer = -1;
+                                Layers[l,x,y].TileRootX = -1;
+                                Layers[l,x,y].TileRootY = -1;
+                            }
+                        }
+                    }
+
+                    // this cell is not in the bounds of the old level,
+                    // so put the default medium here
+                    else
+                    {
+                        Layers[l,x,y] = new LevelCell()
+                        {
+                            Cell = DefaultMedium ? CellType.Solid : CellType.Air
+                        };
+                    }
+                }
+            }
+        }
+
+        // resize light map
+        Raylib.ImageResizeCanvas(
+            ref lightMap.Ref(),
+            newWidth * 20 + 300, newHeight * 20 + 300,
+            dstOriginX * 20, dstOriginY * 20,
+            Color.White
+        );
+
+        // resize effect matrices
+        foreach (var effect in Effects)
+        {
+            effect.Resize(newWidth, newHeight, dstOriginX, dstOriginY);
+        }
+
+        // TODO: resize props
+
+        _width = newWidth;
+        _height = newHeight;
     }
 }

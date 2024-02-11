@@ -11,6 +11,11 @@ interface IEditorMode
 
     void Load() {}
     void Unload() {}
+
+    // write dirty changes to the Level object
+    // this is used by the light editor, since most everything is done in the GPU
+    // since doing the processing on the CPU would prove too slow
+    void FlushDirty() {}
     void ReloadLevel() {}
 
     void DrawToolbar();
@@ -82,6 +87,11 @@ class EditorWindow
     public void LoadView()
     {
         editorModes[selectedMode].Load();
+    }
+
+    public void FlushDirty()
+    {
+        editorModes[selectedMode].FlushDirty();
     }
 
     public void ReloadLevel()

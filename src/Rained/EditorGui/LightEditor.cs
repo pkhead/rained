@@ -155,10 +155,13 @@ class LightEditor : IEditorMode
         thisEditMode = window.EditMode;
     }
 
-    public void Unload()
+    public void FlushDirty()
     {
         UpdateLightMap();
+    }
 
+    public void Unload()
+    {
         if (!isCursorEnabled)
         {
             Raylib.ShowCursor();

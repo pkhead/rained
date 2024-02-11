@@ -91,7 +91,14 @@ class LevelResizeWindow
 
             if (ImGui.Button("OK"))
             {
-                //editor.ResizeLevel(newWidth, newHeight);
+                Apply();
+                IsWindowOpen = false;
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Apply"))
+            {
+                Apply();
             }
 
             ImGui.SameLine();
@@ -101,5 +108,20 @@ class LevelResizeWindow
             }
 
         } ImGui.End();
+    }
+
+    private void Apply()
+    {
+        var level = editor.Level;
+
+        // call resize through the editor class, so that the
+        // edit window is reloaded
+        editor.ResizeLevel(newWidth, newHeight, -1, -1);
+
+        // don't need to do so with buffer tiles
+        level.BufferTilesLeft = newBufL;
+        level.BufferTilesTop = newBufT;
+        level.BufferTilesRight = newBufR;
+        level.BufferTilesBot = newBufB;
     }
 }
