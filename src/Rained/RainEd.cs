@@ -33,6 +33,7 @@ class RainEd
     public ChangeHistory ChangeHistory { get => changeHistory; }
 
     private DrizzleRenderWindow? drizzleRenderWindow = null;
+    private LevelResizeWindow? levelResizeWin = null;
 
     public RainEd(string levelPath = "") {
         rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
@@ -360,6 +361,12 @@ class RainEd
                 ImGuiMenuItemShortcut("Cut", "Cut");
                 ImGuiMenuItemShortcut("Copy", "Copy");
                 ImGuiMenuItemShortcut("Paste", "Paste");
+                ImGui.Separator();
+
+                if (ImGui.MenuItem("Resize Level..."))
+                {
+                    levelResizeWin = new LevelResizeWindow(this);
+                }
 
                 ImGui.EndMenu();
             }
@@ -413,6 +420,13 @@ class RainEd
                 GC.Collect(2, GCCollectionMode.Aggressive, true, true);
                 GC.WaitForFullGCComplete();
             }
+        }
+
+        // render level resize window
+        if (levelResizeWin is not null)
+        {
+            levelResizeWin.DrawWindow();
+            if (!levelResizeWin.IsWindowOpen) levelResizeWin = null;
         }
         
         // notification window
