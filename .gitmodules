@@ -1,5 +1,5 @@
 [submodule "src/Data"]
-	path = src/Data
+	path = Data
 	url = https://github.com/SlimeCubed/Drizzle.Data
 	branch = community
 	ignore = dirty
