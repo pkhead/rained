@@ -435,13 +435,15 @@ class TileEditor : IEditorMode
                 {
                     // placing it on a tile head can introduce a bugged state,
                     // soo... even when forced... no
-                    if (level.Layers[window.WorkLayer, gx, gy].TileHead is not null)
+                    ref var cellAtPos = ref level.Layers[window.WorkLayer, gx, gy];
+
+                    if (specInt >= 0 && cellAtPos.TileHead is not null)
                         return TilePlacementStatus.Overlap;
                     
                     // check on first layer
                     var isHead = x == tile.CenterX && y == tile.CenterY;
 
-                    if ((isHead || specInt >= 0) && !force && level.Layers[window.WorkLayer, gx, gy].HasTile())
+                    if ((isHead || specInt >= 0) && !force && cellAtPos.HasTile())
                         return TilePlacementStatus.Overlap;
 
                     // check on second layer
