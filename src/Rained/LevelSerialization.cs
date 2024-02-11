@@ -379,7 +379,7 @@ static class LevelSerialization
                     if (l > 0) output.Append(", ");
                     output.Append('[');
 
-                    var cell = level.Layers[l,x,y];
+                    ref var cell = ref level.Layers[l,x,y];
                     output.Append((int)cell.Cell);
                     output.Append(", [");
 

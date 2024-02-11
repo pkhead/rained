@@ -63,10 +63,15 @@ class DrizzleRenderWindow : IDisposable
         {
             needUpdateTextures = true;
         };
+
+        Raylib.BeginTextureMode(previewComposite);
+        Raylib.ClearBackground(Color.White);
+        Raylib.EndTextureMode();
     }
 
     public void Dispose()
     {
+        drizzleRenderer.Dispose();
         previewComposite.Dispose();
 
         for (int i = 0; i < previewTextures.Length; i++)

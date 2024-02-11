@@ -113,7 +113,7 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                LevelCell c = Level.Layers[layer ,x,y];
+                ref LevelCell c = ref Level.Layers[layer ,x,y];
 
                 var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
                 var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
@@ -238,7 +238,7 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                var cell = Level.Layers[0, x, y];
+                ref var cell = ref Level.Layers[0, x, y];
 
                 // draw object graphics
                 for (int i = 1; i < 32; i++)
@@ -279,7 +279,7 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                var cell = Level.Layers[0, x, y];
+                ref var cell = ref Level.Layers[0, x, y];
 
                 // shortcut entrance changes appearance
                 // based on neighbor Shortcuts
@@ -365,7 +365,7 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                var cell = Level.Layers[layer, x, y];
+                ref var cell = ref Level.Layers[layer, x, y];
                 if (!cell.HasTile()) continue;
 
                 Tiles.TileData? tile;
@@ -404,11 +404,11 @@ class LevelEditRender
         }
 
         // draw material color squares
-        for (int x = 0; x < Level.Width; x++)
+        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                var cell = Level.Layers[layer, x, y];
+                ref var cell = ref Level.Layers[layer, x, y];
 
                 if (!cell.HasTile() && cell.Material != Material.None && cell.Cell != CellType.Air)
                 {

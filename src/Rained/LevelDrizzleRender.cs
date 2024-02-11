@@ -8,7 +8,7 @@ using Drizzle.Ported;
 using SixLabors.ImageSharp;
 namespace RainEd;
 
-class LevelDrizzleRender
+class LevelDrizzleRender : IDisposable
 {
     private abstract record ThreadMessage;
 
@@ -135,6 +135,12 @@ class LevelDrizzleRender
         Configuration.Default.PreferContiguousImageBuffers = true;
         thread = new Thread(new ThreadStart(threadState.ThreadProc));
         thread.Start();
+    }
+
+    public void Dispose()
+    {
+        foreach (RlManaged.Image image in RenderLayerPreviews)
+            image.Dispose();
     }
 
     private void StatusChanged(RenderStatus status)

@@ -49,7 +49,7 @@ namespace RainEd
 
             {
                 Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow);
-                Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+                //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 Raylib.InitWindow(1200, 800, "Rained");
                 Raylib.SetTargetFPS(120);
                 Raylib.SetExitKey(KeyboardKey.Null);

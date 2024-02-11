@@ -407,6 +407,11 @@ class RainEd
             {
                 drizzleRenderWindow.Dispose();
                 drizzleRenderWindow = null;
+
+                // the whole render process allocates ~1 gb of memory
+                // so, try to free all that
+                GC.Collect(2, GCCollectionMode.Aggressive, true, true);
+                GC.WaitForFullGCComplete();
             }
         }
         
