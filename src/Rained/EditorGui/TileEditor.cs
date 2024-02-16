@@ -29,6 +29,14 @@ class TileEditor : IEditorMode
     public void DrawToolbar() {
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
+            // work layer
+            {
+                int workLayerV = window.WorkLayer + 1;
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                ImGui.InputInt("Work Layer", ref workLayerV);
+                window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
+            }
+
             // default material dropdown
             ImGui.Text("Default Material");
             int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
@@ -115,6 +123,12 @@ class TileEditor : IEditorMode
                     }
                 }
             } ImGui.EndChild();
+        }
+
+        // tab to change work layer
+        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+        {
+            window.WorkLayer = (window.WorkLayer + 1) % 3;
         }
     }
 

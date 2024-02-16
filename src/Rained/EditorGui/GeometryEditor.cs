@@ -107,12 +107,18 @@ class GeometryEditor : IEditorMode
     private int toolRectY;
     private int lastMouseX, lastMouseY;
 
+    // work layer
+    private bool[] layerMask;
+
     public GeometryEditor(EditorWindow editorWindow)
     {
+        layerMask = new bool[3];
+        layerMask[0] = true;
+
         window = editorWindow;
         toolIcons = RlManaged.Texture2D.Load("assets/tool-icons.png");
     }
-
+    
     public enum LayerViewMode : int
     {
         Overlay = 0,
@@ -195,6 +201,12 @@ class GeometryEditor : IEditorMode
             ImGui.PopStyleVar(2);
             ImGui.PopStyleColor();
 
+            // show work layers
+            for (int i = 0; i < 3; i++)
+            {
+                ImGui.Checkbox("Layer " + (i+1), ref layerMask[i]);
+            }
+
             // show stats & hints
             ImGui.Text($"Mouse X: {window.MouseCx}");
             ImGui.Text($"Mouse Y: {window.MouseCy}");
@@ -205,6 +217,16 @@ class GeometryEditor : IEditorMode
                 ImGui.Text("Shift+Drag to\nfill rect");
             }
         } ImGui.End();
+
+        // layer mask toggle shortcuts
+        if (ImGui.IsKeyPressed(ImGuiKey.E))
+            layerMask[0] = !layerMask[0];
+
+        if (ImGui.IsKeyPressed(ImGuiKey.R))
+            layerMask[1] = !layerMask[1];
+
+        if (ImGui.IsKeyPressed(ImGuiKey.T))
+            layerMask[2] = !layerMask[2];
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -236,7 +258,7 @@ class GeometryEditor : IEditorMode
             case LayerViewMode.Stack:
                 for (int l = Level.LayerCount-1; l >= 0; l--)
                 {
-                    var alpha = l == window.WorkLayer ? 255 : 50;
+                    var alpha = layerMask[l] ? 255 : 50;
                     if (l == 0) foregroundAlpha = alpha;
                     var color = new Color(LAYER_COLORS[l].R, LAYER_COLORS[l].G, LAYER_COLORS[l].B, alpha);
                     int offset = l * 2;
@@ -389,205 +411,205 @@ class GeometryEditor : IEditorMode
     private void ActivateTool(int tx, int ty, bool pressed, bool shift)
     {
         var level = window.Editor.Level;
-        var workLayer = window.WorkLayer;
 
         isToolRectActive = false;
 
-        var cell = level.Layers[workLayer, tx, ty];
-        LevelObject levelObject = LevelObject.None;
-
-        switch (selectedTool)
+        for (int workLayer = 0; workLayer < 3; workLayer++)
         {
-            case Tool.Wall:
-                if (shift)
-                {
-                    isToolRectActive = true;
-                    toolRectX = tx;
-                    toolRectY = ty;
-                }
-                else
-                {
-                    cell.Cell = CellType.Solid;
-                }
+            if (!layerMask[workLayer]) continue;
 
-                break;
-            
-            case Tool.Air:
-                if (shift)
-                {
-                    isToolRectActive = true;
-                    toolRectX = tx;
-                    toolRectY = ty;
-                }
-                else
-                {
-                    cell.Cell = CellType.Air;
-                }
+            var cell = level.Layers[workLayer, tx, ty];
+            LevelObject levelObject = LevelObject.None;
 
-                break;
-
-            case Tool.Platform:
-                cell.Cell = CellType.Platform;
-                break;
-
-            case Tool.Glass:
-                if (shift)
-                {
-                    isToolRectActive = true;
-                    toolRectX = tx;
-                    toolRectY = ty;
-                }
-                else
-                {
-                    cell.Cell = CellType.Glass;
-                }
-
-                break;
-            
-            case Tool.Inverse:
-                if (shift)
-                {
-                    isToolRectActive = true;
-                    toolRectX = tx;
-                    toolRectY = ty;
-                }
-                else
-                {
-                    if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
-                    cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
-                }
-
-                break;
-
-            case Tool.ShortcutEntrance:
-                if (pressed) cell.Cell = cell.Cell == CellType.ShortcutEntrance ? CellType.Air : CellType.ShortcutEntrance;
-                break;
-            
-            case Tool.Slope:
+            switch (selectedTool)
             {
-                if (!pressed) break;
-                static bool isSolid(Level level, int l, int x, int y)
-                {
-                    if (x < 0 || y < 0) return false;
-                    if (x >= level.Width || y >= level.Height) return false;
-                    return level.Layers[l,x,y].Cell == CellType.Solid;
-                }
+                case Tool.Wall:
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        cell.Cell = CellType.Solid;
+                    }
 
-                CellType newType = CellType.Air;
-                int possibleConfigs = 0;
-
-                // figure out how to orient the slope using solid neighbors
-                if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty+1))
-                {
-                    newType = CellType.SlopeRightUp;
-                    possibleConfigs++;
-                }
+                    break;
                 
-                if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty+1))
-                {
-                    newType = CellType.SlopeLeftUp;
-                    possibleConfigs++;
-                }
+                case Tool.Air:
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        cell.Cell = CellType.Air;
+                    }
+
+                    break;
+
+                case Tool.Platform:
+                    cell.Cell = CellType.Platform;
+                    break;
+
+                case Tool.Glass:
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        cell.Cell = CellType.Glass;
+                    }
+
+                    break;
                 
-                if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty-1))
-                {
-                    newType = CellType.SlopeRightDown;
-                    possibleConfigs++;
-                }
+                case Tool.Inverse:
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
+                        cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
+                    }
+
+                    break;
+
+                case Tool.ShortcutEntrance:
+                    if (pressed) cell.Cell = cell.Cell == CellType.ShortcutEntrance ? CellType.Air : CellType.ShortcutEntrance;
+                    break;
                 
-                if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty-1))
+                case Tool.Slope:
                 {
-                    newType = CellType.SlopeLeftDown;
-                    possibleConfigs++;
+                    if (!pressed) break;
+                    static bool isSolid(Level level, int l, int x, int y)
+                    {
+                        if (x < 0 || y < 0) return false;
+                        if (x >= level.Width || y >= level.Height) return false;
+                        return level.Layers[l,x,y].Cell == CellType.Solid;
+                    }
+
+                    CellType newType = CellType.Air;
+                    int possibleConfigs = 0;
+
+                    // figure out how to orient the slope using solid neighbors
+                    if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty+1))
+                    {
+                        newType = CellType.SlopeRightUp;
+                        possibleConfigs++;
+                    }
+                    
+                    if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty+1))
+                    {
+                        newType = CellType.SlopeLeftUp;
+                        possibleConfigs++;
+                    }
+                    
+                    if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty-1))
+                    {
+                        newType = CellType.SlopeRightDown;
+                        possibleConfigs++;
+                    }
+                    
+                    if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty-1))
+                    {
+                        newType = CellType.SlopeLeftDown;
+                        possibleConfigs++;
+                    }
+
+                    if (possibleConfigs == 1)
+                        cell.Cell = newType;
+
+                    break;
                 }
 
-                if (possibleConfigs == 1)
-                    cell.Cell = newType;
+                // the following will use the default object tool
+                // handler
+                case Tool.HorizontalBeam:
+                    levelObject = LevelObject.HorizontalBeam;
+                    break;
 
-                break;
+                case Tool.VerticalBeam:
+                    levelObject = LevelObject.VerticalBeam;
+                    break;
+                    
+                case Tool.Rock:
+                    levelObject = LevelObject.Rock;
+                    break;
+
+                case Tool.Spear:
+                    levelObject = LevelObject.Spear;
+                    break;
+
+                case Tool.Crack:
+                    levelObject = LevelObject.Crack;
+                    break;
+                
+                case Tool.Hive:
+                    levelObject = LevelObject.Hive;
+                    break;
+                
+                case Tool.ForbidFlyChain:
+                    levelObject = LevelObject.ForbidFlyChain;
+                    break;
+                
+                case Tool.Waterfall:
+                    levelObject = LevelObject.Waterfall;
+                    break;
+                
+                case Tool.WormGrass:
+                    levelObject = LevelObject.WormGrass;
+                    break;
+
+                case Tool.Shortcut:
+                    levelObject = LevelObject.Shortcut;
+                    break;
+
+                case Tool.Entrance:
+                    levelObject = LevelObject.Entrance;
+                    break;
+
+                case Tool.CreatureDen:
+                    levelObject = LevelObject.CreatureDen;
+                    break;
+                
+                case Tool.WhackAMoleHole:
+                    levelObject = LevelObject.WhackAMoleHole;
+                    break;
+                
+                case Tool.GarbageWorm:
+                    levelObject = LevelObject.GarbageWorm;
+                    break;
+                
+                case Tool.ScavengerHole:
+                    levelObject = LevelObject.ScavengerHole;
+                    break;
             }
 
-            // the following will use the default object tool
-            // handler
-            case Tool.HorizontalBeam:
-                levelObject = LevelObject.HorizontalBeam;
-                break;
+            if (levelObject != LevelObject.None)
+            {
+                // player can only place objects on work layer 1 (except if it's a beam)
+                if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam)
+                {
+                    if (pressed) toolPlaceMode = cell.Has(levelObject);
+                    if (toolPlaceMode)
+                        cell.Remove(levelObject);
+                    else
+                        cell.Add(levelObject);
+                }
+            }
 
-            case Tool.VerticalBeam:
-                levelObject = LevelObject.VerticalBeam;
-                break;
-                
-            case Tool.Rock:
-                levelObject = LevelObject.Rock;
-                break;
-
-            case Tool.Spear:
-                levelObject = LevelObject.Spear;
-                break;
-
-            case Tool.Crack:
-                levelObject = LevelObject.Crack;
-                break;
-            
-            case Tool.Hive:
-                levelObject = LevelObject.Hive;
-                break;
-            
-            case Tool.ForbidFlyChain:
-                levelObject = LevelObject.ForbidFlyChain;
-                break;
-            
-            case Tool.Waterfall:
-                levelObject = LevelObject.Waterfall;
-                break;
-            
-            case Tool.WormGrass:
-                levelObject = LevelObject.WormGrass;
-                break;
-
-            case Tool.Shortcut:
-                levelObject = LevelObject.Shortcut;
-                break;
-
-            case Tool.Entrance:
-                levelObject = LevelObject.Entrance;
-                break;
-
-            case Tool.CreatureDen:
-                levelObject = LevelObject.CreatureDen;
-                break;
-            
-            case Tool.WhackAMoleHole:
-                levelObject = LevelObject.WhackAMoleHole;
-                break;
-            
-            case Tool.GarbageWorm:
-                levelObject = LevelObject.GarbageWorm;
-                break;
-            
-            case Tool.ScavengerHole:
-                levelObject = LevelObject.ScavengerHole;
-                break;
+            level.Layers[workLayer, tx, ty] = cell;
         }
-
-        if (levelObject != LevelObject.None)
-        {
-            // player can only place objects on work layer 1 (except if it's a beam)
-            if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam)
-            {
-                if (pressed) toolPlaceMode = cell.Has(levelObject);
-                if (toolPlaceMode)
-                    cell.Remove(levelObject);
-                else
-                    cell.Add(levelObject);
-            }
-            else
-            {
-                window.Editor.ShowError($"This object is only placeable on layer 1");
-            }
-        }
-
-        level.Layers[workLayer, tx, ty] = cell;
     }
 
     private void ApplyToolRect()

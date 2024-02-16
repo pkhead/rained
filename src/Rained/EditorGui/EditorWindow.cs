@@ -140,19 +140,6 @@ class EditorWindow
                 ImGui.EndCombo();
             }
 
-            // work layer
-            ImGui.SameLine();
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Work Layer");
-            ImGui.SameLine();
-            {
-                var workLayerV = workLayer + 1;
-                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
-                ImGui.InputInt("##WorkLayer", ref workLayerV);
-                workLayerV = Math.Clamp(workLayerV, 1, 3);    
-                workLayer = workLayerV - 1;
-            }
-
             ImGui.SameLine();
             if (ImGui.Button("Reset View"))
             {
@@ -191,12 +178,6 @@ class EditorWindow
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Six))
                     newEditMode = 5;
-                
-                // keybind to switch layer
-                if (Raylib.IsKeyPressed(KeyboardKey.Tab))
-                {
-                    workLayer = (workLayer + 1) % 3;
-                }
             }
 
             // change edit mode if requested

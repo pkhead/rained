@@ -339,7 +339,7 @@ class EffectsEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             int offset = l * 2;
-            var alpha = l == window.WorkLayer ? 255 : 50;
+            var alpha = l == 0 ? 255 : 50;
             Raylib.DrawTextureRec(
                 layerFrame.Texture,
                 new Rectangle(0f, layerFrame.Texture.Height, layerFrame.Texture.Width, -layerFrame.Texture.Height),
