@@ -200,10 +200,10 @@ class TileEditor : IEditorMode
 
     public void DrawToolbar()
     {
+        var tileDb = window.Editor.TileDatabase;
+        
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            var tileDb = window.Editor.TileDatabase;
-
             // work layer
             {
                 int workLayerV = window.WorkLayer + 1;
@@ -213,10 +213,24 @@ class TileEditor : IEditorMode
             }
 
             // default material dropdown
-            ImGui.Text("Default Material");
             int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
-            ImGui.Combo("##DefaultMaterial", ref defaultMat, Level.MaterialNames, Level.MaterialNames.Length, 999999);
-            window.Editor.Level.DefaultMaterial = (Material) defaultMat + 1;
+            ImGui.TextUnformatted($"Default Material: {Level.MaterialNames[defaultMat]}");
+
+            if (selectedTile != null)
+                ImGui.BeginDisabled();
+            
+            if (ImGui.Button("Set Selected Material as Default"))
+            {
+                window.Editor.Level.DefaultMaterial = (Material)(selectedMaterialIdx + 1);
+            }
+
+            if (ImGui.IsItemHovered() && selectedTile != null)
+            {
+                ImGui.SetTooltip("A material is not selected");
+            }
+
+            if (selectedTile != null)
+                ImGui.EndDisabled();
 
             // search bar
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
@@ -308,11 +322,96 @@ class TileEditor : IEditorMode
         }
 
         // tab to change work layer
+        // need to use Raylib.IsKeyPressed instead of ImGui.IsKeyPressed
+        // because i specifically disabled the Tab key in ImGui input handling
         if (Raylib.IsKeyPressed(KeyboardKey.Tab))
         {
             window.WorkLayer = (window.WorkLayer + 1) % 3;
         }
+
+        // A and D to change selected group
+        if (window.Editor.IsShortcutActivated("NavLeft"))
+        {
+            selectedGroup--;
+            if (selectedGroup < -1)
+                selectedGroup = tileDb.Categories.Count - 1;
+            
+            // select the first tile in this group
+            if (selectedGroup == -1)
+            {
+                selectedTile = null;
+                selectedMaterialIdx = 0;
+            }
+            else
+            {
+                selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+            }
+        }
+
+        if (window.Editor.IsShortcutActivated("NavRight"))
+        {
+            selectedGroup++;
+            if (selectedGroup >= tileDb.Categories.Count)
+                selectedGroup = -1;
+            
+            // select the first tile in this group
+            if (selectedGroup == -1)
+            {
+                selectedTile = null;
+                selectedMaterialIdx = 0;
+            }
+            else
+            {
+                selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+            }
+        }
+
+        // W and S to change selected tile in group
+        if (window.Editor.IsShortcutActivated("NavDown")) // S
+        {
+            if (selectedGroup == -1)
+            {
+                selectedMaterialIdx = Mod(selectedMaterialIdx + 1, Level.MaterialNames.Length);
+            }
+            else if (selectedTile != null)
+            {
+                // select the next tile, or wrap around if at end of the list
+                if (selectedTile.Category.Index != selectedGroup)
+                {
+                    selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+                }
+                else
+                {
+                    var tileList = selectedTile.Category.Tiles;
+                    selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) + 1, tileList.Count)];
+                }
+            }
+        }
+
+        if (window.Editor.IsShortcutActivated("NavUp")) // W
+        {
+            if (selectedGroup == -1)
+            {
+                selectedMaterialIdx = Mod(selectedMaterialIdx - 1, Level.MaterialNames.Length);
+            }
+            else if (selectedTile != null)
+            {
+                // select the previous tile, or wrap around if at end of the list
+                if (selectedTile.Category.Index != selectedGroup)
+                {
+                    selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+                }
+                else
+                {
+                    var tileList = selectedTile.Category.Tiles;
+                    selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) - 1, tileList.Count)];
+                }
+            }
+        }
     }
+
+    private static int Mod(int a, int b)
+        => (a%b + b)%b;
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {

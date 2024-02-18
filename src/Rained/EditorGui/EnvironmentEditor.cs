@@ -22,7 +22,7 @@ class EnvironmentEditor : IEditorMode
             ImGui.Text("Graphics Random Seed");
             ImGui.SetNextItemWidth(-0.001f);
             ImGui.SliderInt("##seed", ref level.TileSeed, 0, 400, "%i", ImGuiSliderFlags.AlwaysClamp);
-            ImGui.Checkbox("Is Room Enclosed", ref level.DefaultMedium);
+            ImGui.Checkbox("Enclosed Room", ref level.DefaultMedium);
             ImGui.Checkbox("Sunlight", ref level.HasSunlight);
             ImGui.Checkbox("Water", ref level.HasWater);
             ImGui.Checkbox("Is Water In Front", ref level.IsWaterInFront);
