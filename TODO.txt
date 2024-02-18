@@ -1,10 +1,6 @@
 Overall:
 - proper logging
 - undo/redo for level resize
-- only geo and tile editor uses work layers
-  - geo editor uses checkboxes for each layer edit
-    (need to figure out keyboard shortcut for it)
-  - tile editor layers work as before
 - open file browser in directory of current level
 - help pages/hints/tooltips/whatever
 - Edit/View menu buttons for specific editors
@@ -27,12 +23,7 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 
 Tile Editor:
 - material brush size
-- press E for tile/material eyedropper
-- WASD tile palette navigation (emulates joar editor controls)
 - rect material place
-- copy henry
-  (use two selectable lists for tile category and tile name)
-- draw culling
 
 Camera Editor:
 - way to duplicate camera corner transform

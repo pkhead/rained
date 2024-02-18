@@ -413,6 +413,102 @@ class TileEditor : IEditorMode
     private static int Mod(int a, int b)
         => (a%b + b)%b;
 
+    private static void DrawTile(int tileInt, int x, int y, float lineWidth, Color color)
+    {
+        if (tileInt == 0)
+        {
+            // air is represented by a cross (OMG ASCEND WITH GORB???)
+            // an empty cell (-1) would mean any tile is accepted
+            Raylib.DrawLineEx(
+                startPos: new Vector2(x * Level.TileSize + 5, y * Level.TileSize + 5),
+                endPos: new Vector2((x+1) * Level.TileSize - 5, (y+1) * Level.TileSize - 5),
+                lineWidth,
+                color
+            );
+
+            Raylib.DrawLineEx(
+                startPos: new Vector2((x+1) * Level.TileSize - 5, y * Level.TileSize + 5),
+                endPos: new Vector2(x * Level.TileSize + 5, (y+1) * Level.TileSize - 5),
+                lineWidth,
+                color
+            );
+        }
+        else if (tileInt > 0)
+        {
+            var cellType = (CellType) tileInt;
+            switch (cellType)
+            {
+                case CellType.Solid:
+                    Raylib.DrawRectangleLinesEx(
+                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                        lineWidth,
+                        color
+                    );
+                    break;
+                
+                case CellType.Platform:
+                    Raylib.DrawRectangleLinesEx(
+                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10),
+                        lineWidth,
+                        color
+                    );
+                    break;
+                
+                case CellType.Glass:
+                    Raylib.DrawRectangleLinesEx(
+                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                        lineWidth,
+                        color
+                    );
+                    break;
+
+                case CellType.ShortcutEntrance:
+                    Raylib.DrawRectangleLinesEx(
+                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                        lineWidth,
+                        Color.Red
+                    );
+                    break;
+
+                case CellType.SlopeLeftDown:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y+1) * Level.TileSize,
+                        new Vector2(x+1, y) * Level.TileSize,
+                        new Vector2(x, y) * Level.TileSize,
+                        color
+                    );
+                    break;
+
+                case CellType.SlopeLeftUp:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x, y+1) * Level.TileSize,
+                        new Vector2(x+1, y+1) * Level.TileSize,
+                        new Vector2(x+1, y) * Level.TileSize,
+                        color
+                    );
+                    break;
+
+                case CellType.SlopeRightDown:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y) * Level.TileSize,
+                        new Vector2(x, y) * Level.TileSize,
+                        new Vector2(x, y+1) * Level.TileSize,
+                        color
+                    );
+                    break;
+
+                case CellType.SlopeRightUp:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y+1) * Level.TileSize,
+                        new Vector2(x, y) * Level.TileSize,
+                        new Vector2(x, y+1) * Level.TileSize,
+                        color
+                    );
+                    break;
+            }
+        }
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         window.BeginLevelScissorMode();
@@ -455,106 +551,18 @@ class TileEditor : IEditorMode
         levelRender.RenderGrid();
         levelRender.RenderBorder();
 
-        static void drawTile(int tileInt, int x, int y, float lineWidth, Color color)
-        {
-            if (tileInt == 0)
-            {
-                // air is represented by a cross (OMG ASCEND WITH GORB???)
-                // an empty cell (-1) would mean any tile is accepted
-                Raylib.DrawLineEx(
-                    startPos: new Vector2(x * Level.TileSize + 5, y * Level.TileSize + 5),
-                    endPos: new Vector2((x+1) * Level.TileSize - 5, (y+1) * Level.TileSize - 5),
-                    lineWidth,
-                    color
-                );
-
-                Raylib.DrawLineEx(
-                    startPos: new Vector2((x+1) * Level.TileSize - 5, y * Level.TileSize + 5),
-                    endPos: new Vector2(x * Level.TileSize + 5, (y+1) * Level.TileSize - 5),
-                    lineWidth,
-                    color
-                );
-            }
-            else if (tileInt > 0)
-            {
-                var cellType = (CellType) tileInt;
-                switch (cellType)
-                {
-                    case CellType.Solid:
-                        Raylib.DrawRectangleLinesEx(
-                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                            lineWidth,
-                            color
-                        );
-                        break;
-                    
-                    case CellType.Platform:
-                        Raylib.DrawRectangleLinesEx(
-                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10),
-                            lineWidth,
-                            color
-                        );
-                        break;
-                    
-                    case CellType.Glass:
-                        Raylib.DrawRectangleLinesEx(
-                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                            lineWidth,
-                            color
-                        );
-                        break;
-
-                    case CellType.ShortcutEntrance:
-                        Raylib.DrawRectangleLinesEx(
-                            new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                            lineWidth,
-                            Color.Red
-                        );
-                        break;
-
-                    case CellType.SlopeLeftDown:
-                        Raylib.DrawTriangleLines(
-                            new Vector2(x+1, y+1) * Level.TileSize,
-                            new Vector2(x+1, y) * Level.TileSize,
-                            new Vector2(x, y) * Level.TileSize,
-                            color
-                        );
-                        break;
-
-                    case CellType.SlopeLeftUp:
-                        Raylib.DrawTriangleLines(
-                            new Vector2(x, y+1) * Level.TileSize,
-                            new Vector2(x+1, y+1) * Level.TileSize,
-                            new Vector2(x+1, y) * Level.TileSize,
-                            color
-                        );
-                        break;
-
-                    case CellType.SlopeRightDown:
-                        Raylib.DrawTriangleLines(
-                            new Vector2(x+1, y) * Level.TileSize,
-                            new Vector2(x, y) * Level.TileSize,
-                            new Vector2(x, y+1) * Level.TileSize,
-                            color
-                        );
-                        break;
-
-                    case CellType.SlopeRightUp:
-                        Raylib.DrawTriangleLines(
-                            new Vector2(x+1, y+1) * Level.TileSize,
-                            new Vector2(x, y) * Level.TileSize,
-                            new Vector2(x, y+1) * Level.TileSize,
-                            color
-                        );
-                        break;
-                }
-            }
-        }
-
         if (window.IsViewportHovered)
         {
             var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
             var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
+
+            // begin change if left or right button is down
+            // regardless of what it's doing
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right))
+            {
+                if (!wasToolActive) window.Editor.BeginChange();
+                isToolActive = true;
+            }
 
             // render selected tile
             if (selectedTile is not null)
@@ -577,7 +585,7 @@ class TileEditor : IEditorMode
                             Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
 
                             sbyte tileInt = selectedTile.Requirements2[x,y];
-                            drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                            DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
                             Rlgl.PopMatrix();
                         }
                     }
@@ -592,7 +600,7 @@ class TileEditor : IEditorMode
                         Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
 
                         sbyte tileInt = selectedTile.Requirements[x,y];
-                        drawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
+                        DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
                         Rlgl.PopMatrix();
                     }
                 }
@@ -622,9 +630,6 @@ class TileEditor : IEditorMode
                 // place tile on click
                 if (Raylib.IsMouseButtonDown(MouseButton.Left))
                 {
-                    if (!wasToolActive) window.Editor.BeginChange();
-                    isToolActive = true;
-
                     if (validationStatus == TilePlacementStatus.Success)
                     {
                         PlaceTile(
@@ -661,8 +666,6 @@ class TileEditor : IEditorMode
                 // place material
                 if (Raylib.IsMouseButtonDown(MouseButton.Left))
                 {
-                    if (!wasToolActive) window.Editor.BeginChange();
-                    isToolActive = true;
                     level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = (Material) selectedMaterialIdx + 1;
                 }
 
@@ -671,33 +674,51 @@ class TileEditor : IEditorMode
                     !level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].HasTile()
                 )
                 {
-                    if (!wasToolActive) window.Editor.BeginChange();
-                    isToolActive = true;
                     level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = Material.None;
                 }
             }
 
-            // remove tile on right click
-            if (window.IsMouseInLevel() && Raylib.IsMouseButtonDown(MouseButton.Right))
+            if (window.IsMouseInLevel())
             {
                 int tileLayer = window.WorkLayer;
                 int tileX = window.MouseCx;
                 int tileY = window.MouseCy;
-                
-                var mouseCell = level.Layers[tileLayer, tileX, tileY];
-                if (mouseCell.HasTile())
-                {
-                    if (!wasToolActive) window.Editor.BeginChange();
-                    isToolActive = true;
 
-                    // if this is a tile body, go to referenced tile head
-                    if (mouseCell.TileHead is null)
+                var mouseCell = level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+
+                // if this is a tile body, find referenced tile head
+                if (mouseCell.HasTile() && mouseCell.TileHead is null)
+                {
+                    tileLayer = mouseCell.TileLayer;
+                    tileX = mouseCell.TileRootX;
+                    tileY = mouseCell.TileRootY;
+                }
+
+                // eyedropper
+                if (ImGui.IsKeyPressed(ImGuiKey.E))
+                {
+                    // tile eyedropper
+                    if (mouseCell.HasTile())
                     {
-                        tileLayer = mouseCell.TileLayer;
-                        tileX = mouseCell.TileRootX;
-                        tileY = mouseCell.TileRootY;
+                        selectedTile = level.Layers[tileLayer, tileX, tileY].TileHead;
+                        selectedGroup = selectedTile.Category.Index;
                     }
 
+                    // material eyedropper
+                    else
+                    {
+                        if (mouseCell.Material > 0)
+                        {
+                            selectedTile = null;
+                            selectedMaterialIdx = (int)mouseCell.Material - 1;
+                            selectedGroup = -1;
+                        }
+                    }
+                }
+
+                // remove tile on right click
+                if (Raylib.IsMouseButtonDown(MouseButton.Right) && mouseCell.HasTile())
+                {
                     RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                 }
             }
