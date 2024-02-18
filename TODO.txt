@@ -44,9 +44,6 @@ Light Editor:
 
 Effects Editor:
 - undo/redo
-- show light render stage
-- if possible, show coloring stage, although i don't think
-  drizzle has the code required to show that?
 
 Prop Editor: (TODO)
 - instead of using keys to rotate/scale props, user will place them down first
@@ -59,6 +56,9 @@ Prop Editor: (TODO)
 
 Render:
 - show time elapsed
+- show light render stage
+- if possible, show coloring stage, although i don't think
+  drizzle has the code required to show that?
 
 tile data format (from rwe+):
     {"tp": "tileHead", "data": ["point(C, T)", "N"]}

@@ -138,7 +138,7 @@ class LightMap : IDisposable
 
         // put into a render texture
         lightmapRt.Dispose();
-        lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
+        lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
