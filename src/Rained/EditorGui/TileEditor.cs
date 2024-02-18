@@ -2,6 +2,7 @@ using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
 using rlImGui_cs;
+using Tiles;
 
 namespace RainEd;
 
@@ -14,7 +15,23 @@ class TileEditor : IEditorMode
     private int selectedMaterialIdx = 0;
     private bool isToolActive = false;
 
+    private int selectedGroup = 0;
     private string searchQuery = "";
+    
+    private class AvailableGroup
+    {
+        public int GroupIndex;
+        public List<TileData> Tiles;
+
+        public AvailableGroup(int groupIndex, List<TileData> tiles)
+        {
+            GroupIndex = groupIndex;
+            Tiles = tiles;
+        }
+    }
+
+    // available groups (available = passes search)
+    private List<int> availableGroups = new();
 
     public TileEditor(EditorWindow window) {
         this.window = window;
@@ -24,7 +41,11 @@ class TileEditor : IEditorMode
     public void Load()
     {
         isToolActive = false;
+        ProcessSearch();
     }
+
+    /*
+    PROTOTYPE VERSION
 
     public void DrawToolbar() {
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -123,6 +144,167 @@ class TileEditor : IEditorMode
                     }
                 }
             } ImGui.EndChild();
+        }
+
+        // tab to change work layer
+        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+        {
+            window.WorkLayer = (window.WorkLayer + 1) % 3;
+        }
+    }
+    */
+
+
+    private void ProcessSearch()
+    {
+        var tileDb = window.Editor.TileDatabase;
+        availableGroups.Clear();
+        
+        var queryLower = searchQuery.ToLower();
+
+        // check if any materials have any entries that pass the search query
+        for (int i = 0; i < Level.MaterialNames.Length; i++)
+        {
+            if (searchQuery.Length == 0 || Level.MaterialNames[i].ToLower().Contains(queryLower))
+            {
+                availableGroups.Add(-1); // -1 means materials, i guess
+                break;
+            }
+        }
+
+        // find groups that have any entries that pass the search query
+        for (int i = 0; i < tileDb.Categories.Count; i++)
+        {
+            // if search query is empty, add this group to the search query
+            if (searchQuery == "")
+            {
+                availableGroups.Add(i);
+                continue;
+            }
+
+            // search is not empty, so scan the tiles in this group
+            // if there is one tile that that passes the search query, the
+            // group gets put in the list
+            // (further searching is done in DrawViewport)
+            for (int j = 0; j < tileDb.Categories[i].Tiles.Count; j++)
+            {
+                // this tile passes the search, so add this group to the search results
+                if (tileDb.Categories[i].Tiles[j].Name.ToLower().Contains(queryLower))
+                {
+                    availableGroups.Add(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void DrawToolbar()
+    {
+        if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
+        {
+            var tileDb = window.Editor.TileDatabase;
+
+            // work layer
+            {
+                int workLayerV = window.WorkLayer + 1;
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                ImGui.InputInt("Work Layer", ref workLayerV);
+                window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
+            }
+
+            // default material dropdown
+            ImGui.Text("Default Material");
+            int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
+            ImGui.Combo("##DefaultMaterial", ref defaultMat, Level.MaterialNames, Level.MaterialNames.Length, 999999);
+            window.Editor.Level.DefaultMaterial = (Material) defaultMat + 1;
+
+            // search bar
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite))
+            {
+                // when changed
+                Console.WriteLine("Search changed");
+                ProcessSearch(); // find the groups which have at least one tile that passes the search query
+            }
+
+            var queryLower = searchQuery.ToLower();
+
+            // if there is only one available group, automatically select it
+            if (availableGroups.Count == 1) selectedGroup = availableGroups[0];
+
+            // group list box
+            var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
+            var boxHeight = ImGui.GetContentRegionAvail().Y;
+
+            if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
+            {
+                foreach (int i in availableGroups)
+                {
+                    // material group
+                    if (i == -1)
+                    {
+                        if (ImGui.Selectable("Materials", i == selectedGroup))
+                            selectedGroup = -1;
+                    }
+
+                    // tile group
+                    else if (ImGui.Selectable(tileDb.Categories[i].Name, i == selectedGroup))
+                        selectedGroup = i;
+                }
+                
+                ImGui.EndListBox();
+            }
+            
+            // group listing (effects) list box
+            ImGui.SameLine();
+            if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
+            {
+                // material group
+                if (selectedGroup == -1)
+                {
+                    for (int i = 0; i < Level.MaterialNames.Length; i++)
+                    {
+                        // first, check if name passes search query
+                        var name = Level.MaterialNames[i];
+                        if (searchQuery == "" || name.ToLower().Contains(queryLower))
+                        {
+                            // material selection
+                            var isSelected = selectedTile == null && selectedMaterialIdx == i;
+                            if (ImGui.Selectable(name, isSelected))
+                            {
+                                selectedTile = null;
+                                selectedMaterialIdx = i;
+                            }
+                        }
+                    }
+                }
+
+                // tile group
+                else
+                {
+                    var tileList = tileDb.Categories[selectedGroup].Tiles;
+
+                    for (int i = 0; i < tileList.Count; i++)
+                    {
+                        var tile = tileList[i];
+                        if (searchQuery != "" && !tile.Name.ToLower().Contains(queryLower)) continue;
+
+                        if (ImGui.Selectable(tile.Name, selectedTile == tile))
+                        {
+                            selectedTile = tile;
+                        }
+
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.BeginTooltip();
+                            rlImGui.Image(tile.PreviewTexture);
+                            ImGui.EndTooltip();
+                        }
+                    }
+                }
+                
+                ImGui.EndListBox();
+            }
         }
 
         // tab to change work layer

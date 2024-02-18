@@ -1,4 +1,5 @@
 Overall:
+- proper logging
 - undo/redo for level resize
 - only geo and tile editor uses work layers
   - geo editor uses checkboxes for each layer edit
