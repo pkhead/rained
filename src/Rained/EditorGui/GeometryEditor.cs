@@ -130,6 +130,13 @@ class GeometryEditor : IEditorMode
         "Overlay", "Stack"
     };
 
+    public void Unload()
+    {
+        isToolActive = false;
+        isToolRectActive = false;
+        window.CellChangeRecorder.TryPushChange();
+    }
+
     public void DrawToolbar()
     {
         if (ImGui.Begin("Build", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -358,7 +365,7 @@ class GeometryEditor : IEditorMode
                 if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 {
                     ApplyToolRect();
-                    window.Editor.MarkChange();
+                    window.CellChangeRecorder.PushChange();
                 }
             }
             
@@ -380,20 +387,21 @@ class GeometryEditor : IEditorMode
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
                     isToolActive = true;
+                    window.CellChangeRecorder.BeginChange();
                 }
                 
                 if (isToolActive)
                 {
-                    if (Raylib.IsMouseButtonReleased(MouseButton.Left))
-                    {
-                        isToolActive = false;
-                        window.Editor.MarkChange();
-                    }
-
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
                     {
                         if (!isToolRectActive)
                             ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
+                    }
+
+                    if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                    {
+                        isToolActive = false;
+                        window.CellChangeRecorder.PushChange();
                     }
                 }
             }

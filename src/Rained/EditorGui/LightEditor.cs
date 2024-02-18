@@ -21,7 +21,7 @@ class LightEditor : IEditorMode
         public bool mode;
     }
 
-    private class Stroke : IChangeRecord
+    private class Stroke : ChangeHistory.IChangeRecord
     {
         public LightEditor lightEditor;
 

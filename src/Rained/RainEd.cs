@@ -59,8 +59,8 @@ sealed class RainEd
         }
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
-        editorWindow = new EditorWindow();
         changeHistory = new ChangeHistory.ChangeHistory();
+        editorWindow = new EditorWindow();
 
         UpdateTitle();
         RegisterShortcuts();
@@ -556,16 +556,6 @@ sealed class RainEd
         }
 
         rlImGui.End();
-    }
-    
-    public void MarkChange()
-    {
-        Console.WriteLine("MarkChange called");
-
-        if (changeHistory.TryEndChange())
-        {
-            changeHistory.BeginChange();
-        }
     }
     
     public void Undo() => changeHistory.Undo();

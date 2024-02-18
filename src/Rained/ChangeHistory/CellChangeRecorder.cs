@@ -29,25 +29,24 @@ class CellChangeRecord : IChangeRecord
 
 class CellChangeRecorder
 {
-    private LevelCell[,,] snapshotLayers = null!;
-    private int editMode;
+    private LevelCell[,,]? snapshotLayers = null;
 
-    public CellChangeRecorder()
+    public void BeginChange()
     {
-        UpdateSnapshot();
-    }
+        if (snapshotLayers != null)
+            throw new Exception("CameraChangeRecorder.BeginChange() is already active");
 
-    private void UpdateSnapshot()
-    {
-        editMode = RainEd.Instance.Window.EditMode;
         snapshotLayers = (LevelCell[,,]) RainEd.Instance.Level.Layers.Clone();
     }
 
-    public void PushChange()
+    public void TryPushChange()
     {
+        if (snapshotLayers is null)
+            return;
+        
         var changes = new CellChangeRecord()
         {
-            EditMode = editMode
+            EditMode = RainEd.Instance.Window.EditMode
         };
 
         var level = RainEd.Instance.Level;
@@ -74,6 +73,14 @@ class CellChangeRecorder
         if (changes.CellChanges.Count > 0)
             RainEd.Instance.ChangeHistory.PushCustom(changes);
 
-        UpdateSnapshot();
+        snapshotLayers = null;
+    }
+
+    public void PushChange()
+    {
+        if (snapshotLayers is null)
+            throw new Exception("CellChangeRecorder.PushChange() called, but recorder is not active");
+        
+        TryPushChange();
     }
 }

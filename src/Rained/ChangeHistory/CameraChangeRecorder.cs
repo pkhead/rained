@@ -69,15 +69,20 @@ class CameraChangeRecord : IChangeRecord
 class CameraChangeRecorder
 {
     private readonly List<CameraData> snapshot;
+    private bool isRecording = false;
 
     public CameraChangeRecorder()
     {
         snapshot = new List<CameraData>();
-        UpdateSnapshot();
     }
 
-    private void UpdateSnapshot()
+    public void BeginChange()
     {
+        if (isRecording)
+            throw new Exception("CameraChangeRecorder.BeginChange() is already active");
+        
+        isRecording = true;
+
         var level = RainEd.Instance.Level;
 
         snapshot.Clear();
@@ -87,8 +92,9 @@ class CameraChangeRecorder
         }
     }
 
-    public void PushChange()
+    public void TryPushChange()
     {
+        if (!isRecording) return;
         var level = RainEd.Instance.Level;
 
         bool camerasChanged = snapshot.Count != level.Cameras.Count;
@@ -111,5 +117,15 @@ class CameraChangeRecorder
             var changeRecord = new CameraChangeRecord(snapshot.ToArray(), newCameraData);
             RainEd.Instance.ChangeHistory.PushCustom(changeRecord);
         }
+
+        isRecording = false;
+    }
+
+    public void PushChange()
+    {
+        if (!isRecording)
+            throw new Exception("CameraChangeRecorder.PushChange() called, but recorder is not active");
+        
+        TryPushChange();
     }
 }

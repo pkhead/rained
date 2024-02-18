@@ -12,8 +12,22 @@ class CameraEditor : IEditorMode
     private int activeCorner = -1;
     private Vector2 mouseOffset = new(); // mouse offset from camera position when drag starts
 
+    private ChangeHistory.CameraChangeRecorder changeRecorder;
+
     public CameraEditor(EditorWindow window) {
         this.window = window;
+        changeRecorder = new ChangeHistory.CameraChangeRecorder();
+
+        RainEd.Instance.ChangeHistory.Cleared += () =>
+        {
+            changeRecorder = new ChangeHistory.CameraChangeRecorder();
+        };
+    }
+
+    public void Unload()
+    {
+        activeCamera = null;
+        changeRecorder.TryPushChange();
     }
     
     public void DrawToolbar() {
@@ -71,7 +85,7 @@ class CameraEditor : IEditorMode
                 if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 {
                     activeCamera = null;
-                    window.Editor.MarkChange();
+                    changeRecorder.PushChange();
                 }
             }
 
@@ -116,6 +130,7 @@ class CameraEditor : IEditorMode
                     mouseOffset = window.MouseCellFloat - cameraHoveredOver.Position;
                     activeCamera = cameraHoveredOver;
                     activeCorner = cornerHover;
+                    changeRecorder.BeginChange();
                 }
             }
         }
@@ -126,9 +141,10 @@ class CameraEditor : IEditorMode
             // N to create new camera
             if (window.IsShortcutActivated("NewObject") && level.Cameras.Count < Level.MaxCameraCount)
             {
+                changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
                 level.Cameras.Add(cam);
-                window.Editor.MarkChange();
+                changeRecorder.PushChange();
             }
 
             // Right-Click, Delete, or Backspace to delete camera
@@ -141,6 +157,7 @@ class CameraEditor : IEditorMode
                     || Raylib.IsMouseButtonPressed(MouseButton.Right)
                 )
                 {
+                    changeRecorder.BeginChange();
                     if (cornerHover == -1 && level.Cameras.Count > 1)
                     {
                         level.Cameras.Remove(cameraHoveredOver);
@@ -151,7 +168,7 @@ class CameraEditor : IEditorMode
                         cameraHoveredOver.CornerAngles[cornerHover] = 0f;
                         cameraHoveredOver.CornerOffsets[cornerHover] = 0f;
                     }
-                    window.Editor.MarkChange();
+                    changeRecorder.PushChange();
                 }
             }
         }

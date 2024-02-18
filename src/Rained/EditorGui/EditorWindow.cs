@@ -75,13 +75,22 @@ class EditorWindow
     private RlManaged.RenderTexture2D layerRenderTexture;
     public readonly LevelEditRender LevelRenderer;
 
+    private ChangeHistory.CellChangeRecorder cellChangeRecorder;
+    public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
+    
     public EditorWindow()
     {
         Editor = RainEd.Instance;
         canvasWidget = new(1, 1);
         layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
-
+        
         LevelRenderer = new LevelEditRender();
+        cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
+        RainEd.Instance.ChangeHistory.Cleared += () =>
+        {
+            cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
+        };
+
         editorModes.Add(new EnvironmentEditor(this));
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));
@@ -195,7 +204,6 @@ class EditorWindow
             if (newEditMode != selectedMode)
             {
                 editorModes[selectedMode].Unload();
-                Editor.MarkChange();
                 selectedMode = newEditMode;
                 editorModes[selectedMode].Load();
             }

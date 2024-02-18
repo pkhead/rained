@@ -44,6 +44,11 @@ class TileEditor : IEditorMode
         ProcessSearch();
     }
 
+    public void Unload()
+    {
+        window.CellChangeRecorder.TryPushChange();
+    }
+
     /*
     PROTOTYPE VERSION
 
@@ -560,6 +565,7 @@ class TileEditor : IEditorMode
             // regardless of what it's doing
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right))
             {
+                if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                 isToolActive = true;
             }
 
@@ -724,7 +730,7 @@ class TileEditor : IEditorMode
         }
 
         if (wasToolActive && !isToolActive)
-            window.Editor.MarkChange();
+            window.CellChangeRecorder.PushChange();
         
         Raylib.EndScissorMode();
     }
