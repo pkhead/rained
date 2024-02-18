@@ -18,9 +18,28 @@ struct BrushAtom
 
 class LightBrushDatabase
 {
+    private readonly static string levelLightShaderSrc = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
+        }
+    ";
+
     private readonly List<LightBrush> lightBrushes;
 
     public List<LightBrush> Brushes { get => lightBrushes; }
+    public readonly RlManaged.Shader Shader;
 
     public LightBrushDatabase()
     {
@@ -45,15 +64,21 @@ class LightBrushDatabase
             });
         }
 
+        Shader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
+
         Console.WriteLine("Done!");
     }
 }
 
-class LightMap
+class LightMap : IDisposable
 {
     private RlManaged.RenderTexture2D lightmapRt;
     private int width;
     private int height;
+
+    public int Width { get => width; }
+    public int Height { get => height; }
+    public Texture2D Texture { get => lightmapRt.Texture; }
 
     public LightMap(int levelWidth, int levelHeight)
     {
@@ -83,6 +108,12 @@ class LightMap
         Raylib.EndTextureMode();
 
         lightmapTex.Dispose();
+    }
+
+    public void Dispose()
+    {
+        lightmapRt.Dispose();
+        lightmapRt = null!;
     }
 
     public void Resize(int newWidth, int newHeight, int dstOriginX, int dstOriginY)
@@ -125,9 +156,9 @@ class LightMap
         Raylib.BeginTextureMode(lightmapRt);
     }
 
-    public static void DrawAtom(LightBrushDatabase database, BrushAtom atom)
+    public static void DrawAtom(BrushAtom atom)
     {
-        var tex = database.Brushes[atom.brush].Texture;
+        var tex = RainEd.Instance.LightBrushDatabase.Brushes[atom.brush].Texture;
         Raylib.DrawTexturePro(
             tex,
             new Rectangle(0, 0, tex.Width, tex.Height),
@@ -140,6 +171,10 @@ class LightMap
 
     public RlManaged.Image GetImage()
     {
-        return RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
+        var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
+        Raylib.ImageFlipVertical(ref img.Ref());
+        Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+
+        return img;
     }
 }

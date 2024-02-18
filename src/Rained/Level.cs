@@ -267,7 +267,8 @@ class Level
         "Ridge"
     };
 
-    public readonly LightMap LightMap;
+    private LightMap lightMap;
+    public LightMap LightMap { get => lightMap; }
     public float LightAngle = MathF.PI;
     public float LightDistance = 1f;
     public const float MaxLightDistance = 10f;
@@ -306,7 +307,7 @@ class Level
         }
 
         // initialize light map
-        LightMap = new LightMap(Width, Height);
+        lightMap = new LightMap(Width, Height);
     }
 
     public static Level NewDefaultLevel()
@@ -423,5 +424,11 @@ class Level
 
         _width = newWidth;
         _height = newHeight;
+    }
+
+    public void LoadLightMap(Image image)
+    {
+        lightMap.Dispose();
+        lightMap = new LightMap(image);
     }
 }

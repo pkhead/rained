@@ -17,6 +17,7 @@ sealed class RainEd
     private readonly RlManaged.Texture2D rainedLogo;
     public readonly Tiles.Database TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
+    public readonly Light.LightBrushDatabase LightBrushDatabase;
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private readonly EditorWindow editorWindow;
 
@@ -48,6 +49,7 @@ sealed class RainEd
         rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
         TileDatabase = new Tiles.Database();
         EffectsDatabase = new EffectsDatabase();
+        LightBrushDatabase = new Light.LightBrushDatabase();
         
         if (levelPath.Length > 0)
         {
@@ -81,6 +83,7 @@ sealed class RainEd
 
             try
             {
+                level.LightMap.Dispose();
                 level = LevelSerialization.Load(path);
                 ReloadLevel();
                 currentFilePath = path;
@@ -277,6 +280,7 @@ sealed class RainEd
             PromptUnsavedChanges(() =>
             {
                 editorWindow.UnloadView();
+                level.LightMap.Dispose();
                 level = Level.NewDefaultLevel();
                 ReloadLevel();
                 editorWindow.LoadView();

@@ -7,157 +7,35 @@ namespace RainEd;
 
 class LightEditor : IEditorMode
 {
-    private struct LightBrush
-    {
-        public string Name;
-        public RlManaged.Texture2D Texture;
-    }
-
-    private struct StrokeAtom
-    {
-        public float rotation;
-        public Rectangle rect;
-        public int brush;
-        public bool mode;
-    }
-
-    private class Stroke : ChangeHistory.IChangeRecord
-    {
-        public LightEditor lightEditor;
-
-        public StrokeAtom[] atoms;
-        public Stroke? previous = null;
-
-        public Stroke(StrokeAtom[] atoms, LightEditor lightEditor)
-        {
-            this.lightEditor = lightEditor;
-            this.atoms = atoms;
-            previous = lightEditor.lastStroke;
-        }
-
-        public bool HasChange() => true;
-        public void Apply(bool useNew)
-        {
-            if (lightEditor is null) throw new NullReferenceException();
-
-            // redo call
-            if (useNew)
-            {
-                lightEditor.lastStroke = this;
-                lightEditor.Retrace();
-            }
-
-            // undo call
-            else
-            {
-                lightEditor.lastStroke = previous;
-                lightEditor.Retrace();
-            }
-        }
-    }
-
     public string Name { get => "Light"; }
     private readonly EditorWindow window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
-    private readonly List<LightBrush> lightBrushes;
-    private RlManaged.RenderTexture2D? lightmapRt;
-    private RlManaged.Texture2D origLightmap; // for change history
     private int selectedBrush = 0;
-
-    private int thisEditMode = -1;
-
-    private List<StrokeAtom> currentStrokeData = new();
-    private Stroke? lastStroke = null;
 
     private bool isCursorEnabled = true;
     private bool isDrawing = false;
     private Vector2 savedMouseGp = new();
     private Vector2 savedMousePos = new();
 
-    private readonly static string levelLightShaderSrc = @"
-        #version 330
-
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
-
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            vec4 texelColor = texture(texture0, fragTexCoord);
-            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
-        }
-    ";
-
-    private readonly RlManaged.Shader levelLightShader;
+    private ChangeHistory.LightChangeRecorder changeRecorder = null!;
 
     public LightEditor(EditorWindow window)
     {
         this.window = window;
-
-        levelLightShader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
-
-        // load light textures
-        Console.WriteLine("Initializing light cast catalog...");
-
-        lightBrushes = new List<LightBrush>();
-
-        foreach (var fileName in File.ReadLines("assets/light/init.txt"))
-        {
-            // if this line is empty, skip
-            if (string.IsNullOrWhiteSpace(fileName)) continue;
-
-            // this line is a comment, skip
-            if (fileName[0] == '#') continue;
-            
-            // load light texture
-            var tex = RlManaged.Texture2D.Load($"assets/light/{fileName.Trim()}");
-            lightBrushes.Add(new LightBrush()
-            {
-                Name = fileName.Trim(),
-                Texture = tex
-            });
-        }
-
-        Console.WriteLine("Done!");
-
         ReloadLevel();
-        if (origLightmap == null) throw new Exception();
     }
 
     public void ReloadLevel()
-    {
-        lastStroke = null;
-        lightmapRt?.Dispose();
-        origLightmap?.Dispose();
-
-        // get light map as a texture
-        var lightmapImg = window.Editor.Level.LightMap;
-        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightmapImg);
-        origLightmap = lightmapTex;
-
-        // put into a render texture
-        lightmapRt = RlManaged.RenderTexture2D.Load(lightmapImg.Width, lightmapImg.Height);
-        Raylib.BeginTextureMode(lightmapRt);
-        Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
-        Raylib.EndTextureMode();
+    {   
+        changeRecorder?.Dispose();
+        changeRecorder = new ChangeHistory.LightChangeRecorder();
     }
 
     public void Load()
     {
-        currentStrokeData = new();
-        thisEditMode = window.EditMode;
-    }
-
-    public void FlushDirty()
-    {
-        UpdateLightMap();
+        changeRecorder.ClearStrokeData();
     }
 
     public void Unload()
@@ -199,7 +77,7 @@ class LightEditor : IEditorMode
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
             int i = 0;
-            foreach (var brush in lightBrushes)
+            foreach (var brush in RainEd.Instance.LightBrushDatabase.Brushes)
             {
                 var texture = brush.Texture;
                 
@@ -240,14 +118,13 @@ class LightEditor : IEditorMode
 
     private void DrawOcclusionPlane()
     {
-        if (lightmapRt is null) return;
         var level = window.Editor.Level;
         
         // render light plane
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
         Raylib.DrawTextureRec(
-            lightmapRt.Texture,
+            level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
             new Color(255, 0, 0, 100)
@@ -256,7 +133,6 @@ class LightEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
-        if (lightmapRt is null) return;
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
 
@@ -300,7 +176,7 @@ class LightEditor : IEditorMode
 
         levelRender.RenderBorder();
 
-        Raylib.BeginShaderMode(levelLightShader);
+        Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
 
         // render cast
         Vector2 castOffset = new(
@@ -309,7 +185,7 @@ class LightEditor : IEditorMode
         );
 
         Raylib.DrawTextureRec(
-            lightmapRt.Texture,
+            level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             lightMapOffset + castOffset,
             new Color(0, 0, 0, 80)
@@ -318,7 +194,7 @@ class LightEditor : IEditorMode
         // Render mouse cursor
         if (window.IsViewportHovered)
         {
-            var tex = lightBrushes[selectedBrush].Texture;
+            var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
             var mpos = window.MouseCellFloat;
             if (!wasCursorEnabled) mpos = savedMouseGp;
 
@@ -335,10 +211,10 @@ class LightEditor : IEditorMode
                 DrawOcclusionPlane();
 
                 Rlgl.LoadIdentity(); // why the hell do i have to call this
-                Raylib.BeginTextureMode(lightmapRt);
+                level.LightMap.RaylibBeginTextureMode();
 
                 // draw on brush plane
-                StrokeAtom atom = new()
+                Light.BrushAtom atom = new()
                 {
                     rect = new Rectangle(
                         mpos.X * Level.TileSize - lightMapOffset.X,
@@ -350,9 +226,7 @@ class LightEditor : IEditorMode
                     brush = selectedBrush
                 };
 
-                // record brush "atom" if last atom is different
-                if (currentStrokeData.Count == 0 || !atom.Equals(currentStrokeData[^1]))
-                    currentStrokeData.Add(atom);
+                changeRecorder.RecordAtom(atom);
 
                 Raylib.DrawTexturePro(
                     tex,
@@ -429,7 +303,7 @@ class LightEditor : IEditorMode
         // record stroke data at the end of the stroke
         if (wasDrawing && !isDrawing)
         {
-            EndStroke();
+            changeRecorder.EndStroke();
         }
 
         // handle cursor lock when transforming brush
@@ -450,61 +324,5 @@ class LightEditor : IEditorMode
                 Raylib.HideCursor();
             }
         }
-    }
-
-    private void EndStroke()
-    {
-        if (currentStrokeData.Count == 0) return;
-
-        var stroke = new Stroke(currentStrokeData.ToArray(), this);
-        currentStrokeData.Clear();
-
-        window.Editor.ChangeHistory.PushCustom(stroke);
-        lastStroke = stroke;
-    }
-
-    private void UpdateLightMap()
-    {
-        if (lightmapRt is null) return;
-        Console.WriteLine("Update light map");
-        var level = window.Editor.Level;
-
-        var lightMapImage = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
-        Raylib.ImageFlipVertical(ref lightMapImage.Ref());
-        Raylib.ImageFormat(ref lightMapImage.Ref(), PixelFormat.UncompressedGrayscale);
-        level.LightMap = lightMapImage;
-    }
-
-    private void Retrace()
-    {
-        if (lightmapRt is null) throw new Exception();
-        window.EditMode = thisEditMode;
-
-        void recurse(Stroke? thisStroke)
-        {
-            if (thisStroke is null) return;
-            recurse(thisStroke.previous);
-
-            foreach (var atom in thisStroke.atoms)
-            {
-                var tex = lightBrushes[atom.brush].Texture;
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    new Vector2(atom.rect.Width, atom.rect.Height) / 2f,
-                    atom.rotation,
-                    atom.mode ? Color.Black : Color.White
-                );
-            }
-        }
-
-        Raylib.BeginTextureMode(lightmapRt);
-        Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(origLightmap, 0, 0, Color.White);
-        Raylib.BeginShaderMode(levelLightShader);
-        recurse(lastStroke);
-        Raylib.EndShaderMode();
-        Raylib.EndTextureMode();
     }
 }

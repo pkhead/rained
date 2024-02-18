@@ -324,7 +324,7 @@ static class LevelSerialization
         {
             var img = RlManaged.Image.Load(lightPath);
             Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
-            level.LightMap = img;
+            level.LoadLightMap(img);
         }
 
         // read light parameters
@@ -623,6 +623,8 @@ static class LevelSerialization
 
         // write light image
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        Raylib.ExportImage(level.LightMap, lightPath);
+        var lightMapImg = level.LightMap.GetImage();
+        Raylib.ExportImage(lightMapImg, lightPath);
+        lightMapImg.Dispose();
     }
 }
