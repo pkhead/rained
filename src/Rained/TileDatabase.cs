@@ -1,8 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
-using RlManaged;
 
-namespace Tiles;
+namespace RainEd.Tiles;
 
 public enum TileType
 {

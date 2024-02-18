@@ -1,8 +1,8 @@
 using System.Numerics;
 using System.Text;
-namespace Lingo;
+namespace RainEd.Lingo;
 
-public class LingoParser
+class LingoParser
 {
     private readonly Queue<Token> tokens = new();
 

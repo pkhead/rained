@@ -1,6 +1,6 @@
-namespace Lingo;
+namespace RainEd.Lingo;
 
-internal class TokenParser
+class TokenParser
 {
     private readonly StreamReader stream;
     private readonly List<char> strBuffer = new();

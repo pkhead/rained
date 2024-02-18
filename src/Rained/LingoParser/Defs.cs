@@ -1,13 +1,13 @@
-namespace Lingo;
+namespace RainEd.Lingo;
 
-public class ParseException : Exception
+class ParseException : Exception
 {
     public ParseException() {}
     public ParseException(string message) : base(message) {}
     public ParseException(string message, Exception inner) : base(message, inner) {}
 }
 
-public struct Color
+struct Color
 {
     public int R, G, B;
     public Color(int r, int g, int b)
@@ -18,7 +18,7 @@ public struct Color
     }
 }
 
-public struct Rectangle
+struct Rectangle
 {
     public float X, Y, Width, Height;
 
@@ -31,13 +31,13 @@ public struct Rectangle
     }
 }
 
-public class List
+class List
 {
     public List<object> values = new();
     public Dictionary<string, object> fields = new(); 
 }
 
-public class Table
+class Table
 {
     public object Header;
     public List<Lingo.List> Items;
@@ -49,7 +49,7 @@ public class Table
     }
 }
 
-public enum TokenType
+enum TokenType
 {
     OpenBracket,
     CloseBracket,
@@ -68,7 +68,7 @@ public enum TokenType
     KeywordRect
 }
 
-public struct Token
+struct Token
 {
     public TokenType Type;
     public object? Value;

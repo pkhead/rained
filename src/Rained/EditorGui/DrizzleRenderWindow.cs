@@ -2,12 +2,12 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using rlImGui_cs;
-using RenderState = RainEd.LevelDrizzleRender.RenderState;
+using RenderState = RainEd.DrizzleRender.RenderState;
 namespace RainEd;
 
 class DrizzleRenderWindow : IDisposable
 {
-    public readonly LevelDrizzleRender drizzleRenderer;
+    public readonly DrizzleRender drizzleRenderer;
     private bool isOpen = false;
     private readonly RlManaged.Texture2D[] previewTextures;
     private readonly RlManaged.RenderTexture2D previewComposite;
@@ -41,7 +41,7 @@ class DrizzleRenderWindow : IDisposable
 
     public DrizzleRenderWindow()
     {
-        drizzleRenderer = new LevelDrizzleRender();
+        drizzleRenderer = new DrizzleRender();
         
         previewTextures = new RlManaged.Texture2D[30];
 

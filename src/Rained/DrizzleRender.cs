@@ -8,7 +8,7 @@ using Drizzle.Ported;
 using SixLabors.ImageSharp;
 namespace RainEd;
 
-class LevelDrizzleRender : IDisposable
+class DrizzleRender : IDisposable
 {
     private abstract record ThreadMessage;
 
@@ -110,7 +110,7 @@ class LevelDrizzleRender : IDisposable
     public readonly RlManaged.Image[] RenderLayerPreviews;
     public Action? PreviewUpdated;
 
-    public LevelDrizzleRender()
+    public DrizzleRender()
     {
         cameraCount = RainEd.Instance.Level.Cameras.Count;
 
