@@ -1,4 +1,5 @@
 using System.Numerics;
+using RainEd.Light;
 using Raylib_cs;
 namespace RainEd;
 
@@ -266,21 +267,13 @@ class Level
         "Ridge"
     };
 
-    private RlManaged.Image lightMap;
-
+    public readonly LightMap LightMap;
     public float LightAngle = MathF.PI;
     public float LightDistance = 1f;
     public const float MaxLightDistance = 10f;
 
     public readonly List<Effect> Effects = new();
     
-    public RlManaged.Image LightMap {
-        get => GetLightImage();
-        set => SetLightImage(value);
-    }
-
-    public ref Image LightMapRef { get => ref lightMap.Ref(); }
-
     public int TileSeed = 200;
     public bool DefaultMedium = false; // idk what the hell this does
     public bool HasSunlight = true;
@@ -313,10 +306,7 @@ class Level
         }
 
         // initialize light map
-        int lightMapWidth = Width * 20 + 300;
-        int lightMapHeight = Height * 20 + 300;
-        lightMap = RlManaged.Image.GenColor(lightMapWidth, lightMapHeight, new Color(0, 0, 0, 255));
-        Raylib.ImageFormat(ref lightMap.Ref(), PixelFormat.UncompressedGrayscale);
+        LightMap = new LightMap(Width, Height);
     }
 
     public static Level NewDefaultLevel()
@@ -347,27 +337,7 @@ class Level
         y = Math.Clamp(y, 0, Height - 1);
         return Layers[layer, x, y];
     }
-
-    // get light map as a Raylib image
-    private RlManaged.Image GetLightImage()
-    {
-        return lightMap;
-    }
-
-    private void SetLightImage(RlManaged.Image srcImage)
-    {
-        if (srcImage == lightMap) return;
-        if (srcImage.Width != lightMap.Width || srcImage.Height != lightMap.Height)
-        {
-            Console.WriteLine("WARNING: Light map size is not LevelSize * 20 + (300, 300)");
-        }
-        
-        if (srcImage.PixelFormat != lightMap.PixelFormat)
-            throw new Exception("Mismatched format");
-
-        lightMap = srcImage;
-    }
-
+    
     public void Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
     {
         if (newWidth == _width && newHeight == _height) return;
@@ -431,11 +401,9 @@ class Level
         }
 
         // resize light map
-        Raylib.ImageResizeCanvas(
-            ref lightMap.Ref(),
-            newWidth * 20 + 300, newHeight * 20 + 300,
-            dstOriginX * 20, dstOriginY * 20,
-            Color.White
+        LightMap.Resize(
+            newWidth, newHeight,
+            dstOriginX, dstOriginY
         );
 
         // resize effect matrices
