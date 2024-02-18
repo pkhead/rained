@@ -1,6 +1,5 @@
 using Raylib_cs;
 using ImGuiNET;
-using rlImGui_cs;
 using System.Numerics;
 
 namespace RainEd;
@@ -21,6 +20,18 @@ interface IEditorMode
     void DrawToolbar();
     void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame);
 }
+
+enum EditModeEnum
+{
+    None = -1,
+    Environment = 0,
+    Geometry,
+    Tile,
+    Camera,
+    Light,
+    Effect,
+    Prop
+};
 
 class EditorWindow
 {
@@ -52,8 +63,8 @@ class EditorWindow
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
 
     private readonly List<IEditorMode> editorModes = new();
-    private int selectedMode = 0;
-    private int queuedEditMode = -1;
+    private int selectedMode = (int) EditModeEnum.Environment;
+    private int queuedEditMode = (int) EditModeEnum.None;
 
     public int EditMode {
         get => selectedMode;
@@ -162,22 +173,22 @@ class EditorWindow
 
                 // edit mode keybinds
                 if (Raylib.IsKeyPressed(KeyboardKey.One))
-                    newEditMode = 0;
+                    newEditMode = (int) EditModeEnum.Environment;
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Two))
-                    newEditMode = 1;
+                    newEditMode = (int) EditModeEnum.Geometry;
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Three))
-                    newEditMode = 2;
+                    newEditMode = (int) EditModeEnum.Tile;
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Four))
-                    newEditMode = 3;
+                    newEditMode = (int) EditModeEnum.Camera;
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Five))
-                    newEditMode = 4;
+                    newEditMode = (int) EditModeEnum.Light;
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Six))
-                    newEditMode = 5;
+                    newEditMode = (int) EditModeEnum.Effect;
             }
 
             // change edit mode if requested

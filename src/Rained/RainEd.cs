@@ -9,7 +9,7 @@ namespace RainEd;
 
 sealed class RainEd
 {
-    public static RainEd Instance;
+    public static RainEd Instance = null!;
 
     public bool Running = true;
     private Level level;
@@ -17,7 +17,7 @@ sealed class RainEd
     private readonly RlManaged.Texture2D rainedLogo;
     public readonly Tiles.Database TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
-    private readonly ChangeHistory changeHistory;
+    private readonly ChangeHistory.ChangeHistory changeHistory;
     private readonly EditorWindow editorWindow;
 
     private string currentFilePath = string.Empty;
@@ -32,13 +32,13 @@ sealed class RainEd
 
     private bool promptAbout = false;
 
-    public ChangeHistory ChangeHistory { get => changeHistory; }
+    public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
 
     private DrizzleRenderWindow? drizzleRenderWindow = null;
     private LevelResizeWindow? levelResizeWin = null;
 
     public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
-
+    
     public RainEd(string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
@@ -60,11 +60,10 @@ sealed class RainEd
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
         editorWindow = new EditorWindow();
-        changeHistory = new ChangeHistory();
+        changeHistory = new ChangeHistory.ChangeHistory();
 
         UpdateTitle();
         RegisterShortcuts();
-        changeHistory.BeginChange();
     }
 
     public void ShowError(string msg)
@@ -144,7 +143,6 @@ sealed class RainEd
         editorWindow.ReloadLevel();
         changeHistory.Clear();
         changeHistory.MarkUpToDate();
-        changeHistory.BeginChange();
     }
 
     private Action? promptCallback;
