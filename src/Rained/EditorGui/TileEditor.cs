@@ -560,7 +560,6 @@ class TileEditor : IEditorMode
             // regardless of what it's doing
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right))
             {
-                if (!wasToolActive) window.Editor.BeginChange();
                 isToolActive = true;
             }
 
@@ -725,7 +724,7 @@ class TileEditor : IEditorMode
         }
 
         if (wasToolActive && !isToolActive)
-            window.Editor.EndChange();
+            window.Editor.MarkChange();
         
         Raylib.EndScissorMode();
     }

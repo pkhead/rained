@@ -184,7 +184,7 @@ class EditorWindow
             if (newEditMode != selectedMode)
             {
                 editorModes[selectedMode].Unload();
-                Editor.TryEndChange();
+                Editor.MarkChange();
                 selectedMode = newEditMode;
                 editorModes[selectedMode].Load();
             }

@@ -168,10 +168,11 @@ class ChangeHistory
         oldSnapshot = new Snapshot(Level, RainEd.Instance.Window.EditMode);    
     }
 
-    public void TryEndChange()
+    public bool TryEndChange()
     {
-        if (oldSnapshot is null) return;
+        if (oldSnapshot is null) return false;
         EndChange();
+        return true;
     }
 
     public void EndChange()

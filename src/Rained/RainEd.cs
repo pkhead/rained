@@ -64,6 +64,7 @@ sealed class RainEd
 
         UpdateTitle();
         RegisterShortcuts();
+        changeHistory.BeginChange();
     }
 
     public void ShowError(string msg)
@@ -82,9 +83,7 @@ sealed class RainEd
             try
             {
                 level = LevelSerialization.Load(path);
-                editorWindow.ReloadLevel();
-                changeHistory.Clear();
-                changeHistory.MarkUpToDate();
+                ReloadLevel();
                 currentFilePath = path;
                 UpdateTitle();
             }
@@ -138,6 +137,14 @@ sealed class RainEd
         level.Resize(newWidth, newHeight, anchorX, anchorY);
         Window.ReloadLevel();
         changeHistory.Clear();
+    }
+
+    private void ReloadLevel()
+    {
+        editorWindow.ReloadLevel();
+        changeHistory.Clear();
+        changeHistory.MarkUpToDate();
+        changeHistory.BeginChange();
     }
 
     private Action? promptCallback;
@@ -273,9 +280,7 @@ sealed class RainEd
             {
                 editorWindow.UnloadView();
                 level = Level.NewDefaultLevel();
-                editorWindow.ReloadLevel();
-                changeHistory.Clear();
-                changeHistory.MarkUpToDate();
+                ReloadLevel();
                 editorWindow.LoadView();
 
                 currentFilePath = string.Empty;
@@ -555,9 +560,16 @@ sealed class RainEd
         rlImGui.End();
     }
     
-    public void BeginChange() => changeHistory.BeginChange();
-    public void EndChange() => changeHistory.EndChange();
-    public void TryEndChange() => changeHistory.TryEndChange();
+    public void MarkChange()
+    {
+        Console.WriteLine("MarkChange called");
+
+        if (changeHistory.TryEndChange())
+        {
+            changeHistory.BeginChange();
+        }
+    }
+    
     public void Undo() => changeHistory.Undo();
     public void Redo() => changeHistory.Redo();
 }

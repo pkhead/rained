@@ -358,7 +358,7 @@ class GeometryEditor : IEditorMode
                 if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 {
                     ApplyToolRect();
-                    window.Editor.EndChange();
+                    window.Editor.MarkChange();
                 }
             }
             
@@ -380,7 +380,6 @@ class GeometryEditor : IEditorMode
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                 {
                     isToolActive = true;
-                    window.Editor.BeginChange();
                 }
                 
                 if (isToolActive)
@@ -388,7 +387,7 @@ class GeometryEditor : IEditorMode
                     if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                     {
                         isToolActive = false;
-                        window.Editor.EndChange();
+                        window.Editor.MarkChange();
                     }
 
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
