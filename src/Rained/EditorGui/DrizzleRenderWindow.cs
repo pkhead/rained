@@ -8,7 +8,6 @@ namespace RainEd;
 class DrizzleRenderWindow : IDisposable
 {
     public readonly LevelDrizzleRender drizzleRenderer;
-    private readonly RainEd editor;
     private bool isOpen = false;
     private readonly RlManaged.Texture2D[] previewTextures;
     private readonly RlManaged.RenderTexture2D previewComposite;
@@ -40,10 +39,9 @@ class DrizzleRenderWindow : IDisposable
 
     private RlManaged.Shader layerPreviewShader;
 
-    public DrizzleRenderWindow(RainEd editor)
+    public DrizzleRenderWindow()
     {
-        this.editor = editor;
-        drizzleRenderer = new LevelDrizzleRender(editor);
+        drizzleRenderer = new LevelDrizzleRender();
         
         previewTextures = new RlManaged.Texture2D[30];
 
@@ -92,7 +90,7 @@ class DrizzleRenderWindow : IDisposable
 
         var doClose = false;
 
-        drizzleRenderer.Update(editor);
+        drizzleRenderer.Update();
 
         if (ImGui.BeginPopupModal("Render"))
         {

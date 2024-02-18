@@ -110,12 +110,12 @@ class LevelDrizzleRender : IDisposable
     public readonly RlManaged.Image[] RenderLayerPreviews;
     public Action? PreviewUpdated;
 
-    public LevelDrizzleRender(RainEd editor)
+    public LevelDrizzleRender()
     {
-        cameraCount = editor.Level.Cameras.Count;
+        cameraCount = RainEd.Instance.Level.Cameras.Count;
 
         state = RenderState.Initializing;
-        var filePath = editor.CurrentFilePath;
+        var filePath = RainEd.Instance.CurrentFilePath;
         if (string.IsNullOrEmpty(filePath)) throw new Exception("Render called but level wasn't saved");
 
         // create render layer preview images
@@ -128,7 +128,7 @@ class LevelDrizzleRender : IDisposable
             RenderLayerPreviews[i] = RlManaged.Image.GenColor((int)renderW, (int)renderH, Raylib_cs.Color.Black);
         } 
 
-        LevelSerialization.Save(editor, filePath);
+        LevelSerialization.Save(filePath);
 
         threadState = new RenderThread(filePath);
         threadState.StatusChanged += StatusChanged;
@@ -242,7 +242,7 @@ class LevelDrizzleRender : IDisposable
         }
     }
 
-    public void Update(RainEd editor)
+    public void Update()
     {
         while (threadState.Queue.TryDequeue(out ThreadMessage? messageGeneral))
         {
@@ -267,7 +267,7 @@ class LevelDrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFailed msgFail:
-                    editor.ShowError("Error occured while rendering level");
+                    RainEd.Instance.ShowError("Error occured while rendering level");
                     Console.WriteLine("Error occured when rendering level");
                     Console.WriteLine(msgFail.Exception);
                     break;

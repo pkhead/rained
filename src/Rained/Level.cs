@@ -224,8 +224,6 @@ class Effect
 
 class Level
 {
-    private readonly RainEd editor;
-
     public LevelCell[,,] Layers;
     private int _width, _height;
     public int BufferTilesLeft, BufferTilesTop;
@@ -290,10 +288,8 @@ class Level
     public int WaterLevel = -1;
     public bool IsWaterInFront = true; 
 
-    public Level(RainEd editor, int width = 72, int height = 43)
+    public Level(int width = 72, int height = 43)
     {
-        this.editor = editor;
-
         _width = width;
         _height = height;
         BufferTilesLeft = 12;
@@ -323,9 +319,9 @@ class Level
         Raylib.ImageFormat(ref lightMap.Ref(), PixelFormat.UncompressedGrayscale);
     }
 
-    public static Level NewDefaultLevel(RainEd editor)
+    public static Level NewDefaultLevel()
     {
-        var level = new Level(editor, 72, 43);
+        var level = new Level(72, 43);
         level.Cameras.Add(new Camera());
 
         for (int l = 0; l < LayerCount; l++)

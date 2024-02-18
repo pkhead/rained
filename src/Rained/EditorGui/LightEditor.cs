@@ -36,7 +36,7 @@ class LightEditor : IEditorMode
         }
 
         public bool HasChange() => true;
-        public void Apply(RainEd editor, bool useNew)
+        public void Apply(bool useNew)
         {
             if (lightEditor is null) throw new NullReferenceException();
 

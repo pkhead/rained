@@ -7,8 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace RainEd;
 
-class RainEd
+sealed class RainEd
 {
+    public static RainEd Instance;
+
     public bool Running = true;
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
@@ -38,22 +40,27 @@ class RainEd
     public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
 
     public RainEd(string levelPath = "") {
+        if (Instance != null)
+            throw new Exception("Attempt to create more than one RainEd instance");
+        
+        Instance = this;
+
         rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
         TileDatabase = new Tiles.Database();
         EffectsDatabase = new EffectsDatabase();
         
         if (levelPath.Length > 0)
         {
-            level = LevelSerialization.Load(this, levelPath);
+            level = LevelSerialization.Load(levelPath);
         }
         else
         {
-            level = Level.NewDefaultLevel(this);
+            level = Level.NewDefaultLevel();
         }
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
-        editorWindow = new EditorWindow(this);
-        changeHistory = new ChangeHistory(this);
+        editorWindow = new EditorWindow();
+        changeHistory = new ChangeHistory();
 
         UpdateTitle();
         RegisterShortcuts();
@@ -74,7 +81,7 @@ class RainEd
 
             try
             {
-                level = LevelSerialization.Load(this, path);
+                level = LevelSerialization.Load(path);
                 editorWindow.ReloadLevel();
                 changeHistory.Clear();
                 changeHistory.MarkUpToDate();
@@ -103,7 +110,7 @@ class RainEd
 
             try
             {
-                LevelSerialization.Save(this, path);
+                LevelSerialization.Save(path);
                 currentFilePath = path;
                 UpdateTitle();
                 changeHistory.MarkUpToDate();
@@ -265,7 +272,7 @@ class RainEd
             PromptUnsavedChanges(() =>
             {
                 editorWindow.UnloadView();
-                level = Level.NewDefaultLevel(this);
+                level = Level.NewDefaultLevel();
                 editorWindow.ReloadLevel();
                 changeHistory.Clear();
                 changeHistory.MarkUpToDate();
@@ -336,7 +343,7 @@ class RainEd
                 {
                     PromptUnsavedChanges(() =>
                     {
-                        drizzleRenderWindow = new DrizzleRenderWindow(this);
+                        drizzleRenderWindow = new DrizzleRenderWindow();
                     }, false);
                 }
 
@@ -363,7 +370,7 @@ class RainEd
 
                 if (ImGui.MenuItem("Resize Level..."))
                 {
-                    levelResizeWin = new LevelResizeWindow(this);
+                    levelResizeWin = new LevelResizeWindow();
                 }
 
                 ImGui.EndMenu();

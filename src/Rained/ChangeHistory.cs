@@ -4,23 +4,17 @@ namespace RainEd;
 interface IChangeRecord
 {
     bool HasChange();
-    void Apply(RainEd editor, bool useNew);
+    void Apply(bool useNew);
 }
 
 class ChangeHistory
 {
-    private readonly RainEd editor;
-    public Level Level { get => editor.Level; }
+    public Level Level { get => RainEd.Instance.Level; }
 
     private readonly Stack<IChangeRecord> undoStack = new();
     private readonly Stack<IChangeRecord> redoStack = new();
     private Snapshot? oldSnapshot = null;
     private IChangeRecord? upToDate = null;
-
-    public ChangeHistory(RainEd editor)
-    {
-        this.editor = editor;
-    }
 
     public void Clear()
     {
@@ -106,10 +100,10 @@ class ChangeHistory
             return CellChanges.Count > 0 || CameraChange is not null || LightmapChange is not null;
         }
 
-        public void Apply(RainEd editor, bool useNew)
+        public void Apply(bool useNew)
         {
-            var level = editor.Level;
-            editor.Window.EditMode = EditMode;
+            var level = RainEd.Instance.Level;
+            RainEd.Instance.Window.EditMode = EditMode;
 
             // apply cell changes
             foreach (CellChange change in CellChanges)
@@ -171,7 +165,7 @@ class ChangeHistory
     public void BeginChange()
     {
         if (oldSnapshot is not null) throw new Exception("BeginChange() already called");
-        oldSnapshot = new Snapshot(Level, editor.Window.EditMode);    
+        oldSnapshot = new Snapshot(Level, RainEd.Instance.Window.EditMode);    
     }
 
     public void TryEndChange()
@@ -248,7 +242,7 @@ class ChangeHistory
         if (undoStack.Count == 0) return;
         var record = undoStack.Pop();
         redoStack.Push(record);
-        record.Apply(editor, false);
+        record.Apply(false);
     }
 
     public void Redo()
@@ -256,7 +250,7 @@ class ChangeHistory
         if (redoStack.Count == 0) return;
         var record = redoStack.Pop();
         undoStack.Push(record);
-        record.Apply(editor, true);
+        record.Apply(true);
     }
 
     public void MarkUpToDate()

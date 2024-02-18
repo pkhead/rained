@@ -69,10 +69,9 @@ class LevelEditRender
 
     private RlManaged.Texture2D? gridTexture;
 
-    public LevelEditRender(RainEd editor)
+    public LevelEditRender()
     {
-        this.editor = editor;
-
+        editor = RainEd.Instance;
         ReloadGridTexture();
     }
 

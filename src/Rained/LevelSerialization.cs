@@ -5,7 +5,7 @@ namespace RainEd;
 
 static class LevelSerialization
 {
-    public static Level Load(RainEd editor, string path)
+    public static Level Load(string path)
     {
         var levelData = File.ReadAllLines(path);
         var lingoParser = new Lingo.LingoParser();
@@ -36,7 +36,7 @@ static class LevelSerialization
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];
         Lingo.List extraTiles = (Lingo.List) levelProperties.fields["extraTiles"];
 
-        var level = new Level(editor, (int)levelSize.X, (int)levelSize.Y)
+        var level = new Level((int)levelSize.X, (int)levelSize.Y)
         {
             BufferTilesLeft = (int) extraTiles.values[0],
             BufferTilesTop = (int) extraTiles.values[1],
@@ -132,10 +132,10 @@ static class LevelSerialization
                             var tileID = (Vector2) data.values[0];
                             var name = (string) data.values[1];
 
-                            if (!editor.TileDatabase.HasTile(name))
+                            if (!RainEd.Instance.TileDatabase.HasTile(name))
                                 throw new Exception($"Unrecognized tile '{name}'");
                             
-                            var tile = editor.TileDatabase.GetTileFromName(name);
+                            var tile = RainEd.Instance.TileDatabase.GetTileFromName(name);
                             level.Layers[z,x,y].TileHead = tile;
                             break;
                         }
@@ -157,7 +157,7 @@ static class LevelSerialization
             {
                 var nameStr = (string) effectData.fields["nm"];
                 var type = (string) effectData.fields["tp"];
-                var effectInit = editor.EffectsDatabase.GetEffectFromName(nameStr);
+                var effectInit = RainEd.Instance.EffectsDatabase.GetEffectFromName(nameStr);
                 var effect = new Effect(level, effectInit);
                 level.Effects.Add(effect);
 
@@ -353,16 +353,16 @@ static class LevelSerialization
         "Color1", "Color2", "Dead"
     };
 
-    public static void Save(RainEd editor, string path)
+    public static void Save(string path)
     {
         // open text file
         var outputTxtFile = new StreamWriter(path);
 
-        var level = editor.Level;
+        var level = RainEd.Instance.Level;
 
         StringBuilder output = new();
         var newLine = Environment.NewLine;
-        var workLayer = editor.Window.WorkLayer + 1;
+        var workLayer = RainEd.Instance.Window.WorkLayer + 1;
 
         // geometry data
         output.Append('[');

@@ -6,7 +6,6 @@ namespace RainEd;
 
 class LevelResizeWindow
 {
-    private readonly RainEd editor;
     public bool IsWindowOpen = true;
     private int newWidth;
     private int newHeight;
@@ -24,10 +23,9 @@ class LevelResizeWindow
     public int InputBufferBottom { get => newBufB; }
     public Vector2 InputAnchor { get => new(anchorX / 2f, anchorY / 2f); }
 
-    public LevelResizeWindow(RainEd rained)
+    public LevelResizeWindow()
     {
-        editor = rained;
-        var level = editor.Level;
+        var level = RainEd.Instance.Level;
 
         newWidth = level.Width;
         newHeight = level.Height;
@@ -141,7 +139,7 @@ class LevelResizeWindow
 
                         if (rlImGui.ImageButtonRect(
                             "##button",
-                            editor.LevelGraphicsTexture, 20, 20,
+                            RainEd.Instance.LevelGraphicsTexture, 20, 20,
                             new Rectangle(textureX * 20, textureY * 20, 20, 20)
                         ))
                         {
@@ -196,11 +194,11 @@ class LevelResizeWindow
 
     private void Apply()
     {
-        var level = editor.Level;
+        var level = RainEd.Instance.Level;
 
         // call resize through the editor class, so that the
         // edit window is reloaded
-        editor.ResizeLevel(newWidth, newHeight, anchorX - 1, anchorY - 1);
+        RainEd.Instance.ResizeLevel(newWidth, newHeight, anchorX - 1, anchorY - 1);
 
         // don't need to do so with buffer tiles
         level.BufferTilesLeft = newBufL;

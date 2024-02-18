@@ -64,13 +64,13 @@ class EditorWindow
     private RlManaged.RenderTexture2D layerRenderTexture;
     public readonly LevelEditRender LevelRenderer;
 
-    public EditorWindow(RainEd editor)
+    public EditorWindow()
     {
-        Editor = editor;
+        Editor = RainEd.Instance;
         canvasWidget = new(1, 1);
         layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
 
-        LevelRenderer = new LevelEditRender(editor);
+        LevelRenderer = new LevelEditRender();
         editorModes.Add(new EnvironmentEditor(this));
         editorModes.Add(new GeometryEditor(this));
         editorModes.Add(new TileEditor(this));
