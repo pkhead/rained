@@ -101,6 +101,13 @@ class LevelEditRender
         image.Dispose();
     }
 
+    private bool IsInBorder(int x, int y)
+    {
+        return
+            x >= Level.BufferTilesLeft && y >= Level.BufferTilesTop &&
+            x < Level.Width - Level.BufferTilesRight && y < Level.Height - Level.BufferTilesBot;
+    }
+
     public void RenderGeometry(int layer, Color color)
     {
         int viewL = (int) Math.Floor(ViewTopLeft.X);
@@ -344,7 +351,7 @@ class LevelEditRender
                             editor.LevelGraphicsTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
-                            color
+                            IsInBorder(x, y) ? color : new Color(255, 0, 0, 255)
                         );
                     }
                 }
