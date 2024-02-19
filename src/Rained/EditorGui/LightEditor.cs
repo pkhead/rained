@@ -25,12 +25,25 @@ class LightEditor : IEditorMode
     {
         this.window = window;
         ReloadLevel();
+
+        RainEd.Instance.ChangeHistory.Cleared += () =>
+        {
+            changeRecorder?.Dispose();
+            changeRecorder = new ChangeHistory.LightChangeRecorder();
+            changeRecorder.UpdateParametersSnapshot();
+        };
+
+        RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
+        {
+            changeRecorder.UpdateParametersSnapshot();
+        };
     }
 
     public void ReloadLevel()
     {   
         changeRecorder?.Dispose();
         changeRecorder = new ChangeHistory.LightChangeRecorder();
+        changeRecorder.UpdateParametersSnapshot();
     }
 
     public void Load()
@@ -57,8 +70,15 @@ class LightEditor : IEditorMode
             float lightDeg = level.LightAngle / MathF.PI * 180f;
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
+
             ImGui.SliderFloat("Light Angle", ref lightDeg, 0f, 360f, "%.1f deg");
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                changeRecorder.PushParameterChanges();
+            
             ImGui.SliderFloat("Shadow Dist", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                changeRecorder.PushParameterChanges();
+            
             ImGui.PopItemWidth();
 
             level.LightAngle = lightDeg / 180f * MathF.PI;

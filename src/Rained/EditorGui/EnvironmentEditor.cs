@@ -20,6 +20,7 @@ class EnvironmentEditor : IEditorMode
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
             changeRecorder = new();
+            changeRecorder.TakeSnapshot();
         };
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>

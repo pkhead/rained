@@ -3,14 +3,14 @@ using RainEd.Light;
 using System.Numerics;
 namespace RainEd.ChangeHistory;
 
-class LightChangeRecord : IChangeRecord
+class LightMapChangeRecord : IChangeRecord
 {
     public LightChangeRecorder recorder;
 
     public BrushAtom[] atoms;
-    public LightChangeRecord? previous = null;
+    public LightMapChangeRecord? previous = null;
 
-    public LightChangeRecord(BrushAtom[] atoms, LightChangeRecorder recorder)
+    public LightMapChangeRecord(BrushAtom[] atoms, LightChangeRecorder recorder)
     {
         this.recorder = recorder;
         this.atoms = atoms;
@@ -35,11 +35,47 @@ class LightChangeRecord : IChangeRecord
     }
 }
 
+class LightParametersChangeRecord : IChangeRecord
+{
+    private float oldAngle, oldDist;
+    private float newAngle, newDist;
+
+    public LightParametersChangeRecord(
+        float oldAngle, float oldDist,
+        float newAngle, float newDist
+    )
+    {
+        this.oldAngle = oldAngle;
+        this.newAngle = newAngle;
+        this.oldDist = oldDist;
+        this.newDist = newDist;
+    }
+
+    public void Apply(bool useNew)
+    {
+        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Light;
+        var level = RainEd.Instance.Level;
+
+        if (useNew)
+        {
+            level.LightAngle = newAngle;
+            level.LightDistance = newDist;
+        }
+        else
+        {
+            level.LightAngle = oldAngle;
+            level.LightDistance = oldDist;
+        }
+    }
+}
+
 class LightChangeRecorder : IDisposable
 {
     private readonly List<BrushAtom> currentStrokeData = new();
-    public LightChangeRecord? lastStroke = null;
+    public LightMapChangeRecord? lastStroke = null;
     private readonly RlManaged.Texture2D origLightmap;
+    
+    private float oldAngle, oldDist;
 
     public LightChangeRecorder()
     {
@@ -53,13 +89,32 @@ class LightChangeRecorder : IDisposable
         origLightmap.Dispose();
         lastStroke = null;
     }
-
-    /*public void ReloadLevel(RlManaged.RenderTexture2D lightmapRt, RlManaged.Texture2D origLightmap)
+    
+    public void UpdateParametersSnapshot()
     {
-        lastStroke = null;
-        this.lightmapRt = lightmapRt;
-        this.origLightmap = origLightmap;
-    }*/
+        var level = RainEd.Instance.Level;
+
+        oldAngle = level.LightAngle;
+        oldDist = level.LightDistance;
+    }
+
+    public void PushParameterChanges()
+    {
+        var level = RainEd.Instance.Level;
+
+        var newAngle = level.LightAngle;
+        var newDist = level.LightDistance;
+
+        if (newAngle != oldAngle || newDist != oldDist)
+        {
+            RainEd.Instance.ChangeHistory.Push(new LightParametersChangeRecord(
+                oldAngle, oldDist,
+                newAngle, newDist
+            ));
+
+            UpdateParametersSnapshot();
+        }
+    }
 
     // record brush atom if last atom is different
     public void RecordAtom(BrushAtom atom)
@@ -77,7 +132,7 @@ class LightChangeRecorder : IDisposable
     {
         if (currentStrokeData.Count == 0) return;
 
-        var stroke = new LightChangeRecord(currentStrokeData.ToArray(), this);
+        var stroke = new LightMapChangeRecord(currentStrokeData.ToArray(), this);
         currentStrokeData.Clear();
 
         RainEd.Instance.ChangeHistory.Push(stroke);
@@ -97,7 +152,7 @@ class LightChangeRecorder : IDisposable
         Raylib.EndShaderMode();
         Raylib.EndTextureMode();
 
-        static void recurse(LightChangeRecord? thisStroke)
+        static void recurse(LightMapChangeRecord? thisStroke)
         {
             if (thisStroke is null) return;
             recurse(thisStroke.previous);
