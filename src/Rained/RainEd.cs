@@ -139,6 +139,10 @@ sealed class RainEd
         level.Resize(newWidth, newHeight, anchorX, anchorY);
         Window.ReloadLevel();
         changeHistory.Clear();
+
+        Window.LevelRenderer.MarkNeedsRedraw(0);
+        Window.LevelRenderer.MarkNeedsRedraw(1);
+        Window.LevelRenderer.MarkNeedsRedraw(2);
     }
 
     private void ReloadLevel()
@@ -146,6 +150,9 @@ sealed class RainEd
         editorWindow.ReloadLevel();
         changeHistory.Clear();
         changeHistory.MarkUpToDate();
+        Window.LevelRenderer.MarkNeedsRedraw(0);
+        Window.LevelRenderer.MarkNeedsRedraw(1);
+        Window.LevelRenderer.MarkNeedsRedraw(2);
     }
 
     private Action? promptCallback;

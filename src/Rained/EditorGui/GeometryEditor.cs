@@ -616,6 +616,7 @@ class GeometryEditor : IEditorMode
             }
 
             level.Layers[workLayer, tx, ty] = cell;
+            window.LevelRenderer.MarkNeedsRedraw(workLayer);
         }
     }
 

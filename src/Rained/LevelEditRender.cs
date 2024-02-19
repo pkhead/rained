@@ -71,6 +71,7 @@ class LevelEditRender
     
     private Raylib_cs.Material geoMaterial;
     private RlManaged.Mesh[] geoMeshes;
+    private readonly bool[] dirtyMeshLayers; // if meshes need updating
 
     private readonly List<Vector3> verticesBuf = new();
     private readonly List<Color> colorsBuf = new();
@@ -83,9 +84,11 @@ class LevelEditRender
         geoMaterial = Raylib.LoadMaterialDefault();
 
         geoMeshes = new RlManaged.Mesh[3];
+        dirtyMeshLayers = new bool[3];
+
         for (int i = 0; i < 3; i++)
         {
-            ReloadGeometryMesh(i);
+            dirtyMeshLayers[i] = true;
         }
     }
 
@@ -117,6 +120,11 @@ class LevelEditRender
 
     public void ReloadGeometryMesh(int layer)
     {
+        if (!dirtyMeshLayers[layer]) return;
+        dirtyMeshLayers[layer] = false;
+
+        Console.WriteLine($"Remesh geometry for layer {layer}");
+
         List<Vector3> vertices = verticesBuf;
         List<Color> colors = colorsBuf;
         vertices.Clear();
@@ -314,6 +322,11 @@ class LevelEditRender
         var mat = Matrix4x4.Identity;
         Rlgl.DrawRenderBatchActive(); // should raylib not do this automatically??
         Raylib.DrawMesh(geoMeshes[layer], geoMaterial, mat);
+    }
+
+    public void MarkNeedsRedraw(int layer)
+    {
+        dirtyMeshLayers[layer] = true;
     }
 
     public void RenderObjects(Color color)

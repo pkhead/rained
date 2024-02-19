@@ -909,6 +909,12 @@ class TileEditor : IEditorMode
 
         // place tile root
         level.Layers[layer, tileRootX, tileRootY].TileHead = tile;
+
+        if (placeGeometry)
+        {
+            window.LevelRenderer.MarkNeedsRedraw(layer);
+            window.LevelRenderer.MarkNeedsRedraw(layer+1);
+        }
     }
 
     private void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
@@ -959,5 +965,11 @@ class TileEditor : IEditorMode
 
         // remove tile root
         level.Layers[layer, tileRootX, tileRootY].TileHead = null;
+
+        if (removeGeometry)
+        {
+            window.LevelRenderer.MarkNeedsRedraw(layer);
+            window.LevelRenderer.MarkNeedsRedraw(layer+1);
+        }
     }
 }

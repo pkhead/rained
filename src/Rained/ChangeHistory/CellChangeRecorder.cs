@@ -22,6 +22,7 @@ class CellChangeRecord : IChangeRecord
         foreach (CellChange change in CellChanges)
         {
             level.Layers[change.Layer, change.X, change.Y] = useNew ? change.NewState : change.OldState;
+            RainEd.Instance.Window.LevelRenderer.MarkNeedsRedraw(change.Layer);
         }
     }
 }
