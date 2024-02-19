@@ -11,7 +11,7 @@ class TileEditor : IEditorMode
     public string Name { get => "Tiles"; }
 
     private readonly EditorWindow window;
-    private Tiles.TileData? selectedTile;
+    private TileData? selectedTile;
     private int selectedMaterialIdx = 0;
     private bool isToolActive = false;
 
@@ -31,7 +31,9 @@ class TileEditor : IEditorMode
     }
 
     // available groups (available = passes search)
-    private List<int> availableGroups = new();
+    private readonly List<int> availableGroups = new();
+
+    private int materialBrushSize = 1;
 
     public TileEditor(EditorWindow window) {
         this.window = window;
@@ -50,7 +52,7 @@ class TileEditor : IEditorMode
     }
 
     /*
-    PROTOTYPE VERSION
+    COLLAPSING HEADER TILE SELECTOR UI
 
     public void DrawToolbar() {
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -158,7 +160,6 @@ class TileEditor : IEditorMode
         }
     }
     */
-
 
     private void ProcessSearch()
     {
@@ -659,27 +660,64 @@ class TileEditor : IEditorMode
             }
 
             // render selected material
-            else if (window.IsMouseInLevel())
+            else
             {
+                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                {
+                    window.OverrideMouseWheel = true;
+
+                    if (Raylib.GetMouseWheelMove() > 0.0f)
+                        materialBrushSize += 2;
+                    else if (Raylib.GetMouseWheelMove() < 0.0f)
+                        materialBrushSize -= 2;
+                    
+                    materialBrushSize = Math.Clamp(materialBrushSize, 1, 21);
+                }
+
                 // draw grid cursor
+                int cursorLeft = window.MouseCx - materialBrushSize / 2;
+                int cursorTop = window.MouseCy - materialBrushSize / 2;
+
                 Raylib.DrawRectangleLinesEx(
-                    new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
+                    new Rectangle(
+                        cursorLeft * Level.TileSize,
+                        cursorTop * Level.TileSize,
+                        Level.TileSize * materialBrushSize,
+                        Level.TileSize * materialBrushSize
+                    ),
                     1f / window.ViewZoom,
                     LevelEditRender.MaterialColors[selectedMaterialIdx]
                 );
 
                 // place material
-                if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                int placeMode = 0;
+                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    placeMode = 1;
+                else if (ImGui.IsMouseDown(ImGuiMouseButton.Right))
+                    placeMode = 2;
+                
+                if (placeMode != 0)
                 {
-                    level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = (Material) selectedMaterialIdx + 1;
-                }
+                    // place or remove materials inside cursor
+                    for (int x = cursorLeft; x <= window.MouseCx + materialBrushSize / 2; x++)
+                    {
+                        for (int y = cursorTop; y <= window.MouseCy + materialBrushSize / 2; y++)
+                        {
+                            if (!level.IsInBounds(x, y)) continue;
+                            ref var cell = ref level.Layers[window.WorkLayer, x, y];
 
-                // remove material
-                if (Raylib.IsMouseButtonDown(MouseButton.Right) &&
-                    !level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].HasTile()
-                )
-                {
-                    level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy].Material = Material.None;
+                            if (cell.HasTile()) continue;
+
+                            if (placeMode == 1)
+                            {
+                                cell.Material = (Material) selectedMaterialIdx + 1;
+                            }
+                            else
+                            {
+                                cell.Material = Material.None;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -812,7 +850,7 @@ class TileEditor : IEditorMode
     }
 
     private void PlaceTile(
-        Tiles.TileData tile,
+        TileData tile,
         int tileLeft, int tileTop,
         int layer, int tileRootX, int tileRootY,
         bool placeGeometry

@@ -1,5 +1,6 @@
 Overall:
 - proper logging
+- rename TileData class to Tile
 - undo/redo for level resize
 - open file browser in directory of current level
 - help pages/hints/tooltips/whatever
@@ -22,16 +23,11 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- material brush size
 - rect material place
 
 Camera Editor:
 - way to duplicate camera corner transform
 - Select a camera first, then transform corners
-
-Environment Editor:
-- load seed and light type
-- undo/redo
 
 Light Editor:
 - light parameters undo/redo
@@ -97,20 +93,31 @@ effects matrix format
 
 KEYBINDS:
   General:
-    Tab - Switch Layer
     Arrow Keys - Scroll
     Scroll Wheel - Zoom
     Middle Mouse Button - Pan
-    1 - Toggle Level Properties
+    Ctrl + Z - Undo
+    Ctrl + Shift + Z / Ctrl + Y - Redo
+    1 - Environment Editor
     2 - Geometry Editor
     3 - Tile Editor
+    4 - Camera Editor
+    5 - Light Editor
+    6 - Effects Editor
+    7 - Props Editor
   
   Geometry Editor:
-    WASD - Select
-    LMB - Place/Remove
+    WASD - Browse tool selector
+    LMB - Place/Remove (Context-Specific)
     Shift+LMB - Rect Fill (Context-Specific)
+    E - Toggle Layer 1
+    R - Toggle Layer 2
+    T - Toggle Layer 3
 
   Tile Editor:
+    TAB - Switch Layer
+    WASD - Browse tile selector
+    Shift + MouseWheel - Change material brush size
     LMB - Place Tile/Material
     RMB - Remove Tile/Material
     G+RMB - Remove Tile and Geometry
@@ -130,6 +137,6 @@ KEYBINDS:
 
   Effects Editor:
     LMB - Paint effect
-    Space + LMB - Paint effect stronger
+    Shift + LMB - Paint effect stronger
     RMB - Erase effect
     Shift + MouseWheel - Change brush size
