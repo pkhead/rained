@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Raylib_cs;
@@ -256,5 +257,130 @@ namespace RlManaged
         }
 
         public static implicit operator Raylib_cs.Shader(Shader tex) => tex.raw;
+    }
+
+    class Mesh : IDisposable
+    {
+        private enum MeshIndex : int
+        {
+            Vertices = 0,
+            TexCoords = 1,
+            Normals = 2,
+            Colors = 3,
+            Tangents = 4,
+            TexCoords2 = 5,
+            Indices = 6,
+        }
+
+        private Raylib_cs.Mesh raw;
+        private bool _disposed = false;
+
+        public Mesh()
+        {
+            raw = new Raylib_cs.Mesh();
+        }
+
+        public unsafe void SetVertices(float[] vertices)
+        {
+            if (vertices.Length % 3 != 0)
+                throw new Exception("Vertex array is not a multiple of 3");
+
+            if (raw.Vertices != null)
+                Marshal.FreeHGlobal((nint) raw.Vertices);
+
+            raw.VertexCount = vertices.Length / 3;
+            raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * sizeof(float));
+            Marshal.Copy(vertices, 0, (IntPtr) raw.Vertices, vertices.Length);
+        }
+
+        public unsafe void SetVertices(Vector3[] vertices)
+        {
+            if (raw.Vertices != null)
+                Marshal.FreeHGlobal((nint) raw.Vertices);
+
+            raw.VertexCount = vertices.Length;
+            raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * 3 * sizeof(float));
+
+            var k = 0;
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                raw.Vertices[k++] = vertices[i].X;
+                raw.Vertices[k++] = vertices[i].Y;
+                raw.Vertices[k++] = vertices[i].Z;
+            }
+        }
+
+        public unsafe void UpdateVertices()
+        {
+            Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Vertices, raw.Vertices, raw.VertexCount * 3 * sizeof(float), 0);
+        }
+
+        public unsafe void SetIndices(ushort[] indices)
+        {
+            if (indices.Length % 3 != 0)
+                throw new Exception("Indices array is not a multiple of 3");
+            
+            if (raw.Indices != null)
+                Marshal.FreeHGlobal((nint) raw.Indices);
+            
+            raw.TriangleCount = indices.Length / 3;
+            raw.Indices = (ushort*) Marshal.AllocHGlobal(indices.Length * sizeof(ushort));
+            
+            fixed (ushort* arrPtr = indices)
+            {
+                Buffer.MemoryCopy(arrPtr, raw.Indices, indices.Length * sizeof(ushort), indices.Length * sizeof(ushort));
+            }
+        }
+
+        public unsafe void UpdateIndices()
+        {
+            Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Indices, raw.Indices, raw.TriangleCount * 3 * sizeof(float), 0);
+        }
+
+        public unsafe void SetColors(byte[] colors)
+        {
+            if (colors.Length % 4 != 0)
+                throw new Exception("Colors array is not a multiple of 4");
+            
+            if (raw.Colors != null)
+                Marshal.FreeHGlobal((nint) raw.Colors);
+            
+            raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * sizeof(byte));
+            Marshal.Copy(colors, 0, (nint) raw.Colors, colors.Length);
+        }
+
+        public unsafe void UpdateColors()
+        {
+            Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Colors, raw.Colors, raw.VertexCount * 4 * sizeof(byte), 0);
+        }
+
+        public void UploadMesh(bool dynamic)
+        {
+            Raylib.UploadMesh(ref raw, dynamic);
+        }
+
+        ~Mesh() => Dispose(false);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing)
+            {
+                throw new Exception("Must manually call Mesh.Dispose()");
+            }
+
+            if (!_disposed)
+            {
+                _disposed = true;
+                Raylib.UnloadMesh(ref raw);
+            }
+        }
+
+        public static implicit operator Raylib_cs.Mesh(Mesh mesh) => mesh.raw;
     }
 }

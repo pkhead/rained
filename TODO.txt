@@ -1,4 +1,5 @@
 Overall:
+- gc free queue? to free on main thread? (how?)
 - proper logging
 - rename TileData class to Tile
 - undo/redo for level resize
