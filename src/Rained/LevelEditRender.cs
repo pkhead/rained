@@ -68,11 +68,21 @@ class LevelEditRender
     private float lastViewZoom = 0f;
 
     private RlManaged.Texture2D gridTexture = null!;
+    private Raylib_cs.Material geoMaterial;
+    private RlManaged.Mesh[] geoMeshes;
 
     public LevelEditRender()
     {
         editor = RainEd.Instance;
         ReloadGridTexture();
+
+        geoMaterial = Raylib.LoadMaterialDefault();
+
+        geoMeshes = new RlManaged.Mesh[3];
+        for (int i = 0; i < 3; i++)
+        {
+            ReloadGeometryMesh(i);
+        }
     }
 
     public void ReloadGridTexture()
@@ -101,25 +111,65 @@ class LevelEditRender
         image.Dispose();
     }
 
-    private bool IsInBorder(int x, int y)
+    public void ReloadGeometryMesh(int layer)
     {
-        return
-            x >= Level.BufferTilesLeft && y >= Level.BufferTilesTop &&
-            x < Level.Width - Level.BufferTilesRight && y < Level.Height - Level.BufferTilesBot;
-    }
+        List<Vector3> vertices = new();
+        List<Color> colors = new();
+        List<ushort> indices = new();
+        int meshIndex = 0;
 
-    public void RenderGeometry(int layer, Color color)
-    {
-        int viewL = (int) Math.Floor(ViewTopLeft.X);
-        int viewT = (int) Math.Floor(ViewTopLeft.Y);
-        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
-        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
-
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
+        void drawRect(float x, float y, float w, float h, Color color)
         {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
+            vertices.Add(new Vector3(x, y, 0));
+            vertices.Add(new Vector3(x, y+h, 0));
+            vertices.Add(new Vector3(x+w, y+h, 0));
+            vertices.Add(new Vector3(x+w, y, 0));
+
+            colors.Add(color);
+            colors.Add(color);
+            colors.Add(color);
+            colors.Add(color);
+
+            indices.Add((ushort)(meshIndex + 0));
+            indices.Add((ushort)(meshIndex + 1));
+            indices.Add((ushort)(meshIndex + 2));
+
+            indices.Add((ushort)(meshIndex + 2));
+            indices.Add((ushort)(meshIndex + 3));
+            indices.Add((ushort)(meshIndex + 0));
+
+            meshIndex += 4;
+        }
+
+        void drawRectLines(float x, float y, float w, float h, Color color)
+        {
+            drawRect(x, y, 1, h, color);
+            drawRect(x, y+h, w, 1, color);
+            drawRect(x+w-1, y, 1, h, color);
+            drawRect(x, y, w, 1, color);
+        }
+
+        void drawTri(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
+        {
+            vertices.Add(new Vector3(v1.X, v1.Y, 0));
+            vertices.Add(new Vector3(v2.X, v2.Y, 0));
+            vertices.Add(new Vector3(v3.X, v3.Y, 0));
+
+            colors.Add(color);
+            colors.Add(color);
+            colors.Add(color);
+
+            indices.Add((ushort)(meshIndex + 0));
+            indices.Add((ushort)(meshIndex + 1));
+            indices.Add((ushort)(meshIndex + 2));
+            meshIndex += 3;
+        }
+
+        for (int x = 0; x < Level.Width; x++)
+        {
+            for (int y = 0; y < Level.Height; y++)
             {
-                ref LevelCell c = ref Level.Layers[layer ,x,y];
+                ref LevelCell c = ref Level.Layers[layer,x,y];
 
                 var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
                 var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
@@ -134,83 +184,83 @@ class LevelEditRender
                             // this is done by not drawing on the space where there is a beam
                             if (hasHBeam && hasVBeam)
                             {
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, 8, 8, color);
-                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, color);
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, color);
-                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, color);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, 8, Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, Color.White);
                             }
                             else if (hasHBeam)
                             {
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, color);
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, color);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, Color.White);
                             }
                             else if (hasVBeam)
                             {
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, color);
-                                Raylib.DrawRectangle(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, color);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, Color.White);
                             }
                             else
                             {
-                                Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
                             }
                         }
                         else
                         {
                             // view obscured beams is off, draw as normal
-                            Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                            drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
                         }
 
                         break;
                         
                     case CellType.Platform:
-                        Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, color);
+                        drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, Color.White);
                         break;
                     
                     case CellType.Glass:
-                        Raylib.DrawRectangleLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, color);
+                        drawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
                         break;
 
                     case CellType.ShortcutEntrance:
                         // draw a lighter square
-                        Raylib.DrawRectangle(
+                        drawRect(
                             x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                            new Color(color.R, color.G, color.B, color.A / 2)
+                            new Color(255, 255, 255, 127)
                         );
                         break;
 
                     case CellType.SlopeLeftDown:
-                        Raylib.DrawTriangle(
+                        drawTri(
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
-                            color
+                            Color.White
                         );
                         break;
 
                     case CellType.SlopeLeftUp:
-                        Raylib.DrawTriangle(
+                        drawTri(
                             new Vector2(x, y+1) * Level.TileSize,
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
-                            color
+                            Color.White
                         );
                         break;
 
                     case CellType.SlopeRightDown:
-                        Raylib.DrawTriangle(
+                        drawTri(
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            color
+                            Color.White
                         );
                         break;
 
                     case CellType.SlopeRightUp:
-                        Raylib.DrawTriangle(
+                        drawTri(
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            color
+                            Color.White
                         );
                         break;
                 }
@@ -220,17 +270,58 @@ class LevelEditRender
                     // draw horizontal beam
                     if (hasHBeam)
                     {
-                        Raylib.DrawRectangle(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, color);
+                        drawRect(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, Color.White);
                     }
 
                     // draw vertical beam
                     if (hasVBeam)
                     {
-                        Raylib.DrawRectangle(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, color);
+                        drawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, Color.White);
                     }
                 }
             }
         }
+        
+        if (geoMeshes[layer] == null)
+        {
+            RlManaged.Mesh geoMesh;
+            geoMeshes[layer] = geoMesh = new RlManaged.Mesh();
+            geoMesh.SetVertices(vertices.ToArray());
+            geoMesh.SetColors(colors.ToArray());
+            geoMesh.SetIndices(indices.ToArray());
+            geoMesh.UploadMesh(true);    
+        }
+        else
+        {
+            RlManaged.Mesh geoMesh = geoMeshes[layer];
+            geoMesh.SetVertices(vertices.ToArray());
+            geoMesh.SetColors(colors.ToArray());
+            geoMesh.SetIndices(indices.ToArray());
+            geoMesh.UpdateVertices();
+            geoMesh.UpdateColors();
+            geoMesh.UpdateIndices();
+        }
+    }
+
+    private bool IsInBorder(int x, int y)
+    {
+        return
+            x >= Level.BufferTilesLeft && y >= Level.BufferTilesTop &&
+            x < Level.Width - Level.BufferTilesRight && y < Level.Height - Level.BufferTilesBot;
+    }
+
+    public void RenderGeometry(int layer, Color color)
+    {
+        ReloadGeometryMesh(layer);
+
+        unsafe
+        {
+            geoMaterial.Maps[(int) MaterialMapIndex.Diffuse].Color = color;
+        }
+
+        var mat = Matrix4x4.Identity;
+        Rlgl.DrawRenderBatchActive(); // should raylib not do this automatically??
+        Raylib.DrawMesh(geoMeshes[layer], geoMaterial, mat);
     }
 
     public void RenderObjects(Color color)

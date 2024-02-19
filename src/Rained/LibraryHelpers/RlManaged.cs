@@ -280,7 +280,7 @@ namespace RlManaged
             raw = new Raylib_cs.Mesh();
         }
 
-        public unsafe void SetVertices(float[] vertices)
+        /*public unsafe void SetVertices(float[] vertices)
         {
             if (vertices.Length % 3 != 0)
                 throw new Exception("Vertex array is not a multiple of 3");
@@ -291,7 +291,7 @@ namespace RlManaged
             raw.VertexCount = vertices.Length / 3;
             raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * sizeof(float));
             Marshal.Copy(vertices, 0, (IntPtr) raw.Vertices, vertices.Length);
-        }
+        }*/
 
         public unsafe void SetVertices(Vector3[] vertices)
         {
@@ -337,7 +337,7 @@ namespace RlManaged
             Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Indices, raw.Indices, raw.TriangleCount * 3 * sizeof(float), 0);
         }
 
-        public unsafe void SetColors(byte[] colors)
+        /*public unsafe void SetColors(byte[] colors)
         {
             if (colors.Length % 4 != 0)
                 throw new Exception("Colors array is not a multiple of 4");
@@ -347,6 +347,23 @@ namespace RlManaged
             
             raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * sizeof(byte));
             Marshal.Copy(colors, 0, (nint) raw.Colors, colors.Length);
+        }*/
+
+        public unsafe void SetColors(Color[] colors)
+        {
+            if (raw.Colors != null)
+                Marshal.FreeHGlobal((nint) raw.Colors);
+            
+            raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * 4 * sizeof(byte));
+            
+            int k = 0;
+            for (int i = 0; i < colors.Length; i++)
+            {
+                raw.Colors[k++] = colors[i].R;
+                raw.Colors[k++] = colors[i].G;
+                raw.Colors[k++] = colors[i].B;
+                raw.Colors[k++] = colors[i].A;
+            }
         }
 
         public unsafe void UpdateColors()
