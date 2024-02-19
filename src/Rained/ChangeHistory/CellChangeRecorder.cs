@@ -33,7 +33,7 @@ class CellChangeRecorder
     public void BeginChange()
     {
         if (snapshotLayers != null)
-            throw new Exception("CameraChangeRecorder.BeginChange() is already active");
+            throw new Exception("CameraChangeRecorder.BeginChange() called twice");
 
         snapshotLayers = (LevelCell[,,]) RainEd.Instance.Level.Layers.Clone();
     }
@@ -78,7 +78,7 @@ class CellChangeRecorder
     public void PushChange()
     {
         if (snapshotLayers is null)
-            throw new Exception("CellChangeRecorder.PushChange() called, but recorder is not active");
+            throw new Exception("CellChangeRecorder.PushChange() called twice");
         
         TryPushChange();
     }
