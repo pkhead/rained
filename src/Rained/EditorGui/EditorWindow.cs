@@ -77,6 +77,23 @@ class EditorWindow
 
     private ChangeHistory.CellChangeRecorder cellChangeRecorder;
     public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
+
+    public IEditorMode GetEditor(int editMode)
+    {
+        return editorModes[editMode];
+    }
+
+    public IEditorMode GetEditor(EditModeEnum editMode) => GetEditor((int) editMode);
+
+    public T GetEditor<T>()
+    {
+        foreach (var editor in editorModes)
+        {
+            if (editor is T subclass) return subclass;
+        }
+        
+        throw new Exception("Could not find editor mode");
+    }
     
     public EditorWindow()
     {

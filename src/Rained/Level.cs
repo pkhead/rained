@@ -158,7 +158,7 @@ class Effect
     public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
     public int Seed;
 
-    public int width, height;
+    private int width, height;
     public int Width { get => width; }
     public int Height { get => height; }
     public float[,] Matrix;

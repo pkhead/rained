@@ -13,6 +13,8 @@ class EffectsEditor : IEditorMode
     private int selectedEffect = -1;
     private string searchQuery = string.Empty;
 
+    public int SelectedEffect { get => selectedEffect; set => selectedEffect = value; }
+
     private RlManaged.Texture2D matrixTexture;
     private RlManaged.Image matrixImage;
 
@@ -37,6 +39,9 @@ class EffectsEditor : IEditorMode
 
     private int brushSize = 4;
     private Vector2 lastBrushPos = new();
+    private bool isToolActive = false;
+
+    private ChangeHistory.EffectsChangeRecorder changeRecorder;
 
     public EffectsEditor(EditorWindow window)
     {
@@ -49,6 +54,14 @@ class EffectsEditor : IEditorMode
         var level = window.Editor.Level;
         matrixImage = RlManaged.Image.GenColor(level.Width, level.Height, Color.Black);
         matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
+
+        // create change recorder
+        changeRecorder = new();
+
+        RainEd.Instance.ChangeHistory.Cleared += () =>
+        {
+            changeRecorder = new();
+        };
     }
 
     public void ReloadLevel()
@@ -63,12 +76,19 @@ class EffectsEditor : IEditorMode
         matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
     }
 
-    private static string[] layerModeNames = new string[]
+    public void Unload()
+    {
+        changeRecorder.TryPushListChange();
+        changeRecorder.TryPushMatrixChange();
+        isToolActive = false;
+    }
+
+    private static readonly string[] layerModeNames = new string[]
     {
         "All", "1", "2", "3", "1+2", "2+3"
     };
 
-    private static string[] plantColorNames = new string[]
+    private static readonly string[] plantColorNames = new string[]
     {
         "Color1", "Color2", "Dead"
     };
@@ -165,6 +185,9 @@ class EffectsEditor : IEditorMode
                             selectedEffect = i;
 
                         // drag to reorder items
+                        if (ImGui.IsItemActivated())
+                            changeRecorder.BeginListChange();
+                        
                         if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
                         {
                             var inext = i + (ImGui.GetMouseDragDelta(0).Y < 0f ? -1 : 1);
@@ -179,6 +202,9 @@ class EffectsEditor : IEditorMode
                             }   
                         }
 
+                        if (ImGui.IsItemDeactivated())
+                            changeRecorder.PushListChange();
+
                         // right-click to delete
                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
                             deleteRequest = i;
@@ -188,8 +214,10 @@ class EffectsEditor : IEditorMode
 
                     if (deleteRequest >= 0)
                     {
+                        changeRecorder.BeginListChange();
                         level.Effects.RemoveAt(deleteRequest);
                         selectedEffect = -1;
+                        changeRecorder.PushListChange();
                     }
                 }
 
@@ -306,7 +334,7 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
     }
 
-    private float GetBrushPower(int cx, int cy, int bsize, int x, int y)
+    private static float GetBrushPower(int cx, int cy, int bsize, int x, int y)
     {
         var dx = x - cx;
         var dy = y - cy;
@@ -316,6 +344,9 @@ class EffectsEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
         window.BeginLevelScissorMode();
+
+        bool wasToolActive = isToolActive;
+        isToolActive = false;
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
@@ -395,6 +426,9 @@ class EffectsEditor : IEditorMode
                 
                 if (brushFac != 0.0f)
                 {
+                    if (!wasToolActive) changeRecorder.BeginMatrixChange(effect);
+                    isToolActive = true;
+
                     if (new Vector2(bcx, bcy) != lastBrushPos)
                     {
                         lastBrushPos.X = bcx;
@@ -489,12 +523,17 @@ class EffectsEditor : IEditorMode
 
         levelRender.RenderBorder();
         Raylib.EndScissorMode();
+
+        if (!isToolActive && wasToolActive)
+            changeRecorder.PushMatrixChange();
     }
 
     private void AddEffect(EffectInit init)
     {
+        changeRecorder.BeginListChange();
         var level = window.Editor.Level;
         selectedEffect = level.Effects.Count;
         level.Effects.Add(new Effect(level, init));
+        changeRecorder.PushListChange();
     }
 }
