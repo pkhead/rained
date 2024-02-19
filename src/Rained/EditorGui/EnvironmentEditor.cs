@@ -15,29 +15,28 @@ class EnvironmentEditor : IEditorMode
     {
         this.window = window;
         changeRecorder = new();
+        changeRecorder.TakeSnapshot();
 
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
             changeRecorder = new();
         };
+
+        RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
+        {
+            changeRecorder.TakeSnapshot();
+        };
     }
 
     public void Unload()
     {
-        changeRecorder.TryPushChange();
+        changeRecorder.PushChange();
     }
 
     private void RecordItemChanges()
     {
-        if (ImGui.IsItemActivated())
-        {
-            Console.WriteLine("Activated");
-            changeRecorder.BeginChange();
-        }
-
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
-            Console.WriteLine("DeactivatedAfterEdit");
             changeRecorder.PushChange();
         }
     }
@@ -96,7 +95,6 @@ class EnvironmentEditor : IEditorMode
         {
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
             {
-                if (!wasDragging) changeRecorder.BeginChange();
                 isDragging = true;
 
                 var my = Math.Clamp(window.MouseCy, -1, level.Height - level.BufferTilesBot);

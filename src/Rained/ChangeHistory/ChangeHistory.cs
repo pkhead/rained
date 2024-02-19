@@ -12,6 +12,7 @@ class ChangeHistory
     private IChangeRecord? upToDate = null;
 
     public event Action? Cleared = null;
+    public event Action? UndidOrRedid = null; // WTF DO I CALL THIS!?!?
 
     public void Clear()
     {
@@ -33,6 +34,7 @@ class ChangeHistory
         var record = undoStack.Pop();
         redoStack.Push(record);
         record.Apply(false);
+        UndidOrRedid?.Invoke();
     }
 
     public void Redo()
@@ -41,6 +43,7 @@ class ChangeHistory
         var record = redoStack.Pop();
         undoStack.Push(record);
         record.Apply(true);
+        UndidOrRedid?.Invoke();
     }
 
     public void MarkUpToDate()
