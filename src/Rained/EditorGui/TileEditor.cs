@@ -218,16 +218,21 @@ class TileEditor : IEditorMode
                 window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
             }
 
-            // default material dropdown
+            // default material button (or press E)
             int defaultMat = (int) window.Editor.Level.DefaultMaterial - 1;
             ImGui.TextUnformatted($"Default Material: {Level.MaterialNames[defaultMat]}");
 
             if (selectedTile != null)
                 ImGui.BeginDisabled();
             
-            if (ImGui.Button("Set Selected Material as Default"))
+            if ((ImGui.Button("Set Selected Material as Default") || ImGui.IsKeyPressed(ImGuiKey.E)) && selectedTile == null)
             {
-                window.Editor.Level.DefaultMaterial = (Material)(selectedMaterialIdx + 1);
+                var oldMat = window.Editor.Level.DefaultMaterial;
+                var newMat = (Material)(selectedMaterialIdx + 1);
+                window.Editor.Level.DefaultMaterial = newMat;
+
+                if (oldMat != newMat)
+                    RainEd.Instance.ChangeHistory.Push(new ChangeHistory.DefaultMaterialChangeRecord(oldMat, newMat));
             }
 
             if (ImGui.IsItemHovered() && selectedTile != null)
