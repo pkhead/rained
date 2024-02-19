@@ -45,6 +45,15 @@ static class LevelSerialization
             DefaultMedium = (int) levelMiscData.fields["defaultTerrain"] != 0
         };
 
+        // read tile seed and light type
+        {
+            var seed = (int) levelProperties.fields["tileSeed"];
+            level.TileSeed = seed;
+
+            var light = (int) levelProperties.fields["light"];
+            level.HasSunlight = light != 0;
+        }
+
         // read level geometry
         int x, y, z;
         x = 0;

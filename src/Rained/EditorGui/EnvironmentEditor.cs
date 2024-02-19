@@ -47,7 +47,7 @@ class EnvironmentEditor : IEditorMode
 
         if (ImGui.Begin("Environment", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            ImGui.Text("Graphics Random Seed");
+            ImGui.Text("Tile Random Seed");
             ImGui.SetNextItemWidth(-0.001f);
 
             ImGui.SliderInt("##seed", ref level.TileSeed, 0, 400, "%i", ImGuiSliderFlags.AlwaysClamp);
