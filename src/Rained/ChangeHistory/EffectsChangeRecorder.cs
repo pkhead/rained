@@ -1,6 +1,31 @@
-using Drizzle.Lingo.Runtime.Xtra;
-using RainEd;
 namespace RainEd.ChangeHistory;
+
+struct EffectConfigData
+{
+    public Effect.LayerMode Layer;
+    public bool Is3D;
+    public int PlantColor;
+    public int CustomValue;
+    public int Seed;
+
+    public EffectConfigData(Effect effect)
+    {
+        Layer = effect.Layer;
+        Is3D = effect.Is3D;
+        PlantColor = effect.PlantColor;
+        CustomValue = effect.CustomValue;
+        Seed = effect.Seed;
+    }
+
+    public readonly void Apply(Effect effect)
+    {
+        effect.Layer = Layer;
+        effect.Is3D = Is3D;
+        effect.PlantColor = PlantColor;
+        effect.CustomValue = CustomValue;
+        effect.Seed = Seed;
+    }
+};
 
 class EffectMatrixChangeRecord : IChangeRecord
 {
@@ -66,13 +91,39 @@ class EffectsListChangeRecord : IChangeRecord
     }
 }
 
+class EffectConfigChangeRecord : IChangeRecord
+{
+    private readonly Effect effect;
+    private readonly EffectConfigData oldConfig;
+    private readonly EffectConfigData newConfig;
+
+    public EffectConfigChangeRecord(Effect effect, EffectConfigData oldConfig, EffectConfigData newConfig)
+    {
+        this.effect = effect;
+        this.oldConfig = oldConfig;
+        this.newConfig = newConfig;
+    }
+
+    public void Apply(bool useNew)
+    {
+        var fxList = RainEd.Instance.Level.Effects;
+        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Effect;
+        RainEd.Instance.Window.GetEditor<EffectsEditor>().SelectedEffect = fxList.IndexOf(effect);
+
+        var target = useNew ? newConfig : oldConfig;
+        target.Apply(effect);
+    }
+}
+
 class EffectsChangeRecorder
 {
     private Effect? activeEffect = null;
     private float[,] snapshot = new float[0,0];
-
     private Effect[]? oldFxList = null;
     private int selectedEffect;
+    
+    private Effect? activeConfigEffect = null;
+    private EffectConfigData configSnapshot;
 
     public void BeginMatrixChange(Effect effect)
     {
@@ -168,5 +219,35 @@ class EffectsChangeRecorder
     {
         if (oldFxList == null) return;
         PushListChange();
+    }
+
+    public void SetCurrentConfig(Effect effect)
+    {
+        if (activeConfigEffect == effect) return;
+
+        activeConfigEffect = effect;
+        configSnapshot = new(effect);
+    }
+
+    public void UpdateConfigSnapshot()
+    {
+        if (activeConfigEffect is not null)
+            configSnapshot = new(activeConfigEffect);
+    }
+
+    public void PushConfigChange()
+    {
+        if (activeConfigEffect is not null)
+        {
+            var currentState = new EffectConfigData(activeConfigEffect);
+
+            if (!currentState.Equals(configSnapshot))
+            {
+                Console.WriteLine("Push effect editor config change");
+                RainEd.Instance.ChangeHistory.Push(new EffectConfigChangeRecord(activeConfigEffect, configSnapshot, currentState));
+            }
+
+            UpdateConfigSnapshot();
+        }
     }
 }

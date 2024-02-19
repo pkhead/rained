@@ -62,6 +62,11 @@ class EffectsEditor : IEditorMode
         {
             changeRecorder = new();
         };
+
+        RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
+        {
+            changeRecorder.UpdateConfigSnapshot();
+        };
     }
 
     public void ReloadLevel()
@@ -239,21 +244,28 @@ class EffectsEditor : IEditorMode
                 if (ImGui.Button("Move Up") && selectedEffect > 0)
                 {
                     // swap this effect with up
+                    changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect - 1];
                     level.Effects[selectedEffect - 1] = effect;
                     selectedEffect--;
+                    changeRecorder.PushListChange();
                 }
 
                 ImGui.SameLine();
                 if (ImGui.Button("Move Down") && selectedEffect < level.Effects.Count - 1)
                 {
                     // swap this effect with down
+                    changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect + 1];
                     level.Effects[selectedEffect + 1] = effect;
                     selectedEffect++;
+                    changeRecorder.PushListChange();
                 }
 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
+
+                changeRecorder.SetCurrentConfig(effect);
+                bool hadChanged = false;
 
                 // layers property
                 if (effect.Data.useLayers)
@@ -264,20 +276,29 @@ class EffectsEditor : IEditorMode
                         {
                             bool isSelected = i == (int) effect.Layer;
                             if (ImGui.Selectable(layerModeNames[i], isSelected))
+                            {
                                 effect.Layer = (Effect.LayerMode) i;
-                            
+                                hadChanged = true;
+                            }
+
                             if (isSelected)
                                 ImGui.SetItemDefaultFocus();
                         }
 
                         ImGui.EndCombo();
                     }
+
+                    if (ImGui.IsItemEdited())
+                        hadChanged = true;
                 }
 
                 // 3d property
                 if (effect.Data.use3D)
                 {
                     ImGui.Checkbox("3D", ref effect.Is3D);
+
+                    if (ImGui.IsItemDeactivatedAfterEdit())
+                        hadChanged = true;
                 }
 
                 // plant color property
@@ -289,7 +310,10 @@ class EffectsEditor : IEditorMode
                         {
                             bool isSelected = i == effect.PlantColor;
                             if (ImGui.Selectable(plantColorNames[i], isSelected))
+                            {
                                 effect.PlantColor = i;
+                                hadChanged = true;
+                            }
                             
                             if (isSelected)
                                 ImGui.SetItemDefaultFocus();
@@ -297,6 +321,9 @@ class EffectsEditor : IEditorMode
 
                         ImGui.EndCombo();
                     }
+
+                    if (ImGui.IsItemEdited())
+                        hadChanged = true;
                 }
 
                 // custom property
@@ -308,8 +335,11 @@ class EffectsEditor : IEditorMode
                         {
                             bool isSelected = i == effect.CustomValue;
                             if (ImGui.Selectable(effect.Data.customSwitchOptions[i], isSelected))
+                            {
                                 effect.CustomValue = i;
-                            
+                                hadChanged = true;
+                            }
+
                             if (isSelected)
                                 ImGui.SetItemDefaultFocus();
                         }
@@ -320,14 +350,23 @@ class EffectsEditor : IEditorMode
 
                 // seed
                 ImGui.SliderInt("Seed", ref effect.Seed, 0, 500);
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                        hadChanged = true;
 
                 ImGui.PopItemWidth();
+
+                if (hadChanged)
+                {
+                    changeRecorder.PushConfigChange();
+                }
 
                 // if user requested delete, do it here
                 if (doDelete)
                 {
+                    changeRecorder.BeginListChange();
                     level.Effects.RemoveAt(selectedEffect);
                     selectedEffect = -1;
+                    changeRecorder.PushListChange();
                 }
             }
             
