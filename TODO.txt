@@ -1,6 +1,7 @@
 Overall:
 - gc free queue? to free on main thread? (how?)
 - proper logging
+- on cell change, only remesh the mesh chunk that it is in
 - rename TileData class to Tile
 - undo/redo for level resize
 - open file browser in directory of current level
@@ -19,7 +20,6 @@ Geometry Editor:
 - select and copy/paste
 - ability to view tiles
 - right-click to remove cells/objects
-- OPTIMIZATION: render level in chunks, only re-render updated chunks
 
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
@@ -31,7 +31,6 @@ Camera Editor:
 - Select a camera first, then transform corners
 
 Light Editor:
-- light parameters undo/redo
 - light ring
 - IJKL light parameter changing
 - WASD catalog navigation

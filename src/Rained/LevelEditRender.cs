@@ -70,7 +70,7 @@ class LevelEditRender
     private RlManaged.Texture2D gridTexture = null!;
     
     private Raylib_cs.Material geoMaterial;
-    private RlManaged.Mesh[] geoMeshes;
+    private List<RlManaged.Mesh>[] meshLayers;
     private readonly bool[] dirtyMeshLayers; // if meshes need updating
 
     private readonly List<Vector3> verticesBuf = new();
@@ -83,11 +83,12 @@ class LevelEditRender
 
         geoMaterial = Raylib.LoadMaterialDefault();
 
-        geoMeshes = new RlManaged.Mesh[3];
+        meshLayers = new List<RlManaged.Mesh>[3];
         dirtyMeshLayers = new bool[3];
 
         for (int i = 0; i < 3; i++)
         {
+            meshLayers[i] = new List<RlManaged.Mesh>();
             dirtyMeshLayers[i] = true;
         }
     }
@@ -118,18 +119,13 @@ class LevelEditRender
         image.Dispose();
     }
 
-    public void ReloadGeometryMesh(int layer)
+    private void MeshGeometry(RlManaged.Mesh geoMesh, int layer, int subL, int subT, int subR, int subB)
     {
-        if (!dirtyMeshLayers[layer]) return;
-        dirtyMeshLayers[layer] = false;
-
-        Console.WriteLine($"Remesh geometry for layer {layer}");
-
-        List<Vector3> vertices = verticesBuf;
-        List<Color> colors = colorsBuf;
+        var vertices = verticesBuf;
+        var colors = colorsBuf;
         vertices.Clear();
         colors.Clear();
-        
+
         void drawRect(float x, float y, float w, float h, Color color)
         {
             vertices.Add(new Vector3(x, y, 0));
@@ -168,9 +164,9 @@ class LevelEditRender
             colors.Add(color);
         }
 
-        for (int x = 0; x < Level.Width; x++)
+        for (int x = subL; x < subR; x++)
         {
-            for (int y = 0; y < Level.Height; y++)
+            for (int y = subT; y < subB; y++)
             {
                 ref LevelCell c = ref Level.Layers[layer,x,y];
 
@@ -284,22 +280,46 @@ class LevelEditRender
                 }
             }
         }
-        
-        if (geoMeshes[layer] == null)
+
+        geoMesh.SetVertices(vertices.ToArray());
+        geoMesh.SetColors(colors.ToArray());
+        geoMesh.UploadMesh(true);
+    }
+
+    public void ReloadGeometryMesh(int layer)
+    {
+        if (!dirtyMeshLayers[layer]) return;
+        dirtyMeshLayers[layer] = false;
+
+        Console.WriteLine($"Remesh geometry for layer {layer}");
+
+        var geoList = meshLayers[layer];
+        int index = 0;
+
+        for (int x = 0; x < Level.Width; x += 100)
         {
-            RlManaged.Mesh geoMesh;
-            geoMeshes[layer] = geoMesh = new RlManaged.Mesh();
-            geoMesh.SetVertices(vertices.ToArray());
-            geoMesh.SetColors(colors.ToArray());
-            geoMesh.UploadMesh(true);    
+            for (int y = 0; y < Level.Height; y += 100)
+            {
+                if (index >= geoList.Count)
+                {
+                    var mesh = new RlManaged.Mesh();
+                    geoList.Add(mesh);
+                }
+                else
+                {
+                    geoList[index].Dispose();
+                    geoList[index] = new RlManaged.Mesh();
+                }
+
+                MeshGeometry(geoList[index], layer, x, y, Math.Min(x + 100, Level.Width), Math.Min(y + 100, Level.Height));
+                index++;
+            }
         }
-        else
+
+        while (geoList.Count > index)
         {
-            RlManaged.Mesh geoMesh = geoMeshes[layer];
-            geoMesh.SetVertices(vertices.ToArray());
-            geoMesh.SetColors(colors.ToArray());
-            geoMesh.UpdateVertices();
-            geoMesh.UpdateColors();
+            geoList[^1].Dispose();
+            geoList.RemoveAt(geoList.Count - 1);
         }
     }
 
@@ -321,7 +341,11 @@ class LevelEditRender
 
         var mat = Matrix4x4.Identity;
         Rlgl.DrawRenderBatchActive(); // should raylib not do this automatically??
-        Raylib.DrawMesh(geoMeshes[layer], geoMaterial, mat);
+
+        foreach (var mesh in meshLayers[layer])
+        {
+            Raylib.DrawMesh(mesh, geoMaterial, mat);
+        }
     }
 
     public void MarkNeedsRedraw(int layer)
