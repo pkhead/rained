@@ -2,14 +2,11 @@ namespace RainEd.ChangeHistory;
 
 interface IChangeRecord
 {
-    bool HasChange();
     void Apply(bool useNew);
 }
 
 class ChangeHistory
 {
-    public Level Level { get => RainEd.Instance.Level; }
-
     private readonly Stack<IChangeRecord> undoStack = new();
     private readonly Stack<IChangeRecord> redoStack = new();
     private IChangeRecord? upToDate = null;
@@ -24,7 +21,7 @@ class ChangeHistory
         Cleared?.Invoke();
     }
     
-    public void PushCustom(IChangeRecord record)
+    public void Push(IChangeRecord record)
     {
         redoStack.Clear();
         undoStack.Push(record);

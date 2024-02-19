@@ -43,8 +43,6 @@ class CameraChangeRecord : IChangeRecord
         NewData = newData;
     }
 
-    public bool HasChange() => true;
-
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
@@ -115,7 +113,7 @@ class CameraChangeRecorder
                 newCameraData[i] = new CameraData(level.Cameras[i]);
             
             var changeRecord = new CameraChangeRecord(snapshot.ToArray(), newCameraData);
-            RainEd.Instance.ChangeHistory.PushCustom(changeRecord);
+            RainEd.Instance.ChangeHistory.Push(changeRecord);
         }
 
         isRecording = false;

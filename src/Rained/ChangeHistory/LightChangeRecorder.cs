@@ -16,8 +16,7 @@ class LightChangeRecord : IChangeRecord
         this.atoms = atoms;
         previous = recorder.lastStroke;
     }
-
-    public bool HasChange() => true;
+    
     public void Apply(bool useNew)
     {
         // redo call
@@ -81,7 +80,7 @@ class LightChangeRecorder : IDisposable
         var stroke = new LightChangeRecord(currentStrokeData.ToArray(), this);
         currentStrokeData.Clear();
 
-        RainEd.Instance.ChangeHistory.PushCustom(stroke);
+        RainEd.Instance.ChangeHistory.Push(stroke);
         lastStroke = stroke;
     }
 

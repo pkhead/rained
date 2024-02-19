@@ -13,8 +13,7 @@ class CellChangeRecord : IChangeRecord
 
     public CellChangeRecord()
     {}
-
-    public bool HasChange() => true;
+    
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
@@ -71,7 +70,7 @@ class CellChangeRecorder
         }
 
         if (changes.CellChanges.Count > 0)
-            RainEd.Instance.ChangeHistory.PushCustom(changes);
+            RainEd.Instance.ChangeHistory.Push(changes);
 
         snapshotLayers = null;
     }
