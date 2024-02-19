@@ -68,8 +68,12 @@ class LevelEditRender
     private float lastViewZoom = 0f;
 
     private RlManaged.Texture2D gridTexture = null!;
+    
     private Raylib_cs.Material geoMaterial;
     private RlManaged.Mesh[] geoMeshes;
+
+    private readonly List<Vector3> verticesBuf = new();
+    private readonly List<Color> colorsBuf = new();
 
     public LevelEditRender()
     {
@@ -113,32 +117,28 @@ class LevelEditRender
 
     public void ReloadGeometryMesh(int layer)
     {
-        List<Vector3> vertices = new();
-        List<Color> colors = new();
-        List<ushort> indices = new();
-        int meshIndex = 0;
-
+        List<Vector3> vertices = verticesBuf;
+        List<Color> colors = colorsBuf;
+        vertices.Clear();
+        colors.Clear();
+        
         void drawRect(float x, float y, float w, float h, Color color)
         {
             vertices.Add(new Vector3(x, y, 0));
             vertices.Add(new Vector3(x, y+h, 0));
             vertices.Add(new Vector3(x+w, y+h, 0));
+
+            vertices.Add(new Vector3(x+w, y+h, 0));
             vertices.Add(new Vector3(x+w, y, 0));
+            vertices.Add(new Vector3(x, y, 0));
 
             colors.Add(color);
             colors.Add(color);
             colors.Add(color);
+
             colors.Add(color);
-
-            indices.Add((ushort)(meshIndex + 0));
-            indices.Add((ushort)(meshIndex + 1));
-            indices.Add((ushort)(meshIndex + 2));
-
-            indices.Add((ushort)(meshIndex + 2));
-            indices.Add((ushort)(meshIndex + 3));
-            indices.Add((ushort)(meshIndex + 0));
-
-            meshIndex += 4;
+            colors.Add(color);
+            colors.Add(color);
         }
 
         void drawRectLines(float x, float y, float w, float h, Color color)
@@ -158,11 +158,6 @@ class LevelEditRender
             colors.Add(color);
             colors.Add(color);
             colors.Add(color);
-
-            indices.Add((ushort)(meshIndex + 0));
-            indices.Add((ushort)(meshIndex + 1));
-            indices.Add((ushort)(meshIndex + 2));
-            meshIndex += 3;
         }
 
         for (int x = 0; x < Level.Width; x++)
@@ -288,7 +283,6 @@ class LevelEditRender
             geoMeshes[layer] = geoMesh = new RlManaged.Mesh();
             geoMesh.SetVertices(vertices.ToArray());
             geoMesh.SetColors(colors.ToArray());
-            geoMesh.SetIndices(indices.ToArray());
             geoMesh.UploadMesh(true);    
         }
         else
@@ -296,10 +290,8 @@ class LevelEditRender
             RlManaged.Mesh geoMesh = geoMeshes[layer];
             geoMesh.SetVertices(vertices.ToArray());
             geoMesh.SetColors(colors.ToArray());
-            geoMesh.SetIndices(indices.ToArray());
             geoMesh.UpdateVertices();
             geoMesh.UpdateColors();
-            geoMesh.UpdateIndices();
         }
     }
 
