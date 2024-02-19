@@ -47,7 +47,7 @@ namespace rlImGui_cs
         /// <summary>
         /// Callback for cases where the user wants to install additional fonts.
         /// </summary>
-        public static SetupUserFontsCallback SetupUserFonts = null;
+        public static SetupUserFontsCallback SetupUserFonts = null!;
 
         /// <summary>
         /// Sets up ImGui, loads fonts and themes

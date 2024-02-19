@@ -706,7 +706,15 @@ class TileEditor : IEditorMode
                     if (mouseCell.HasTile())
                     {
                         selectedTile = level.Layers[tileLayer, tileX, tileY].TileHead;
-                        selectedGroup = selectedTile.Category.Index;
+                        
+                        if (selectedTile is null)
+                        {
+                            throw new Exception("Could not find tile head");
+                        }
+                        else
+                        {
+                            selectedGroup = selectedTile.Category.Index;
+                        }
                     }
 
                     // material eyedropper

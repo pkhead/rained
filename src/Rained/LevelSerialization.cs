@@ -211,7 +211,7 @@ static class LevelSerialization
                 {
                     optionsObj = effectData.fields["Options"]; // wtf??? again???
                 }
-                var optionsData = (Lingo.List) (optionsObj ?? throw new NullReferenceException());
+                var optionsData = (Lingo.List) optionsObj!;
 
                 foreach (var optionData in optionsData.values.Cast<Lingo.List>())
                 {
@@ -276,7 +276,7 @@ static class LevelSerialization
 
             if (levelCameraData.fields.TryGetValue("quads", out object? quadsListData))
             {
-                var quadsList = (Lingo.List) (quadsListData ?? throw new NullReferenceException());
+                var quadsList = (Lingo.List) quadsListData!;
                 int camIndex = 0;
                 foreach (Lingo.List quad in quadsList.values.Cast<Lingo.List>())
                 {

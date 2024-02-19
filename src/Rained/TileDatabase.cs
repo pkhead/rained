@@ -77,8 +77,7 @@ class TileData
             case TileType.VoxelStruct:
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
-                if (repeatL is null) throw new NullReferenceException();
-                rowCount *= repeatL.Count;
+                rowCount *= repeatL!.Count;
                 break;
             
             case TileType.VoxelStructRockType:

@@ -144,7 +144,7 @@ class LevelBrowser
         int IComparer<Entry>.Compare(Entry a, Entry b) => a.Name.CompareTo(b.Name);
     }
     
-    private static RlManaged.Texture2D icons;
+    private static RlManaged.Texture2D icons = null!;
     private LevelBrowser(OpenMode mode, Action<string> callback, string fileRoot)
     {
         root = fileRoot;

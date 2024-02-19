@@ -145,7 +145,7 @@ class DrizzleRender : IDisposable
 
     private void StatusChanged(RenderStatus status)
     {
-        var renderer = threadState.Renderer ?? throw new NullReferenceException();
+        var renderer = threadState.Renderer!;
 
         Console.WriteLine("Status changed");
 

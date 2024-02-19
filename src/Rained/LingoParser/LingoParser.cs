@@ -57,11 +57,11 @@ class LingoParser
             throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
         }
 
-        if (tok.Value is null) throw new NullReferenceException();
+        var v = tok.Value!;
         if (tok.Type == TokenType.Integer)
-            return (float) (int) tok.Value;
+            return (float) (int) v;
         else
-            return (float) tok.Value;
+            return (float) v;
     }
 
     // this assumes the open bracket was already popped off
@@ -80,15 +80,14 @@ class LingoParser
             if (initTok.Type == TokenType.Symbol)
             {
                 PopToken();
-                if (initTok.Value is null) throw new NullReferenceException();
                 Expect(TokenType.Colon);
                 object? value = ReadValue();
                 if (value is not null)
-                    list.fields[(string) initTok.Value] = value;
+                    list.fields[(string) initTok.Value!] = value;
             }
             else if (initTok.Type != TokenType.Void)
             {
-                var value = ReadValue() ?? throw new NullReferenceException();
+                var value = ReadValue()!;
                 list.values.Add(value);
             }
             else
@@ -128,8 +127,7 @@ class LingoParser
                 for (int i = 0; i < 3; i++)
                 {
                     var num = Expect(TokenType.Integer);
-                    if (num.Value is null) throw new NullReferenceException();
-                    components[i] = (int) num.Value;
+                    components[i] = (int) num.Value!;
                     if (i < 2) Expect(TokenType.Comma);
                 }
 

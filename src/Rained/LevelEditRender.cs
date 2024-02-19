@@ -67,7 +67,7 @@ class LevelEditRender
     public float ViewZoom = 1f;
     private float lastViewZoom = 0f;
 
-    private RlManaged.Texture2D? gridTexture;
+    private RlManaged.Texture2D gridTexture = null!;
 
     public LevelEditRender()
     {
@@ -427,8 +427,7 @@ class LevelEditRender
         if (!ViewGrid) return;
 
         ReloadGridTexture();
-        if (gridTexture is null) throw new NullReferenceException();
-
+        
         var levelW = editor.Level.Width;
         var levelH = editor.Level.Height;
 
