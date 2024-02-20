@@ -225,7 +225,7 @@ class TileEditor : IEditorMode
             if (selectedTile != null)
                 ImGui.BeginDisabled();
             
-            if ((ImGui.Button("Set Selected Material as Default") || ImGui.IsKeyPressed(ImGuiKey.E)) && selectedTile == null)
+            if ((ImGui.Button("Set Selected Material as Default") || ImGui.IsKeyPressed(ImGuiKey.Q)) && selectedTile == null)
             {
                 var oldMat = window.Editor.Level.DefaultMaterial;
                 var newMat = (Material)(selectedMaterialIdx + 1);

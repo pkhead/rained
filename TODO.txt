@@ -118,6 +118,8 @@ KEYBINDS:
     TAB - Switch Layer
     WASD - Browse tile selector
     Shift + MouseWheel - Change material brush size
+    E - Select tile from level
+    Q - Set currently selected material as default
     LMB - Place Tile/Material
     RMB - Remove Tile/Material
     G+RMB - Remove Tile and Geometry
