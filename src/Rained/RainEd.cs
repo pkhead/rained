@@ -20,6 +20,7 @@ sealed class RainEd
     public readonly Light.LightBrushDatabase LightBrushDatabase;
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private readonly EditorWindow editorWindow;
+    private bool ShowDemoWindow = false;
 
     private string currentFilePath = string.Empty;
 
@@ -420,7 +421,17 @@ sealed class RainEd
 
         editorWindow.Render(dt);
 
-        ImGui.ShowDemoWindow();
+        if (ImGui.IsKeyPressed(ImGuiKey.F1))
+            ShowDemoWindow = !ShowDemoWindow;
+        
+        // this is how imgui is documented
+        // you see what it can do and when i want to know how it does that,
+        // i ctrl+f imgui_demo.cpp.
+        // I guess it works?
+        if (ShowDemoWindow)
+        {
+            ImGui.ShowDemoWindow(ref ShowDemoWindow);
+        }
 
         // render level browser
         LevelBrowser.Singleton?.Render();
