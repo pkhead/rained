@@ -5,6 +5,8 @@ namespace RainEd;
 
 class LevelEditRender
 {
+    // Grid offsets into the level graphics texture
+    // used to render object images in the level
     private static readonly Dictionary<LevelObject, Vector2> ObjectTextureOffsets = new()
     {
         { LevelObject.Rock,             new(0, 0) },
@@ -56,6 +58,13 @@ class LevelEditRender
         LevelObject.WhackAMoleHole, LevelObject.ScavengerHole, LevelObject.GarbageWorm,
     };
 
+    // shortcut objects that can be used to make a valid shortcut connection
+    // seems to just be everything except a garbage worm spawn
+    private static readonly LevelObject[] ConnectableShortcutObjects = new[] {
+        LevelObject.Shortcut, LevelObject.CreatureDen, LevelObject.Entrance,
+        LevelObject.WhackAMoleHole, LevelObject.ScavengerHole
+    };
+
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -93,6 +102,7 @@ class LevelEditRender
         }
     }
 
+    // re-render the grid texture for the new zoom level
     public void ReloadGridTexture()
     {
         if (ViewZoom == lastViewZoom) return;
@@ -119,6 +129,7 @@ class LevelEditRender
         image.Dispose();
     }
 
+    // build the mesh for the sub-rectangle of a layer
     private void MeshGeometry(RlManaged.Mesh geoMesh, int layer, int subL, int subT, int subR, int subB)
     {
         var vertices = verticesBuf;
@@ -383,19 +394,118 @@ class LevelEditRender
             }
         }
     }
-    public void RenderShortcuts(Color color)
-    {
-        static bool isShortcut(Level Level, int x, int y)
-        {
-            if (x < 0 || y < 0) return false;
-            if (x >= Level.Width || y >= Level.Height) return false;
 
-            foreach (var objType in ShortcutObjects)
+    private enum ShortcutDirection
+    {
+        Invalid,
+        Left,
+        Up,
+        Right,
+        Down
+    };
+
+    // assumes the cell at (x, y) is a shortcut entrance
+    private ShortcutDirection CalcShortcutEntranceDirection(int x, int y)
+    {
+        static bool shortcutCanConnect(Level Level, int x, int y)
+        {
+            if (!Level.IsInBounds(x, y)) return false;
+            
+            foreach (var objType in ConnectableShortcutObjects)
                 if (Level.Layers[0,x,y].Has(objType)) return true;
 
             return false;
         }
 
+        static bool isWallBlock(Level level, int x, int y)
+        {
+            if (!level.IsInBounds(x, y)) return false;
+            return level.Layers[0,x,y].Cell == CellType.Solid;
+        }
+
+        int neighborCount = 0;
+        int dx = 0;
+        int dy = 0;
+        ShortcutDirection dir = ShortcutDirection.Invalid;
+
+        // left
+        if (shortcutCanConnect(Level, x-1, y))
+        {
+            dir = ShortcutDirection.Left;
+            dx = -1;
+            dy = 0;
+            neighborCount++;
+        }
+
+        // right
+        if (shortcutCanConnect(Level, x+1, y))
+        {
+            dir = ShortcutDirection.Right;
+            dx = 1;
+            dy = 0;
+            neighborCount++;
+        }
+
+        // up
+        if (shortcutCanConnect(Level, x, y-1))
+        {
+            dir = ShortcutDirection.Up;
+            dx = 0;
+            dy = -1;
+            neighborCount++;
+        }
+
+        // down
+        if (shortcutCanConnect(Level, x, y+1))
+        {
+            dir = ShortcutDirection.Down;
+            dx = 0;
+            dy = 1;
+            neighborCount++;
+        }
+
+        // can only be one shortcut-connectable neighbor
+        if (neighborCount != 1)
+        {
+            return ShortcutDirection.Invalid;
+        }
+        else
+        {
+            ref var fromCell = ref Level.Layers[0,x-dx,y-dy];
+            ref var toCell = ref Level.Layers[0,x+dx,y+dy];
+            
+            // the shortcut it's facing toward has to be over a solid block (wall, glass, slope(?))
+            if (
+                toCell.Cell != CellType.Solid &&
+                toCell.Cell != CellType.Glass &&
+                !(toCell.Cell >= CellType.SlopeRightUp && toCell.Cell <= CellType.SlopeLeftDown) // check if any slope?
+            )
+            {
+                return ShortcutDirection.Invalid;
+            }
+            
+            // the tile opposite to the shortcut direction must be an air or platform block
+            else if (fromCell.Cell != CellType.Air && fromCell.Cell != CellType.Platform)
+            {
+                return ShortcutDirection.Invalid;
+            }
+
+            // the 3 blocks to the side must be wall blocks
+            for (int i = -1; i <= 1; i++)
+            {
+                if (!isWallBlock(Level, x+dy + dx*i, y+dx + dy*i))
+                    return ShortcutDirection.Invalid;
+                
+                if (!isWallBlock(Level, x-dy + dx*i, y-dx + dy*i))
+                    return ShortcutDirection.Invalid;
+            }
+        }
+
+        return dir;
+    } 
+    
+    public void RenderShortcuts(Color color)
+    {
         int viewL = (int) Math.Floor(ViewTopLeft.X);
         int viewT = (int) Math.Floor(ViewTopLeft.Y);
         int viewR = (int) Math.Ceiling(ViewBottomRight.X);
@@ -411,49 +521,37 @@ class LevelEditRender
                 // based on neighbor Shortcuts
                 if (cell.Cell == CellType.ShortcutEntrance)
                 {
-                    int neighborCount = 0;
                     int texX = 0;
                     int texY = 0;
-
-                    // left
-                    if (isShortcut(Level, x-1, y))
+                        
+                    switch (CalcShortcutEntranceDirection(x, y))
                     {
-                        texX = 1;
-                        texY = 1;
-                        neighborCount++;
+                        case ShortcutDirection.Left:
+                            texX = 1;
+                            texY = 1;
+                            break;
+                            
+                        case ShortcutDirection.Right:
+                            texX = 4;
+                            texY = 0;
+                            break;
+                    
+                        case ShortcutDirection.Up:
+                            texX = 3;
+                            texY = 0;
+                            break;
+                            
+                        case ShortcutDirection.Down:
+                            texX = 0;
+                            texY = 1;
+                            break;
+                        
+                        case ShortcutDirection.Invalid:
+                            texX = 2;
+                            texY = 0;
+                            break;
                     }
-
-                    // right
-                    if (isShortcut(Level, x+1, y))
-                    {
-                        texX = 4;
-                        texY = 0;
-                        neighborCount++;
-                    }
-
-                    // up
-                    if (isShortcut(Level, x, y-1))
-                    {
-                        texX = 3;
-                        texY = 0;
-                        neighborCount++;
-                    }
-
-                    // down
-                    if (isShortcut(Level, x, y+1))
-                    {
-                        texX = 0;
-                        texY = 1;
-                        neighborCount++;
-                    }
-
-                    // "invalid" shortcut graphic
-                    if (neighborCount != 1)
-                    {
-                        texX = 2;
-                        texY = 0;
-                    }
-
+                    
                     Raylib.DrawTextureRec(
                         editor.LevelGraphicsTexture,
                         new Rectangle(texX*20, texY*20, 20, 20),
