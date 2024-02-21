@@ -2,8 +2,9 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 using ImGuiNET;
-using System.Text;
+using Serilog;
 using System.Runtime.InteropServices;
+using Serilog.Core;
 
 namespace RainEd;
 
@@ -13,7 +14,11 @@ sealed class RainEd
 
     public static RainEd Instance = null!;
 
-    public bool Running = true;
+    public bool Running = true; // if false, Boot.cs will close the window
+    private readonly Logger _logger;
+    public static Logger Logger { get => Instance._logger; }
+
+
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private readonly RlManaged.Texture2D rainedLogo;
@@ -34,7 +39,7 @@ sealed class RainEd
     private float notificationTime = 0f;
     private float notifFlash = 0f;
 
-    private bool promptAbout = false;
+    private bool promptAbout = false; // is the about prompt open?
 
     public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
 
@@ -49,26 +54,47 @@ sealed class RainEd
         
         Instance = this;
 
+        // create serilog logger
+        _logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateLogger();
+
+        Logger.Information("RainEd started");
+
         rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
+
+        Logger.Information("Loading tile init...");
         TileDatabase = new Tiles.Database();
+
+        Logger.Information("Creating effect init...");
         EffectsDatabase = new EffectsDatabase();
+
+        Logger.Information("Loading light brush init...");
         LightBrushDatabase = new Light.LightBrushDatabase();
         
         if (levelPath.Length > 0)
         {
+            Logger.Information("Boot load " + levelPath);
             level = LevelSerialization.Load(levelPath);
         }
         else
         {
+            Logger.Information("Boot load default level");
             level = Level.NewDefaultLevel();
         }
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
+
+        Logger.Information("Initializing change history...");
         changeHistory = new ChangeHistory.ChangeHistory();
+
+        Logger.Information("Creating editor window...");
         editorWindow = new EditorWindow();
 
         UpdateTitle();
         RegisterShortcuts();
+
+        Logger.Information("Boot successful!");
     }
 
     public void ShowError(string msg)
@@ -82,6 +108,8 @@ sealed class RainEd
     {
         if (!string.IsNullOrEmpty(path))
         {
+            Logger.Information("Loading level {Path}...", path);
+
             editorWindow.UnloadView();
 
             try
@@ -91,11 +119,12 @@ sealed class RainEd
                 ReloadLevel();
                 currentFilePath = path;
                 UpdateTitle();
+
+                Logger.Information("Done!");
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error loading file " + path);
-                Console.WriteLine(e);
+                Logger.Error("Error loading file {Path}:\n{ErrorMessage}", path, e);
                 ShowError("Could not load level");
             }
 
@@ -110,6 +139,8 @@ sealed class RainEd
     {
         if (!string.IsNullOrEmpty(path))
         {
+            Logger.Information("Saving level to {Path}...", path);
+
             editorWindow.FlushDirty();
 
             try
@@ -118,10 +149,11 @@ sealed class RainEd
                 currentFilePath = path;
                 UpdateTitle();
                 changeHistory.MarkUpToDate();
+                Logger.Information("Done!");
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Logger.Error("Could not write level file:\n{ErrorMessage}", e);
                 ShowError("Could not write level file");
             }
             
@@ -137,6 +169,7 @@ sealed class RainEd
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
         if (newWidth == level.Width && newHeight == level.Height) return;
+        Logger.Information("Resizing level...");
 
         Window.FlushDirty();
         level.Resize(newWidth, newHeight, anchorX, anchorY);
@@ -146,6 +179,8 @@ sealed class RainEd
         Window.LevelRenderer.MarkNeedsRedraw(0);
         Window.LevelRenderer.MarkNeedsRedraw(1);
         Window.LevelRenderer.MarkNeedsRedraw(2);
+
+        Logger.Information("Done!");
     }
 
     private void ReloadLevel()
@@ -289,6 +324,8 @@ sealed class RainEd
         {
             PromptUnsavedChanges(() =>
             {
+                Logger.Information("Load default level...");
+
                 editorWindow.UnloadView();
                 level.LightMap.Dispose();
                 level = Level.NewDefaultLevel();
@@ -297,6 +334,8 @@ sealed class RainEd
 
                 currentFilePath = string.Empty;
                 UpdateTitle();
+
+                Logger.Information("Done!");
             });
         }
 
@@ -345,6 +384,7 @@ sealed class RainEd
         rlImGui.Begin();
         ImGui.DockSpaceOverViewport();
 
+        // main menu bar
         if (ImGui.BeginMainMenuBar())
         {
             if (ImGui.BeginMenu("File"))

@@ -40,6 +40,8 @@ class DrizzleRender : IDisposable
         {
             try
             {
+                RainEd.Logger.Information("Initializing Zygote runtime...");
+
                 var runtime = new LingoRuntime(typeof(MovieScript).Assembly);
                 runtime.Init();
                 EditorRuntimeHelpers.RunStartup(runtime);
@@ -58,14 +60,14 @@ class DrizzleRender : IDisposable
                         throw new RenderCancelledException();
                 }
 
-                Console.Write("Begin Render");
+                RainEd.Logger.Information("Begin render of {LevelName}", Path.GetFileNameWithoutExtension(filePath));
                 Renderer.DoRender();
-                Console.WriteLine("Render successful!");
+                RainEd.Logger.Information("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
             }
             catch (RenderCancelledException)
             {
-                Console.WriteLine("Render cancelled");
+                RainEd.Logger.Information("Render was cancelled");
                 Queue.Enqueue(new MessageRenderCancelled());
             }
             catch (Exception e)
@@ -147,7 +149,7 @@ class DrizzleRender : IDisposable
     {
         var renderer = threadState.Renderer!;
 
-        Console.WriteLine("Status changed");
+        RainEd.Logger.Debug("Status changed");
 
         var camIndex = status.CameraIndex;
         var stageEnum = status.Stage.Stage;
@@ -256,7 +258,7 @@ class DrizzleRender : IDisposable
                 
                 case MessageRenderFinished:
                     state = RenderState.Finished;
-                    Console.WriteLine("Thread is done!");
+                    RainEd.Logger.Debug("Close render thread");
                     progress = 1f;
                     DisplayString = "";
                     thread.Join();
@@ -268,8 +270,7 @@ class DrizzleRender : IDisposable
                 
                 case MessageRenderFailed msgFail:
                     RainEd.Instance.ShowError("Error occured while rendering level");
-                    Console.WriteLine("Error occured when rendering level");
-                    Console.WriteLine(msgFail.Exception);
+                    RainEd.Logger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
                     break;
                 
                 case MessageRenderCancelled:
@@ -288,8 +289,8 @@ class DrizzleRender : IDisposable
 
     private void ProcessPreview(RenderPreview renderPreview)
     {
-        Console.WriteLine("Recieve preview");
-
+        RainEd.Logger.Verbose("Receive preview");
+        
         switch (renderPreview)
         {
             case RenderPreviewEffects effects:

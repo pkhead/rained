@@ -75,6 +75,7 @@ namespace RainEd
                     Raylib.EndDrawing();
                 }
 
+                RainEd.Logger.Information("Shutting down Rained...");
                 rlImGui.Shutdown();
             }
 

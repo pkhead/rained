@@ -263,7 +263,7 @@ static class LevelSerialization
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"WARNING: Unknown option '{optionName}' in effect '{nameStr}'");
+                                    RainEd.Logger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                 }
                                 
                                 break;

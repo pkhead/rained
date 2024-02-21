@@ -243,7 +243,6 @@ class EffectsChangeRecorder
 
             if (!currentState.Equals(configSnapshot))
             {
-                Console.WriteLine("Push effect editor config change");
                 RainEd.Instance.ChangeHistory.Push(new EffectConfigChangeRecord(activeConfigEffect, configSnapshot, currentState));
             }
 

@@ -43,8 +43,6 @@ class LightBrushDatabase
 
     public LightBrushDatabase()
     {
-        Console.WriteLine("Initializing light cast catalog...");
-
         lightBrushes = new List<LightBrush>();
 
         foreach (var fileName in File.ReadLines("assets/light/init.txt"))
@@ -65,8 +63,6 @@ class LightBrushDatabase
         }
 
         Shader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
-
-        Console.WriteLine("Done!");
     }
 }
 

@@ -103,7 +103,7 @@ class TileData
             previewRect.Y + previewRect.Height > fullImage.Height
         )
         {
-            Console.WriteLine($"Warning: '{name}' preview image is out of bounds");
+            RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
         }
 
         var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
@@ -162,8 +162,7 @@ class Database
     public Database()
     {
         Categories = new();
-
-        Console.WriteLine("Reading tile init data...");
+        
         var lingoParser = new Lingo.LingoParser();
 
         TileCategory? curGroup = null;
@@ -184,7 +183,7 @@ class Database
                 groupIndex++;
                 Categories.Add(curGroup);
                 
-                Console.WriteLine($"Register category {curGroup.Name}");
+                RainEd.Logger.Information("Register tile category {GroupName}", curGroup.Name);
             }
             else
             {
@@ -236,12 +235,10 @@ class Database
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    Console.WriteLine($"Could not add '{name}': {e.Message}");
+                    RainEd.Logger.Warning("Could not add tile '{Name}': {ErrorMessage}", name, e.Message);
                 }
             }
         }
-
-        Console.WriteLine("Done!");
     }
 
     public bool HasTile(string name) => stringToTile.ContainsKey(name);

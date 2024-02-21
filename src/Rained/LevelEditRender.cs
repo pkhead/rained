@@ -302,7 +302,7 @@ class LevelEditRender
         if (!dirtyMeshLayers[layer]) return;
         dirtyMeshLayers[layer] = false;
 
-        Console.WriteLine($"Remesh geometry for layer {layer}");
+        RainEd.Logger.Debug("Remesh geometry for layer {Layer}", layer);
 
         var geoList = meshLayers[layer];
         int index = 0;

@@ -248,7 +248,7 @@ class TileEditor : IEditorMode
             if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite))
             {
                 // when changed
-                Console.WriteLine("Search changed");
+                RainEd.Logger.Verbose("Tile editor search changed");
                 ProcessSearch(); // find the groups which have at least one tile that passes the search query
             }
 
