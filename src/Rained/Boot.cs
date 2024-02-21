@@ -62,7 +62,7 @@ namespace RainEd
                 Raylib.InitWindow(1200, 800, "Rained");
                 Raylib.SetTargetFPS(120);
                 Raylib.SetExitKey(KeyboardKey.Null);
-
+                
                 // setup imgui
                 rlImGui.Setup(true, true);
                 rlImGui.SetIniFilename(Path.Combine(AppDataPath,"assets","imgui.ini"));

@@ -16,7 +16,8 @@ public partial class LingoRuntime
 
     private static readonly Regex CastPathRegex = new Regex(@"([^_]+)_(\d+)_(.+)?\.([a-z]*)");
 
-    private static readonly string CastPath;
+    // pkhead modification
+    /*private*/ public static /*readonly*/ string CastPath;
 
     private readonly Dictionary<string, LingoCastLib>
         _castLibNames = new(StringComparer.InvariantCultureIgnoreCase);

@@ -9,6 +9,14 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(AppDataPath)'=='Assembly'">
+    <DefineConstants>DATA_ASSEMBLY</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AppDataPath)'=='AppData'">
+    <DefineConstants>DATA_APPDATA</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
     <PackageReference Include="Raylib-cs" Version="6.0.0" />
