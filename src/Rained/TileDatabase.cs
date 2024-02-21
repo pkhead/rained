@@ -89,7 +89,7 @@ class TileData
                 break;
         }
         
-        var fullImage = RlManaged.Image.Load($"Data/Graphics/{name}.png");
+        var fullImage = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png"));
         var previewRect = new Rectangle(
             0,
             rowCount * 20 + imageOffset,
@@ -167,7 +167,7 @@ class Database
 
         TileCategory? curGroup = null;
         int groupIndex = 0;
-        foreach (var line in File.ReadLines("Data/Graphics/Init.txt"))
+        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data","Graphics","Init.txt")))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
             

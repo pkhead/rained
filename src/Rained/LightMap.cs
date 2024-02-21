@@ -45,7 +45,7 @@ class LightBrushDatabase
     {
         lightBrushes = new List<LightBrush>();
 
-        foreach (var fileName in File.ReadLines("assets/light/init.txt"))
+        foreach (var fileName in File.ReadLines(Path.Combine(Boot.AppDataPath,"assets","light","init.txt")))
         {
             // if this line is empty, skip
             if (string.IsNullOrWhiteSpace(fileName)) continue;
@@ -54,7 +54,7 @@ class LightBrushDatabase
             if (fileName[0] == '#') continue;
             
             // load light texture
-            var tex = RlManaged.Texture2D.Load($"assets/light/{fileName.Trim()}");
+            var tex = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","light",fileName.Trim()));
             lightBrushes.Add(new LightBrush()
             {
                 Name = fileName.Trim(),

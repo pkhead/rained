@@ -9,6 +9,15 @@ namespace RainEd
 {
     class Boot
     {
+        // find the location of the app data folder
+#if DATA_ASSEMBLY
+    public static string AppDataPath = AppContext.BaseDirectory;
+#elif DATA_APPDATA
+    public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+#else
+    public static string AppDataPath = Directory.GetCurrentDirectory();
+#endif
+
         static void Main(string[] args)
         {
             // parse command arguments
@@ -39,7 +48,7 @@ namespace RainEd
             if (showSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                Texture texture = new("assets/splash-screen.png");
+                Texture texture = new(Path.Combine(AppDataPath, "assets","splash-screen.png"));
                 var sprite = new Sprite(texture);
 
                 splashScreenWindow.Clear();
@@ -56,7 +65,7 @@ namespace RainEd
 
                 // setup imgui
                 rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename("assets/imgui.ini");
+                rlImGui.SetIniFilename(Path.Combine(AppDataPath,"assets","imgui.ini"));
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 

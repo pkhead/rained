@@ -90,7 +90,7 @@ class LevelBrowser
     public static LevelBrowser? Singleton { get => singleton; }
     public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
     {
-        singleton = new LevelBrowser(openMode, callback, "Data/LevelEditorProjects");
+        singleton = new LevelBrowser(openMode, callback, Path.Combine(Boot.AppDataPath, "Data","LevelEditorProjects"));
     }
 
     private bool isOpen = false;
@@ -148,7 +148,7 @@ class LevelBrowser
     private LevelBrowser(OpenMode mode, Action<string> callback, string fileRoot)
     {
         root = fileRoot;
-        icons ??= RlManaged.Texture2D.Load("assets/filebrowser-icons.png");
+        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
 
         this.mode = mode;
         this.callback = callback;

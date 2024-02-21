@@ -18,7 +18,6 @@ sealed class RainEd
     private readonly Logger _logger;
     public static Logger Logger { get => Instance._logger; }
 
-
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private readonly RlManaged.Texture2D rainedLogo;
@@ -60,8 +59,9 @@ sealed class RainEd
             .CreateLogger();
 
         Logger.Information("RainEd started");
+        Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
-        rainedLogo = RlManaged.Texture2D.Load("assets/rained-logo.png");
+        rainedLogo = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
         Logger.Information("Loading tile init...");
         TileDatabase = new Tiles.Database();
@@ -83,7 +83,7 @@ sealed class RainEd
             level = Level.NewDefaultLevel();
         }
 
-        LevelGraphicsTexture = RlManaged.Texture2D.Load("assets/level-graphics.png");
+        LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
         Logger.Information("Initializing change history...");
         changeHistory = new ChangeHistory.ChangeHistory();

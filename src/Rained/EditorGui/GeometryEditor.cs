@@ -116,7 +116,7 @@ class GeometryEditor : IEditorMode
         layerMask[0] = true;
 
         window = editorWindow;
-        toolIcons = RlManaged.Texture2D.Load("assets/tool-icons.png");
+        toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
     }
     
     public enum LayerViewMode : int
