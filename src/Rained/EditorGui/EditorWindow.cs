@@ -186,7 +186,7 @@ class EditorWindow
             }
 
             ImGui.SameLine();
-            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%");
+            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})");
 
             if (!ImGui.GetIO().WantTextInput)
             {

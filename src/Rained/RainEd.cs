@@ -9,6 +9,8 @@ namespace RainEd;
 
 sealed class RainEd
 {
+    private const string VERSION = "dev"; 
+
     public static RainEd Instance = null!;
 
     public bool Running = true;
@@ -509,7 +511,7 @@ sealed class RainEd
         {
             // TODO: version number, build date, os/runtime information, library licenses
             rlImGui.Image(rainedLogo);
-            ImGui.Text("A Rain World level editor - Beta 1.0.0");
+            ImGui.Text("A Rain World level editor - " + VERSION);
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");
             ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");

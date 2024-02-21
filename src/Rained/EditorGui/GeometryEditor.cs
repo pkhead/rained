@@ -214,11 +214,7 @@ class GeometryEditor : IEditorMode
                 ImGui.Checkbox("Layer " + (i+1), ref layerMask[i]);
             }
 
-            // show stats & hints
-            ImGui.Text($"Mouse X: {window.MouseCx}");
-            ImGui.Text($"Mouse Y: {window.MouseCy}");
-            ImGui.NewLine();
-
+            // show fill rect hint
             if (selectedTool == Tool.Wall || selectedTool == Tool.Air || selectedTool == Tool.Inverse || selectedTool == Tool.Glass)
             {
                 ImGui.Text("Shift+Drag to\nfill rect");
