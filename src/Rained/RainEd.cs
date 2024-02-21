@@ -54,10 +54,17 @@ sealed class RainEd
         Instance = this;
 
         // create serilog logger
+        Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
+    
+#if DEBUG
         _logger = new LoggerConfiguration()
             .WriteTo.Console()
             .CreateLogger();
-
+#else
+        _logger = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+#endif
         Logger.Information("RainEd started");
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 

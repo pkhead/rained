@@ -15,3 +15,6 @@
 
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated
+
+# rained logs
+/logs
