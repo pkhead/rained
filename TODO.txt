@@ -91,6 +91,77 @@ effects matrix format
     )
   }
 
+prop init format
+[
+  #nm: string
+  #tp: "standard" | "soft" | "variedStandard" | "simpleDecal" | "variedSoft" | "variedDecal" | "antimatter" | "coloredSoft"
+
+  #colorize?: integer
+
+  if tp == "standard" | "variedStandard" (
+    #colorTreatment: "standard" | "bevel"
+    
+    if colorTreatment == "bevel" (
+      #bevel: integer  
+    )
+
+    #sz: point
+    #repeatL: int[]
+  )
+
+  if tp == "variedStandard" (
+    #vars: integer
+    #random: integer
+  )
+
+  if tp == "variedSoft" | "variedDecal" (
+    #pxlSize: point
+    #vars: integer
+    #random: integer
+  )
+
+  if tp == "coloredSoft" (
+    #pxlSize: point
+  )
+
+  if tp == "soft" (
+    #depth: integer
+    #round: integer
+    #contourExp: float
+    #selfShade: integer
+    #highLightBorder: float
+    #depthAffectHilites: float
+    #shadowBorder: float
+    #smoothShading: integer
+  )
+
+  if tp == "simpleDecal" | tp == "variedDecal" (
+    #depth: integer
+  )
+
+  if tp == "antimatter" (
+    #depth: number
+    #contourExp: number
+  )
+
+  #tags: ("randomRotat" | "snapToGrid" | "Circular Sign" | "randomFlipX" | "randomFlipY")[]
+  #layerExceptions: []
+  #notes: string[]
+]
+prop init format
+[
+  #nm: string
+  #tp: "standard" <
+    #colorTreatment: "bevel" <
+      #bevel: int
+    >
+    | "standard"
+    #sz: point
+    #repeatL: int[]
+    #tags: <"randomRotat", "customColor", 
+  >
+]
+
 KEYBINDS:
   General:
     Arrow Keys - Scroll

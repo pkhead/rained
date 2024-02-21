@@ -2,7 +2,9 @@
 # i've done it this way so that each light image appears
 # in a predetermined order.
 pxl.png
+squareLightEmpty.png
 bigCircle.png
+discLightEmpty.png
 leaves.png
 oilyLight.png
 directionalLight.png
@@ -10,5 +12,20 @@ blobLight1.png
 blobLight2.png
 wormsLight.png
 crackLight.png
+squareishLight.png
 holeLight.png
 roundedRectLight.png
+roundedRectLightEmpty.png
+triangleLight.png
+triangleLightEmpty.png
+curvedTriangleLight.png
+curvedTriangleLightEmpty.png
+pentagonLight.png
+pentagonLightEmpty.png
+hexagonLight.png
+hexagonLightEmpty.png
+octagonLight.png
+octagonLightEmpty.png
+DR1DestLight.png
+DR2DestLight.png
+DR3DestLight.png
