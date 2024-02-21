@@ -1,7 +1,5 @@
 Overall:
 - gc free queue? to free on main thread? (how?)
-- refer to assembly location to obtain assets and Data folder
-- proper logging
 - on cell change, only remesh the mesh chunk that it is in
 - rename TileData class to Tile
 - undo/redo for level resize

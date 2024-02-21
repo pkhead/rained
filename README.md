@@ -3,7 +3,11 @@
 
 Another Rain World level editor. Currently in development.
 
-Includes an integrated [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community) for level rendering.
+## Features
+- Ease of use (hopefully)
+- Undo/redo everything
+- [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community) level rendering with a preview
+- Dark Mode for the vampires
 
 ## Building
 ### .NET CLI
