@@ -22,19 +22,38 @@ namespace RainEd
         {
             // parse command arguments
             bool showSplashScreen = true;
+            bool showAltSplashScreen = false;
             string levelToLoad = string.Empty;
 
-            foreach (var str in args)
+            for (int i = 0; i < args.Length; i++)
             {
-                if (str[0] == '-')
+                var str = args[i];
+
+                // this is here because it appears SFML uses some
+                // OpenGL extensions that RenderDoc doesn't support
+                if (str == "--no-splash-screen")
                 {
-                    if (str == "--no-splash-screen")
-                        showSplashScreen = false;
+                    showSplashScreen = false;
+                    continue;
                 }
-                else
+
+                // runtime-configurable app data path because why not
+                if (str == "--app-data")
                 {
-                    levelToLoad = str;
+                    i++;
+                    AppDataPath = args[i];
+                    continue;
                 }
+
+                // the intrusive thoughts defeated me
+                if (str == "--ogscule")
+                {
+                    Console.WriteLine("ogscule");
+                    showAltSplashScreen = true;
+                    continue;
+                }
+
+                levelToLoad = str;
             }
             
             RenderWindow? splashScreenWindow = null;
@@ -48,7 +67,7 @@ namespace RainEd
             if (showSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                Texture texture = new(Path.Combine(AppDataPath, "assets","splash-screen.png"));
+                Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
                 var sprite = new Sprite(texture);
 
                 splashScreenWindow.Clear();
@@ -62,7 +81,7 @@ namespace RainEd
                 Raylib.InitWindow(1200, 800, "Rained");
                 Raylib.SetTargetFPS(120);
                 Raylib.SetExitKey(KeyboardKey.Null);
-                
+
                 // setup imgui
                 rlImGui.Setup(true, true);
                 rlImGui.SetIniFilename(Path.Combine(AppDataPath,"assets","imgui.ini"));
