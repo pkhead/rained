@@ -299,7 +299,8 @@ namespace RlManaged
                 Marshal.FreeHGlobal((nint) raw.Vertices);
 
             raw.VertexCount = vertices.Length;
-            raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * 3 * sizeof(float));
+            //raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * 3 * sizeof(float));
+            raw.AllocVertices();
 
             var k = 0;
             for (int i = 0; i < vertices.Length; i++)
@@ -324,8 +325,9 @@ namespace RlManaged
                 Marshal.FreeHGlobal((nint) raw.Indices);
             
             raw.TriangleCount = indices.Length / 3;
-            raw.Indices = (ushort*) Marshal.AllocHGlobal(indices.Length * sizeof(ushort));
-            
+            //raw.Indices = (ushort*) Marshal.AllocHGlobal(indices.Length * sizeof(ushort));
+            raw.AllocIndices();
+
             fixed (ushort* arrPtr = indices)
             {
                 Buffer.MemoryCopy(arrPtr, raw.Indices, indices.Length * sizeof(ushort), indices.Length * sizeof(ushort));
@@ -354,7 +356,8 @@ namespace RlManaged
             if (raw.Colors != null)
                 Marshal.FreeHGlobal((nint) raw.Colors);
             
-            raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * 4 * sizeof(byte));
+            //raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * 4 * sizeof(byte));
+            raw.AllocColors();
             
             int k = 0;
             for (int i = 0; i < colors.Length; i++)
