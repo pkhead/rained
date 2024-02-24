@@ -100,10 +100,14 @@ class PropInit
 
         Category = category;
         Name = srcTile.Name;
-        Type = PropType.Standard; // this doesn't actually matter
+        Type = PropType.Standard;
         Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", Name + ".png"));
-        PropFlags = 0;
+        PropFlags = PropFlags.Tile;
         Notes = Array.Empty<string>();
+
+        layerCount = srcTile.LayerCount;
+        pixelWidth = (srcTile.Width + srcTile.BfTiles * 2) * 20;
+        pixelHeight = (srcTile.Height + srcTile.BfTiles * 2) * 20;
     }
 
     public Rectangle GetPreviewRectangle(int variation)

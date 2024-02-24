@@ -24,6 +24,7 @@ class Tile
     public readonly int BfTiles = 0;
     public readonly RlManaged.Texture2D PreviewTexture;
     public readonly bool CanBeProp;
+    public readonly int LayerCount;
 
     public readonly int CenterX;
     public readonly int CenterY;
@@ -45,6 +46,7 @@ class Tile
         BfTiles = bfTiles;
         Category = category;
         CanBeProp = false;
+        LayerCount = 1;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
@@ -88,7 +90,8 @@ class Tile
             case TileType.VoxelStruct:
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
-                rowCount *= repeatL!.Count;
+                LayerCount = repeatL!.Count;
+                rowCount *= LayerCount;;
                 CanBeProp = true;
                 break;
             

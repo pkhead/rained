@@ -80,10 +80,6 @@ class PropEditor : IEditorMode
                                 );
                                 ImGui.EndTooltip();
                             }
-                            
-                            if (ImGui.IsItemHovered())
-                            {
-                            }
                         }
                         
                         ImGui.EndListBox();
@@ -126,6 +122,17 @@ class PropEditor : IEditorMode
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {
                                 selectedInit = prop;
+                            }
+
+                            if (ImGui.BeginItemTooltip())
+                            {
+                                var previewRect = prop.GetPreviewRectangle(0);
+                                rlImGui.ImageRect(
+                                    prop.Texture,
+                                    (int)previewRect.Width, (int)previewRect.Height,
+                                    previewRect
+                                );
+                                ImGui.EndTooltip();
                             }
                         }
                         
