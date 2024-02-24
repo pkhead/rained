@@ -12,7 +12,7 @@ public enum TileType
     Box
 }
 
-class TileData
+class Tile
 {
     public string Name;
     public readonly TileCategory Category;
@@ -27,7 +27,7 @@ class TileData
     public readonly int CenterX;
     public readonly int CenterY;
 
-    public TileData(string name, TileCategory category, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
+    public Tile(string name, TileCategory category, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
     {
         Name = name;
         Width = width;
@@ -145,7 +145,7 @@ class TileCategory
     public string Name;
     public int Index;
     public Color Color;
-    public List<TileData> Tiles = new();
+    public List<Tile> Tiles = new();
 
     public TileCategory(string name, Lingo.Color color)
     {
@@ -157,7 +157,7 @@ class TileCategory
 class Database
 {
     public readonly List<TileCategory> Categories;
-    private readonly Dictionary<string, TileData> stringToTile = new();
+    private readonly Dictionary<string, Tile> stringToTile = new();
 
     public Database()
     {
@@ -220,7 +220,7 @@ class Database
                 };
 
                 try {
-                    var tileData = new TileData(
+                    var tileData = new Tile(
                         name: name,
                         category: curGroup,
                         type: tileType,
@@ -242,5 +242,5 @@ class Database
     }
 
     public bool HasTile(string name) => stringToTile.ContainsKey(name);
-    public TileData GetTileFromName(string name) => stringToTile[name];
+    public Tile GetTileFromName(string name) => stringToTile[name];
 }

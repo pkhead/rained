@@ -11,7 +11,7 @@ class TileEditor : IEditorMode
     public string Name { get => "Tiles"; }
 
     private readonly EditorWindow window;
-    private TileData? selectedTile;
+    private Tile? selectedTile;
     private int selectedMaterialIdx = 0;
     private bool isToolActive = false;
 
@@ -21,9 +21,9 @@ class TileEditor : IEditorMode
     private class AvailableGroup
     {
         public int GroupIndex;
-        public List<TileData> Tiles;
+        public List<Tile> Tiles;
 
-        public AvailableGroup(int groupIndex, List<TileData> tiles)
+        public AvailableGroup(int groupIndex, List<Tile> tiles)
         {
             GroupIndex = groupIndex;
             Tiles = tiles;
@@ -794,7 +794,7 @@ class TileEditor : IEditorMode
         Geometry
     };
 
-    private TilePlacementStatus ValidateTilePlacement(Tiles.TileData tile, int tileLeft, int tileTop, bool force)
+    private TilePlacementStatus ValidateTilePlacement(Tiles.Tile tile, int tileLeft, int tileTop, bool force)
     {
         var level = window.Editor.Level;
 
@@ -855,7 +855,7 @@ class TileEditor : IEditorMode
     }
 
     private void PlaceTile(
-        TileData tile,
+        Tile tile,
         int tileLeft, int tileTop,
         int layer, int tileRootX, int tileRootY,
         bool placeGeometry

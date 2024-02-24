@@ -592,7 +592,7 @@ class LevelEditRender
                 ref var cell = ref Level.Layers[layer, x, y];
                 if (!cell.HasTile()) continue;
 
-                Tiles.TileData? tile;
+                Tiles.Tile? tile;
                 int tx;
                 int ty;
 

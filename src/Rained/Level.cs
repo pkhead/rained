@@ -84,7 +84,7 @@ struct LevelCell
     public int TileLayer = -1;
 
     // As the tile root, reference to the tile, or null if no tile here
-    public Tiles.TileData? TileHead = null;
+    public Tiles.Tile? TileHead = null;
 
     public readonly bool HasTile() => TileRootX >= 0 || TileRootY >= 0 || TileHead is not null;
 

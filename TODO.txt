@@ -1,7 +1,6 @@
 Overall:
 - gc free queue? to free on main thread? (how?)
 - on cell change, only remesh the mesh chunk that it is in
-- rename TileData class to Tile
 - undo/redo for level resize
 - open file browser in directory of current level
 - help pages/hints/tooltips/whatever
