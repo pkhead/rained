@@ -165,6 +165,7 @@ class PropDatabase
         {
             IsTileCategory = true
         };
+        Categories.Add(currentCategory);
         RainEd.Logger.Information("Register prop category Tiles as props 1");
 
         int tileIndex = 0;
@@ -177,6 +178,7 @@ class PropDatabase
                 if (!tile.CanBeProp) continue;
 
                 var propInit = new PropInit(currentCategory, tile);
+                currentCategory.Props.Add(propInit);
                 tilePropCategory.Props.Add(propInit);
                 tileIndex++;
 

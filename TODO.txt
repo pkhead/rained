@@ -1,3 +1,6 @@
+Bugs:
+- loading a new level with the prop editor open will load light map data incorrectly?
+
 Overall:
 - gc free queue? to free on main thread? (how?)
 - on cell change, only remesh the mesh chunk that it is in
@@ -59,6 +62,7 @@ Prop Editor: (TODO)
 - for rope-type props, copy henry's design
 
 Render:
+- select camera to render first
 - show time elapsed
 - show light render stage
 - if possible, show coloring stage, although i don't think
