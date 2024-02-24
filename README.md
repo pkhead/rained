@@ -7,7 +7,7 @@ Another Rain World level editor. Currently in development.
 - Ease of use (hopefully)
 - Undo/redo everything
 - [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community) level rendering with a preview
-- Dark Mode for the vampires
+- Dark Mode for the Miros Birds
 
 ## Building
 ### .NET CLI
