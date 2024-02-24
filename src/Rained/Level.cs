@@ -101,7 +101,7 @@ class Camera
     // camera red border is 52.5x35
     // left black inner border is 1 tile away
     // game resolution is 1040x800 
-    // render scales up pixels by 1.25 (each tile is 16 pixels )
+    // render scales up pixels by 1.25 (each tile is 16 pixels) (me smort. i was already aware tiles were 20 px large)
     // quad save format: [A, O]
     //  A: clockwise angle in degrees, where 0 is up
     //  O: offset number from 0 to 1 (1.0 translate to 4 tiles) 
@@ -220,6 +220,16 @@ class Effect
 
         width = newWidth;
         height = newHeight;
+    }
+}
+
+class Prop
+{
+    public readonly Props.PropInit PropInit;
+
+    public Prop(Vector2 center, Props.PropInit init)
+    {
+        PropInit = init;
     }
 }
 

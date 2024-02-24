@@ -1,6 +1,7 @@
 using ImGuiNET;
 using RainEd.Props;
 using Raylib_cs;
+using rlImGui_cs;
 using System.Numerics;
 namespace RainEd;
 
@@ -56,7 +57,7 @@ class PropEditor : IEditorMode
                     
                     // group listing (effects) list box
                     ImGui.SameLine();
-                    if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
+                    if (ImGui.BeginListBox("##Props", new Vector2(halfWidth, boxHeight)))
                     {
                         var propList = propDb.Categories[selectedGroup].Props;
 
@@ -67,6 +68,21 @@ class PropEditor : IEditorMode
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {
                                 selectedInit = prop;
+                            }
+
+                            if (ImGui.BeginItemTooltip())
+                            {
+                                var previewRect = prop.GetPreviewRectangle(0);
+                                rlImGui.ImageRect(
+                                    prop.Texture,
+                                    (int)previewRect.Width, (int)previewRect.Height,
+                                    previewRect
+                                );
+                                ImGui.EndTooltip();
+                            }
+                            
+                            if (ImGui.IsItemHovered())
+                            {
                             }
                         }
                         
@@ -99,7 +115,7 @@ class PropEditor : IEditorMode
                     
                     // group listing (effects) list box
                     ImGui.SameLine();
-                    if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
+                    if (ImGui.BeginListBox("##Props", new Vector2(halfWidth, boxHeight)))
                     {
                         var propList = propDb.TileCategories[selectedGroup].Props;
 

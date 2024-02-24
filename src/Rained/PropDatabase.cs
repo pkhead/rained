@@ -1,5 +1,6 @@
 using RainEd.Tiles;
 using Raylib_cs;
+using System.Numerics;
 namespace RainEd.Props;
 
 enum PropType
@@ -24,7 +25,8 @@ enum PropFlags
     PostEffectsWhenColorized = 8,
     CustomColorAvailable = 16,
     CanSetThickness = 32,
-    CanColorTube = 64
+    CanColorTube = 64,
+    Tile = 128,
 }
 
 class PropInit
@@ -35,6 +37,11 @@ class PropInit
     public readonly RlManaged.Texture2D Texture;
     public readonly PropFlags PropFlags;
     public readonly string[] Notes;
+
+    // used for obtaining preview image
+    private readonly int pixelWidth;
+    private readonly int pixelHeight;
+    private readonly int layerCount;
 
     public PropInit(PropCategory category, Lingo.List init)
     {
@@ -54,6 +61,32 @@ class PropInit
         };
         Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png"));
 
+        // obtain size of image cel
+        if (init.fields.TryGetValue("pxlSize", out object? tempObject))
+        {
+            var pxlSize = (Vector2) tempObject;
+            pixelWidth = (int) pxlSize.X;
+            pixelHeight = (int) pxlSize.Y;
+        }
+        else if (init.fields.TryGetValue("sz", out tempObject))
+        {
+            var sz = (Vector2) tempObject;
+            pixelWidth = (int)sz.X * 20;
+            pixelHeight = (int)sz.Y * 20;
+        }
+        else
+        {
+            pixelWidth = Texture.Width;
+            pixelHeight = Texture.Height;
+        }
+
+        // get layer count
+        layerCount = 1;
+        if (init.fields.TryGetValue("repeatL", out tempObject))
+        {
+            layerCount = ((Lingo.List)tempObject).values.Count;
+        }
+
         PropFlags = 0;
         Notes = Array.Empty<string>();
     }
@@ -71,6 +104,26 @@ class PropInit
         Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", Name + ".png"));
         PropFlags = 0;
         Notes = Array.Empty<string>();
+    }
+
+    public Rectangle GetPreviewRectangle(int variation)
+    {
+        // standard types, like tiles, have an entire row of pixels at the top dedicated to
+        // a single black pixel.
+        int oy = 0;
+
+        if (Type == PropType.Standard || Type == PropType.VariedStandard)
+        {
+            oy = 1;
+        }
+
+        int layer = layerCount / 2;
+
+        return new Rectangle(
+            pixelWidth * variation,
+            pixelHeight * layer + oy,
+            pixelWidth, pixelHeight
+        );
     }
 }
 
