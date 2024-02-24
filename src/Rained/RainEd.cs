@@ -21,12 +21,14 @@ sealed class RainEd
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private readonly RlManaged.Texture2D rainedLogo;
+    private readonly EditorWindow editorWindow;
+    private readonly ChangeHistory.ChangeHistory changeHistory;
+    private bool ShowDemoWindow = false;
+
     public readonly Tiles.Database TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
-    private readonly ChangeHistory.ChangeHistory changeHistory;
-    private readonly EditorWindow editorWindow;
-    private bool ShowDemoWindow = false;
+    public readonly Props.PropDatabase PropDatabase;
 
     private string currentFilePath = string.Empty;
 
@@ -70,14 +72,17 @@ sealed class RainEd
 
         rainedLogo = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
-        Logger.Information("Loading tile init...");
+        Logger.Information("Initializing tile database...");
         TileDatabase = new Tiles.Database();
 
-        Logger.Information("Creating effect init...");
+        Logger.Information("Initializing effects database...");
         EffectsDatabase = new EffectsDatabase();
 
-        Logger.Information("Loading light brush init...");
+        Logger.Information("Initializing light brush database...");
         LightBrushDatabase = new Light.LightBrushDatabase();
+
+        Logger.Information("Initializing prop database...");
+        PropDatabase = new Props.PropDatabase();
         
         if (levelPath.Length > 0)
         {
