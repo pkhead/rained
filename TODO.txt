@@ -11,6 +11,8 @@ Overall:
 - copy henry
   (if i were to add a new level config screen, add bool toggle to auto-place cameras)
   (that is the specific thing i want to copy)
+- tile cat# and index# saving is probably incorrect
+- investigate Graphics/CopyToInit.txt
 
 Level Properties:
 
@@ -42,6 +44,12 @@ Effects Editor:
 - only store the pixels that changed in the matrix
 
 Prop Editor: (TODO)
+- More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
+- Tiles as Prop only looks at voxelStruct or voxelStructRandomDisplace(*) tiles
+  - also ignores all tiles tagged with "notProp"
+- Tiles as prop is generated from adding every tile in tile init sequentially
+    21 tiles per page
+- snap to grid in lingo editor snaps to grid intersections
 - instead of using keys to rotate/scale props, user will place them down first
   and then use handles on the edge of the prop to rotate/scale them.
   (i think this is fine, although i haven't done much prop editing myself
@@ -71,7 +79,7 @@ tile data format (from rwe+):
 
     {"tp": "default": "data": 0}
 
-effects matrix format
+FX MATRIX FORMAT
   {
     #nm: string
     #tp: "nn" | "standardErosion" (don't really know what this means),
@@ -91,76 +99,84 @@ effects matrix format
     )
   }
 
-prop init format
-[
-  #nm: string
-  #tp: "standard" | "soft" | "variedStandard" | "simpleDecal" | "variedSoft" | "variedDecal" | "antimatter" | "coloredSoft"
+PROP INIT FORMAT
+  [
+    #nm: string
+    #tp: "standard" | "soft" | "variedStandard" | "simpleDecal" | "variedSoft" | "variedDecal" | "antimatter" | "coloredSoft"
 
-  #colorize?: integer
+    #colorize?: integer
 
-  if tp == "standard" | "variedStandard" (
-    #colorTreatment: "standard" | "bevel"
-    
-    if colorTreatment == "bevel" (
-      #bevel: integer  
+    if tp == "standard" | "variedStandard" (
+      #colorTreatment: "standard" | "bevel"
+      
+      if colorTreatment == "bevel" (
+        #bevel: integer  
+      )
+
+      #sz: point
+      #repeatL: int[]
     )
 
-    #sz: point
-    #repeatL: int[]
-  )
+    if tp == "variedStandard" (
+      #vars: integer
+      #random: integer
+    )
 
-  if tp == "variedStandard" (
-    #vars: integer
-    #random: integer
-  )
+    if tp == "variedSoft" | "variedDecal" (
+      #pxlSize: point
+      #vars: integer
+      #random: integer
+    )
 
-  if tp == "variedSoft" | "variedDecal" (
-    #pxlSize: point
-    #vars: integer
-    #random: integer
-  )
+    if tp == "coloredSoft" (
+      #pxlSize: point
+    )
 
-  if tp == "coloredSoft" (
-    #pxlSize: point
-  )
+    if tp == "soft" (
+      #depth: integer
+      #round: integer
+      #contourExp: float
+      #selfShade: integer
+      #highLightBorder: float
+      #depthAffectHilites: float
+      #shadowBorder: float
+      #smoothShading: integer
+    )
 
-  if tp == "soft" (
-    #depth: integer
-    #round: integer
-    #contourExp: float
-    #selfShade: integer
-    #highLightBorder: float
-    #depthAffectHilites: float
-    #shadowBorder: float
-    #smoothShading: integer
-  )
+    if tp == "simpleDecal" | tp == "variedDecal" (
+      #depth: integer
+    )
 
-  if tp == "simpleDecal" | tp == "variedDecal" (
-    #depth: integer
-  )
+    if tp == "antimatter" (
+      #depth: number
+      #contourExp: number
+    )
 
-  if tp == "antimatter" (
-    #depth: number
-    #contourExp: number
-  )
+    #tags: ("randomRotat" | "snapToGrid" | "Circular Sign" | "randomFlipX" | "randomFlipY")[]
+    #layerExceptions: []
+    #notes: string[]
+  ]
 
-  #tags: ("randomRotat" | "snapToGrid" | "Circular Sign" | "randomFlipX" | "randomFlipY")[]
-  #layerExceptions: []
-  #notes: string[]
-]
-prop init format
-[
-  #nm: string
-  #tp: "standard" <
-    #colorTreatment: "bevel" <
-      #bevel: int
-    >
-    | "standard"
-    #sz: point
-    #repeatL: int[]
-    #tags: <"randomRotat", "customColor", 
-  >
-]
+PROP LEVEL FORMAT
+    PROPDATA: [
+      sublayer origin as negative integer
+      name as string
+      point(category#, tile#) (Cogs and Gears = 1)
+      array for quad corners, starting from top-left and continuing clockwise. 16 units = 1 cell
+      [
+        #settings: [
+          #renderorder: any integer
+          #seed: integer [0,1000]
+          #renderTime: 0 = PreEffects; 1 = PostEffects
+          e.t.c
+        ],
+        #points: point[] (if rope-type prop)
+      ]
+    ]
+
+    [
+      #props: PROPDATA[]
+    ]
 
 KEYBINDS:
   General:
