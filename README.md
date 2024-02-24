@@ -19,7 +19,7 @@ cd rained
 
 Set up Drizzle
 ```bash
-cd Drizzle
+cd src/Drizzle
 dotnet run --project Drizzle.Transpiler
 ```
 
