@@ -14,26 +14,37 @@ public enum TileType
 
 class Tile
 {
-    public string Name;
+    public readonly string Name;
     public readonly TileCategory Category;
-    public int Width;
-    public int Height;
-    public sbyte[,] Requirements;
-    public sbyte[,] Requirements2;
+    public readonly int Width;
+    public readonly int Height;
+    public readonly sbyte[,] Requirements;
+    public readonly sbyte[,] Requirements2;
     public readonly bool HasSecondLayer;
-    public int BfTiles = 0;
-    public RlManaged.Texture2D PreviewTexture;
+    public readonly int BfTiles = 0;
+    public readonly RlManaged.Texture2D PreviewTexture;
+    public readonly bool CanBeProp;
 
     public readonly int CenterX;
     public readonly int CenterY;
 
-    public Tile(string name, TileCategory category, TileType type, int width, int height, int bfTiles, List<int>? repeatL, List<int> specs, List<int>? specs2)
+    public Tile(
+        string name,
+        TileCategory category,
+        TileType type,
+        int width, int height,
+        int bfTiles,
+        List<int>? repeatL,
+        List<int> specs, List<int>? specs2,
+        bool noPropTag
+    )
     {
         Name = name;
         Width = width;
         Height = height;
         BfTiles = bfTiles;
         Category = category;
+        CanBeProp = false;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
@@ -78,6 +89,7 @@ class Tile
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
                 rowCount *= repeatL!.Count;
+                CanBeProp = true;
                 break;
             
             case TileType.VoxelStructRockType:
@@ -137,6 +149,9 @@ class Tile
 
         fullImage.Dispose();
         previewImage.Dispose();
+
+        if (noPropTag)
+            CanBeProp = false;
     }
 }
 
@@ -154,12 +169,12 @@ class TileCategory
     }
 }
 
-class Database
+class TileDatabase
 {
     public readonly List<TileCategory> Categories;
     private readonly Dictionary<string, Tile> stringToTile = new();
 
-    public Database()
+    public TileDatabase()
     {
         Categories = new();
         
@@ -191,6 +206,7 @@ class Database
 
                 var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Invalid tile init file"));
 
+                object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];
                 var tp = (string) tileInit.fields["tp"];
                 var size = (Vector2) tileInit.fields["sz"];
@@ -198,9 +214,9 @@ class Database
                 var bfTiles = (int) tileInit.fields["bfTiles"];
                 Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
-                    tileInit.fields.ContainsKey("repeatL") ? (Lingo.List) tileInit.fields["repeatL"] : null;
+                    tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
                 
-                if (tileInit.fields.ContainsKey("specs2") && tileInit.fields["specs2"] is Lingo.List specs2List)
+                if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
                 {
                     specs2Data = specs2List;
                 }
@@ -208,6 +224,7 @@ class Database
                 List<int>? repeatL = repeatLayerList?.values.Cast<int>().ToList();
                 List<int> specs = specsData.values.Cast<int>().ToList();
                 List<int>? specs2 = specs2Data?.values.Cast<int>().ToList();
+                List<string> tags = ((Lingo.List)tileInit.fields["tags"]).values.Cast<string>().ToList();
 
                 TileType tileType = tp switch
                 {
@@ -228,7 +245,8 @@ class Database
                         bfTiles: bfTiles,
                         repeatL: repeatL,
                         specs: specs,
-                        specs2: specs2
+                        specs2: specs2,
+                        tags.Contains("notProp")
                     );
 
                     curGroup.Tiles.Add(tileData);

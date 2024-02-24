@@ -114,6 +114,7 @@ class EditorWindow
         editorModes.Add(new CameraEditor(this));
         editorModes.Add(new LightEditor(this));
         editorModes.Add(new EffectsEditor(this));
+        editorModes.Add(new PropEditor(this));
     }
 
     public void UnloadView()
@@ -215,6 +216,9 @@ class EditorWindow
                 
                 if (Raylib.IsKeyPressed(KeyboardKey.Six))
                     newEditMode = (int) EditModeEnum.Effect;
+
+                if (Raylib.IsKeyPressed(KeyboardKey.Seven))
+                    newEditMode = (int) EditModeEnum.Prop;
             }
 
             // change edit mode if requested

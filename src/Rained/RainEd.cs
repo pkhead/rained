@@ -25,7 +25,7 @@ sealed class RainEd
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private bool ShowDemoWindow = false;
 
-    public readonly Tiles.Database TileDatabase;
+    public readonly Tiles.TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
     public readonly Props.PropDatabase PropDatabase;
@@ -73,7 +73,7 @@ sealed class RainEd
         rainedLogo = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
         Logger.Information("Initializing tile database...");
-        TileDatabase = new Tiles.Database();
+        TileDatabase = new Tiles.TileDatabase();
 
         Logger.Information("Initializing effects database...");
         EffectsDatabase = new EffectsDatabase();
@@ -82,7 +82,7 @@ sealed class RainEd
         LightBrushDatabase = new Light.LightBrushDatabase();
 
         Logger.Information("Initializing prop database...");
-        PropDatabase = new Props.PropDatabase();
+        PropDatabase = new Props.PropDatabase(TileDatabase);
         
         if (levelPath.Length > 0)
         {
