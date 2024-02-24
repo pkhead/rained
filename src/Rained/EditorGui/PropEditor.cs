@@ -24,7 +24,7 @@ class PropEditor : IEditorMode
 
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            ImGui.SeparatorText("Prop Selector");
+            ImGui.SeparatorText("Create Prop");
 
             if (ImGui.BeginTabBar("PropSelector"))
             {
@@ -72,7 +72,7 @@ class PropEditor : IEditorMode
 
                             if (ImGui.BeginItemTooltip())
                             {
-                                var previewRect = prop.GetPreviewRectangle(0);
+                                var previewRect = prop.GetPreviewRectangle(0, prop.LayerCount / 2);
                                 rlImGui.ImageRect(
                                     prop.Texture,
                                     (int)previewRect.Width, (int)previewRect.Height,
@@ -126,7 +126,7 @@ class PropEditor : IEditorMode
 
                             if (ImGui.BeginItemTooltip())
                             {
-                                var previewRect = prop.GetPreviewRectangle(0);
+                                var previewRect = prop.GetPreviewRectangle(0, prop.LayerCount / 2);
                                 rlImGui.ImageRect(
                                     prop.Texture,
                                     (int)previewRect.Width, (int)previewRect.Height,
@@ -157,6 +157,7 @@ class PropEditor : IEditorMode
 
             // sublayer
             // prop settings
+            // notes + synopses
             
             ImGui.End();
         }
@@ -200,5 +201,16 @@ class PropEditor : IEditorMode
 
         levelRender.RenderGrid();
         levelRender.RenderBorder();
+        levelRender.RenderProps(0, 255);
+
+        if (window.IsViewportHovered && window.IsMouseInLevel())
+        {
+            // add selected prop on mouse click
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && selectedInit is not null)
+            {
+                var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height));
+                level.Props.Add(prop);
+            }
+        }
     }
 }

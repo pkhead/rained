@@ -226,10 +226,17 @@ class Effect
 class Prop
 {
     public readonly Props.PropInit PropInit;
+    public readonly Vector2[] Quad;
 
-    public Prop(Vector2 center, Props.PropInit init)
+    public Prop(Props.PropInit init, Vector2 center, Vector2 size)
     {
         PropInit = init;
+        Quad = new Vector2[4];
+
+        Quad[0] = center + size * new Vector2(-1f, -1f) / 2f;
+        Quad[1] = center + size * new Vector2(1f, -1f) / 2f;
+        Quad[2] = center + size * new Vector2(1f, 1f) / 2f;
+        Quad[3] = center + size * new Vector2(-1f, 1f) / 2f;
     }
 }
 
@@ -284,6 +291,7 @@ class Level
     public const float MaxLightDistance = 10f;
 
     public readonly List<Effect> Effects = new();
+    public readonly List<Prop> Props = new();
     
     public int TileSeed = 200;
     public bool DefaultMedium = false; // idk what the hell this does

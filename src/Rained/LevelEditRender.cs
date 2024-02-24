@@ -65,6 +65,26 @@ class LevelEditRender
         LevelObject.WhackAMoleHole, LevelObject.ScavengerHole
     };
 
+    // it seems transparent pixels can be interpreted as pure white or no alpha
+    private readonly static string RWTransparencyShaderSrc = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            bool isTransparent = texelColor.rgb == vec3(1.0f, 1.0f, 1.0f) || texelColor.a == 0.0f;
+            finalColor = vec4(texelColor.rgb, 1.0f - float(isTransparent)) * fragColor * colDiffuse;
+        }
+    ";
+
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -81,6 +101,7 @@ class LevelEditRender
     private Raylib_cs.Material geoMaterial;
     private List<RlManaged.Mesh>[] meshLayers;
     private readonly bool[] dirtyMeshLayers; // if meshes need updating
+    private RlManaged.Shader transparencyShader;
 
     private readonly List<Vector3> verticesBuf = new();
     private readonly List<Color> colorsBuf = new();
@@ -100,6 +121,8 @@ class LevelEditRender
             meshLayers[i] = new List<RlManaged.Mesh>();
             dirtyMeshLayers[i] = true;
         }
+
+        transparencyShader = RlManaged.Shader.LoadFromMemory(null, RWTransparencyShaderSrc);
     }
 
     // re-render the grid texture for the new zoom level
@@ -645,6 +668,47 @@ class LevelEditRender
                 }
             }
         }
+    }
+
+    public void RenderProps(int layer, int alpha)
+    {
+        Raylib.BeginShaderMode(transparencyShader);
+
+        foreach (var prop in Level.Props)
+        {
+            var texture = prop.PropInit.Texture;
+            Rlgl.SetTexture(texture.Id);
+
+            for (int depth = prop.PropInit.LayerCount - 1; depth >= 0; depth--)
+            {
+                var srcRect = prop.PropInit.GetPreviewRectangle(0, depth);
+                Rlgl.Begin(DrawMode.Quads);
+                {
+                    Rlgl.Color4ub(255, 255, 255, (byte)alpha);
+
+                    // top-left
+                    Rlgl.TexCoord2f(srcRect.X / texture.Width, srcRect.Y / texture.Height);
+                    Rlgl.Vertex2f(prop.Quad[0].X * Level.TileSize, prop.Quad[0].Y * Level.TileSize);
+
+                    // bottom-left
+                    Rlgl.TexCoord2f(srcRect.X / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
+                    Rlgl.Vertex2f(prop.Quad[3].X * Level.TileSize, prop.Quad[3].Y * Level.TileSize);
+
+                    // bottom-right
+                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
+                    Rlgl.Vertex2f(prop.Quad[2].X * Level.TileSize, prop.Quad[2].Y * Level.TileSize);
+
+                    // top-right
+                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, srcRect.Y / texture.Height);
+                    Rlgl.Vertex2f(prop.Quad[1].X * Level.TileSize, prop.Quad[1].Y * Level.TileSize);
+                }
+                Rlgl.End();
+            }
+
+            Rlgl.SetTexture(0);
+        }
+
+        Raylib.EndShaderMode();
     }
 
     public void RenderGrid()

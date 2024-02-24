@@ -43,6 +43,10 @@ class PropInit
     private readonly int pixelHeight;
     private readonly int layerCount;
 
+    public float Width { get => pixelWidth / 20f; }
+    public float Height { get => pixelHeight / 20f; }
+    public int LayerCount { get => layerCount; }
+
     public PropInit(PropCategory category, Lingo.List init)
     {
         Category = category;
@@ -108,9 +112,11 @@ class PropInit
         layerCount = srcTile.LayerCount;
         pixelWidth = (srcTile.Width + srcTile.BfTiles * 2) * 20;
         pixelHeight = (srcTile.Height + srcTile.BfTiles * 2) * 20;
+
+        // TODO: account for tile variations
     }
 
-    public Rectangle GetPreviewRectangle(int variation)
+    public Rectangle GetPreviewRectangle(int variation, int layer)
     {
         // standard types, like tiles, have an entire row of pixels at the top dedicated to
         // a single black pixel.
@@ -120,9 +126,7 @@ class PropInit
         {
             oy = 1;
         }
-
-        int layer = layerCount / 2;
-
+        
         return new Rectangle(
             pixelWidth * variation,
             pixelHeight * layer + oy,
