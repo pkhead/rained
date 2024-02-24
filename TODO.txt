@@ -1,5 +1,7 @@
 Bugs:
 - loading a new level with the prop editor open will load light map data incorrectly?
+- crashes when loading a level that doesn't have a light map
+- crashes when regenerating geo mesh on debian 
 
 Overall:
 - gc free queue? to free on main thread? (how?)
