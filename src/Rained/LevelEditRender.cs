@@ -676,6 +676,9 @@ class LevelEditRender
 
         foreach (var prop in Level.Props)
         {
+            if (prop.Depth < layer * 10 || prop.Depth >= (layer+1) * 10)
+                continue;
+            
             var texture = prop.PropInit.Texture;
             Rlgl.SetTexture(texture.Id);
 

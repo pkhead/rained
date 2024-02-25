@@ -235,3 +235,6 @@ KEYBINDS:
     Shift + LMB - Paint effect stronger
     RMB - Erase effect
     Shift + MouseWheel - Change brush size
+  
+  Prop Editor:
+    N - Add new prop

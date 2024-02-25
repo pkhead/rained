@@ -227,6 +227,7 @@ class Prop
 {
     public readonly Props.PropInit PropInit;
     public readonly Vector2[] Quad;
+    public int Depth = 0; // 0-29
 
     public Prop(Props.PropInit init, Vector2 center, Vector2 size)
     {

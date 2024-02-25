@@ -12,6 +12,17 @@ class PropEditor : IEditorMode
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
+    private List<Prop> selectedProps = new();
+    private Vector2 prevMousePos;
+    private Vector2 dragStartPos;
+
+    private bool isMouseDragging = false;
+    private enum DragMode
+    {
+        Select,
+        Move
+    };
+    private DragMode dragMode;
 
     public PropEditor(EditorWindow window)
     {
@@ -163,12 +174,58 @@ class PropEditor : IEditorMode
         }
     }
 
+    private static bool IsPointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3)
+    {
+        static float sign(Vector2 p1, Vector2 p2, Vector2 p3)
+        {
+            return (p1.X - p3.X) * (p2.Y - p3.Y) - (p2.X - p3.X) * (p1.Y - p3.Y);
+        }
+
+        float d1 = sign(pt, v1, v2);
+        float d2 = sign(pt, v2, v3);
+        float d3 = sign(pt, v3, v1);
+
+        bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+        return !(hasNeg && hasPos);
+    }
+
+    private void SelectPropAt(Vector2 point)
+    {
+        selectedProps.Clear();
+
+        foreach (var prop in RainEd.Instance.Level.Props)
+        {
+            if (
+                IsPointInTriangle(point, prop.Quad[0], prop.Quad[1], prop.Quad[2]) ||
+                IsPointInTriangle(point, prop.Quad[2], prop.Quad[3], prop.Quad[0])    
+            )
+            {
+                selectedProps.Add(prop);
+                break;
+            }
+        }
+    }
+
+    private Vector2 GetSelectionCenter()
+    {
+        Vector2 accum = Vector2.Zero;
+        foreach (var prop in selectedProps)
+        {
+            accum += prop.Quad[0] + prop.Quad[1] + prop.Quad[2] + prop.Quad[3];
+        }
+
+        return accum / (selectedProps.Count * 4);
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
     {
-        window.BeginLevelScissorMode();
+        bool wasMouseDragging = isMouseDragging;
+        isMouseDragging = false;
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
+        var selectionColor = Color.Blue;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
@@ -182,6 +239,7 @@ class PropEditor : IEditorMode
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
             levelRender.RenderTiles(l, 255);
+            levelRender.RenderProps(l, 255);
             
             // draw alpha-blended result into main frame
             Raylib.BeginTextureMode(mainFrame);
@@ -201,16 +259,82 @@ class PropEditor : IEditorMode
 
         levelRender.RenderGrid();
         levelRender.RenderBorder();
-        levelRender.RenderProps(0, 255);
 
-        if (window.IsViewportHovered && window.IsMouseInLevel())
+        // highlight selected props
+        foreach (var prop in selectedProps)
         {
-            // add selected prop on mouse click
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && selectedInit is not null)
+            Raylib.DrawLineEx(prop.Quad[0] * Level.TileSize, prop.Quad[1] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
+            Raylib.DrawLineEx(prop.Quad[1] * Level.TileSize, prop.Quad[2] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
+            Raylib.DrawLineEx(prop.Quad[2] * Level.TileSize, prop.Quad[3] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
+            Raylib.DrawLineEx(prop.Quad[3] * Level.TileSize, prop.Quad[0] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
+        }
+
+        // draw drag rect
+        if (wasMouseDragging && dragMode == DragMode.Select)
+        {
+            var minX = (int)(Math.Min(dragStartPos.X, window.MouseCellFloat.X) * Level.TileSize);
+            var maxX = (int)(Math.Max(dragStartPos.X, window.MouseCellFloat.X) * Level.TileSize);
+            var minY = (int)(Math.Min(dragStartPos.Y, window.MouseCellFloat.Y) * Level.TileSize);
+            var maxY = (int)(Math.Max(dragStartPos.Y, window.MouseCellFloat.Y) * Level.TileSize);
+
+            var rect = new Rectangle(minX, minY, maxX - minX, maxY - minY);
+            Raylib.DrawRectangleRec(rect, new Color(selectionColor.R, selectionColor.G, selectionColor.B, (byte)80));
+            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, selectionColor);
+        }
+
+        if (window.IsViewportHovered)
+        {
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
             {
-                var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height));
-                level.Props.Add(prop);
+                dragStartPos = window.MouseCellFloat;
+            }
+
+            if (ImGui.IsMouseDragging(ImGuiMouseButton.Left))
+            {
+                if (!wasMouseDragging)
+                {
+                    // drag had begun
+                    SelectPropAt(dragStartPos);
+                    dragMode = selectedProps.Count == 0 ? DragMode.Select : DragMode.Move;
+                }
+                isMouseDragging = true;
+
+                // move drag
+                if (dragMode == DragMode.Move)
+                {
+                    var mouseDelta = window.MouseCellFloat - prevMousePos;
+                    foreach (var prop in selectedProps)
+                    {
+                        prop.Quad[0] += mouseDelta;
+                        prop.Quad[1] += mouseDelta;
+                        prop.Quad[2] += mouseDelta;
+                        prop.Quad[3] += mouseDelta;
+                    }
+                }
+            }
+
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
+            {
+                SelectPropAt(window.MouseCellFloat);
+            }
+
+            // when N is pressed, create new selected prop
+            if (ImGui.IsKeyPressed(ImGuiKey.N))
+            {
+                if (selectedInit is not null)
+                {
+                    var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height))
+                    {
+                        Depth = window.WorkLayer * 10
+                    };
+
+                    level.Props.Add(prop);
+                    selectedProps.Clear();
+                    selectedProps.Add(prop);
+                }
             }
         }
+
+        prevMousePos = window.MouseCellFloat;
     }
 }
