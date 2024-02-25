@@ -12,7 +12,8 @@ class PropEditor : IEditorMode
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
-    private List<Prop> selectedProps = new();
+    private readonly List<Prop> selectedProps = new();
+    private List<Prop>? initSelectedProps = null; // used for add rect select mode
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
 
@@ -27,6 +28,13 @@ class PropEditor : IEditorMode
     public PropEditor(EditorWindow window)
     {
         this.window = window;
+    }
+
+    public void Load()
+    {
+        selectedProps.Clear();
+        initSelectedProps = null;
+        isMouseDragging = false;
     }
 
     public void DrawToolbar()
@@ -190,10 +198,8 @@ class PropEditor : IEditorMode
         return !(hasNeg && hasPos);
     }
 
-    private void SelectPropAt(Vector2 point)
+    private static Prop? GetPropAt(Vector2 point)
     {
-        selectedProps.Clear();
-
         foreach (var prop in RainEd.Instance.Level.Props)
         {
             if (
@@ -201,21 +207,25 @@ class PropEditor : IEditorMode
                 IsPointInTriangle(point, prop.Quad[2], prop.Quad[3], prop.Quad[0])    
             )
             {
-                selectedProps.Add(prop);
-                break;
+                return prop;
             }
         }
+
+        return null;
     }
 
-    private Vector2 GetSelectionCenter()
+    private static Rectangle GetPropAABB(Prop prop)
     {
-        Vector2 accum = Vector2.Zero;
-        foreach (var prop in selectedProps)
-        {
-            accum += prop.Quad[0] + prop.Quad[1] + prop.Quad[2] + prop.Quad[3];
-        }
+        var minX = Math.Min(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
+        var minY = Math.Min(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
+        var maxX = Math.Max(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
+        var maxY = Math.Max(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
 
-        return accum / (selectedProps.Count * 4);
+    private static Vector2 GetPropCenter(Prop prop)
+    {
+        return (prop.Quad[0] + prop.Quad[1] + prop.Quad[2] + prop.Quad[3]) / 4f;
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -225,7 +235,7 @@ class PropEditor : IEditorMode
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
-        var selectionColor = Color.Blue;
+        var selectionColor = new Color(0, 0, 255, 255);
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
@@ -272,14 +282,35 @@ class PropEditor : IEditorMode
         // draw drag rect
         if (wasMouseDragging && dragMode == DragMode.Select)
         {
-            var minX = (int)(Math.Min(dragStartPos.X, window.MouseCellFloat.X) * Level.TileSize);
-            var maxX = (int)(Math.Max(dragStartPos.X, window.MouseCellFloat.X) * Level.TileSize);
-            var minY = (int)(Math.Min(dragStartPos.Y, window.MouseCellFloat.Y) * Level.TileSize);
-            var maxY = (int)(Math.Max(dragStartPos.Y, window.MouseCellFloat.Y) * Level.TileSize);
+            var minX = Math.Min(dragStartPos.X, window.MouseCellFloat.X);
+            var maxX = Math.Max(dragStartPos.X, window.MouseCellFloat.X);
+            var minY = Math.Min(dragStartPos.Y, window.MouseCellFloat.Y);
+            var maxY = Math.Max(dragStartPos.Y, window.MouseCellFloat.Y);
 
-            var rect = new Rectangle(minX, minY, maxX - minX, maxY - minY);
+            var rect = new Rectangle(
+                minX * Level.TileSize,
+                minY * Level.TileSize,
+                (maxX - minX) * Level.TileSize,
+                (maxY - minY) * Level.TileSize
+            );
             Raylib.DrawRectangleRec(rect, new Color(selectionColor.R, selectionColor.G, selectionColor.B, (byte)80));
             Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, selectionColor);
+
+            // select all props within selection rectangle
+            selectedProps.Clear();
+            
+            if (initSelectedProps is not null)
+            {
+                foreach (var prop in initSelectedProps)
+                    selectedProps.Add(prop);
+            }
+
+            foreach (var prop in level.Props)
+            {
+                var pc = GetPropCenter(prop);
+                if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
+                    selectedProps.Add(prop);
+            }
         }
 
         if (window.IsViewportHovered)
@@ -294,8 +325,31 @@ class PropEditor : IEditorMode
                 if (!wasMouseDragging)
                 {
                     // drag had begun
-                    SelectPropAt(dragStartPos);
-                    dragMode = selectedProps.Count == 0 ? DragMode.Select : DragMode.Move;
+                    var hoverProp = GetPropAt(dragStartPos);
+
+                    // if dragging over an empty space, begin rect select
+                    if (hoverProp is null)
+                    {
+                        dragMode = DragMode.Select;
+
+                        // if shift is held, rect select Adds instead of Replace
+                        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                            initSelectedProps = selectedProps.ToList(); // clone selection list
+                        else
+                            initSelectedProps = null;
+                    }
+                    else
+                    {
+                        // if draggging over a prop, drag all currently selected props
+                        // if active prop is in selection. if not, then set selection
+                        // to this prop
+                        dragMode = DragMode.Move;
+                        if (!selectedProps.Contains(hoverProp))
+                        {
+                            selectedProps.Clear();
+                            selectedProps.Add(hoverProp);
+                        }
+                    }
                 }
                 isMouseDragging = true;
 
@@ -313,12 +367,31 @@ class PropEditor : IEditorMode
                 }
             }
 
+            // user clicked a prop, so add it to the selection
             if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
             {
-                SelectPropAt(window.MouseCellFloat);
+                if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    selectedProps.Clear();
+                
+                var prop = GetPropAt(window.MouseCellFloat);
+                if (prop is not null)
+                {
+                    if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    {
+                        // if prop is in selection, remove it from selection
+                        // if prop is not in selection, add it to the selection
+                        if (!selectedProps.Remove(prop))
+                            selectedProps.Add(prop);
+                    }
+                    else
+                    {
+                        selectedProps.Add(prop);
+                    }
+                }
             }
 
             // when N is pressed, create new selected prop
+            // TODO: drag and drop from props list
             if (ImGui.IsKeyPressed(ImGuiKey.N))
             {
                 if (selectedInit is not null)
