@@ -4,7 +4,6 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 namespace RainEd;
-
 class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
@@ -16,6 +15,8 @@ class PropEditor : IEditorMode
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
+
+    private readonly Color SelectionColor = new(0, 0, 255, 255);
 
     private bool isMouseDragging = false;
     private enum DragMode
@@ -214,18 +215,50 @@ class PropEditor : IEditorMode
         return null;
     }
 
-    private static Rectangle GetPropAABB(Prop prop)
+    /*private static Rectangle GetPropAABB(Prop prop)
     {
         var minX = Math.Min(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
         var minY = Math.Min(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
         var maxX = Math.Max(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
         var maxY = Math.Max(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }*/
+    private Rectangle GetSelectionAABB()
+    {
+        var minX = float.PositiveInfinity;
+        var maxX = float.NegativeInfinity;
+        var minY = float.PositiveInfinity;
+        var maxY = float.NegativeInfinity;
+
+        foreach (var prop in selectedProps)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                minX = Math.Min(minX, prop.Quad[i].X);
+                minY = Math.Min(minY, prop.Quad[i].Y);
+                maxX = Math.Max(maxX, prop.Quad[i].X);
+                maxY = Math.Max(maxY, prop.Quad[i].Y);
+            }
+        }
+
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
     private static Vector2 GetPropCenter(Prop prop)
     {
         return (prop.Quad[0] + prop.Quad[1] + prop.Quad[2] + prop.Quad[3]) / 4f;
+    }
+
+    // returns true if gizmo is hovered, false if not
+    private bool DrawGizmoHandle(Vector2 pos)
+    {
+        bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - pos).Length() < 0.5f / window.ViewZoom;
+        Raylib.DrawCircleV(
+            pos * Level.TileSize,
+            (isGizmoHovered ? 8f : 4f) / window.ViewZoom,
+            isGizmoHovered ? new Color(50, 50, 255, 255) : SelectionColor
+        );
+        return isGizmoHovered;
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -235,7 +268,6 @@ class PropEditor : IEditorMode
 
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
-        var selectionColor = new Color(0, 0, 255, 255);
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
@@ -273,10 +305,67 @@ class PropEditor : IEditorMode
         // highlight selected props
         foreach (var prop in selectedProps)
         {
-            Raylib.DrawLineEx(prop.Quad[0] * Level.TileSize, prop.Quad[1] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
-            Raylib.DrawLineEx(prop.Quad[1] * Level.TileSize, prop.Quad[2] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
-            Raylib.DrawLineEx(prop.Quad[2] * Level.TileSize, prop.Quad[3] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
-            Raylib.DrawLineEx(prop.Quad[3] * Level.TileSize, prop.Quad[0] * Level.TileSize, 1f / window.ViewZoom, selectionColor);
+            Raylib.DrawLineEx(prop.Quad[0] * Level.TileSize, prop.Quad[1] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(prop.Quad[1] * Level.TileSize, prop.Quad[2] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(prop.Quad[2] * Level.TileSize, prop.Quad[3] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(prop.Quad[3] * Level.TileSize, prop.Quad[0] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+        }
+
+        // prop transform gizmos
+        if (selectedProps.Count > 0)
+        {
+            var aabb = GetSelectionAABB();
+
+            // draw selection AABB if there is more than
+            // one prop selected
+            if (selectedProps.Count > 1)
+            {
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(
+                        aabb.Position * Level.TileSize,
+                        aabb.Size * Level.TileSize
+                    ),
+                    1f / window.ViewZoom,
+                    SelectionColor
+                );
+            }
+
+            // scale gizmo (points on corners)
+            {
+                Vector2[] corners = new Vector2[4]
+                {
+                    aabb.Position + aabb.Size * new Vector2(0f, 0f),
+                    aabb.Position + aabb.Size * new Vector2(1f, 0f),
+                    aabb.Position + aabb.Size * new Vector2(1f, 1f),
+                    aabb.Position + aabb.Size * new Vector2(0f, 1f),
+                };
+
+                for (int i = 0; i < 4; i++)
+                {
+                    var handlePos = corners[i];
+                    bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - handlePos).Length() < 0.5f / window.ViewZoom;
+
+                    // draw gizmo handle at corner
+                    DrawGizmoHandle(handlePos);
+                }
+            }
+
+            // rotation gizmo
+            {
+                Vector2 rotDotPos = new(aabb.X + aabb.Width / 2f, aabb.Y - 5f);
+                bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - rotDotPos).Length() < 0.5f / window.ViewZoom;
+
+                // draw line to gizmo handle
+                Raylib.DrawLineEx(
+                    startPos: new Vector2(aabb.X + aabb.Width / 2, aabb.Y) * Level.TileSize,
+                    endPos: rotDotPos * Level.TileSize,
+                    1f / window.ViewZoom,
+                    SelectionColor
+                );
+
+                // draw gizmo handle
+                DrawGizmoHandle(rotDotPos);
+            }
         }
 
         // draw drag rect
@@ -293,8 +382,8 @@ class PropEditor : IEditorMode
                 (maxX - minX) * Level.TileSize,
                 (maxY - minY) * Level.TileSize
             );
-            Raylib.DrawRectangleRec(rect, new Color(selectionColor.R, selectionColor.G, selectionColor.B, (byte)80));
-            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, selectionColor);
+            Raylib.DrawRectangleRec(rect, new Color(SelectionColor.R, SelectionColor.G, SelectionColor.B, (byte)80));
+            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, SelectionColor);
 
             // select all props within selection rectangle
             selectedProps.Clear();
@@ -392,7 +481,7 @@ class PropEditor : IEditorMode
 
             // when N is pressed, create new selected prop
             // TODO: drag and drop from props list
-            if (ImGui.IsKeyPressed(ImGuiKey.N))
+            if (ImGui.IsKeyPressed(ImGuiKey.N) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
             {
                 if (selectedInit is not null)
                 {
