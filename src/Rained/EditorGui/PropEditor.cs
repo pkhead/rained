@@ -6,6 +6,11 @@ using System.Numerics;
 namespace RainEd;
 class PropEditor : IEditorMode
 {
+    interface ITransformState
+    {
+        void Update();
+    }
+
     public string Name { get => "Props"; }
     private readonly EditorWindow window;
     private int selectedGroup = 0;
@@ -25,6 +30,30 @@ class PropEditor : IEditorMode
         Move
     };
     private DragMode dragMode;
+
+#region Transform Modes
+    // transform mode
+    // aa how do i structure this??
+    struct ScaleTransformState
+    {
+        public int corner;
+    }
+
+    struct RotateTransformState
+    {
+        public Vector2 rotCenter;
+    }
+
+    private enum TransformMode
+    {
+        None,
+        Scale,
+        Rotate
+    }
+    private TransformMode transformMode;
+    private ScaleTransformState scaleState;
+    private RotateTransformState rotateState;
+#endregion
 
     public PropEditor(EditorWindow window)
     {
@@ -331,6 +360,8 @@ class PropEditor : IEditorMode
             }
 
             // scale gizmo (points on corners)
+            // don't draw handles if rotating
+            if (transformMode == TransformMode.None || transformMode == TransformMode.Scale)
             {
                 Vector2[] corners = new Vector2[4]
                 {
@@ -340,20 +371,31 @@ class PropEditor : IEditorMode
                     aabb.Position + aabb.Size * new Vector2(0f, 1f),
                 };
 
+
                 for (int i = 0; i < 4; i++)
                 {
-                    var handlePos = corners[i];
-                    bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - handlePos).Length() < 0.5f / window.ViewZoom;
-
+                    // don't draw this handle if another scale handle is active
+                    if (transformMode == TransformMode.Scale && scaleState.corner != i)
+                        continue;
+                    
+                    var handlePos = corners[i];   
+                    
                     // draw gizmo handle at corner
-                    DrawGizmoHandle(handlePos);
+                    if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    {
+                        transformMode = TransformMode.Scale;
+                        scaleState = new ScaleTransformState()
+                        {
+                            corner = i
+                        };
+                    }
                 }
             }
 
-            // rotation gizmo
+            // rotation gizmo (don't draw if scaling)
+            if (transformMode == TransformMode.None || transformMode == TransformMode.Rotate)
             {
                 Vector2 rotDotPos = new(aabb.X + aabb.Width / 2f, aabb.Y - 5f);
-                bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - rotDotPos).Length() < 0.5f / window.ViewZoom;
 
                 // draw line to gizmo handle
                 Raylib.DrawLineEx(
@@ -364,7 +406,14 @@ class PropEditor : IEditorMode
                 );
 
                 // draw gizmo handle
-                DrawGizmoHandle(rotDotPos);
+                if (DrawGizmoHandle(rotDotPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    transformMode = TransformMode.Rotate;
+                    rotateState = new RotateTransformState()
+                    {
+                        rotCenter = aabb.Position + aabb.Size / 2f
+                    };
+                }
             }
         }
 
@@ -409,94 +458,126 @@ class PropEditor : IEditorMode
                 dragStartPos = window.MouseCellFloat;
             }
 
-            if (ImGui.IsMouseDragging(ImGuiMouseButton.Left))
+            // in prop transform mode
+            if (transformMode != TransformMode.None)
             {
-                if (!wasMouseDragging)
-                {
-                    // drag had begun
-                    var hoverProp = GetPropAt(dragStartPos);
-
-                    // if dragging over an empty space, begin rect select
-                    if (hoverProp is null)
-                    {
-                        dragMode = DragMode.Select;
-
-                        // if shift is held, rect select Adds instead of Replace
-                        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
-                            initSelectedProps = selectedProps.ToList(); // clone selection list
-                        else
-                            initSelectedProps = null;
-                    }
-                    else
-                    {
-                        // if draggging over a prop, drag all currently selected props
-                        // if active prop is in selection. if not, then set selection
-                        // to this prop
-                        dragMode = DragMode.Move;
-                        if (!selectedProps.Contains(hoverProp))
-                        {
-                            selectedProps.Clear();
-                            selectedProps.Add(hoverProp);
-                        }
-                    }
-                }
-                isMouseDragging = true;
-
-                // move drag
-                if (dragMode == DragMode.Move)
-                {
-                    var mouseDelta = window.MouseCellFloat - prevMousePos;
-                    foreach (var prop in selectedProps)
-                    {
-                        prop.Quad[0] += mouseDelta;
-                        prop.Quad[1] += mouseDelta;
-                        prop.Quad[2] += mouseDelta;
-                        prop.Quad[3] += mouseDelta;
-                    }
-                }
-            }
-
-            // user clicked a prop, so add it to the selection
-            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
-            {
-                if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
-                    selectedProps.Clear();
+                if (transformMode == TransformMode.Scale)
+                    PropScaleMode();
+                else if (transformMode == TransformMode.Rotate)
+                    PropRotateMode();
                 
-                var prop = GetPropAt(window.MouseCellFloat);
-                if (prop is not null)
+                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
+                    transformMode = TransformMode.None;
+                }
+            }
+            else
+            {
+                // in default mode
+                PropSelectMode(wasMouseDragging);
+            }
+        }
+
+        prevMousePos = window.MouseCellFloat;
+    }
+
+    public void PropSelectMode(bool wasMouseDragging)
+    {
+        if (ImGui.IsMouseDragging(ImGuiMouseButton.Left))
+        {
+            if (!wasMouseDragging)
+            {
+                // drag had begun
+                var hoverProp = GetPropAt(dragStartPos);
+
+                // if dragging over an empty space, begin rect select
+                if (hoverProp is null)
+                {
+                    dragMode = DragMode.Select;
+
+                    // if shift is held, rect select Adds instead of Replace
                     if (ImGui.IsKeyDown(ImGuiKey.ModShift))
-                    {
-                        // if prop is in selection, remove it from selection
-                        // if prop is not in selection, add it to the selection
-                        if (!selectedProps.Remove(prop))
-                            selectedProps.Add(prop);
-                    }
+                        initSelectedProps = selectedProps.ToList(); // clone selection list
                     else
+                        initSelectedProps = null;
+                }
+                else
+                {
+                    // if draggging over a prop, drag all currently selected props
+                    // if active prop is in selection. if not, then set selection
+                    // to this prop
+                    dragMode = DragMode.Move;
+                    if (!selectedProps.Contains(hoverProp))
                     {
-                        selectedProps.Add(prop);
+                        selectedProps.Clear();
+                        selectedProps.Add(hoverProp);
                     }
                 }
             }
+            isMouseDragging = true;
 
-            // when N is pressed, create new selected prop
-            // TODO: drag and drop from props list
-            if (ImGui.IsKeyPressed(ImGuiKey.N) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+            // move drag
+            if (dragMode == DragMode.Move)
             {
-                if (selectedInit is not null)
+                var mouseDelta = window.MouseCellFloat - prevMousePos;
+                foreach (var prop in selectedProps)
                 {
-                    var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height))
-                    {
-                        Depth = window.WorkLayer * 10
-                    };
+                    prop.Quad[0] += mouseDelta;
+                    prop.Quad[1] += mouseDelta;
+                    prop.Quad[2] += mouseDelta;
+                    prop.Quad[3] += mouseDelta;
+                }
+            }
+        }
 
-                    level.Props.Add(prop);
-                    selectedProps.Clear();
+        // user clicked a prop, so add it to the selection
+        if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
+        {
+            if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                selectedProps.Clear();
+            
+            var prop = GetPropAt(window.MouseCellFloat);
+            if (prop is not null)
+            {
+                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                {
+                    // if prop is in selection, remove it from selection
+                    // if prop is not in selection, add it to the selection
+                    if (!selectedProps.Remove(prop))
+                        selectedProps.Add(prop);
+                }
+                else
+                {
                     selectedProps.Add(prop);
                 }
             }
         }
 
-        prevMousePos = window.MouseCellFloat;
+        // when N is pressed, create new selected prop
+        // TODO: drag and drop from props list
+        if (ImGui.IsKeyPressed(ImGuiKey.N) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        {
+            if (selectedInit is not null)
+            {
+                var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height))
+                {
+                    Depth = window.WorkLayer * 10
+                };
+
+                RainEd.Instance.Level.Props.Add(prop);
+                selectedProps.Clear();
+                selectedProps.Add(prop);
+            }
+        }
+    }
+
+    public void PropRotateMode()
+    {
+
+    }
+
+    public void PropScaleMode()
+    {
+
     }
 }
