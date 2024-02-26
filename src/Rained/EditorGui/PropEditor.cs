@@ -34,14 +34,35 @@ class PropEditor : IEditorMode
 #region Transform Modes
     // transform mode
     // aa how do i structure this??
-    struct ScaleTransformState
+    readonly struct ScaleTransformState
     {
-        public int corner;
+        public readonly int corner;
+
+        public ScaleTransformState(int corner)
+        {
+            this.corner = corner;
+        }
     }
 
-    struct RotateTransformState
+    readonly struct RotateTransformState
     {
-        public Vector2 rotCenter;
+        public readonly Vector2 rotCenter;
+        public readonly Vector2[,] origQuads;
+
+        public RotateTransformState(Vector2 rotCenter, List<Prop> props)
+        {
+            this.rotCenter = rotCenter;
+
+            origQuads = new Vector2[props.Count, 4];
+            for (int i = 0; i < props.Count; i++)
+            {
+                var prop = props[i];
+                origQuads[i,0] = prop.Quad[0] - rotCenter;
+                origQuads[i,1] = prop.Quad[1] - rotCenter;
+                origQuads[i,2] = prop.Quad[2] - rotCenter;
+                origQuads[i,3] = prop.Quad[3] - rotCenter;
+            }
+        }
     }
 
     private enum TransformMode
@@ -384,10 +405,9 @@ class PropEditor : IEditorMode
                     if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         transformMode = TransformMode.Scale;
-                        scaleState = new ScaleTransformState()
-                        {
-                            corner = i
-                        };
+                        scaleState = new ScaleTransformState(
+                            corner: i
+                        );
                     }
                 }
             }
@@ -395,11 +415,22 @@ class PropEditor : IEditorMode
             // rotation gizmo (don't draw if scaling)
             if (transformMode == TransformMode.None || transformMode == TransformMode.Rotate)
             {
-                Vector2 rotDotPos = new(aabb.X + aabb.Width / 2f, aabb.Y - 5f);
+                Vector2 sideDir = Vector2.UnitX;
+                Vector2 handleDir = -Vector2.UnitY;
+                Vector2 handleCnPos = aabb.Position + new Vector2(aabb.Width / 2f, 0f);
+
+                if (selectedProps.Count == 1)
+                {
+                    handleCnPos = (selectedProps[0].Quad[0] + selectedProps[0].Quad[1]) / 2f;
+                    sideDir = Vector2.Normalize(selectedProps[0].Quad[1] - selectedProps[0].Quad[0]);
+                    handleDir = new(sideDir.Y, -sideDir.X);
+                }
+
+                Vector2 rotDotPos = handleCnPos + handleDir * 5f;
 
                 // draw line to gizmo handle
                 Raylib.DrawLineEx(
-                    startPos: new Vector2(aabb.X + aabb.Width / 2, aabb.Y) * Level.TileSize,
+                    startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
                     1f / window.ViewZoom,
                     SelectionColor
@@ -409,10 +440,10 @@ class PropEditor : IEditorMode
                 if (DrawGizmoHandle(rotDotPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     transformMode = TransformMode.Rotate;
-                    rotateState = new RotateTransformState()
-                    {
-                        rotCenter = aabb.Position + aabb.Size / 2f
-                    };
+                    rotateState = new RotateTransformState(
+                        rotCenter: aabb.Position + aabb.Size / 2f,
+                        props: selectedProps
+                    );
                 }
             }
         }
@@ -573,7 +604,19 @@ class PropEditor : IEditorMode
 
     public void PropRotateMode()
     {
+        var startDir = Vector2.Normalize(dragStartPos - rotateState.rotCenter);
+        var curDir = Vector2.Normalize(window.MouseCellFloat - rotateState.rotCenter);
+        var angleDiff = MathF.Atan2(curDir.Y, curDir.X) - MathF.Atan2(startDir.Y, startDir.X);
 
+        var rotMat = Matrix3x2.CreateRotation(angleDiff);
+        
+        for (int i = 0; i < selectedProps.Count; i++)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                selectedProps[i].Quad[k] = Vector2.Transform(rotateState.origQuads[i,k], rotMat) + rotateState.rotCenter;
+            }
+        }
     }
 
     public void PropScaleMode()
