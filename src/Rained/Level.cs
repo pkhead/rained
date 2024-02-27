@@ -282,6 +282,19 @@ class Prop
         affineTransform.Rotation = 0f;
     }
 
+    public Prop(Props.PropInit init, Vector2[] points)
+    {
+        PropInit = init;
+
+        isAffine = false;
+        quad = new Vector2[4];
+
+        for (int i = 0; i < 4; i++)
+        {
+            quad[i] = points[i];
+        }
+    }
+
     private void UpdateQuadPointsFromAffine()
     {
         Matrix3x2 transformMat = Matrix3x2.CreateRotation(affineTransform.Rotation);

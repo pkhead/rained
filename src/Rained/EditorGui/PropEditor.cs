@@ -819,6 +819,34 @@ class PropEditor : IEditorMode
 
             selectedProps.Clear();
         }
+
+        // duplicate props
+        if (ImGui.IsKeyPressed(ImGuiKey.D) && ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+        {
+            var propsToDup = selectedProps.ToArray();
+            selectedProps.Clear();
+
+            foreach (var srcProp in propsToDup)
+            {
+                Prop newProp;
+                if (srcProp.IsAffine)
+                {
+                    newProp = new Prop(srcProp.PropInit, srcProp.Transform.Center + Vector2.One, srcProp.Transform.Size);
+                    newProp.Transform.Rotation = srcProp.Transform.Rotation;
+                }
+                else
+                {
+                    newProp = new Prop(srcProp.PropInit, srcProp.QuadPoints);
+                    newProp.QuadPoints[0] += Vector2.One;
+                    newProp.QuadPoints[1] += Vector2.One;
+                    newProp.QuadPoints[2] += Vector2.One;
+                    newProp.QuadPoints[3] += Vector2.One;
+                }
+
+                RainEd.Instance.Level.Props.Add(newProp);
+                selectedProps.Add(newProp);
+            }
+        }
     }
 
     public void TransformRotateUpdate()
