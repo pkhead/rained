@@ -742,6 +742,17 @@ class PropEditor : IEditorMode
                 selectedProps.Add(prop);
             }
         }
+
+        // delete key to delete selected props
+        if (ImGui.IsKeyPressed(ImGuiKey.Delete) || ImGui.IsKeyPressed(ImGuiKey.Backspace))
+        {
+            foreach (var prop in selectedProps)
+            {
+                RainEd.Instance.Level.Props.Remove(prop);
+            }
+
+            selectedProps.Clear();
+        }
     }
 
     public void TransformRotateUpdate()
@@ -751,6 +762,12 @@ class PropEditor : IEditorMode
         var startDir = Vector2.Normalize(dragStartPos - modeState.rotCenter);
         var curDir = Vector2.Normalize(window.MouseCellFloat - modeState.rotCenter);
         var angleDiff = MathF.Atan2(curDir.Y, curDir.X) - MathF.Atan2(startDir.Y, startDir.X);
+
+        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+        {
+            var snap = MathF.PI / 8f;
+            angleDiff = MathF.Round(angleDiff / snap) * snap; 
+        }
 
         var rotMat = Matrix3x2.CreateRotation(angleDiff);
 
@@ -802,11 +819,20 @@ class PropEditor : IEditorMode
 
         var rotMat = Matrix3x2.CreateRotation(propTransform.Rotation);
 
-        // the side opposite to the active handle
-        var scaleAnchor =
-            Vector2.Transform(origTransform.Size / 2f * -modeState.handleOffset, rotMat)
-            + origTransform.Center;
-        
+        Vector2 scaleAnchor;
+
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+        {
+            scaleAnchor = origTransform.Center;
+        }
+        else
+        {
+            // the side opposite to the active handle
+            scaleAnchor =
+                Vector2.Transform(origTransform.Size / 2f * -modeState.handleOffset, rotMat)
+                + origTransform.Center;
+        }
+
         // calculate vector deltas from scale anchor to original handle pos and mouse position
         // these take the prop's rotation into account
         var origDx = Vector2.Dot(modeState.propRight, dragStartPos - scaleAnchor);
@@ -848,7 +874,14 @@ class PropEditor : IEditorMode
         propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
         propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
         
-        // anchor the prop to the corner
-        propTransform.Center = scaleAnchor + Vector2.Transform(propTransform.Size / 2f * modeState.handleOffset, rotMat);
+        // anchor the prop to the anchor point
+        if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+        {
+            propTransform.Center = origTransform.Center;
+        }
+        else
+        {
+            propTransform.Center = scaleAnchor + Vector2.Transform(propTransform.Size / 2f * modeState.handleOffset, rotMat);
+        }
     }
 }
