@@ -21,7 +21,10 @@ class PropEditor : IEditorMode
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
 
-    private readonly Color SelectionColor = new(0, 0, 255, 255);
+    private readonly Color HighlightColor = new(0, 0, 255, 255);
+    private readonly Color HighlightColorGlow = new(50, 50, 255, 255);
+    private readonly Color HighlightColor2 = new(180, 180, 180, 255);
+    private readonly Color HighlightColor2Glow = new(255, 255, 255, 255);
 
     private bool isMouseDragging = false;
     private enum DragMode
@@ -59,10 +62,8 @@ class PropEditor : IEditorMode
             }
         }
     }
-
-    // this mode will occur if and only if the user is scaling
-    // a singular affine mode prop
-    class AffineScaleTransformMode
+    
+    class ScaleTransformMode
     {
         public readonly int handleId; // even = corner, odd = edge
         public readonly Prop.AffineTransform origRect;
@@ -74,7 +75,7 @@ class PropEditor : IEditorMode
         public readonly Matrix3x2 rotationMatrix;
         public readonly bool mustMaintainProportions;
 
-        public AffineScaleTransformMode(int handleId, List<Prop> props)
+        public ScaleTransformMode(int handleId, List<Prop> props)
         {
             this.handleId = handleId;
 
@@ -137,32 +138,15 @@ class PropEditor : IEditorMode
         }
     }
 
-    // a non-affine scale mode
-    // this mode will occur if and only if the user is scaling
-    // a freeform mode prop, or multiple props
-    class AABBScaleTransformMode
+    class WarpTransformMode
     {
-        public readonly int handleId; // even = corner, odd = edge
-        public readonly Rectangle origAABB;
-        public readonly Vector2 handlePos; // on origAABB 
-        public readonly PropTransform[] origTransforms;
+        public readonly int handleId;
 
-        public AABBScaleTransformMode(
-            int handleId,
-            Rectangle aabb,
-            Vector2 handlePos,
-            List<Prop> props
+        public WarpTransformMode(
+            int handleId
         )
         {
-            this.handleId = handleId; 
-            origAABB = aabb;
-            this.handlePos = handlePos;
-
-            origTransforms = new PropTransform[props.Count];
-            for (int i = 0; i < 4; i++)
-            {
-                origTransforms[i] = new PropTransform(props[i]);
-            }
+            this.handleId = handleId;
         }
     }
 
@@ -185,13 +169,13 @@ class PropEditor : IEditorMode
     private enum TransformMode
     {
         None,
-        ScaleAffine,
-        ScaleAABB,
+        Scale,
+        Warp,
         Rotate
     }
     private TransformMode? transformMode;
-    private AffineScaleTransformMode? affineScaleMode;
-    private AABBScaleTransformMode? aabbScaleMode;
+    private ScaleTransformMode? scaleMode;
+    private WarpTransformMode? warpMode;
     private RotateTransformMode? rotateMode;
 #endregion
 
@@ -455,14 +439,26 @@ class PropEditor : IEditorMode
     }
 
     // returns true if gizmo is hovered, false if not
-    private bool DrawGizmoHandle(Vector2 pos)
+    private bool DrawGizmoHandle(Vector2 pos, bool secondaryColor = false)
     {
         bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - pos).Length() < 0.5f / window.ViewZoom;
+        
+        Color color;
+        if (secondaryColor)
+        {
+            color = isGizmoHovered ? HighlightColor2Glow : HighlightColor2;
+        }
+        else
+        {
+            color = isGizmoHovered ? HighlightColorGlow : HighlightColor;
+        }
+
         Raylib.DrawCircleV(
             pos * Level.TileSize,
             (isGizmoHovered ? 8f : 4f) / window.ViewZoom,
-            isGizmoHovered ? new Color(50, 50, 255, 255) : SelectionColor
+            color
         );
+
         return isGizmoHovered;
     }
 
@@ -511,20 +507,24 @@ class PropEditor : IEditorMode
         foreach (var prop in selectedProps)
         {
             var pts = prop.QuadPoints;
-            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            var col = prop.IsAffine ? HighlightColor : HighlightColor2;
+            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
         }
 
         // prop transform gizmos
         if (selectedProps.Count > 0)
         {
+            bool canWarp = transformMode == TransformMode.Warp ||
+                (ImGui.IsKeyDown(ImGuiKey.F) && selectedProps.Count == 1 && !selectedProps[0].IsAffine);
+            
             var aabb = GetSelectionAABB();
 
             // draw selection AABB if there is more than
             // one prop selected
-            if (selectedProps.Count > 1 || !selectedProps[0].IsAffine)
+            if (!canWarp && (selectedProps.Count > 1 || !selectedProps[0].IsAffine))
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(
@@ -532,13 +532,13 @@ class PropEditor : IEditorMode
                         aabb.Size * Level.TileSize
                     ),
                     1f / window.ViewZoom,
-                    SelectionColor
+                    HighlightColor
                 );
             }
-
-            // scale gizmo (points on corners)
+            
+            // scale gizmo (points on corners/edges)
             // don't draw handles if rotating
-            if (transformMode == TransformMode.None || transformMode == TransformMode.ScaleAABB || transformMode == TransformMode.ScaleAffine)
+            if ((transformMode == TransformMode.None && !canWarp) || transformMode == TransformMode.Scale)
             {
                 Vector2[] corners;
 
@@ -562,10 +562,7 @@ class PropEditor : IEditorMode
                 for (int i = 0; i < 8; i++)
                 {
                     // don't draw this handle if another scale handle is active
-                    if (
-                        (aabbScaleMode is not null && aabbScaleMode.handleId != i) ||
-                        (affineScaleMode is not null && affineScaleMode.handleId != i)    
-                    )
+                    if (scaleMode is not null && scaleMode.handleId != i)
                     {
                         continue;
                     }
@@ -577,8 +574,8 @@ class PropEditor : IEditorMode
                     // draw gizmo handle at corner
                     if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        transformMode = TransformMode.ScaleAffine;
-                        affineScaleMode = new AffineScaleTransformMode(
+                        transformMode = TransformMode.Scale;
+                        scaleMode = new ScaleTransformMode(
                             handleId: i,
                             props: selectedProps
                         );
@@ -587,7 +584,7 @@ class PropEditor : IEditorMode
             }
 
             // rotation gizmo (don't draw if scaling or rotating) 
-            if (transformMode == TransformMode.None)
+            if (transformMode == TransformMode.None && !canWarp)
             {
                 Vector2 sideDir = Vector2.UnitX;
                 Vector2 handleDir = -Vector2.UnitY;
@@ -607,7 +604,7 @@ class PropEditor : IEditorMode
                     startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
                     1f / window.ViewZoom,
-                    SelectionColor
+                    HighlightColor
                 );
 
                 // draw gizmo handle
@@ -618,6 +615,32 @@ class PropEditor : IEditorMode
                         rotCenter: aabb.Position + aabb.Size / 2f,
                         props: selectedProps
                     );
+                }
+            }
+
+            // freeform warp gizmo
+            if ((transformMode == TransformMode.None && canWarp) || transformMode == TransformMode.Warp)
+            {
+                Vector2[] corners = selectedProps[0].QuadPoints;
+                
+                for (int i = 0; i < 4; i++)
+                {
+                    // don't draw this handle if another scale handle is active
+                    if (warpMode is not null && warpMode.handleId != i)
+                    {
+                        continue;
+                    }
+
+                    var handlePos = corners[i];
+                    
+                    // draw gizmo handle at corner
+                    if (DrawGizmoHandle(handlePos, true) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    {
+                        transformMode = TransformMode.Warp;
+                        warpMode = new WarpTransformMode(
+                            handleId: i
+                        );
+                    }
                 }
             }
         }
@@ -636,8 +659,8 @@ class PropEditor : IEditorMode
                 (maxX - minX) * Level.TileSize,
                 (maxY - minY) * Level.TileSize
             );
-            Raylib.DrawRectangleRec(rect, new Color(SelectionColor.R, SelectionColor.G, SelectionColor.B, (byte)80));
-            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawRectangleRec(rect, new Color(HighlightColor.R, HighlightColor.G, HighlightColor.B, (byte)80));
+            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, HighlightColor);
 
             // select all props within selection rectangle
             selectedProps.Clear();
@@ -666,9 +689,9 @@ class PropEditor : IEditorMode
             // in prop transform mode
             if (transformMode != TransformMode.None)
             {
-                if (transformMode == TransformMode.ScaleAABB)
-                    TransformScaleAABBUpdate();
-                else if (transformMode == TransformMode.ScaleAffine)
+                if (transformMode == TransformMode.Warp)
+                    TransformWarpUpdate();
+                else if (transformMode == TransformMode.Scale)
                     TransformScaleAffineUpdate();
                 else if (transformMode == TransformMode.Rotate)
                     TransformRotateUpdate();
@@ -676,8 +699,8 @@ class PropEditor : IEditorMode
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     transformMode = TransformMode.None;
-                    aabbScaleMode = null;
-                    affineScaleMode = null;
+                    warpMode = null;
+                    scaleMode = null;
                     rotateMode = null;
                 }
             }
@@ -835,28 +858,19 @@ class PropEditor : IEditorMode
         }
     }
 
-    public void TransformScaleAABBUpdate()
+    public void TransformWarpUpdate()
     {
-        var modeState = aabbScaleMode!;
-
-        int targetCorner = modeState.handleId;
-
+        var modeState = warpMode!;
+        
         if (selectedProps.Count == 1)
         {
-            /*var prop = selectedProps[0];
-            var opCorner = prop.Quad[(targetCorner + 2) % 4];
-            var scale = (window.MouseCellFloat - opCorner) / (scaleState.origQuads[targetCorner] - opCorner); 
-            
-            for (int i = 0; i < 4; i++)
-            {
-                prop.Quad[i] = opCorner + (scaleState.origQuads[i] - opCorner) * scale;
-            }*/
+            selectedProps[0].QuadPoints[modeState.handleId] = window.MouseCellFloat;
         }
     }
 
     public void TransformScaleAffineUpdate()
     {
-        var modeState = affineScaleMode!;
+        var modeState = scaleMode!;
         var origRect = modeState.origRect;
         
         Vector2 scaleAnchor;
