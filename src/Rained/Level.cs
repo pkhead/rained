@@ -223,15 +223,15 @@ class Effect
     }
 }
 
+public struct RotatedRect
+{
+    public Vector2 Center;
+    public Vector2 Size;
+    public float Rotation;
+}
+
 class Prop
 {
-    public struct AffineTransform
-    {
-        public Vector2 Center;
-        public Vector2 Size;
-        public float Rotation;
-    }
-
     public readonly Props.PropInit PropInit;
 
     // A prop is affine by default
@@ -243,7 +243,7 @@ class Prop
     private readonly Vector2[] quad;
 
     // only use if Affine is true
-    private AffineTransform affineTransform; 
+    private RotatedRect affineTransform; 
 
     public Vector2[] QuadPoints
     {
@@ -256,7 +256,7 @@ class Prop
         }
     }
 
-    public ref AffineTransform Transform
+    public ref RotatedRect Rect
     {
         get
         {
