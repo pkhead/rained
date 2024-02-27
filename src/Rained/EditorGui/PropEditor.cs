@@ -67,10 +67,30 @@ class PropEditor : IEditorMode
         public readonly int handleId; // even = corner, odd = edge
         public readonly Prop.AffineTransform origTransform;
 
+        public readonly Vector2 handleOffset;
+        public readonly Vector2 propRight;
+        public readonly Vector2 propUp;
+
         public AffineScaleTransformMode(int handleId, Prop prop)
         {
             this.handleId = handleId;
             origTransform = prop.Transform;
+
+            handleOffset = handleId switch
+            {
+                0 => new Vector2(-1f, -1f),
+                1 => new Vector2( 0f, -1f),
+                2 => new Vector2( 1f, -1f),
+                3 => new Vector2( 1f,  0f),
+                4 => new Vector2( 1f,  1f),
+                5 => new Vector2( 0f,  1f),
+                6 => new Vector2(-1f,  1f),
+                7 => new Vector2(-1f,  0f),
+                _ => throw new Exception("Invalid handleId")
+            };
+
+            propRight = new Vector2(MathF.Cos(prop.Transform.Rotation), MathF.Sin(prop.Transform.Rotation));
+            propUp = new Vector2(propRight.Y, -propRight.X);
         }
     }
 
@@ -497,8 +517,8 @@ class PropEditor : IEditorMode
                 {
                     // don't draw this handle if another scale handle is active
                     if (
-                        (aabbScaleMode is not null && aabbScaleMode.handleId == i) ||
-                        (affineScaleMode is not null && affineScaleMode.handleId == i)    
+                        (aabbScaleMode is not null && aabbScaleMode.handleId != i) ||
+                        (affineScaleMode is not null && affineScaleMode.handleId != i)    
                     )
                     {
                         continue;
@@ -511,11 +531,14 @@ class PropEditor : IEditorMode
                     // draw gizmo handle at corner
                     if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        /*transformMode = TransformMode.Scale;
-                        scaleState = new ScaleTransformState(
-                            corner: i,
-                            props: selectedProps
-                        );*/
+                        if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
+                        {
+                            transformMode = TransformMode.ScaleAffine;
+                            affineScaleMode = new AffineScaleTransformMode(
+                                handleId: i,
+                                prop: selectedProps[0]
+                            );
+                        }
                     }
                 }
             }
@@ -773,6 +796,59 @@ class PropEditor : IEditorMode
 
     public void TransformScaleAffineUpdate()
     {
+        var modeState = affineScaleMode!;
+        ref var propTransform = ref selectedProps[0].Transform;
+        var origTransform = modeState.origTransform;
 
+        var rotMat = Matrix3x2.CreateRotation(propTransform.Rotation);
+
+        // the side opposite to the active handle
+        var scaleAnchor =
+            Vector2.Transform(origTransform.Size / 2f * -modeState.handleOffset, rotMat)
+            + origTransform.Center;
+        
+        // calculate vector deltas from scale anchor to original handle pos and mouse position
+        // these take the prop's rotation into account
+        var origDx = Vector2.Dot(modeState.propRight, dragStartPos - scaleAnchor);
+        var origDy = Vector2.Dot(modeState.propUp, dragStartPos - scaleAnchor);
+        var mouseDx = Vector2.Dot(modeState.propRight, window.MouseCellFloat - scaleAnchor);
+        var mouseDy = Vector2.Dot(modeState.propUp, window.MouseCellFloat - scaleAnchor);
+        var scale = new Vector2(mouseDx / origDx, mouseDy / origDy);
+
+        // lock on axis if dragging an edge handle
+        if (modeState.handleOffset.X == 0f)
+            scale.X = 1f;
+        if (modeState.handleOffset.Y == 0f)
+            scale.Y = 1f;
+        
+        // hold shift to maintain proportions        
+        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+        {
+            if (modeState.handleOffset.X == 0f)
+            {
+                scale.X = scale.Y;
+            }
+            else if (modeState.handleOffset.Y == 0f)
+            {
+                scale.Y = scale.X;
+            }
+            else
+            {
+                if (scale.X > scale.Y)
+                    scale.Y = scale.X;
+                else
+                    scale.X = scale.Y;
+            }
+        }
+        
+        // apply size scale
+        propTransform.Size = origTransform.Size * scale;
+        
+        // clamp size
+        propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
+        propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
+        
+        // anchor the prop to the corner
+        propTransform.Center = scaleAnchor + Vector2.Transform(propTransform.Size / 2f * modeState.handleOffset, rotMat);
     }
 }
