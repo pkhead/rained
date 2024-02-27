@@ -76,10 +76,10 @@ namespace RainEd
             }
 
             {
-                Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow);
+                Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 Raylib.InitWindow(1200, 800, "Rained");
-                Raylib.SetTargetFPS(120);
+                //Raylib.SetTargetFPS(10);
                 Raylib.SetExitKey(KeyboardKey.Null);
 
                 // setup imgui
