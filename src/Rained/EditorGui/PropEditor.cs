@@ -32,13 +32,16 @@ class PropEditor : IEditorMode
     private DragMode dragMode;
 
 #region Transform Modes
-    readonly struct PropTransformState
+    // aaa how do i structure this??
+
+    // A snapshot of a prop's transform
+    readonly struct PropTransform
     {
         public readonly bool isAffine;
         public readonly Vector2[] quads;
         public readonly Prop.AffineTransform affine;
 
-        public PropTransformState(Prop prop)
+        public PropTransform(Prop prop)
         {
             quads = new Vector2[4];
             isAffine = prop.IsAffine;
@@ -57,45 +60,61 @@ class PropEditor : IEditorMode
         }
     }
 
-    // transform mode
-    // aa how do i structure this??
-
-    readonly struct ScaleTransformState
+    // this mode will occur if and only if the user is scaling
+    // a singular affine mode prop
+    class AffineScaleTransformMode
     {
-        public readonly int corner;
-        public readonly Vector2 handlePos;
-        public readonly Vector2 anchorPt;
-        public readonly PropTransformState[] origTransforms;
+        public readonly int handleId; // even = corner, odd = edge
+        public readonly Prop.AffineTransform origTransform;
 
-        public ScaleTransformState(
-            int corner,
-            Prop.AffineTransform rect,
-            Vector2 handlePos, Vector2 anchorPoint,
+        public AffineScaleTransformMode(int handleId, Prop prop)
+        {
+            this.handleId = handleId;
+            origTransform = prop.Transform;
+        }
+    }
+
+    // a non-affine scale mode
+    // this mode will occur if and only if the user is scaling
+    // a freeform mode prop, or multiple props
+    class AABBScaleTransformMode
+    {
+        public readonly int handleId; // even = corner, odd = edge
+        public readonly Rectangle origAABB;
+        public readonly Vector2 handlePos; // on origAABB 
+        public readonly PropTransform[] origTransforms;
+
+        public AABBScaleTransformMode(
+            int handleId,
+            Rectangle aabb,
+            Vector2 handlePos,
             List<Prop> props
         )
         {
-            this.corner = corner;
+            this.handleId = handleId; 
+            origAABB = aabb;
+            this.handlePos = handlePos;
 
-            origTransforms = new PropTransformState[props.Count];
+            origTransforms = new PropTransform[props.Count];
             for (int i = 0; i < 4; i++)
             {
-                origTransforms[i] = new PropTransformState(props[i]);
+                origTransforms[i] = new PropTransform(props[i]);
             }
         }
     }
 
-    readonly struct RotateTransformState
+    class RotateTransformMode
     {
         public readonly Vector2 rotCenter;
-        public readonly PropTransformState[] origTransforms;
+        public readonly PropTransform[] origTransforms;
 
-        public RotateTransformState(Vector2 rotCenter, List<Prop> props)
+        public RotateTransformMode(Vector2 rotCenter, List<Prop> props)
         {
             this.rotCenter = rotCenter;
-            origTransforms = new PropTransformState[props.Count];
+            origTransforms = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                origTransforms[i] = new PropTransformState(props[i]);
+                origTransforms[i] = new PropTransform(props[i]);
             }
         }
     }
@@ -103,12 +122,14 @@ class PropEditor : IEditorMode
     private enum TransformMode
     {
         None,
-        Scale,
+        ScaleAffine,
+        ScaleAABB,
         Rotate
     }
-    private TransformMode transformMode;
-    private ScaleTransformState scaleState;
-    private RotateTransformState rotateState;
+    private TransformMode? transformMode;
+    private AffineScaleTransformMode? affineScaleMode;
+    private AABBScaleTransformMode? aabbScaleMode;
+    private RotateTransformMode? rotateMode;
 #endregion
 
     public PropEditor(EditorWindow window)
@@ -451,7 +472,7 @@ class PropEditor : IEditorMode
 
             // scale gizmo (points on corners)
             // don't draw handles if rotating
-            if (transformMode == TransformMode.None || transformMode == TransformMode.Scale)
+            if (transformMode == TransformMode.None || transformMode == TransformMode.ScaleAABB || transformMode == TransformMode.ScaleAffine)
             {
                 Vector2[] corners;
 
@@ -475,8 +496,13 @@ class PropEditor : IEditorMode
                 for (int i = 0; i < 8; i++)
                 {
                     // don't draw this handle if another scale handle is active
-                    if (transformMode == TransformMode.Scale && scaleState.corner != i)
+                    if (
+                        (aabbScaleMode is not null && aabbScaleMode.handleId == i) ||
+                        (affineScaleMode is not null && affineScaleMode.handleId == i)    
+                    )
+                    {
                         continue;
+                    }
                     
                     var handle1 = corners[i / 2]; // position of left corner
                     var handle2 = corners[((i + 1) / 2) % 4]; // position of right corner
@@ -522,7 +548,7 @@ class PropEditor : IEditorMode
                 if (DrawGizmoHandle(rotDotPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     transformMode = TransformMode.Rotate;
-                    rotateState = new RotateTransformState(
+                    rotateMode = new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
                         props: selectedProps
                     );
@@ -574,27 +600,32 @@ class PropEditor : IEditorMode
             // in prop transform mode
             if (transformMode != TransformMode.None)
             {
-                if (transformMode == TransformMode.Scale)
-                    PropScaleMode();
+                if (transformMode == TransformMode.ScaleAABB)
+                    TransformScaleAABBUpdate();
+                else if (transformMode == TransformMode.ScaleAffine)
+                    TransformScaleAffineUpdate();
                 else if (transformMode == TransformMode.Rotate)
-                    PropRotateMode();
+                    TransformRotateUpdate();
                 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     transformMode = TransformMode.None;
+                    aabbScaleMode = null;
+                    affineScaleMode = null;
+                    rotateMode = null;
                 }
             }
             else
             {
                 // in default mode
-                PropSelectMode(wasMouseDragging);
+                PropSelectUpdate(wasMouseDragging);
             }
         }
 
         prevMousePos = window.MouseCellFloat;
     }
 
-    public void PropSelectMode(bool wasMouseDragging)
+    public void PropSelectUpdate(bool wasMouseDragging)
     {
         if (ImGui.IsMouseDragging(ImGuiMouseButton.Left))
         {
@@ -690,32 +721,42 @@ class PropEditor : IEditorMode
         }
     }
 
-    public void PropRotateMode()
+    public void TransformRotateUpdate()
     {
-        var startDir = Vector2.Normalize(dragStartPos - rotateState.rotCenter);
-        var curDir = Vector2.Normalize(window.MouseCellFloat - rotateState.rotCenter);
+        RotateTransformMode modeState = rotateMode!;
+
+        var startDir = Vector2.Normalize(dragStartPos - modeState.rotCenter);
+        var curDir = Vector2.Normalize(window.MouseCellFloat - modeState.rotCenter);
         var angleDiff = MathF.Atan2(curDir.Y, curDir.X) - MathF.Atan2(startDir.Y, startDir.X);
 
         var rotMat = Matrix3x2.CreateRotation(angleDiff);
-        selectedProps[0].Transform.Rotation = MathF.Atan2(curDir.Y, curDir.X) + MathF.PI / 2f;
 
         for (int i = 0; i < selectedProps.Count; i++)
         {
             var prop = selectedProps[i];
             if (prop.IsAffine)
             {
-                var origTransform = rotateState.origTransforms[i].affine;
+                var origTransform = modeState.origTransforms[i].affine;
                 prop.Transform.Rotation = origTransform.Rotation + angleDiff;
-                prop.Transform.Center = Vector2.Transform(origTransform.Center - rotateState.rotCenter, rotMat) + rotateState.rotCenter;
+                prop.Transform.Center = Vector2.Transform(origTransform.Center - modeState.rotCenter, rotMat) + modeState.rotCenter;
             }
-            //selectedProps[i].Transform.Rotation = rotateState.
-            //selectedProps[i].Quad[k] = Vector2.Transform(rotateState.origQuads[i,k], rotMat) + rotateState.rotCenter;
+            else
+            {
+                var pts = prop.QuadPoints;
+                var origPts = modeState.origTransforms[i].quads;
+                for (int k = 0; k < 4; k++)
+                {
+                    pts[k] = Vector2.Transform(origPts[k] - modeState.rotCenter, rotMat) + modeState.rotCenter;
+                }
+            }
         }
     }
 
-    public void PropScaleMode()
+    public void TransformScaleAABBUpdate()
     {
-        int targetCorner = scaleState.corner;
+        var modeState = aabbScaleMode!;
+
+        int targetCorner = modeState.handleId;
 
         if (selectedProps.Count == 1)
         {
@@ -728,5 +769,10 @@ class PropEditor : IEditorMode
                 prop.Quad[i] = opCorner + (scaleState.origQuads[i] - opCorner) * scale;
             }*/
         }
+    }
+
+    public void TransformScaleAffineUpdate()
+    {
+
     }
 }
