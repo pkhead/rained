@@ -50,12 +50,18 @@ partial class PropEditor : IEditorMode
 
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            ImGui.SeparatorText("Create Prop");
-
+            // work layer
+            {
+                int workLayerV = window.WorkLayer + 1;
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                ImGui.InputInt("View Layer", ref workLayerV);
+                window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
+            }
+            
             if (ImGui.BeginTabBar("PropSelector"))
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
-                var boxHeight = ImGui.GetTextLineHeight() * 50.0f;
+                var boxHeight = ImGui.GetContentRegionAvail().Y;
 
                 if (ImGui.BeginTabItem("Props"))
                 {
@@ -170,20 +176,24 @@ partial class PropEditor : IEditorMode
 
                 ImGui.EndTabBar();
             }
+            
+        } ImGui.End();
 
-            // work layer
-            {
-                int workLayerV = window.WorkLayer + 1;
-                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
-                ImGui.InputInt("Work Layer", ref workLayerV);
-                window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
-            }
-
-            ImGui.SeparatorText("Prop Options");
-
+        if (ImGui.Begin("Prop Options", ImGuiWindowFlags.NoFocusOnAppearing))
+        {
             // prop transformation mode
             if (selectedProps.Count > 0)
             {
+                if (selectedProps.Count == 1)
+                {
+                    ImGui.TextUnformatted($"Selected {selectedProps[0].PropInit.Name}");
+                }
+                else
+                {
+                    ImGui.Text("Selected multiple props");
+                }
+
+                // convert to/from freeform prop
                 bool canConvert = false;
 
                 foreach (var prop in selectedProps)
@@ -206,14 +216,69 @@ partial class PropEditor : IEditorMode
 
                 if (!canConvert)
                     ImGui.EndDisabled();
+                
+                int propDepthV = selectedProps[0].Depth;
+
+                for (int i = 1; i < selectedProps.Count; i++)
+                {
+                    if (selectedProps[i].Depth != propDepthV)
+                    {
+                        propDepthV = int.MaxValue;
+                    }
+                }
+
+                // depth
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                if (propDepthV != int.MaxValue)
+                {
+                    if (ImGui.InputInt("Depth", ref propDepthV))
+                    {
+                        propDepthV = Math.Clamp(propDepthV, 0, 29);
+                        foreach (var prop in selectedProps)
+                            prop.Depth = propDepthV;
+                    }
+                }
+
+                if (selectedProps.Count == 1)
+                {
+                    var prop = selectedProps[0];
+
+                    // prop settings
+
+                    // notes + synopses
+                    ImGui.SeparatorText("Notes");
+
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
+                        ImGui.BulletText("Tile as Prop");
+
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded))
+                        ImGui.BulletText("Procedurally Shaded");
+
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariations))
+                        ImGui.BulletText("Random Variation");
+                    
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.HasVariations))
+                        ImGui.BulletText("Variation Selectable");
+                    
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.PostEffectsWhenColorized))
+                        ImGui.BulletText("Post Effects Recommended When Colored");
+
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanColorTube))
+                        ImGui.BulletText("Can Color Tube");
+                    
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
+                        ImGui.BulletText("Can Set Thickness");
+
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
+                        ImGui.BulletText("Custom Color Available");
+                }
+            }
+            else
+            {
+                ImGui.Text("No props selected");
             }
 
-            // sublayer
-            // prop settings
-            // notes + synopses
-            
-            ImGui.End();
-        }
+        } ImGui.End();
     }
 
     private static bool IsPointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3)
