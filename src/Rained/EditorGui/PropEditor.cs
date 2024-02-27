@@ -32,35 +32,70 @@ class PropEditor : IEditorMode
     private DragMode dragMode;
 
 #region Transform Modes
+    readonly struct PropTransformState
+    {
+        public readonly bool isAffine;
+        public readonly Vector2[] quads;
+        public readonly Prop.AffineTransform affine;
+
+        public PropTransformState(Prop prop)
+        {
+            quads = new Vector2[4];
+            isAffine = prop.IsAffine;
+            if (isAffine)
+            {
+                affine = prop.Transform;
+            }
+            else
+            {
+                var pts = prop.QuadPoints;
+                for (int i = 0; i < 4; i++)
+                {
+                    quads[i] = pts[i];
+                }
+            }
+        }
+    }
+
     // transform mode
     // aa how do i structure this??
+
     readonly struct ScaleTransformState
     {
         public readonly int corner;
+        public readonly Vector2 handlePos;
+        public readonly Vector2 anchorPt;
+        public readonly PropTransformState[] origTransforms;
 
-        public ScaleTransformState(int corner)
+        public ScaleTransformState(
+            int corner,
+            Prop.AffineTransform rect,
+            Vector2 handlePos, Vector2 anchorPoint,
+            List<Prop> props
+        )
         {
             this.corner = corner;
+
+            origTransforms = new PropTransformState[props.Count];
+            for (int i = 0; i < 4; i++)
+            {
+                origTransforms[i] = new PropTransformState(props[i]);
+            }
         }
     }
 
     readonly struct RotateTransformState
     {
         public readonly Vector2 rotCenter;
-        public readonly Vector2[,] origQuads;
+        public readonly PropTransformState[] origTransforms;
 
         public RotateTransformState(Vector2 rotCenter, List<Prop> props)
         {
             this.rotCenter = rotCenter;
-
-            origQuads = new Vector2[props.Count, 4];
+            origTransforms = new PropTransformState[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                var prop = props[i];
-                origQuads[i,0] = prop.Quad[0] - rotCenter;
-                origQuads[i,1] = prop.Quad[1] - rotCenter;
-                origQuads[i,2] = prop.Quad[2] - rotCenter;
-                origQuads[i,3] = prop.Quad[3] - rotCenter;
+                origTransforms[i] = new PropTransformState(props[i]);
             }
         }
     }
@@ -225,6 +260,33 @@ class PropEditor : IEditorMode
                 window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
             }
 
+            // prop transformation mode
+            if (selectedProps.Count > 0)
+            {
+                bool canConvert = false;
+
+                foreach (var prop in selectedProps)
+                {
+                    if (prop.IsAffine)
+                    {
+                        canConvert = true;
+                        break;
+                    }
+                }
+
+                if (!canConvert)
+                    ImGui.BeginDisabled();
+                
+                if (ImGui.Button("Convert to Warpable Prop"))
+                {
+                    foreach (var prop in selectedProps)
+                        prop.ConvertToFreeform();
+                }
+
+                if (!canConvert)
+                    ImGui.EndDisabled();
+            }
+
             // sublayer
             // prop settings
             // notes + synopses
@@ -253,9 +315,10 @@ class PropEditor : IEditorMode
     {
         foreach (var prop in RainEd.Instance.Level.Props)
         {
+            var pts = prop.QuadPoints;
             if (
-                IsPointInTriangle(point, prop.Quad[0], prop.Quad[1], prop.Quad[2]) ||
-                IsPointInTriangle(point, prop.Quad[2], prop.Quad[3], prop.Quad[0])    
+                IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
+                IsPointInTriangle(point, pts[2], pts[3], pts[0])    
             )
             {
                 return prop;
@@ -284,10 +347,11 @@ class PropEditor : IEditorMode
         {
             for (int i = 0; i < 4; i++)
             {
-                minX = Math.Min(minX, prop.Quad[i].X);
-                minY = Math.Min(minY, prop.Quad[i].Y);
-                maxX = Math.Max(maxX, prop.Quad[i].X);
-                maxY = Math.Max(maxY, prop.Quad[i].Y);
+                var pts = prop.QuadPoints;
+                minX = Math.Min(minX, pts[i].X);
+                minY = Math.Min(minY, pts[i].Y);
+                maxX = Math.Max(maxX, pts[i].X);
+                maxY = Math.Max(maxY, pts[i].Y);
             }
         }
 
@@ -296,7 +360,11 @@ class PropEditor : IEditorMode
 
     private static Vector2 GetPropCenter(Prop prop)
     {
-        return (prop.Quad[0] + prop.Quad[1] + prop.Quad[2] + prop.Quad[3]) / 4f;
+        if (prop.IsAffine)
+            return prop.Transform.Center;
+        
+        var pts = prop.QuadPoints;
+        return (pts[0] + pts[1] + pts[2] + pts[3]) / 4f;
     }
 
     // returns true if gizmo is hovered, false if not
@@ -355,10 +423,11 @@ class PropEditor : IEditorMode
         // highlight selected props
         foreach (var prop in selectedProps)
         {
-            Raylib.DrawLineEx(prop.Quad[0] * Level.TileSize, prop.Quad[1] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(prop.Quad[1] * Level.TileSize, prop.Quad[2] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(prop.Quad[2] * Level.TileSize, prop.Quad[3] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
-            Raylib.DrawLineEx(prop.Quad[3] * Level.TileSize, prop.Quad[0] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            var pts = prop.QuadPoints;
+            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
+            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, SelectionColor);
         }
 
         // prop transform gizmos
@@ -384,45 +453,58 @@ class PropEditor : IEditorMode
             // don't draw handles if rotating
             if (transformMode == TransformMode.None || transformMode == TransformMode.Scale)
             {
-                Vector2[] corners = new Vector2[4]
+                Vector2[] corners;
+
+                if (selectedProps.Count == 1)
                 {
-                    aabb.Position + aabb.Size * new Vector2(0f, 0f),
-                    aabb.Position + aabb.Size * new Vector2(1f, 0f),
-                    aabb.Position + aabb.Size * new Vector2(1f, 1f),
-                    aabb.Position + aabb.Size * new Vector2(0f, 1f),
+                    corners = selectedProps[0].QuadPoints;
+                }
+                else
+                {
+                    corners = new Vector2[4]
+                    {
+                        aabb.Position + aabb.Size * new Vector2(0f, 0f),
+                        aabb.Position + aabb.Size * new Vector2(1f, 0f),
+                        aabb.Position + aabb.Size * new Vector2(1f, 1f),
+                        aabb.Position + aabb.Size * new Vector2(0f, 1f),
+                    };
                 };
 
-
-                for (int i = 0; i < 4; i++)
+                // even i's are corner points
+                // odd i's are edge points
+                for (int i = 0; i < 8; i++)
                 {
                     // don't draw this handle if another scale handle is active
                     if (transformMode == TransformMode.Scale && scaleState.corner != i)
                         continue;
                     
-                    var handlePos = corners[i];   
+                    var handle1 = corners[i / 2]; // position of left corner
+                    var handle2 = corners[((i + 1) / 2) % 4]; // position of right corner
+                    var handlePos = (handle1 + handle2) / 2f;
                     
                     // draw gizmo handle at corner
                     if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        transformMode = TransformMode.Scale;
+                        /*transformMode = TransformMode.Scale;
                         scaleState = new ScaleTransformState(
-                            corner: i
-                        );
+                            corner: i,
+                            props: selectedProps
+                        );*/
                     }
                 }
             }
 
-            // rotation gizmo (don't draw if scaling)
-            if (transformMode == TransformMode.None || transformMode == TransformMode.Rotate)
+            // rotation gizmo (don't draw if scaling or rotating) 
+            if (transformMode == TransformMode.None)
             {
                 Vector2 sideDir = Vector2.UnitX;
                 Vector2 handleDir = -Vector2.UnitY;
                 Vector2 handleCnPos = aabb.Position + new Vector2(aabb.Width / 2f, 0f);
 
-                if (selectedProps.Count == 1)
+                if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
                 {
-                    handleCnPos = (selectedProps[0].Quad[0] + selectedProps[0].Quad[1]) / 2f;
-                    sideDir = Vector2.Normalize(selectedProps[0].Quad[1] - selectedProps[0].Quad[0]);
+                    handleCnPos = (selectedProps[0].QuadPoints[0] + selectedProps[0].QuadPoints[1]) / 2f;
+                    sideDir = Vector2.Normalize(selectedProps[0].QuadPoints[1] - selectedProps[0].QuadPoints[0]);
                     handleDir = new(sideDir.Y, -sideDir.X);
                 }
 
@@ -553,10 +635,16 @@ class PropEditor : IEditorMode
                 var mouseDelta = window.MouseCellFloat - prevMousePos;
                 foreach (var prop in selectedProps)
                 {
-                    prop.Quad[0] += mouseDelta;
-                    prop.Quad[1] += mouseDelta;
-                    prop.Quad[2] += mouseDelta;
-                    prop.Quad[3] += mouseDelta;
+                    if (prop.IsAffine)
+                        prop.Transform.Center += mouseDelta;
+                    else
+                    {
+                        var pts = prop.QuadPoints;
+                        pts[0] += mouseDelta;
+                        pts[1] += mouseDelta;
+                        pts[2] += mouseDelta;
+                        pts[3] += mouseDelta;
+                    }
                 }
             }
         }
@@ -609,18 +697,36 @@ class PropEditor : IEditorMode
         var angleDiff = MathF.Atan2(curDir.Y, curDir.X) - MathF.Atan2(startDir.Y, startDir.X);
 
         var rotMat = Matrix3x2.CreateRotation(angleDiff);
-        
+        selectedProps[0].Transform.Rotation = MathF.Atan2(curDir.Y, curDir.X) + MathF.PI / 2f;
+
         for (int i = 0; i < selectedProps.Count; i++)
         {
-            for (int k = 0; k < 4; k++)
+            var prop = selectedProps[i];
+            if (prop.IsAffine)
             {
-                selectedProps[i].Quad[k] = Vector2.Transform(rotateState.origQuads[i,k], rotMat) + rotateState.rotCenter;
+                var origTransform = rotateState.origTransforms[i].affine;
+                prop.Transform.Rotation = origTransform.Rotation + angleDiff;
+                prop.Transform.Center = Vector2.Transform(origTransform.Center - rotateState.rotCenter, rotMat) + rotateState.rotCenter;
             }
+            //selectedProps[i].Transform.Rotation = rotateState.
+            //selectedProps[i].Quad[k] = Vector2.Transform(rotateState.origQuads[i,k], rotMat) + rotateState.rotCenter;
         }
     }
 
     public void PropScaleMode()
     {
+        int targetCorner = scaleState.corner;
 
+        if (selectedProps.Count == 1)
+        {
+            /*var prop = selectedProps[0];
+            var opCorner = prop.Quad[(targetCorner + 2) % 4];
+            var scale = (window.MouseCellFloat - opCorner) / (scaleState.origQuads[targetCorner] - opCorner); 
+            
+            for (int i = 0; i < 4; i++)
+            {
+                prop.Quad[i] = opCorner + (scaleState.origQuads[i] - opCorner) * scale;
+            }*/
+        }
     }
 }

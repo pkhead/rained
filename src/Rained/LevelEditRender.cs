@@ -679,6 +679,7 @@ class LevelEditRender
             if (prop.Depth < layer * 10 || prop.Depth >= (layer+1) * 10)
                 continue;
             
+            var quad = prop.QuadPoints;
             var texture = prop.PropInit.Texture;
             Rlgl.SetTexture(texture.Id);
 
@@ -691,19 +692,19 @@ class LevelEditRender
 
                     // top-left
                     Rlgl.TexCoord2f(srcRect.X / texture.Width, srcRect.Y / texture.Height);
-                    Rlgl.Vertex2f(prop.Quad[0].X * Level.TileSize, prop.Quad[0].Y * Level.TileSize);
+                    Rlgl.Vertex2f(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
 
                     // bottom-left
                     Rlgl.TexCoord2f(srcRect.X / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
-                    Rlgl.Vertex2f(prop.Quad[3].X * Level.TileSize, prop.Quad[3].Y * Level.TileSize);
+                    Rlgl.Vertex2f(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
 
                     // bottom-right
                     Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
-                    Rlgl.Vertex2f(prop.Quad[2].X * Level.TileSize, prop.Quad[2].Y * Level.TileSize);
+                    Rlgl.Vertex2f(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
 
                     // top-right
                     Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, srcRect.Y / texture.Height);
-                    Rlgl.Vertex2f(prop.Quad[1].X * Level.TileSize, prop.Quad[1].Y * Level.TileSize);
+                    Rlgl.Vertex2f(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
                 }
                 Rlgl.End();
             }

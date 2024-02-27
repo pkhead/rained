@@ -225,19 +225,77 @@ class Effect
 
 class Prop
 {
+    public struct AffineTransform
+    {
+        public Vector2 Center;
+        public Vector2 Size;
+        public float Rotation;
+    }
+
     public readonly Props.PropInit PropInit;
-    public readonly Vector2[] Quad;
+
+    // A prop is affine by default
+    // The user can then "convert" it to a freeform quad,
+    // which then will allow the Quad field to be used
+    private bool isAffine;
+
+    // only use if Affine is false
+    private readonly Vector2[] quad;
+
+    // only use if Affine is true
+    private AffineTransform affineTransform; 
+
+    public Vector2[] QuadPoints
+    {
+        get
+        {
+            if (isAffine)
+                UpdateQuadPointsFromAffine();
+            
+            return quad;
+        }
+    }
+
+    public ref AffineTransform Transform
+    {
+        get
+        {
+            if (!isAffine)
+                throw new Exception("Attempt to get affine transformation of a freeform-mode prop");
+            return ref affineTransform;
+        }
+    }
+
+    public bool IsAffine { get => isAffine; }
+
     public int Depth = 0; // 0-29
 
     public Prop(Props.PropInit init, Vector2 center, Vector2 size)
     {
         PropInit = init;
-        Quad = new Vector2[4];
 
-        Quad[0] = center + size * new Vector2(-1f, -1f) / 2f;
-        Quad[1] = center + size * new Vector2(1f, -1f) / 2f;
-        Quad[2] = center + size * new Vector2(1f, 1f) / 2f;
-        Quad[3] = center + size * new Vector2(-1f, 1f) / 2f;
+        isAffine = true;
+        quad = new Vector2[4];
+
+        affineTransform.Center = center;
+        affineTransform.Size = size;
+        affineTransform.Rotation = 0f;
+    }
+
+    private void UpdateQuadPointsFromAffine()
+    {
+        Matrix3x2 transformMat = Matrix3x2.CreateRotation(affineTransform.Rotation);
+        quad[0] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(-1f, -1f) / 2f, transformMat);
+        quad[1] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(1f, -1f) / 2f, transformMat);
+        quad[2] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(1f, 1f) / 2f, transformMat);
+        quad[3] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(-1f, 1f) / 2f, transformMat);
+    }
+
+    public void ConvertToFreeform()
+    {
+        if (!isAffine) return;
+        isAffine = false;
+        UpdateQuadPointsFromAffine();
     }
 }
 
