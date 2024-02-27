@@ -51,15 +51,8 @@ Effects Editor:
 
 Prop Editor: (TODO)
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
-- Tiles as Prop only looks at voxelStruct or voxelStructRandomDisplace(*) tiles
-  - also ignores all tiles tagged with "notProp"
-- Tiles as prop is generated from adding every tile in tile init sequentially
-    21 tiles per page
+- prop flipping
 - snap to grid in lingo editor snaps to grid intersections
-- instead of using keys to rotate/scale props, user will place them down first
-  and then use handles on the edge of the prop to rotate/scale them.
-  (i think this is fine, although i haven't done much prop editing myself
-  ...or much leditor experience in general...)
 - rope-type props will have a "Simulate" button in an always-visible prop properties field.
   holding down this button will perform the simulation for as long as it is held.
 - for rope-type props, copy henry's design

@@ -228,10 +228,11 @@ partial class PropEditor : IEditorMode
                 }
 
                 // depth
-                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
+
                 if (propDepthV != int.MaxValue)
                 {
-                    if (ImGui.InputInt("Depth", ref propDepthV))
+                    if (ImGui.SliderInt("Depth", ref propDepthV, 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp))
                     {
                         propDepthV = Math.Clamp(propDepthV, 0, 29);
                         foreach (var prop in selectedProps)
@@ -244,6 +245,29 @@ partial class PropEditor : IEditorMode
                     var prop = selectedProps[0];
 
                     // prop settings
+                    if (prop.PropInit.VariationCount > 1)
+                    {
+                        var varV = prop.Variation + 1;
+                        ImGui.SliderInt(
+                            label: "Variation",
+                            v: ref varV,
+                            v_min: prop.PropInit.HasRandomVariation ? 0 : 1, // in Prop, a Variation of -1 means random variation
+                            v_max: prop.PropInit.VariationCount,
+                            format: varV == 0 ? "Random" : "%i",
+                            flags: ImGuiSliderFlags.AlwaysClamp
+                        );
+                        prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
+                    }
+
+                    ImGui.SliderInt("Seed", ref prop.Seed, 0, 999);
+
+                    {
+                        int renderTime = (int) prop.RenderTime;
+                        ImGui.Combo("Render Time", ref renderTime, "Pre Effects\0Post Effects");
+                        prop.RenderTime = (Prop.PropRenderTime) renderTime;
+                    }
+
+                    ImGui.InputInt("Render Order", ref prop.RenderOrder);
 
                     // notes + synopses
                     ImGui.SeparatorText("Notes");
@@ -253,6 +277,8 @@ partial class PropEditor : IEditorMode
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded))
                         ImGui.BulletText("Procedurally Shaded");
+                    else
+                        ImGui.BulletText("Shadows will not rotate with this prop");
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariations))
                         ImGui.BulletText("Random Variation");
@@ -272,6 +298,8 @@ partial class PropEditor : IEditorMode
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
                         ImGui.BulletText("Custom Color Available");
                 }
+
+                ImGui.PopItemWidth();
             }
             else
             {

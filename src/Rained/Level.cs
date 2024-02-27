@@ -268,7 +268,16 @@ class Prop
 
     public bool IsAffine { get => isAffine; }
 
+    public enum PropRenderTime
+    {
+        PreEffects, PostEffects
+    };
+
     public int Depth = 0; // 0-29
+    public int RenderOrder = 0;
+    public int Variation = 0; // A variation of -1 means Random Variation
+    public int Seed;
+    public PropRenderTime RenderTime = PropRenderTime.PreEffects;
 
     public Prop(Props.PropInit init, Vector2 center, Vector2 size)
     {
@@ -280,6 +289,9 @@ class Prop
         affineTransform.Center = center;
         affineTransform.Size = size;
         affineTransform.Rotation = 0f;
+
+        if (init.HasRandomVariation) Variation = -1;
+        Seed = (int)(DateTime.Now.Ticks % 1000);
     }
 
     public Prop(Props.PropInit init, Vector2[] points)

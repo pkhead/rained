@@ -683,9 +683,11 @@ class LevelEditRender
             var texture = prop.PropInit.Texture;
             Rlgl.SetTexture(texture.Id);
 
+            var variation = prop.Variation == -1 ? 0 : prop.Variation;
+
             for (int depth = prop.PropInit.LayerCount - 1; depth >= 0; depth--)
             {
-                var srcRect = prop.PropInit.GetPreviewRectangle(0, depth);
+                var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
                 Rlgl.Begin(DrawMode.Quads);
                 {
                     Rlgl.Color4ub(255, 255, 255, (byte)alpha);

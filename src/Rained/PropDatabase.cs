@@ -1,3 +1,4 @@
+using Drizzle.Lingo.Runtime;
 using RainEd.Tiles;
 using Raylib_cs;
 using System.Numerics;
@@ -36,6 +37,9 @@ class PropInit
     private readonly PropType Type;
     public readonly RlManaged.Texture2D Texture;
     public readonly PropFlags PropFlags;
+    public readonly int Depth;
+    public readonly int VariationCount;
+    public readonly bool HasRandomVariation;
     public readonly string[] Notes;
 
     // used for obtaining preview image
@@ -84,15 +88,77 @@ class PropInit
             pixelHeight = Texture.Height;
         }
 
-        // get layer count
+        // get image layer count and depth
+        Depth = 0;
         layerCount = 1;
+        
         if (init.fields.TryGetValue("repeatL", out tempObject))
         {
-            layerCount = ((Lingo.List)tempObject).values.Count;
+            var list = ((Lingo.List)tempObject).values;
+            layerCount = list.Count;
+            foreach (int n in list.Cast<int>())
+            {
+                Depth += n;
+            }
+        }
+        else if (init.fields.TryGetValue("depth", out tempObject))
+        {
+            Depth = (int)tempObject;
         }
 
+        // variation count
+        VariationCount = 1;
+        HasRandomVariation = false;
+
+        if (init.fields.TryGetValue("vars", out tempObject))
+        {
+            VariationCount = (int)tempObject;
+        }
+
+        if (init.fields.TryGetValue("random", out tempObject))
+        {
+            HasRandomVariation = (int)tempObject != 0;   
+        }
+
+        // read notes and flags
+        var tags = ((Lingo.List)init.fields["tags"]).values.Cast<string>();
+
         PropFlags = 0;
-        Notes = Array.Empty<string>();
+        if (init.fields.TryGetValue("notes", out tempObject))
+        {
+            var notes = ((Lingo.List)tempObject).values;
+            Notes = notes.Cast<string>().ToArray();
+        }
+        else
+        {
+            Notes = Array.Empty<string>();
+        }
+
+        if (init.fields.TryGetValue("colorTreatment", out tempObject) && (string)tempObject == "bevel")
+        {
+            PropFlags |= PropFlags.ProcedurallyShaded;
+        }
+
+        if (Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
+        {
+            if (init.fields.TryGetValue("colorize", out tempObject) && (int)tempObject != 0)
+            {
+                PropFlags |= PropFlags.PostEffectsWhenColorized;
+            }
+        }
+
+        if (Type == PropType.Soft || Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
+        {
+            if (init.fields.TryGetValue("selfShade", out tempObject) && (int)tempObject != 0)
+            {
+                PropFlags |= PropFlags.ProcedurallyShaded;
+            }
+        }
+
+        if (tags.Contains("customColor") || tags.Contains("customColorRainBow"))
+        {
+            PropFlags |= PropFlags.CustomColorAvailable;
+        }
     }
 
     public PropInit(PropCategory category, Tile srcTile)
