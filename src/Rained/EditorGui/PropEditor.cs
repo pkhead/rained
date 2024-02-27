@@ -66,13 +66,13 @@ class PropEditor : IEditorMode
     {
         public readonly int handleId; // even = corner, odd = edge
         public readonly Prop.AffineTransform origRect;
-        public readonly Vector2[] propOffsets; // proportions into origRect
-        public readonly Vector2[] origPropSizes;
+        public readonly PropTransform[] origPropTransforms;
 
         public readonly Vector2 handleOffset;
         public readonly Vector2 propRight;
         public readonly Vector2 propUp;
         public readonly Matrix3x2 rotationMatrix;
+        public readonly bool mustMaintainProportions;
 
         public AffineScaleTransformMode(int handleId, List<Prop> props)
         {
@@ -91,7 +91,7 @@ class PropEditor : IEditorMode
                 _ => throw new Exception("Invalid handleId")
             };
 
-            if (props.Count > 1)
+            if (props.Count > 1 || !props[0].IsAffine)
             {
                 var extents = CalcPropExtents(props);
                 origRect = new Prop.AffineTransform()
@@ -104,15 +104,6 @@ class PropEditor : IEditorMode
                 propRight = Vector2.UnitX;
                 propUp = -Vector2.UnitY;
                 rotationMatrix = Matrix3x2.Identity;
-
-                propOffsets = new Vector2[props.Count];
-                origPropSizes = new Vector2[props.Count];
-                for (int i = 0; i < props.Count; i++)
-                {
-                    var prop = props[i];
-                    propOffsets[i] = (prop.Transform.Center - origRect.Center) / extents.Size * 2f;
-                    origPropSizes[i] = prop.Transform.Size;
-                }
             }
             else
             {
@@ -121,11 +112,27 @@ class PropEditor : IEditorMode
                 propRight = new Vector2(MathF.Cos(prop.Transform.Rotation), MathF.Sin(prop.Transform.Rotation));
                 propUp = new Vector2(propRight.Y, -propRight.X);
                 rotationMatrix = Matrix3x2.CreateRotation(origRect.Rotation);
-                
-                propOffsets = new Vector2[1];
-                origPropSizes = new Vector2[1];
-                propOffsets[0] = new Vector2(0f, 0f);
-                origPropSizes[0] = origRect.Size;
+            }
+
+            origPropTransforms = new PropTransform[props.Count];
+            for (int i = 0; i < props.Count; i++)
+            {
+                origPropTransforms[i] = new PropTransform(props[i]);
+            }
+
+            // proportion maintenance is required if there is more than
+            // one prop selected, and at least one affine prop in the selection
+            mustMaintainProportions = false;
+            if (props.Count > 1)
+            {
+                foreach (var prop in props)
+                {
+                    if (prop.IsAffine)
+                    {
+                        mustMaintainProportions = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -517,7 +524,7 @@ class PropEditor : IEditorMode
 
             // draw selection AABB if there is more than
             // one prop selected
-            if (selectedProps.Count > 1)
+            if (selectedProps.Count > 1 || !selectedProps[0].IsAffine)
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(
@@ -535,7 +542,7 @@ class PropEditor : IEditorMode
             {
                 Vector2[] corners;
 
-                if (selectedProps.Count == 1)
+                if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
                 {
                     corners = selectedProps[0].QuadPoints;
                 }
@@ -564,7 +571,7 @@ class PropEditor : IEditorMode
                     }
                     
                     var handle1 = corners[i / 2]; // position of left corner
-                    var handle2 = corners[((i + 1) / 2) % 4]; // position of right corner
+                    var handle2 = corners[(i + 1) / 2 % 4]; // position of right corner
                     var handlePos = (handle1 + handle2) / 2f;
                     
                     // draw gizmo handle at corner
@@ -850,20 +857,20 @@ class PropEditor : IEditorMode
     public void TransformScaleAffineUpdate()
     {
         var modeState = affineScaleMode!;
-        var origTransform = modeState.origRect;
+        var origRect = modeState.origRect;
         
         Vector2 scaleAnchor;
 
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
         {
-            scaleAnchor = origTransform.Center;
+            scaleAnchor = origRect.Center;
         }
         else
         {
             // the side opposite to the active handle
             scaleAnchor =
-                Vector2.Transform(origTransform.Size / 2f * -modeState.handleOffset, modeState.rotationMatrix)
-                + origTransform.Center;
+                Vector2.Transform(origRect.Size / 2f * -modeState.handleOffset, modeState.rotationMatrix)
+                + origRect.Center;
         }
 
         // calculate vector deltas from scale anchor to original handle pos and mouse position
@@ -882,7 +889,7 @@ class PropEditor : IEditorMode
         
         // hold shift to maintain proportions
         // if scaling multiple props at once, this is the only valid mode. curse you, rotation!!!  
-        if (ImGui.IsKeyDown(ImGuiKey.ModShift) || selectedProps.Count > 1)
+        if (modeState.mustMaintainProportions || ImGui.IsKeyDown(ImGuiKey.ModShift))
         {
             if (modeState.handleOffset.X == 0f)
             {
@@ -902,7 +909,7 @@ class PropEditor : IEditorMode
         }
 
         // apply size scale
-        var newRect = origTransform;
+        var newRect = origRect;
         newRect.Size *= scale;
 
         // clamp size
@@ -912,7 +919,7 @@ class PropEditor : IEditorMode
         // anchor the prop to the anchor point
         if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
         {
-            newRect.Center = origTransform.Center;
+            newRect.Center = origRect.Center;
         }
         else
         {
@@ -923,16 +930,33 @@ class PropEditor : IEditorMode
         for (int i = 0; i < selectedProps.Count; i++)
         {
             var prop = selectedProps[i];
-            ref var propTransform = ref prop.Transform;
 
-            propTransform.Size = modeState.origPropSizes[i] * scale;
-            
-            // clamp size
-            propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
-            propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
+            if (prop.IsAffine)
+            {
+                ref var propTransform = ref prop.Transform;
+                var origTransform = modeState.origPropTransforms[i].affine;
 
-            // position prop
-            propTransform.Center = Vector2.Transform(modeState.propOffsets[i] * newRect.Size / 2f, modeState.rotationMatrix) + newRect.Center;
+                propTransform.Size = origTransform.Size * scale;
+                
+                // clamp size
+                propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
+                propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
+
+                // position prop
+                var propOffset = (origTransform.Center - origRect.Center) / origRect.Size;
+                propTransform.Center = Vector2.Transform(propOffset * newRect.Size, modeState.rotationMatrix) + newRect.Center;
+            }
+            else
+            {
+                var propQuad = prop.QuadPoints;
+                var origQuad = modeState.origPropTransforms[i].quads;
+
+                for (int k = 0; k < 4; k++)
+                {
+                    var scaleOffset = (origQuad[k] - origRect.Center) / origRect.Size;
+                    propQuad[k] = Vector2.Transform(scaleOffset * newRect.Size, modeState.rotationMatrix) + newRect.Center;
+                }
+            }
         }
     }
 }
