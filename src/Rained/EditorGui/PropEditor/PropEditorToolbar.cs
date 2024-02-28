@@ -85,6 +85,43 @@ partial class PropEditor : IEditorMode
         }
     }
 
+    private void MultiselectListInput<T>(string label, string fieldName, List<T> list)
+    {
+        var field = typeof(Prop).GetField(fieldName)!;
+        int targetV = (int) field.GetValue(selectedProps[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < selectedProps.Count; i++)
+        {
+            if (!field.GetValue(selectedProps[i])!.Equals(targetV))
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        var previewText = isSame ? list[targetV]!.ToString() : "";
+
+        if (ImGui.BeginCombo(label, previewText))
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                var txt = list[i]!.ToString();
+                bool sel = isSame && targetV == i;
+                if (ImGui.Selectable(txt, sel))
+                {
+                    foreach (var prop in selectedProps)
+                        field.SetValue(prop, i);
+                }
+
+                if (sel)
+                    ImGui.SetItemDefaultFocus();
+            }
+
+            ImGui.EndCombo();
+        }
+    }
+
     public void DrawToolbar()
     {
         var propDb = RainEd.Instance.PropDatabase;
@@ -280,6 +317,22 @@ partial class PropEditor : IEditorMode
 
                     if (hasCustomDepth)
                         MultiselectSliderInt("Custom Depth", "CustomDepth", 1, 30, "%i", ImGuiSliderFlags.AlwaysClamp);
+                }
+
+                // custom color, if available
+                {
+                    bool hasCustomColor = true;
+                    foreach (var prop in selectedProps)
+                    {
+                        if (!prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
+                        {
+                            hasCustomColor = false;
+                            break;
+                        }
+                    }
+
+                    if (hasCustomColor)
+                        MultiselectListInput("Custom Color", "CustomColor", propColorNames);
                 }
 
                 if (selectedProps.Count == 1)

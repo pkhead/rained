@@ -18,6 +18,7 @@ partial class PropEditor : IEditorMode
     private readonly Color HighlightColorGlow = new(50, 50, 255, 255);
     private readonly Color HighlightColor2 = new(180, 180, 180, 255);
     private readonly Color HighlightColor2Glow = new(255, 255, 255, 255);
+    private readonly List<string> propColorNames;
 
     private bool isMouseDragging = false;
     private enum DragMode
@@ -32,6 +33,16 @@ partial class PropEditor : IEditorMode
     public PropEditor(EditorWindow window)
     {
         this.window = window;
+
+        propColorNames = new List<string>()
+        {
+            Capacity = RainEd.Instance.PropDatabase.PropColors.Count
+        };
+
+        foreach (var col in RainEd.Instance.PropDatabase.PropColors)
+        {
+            propColorNames.Add(col.Name);
+        }
     }
 
     public void Load()

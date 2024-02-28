@@ -30,6 +30,13 @@ enum PropFlags
     Tile = 128,
 }
 
+// data in propColors.txt, used for custom colors
+struct PropColor
+{
+    public string Name;
+    public Color Color;
+}
+
 class PropInit
 {
     public readonly string Name;
@@ -263,12 +270,20 @@ class PropDatabase
 {
     public readonly List<PropCategory> Categories;
     public readonly List<PropTileCategory> TileCategories;
+    public readonly List<PropColor> PropColors; // custom colors
 
     public PropDatabase(TileDatabase tileDatabase)
     {
         Categories = new List<PropCategory>();
         TileCategories = new List<PropTileCategory>();
+        PropColors = new List<PropColor>();
 
+        InitProps(tileDatabase);
+        InitCustomColors();
+    }
+
+    public void InitProps(TileDatabase tileDatabase)
+    {
         // read prop init file
         var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "Init.txt");
         var lingoParser = new Lingo.LingoParser();
@@ -352,6 +367,29 @@ class PropDatabase
                 RainEd.Logger.Information("Register tile prop category {CategoryName}", tilePropCategory.Name);
                 TileCategories.Add(tilePropCategory);
             }
+        }
+    }
+
+    public void InitCustomColors()
+    {
+        // read propColors.txt
+        var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "propColors.txt");
+        var lingoParser = new Lingo.LingoParser();
+
+        foreach (var line in File.ReadLines(initFilePath))
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var colData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed propColors.txt"));
+
+            var name = (string) colData.values[0];
+            var lingoCol = (Lingo.Color) colData.values[1];
+
+            PropColors.Add(new PropColor()
+            {
+                Name = name,
+                Color = new Color(lingoCol.R, lingoCol.G, lingoCol.B, 255)
+            });
         }
     }
 }

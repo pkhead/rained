@@ -275,6 +275,7 @@ class Prop
 
     public int DepthOffset = 0; // 0-29
     public int CustomDepth;
+    public int CustomColor = 0; // index into the PropDatabase.PropColors list
     public int RenderOrder = 0;
     public int Variation = 0; // A variation of -1 means Random Variation
     public int Seed;
