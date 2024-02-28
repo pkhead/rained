@@ -170,16 +170,19 @@ class PropInit
 
         Category = category;
         Name = srcTile.Name;
-        Type = PropType.Standard;
+        Type = srcTile.VariationCount > 1 ? PropType.VariedStandard : PropType.Standard;
         Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", Name + ".png"));
         PropFlags = PropFlags.Tile;
         Notes = Array.Empty<string>();
 
         layerCount = srcTile.LayerCount;
+        Depth = srcTile.LayerDepth;
         pixelWidth = (srcTile.Width + srcTile.BfTiles * 2) * 20;
         pixelHeight = (srcTile.Height + srcTile.BfTiles * 2) * 20;
+        VariationCount = srcTile.VariationCount;
 
-        // TODO: account for tile variations
+        if (VariationCount > 1)
+            HasRandomVariation = true;
     }
 
     public Rectangle GetPreviewRectangle(int variation, int layer)

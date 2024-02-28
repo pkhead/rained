@@ -25,6 +25,8 @@ class Tile
     public readonly RlManaged.Texture2D PreviewTexture;
     public readonly bool CanBeProp;
     public readonly int LayerCount;
+    public readonly int LayerDepth;
+    public readonly int VariationCount;
 
     public readonly int CenterX;
     public readonly int CenterY;
@@ -37,6 +39,7 @@ class Tile
         int bfTiles,
         List<int>? repeatL,
         List<int> specs, List<int>? specs2,
+        int rnd,
         bool noPropTag
     )
     {
@@ -47,6 +50,7 @@ class Tile
         Category = category;
         CanBeProp = false;
         LayerCount = 1;
+        VariationCount = rnd;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
@@ -54,6 +58,7 @@ class Tile
         Requirements = new sbyte[width, height];
         Requirements2 = new sbyte[width, height];
         HasSecondLayer = false;
+        LayerDepth = 10;
 
         // fill requirements table
         int i = 0;
@@ -69,6 +74,7 @@ class Tile
 
         if (specs2 is not null)
         {
+            LayerDepth = 20;
             HasSecondLayer = true;
             
             i = 0;
@@ -91,8 +97,9 @@ class Tile
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
                 LayerCount = repeatL!.Count;
-                rowCount *= LayerCount;;
+                rowCount *= LayerCount;
                 CanBeProp = true;
+
                 break;
             
             case TileType.VoxelStructRockType:
@@ -218,6 +225,8 @@ class TileDatabase
                 Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
                     tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
+                int rnd =
+                    tileInit.fields.TryGetValue("rnd", out tempValue) ? (int)tempValue : 1;
                 
                 if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
                 {
@@ -249,7 +258,8 @@ class TileDatabase
                         repeatL: repeatL,
                         specs: specs,
                         specs2: specs2,
-                        tags.Contains("notProp")
+                        rnd: rnd,
+                        noPropTag: tags.Contains("notProp")
                     );
 
                     curGroup.Tiles.Add(tileData);
