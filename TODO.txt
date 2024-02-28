@@ -232,4 +232,4 @@ KEYBINDS:
     Shift + MouseWheel - Change brush size
   
   Prop Editor:
-    N - Add new prop
+    Double-Click or N - Add new prop

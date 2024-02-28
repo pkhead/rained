@@ -135,6 +135,10 @@ partial class PropEditor : IEditorMode
                 ImGui.InputInt("View Layer", ref workLayerV);
                 window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
             }
+
+            // snapping
+            ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+            ImGui.Combo("Snap", ref snappingMode, "Off\00.5x\01x");
             
             if (ImGui.BeginTabBar("PropSelector"))
             {

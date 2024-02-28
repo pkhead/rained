@@ -47,12 +47,14 @@ partial class PropEditor : IEditorMode
         private readonly Vector2 propUp;
         private readonly Matrix3x2 rotationMatrix;
         private readonly bool mustMaintainProportions;
+        private readonly float snap;
 
         private readonly Prop[] props;
-        public ScaleTransformMode(int handleId, List<Prop> props)
+        public ScaleTransformMode(int handleId, List<Prop> props, float snap)
         {
             this.props = props.ToArray();
             this.handleId = handleId;
+            this.snap = snap;
 
             handleOffset = handleId switch
             {
@@ -134,7 +136,10 @@ partial class PropEditor : IEditorMode
             var origDy = Vector2.Dot(propUp, dragStartPos - scaleAnchor);
             var mouseDx = Vector2.Dot(propRight, mousePos - scaleAnchor);
             var mouseDy = Vector2.Dot(propUp, mousePos - scaleAnchor);
-            var scale = new Vector2(mouseDx / origDx, mouseDy / origDy);
+            var scale = new Vector2(
+                Snap(mouseDx, snap) / Snap(origDx, snap),
+                Snap(mouseDy, snap) / Snap(origDy, snap)
+            );
 
             // lock on axis if dragging an edge handle
             if (handleOffset.X == 0f)
@@ -220,13 +225,17 @@ partial class PropEditor : IEditorMode
     {
         public readonly int handleId;
         public readonly Prop prop;
+        public readonly float snap;
+
         public WarpTransformMode(
             int handleId,
-            Prop prop
+            Prop prop,
+            float snap
         )
         {
             this.prop = prop;
             this.handleId = handleId;
+            this.snap = snap;
 
             if (prop.IsAffine)
             {
@@ -236,7 +245,7 @@ partial class PropEditor : IEditorMode
 
         public void Update(Vector2 dragStart, Vector2 mousePos)
         {
-            prop.QuadPoints[handleId] = mousePos;
+            prop.QuadPoints[handleId] = Snap(mousePos, snap);
         }
     }
 

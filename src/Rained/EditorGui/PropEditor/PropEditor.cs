@@ -14,6 +14,7 @@ partial class PropEditor : IEditorMode
     private bool isWarpMode = false;
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
+    private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
 
     private readonly Color HighlightColor = new(0, 0, 255, 255);
     private readonly Color HighlightColorGlow = new(50, 50, 255, 255);
@@ -22,6 +23,7 @@ partial class PropEditor : IEditorMode
     private readonly List<string> propColorNames;
 
     private bool isMouseDragging = false;
+    private readonly List<PropTransform> dragInitPositions = new();
     private enum DragMode
     {
         Select,
@@ -67,6 +69,21 @@ partial class PropEditor : IEditorMode
         bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
         bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
         return !(hasNeg && hasPos);
+    }
+
+    private static Vector2 Snap(Vector2 vector, float snap)
+    {
+        if (snap == 0) return vector;
+        return new Vector2(
+            MathF.Round(vector.X / snap) * snap,
+            MathF.Round(vector.Y / snap) * snap
+        );
+    }
+
+    private static float Snap(float number, float snap)
+    {
+        if (snap == 0) return number;
+        return MathF.Round(number / snap) * snap;
     }
 
     private static Prop? GetPropAt(Vector2 point)
@@ -283,7 +300,8 @@ partial class PropEditor : IEditorMode
                     {
                         transformMode = new ScaleTransformMode(
                             handleId: i,
-                            props: selectedProps
+                            props: selectedProps,
+                            snap: snappingMode / 2f
                         );
                     }
                 }
@@ -344,7 +362,8 @@ partial class PropEditor : IEditorMode
                     {
                         transformMode = new WarpTransformMode(
                             handleId: i,
-                            prop: selectedProps[0]
+                            prop: selectedProps[0],
+                            snap: snappingMode / 2f
                         );
                     }
                 }
@@ -443,6 +462,13 @@ partial class PropEditor : IEditorMode
                         selectedProps.Clear();
                         selectedProps.Add(hoverProp);
                     }
+
+                    // record initial drag positions
+                    dragInitPositions.Clear();
+                    foreach (var prop in selectedProps)
+                    {
+                        dragInitPositions.Add(new PropTransform(prop));
+                    }
                 }
             }
             isMouseDragging = true;
@@ -450,18 +476,34 @@ partial class PropEditor : IEditorMode
             // move drag
             if (dragMode == DragMode.Move)
             {
-                var mouseDelta = window.MouseCellFloat - prevMousePos;
-                foreach (var prop in selectedProps)
+                float snap = snappingMode / 2f;
+                bool posSnap = selectedProps.Count == 1 && selectedProps[0].IsAffine;
+
+                var mouseDelta = window.MouseCellFloat - dragStartPos;
+                
+                if (snap > 0 && !posSnap)
                 {
+                    mouseDelta = Snap(mouseDelta, snap);
+                }
+
+                for (int i = 0; i < selectedProps.Count; i++)
+                {
+                    var prop = selectedProps[i];
+
                     if (prop.IsAffine)
-                        prop.Rect.Center += mouseDelta;
+                        prop.Rect.Center = dragInitPositions[i].rect.Center + mouseDelta;
+
+                        if (snap > 0 && posSnap)
+                        {
+                            prop.Rect.Center = Snap(prop.Rect.Center, snap);
+                        }
                     else
                     {
                         var pts = prop.QuadPoints;
-                        pts[0] += mouseDelta;
-                        pts[1] += mouseDelta;
-                        pts[2] += mouseDelta;
-                        pts[3] += mouseDelta;
+                        pts[0] = dragInitPositions[i].quad[0] + mouseDelta;
+                        pts[1] = dragInitPositions[i].quad[1] + mouseDelta;
+                        pts[2] = dragInitPositions[i].quad[2] + mouseDelta;
+                        pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
                     }
                 }
             }
@@ -496,7 +538,16 @@ partial class PropEditor : IEditorMode
         {
             if (selectedInit is not null)
             {
-                var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height))
+                var createPos = window.MouseCellFloat;
+                
+                var snap = snappingMode / 2f;
+                if (snap > 0)
+                {
+                    createPos.X = MathF.Round(createPos.X / snap) * snap;
+                    createPos.Y = MathF.Round(createPos.Y / snap) * snap;
+                }
+
+                var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
                     DepthOffset = window.WorkLayer * 10
                 };
@@ -516,6 +567,7 @@ partial class PropEditor : IEditorMode
             }
 
             selectedProps.Clear();
+            isMouseDragging = false;
         }
 
         // duplicate props
