@@ -58,6 +58,7 @@ class EditorWindow
     public Vector2 MouseCellFloat { get => mouseCellFloat; }
     public bool IsMouseInLevel() => Editor.Level.IsInBounds(mouseCx, mouseCy);
     public bool OverrideMouseWheel = false;
+    public string StatusText = string.Empty;
 
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
@@ -187,7 +188,7 @@ class EditorWindow
             }
 
             ImGui.SameLine();
-            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})");
+            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})    {StatusText}");
 
             if (!ImGui.GetIO().WantTextInput)
             {
@@ -252,6 +253,7 @@ class EditorWindow
             }
         }
         
+        StatusText = string.Empty;
         editorModes[selectedMode].DrawToolbar();
     }
 

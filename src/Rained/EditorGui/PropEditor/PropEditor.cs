@@ -11,6 +11,7 @@ partial class PropEditor : IEditorMode
     private readonly EditorWindow window;
     private readonly List<Prop> selectedProps = new();
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
+    private bool isWarpMode = false;
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
 
@@ -193,21 +194,36 @@ partial class PropEditor : IEditorMode
         levelRender.RenderBorder();
 
         // highlight selected props
-        foreach (var prop in selectedProps)
+        if (isWarpMode)
         {
-            var pts = prop.QuadPoints;
-            var col = prop.IsAffine ? HighlightColor : HighlightColor2;
-            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            foreach (var prop in level.Props)
+            {
+                var pts = prop.QuadPoints;
+                var col = prop.IsAffine ? HighlightColor : HighlightColor2;
+                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            }    
+        }
+        else
+        {
+            foreach (var prop in selectedProps)
+            {
+                var pts = prop.QuadPoints;
+                var col = HighlightColor;
+                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            }
         }
 
         // prop transform gizmos
         if (selectedProps.Count > 0)
         {
             bool canWarp = transformMode is WarpTransformMode ||
-                (ImGui.IsKeyDown(ImGuiKey.F) && selectedProps.Count == 1 && !selectedProps[0].IsAffine);
+                (isWarpMode && selectedProps.Count == 1);
             
             var aabb = GetSelectionAABB();
 

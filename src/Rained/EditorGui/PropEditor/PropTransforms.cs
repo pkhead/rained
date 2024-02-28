@@ -227,6 +227,11 @@ partial class PropEditor : IEditorMode
         {
             this.prop = prop;
             this.handleId = handleId;
+
+            if (prop.IsAffine)
+            {
+                prop.ConvertToFreeform();
+            }
         }
 
         public void Update(Vector2 dragStart, Vector2 mousePos)

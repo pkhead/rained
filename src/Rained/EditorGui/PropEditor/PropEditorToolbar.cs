@@ -387,5 +387,13 @@ partial class PropEditor : IEditorMode
             }
 
         } ImGui.End();
+
+        if (ImGui.IsKeyPressed(ImGuiKey.F) && !ImGui.GetIO().WantCaptureKeyboard)
+        {
+            isWarpMode = !isWarpMode;
+        }
+
+        if (isWarpMode)
+            RainEd.Instance.Window.StatusText = "Freeform Warp";
     }
 }
