@@ -273,31 +273,23 @@ partial class PropEditor : IEditorMode
                 {
                     ImGui.Text("Selected multiple props");
                 }
-
-                // convert to/from freeform prop
-                bool canConvert = false;
-
-                foreach (var prop in selectedProps)
-                {
-                    if (prop.IsAffine)
-                    {
-                        canConvert = true;
-                        break;
-                    }
-                }
-
-                if (!canConvert)
-                    ImGui.BeginDisabled();
                 
-                if (ImGui.Button("Convert to Warpable Prop"))
+                if (ImGui.Button("Reset Transform"))
                 {
                     foreach (var prop in selectedProps)
-                        prop.ConvertToFreeform();
+                        prop.ResetTransform();
                 }
 
-                if (!canConvert)
-                    ImGui.EndDisabled();
+                ImGui.SameLine();
+                if (ImGui.Button("Flip X"))
+                    foreach (var prop in selectedProps)
+                        prop.FlipX();
 
+                ImGui.SameLine();
+                if (ImGui.Button("Flip Y"))
+                    foreach (var prop in selectedProps)
+                        prop.FlipY();
+                
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);

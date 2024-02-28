@@ -168,8 +168,8 @@ partial class PropEditor : IEditorMode
             newRect.Size *= scale;
 
             // clamp size
-            newRect.Size.X = MathF.Max(0.1f, newRect.Size.X);
-            newRect.Size.Y = MathF.Max(0.1f, newRect.Size.Y);
+            //newRect.Size.X = MathF.Max(0.1f, newRect.Size.X);
+            //newRect.Size.Y = MathF.Max(0.1f, newRect.Size.Y);
 
             // anchor the prop to the anchor point
             if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
@@ -194,8 +194,8 @@ partial class PropEditor : IEditorMode
                     propTransform.Size = origTransform.Size * scale;
                     
                     // clamp size
-                    propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
-                    propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
+                    //propTransform.Size.X = MathF.Max(0.1f, propTransform.Size.X);
+                    //propTransform.Size.Y = MathF.Max(0.1f, propTransform.Size.Y);
 
                     // position prop
                     var propOffset = (origTransform.Center - origRect.Center) / origRect.Size;

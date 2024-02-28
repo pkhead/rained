@@ -292,18 +292,18 @@ partial class PropEditor : IEditorMode
             // rotation gizmo (don't draw if scaling or rotating) 
             if (transformMode is null && !canWarp)
             {
-                Vector2 sideDir = Vector2.UnitX;
                 Vector2 handleDir = -Vector2.UnitY;
                 Vector2 handleCnPos = aabb.Position + new Vector2(aabb.Width / 2f, 0f);
 
                 if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
                 {
-                    handleCnPos = (selectedProps[0].QuadPoints[0] + selectedProps[0].QuadPoints[1]) / 2f;
-                    sideDir = Vector2.Normalize(selectedProps[0].QuadPoints[1] - selectedProps[0].QuadPoints[0]);
+                    var prop = selectedProps[0];
+                    var sideDir = new Vector2(MathF.Cos(prop.Rect.Rotation), MathF.Sin(prop.Rect.Rotation));
                     handleDir = new(sideDir.Y, -sideDir.X);
+                    handleCnPos = prop.Rect.Center + handleDir * Math.Abs(prop.Rect.Size.Y) / 2f; 
                 }
 
-                Vector2 rotDotPos = handleCnPos + handleDir * 5f;
+                Vector2 rotDotPos = handleCnPos + handleDir * 5f / window.ViewZoom;
 
                 // draw line to gizmo handle
                 Raylib.DrawLineEx(

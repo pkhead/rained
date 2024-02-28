@@ -325,6 +325,50 @@ class Prop
         isAffine = false;
         UpdateQuadPointsFromAffine();
     }
+
+    public void ResetTransform()
+    {
+        if (!isAffine)
+        {
+            // calculate center of quad
+            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+
+            // convert to affine
+            isAffine = true;
+            affineTransform.Center = ct;
+        }
+
+        affineTransform.Size = new Vector2(PropInit.Width, PropInit.Height);
+        affineTransform.Rotation = 0f;
+    }
+
+    public void FlipX()
+    {
+        if (isAffine)
+        {
+            affineTransform.Size.X = -affineTransform.Size.X;
+        }
+        else
+        {
+            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+            for (int i = 0; i < 4; i++)
+                quad[i].X = -(quad[i].X - ct.X) + ct.X;
+        }
+    }
+
+    public void FlipY()
+    {
+        if (isAffine)
+        {
+            affineTransform.Size.Y = -affineTransform.Size.Y;
+        }
+        else
+        {
+            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+            for (int i = 0; i < 4; i++)
+                quad[i].Y = -(quad[i].Y - ct.Y) + ct.Y;
+        }
+    }
 }
 
 class Level

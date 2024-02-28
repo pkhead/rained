@@ -672,6 +672,7 @@ class LevelEditRender
 
     public void RenderProps(int layer, int alpha)
     {
+        Rlgl.DisableBackfaceCulling();
         Raylib.BeginShaderMode(transparencyShader);
 
         foreach (var prop in Level.Props)
@@ -715,6 +716,7 @@ class LevelEditRender
         }
 
         Raylib.EndShaderMode();
+        Rlgl.EnableBackfaceCulling();
     }
 
     public void RenderGrid()
