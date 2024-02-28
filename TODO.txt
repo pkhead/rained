@@ -52,6 +52,7 @@ Effects Editor:
 Prop Editor: (TODO)
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - prop flipping
+- read propColors.txt
 - snap to grid in lingo editor snaps to grid intersections
 - rope-type props will have a "Simulate" button in an always-visible prop properties field.
   holding down this button will perform the simulation for as long as it is held.
