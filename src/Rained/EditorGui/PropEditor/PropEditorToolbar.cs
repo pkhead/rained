@@ -227,7 +227,10 @@ partial class PropEditor : IEditorMode
             {
                 if (selectedProps.Count == 1)
                 {
-                    ImGui.TextUnformatted($"Selected {selectedProps[0].PropInit.Name}");
+                    var prop = selectedProps[0];
+
+                    ImGui.TextUnformatted($"Selected {prop.PropInit.Name}");
+                    ImGui.TextUnformatted($"Depth: {prop.Depth} - {prop.Depth + prop.PropInit.Depth}");
                 }
                 else
                 {
@@ -282,34 +285,29 @@ partial class PropEditor : IEditorMode
                         prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
                     }
 
-                    // notes + synopses
+                    ImGui.BeginDisabled();
+                        bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
+                        ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
+                    ImGui.EndDisabled();
+
+                    // notes
                     ImGui.SeparatorText("Notes");
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                         ImGui.BulletText("Tile as Prop");
 
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded))
-                        ImGui.BulletText("Procedurally Shaded");
-                    else
-                        ImGui.BulletText("Shadows will not rotate with this prop");
-
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariations))
-                        ImGui.BulletText("Random Variation");
-                    
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.HasVariations))
-                        ImGui.BulletText("Variation Selectable");
-                    
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.PostEffectsWhenColorized))
-                        ImGui.BulletText("Post Effects Recommended When Colored");
-
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanColorTube))
-                        ImGui.BulletText("Can Color Tube");
+                    {
+                        ImGui.Bullet(); ImGui.SameLine();
+                        ImGui.TextWrapped("It's recommended to render this prop after the effects if the color is activated, as the effects won't affect the color layers.");
+                    }
                     
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
-                        ImGui.BulletText("Can Set Thickness");
-
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
-                        ImGui.BulletText("Custom Color Available");
+                    // user notes
+                    foreach (string note in prop.PropInit.Notes)
+                    {
+                        ImGui.Bullet(); ImGui.SameLine();
+                        ImGui.TextWrapped(note);
+                    }
                 }
 
                 ImGui.PopItemWidth();
