@@ -230,7 +230,7 @@ partial class PropEditor : IEditorMode
                     var prop = selectedProps[0];
 
                     ImGui.TextUnformatted($"Selected {prop.PropInit.Name}");
-                    ImGui.TextUnformatted($"Depth: {prop.Depth} - {prop.Depth + prop.PropInit.Depth}");
+                    ImGui.TextUnformatted($"Depth: {prop.DepthOffset} - {prop.DepthOffset + prop.PropInit.Depth}");
                 }
                 else
                 {
@@ -262,22 +262,38 @@ partial class PropEditor : IEditorMode
                     ImGui.EndDisabled();
 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
-                MultiselectSliderInt("Depth", "Depth", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
+                MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
                 MultiselectEnumInput<Prop.PropRenderTime>("Render Time", "RenderTime", PropRenderTimeNames);
+
+                // custom depth, if available
+                {
+                    bool hasCustomDepth = true;
+                    foreach (var prop in selectedProps)
+                    {
+                        if (!prop.PropInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))
+                        {
+                            hasCustomDepth = false;
+                            break;
+                        }
+                    }
+
+                    if (hasCustomDepth)
+                        MultiselectSliderInt("Custom Depth", "CustomDepth", 1, 30, "%i", ImGuiSliderFlags.AlwaysClamp);
+                }
 
                 if (selectedProps.Count == 1)
                 {
                     var prop = selectedProps[0];
 
-                    // prop settings
+                    // prop variation
                     if (prop.PropInit.VariationCount > 1)
                     {
                         var varV = prop.Variation + 1;
                         ImGui.SliderInt(
                             label: "Variation",
                             v: ref varV,
-                            v_min: prop.PropInit.HasRandomVariation ? 0 : 1, // in Prop, a Variation of -1 means random variation
+                            v_min: prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariation) ? 0 : 1, // in Prop, a Variation of -1 means random variation
                             v_max: prop.PropInit.VariationCount,
                             format: varV == 0 ? "Random" : "%i",
                             flags: ImGuiSliderFlags.AlwaysClamp

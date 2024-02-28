@@ -471,7 +471,7 @@ partial class PropEditor : IEditorMode
             {
                 var prop = new Prop(selectedInit, window.MouseCellFloat, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
-                    Depth = window.WorkLayer * 10
+                    DepthOffset = window.WorkLayer * 10
                 };
 
                 RainEd.Instance.Level.Props.Add(prop);

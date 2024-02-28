@@ -21,10 +21,10 @@ enum PropType
 enum PropFlags
 {
     ProcedurallyShaded = 1,
-    RandomVariations = 2,
-    HasVariations = 4,
-    PostEffectsWhenColorized = 8,
-    CustomColorAvailable = 16,
+    RandomVariation = 2,
+    CustomDepthAvailable = 4,
+    CustomColorAvailable = 8,
+    PostEffectsWhenColorized = 16,
     CanSetThickness = 32,
     CanColorTube = 64,
     Tile = 128,
@@ -39,7 +39,6 @@ class PropInit
     public readonly PropFlags PropFlags;
     public readonly int Depth;
     public readonly int VariationCount;
-    public readonly bool HasRandomVariation;
     public readonly string[] Notes;
 
     // used for obtaining preview image
@@ -108,7 +107,7 @@ class PropInit
 
         // variation count
         VariationCount = 1;
-        HasRandomVariation = false;
+        var randVar = false;
 
         if (init.fields.TryGetValue("vars", out tempObject))
         {
@@ -117,10 +116,10 @@ class PropInit
 
         if (init.fields.TryGetValue("random", out tempObject))
         {
-            HasRandomVariation = (int)tempObject != 0;   
+            randVar = (int)tempObject != 0;   
         }
 
-        // read notes and flags
+        // read notes
         var tags = ((Lingo.List)init.fields["tags"]).values.Cast<string>();
 
         PropFlags = 0;
@@ -134,11 +133,7 @@ class PropInit
             Notes = Array.Empty<string>();
         }
 
-        if (init.fields.TryGetValue("colorTreatment", out tempObject) && (string)tempObject == "bevel")
-        {
-            PropFlags |= PropFlags.ProcedurallyShaded;
-        }
-
+        // post effects recommended when colorized note
         if (Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
             if (init.fields.TryGetValue("colorize", out tempObject) && (int)tempObject != 0)
@@ -146,7 +141,13 @@ class PropInit
                 PropFlags |= PropFlags.PostEffectsWhenColorized;
             }
         }
+        // set flags
+        if (init.fields.TryGetValue("colorTreatment", out tempObject) && (string)tempObject == "bevel")
+        {
+            PropFlags |= PropFlags.ProcedurallyShaded;
+        }
 
+        // is procedurally shaded?
         if (Type == PropType.Soft || Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
             if (init.fields.TryGetValue("selfShade", out tempObject) && (int)tempObject != 0)
@@ -155,9 +156,30 @@ class PropInit
             }
         }
 
+        // is custom color available?
         if (tags.Contains("customColor") || tags.Contains("customColorRainBow"))
         {
             PropFlags |= PropFlags.CustomColorAvailable;
+        }
+
+        // random variation
+        if (randVar)
+        {
+            PropFlags |= PropFlags.RandomVariation;
+        }
+
+        // is custom depth available?
+        switch (Type)
+        {
+            case PropType.VariedDecal:
+            case PropType.VariedSoft:
+            case PropType.SimpleDecal:
+            case PropType.Soft:
+            // case PropType.SoftEffect:
+            case PropType.Antimatter:
+            case PropType.ColoredSoft:
+                PropFlags |= PropFlags.CustomDepthAvailable;
+                break;
         }
     }
 
@@ -182,7 +204,7 @@ class PropInit
         VariationCount = srcTile.VariationCount;
 
         if (VariationCount > 1)
-            HasRandomVariation = true;
+            PropFlags |= PropFlags.RandomVariation;
     }
 
     public Rectangle GetPreviewRectangle(int variation, int layer)

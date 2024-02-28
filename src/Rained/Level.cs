@@ -273,33 +273,35 @@ class Prop
         PreEffects, PostEffects
     };
 
-    public int Depth = 0; // 0-29
+    public int DepthOffset = 0; // 0-29
+    public int CustomDepth;
     public int RenderOrder = 0;
     public int Variation = 0; // A variation of -1 means Random Variation
     public int Seed;
     public PropRenderTime RenderTime = PropRenderTime.PreEffects;
 
-    public Prop(Props.PropInit init, Vector2 center, Vector2 size)
+    private Prop(Props.PropInit init)
     {
         PropInit = init;
-
+        
         isAffine = true;
         quad = new Vector2[4];
 
-        affineTransform.Center = center;
-        affineTransform.Size = size;
-        affineTransform.Rotation = 0f;
-
-        if (init.HasRandomVariation) Variation = -1;
+        if (init.PropFlags.HasFlag(Props.PropFlags.RandomVariation)) Variation = -1;
         Seed = (int)(DateTime.Now.Ticks % 1000);
+        CustomDepth = init.Depth;
     }
 
-    public Prop(Props.PropInit init, Vector2[] points)
+    public Prop(Props.PropInit init, Vector2 center, Vector2 size) : this(init)
     {
-        PropInit = init;
+        affineTransform.Center = center;
+        affineTransform.Size = size;
+        affineTransform.Rotation = 0f;   
+    }
 
+    public Prop(Props.PropInit init, Vector2[] points) : this(init)
+    {
         isAffine = false;
-        quad = new Vector2[4];
 
         for (int i = 0; i < 4; i++)
         {

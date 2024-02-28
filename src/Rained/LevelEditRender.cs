@@ -676,7 +676,7 @@ class LevelEditRender
 
         foreach (var prop in Level.Props)
         {
-            if (prop.Depth < layer * 10 || prop.Depth >= (layer+1) * 10)
+            if (prop.DepthOffset < layer * 10 || prop.DepthOffset >= (layer+1) * 10)
                 continue;
             
             var quad = prop.QuadPoints;
