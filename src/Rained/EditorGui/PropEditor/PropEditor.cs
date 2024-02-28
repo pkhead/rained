@@ -44,6 +44,81 @@ partial class PropEditor : IEditorMode
         isMouseDragging = false;
     }
 
+    private void MultiselectSliderInt(string label, string fieldName, int v_min, int v_max, string format = "%i", ImGuiSliderFlags flags = 0)
+    {
+        var field = typeof(Prop).GetField(fieldName)!;
+        var targetV = (int)field.GetValue(selectedProps[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < selectedProps.Count; i++)
+        {
+            if ((int)field.GetValue(selectedProps[i])! != targetV)
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        if (isSame)
+        {
+            int v = (int) field.GetValue(selectedProps[0])!;
+            if (ImGui.SliderInt(label, ref v, v_min, v_max, format, flags))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, v);
+            }
+        }
+        else
+        {
+            int v = int.MinValue;
+            if (ImGui.SliderInt(label, ref v, v_min, v_max, string.Empty, flags))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, v);
+            }
+        }
+    }
+
+    // what a reflective mess
+    private void MultiselectEnumInput<T>(string label, string fieldName, string[] enumNames) where T : Enum
+    {
+        var field = typeof(Prop).GetField(fieldName)!;
+        T targetV = (T)field.GetValue(selectedProps[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < selectedProps.Count; i++)
+        {
+            if (!((T)field.GetValue(selectedProps[i])!).Equals(targetV))
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        var previewText = isSame ? enumNames[(int) Convert.ChangeType(targetV, targetV.GetTypeCode())] : "";
+
+        if (ImGui.BeginCombo(label, previewText))
+        {
+            for (int i = 0; i < enumNames.Length; i++)
+            {
+                T e = (T) Convert.ChangeType(i, targetV.GetTypeCode());
+                bool sel = isSame && e.Equals(targetV);
+                if (ImGui.Selectable(enumNames[i], sel))
+                {
+                    foreach (var prop in selectedProps)
+                        field.SetValue(prop, e);
+                }
+
+                if (sel)
+                    ImGui.SetItemDefaultFocus();
+            }
+
+            ImGui.EndCombo();
+        }
+    }
+
+    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects "};
+
     public void DrawToolbar()
     {
         var propDb = RainEd.Instance.PropDatabase;
@@ -216,29 +291,11 @@ partial class PropEditor : IEditorMode
 
                 if (!canConvert)
                     ImGui.EndDisabled();
-                
-                int propDepthV = selectedProps[0].Depth;
 
-                for (int i = 1; i < selectedProps.Count; i++)
-                {
-                    if (selectedProps[i].Depth != propDepthV)
-                    {
-                        propDepthV = int.MaxValue;
-                    }
-                }
-
-                // depth
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
-
-                if (propDepthV != int.MaxValue)
-                {
-                    if (ImGui.SliderInt("Depth", ref propDepthV, 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp))
-                    {
-                        propDepthV = Math.Clamp(propDepthV, 0, 29);
-                        foreach (var prop in selectedProps)
-                            prop.Depth = propDepthV;
-                    }
-                }
+                MultiselectSliderInt("Depth", "Depth", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
+                MultiselectSliderInt("Seed", "Seed", 0, 999);
+                MultiselectEnumInput<Prop.PropRenderTime>("Render Time", "RenderTime", PropRenderTimeNames);
 
                 if (selectedProps.Count == 1)
                 {
@@ -258,16 +315,6 @@ partial class PropEditor : IEditorMode
                         );
                         prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
                     }
-
-                    ImGui.SliderInt("Seed", ref prop.Seed, 0, 999);
-
-                    {
-                        int renderTime = (int) prop.RenderTime;
-                        ImGui.Combo("Render Time", ref renderTime, "Pre Effects\0Post Effects");
-                        prop.RenderTime = (Prop.PropRenderTime) renderTime;
-                    }
-
-                    ImGui.InputInt("Render Order", ref prop.RenderOrder);
 
                     // notes + synopses
                     ImGui.SeparatorText("Notes");
