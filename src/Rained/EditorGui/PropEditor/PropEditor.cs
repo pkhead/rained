@@ -11,6 +11,8 @@ partial class PropEditor : IEditorMode
     private readonly EditorWindow window;
     private readonly List<Prop> selectedProps = new();
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
+    private Prop[] propSelectionList = Array.Empty<Prop>(); // used for being able to select props that are behind others
+    private Prop? highlightedProp = null; // used for prop selection list
     private bool isWarpMode = false;
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
@@ -88,8 +90,10 @@ partial class PropEditor : IEditorMode
 
     private static Prop? GetPropAt(Vector2 point)
     {
-        foreach (var prop in RainEd.Instance.Level.Props)
+        for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
         {
+            var prop = RainEd.Instance.Level.Props[i];
+
             var pts = prop.QuadPoints;
             if (
                 IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
@@ -101,6 +105,25 @@ partial class PropEditor : IEditorMode
         }
 
         return null;
+    }
+
+    private static Prop[] GetPropsAt(Vector2 point)
+    {
+        var list = new List<Prop>();
+
+        foreach (var prop in RainEd.Instance.Level.Props)
+        {
+            var pts = prop.QuadPoints;
+            if (
+                IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
+                IsPointInTriangle(point, pts[2], pts[3], pts[0])    
+            )
+            {
+                list.Add(prop);
+            }
+        }
+
+        return list.ToArray();
     }
 
     /*private static Rectangle GetPropAABB(Prop prop)
@@ -215,18 +238,22 @@ partial class PropEditor : IEditorMode
         {
             foreach (var prop in level.Props)
             {
+                if (prop == highlightedProp) continue;
+
                 var pts = prop.QuadPoints;
                 var col = prop.IsAffine ? HighlightColor : HighlightColor2;
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
-            }    
+            }
         }
         else
         {
             foreach (var prop in selectedProps)
             {
+                if (prop == highlightedProp) continue;
+
                 var pts = prop.QuadPoints;
                 var col = HighlightColor;
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -234,6 +261,16 @@ partial class PropEditor : IEditorMode
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
             }
+        }
+
+        if (highlightedProp is not null)
+        {
+            var pts = highlightedProp.QuadPoints;
+            var col = HighlightColorGlow;
+            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
         }
 
         // prop transform gizmos
@@ -429,6 +466,48 @@ partial class PropEditor : IEditorMode
         }
 
         prevMousePos = window.MouseCellFloat;
+
+        // props selection popup (opens when right-clicking over an area with multiple props)
+        highlightedProp = null;
+        if (ImGui.IsPopupOpen("PropSelectionList") && ImGui.BeginPopup("PropSelectionList"))
+        {
+            for (int i = propSelectionList.Length - 1; i >= 0; i--)
+            {
+                var prop = propSelectionList[i];
+
+                ImGui.PushID(i);
+                if (ImGui.Selectable(prop.PropInit.Name))
+                {
+                    ImGui.CloseCurrentPopup();
+                    if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                        selectedProps.Clear();
+                    SelectProp(prop);
+                }
+
+                if (ImGui.IsItemHovered())
+                    highlightedProp = prop;
+                
+                ImGui.PopID();
+
+            }
+
+            ImGui.EndPopup();
+        }
+    }
+
+    private void SelectProp(Prop prop)
+    {
+        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+        {
+            // if prop is in selection, remove it from selection
+            // if prop is not in selection, add it to the selection
+            if (!selectedProps.Remove(prop))
+                selectedProps.Add(prop);
+        }
+        else
+        {
+            selectedProps.Add(prop);
+        }
     }
 
     public void PropSelectUpdate(bool wasMouseDragging)
@@ -518,17 +597,22 @@ partial class PropEditor : IEditorMode
             var prop = GetPropAt(window.MouseCellFloat);
             if (prop is not null)
             {
-                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
-                {
-                    // if prop is in selection, remove it from selection
-                    // if prop is not in selection, add it to the selection
-                    if (!selectedProps.Remove(prop))
-                        selectedProps.Add(prop);
-                }
-                else
-                {
-                    selectedProps.Add(prop);
-                }
+                SelectProp(prop);
+            }
+        }
+
+        if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !wasMouseDragging)
+        {
+            propSelectionList = GetPropsAt(window.MouseCellFloat);
+            if (propSelectionList.Length == 1)
+            {
+                if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    selectedProps.Clear();
+                
+                SelectProp(propSelectionList[0]);
+            } else if (propSelectionList.Length > 1)
+            {
+                ImGui.OpenPopup("PropSelectionList");
             }
         }
 

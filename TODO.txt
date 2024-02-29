@@ -232,4 +232,10 @@ KEYBINDS:
     Shift + MouseWheel - Change brush size
   
   Prop Editor:
-    Double-Click or N - Add new prop
+    Double-Click or N - Place prop
+    Backspace/Delete - Delete selected prop
+    LMB - Select prop
+    Shift+LMB - Add prop to selection
+    RMB - Select all props under mouse
+    F - Toggle freeform warp mode
+    Ctrl+D - Duplicate selected prop
