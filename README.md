@@ -30,4 +30,6 @@ dotnet run --project src/Rained/Rained.csproj
 ```
 
 ## Contributing
+Report bugs and other complaints by creating an issue or pinging @chromosoze in the Rain World Discord server.
+
 Pull requests are welcome.
