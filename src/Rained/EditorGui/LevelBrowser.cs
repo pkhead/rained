@@ -3,16 +3,17 @@ using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
 using rlImGui_cs;
+using System.Text;
 
 namespace RainEd;
 
-class LevelBrowser
+class FileBrowser
 {
-    private static LevelBrowser? singleton = null;
-    public static LevelBrowser? Singleton { get => singleton; }
+    private static FileBrowser singleton = null!;
+    public static FileBrowser Instance { get => singleton; }
     public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
     {
-        singleton = new LevelBrowser(openMode, callback, Path.Combine(Boot.AppDataPath, "Data","LevelEditorProjects"));
+        singleton = new FileBrowser(openMode, callback, Path.Combine(Boot.AppDataPath, "Data","LevelEditorProjects"));
     }
 
     private bool isOpen = false;
@@ -34,6 +35,10 @@ class LevelBrowser
     private int selected = -1;
     private bool scrollToSelected = false;
     private readonly List<Entry> entries = new();
+    private readonly List<(int, Entry)> filteredEntries = new();
+    private readonly List<FileFilter> fileFilters = new();
+    private FileFilter selectedFilter;
+    private bool needFilterRefresh = false;
 
     private bool openErrorPopup = false;
     private string errorMsg = string.Empty;
@@ -52,6 +57,7 @@ class LevelBrowser
         public string Name;
         public string Extension;
         public EntryType Type;
+        public int IconIndex = 6; // file icon
 
         public Entry(string name, EntryType type)
         {
@@ -67,22 +73,103 @@ class LevelBrowser
         public string Path;
     }
 
+    private record FileFilter
+    {
+        public string FilterName;
+        public string FullText;
+        public string[] AllowedExtensions;
+        public Func<string, bool, bool>? FilterCallback;
+
+        public FileFilter(string name, string[] extensions, Func<string, bool, bool>? filterCallback = null)
+        {
+            FilterName = name;
+            AllowedExtensions = extensions;
+            FilterCallback = filterCallback;
+
+            var strBuilder = new StringBuilder();
+            strBuilder.Append(name);
+            strBuilder.Append(" (");
+            
+            for (int i = 0; i < extensions.Length; i++)
+            {
+                var ext = extensions[i];
+                if (i > 0) strBuilder.Append(", ");
+                strBuilder.Append('*');
+                strBuilder.Append(ext);
+            }
+
+            strBuilder.Append(')');
+            FullText = strBuilder.ToString();
+        }
+
+        // the isRw parameter -- if teh SetPath function had identified it as a
+        // Rain World level file
+        public bool Match(string fileName, bool isRw)
+        {
+            foreach (var ext in AllowedExtensions)
+            {
+                if (ext == ".*") return true;
+            }
+
+            var pathExt = Path.GetExtension(fileName);
+            if (string.IsNullOrEmpty(pathExt)) return false;
+            
+            foreach (var ext in AllowedExtensions)
+            {
+                if (pathExt == ext)
+                {
+                    if (FilterCallback is null) return true;
+                    else if (FilterCallback(fileName, isRw))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public string Enforce(string fileName)
+        {
+            if (Path.GetExtension(fileName) != AllowedExtensions[0])
+                return fileName + AllowedExtensions[0];
+
+            return fileName;
+        }
+    }
+
     private class EntrySorter : IComparer<Entry>
     {
         int IComparer<Entry>.Compare(Entry a, Entry b) => a.Name.CompareTo(b.Name);
     }
     
     private static RlManaged.Texture2D icons = null!;
-    private LevelBrowser(OpenMode mode, Action<string> callback, string? openDir)
+    private FileBrowser(OpenMode mode, Action<string> callback, string? openDir)
     {
         icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
 
         this.mode = mode;
         this.callback = callback;
+        fileFilters.Add(new FileFilter("Any", new string[] { ".*" }));
+        selectedFilter = fileFilters[0];
+
         cwd = openDir ?? Boot.AppDataPath;
         SetPath(cwd);
         pathBuf = cwd;
         nameBuf = string.Empty;
+    }
+
+    public static void AddFilter(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
+    {
+        singleton.fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
+
+        // default filter is the first filter added, else "Any"
+        singleton.selectedFilter = singleton.fileFilters[1];
+    }
+
+    public static void Render()
+    {
+        singleton?.InstanceRender();
     }
 
     private static Rectangle GetIconRect(int index)
@@ -112,20 +199,46 @@ class LevelBrowser
             var dirInfo = File.GetAttributes(dirPath);
             
             if (!dirInfo.HasFlag(FileAttributes.Hidden))
-                if (!string.IsNullOrEmpty(dirName)) entries.Add(new Entry(dirName, EntryType.Directory));
+            {
+                if (!string.IsNullOrEmpty(dirName))
+                {
+                    entries.Add(new Entry(dirName, EntryType.Directory)
+                    {
+                        IconIndex = 5 // folder icon
+                    });
+                }
+            }
         }
         entries.Sort(new EntrySorter());
         var firstFile = entries.Count;
 
         // add files
+        var charBuf = new char[4];
+
         foreach (var filePath in Directory.EnumerateFiles(path))
         {
             var fileName = Path.GetFileName(filePath);
             var fileInfo = File.GetAttributes(filePath);
 
             if (fileInfo.HasFlag(FileAttributes.Hidden)) continue;
-            if (Path.GetExtension(fileName) != ".txt") continue; // file filter, although hardcoded
-                entries.Add(new Entry(fileName, EntryType.File));
+
+            // quick read to see if it's a rain world level file
+            // all rain world level files start with four brackets
+            var icon = 6; // file icon
+            if (Path.GetExtension(filePath) == ".txt")
+            {
+                using var stream = File.OpenText(filePath);
+                int n = stream.ReadBlock(charBuf, 0, 4);
+                if (n == 4 && charBuf[0] == '[' && charBuf[1] == '[' && charBuf[2] == '[' && charBuf[3] == '[')
+                {
+                    icon = 7; // slugcat icon
+                }
+            }
+
+            entries.Add(new Entry(fileName, EntryType.File)
+            {
+                IconIndex = icon
+            });
         }
         entries.Sort(firstFile, entries.Count - firstFile, new EntrySorter());
         pathBuf = path;
@@ -136,13 +249,31 @@ class LevelBrowser
         {
             pathList.Add(p);
         }
+
+        needFilterRefresh = true;
         
         return true;
     }
 
-    public void Render()
+    private void RefreshFilter()
     {
-        var winName = mode == OpenMode.Write ? "Save Level" : "Open Level";
+        filteredEntries.Clear();
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+
+            if (entry.Name[0] == '.') continue; // hidden files/folders
+            if (entry.Type == EntryType.Directory || selectedFilter.Match(Path.Combine(cwd, entry.Name), entry.IconIndex == 7))
+            {
+                filteredEntries.Add((i, entry));
+            }
+        }
+    }
+
+    private void InstanceRender()
+    {
+        var winName = mode == OpenMode.Write ? "Save File" : "Open File";
 
         if (!isOpen)
         {
@@ -277,47 +408,50 @@ class LevelBrowser
 
             ImGui.BeginChild("Listing", new Vector2(-0.0001f, listingHeight));
             {
-                for (int i = 0; i < entries.Count; i++)
+                if (needFilterRefresh)
                 {
-                    var entry = entries[i];
+                    RefreshFilter();
+                    needFilterRefresh = false;
+                }
 
-                    if (entry.Name[0] != '.')
+                foreach ((var i, var entry) in filteredEntries)
+                {
+                    if (selected == i && scrollToSelected)
                     {
-                        if (selected == i && scrollToSelected)
-                        {
-                            ImGui.SetScrollHereY();
-                        }
+                        ImGui.SetScrollHereY();
+                    }
 
-                        // this is the offset into the file icon texture
-                        int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
+                    // this is the offset into the file icon texture
+                    int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
 
-                        rlImGui.ImageRect(icons, 13, 13, GetIconRect(fileTypeIcon));
-                        ImGui.SameLine();
-                        
-                        var entryName = entry.Name;
-                        if (entry.Type == EntryType.Directory)
-                        {
-                            entryName += Path.DirectorySeparatorChar;
-                        } 
+                    rlImGui.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex));
+                    ImGui.SameLine();
+                    
+                    var entryName = entry.Name;
+                    if (entry.Type == EntryType.Directory)
+                    {
+                        entryName += Path.DirectorySeparatorChar;
+                    } 
 
-                        if (ImGui.Selectable(entryName, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
-                        {
-                            selected = i;
+                    if (ImGui.Selectable(entryName, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
+                    {
+                        selected = i;
 
-                            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                                ok = true;
-                        }
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                            ok = true;
+                    }
 
-                        if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
-                        {
-                            nameBuf = entryName;
-                        }
+                    if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
+                    {
+                        nameBuf = entryName;
                     }
                 }
             }
+
             scrollToSelected = false;
             ImGui.EndChild();
 
+            // ok and cancel buttons
             if (ImGui.Button("OK")) ok = true;
             ImGui.SameLine();
             if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.Escape)))
@@ -326,20 +460,37 @@ class LevelBrowser
             }
             ImGui.SameLine();
 
+            // file filter
+            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8f);
+            if (ImGui.BeginCombo("##Filter", selectedFilter.FilterName))
+            {
+                foreach (var filter in fileFilters)
+                {
+                    bool isSelected = filter == selectedFilter;
+                    if (ImGui.Selectable(filter.FullText, isSelected))
+                    {
+                        selectedFilter = filter;
+                        needFilterRefresh = true;
+                    }
+                    
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
+            }
+
             ImGui.SameLine();
             ImGui.SetNextItemWidth(-0.0001f);
 
             var oldName = nameBuf;
-            var enterPressed = ImGui.InputTextWithHint("##Name", "Level Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
+            var enterPressed = ImGui.InputTextWithHint("##Name", "File Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
         
             // find a file/directory that has the same name
             if (nameBuf != oldName)
             {
-                // modify name to match current filter (txt files)
-                string name = nameBuf;
-                if (name.Length <= 4 || name.Substring(name.Length - 4, 4) != ".txt")
-                    name += ".txt";
-                
+                // modify name to match current filter
+                string name = selectedFilter.Enforce(nameBuf);
                 selected = -1;
 
                 for (int i = 0; i < entries.Count; i++)
@@ -364,11 +515,7 @@ class LevelBrowser
                     {
                         if (nameBuf != "" && nameBuf != "." && nameBuf != "..")
                         {
-                            // modify name to match current filter (txt files)
-                            string name = nameBuf;
-                            if (name.Length <= 4 || name.Substring(name.Length - 4, 4) != ".txt")
-                                name += ".txt";
-                            
+                            string name = selectedFilter.Enforce(nameBuf);
                             isDone = true;
                             callback(Path.Combine(cwd, name));
                         }

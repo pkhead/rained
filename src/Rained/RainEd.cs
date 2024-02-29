@@ -320,6 +320,17 @@ sealed class RainEd
             RegisterKeyShortcut("Redo", ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
     }
 
+    private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
+    {
+        static bool levelCheck(string path, bool isRw)
+        {
+            return isRw;
+        }
+
+        FileBrowser.Open(openMode, callback, currentFilePath);
+        FileBrowser.AddFilter("Rain World level file", levelCheck, ".txt");
+    }
+
     private void HandleShortcuts()
     {
         // activate shortcuts on key press
@@ -354,21 +365,22 @@ sealed class RainEd
         if (IsShortcutActivated("Open"))
         {
             PromptUnsavedChanges(() =>
-                LevelBrowser.Open(LevelBrowser.OpenMode.Read, LoadLevel, currentFilePath)
-            );
+            {
+                OpenLevelBrowser(FileBrowser.OpenMode.Read, LoadLevel);
+            });
         }
 
         if (IsShortcutActivated("Save"))
         {
             if (string.IsNullOrEmpty(currentFilePath))
-                LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
             else
                 SaveLevel(currentFilePath);
         }
 
         if (IsShortcutActivated("SaveAs"))
         {
-            LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+            OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
         }
 
         if (IsShortcutActivated("Undo"))
@@ -488,7 +500,7 @@ sealed class RainEd
         }
 
         // render level browser
-        LevelBrowser.Singleton?.Render();
+        FileBrowser.Render();
 
         // render drizzle render, if in progress
         if (drizzleRenderWindow is not null)
@@ -598,7 +610,7 @@ sealed class RainEd
 
                 // unsaved change callback is run in SaveLevel
                 if (string.IsNullOrEmpty(currentFilePath))
-                    LevelBrowser.Open(LevelBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                    FileBrowser.Open(FileBrowser.OpenMode.Write, SaveLevel, currentFilePath);
                 else
                     SaveLevel(currentFilePath);
             }
