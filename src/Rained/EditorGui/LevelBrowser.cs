@@ -8,84 +8,6 @@ namespace RainEd;
 
 class LevelBrowser
 {
-    private struct LevelPath
-    {
-        private string path;
-        public readonly string PathString { get => path; }
-
-        public LevelPath(string str)
-        {
-            var paths = str.Trim().Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var final = new List<string>();
-
-            foreach (var p in paths)
-            {
-                if (p == ".") continue;
-                if (p == "..") final.RemoveAt(final.Count - 1);
-                else
-                {
-                    final.Add(p);
-                }
-            }
-
-            if (final.Count == 0)
-            {
-                path = "/";
-            }
-            else
-            {
-                path = "/" + string.Join('/', final) + "/";
-            }
-        }
-
-        public LevelPath()
-        {
-            path = "/";
-        }
-
-        public readonly string DirectoryName()
-        {
-            if (path == "/") return string.Empty;
-
-            for (int i = path.Length - 2; i >= 0; i--)
-            {
-                if (path[i] == '/')
-                {
-                    return path[(i+1)..(path.Length-1)];
-                }
-            }
-
-            return string.Empty;
-        }
-
-        public LevelPath Join(string path)
-        {
-            if (path == ".") return this;
-            if (path == "..")
-            {
-                if (this.path == "/") return this;
-
-                for (int i = this.path.Length - 2; i >= 0; i--)
-                {
-                    if (this.path[i] == '/')
-                    {
-                        return new LevelPath(this.path[..(i+1)]);
-                    }
-                }
-            }
-
-            return new LevelPath()
-            {
-                path = this.path + path + "/"
-            };
-        }
-
-        public readonly string ToSystemPath(string root)
-        {
-            return root + path.Replace('/', Path.DirectorySeparatorChar);
-        }
-    }
-
     private static LevelBrowser? singleton = null;
     public static LevelBrowser? Singleton { get => singleton; }
     public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
@@ -96,13 +18,13 @@ class LevelBrowser
     private bool isOpen = false;
     private bool isDone = false;
     private readonly Action<string> callback;
-    private LevelPath cwd;
-    private readonly string root;
-    private readonly List<string> pathList = new();
+    private string cwd; // current directory of file browser
+    private readonly List<string> pathList = new(); // path as a list
 
-    private readonly Stack<LevelPath> backStack = new();
-    private readonly Stack<LevelPath> forwardStack = new();
+    private readonly Stack<string> backStack = new();
+    private readonly Stack<string> forwardStack = new();
 
+    // path display mode - breadcrumb trail or string input
     private bool enterPath;
     private bool showPathInput;
 
@@ -139,44 +61,52 @@ class LevelBrowser
         }
     }
 
+    private struct BookmarkItem
+    {
+        public string Name;
+        public string Path;
+    }
+
     private class EntrySorter : IComparer<Entry>
     {
         int IComparer<Entry>.Compare(Entry a, Entry b) => a.Name.CompareTo(b.Name);
     }
     
     private static RlManaged.Texture2D icons = null!;
-    private LevelBrowser(OpenMode mode, Action<string> callback, string fileRoot)
+    private LevelBrowser(OpenMode mode, Action<string> callback, string? openDir)
     {
-        root = fileRoot;
         icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
 
         this.mode = mode;
         this.callback = callback;
-        cwd = new LevelPath();
+        cwd = openDir ?? Boot.AppDataPath;
         SetPath(cwd);
-        pathBuf = cwd.PathString;
+        pathBuf = cwd;
         nameBuf = string.Empty;
     }
 
-    private Rectangle GetIconRect(int index)
+    private static Rectangle GetIconRect(int index)
         => new Rectangle(index * 13, 0, 13, 13);
 
-    private bool SetPath(LevelPath newPath)
+    private bool SetPath(string path)
     {
-        var fullPath = newPath.ToSystemPath(root);
-
-        if (!Directory.Exists(fullPath))
+        if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
+        if (!Directory.Exists(path))
         {
             openErrorPopup = true;
             errorMsg = "Directory does not exist";
+            RainEd.Logger.Error("Directory {Path} does not exist", path);
+
             return false;
         }
 
-        cwd = newPath;
+        path = Path.GetFullPath(path);
+
+        cwd = path;
         entries.Clear();
 
         // add directories
-        foreach (var dirPath in Directory.EnumerateDirectories(fullPath))
+        foreach (var dirPath in Directory.EnumerateDirectories(path))
         {
             var dirName = Path.GetFileName(dirPath);
             var dirInfo = File.GetAttributes(dirPath);
@@ -188,7 +118,7 @@ class LevelBrowser
         var firstFile = entries.Count;
 
         // add files
-        foreach (var filePath in Directory.EnumerateFiles(fullPath))
+        foreach (var filePath in Directory.EnumerateFiles(path))
         {
             var fileName = Path.GetFileName(filePath);
             var fileInfo = File.GetAttributes(filePath);
@@ -198,17 +128,15 @@ class LevelBrowser
                 entries.Add(new Entry(fileName, EntryType.File));
         }
         entries.Sort(firstFile, entries.Count - firstFile, new EntrySorter());
-        pathBuf = newPath.PathString;
+        pathBuf = path;
 
-        // fill path list
+        // path tree into list
         pathList.Clear();
-        var parentDir = newPath;
-        while (parentDir.PathString != "/")
+        foreach (var p in path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
         {
-            pathList.Insert(0, parentDir.DirectoryName());
-            parentDir = parentDir.Join("..");
+            pathList.Add(p);
         }
-
+        
         return true;
     }
 
@@ -231,36 +159,37 @@ class LevelBrowser
             // back button
             if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0)))
             {
-                if (backStack.TryPop(out LevelPath newPath))
+                if (backStack.TryPop(out string? newPath))
                 {
                     var oldDir = cwd;
-                    if (SetPath(newPath))
+                    if (SetPath(newPath!))
                     {
                         forwardStack.Push(oldDir);
                         selected = -1;
                     }
                 }
-
             } ImGui.SameLine();
+            ImGui.SetItemTooltip("Back");
 
             // forward button
             if (rlImGui.ImageButtonRect(">", icons, 13, 13, GetIconRect(1)))
             {
-                if (forwardStack.TryPop(out LevelPath newPath))
+                if (forwardStack.TryPop(out string? newPath))
                 {
                     var oldDir = cwd;
-                    if (SetPath(newPath))
+                    if (SetPath(newPath!))
                     {
                         backStack.Push(oldDir);
                         selected = -1;
                     }
                 }  
             } ImGui.SameLine();
+            ImGui.SetItemTooltip("Forward");
 
-            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2)) && cwd.PathString != "/")
+            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2))/* && cwd.PathString != "/"*/)
             {
                 var oldDir = cwd;
-                if (SetPath(cwd.Join("..")))
+                if (SetPath(Path.Combine(cwd, "..")))
                 {
                     selected = -1;
                     backStack.Push(oldDir);
@@ -268,28 +197,43 @@ class LevelBrowser
                 }
             }
             ImGui.SameLine();
-            rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4));
+            ImGui.SetItemTooltip("Go To Parent Directory");
+
+            if (rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4)))
+            {
+                if (Directory.Exists(cwd))
+                    SetPath(cwd);
+                else
+                    SetPath(Path.GetFullPath(Path.DirectorySeparatorChar.ToString()));
+            }
+            ImGui.SetItemTooltip("Refresh");
 
             // current path
             ImGui.SameLine();
             if (enterPath || showPathInput)
             {
+                bool closeTextInput = rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3));
+                ImGui.SameLine();
+                ImGui.SetItemTooltip("Close Text Input");
+
                 if (!enterPath)
                     ImGui.SetKeyboardFocusHere();
                 
-                enterPath = true;
-                showPathInput = false;
-
                 ImGui.SetNextItemWidth(-0.0001f);
                 if (ImGui.InputText("##Path", ref pathBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
-                    SetPath(new LevelPath(pathBuf));
+                    SetPath(Path.GetFullPath(pathBuf));
                 }
+
+                enterPath = !closeTextInput;
+                showPathInput = false;
             }
             else
             {
-                if (ImGui.Button("Type"))
+                if (rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8)))
                     showPathInput = true;
+                ImGui.SetItemTooltip("Open Text Input");
+                
                 ImGui.SameLine();
 
                 if (pathList.Count == 0)
@@ -298,6 +242,8 @@ class LevelBrowser
                 }
                 else
                 {
+                    ImGui.AlignTextToFramePadding();
+
                     for (int i = 0; i < pathList.Count; i++)
                     {
                         var ent = pathList[i];
@@ -310,7 +256,7 @@ class LevelBrowser
                         if (ImGui.SmallButton(ent))
                         {
                             var old = cwd;
-                            if (SetPath(new LevelPath(string.Join('/', pathList.ToArray(), 0, i+1))))
+                            if (SetPath(string.Join(Path.DirectorySeparatorChar, pathList.ToArray(), 0, i+1)))
                             {
                                 backStack.Push(old);
                                 forwardStack.Clear();
@@ -348,7 +294,12 @@ class LevelBrowser
                         rlImGui.ImageRect(icons, 13, 13, GetIconRect(fileTypeIcon));
                         ImGui.SameLine();
                         
-                        var entryName = Path.GetFileNameWithoutExtension(entry.Name);
+                        var entryName = entry.Name;
+                        if (entry.Type == EntryType.Directory)
+                        {
+                            entryName += Path.DirectorySeparatorChar;
+                        } 
+
                         if (ImGui.Selectable(entryName, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
                         {
                             selected = i;
@@ -419,7 +370,7 @@ class LevelBrowser
                                 name += ".txt";
                             
                             isDone = true;
-                            callback(Path.Join(cwd.ToSystemPath(root), name));
+                            callback(Path.Combine(cwd, name));
                         }
                     }
                 }
@@ -431,7 +382,7 @@ class LevelBrowser
                     else
                     {
                         isDone = true;
-                        callback(Path.Join(cwd.ToSystemPath(root), ent.Name));
+                        callback(Path.Combine(cwd, ent.Name));
                     }
                 }
             }
@@ -470,7 +421,7 @@ class LevelBrowser
         if (entry.Type == EntryType.Directory)
         {
             var oldPath = cwd;
-            if (SetPath(cwd.Join(entry.Name)))
+            if (SetPath(Path.Combine(cwd, entry.Name)))
             {
                 backStack.Push(oldPath);
                 forwardStack.Clear();
