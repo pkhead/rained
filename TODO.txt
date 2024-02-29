@@ -49,11 +49,12 @@ Effects Editor:
 - only store the pixels that changed in the matrix
 - community effects
 
-Prop Editor: (TODO)
+Prop Editor:
+- undo/redo
+- save props
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
-- snap to grid in lingo editor snaps to grid intersections
 - rope-type props will have a "Simulate" button in an always-visible prop properties field.
   holding down this button will perform the simulation for as long as it is held.
 - for rope-type props, copy henry's design
