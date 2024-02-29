@@ -50,6 +50,8 @@ Effects Editor:
 - community effects
 
 Prop Editor:
+- tab to change view layer
+- render order (forgot i forgot to put that back in)
 - undo/redo
 - save props
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
