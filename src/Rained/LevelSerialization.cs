@@ -50,8 +50,15 @@ static class LevelSerialization
             var seed = (int) levelProperties.fields["tileSeed"];
             level.TileSeed = seed;
 
-            var light = (int) levelProperties.fields["light"];
-            level.HasSunlight = light != 0;
+            if (levelProperties.fields.TryGetValue("light", out object? objLight))
+            {
+                var light = (int)objLight;
+                level.HasSunlight = light != 0;
+            }
+            else
+            {
+                level.HasSunlight = true;
+            }
         }
 
         // read level geometry
