@@ -632,8 +632,7 @@ static class LevelSerialization
 
         // write light image
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        var lightMapImg = level.LightMap.GetImage();
+        using var lightMapImg = level.LightMap.GetImage();
         Raylib.ExportImage(lightMapImg, lightPath);
-        lightMapImg.Dispose();
     }
 }

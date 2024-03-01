@@ -111,7 +111,7 @@ class Tile
                 break;
         }
         
-        var fullImage = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png"));
+        using var fullImage = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png"));
         var previewRect = new Rectangle(
             0,
             rowCount * 20 + imageOffset,
@@ -128,7 +128,7 @@ class Tile
             RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
         }
 
-        var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
+        using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
         previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
         Raylib.ImageDraw(
@@ -156,9 +156,6 @@ class Tile
         }
 
         PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
-
-        fullImage.Dispose();
-        previewImage.Dispose();
 
         if (noPropTag)
             CanBeProp = false;

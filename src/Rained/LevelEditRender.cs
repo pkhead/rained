@@ -133,7 +133,7 @@ class LevelEditRender
 
         var imageW = (int)(Level.TileSize * ViewZoom * 2); 
         var imageH = (int)(Level.TileSize * ViewZoom * 2);
-        var image = RlManaged.Image.GenColor(imageW, imageH, new Color(0, 0, 0, 0));
+        using var image = RlManaged.Image.GenColor(imageW, imageH, new Color(0, 0, 0, 0));
 
         var majorLineCol = new Color(255, 255, 255, 100);
         var minorLineCol = new Color(255, 255, 255, 60);
@@ -149,7 +149,6 @@ class LevelEditRender
 
         gridTexture?.Dispose();
         gridTexture = RlManaged.Texture2D.LoadFromImage(image);
-        image.Dispose();
     }
 
     // build the mesh for the sub-rectangle of a layer

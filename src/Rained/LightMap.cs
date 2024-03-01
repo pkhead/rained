@@ -94,7 +94,7 @@ class LightMap : IDisposable
         height = lightMapImage.Height;
 
         // get light map as a texture
-        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
+        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
 
         // put into a render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
@@ -102,8 +102,6 @@ class LightMap : IDisposable
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
         Raylib.EndTextureMode();
-
-        lightmapTex.Dispose();
     }
 
     public void Dispose()
@@ -121,7 +119,7 @@ class LightMap : IDisposable
         dstOriginY *= 20;
 
         // resize light map image
-        var lightMapImage = GetImage();
+        using var lightMapImage = GetImage();
         Raylib.ImageResizeCanvas(
             ref lightMapImage.Ref(),
             newWidth, newHeight,
@@ -130,7 +128,7 @@ class LightMap : IDisposable
         );
 
         // get light map as a texture
-        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
+        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
 
         // put into a render texture
         lightmapRt.Dispose();
@@ -139,9 +137,6 @@ class LightMap : IDisposable
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
         Raylib.EndTextureMode();
-
-        lightMapImage.Dispose();
-        lightmapTex.Dispose();
 
         width = newWidth;
         height = newHeight;
