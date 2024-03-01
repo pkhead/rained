@@ -12,6 +12,44 @@ partial class PropEditor : IEditorMode
     private PropInit? selectedInit = null;
     private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects "};
 
+#region Multiselect Inputs
+    // what a reflective mess...
+
+    private void MultiselectDragInt(string label, string fieldName, float v_speed = 1f, int v_min = int.MinValue, int v_max = int.MaxValue)
+    {
+        var field = typeof(Prop).GetField(fieldName)!;
+        var targetV = (int)field.GetValue(selectedProps[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < selectedProps.Count; i++)
+        {
+            if ((int)field.GetValue(selectedProps[i])! != targetV)
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        if (isSame)
+        {
+            int v = (int) field.GetValue(selectedProps[0])!;
+            if (ImGui.DragInt(label, ref v, v_speed, v_min, v_max))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, v);
+            }
+        }
+        else
+        {
+            int v = 0;
+            if (ImGui.DragInt(label, ref v, v_speed, v_min, v_max, string.Empty))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, v);
+            }
+        }
+    }
+
     private void MultiselectSliderInt(string label, string fieldName, int v_min, int v_max, string format = "%i", ImGuiSliderFlags flags = 0)
     {
         var field = typeof(Prop).GetField(fieldName)!;
@@ -47,7 +85,6 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    // what a reflective mess
     private void MultiselectEnumInput<T>(string label, string fieldName, string[] enumNames) where T : Enum
     {
         var field = typeof(Prop).GetField(fieldName)!;
@@ -121,6 +158,7 @@ partial class PropEditor : IEditorMode
             ImGui.EndCombo();
         }
     }
+#endregion
 
     public void DrawToolbar()
     {
@@ -295,6 +333,7 @@ partial class PropEditor : IEditorMode
                         prop.FlipY();
                 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
+                MultiselectDragInt("Render Order", "RenderOrder", 0.02f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
                 MultiselectEnumInput<Prop.PropRenderTime>("Render Time", "RenderTime", PropRenderTimeNames);
