@@ -48,6 +48,8 @@ sealed class RainEd
     private LevelResizeWindow? levelResizeWin = null;
 
     public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
+
+    private double lastRopeUpdateTime = 0f;
     
     public RainEd(string levelPath = "") {
         if (Instance != null)
@@ -107,6 +109,7 @@ sealed class RainEd
         RegisterShortcuts();
 
         Logger.Information("Boot successful!");
+        lastRopeUpdateTime = Raylib.GetTime();
     }
 
     public void ShowError(string msg)
@@ -493,6 +496,7 @@ sealed class RainEd
 
         HandleShortcuts();
 
+        UpdateRopeSimulation();
         editorWindow.Render(dt);
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
@@ -652,6 +656,30 @@ sealed class RainEd
         }
 
         rlImGui.End();
+    }
+
+    public void UpdateRopeSimulation()
+    {
+        double nowTime = Raylib.GetTime();
+        double stepTime = 1.0 / 60.0;
+
+        for (int i = 0; nowTime >= lastRopeUpdateTime + stepTime; i++)
+        {
+            lastRopeUpdateTime += stepTime;
+            
+            // tick rope simulation
+            foreach (var rope in level.RopeProps)
+            {
+                rope.SimulationStep();
+            }
+
+            // break if too many iterations in one frame
+            if (i == 8)
+            {
+                lastRopeUpdateTime += stepTime * Math.Floor(nowTime - lastRopeUpdateTime);
+                break;
+            }
+        }
     }
     
     public void Undo() => changeHistory.Undo();

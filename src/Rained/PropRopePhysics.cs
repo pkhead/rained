@@ -82,7 +82,7 @@ class RopeModel
     {
         for (int i = 0; i < segments.Length; i++)
         {
-            _segmentsVec2[i] = (segments[i].pos) / 20f - Vector2.One;
+            _segmentsVec2[i] = SmoothPos(i) / 20f - Vector2.One;
         }
     }
 
@@ -92,6 +92,7 @@ class RopeModel
         return _segmentsVec2;
     }
 
+    /*
     public RopeReleaseMode Release {
         get
         {
@@ -125,6 +126,7 @@ class RopeModel
         set => posB = (value + Vector2.One) * 20f;
         get => posB / 20f - Vector2.One;
     }
+    */
 
 #region Lingo Ported
     struct Segment
@@ -201,8 +203,7 @@ class RopeModel
             return 1;
     }
 
-    // this is the update function in ropeModel.lingo
-    private void Tick() 
+    public void Update() 
     {
         if (physics.edgeDirection > 0f)
         {
@@ -219,7 +220,7 @@ class RopeModel
                 }
 
                 var idealFirstPos = posA + dir * physics.segmentLength;
-                segments[1].pos = new Vector2(
+                segments[0].pos = new Vector2(
                     Lerp(segments[0].pos.X, idealFirstPos.X, physics.edgeDirection),
                     Lerp(segments[0].pos.Y, idealFirstPos.Y, physics.edgeDirection)
                 );
@@ -232,6 +233,7 @@ class RopeModel
                 {
                     var fac = 1f - A / (segments.Length / 2f);
                     fac *= fac;
+                    A = segments.Length - A - 1;
                     segments[A].vel -= dir*fac*physics.edgeDirection;
                 }
 
@@ -245,8 +247,8 @@ class RopeModel
 
         if (release > -1)
         {
-            segments[1].pos = posA;
-            segments[1].vel = Vector2.Zero;
+            segments[0].pos = posA;
+            segments[0].vel = Vector2.Zero;
         }
 
         if (release < 1)
@@ -270,12 +272,12 @@ class RopeModel
                 ApplyRigidity(i);
         }
 
-        for (int i = 1; i < segments.Length; i++)
+        for (int i = 2; i <= segments.Length; i++)
         {
-            var a = segments.Length - i;
-            ConnectRopePoints(a, a+1);
+            var a = segments.Length - i + 1;
+            ConnectRopePoints(a-1, a);
             if (physics.rigid > 0)
-                ApplyRigidity(i);
+                ApplyRigidity(i-1);
         }
 
         if (physics.selfPush > 0)
@@ -348,23 +350,22 @@ class RopeModel
         void func(int B2)
         {
             var B = A + B2;
-            if (B >= 0 && B < segments.Length)
+            if (B > 0 && B <= segments.Length)
             {
-                var dir = Direction(segments[A].pos, segments[B].pos);
-                segments[A].vel -= (dir * physics.rigid * physics.segmentLength)
-                    / (Vector2.Distance(segments[A].pos, segments[B].pos) + 0.1f + MathF.Abs(B2));
-                segments[B].vel += (dir * physics.rigid * physics.segmentLength)
-                    / (Vector2.Distance(segments[A].pos, segments[B].pos) + 0.1f + MathF.Abs(B2)); 
+                var dir = Direction(segments[A-1].pos, segments[B-1].pos);
+                segments[A-1].vel -= (dir * physics.rigid * physics.segmentLength)
+                    / (Vector2.Distance(segments[A-1].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2));
+                segments[B-1].vel += (dir * physics.rigid * physics.segmentLength)
+                    / (Vector2.Distance(segments[A-1].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2)); 
             }
         };
 
-        // WARNING - if there is an error, check to see if this indexing is correct
-        func(-1);
-        func(1);
         func(-2);
         func(2);
         func(-3);
         func(3);
+        func(-4);
+        func(4);
     }
 
     private Vector2 SmoothPos(int A)
@@ -404,20 +405,18 @@ class RopeModel
         segments[A].vel = p.Frc;
 
         var gridPos = GiveGridPos(segments[A].pos);
-        var _list = new Vector2[]
-        {
-            new(0f, 0f),
-            new(-1f, 0f),
-            new(-1f, -1f),
-            new(0f, -1),
-            new(1f, -1),
-            new(1f, 0f),
-            new(1f, 1f),
-            new(0f, 1f),
-            new(-1f, 1f)
-        };
+        
+        loopFunc(new Vector2(0f, 0f));
+        loopFunc(new Vector2(-1f, 0f));
+        loopFunc(new Vector2(-1f, -1f));
+        loopFunc(new Vector2(0f, -1));
+        loopFunc(new Vector2(1f, -1));
+        loopFunc(new Vector2(1f, 0f));
+        loopFunc(new Vector2(1f, 1f));
+        loopFunc(new Vector2(0f, 1f));
+        loopFunc(new Vector2(-1f, 1f));
 
-        foreach (var dir in _list)
+        void loopFunc(Vector2 dir)
         {
             if (AfaMvLvlEdit(gridPos+dir, layer) == 1)
             {

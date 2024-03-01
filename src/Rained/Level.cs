@@ -400,6 +400,11 @@ class RopeProp
     {
         return ropeModel.GetSegmentPositions();
     }
+
+    public void SimulationStep()
+    {
+        ropeModel.Update();
+    }
 }
 
 class Level
