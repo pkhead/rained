@@ -1,4 +1,3 @@
-using RlManaged;
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
@@ -13,7 +12,7 @@ class FileBrowser
     public static FileBrowser Instance { get => singleton; }
     public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
     {
-        singleton = new FileBrowser(openMode, callback, Path.Combine(Boot.AppDataPath, "Data","LevelEditorProjects"));
+        singleton = new FileBrowser(openMode, callback, Path.GetDirectoryName(defaultFileName));
     }
 
     private bool isOpen = false;
@@ -162,7 +161,7 @@ class FileBrowser
         fileFilters.Add(new FileFilter("Any", new string[] { ".*" }));
         selectedFilter = fileFilters[0];
         
-        cwd = openDir ?? Boot.AppDataPath;
+        cwd = openDir ?? Path.Combine(Boot.AppDataPath, "Data", "LevelEditorProjects");
         SetPath(cwd);
         pathBuf = cwd;
         nameBuf = string.Empty;
