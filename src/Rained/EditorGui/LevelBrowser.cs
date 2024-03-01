@@ -39,8 +39,11 @@ class FileBrowser
     private readonly List<FileFilter> fileFilters = new();
     private FileFilter selectedFilter;
     private bool needFilterRefresh = false;
+    private readonly List<BookmarkItem> bookmarks = new();
 
     private bool openErrorPopup = false;
+    private bool openOverwritePopup = false;
+    private string overwriteFileName = "";
     private string errorMsg = string.Empty;
 
     public enum OpenMode
@@ -71,6 +74,12 @@ class FileBrowser
     {
         public string Name;
         public string Path;
+
+        public BookmarkItem(string name, string path)
+        {
+            Name = name;
+            Path = path;
+        }
     }
 
     private record FileFilter
@@ -152,11 +161,37 @@ class FileBrowser
         this.callback = callback;
         fileFilters.Add(new FileFilter("Any", new string[] { ".*" }));
         selectedFilter = fileFilters[0];
-
+        
         cwd = openDir ?? Boot.AppDataPath;
         SetPath(cwd);
         pathBuf = cwd;
         nameBuf = string.Empty;
+
+
+        AddBookmark("Levels", Path.Combine(Boot.AppDataPath, "Data", "LevelEditorProjects"));
+
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        {
+            AddBookmark("User", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        }
+
+        AddBookmark("Desktop", Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+        AddBookmark("Documents", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+        AddBookmark("Music", Environment.GetFolderPath(Environment.SpecialFolder.MyMusic));
+        AddBookmark("Pictures", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+        AddBookmark("Videos", Environment.GetFolderPath(Environment.SpecialFolder.MyVideos));
+
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            AddBookmark("Downloads", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
+        }
+    }
+
+    private void AddBookmark(string name, string path)
+    {
+        if (path == "") return;
+        if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
+        bookmarks.Add(new BookmarkItem(name, path));
     }
 
     public static void AddFilter(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
@@ -402,6 +437,29 @@ class FileBrowser
             var style = ImGui.GetStyle();
             var listingHeight = windowSize.Y - ImGui.GetFrameHeightWithSpacing() * 3f +
                 style.ItemSpacing.Y - style.WindowPadding.Y * 2f;
+            
+            // list bookmarks/locations
+            ImGui.BeginChild("Locations", new Vector2(ImGui.GetTextLineHeight() * 10f, listingHeight));
+            {
+                foreach (var location in bookmarks)
+                {
+                    if (ImGui.Selectable(location.Name, cwd == location.Path))
+                    {
+                        if (cwd != location.Path)
+                        {
+                            var old = cwd;
+                            if (SetPath(location.Path))
+                            {
+                                backStack.Push(old);
+                                forwardStack.Clear();
+                                selected = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            ImGui.EndChild();
+            ImGui.SameLine();
 
             // list files in cwd
             var ok = false;
@@ -485,7 +543,7 @@ class FileBrowser
 
             var oldName = nameBuf;
             var enterPressed = ImGui.InputTextWithHint("##Name", "File Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
-        
+
             // find a file/directory that has the same name
             if (nameBuf != oldName)
             {
@@ -516,8 +574,18 @@ class FileBrowser
                         if (nameBuf != "" && nameBuf != "." && nameBuf != "..")
                         {
                             string name = selectedFilter.Enforce(nameBuf);
-                            isDone = true;
-                            callback(Path.Combine(cwd, name));
+                            var absPath = Path.Combine(cwd, name);
+
+                            if (File.Exists(absPath))
+                            {
+                                openOverwritePopup = true;
+                                overwriteFileName = absPath;
+                            }
+                            else
+                            {
+                                isDone = true;
+                                callback(Path.Combine(cwd, name));
+                            }
                         }
                     }
                 }
@@ -531,6 +599,32 @@ class FileBrowser
                         isDone = true;
                         callback(Path.Combine(cwd, ent.Name));
                     }
+                }
+            }
+
+            // show overwrite popup
+            if (openOverwritePopup)
+            {
+                openOverwritePopup = false;
+                ImGui.OpenPopup("Overwrite");
+            }
+
+            bool overwriteClose = true;
+            if (ImGui.BeginPopupModal("Overwrite", ref overwriteClose, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.TextUnformatted($"{Path.GetFileName(overwriteFileName)} will be overwritten! Are you sure?");
+
+                if (ImGui.Button("Yes"))
+                {
+                    isDone = true;
+                    callback(overwriteFileName);
+                    ImGui.CloseCurrentPopup();
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button("No"))
+                {
+                    ImGui.CloseCurrentPopup();
                 }
             }
 
