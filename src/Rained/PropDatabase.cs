@@ -1,4 +1,3 @@
-using Drizzle.Lingo.Runtime;
 using RainEd.Tiles;
 using Raylib_cs;
 using System.Numerics;
@@ -37,7 +36,7 @@ struct PropColor
     public Color Color;
 }
 
-class PropInit
+record PropInit
 {
     public readonly string Name;
     public readonly PropCategory Category;
@@ -233,7 +232,7 @@ class PropInit
     }
 }
 
-class PropCategory
+record PropCategory
 {
     public string Name;
     public bool IsTileCategory = false;
@@ -255,7 +254,7 @@ class PropCategory
     }
 }
 
-class PropTileCategory
+record PropTileCategory
 {
     public string Name;
     public List<PropInit> Props = new();
@@ -266,10 +265,67 @@ class PropTileCategory
     }
 }
 
+record RopePropInit
+{
+    public readonly string Name;
+    public readonly RopePhysicalProperties PhysicalProperties;
+    public readonly int Depth;
+    public readonly int CollisionDepth;
+    public readonly Color PreviewColor;
+    public readonly int PreviewInterval;
+
+    public RopePropInit(string name, int depth, int collisionDepth, int previewInterval, Color previewColor, RopePhysicalProperties props)
+    {
+        Name = name;
+        Depth = depth;
+        CollisionDepth = collisionDepth;
+        PreviewColor = previewColor;
+        PhysicalProperties = props;
+        PreviewInterval = previewInterval;
+    }
+}
+
+record RopePropCategory
+{
+    public string Name;
+    public List<RopePropInit> Props = new();
+
+    public RopePropCategory(string name)
+    {
+        Name = name;
+    }
+}
+
 class PropDatabase
 {
+    // taken from startUp.lingo, and re-formatted
+    private const string RopePropsInit = """
+    -["Rope type props", color(0, 255, 0)]
+    [#nm:"Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:3, #collisionDepth:0, #segRad:1, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(255,0, 0), #previewEvery:4, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
+    [#nm:"Tube", #tp:"rope", #depth:4, #tags:[], #notes:[], #segmentLength:10, #collisionDepth:2, #segRad:4.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:1, #previewColor:color(0,0, 255), #previewEvery:2, #edgeDirection:5, #rigid:1.6, #selfPush:0, #sourcePush:0]
+    [#nm:"ThickWire", #tp:"rope", #depth:3, #tags:[], #notes:[], #segmentLength:4, #collisionDepth:1, #segRad:2, #grav:0.5, #friction:0.8, #airFric:0.9, #stiff:1, #previewColor:color(255,255, 0), #previewEvery:2, #edgeDirection:0, #rigid:0.2, #selfPush:0, #sourcePush:0]
+    [#nm:"RidgedTube", #tp:"rope", #depth:4, #tags:[], #notes:[], #segmentLength:5, #collisionDepth:2, #segRad:5, #grav:0.5, #friction:0.3, #airFric:0.7, #stiff:1, #previewColor:color(255,0,255), #previewEvery:2, #edgeDirection:0, #rigid:0.1, #selfPush:0, #sourcePush:0]
+    [#nm:"Fuel Hose", #tp:"rope", #depth:5, #tags:[], #notes:[], #segmentLength:16, #collisionDepth:1, #segRad:7, #grav:0.5, #friction:0.8, #airFric:0.9, #stiff:1, #previewColor:color(255,150,0), #previewEvery:1, #edgeDirection:1.4, #rigid:0.2, #selfPush:0, #sourcePush:0]
+    [#nm:"Broken Fuel Hose", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:16, #collisionDepth:1, #segRad:7, #grav:0.5, #friction:0.8, #airFric:0.9, #stiff:1, #previewColor:color(255,150,0), #previewEvery:1, #edgeDirection:1.4, #rigid:0.2, #selfPush:0, #sourcePush:0]
+    [#nm:"Large Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:28, #collisionDepth:3, #segRad:9.5, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(0,255,0), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    [#nm:"Large Chain 2", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:28, #collisionDepth:3, #segRad:9.5, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(20,205,0), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    [#nm:"Bike Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:38, #collisionDepth:3, #segRad:16.5, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(100,100,100), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:16.5, #sourcePush:0]
+    [#nm:"Zero-G Tube", #tp:"rope", #depth:4, #tags:[], #notes:[], #segmentLength:10, #collisionDepth:2, #segRad:4.5, #grav:0, #friction:0.5, #airFric:0.9, #stiff:1, #previewColor:color(0,255, 0), #previewEvery:2, #edgeDirection:0, #rigid:0.6, #selfPush:2, #sourcePush:0.5]
+    [#nm:"Zero-G Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:8, #collisionDepth:0, #segRad:1, #grav:0, #friction:0.5, #airFric:0.9, #stiff:1, #previewColor:color(255,0, 0), #previewEvery:2, #edgeDirection:0.3, #rigid:0.5, #selfPush:1.2, #sourcePush:0.5]
+    [#nm:"Fat Hose", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(0,100,150), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
+    [#nm:"Wire Bunch", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:50, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(255,100,150), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
+    [#nm:"Wire Bunch 2", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:50, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(255,100,150), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
+    
+    -["Drought Rope Props", color(0, 255, 0)]
+    [#nm:"Big Big Pipe", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(50,150,210), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
+    [#nm:"Ring Chain", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(100,200,0), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
+    [#nm:"Christmas Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(200,0, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
+    [#nm:"Ornate Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(0,200, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
+    """;
+
     public readonly List<PropCategory> Categories;
     public readonly List<PropTileCategory> TileCategories;
+    public readonly List<RopePropCategory> RopeCategories;
     public readonly List<PropColor> PropColors; // custom colors
 
     public PropDatabase(TileDatabase tileDatabase)
@@ -277,8 +333,10 @@ class PropDatabase
         Categories = new List<PropCategory>();
         TileCategories = new List<PropTileCategory>();
         PropColors = new List<PropColor>();
+        RopeCategories = new List<RopePropCategory>();
 
         InitProps(tileDatabase);
+        InitRopeTypeProps();
         InitCustomColors();
     }
 
@@ -368,6 +426,73 @@ class PropDatabase
                 TileCategories.Add(tilePropCategory);
             }
         }
+    }
+
+    // i really need to figure out how to fix this design issue
+    private float LingoToFloat(object n)
+    {
+        if (n is int vi)
+        {
+            return vi;
+        }
+        else if (n is float vf)
+        {
+            return (float) vf;
+        }
+
+        throw new ArgumentException("Object is not an int or a float", nameof(n));
+    }
+
+    public void InitRopeTypeProps()
+    {
+        RainEd.Logger.Information("Initialize rope-type props...");
+
+        using StringReader reader = new(RopePropsInit);
+        var lingoParser = new Lingo.LingoParser();
+
+        RopePropCategory? curGroup = null;
+
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line[0] == '-')
+            {
+                var headerData = (Lingo.List)lingoParser.Read(line[1..])!;
+                curGroup = new RopePropCategory((string)headerData.values[0]);
+                RopeCategories.Add(curGroup);
+            }
+            else
+            {
+                var ropeData = (Lingo.List)lingoParser.Read(line)!;
+                var previewColor = (Lingo.Color)ropeData.fields["previewColor"];
+
+                var ropeInit = new RopePropInit(
+                    name: (string)ropeData.fields["nm"],
+                    depth: (int)ropeData.fields["depth"],
+                    collisionDepth: (int)ropeData.fields["collisionDepth"],
+                    previewInterval: (int)ropeData.fields["previewEvery"],
+                    previewColor: new Color(previewColor.R, previewColor.G, previewColor.B, 255),
+                    props: new RopePhysicalProperties()
+                    {
+                        segmentLength = LingoToFloat(ropeData.fields["segmentLength"]),
+                        grav = LingoToFloat(ropeData.fields["grav"]),
+                        stiff = ((int)ropeData.fields["stiff"]) == 1,
+                        friction = LingoToFloat(ropeData.fields["friction"]),
+                        airFric = LingoToFloat(ropeData.fields["airFric"]),
+                        segRad = LingoToFloat(ropeData.fields["segRad"]),
+                        rigid = LingoToFloat(ropeData.fields["rigid"]),
+                        edgeDirection = LingoToFloat(ropeData.fields["edgeDirection"]),
+                        selfPush = LingoToFloat(ropeData.fields["selfPush"]),
+                        sourcePush = LingoToFloat(ropeData.fields["sourcePush"])
+                    }
+                );
+                curGroup!.Props.Add(ropeInit);
+            }
+        }
+
+        RainEd.Logger.Information("Done initialzing rope-type props");
     }
 
     public void InitCustomColors()

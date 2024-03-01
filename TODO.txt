@@ -3,6 +3,7 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - split up tile and prop editor source code
 - on cell change, only remesh the mesh chunk that it is in
 - undo/redo for level resize
