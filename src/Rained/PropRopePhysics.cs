@@ -147,21 +147,26 @@ class RopeModel
     private static Vector2 MoveToPoint(Vector2 a, Vector2 b, float t)
     {
         var diff = b - a;
-        if (diff.LengthSquared() == 0) return Vector2.Zero;
+        if (diff.LengthSquared() == 0) return Vector2.UnitY * t;
         return Vector2.Normalize(diff) * t;
     }
 
+    // simplification of a specialized version of MoveToPoint where t = 1
     private static Vector2 Direction(Vector2 from, Vector2 to)
     {
-        if (to == from) return Vector2.Zero;
+        if (to == from) return Vector2.UnitY; // why is MoveToPoint defined like this??
         return Vector2.Normalize(to - from);
     }
 
     private static Vector2 GiveGridPos(Vector2 pos)
     {
-        return new Vector2(
+        /*return new Vector2(
             MathF.Floor((pos.X / 20f) + 0.4999f),
             MathF.Floor((pos.Y / 20f) + 0.4999f)
+        );*/
+        return new Vector2(
+            MathF.Floor(pos.X / 20f),
+            MathF.Floor(pos.Y / 20f)
         );
     }
 
@@ -169,7 +174,7 @@ class RopeModel
     {
         return new Vector2(
             (pos.X * 20f) - 10f,
-            (pos.Y * 20f) - 10
+            (pos.Y * 20f) - 10f
         );
     }
 
@@ -194,8 +199,8 @@ class RopeModel
     // wtf is this function name?
     private static int AfaMvLvlEdit(Vector2 p, int layer)
     {
-        int x = (int)p.X - 1;
-        int y = (int)p.Y - 1;
+        int x = (int)p.X - 2;
+        int y = (int)p.Y - 2;
         var level = RainEd.Instance.Level;
         if (level.IsInBounds(x, y))
             return (int) RainEd.Instance.Level.Layers[layer, x, y].Cell;
@@ -229,11 +234,11 @@ class RopeModel
             if (release < 1)
             {
                 // WARNING - indexing
-                for (int A = 0; A <= segments.Length / 2f - 1; A++)
+                for (int A1 = 0; A1 <= segments.Length / 2f - 1; A1++)
                 {
-                    var fac = 1f - A / (segments.Length / 2f);
+                    var fac = 1f - A1 / (segments.Length / 2f);
                     fac *= fac;
-                    A = segments.Length - A - 1;
+                    var A = segments.Length + 1 - (A1+1) - 1;
                     segments[A].vel -= dir*fac*physics.edgeDirection;
                 }
 
@@ -284,7 +289,7 @@ class RopeModel
         {
             for (int A = 0; A < segments.Length; A++)
             {
-                for (int B = 1; B < segments.Length; B++)
+                for (int B = 0; B < segments.Length; B++)
                 {
                     if (A != B && DiagWI(segments[A].pos, segments[B].pos, physics.selfPush))
                     {
@@ -349,14 +354,14 @@ class RopeModel
     {
         void func(int B2)
         {
-            var B = A + B2;
+            var B = A+1 + B2;
             if (B > 0 && B <= segments.Length)
             {
-                var dir = Direction(segments[A-1].pos, segments[B-1].pos);
-                segments[A-1].vel -= (dir * physics.rigid * physics.segmentLength)
-                    / (Vector2.Distance(segments[A-1].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2));
+                var dir = Direction(segments[A].pos, segments[B-1].pos);
+                segments[A].vel -= (dir * physics.rigid * physics.segmentLength)
+                    / (Vector2.Distance(segments[A].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2));
                 segments[B-1].vel += (dir * physics.rigid * physics.segmentLength)
-                    / (Vector2.Distance(segments[A-1].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2)); 
+                    / (Vector2.Distance(segments[A].pos, segments[B-1].pos) + 0.1f + MathF.Abs(B2)); 
             }
         };
 
@@ -456,7 +461,6 @@ class RopeModel
             {
                 for (float c = leftPos.X; c <= rightPos.X; c++)
                 {
-                    // WARNING - does <> mean not equal to?
                     if (AfaMvLvlEdit(new Vector2(c, q), layer) == 1 && AfaMvLvlEdit(new Vector2(c, q-1f), layer) != 1)
                     {
                         if (lastGridPos.Y >= q && AfaMvLvlEdit(lastGridPos, layer) == 1)
