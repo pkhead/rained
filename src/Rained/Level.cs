@@ -1,5 +1,6 @@
 using System.Numerics;
 using RainEd.Light;
+using RainEd.Props;
 using Raylib_cs;
 namespace RainEd;
 
@@ -232,7 +233,7 @@ public struct RotatedRect
 
 class Prop
 {
-    public readonly Props.PropInit PropInit;
+    public readonly PropInit PropInit;
 
     // A prop is affine by default
     // The user can then "convert" it to a freeform quad,
@@ -371,6 +372,36 @@ class Prop
     }
 }
 
+class RopeProp
+{
+    public readonly RopePropInit Init;
+    public Vector2 PointA;
+    public Vector2 PointB;
+    private int lengthFac;
+    private int layer;
+    public RopeReleaseMode Release;
+
+    private RopeModel ropeModel;
+
+    public RopeProp(RopePropInit init, int layer, Vector2 center, float width)
+    {
+        Init = init;
+        PointA = center - Vector2.UnitX * (width / 2f);
+        PointB = center + Vector2.UnitX * (width / 2f);
+        
+        lengthFac = 1;
+        this.layer = layer;
+        Release = RopeReleaseMode.None;
+
+        ropeModel = new RopeModel(PointA, PointB, init.PhysicalProperties, lengthFac, layer, Release);
+    }
+
+    public Vector2[] GetSegmentPositions()
+    {
+        return ropeModel.GetSegmentPositions();
+    }
+}
+
 class Level
 {
     public LevelCell[,,] Layers;
@@ -423,6 +454,7 @@ class Level
 
     public readonly List<Effect> Effects = new();
     public readonly List<Prop> Props = new();
+    public readonly List<RopeProp> RopeProps = new();
     
     public int TileSeed = 200;
     public bool DefaultMedium = false; // idk what the hell this does

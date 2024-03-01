@@ -29,11 +29,104 @@ enum RopeReleaseMode
 class RopeModel
 {
     private Vector2 posA, posB;
-    private readonly int layer;
-    private readonly int release;
+    private int layer;
+    private int release;
     private readonly RopePhysicalProperties physics;
     private readonly Segment[] segments;
+    private readonly Vector2[] _segmentsVec2;
 
+    public RopeModel(
+        Vector2 pA, Vector2 pB,
+        RopePhysicalProperties prop,
+        float lengthFac,
+        int layer,
+        RopeReleaseMode release
+    )
+    {
+        this.layer = layer;
+        this.release = release switch
+        {
+            RopeReleaseMode.Left => -1,
+            RopeReleaseMode.Right => 1,
+            RopeReleaseMode.None => 0,
+            _ => throw new ArgumentOutOfRangeException(nameof(release))
+        };
+
+        // convert RainEd coordinates to a coordinate system where
+        // topleft is at (1, 1), and each tile is 20 px large
+        posA = (pA + Vector2.One) * 20f;
+        posB = (pB + Vector2.One) * 20f;
+        physics = prop;
+
+        float numberOfSegments = Vector2.Distance(posA, posB) / physics.segmentLength * lengthFac;
+        numberOfSegments = Math.Max(numberOfSegments, 3);
+
+        float step = Vector2.Distance(posA, posB) / numberOfSegments;
+        
+        segments = new Segment[(int) numberOfSegments];
+        for (int i = 0; i < (int) numberOfSegments; i++)
+        {
+            segments[i] = new Segment()
+            {
+                pos = posA + MoveToPoint(posA, posB, (i+0.5f)*step),
+                lastPos = posA + MoveToPoint(posA, posB, (i+0.5f)*step),
+                vel = Vector2.Zero
+            };
+        }
+
+        _segmentsVec2 = new Vector2[segments.Length];
+        UpdateSegmentPositions();
+    }
+
+    private void UpdateSegmentPositions()
+    {
+        for (int i = 0; i < segments.Length; i++)
+        {
+            _segmentsVec2[i] = (segments[i].pos) / 20f - Vector2.One;
+        }
+    }
+
+    public Vector2[] GetSegmentPositions()
+    {
+        UpdateSegmentPositions();
+        return _segmentsVec2;
+    }
+
+    public RopeReleaseMode Release {
+        get
+        {
+            return release switch
+            {
+                -1 => RopeReleaseMode.Left,
+                1 => RopeReleaseMode.Right,
+                _ => RopeReleaseMode.None
+            };
+        }
+        set
+        {
+            release = value switch
+            {
+                RopeReleaseMode.Left => -1,
+                RopeReleaseMode.Right => 1,
+                RopeReleaseMode.None => 0,
+                _ => throw new ArgumentOutOfRangeException(nameof(value))
+            };   
+        }
+    }
+
+    public Vector2 PointA
+    {
+        set => posA = (value + Vector2.One) * 20f;
+        get => posA / 20f - Vector2.One;
+    }
+
+    public Vector2 PointB
+    {
+        set => posB = (value + Vector2.One) * 20f;
+        get => posB / 20f - Vector2.One;
+    }
+
+#region Lingo Ported
     struct Segment
     {
         public Vector2 pos;
@@ -96,47 +189,20 @@ class RopeModel
         return (RectHeight * RectHeight) + (RectWidth * RectWidth) < dig*dig;
     }
 
-    public RopeModel(
-        Vector2 pA, Vector2 pB,
-        RopePhysicalProperties prop,
-        float lengthFac,
-        int layer,
-        RopeReleaseMode release
-    )
+    // wtf is this function name?
+    private static int AfaMvLvlEdit(Vector2 p, int layer)
     {
-        this.layer = layer;
-        this.release = release switch
-        {
-            RopeReleaseMode.Left => -1,
-            RopeReleaseMode.Right => 1,
-            RopeReleaseMode.None => 0,
-            _ => throw new ArgumentOutOfRangeException(nameof(release))
-        };
-
-        // convert RainEd coordinates to a coordinate system where
-        // topleft is at (1, 1), and each tile is 20 px large
-        posA = pA / Level.TileSize * 20f + Vector2.One;
-        posB = pB / Level.TileSize * 20f + Vector2.One;
-        physics = prop;
-
-        float numberOfSegments = Vector2.Distance(pA, pB) / physics.segmentLength * lengthFac;
-        numberOfSegments = Math.Max(numberOfSegments, 3);
-
-        float step = Vector2.Distance(pA, pB) / numberOfSegments;
-        
-        segments = new Segment[(int) numberOfSegments];
-        for (int i = 0; i < numberOfSegments; i++)
-        {
-            segments[i] = new Segment()
-            {
-                pos = pA + MoveToPoint(pA, pB, (i+0.5f)*step),
-                lastPos = pA + MoveToPoint(pA, pB, (i+0.5f)*step),
-                vel = Vector2.Zero
-            };
-        }
+        int x = (int)p.X - 1;
+        int y = (int)p.Y - 1;
+        var level = RainEd.Instance.Level;
+        if (level.IsInBounds(x, y))
+            return (int) RainEd.Instance.Level.Layers[layer, x, y].Cell;
+        else
+            return 1;
     }
 
-    public void Update()
+    // this is the update function in ropeModel.lingo
+    private void Tick() 
     {
         if (physics.edgeDirection > 0f)
         {
@@ -261,7 +327,7 @@ class RopeModel
         */
     }
 
-    public void ConnectRopePoints(int A, int B)
+    private void ConnectRopePoints(int A, int B)
     {
         var dir = Direction(segments[A].pos, segments[B].pos);
         var dist = Vector2.Distance(segments[A].pos, segments[B].pos);
@@ -277,7 +343,7 @@ class RopeModel
         }
     }
 
-    public void ApplyRigidity(int A)
+    private void ApplyRigidity(int A)
     {
         void func(int B2)
         {
@@ -301,7 +367,7 @@ class RopeModel
         func(3);
     }
 
-    public Vector2 SmoothPos(int A)
+    private Vector2 SmoothPos(int A)
     {
         if (A == 0)
         {
@@ -324,7 +390,7 @@ class RopeModel
         }
     }
 
-    public void PushRopePointOutOfTerrain(int A)
+    private void PushRopePointOutOfTerrain(int A)
     {
         var p = new RopePoint()
         {
@@ -440,16 +506,5 @@ class RopeModel
 
         return p;
     }
-
-    // wtf is this function name?
-    private static int AfaMvLvlEdit(Vector2 p, int layer)
-    {
-        int x = (int)p.X - 1;
-        int y = (int)p.Y - 1;
-        var level = RainEd.Instance.Level;
-        if (level.IsInBounds(x, y))
-            return (int) RainEd.Instance.Level.Layers[layer, x, y].Cell;
-        else
-            return 1;
-    }
+#endregion
 }

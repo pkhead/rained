@@ -10,6 +10,7 @@ partial class PropEditor : IEditorMode
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
+    private RopePropInit? selectedRopeInit = null;
     private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects "};
 
 #region Multiselect Inputs
@@ -183,6 +184,7 @@ partial class PropEditor : IEditorMode
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
                 var boxHeight = ImGui.GetContentRegionAvail().Y;
 
+                // Props tab
                 if (ImGui.BeginTabItem("Props"))
                 {
                     // if tab changed, reset selected group back to 0
@@ -220,6 +222,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {
                                 selectedInit = prop;
+                                selectedRopeInit = null;
                             }
 
                             if (ImGui.BeginItemTooltip())
@@ -240,6 +243,7 @@ partial class PropEditor : IEditorMode
                     ImGui.EndTabItem();
                 }
 
+                // Tiles as props tab
                 if (ImGui.BeginTabItem("Tiles"))
                 {
                     // if tab changed, reset selected group back to 0
@@ -274,6 +278,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {
                                 selectedInit = prop;
+                                selectedRopeInit = null;
                             }
 
                             if (ImGui.BeginItemTooltip())
@@ -285,6 +290,51 @@ partial class PropEditor : IEditorMode
                                     previewRect
                                 );
                                 ImGui.EndTooltip();
+                            }
+                        }
+                        
+                        ImGui.EndListBox();
+                    }
+
+                    ImGui.EndTabItem();
+                }
+
+                // Rope-type props
+                if (ImGui.BeginTabItem("Rope-type"))
+                {
+                    // if tab changed, reset selected group back to 0
+                    if (currentSelectorMode != 2)
+                    {
+                        currentSelectorMode = 2;
+                        selectedGroup = 0;
+                    }
+
+                    // group list box
+                    if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
+                    {
+                        for (int i = 0; i < propDb.RopeCategories.Count; i++)
+                        {
+                            if (ImGui.Selectable(propDb.RopeCategories[i].Name, selectedGroup == i))
+                                selectedGroup = i;
+                        }
+                        
+                        ImGui.EndListBox();
+                    }
+                    
+                    // group listing (effects) list box
+                    ImGui.SameLine();
+                    if (ImGui.BeginListBox("##Props", new Vector2(halfWidth, boxHeight)))
+                    {
+                        var propList = propDb.RopeCategories[selectedGroup].Props;
+
+                        for (int i = 0; i < propList.Count; i++)
+                        {
+                            var prop = propList[i];
+
+                            if (ImGui.Selectable(prop.Name, prop == selectedRopeInit))
+                            {
+                                selectedInit = null;
+                                selectedRopeInit = prop;
                             }
                         }
                         

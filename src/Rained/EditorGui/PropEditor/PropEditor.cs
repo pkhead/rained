@@ -620,17 +620,17 @@ partial class PropEditor : IEditorMode
         // TODO: drag and drop from props list
         if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.NewObject) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
+            var createPos = window.MouseCellFloat;
+            
+            var snap = snappingMode / 2f;
+            if (snap > 0)
+            {
+                createPos.X = MathF.Round(createPos.X / snap) * snap;
+                createPos.Y = MathF.Round(createPos.Y / snap) * snap;
+            
+            }
             if (selectedInit is not null)
             {
-                var createPos = window.MouseCellFloat;
-                
-                var snap = snappingMode / 2f;
-                if (snap > 0)
-                {
-                    createPos.X = MathF.Round(createPos.X / snap) * snap;
-                    createPos.Y = MathF.Round(createPos.Y / snap) * snap;
-                }
-
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
                     DepthOffset = window.WorkLayer * 10
@@ -639,6 +639,13 @@ partial class PropEditor : IEditorMode
                 RainEd.Instance.Level.Props.Add(prop);
                 selectedProps.Clear();
                 selectedProps.Add(prop);
+            }
+            else if (selectedRopeInit is not null)
+            {
+                Console.WriteLine("Add rope");
+                var prop = new RopeProp(selectedRopeInit, window.WorkLayer, createPos, 10f);
+                RainEd.Instance.Level.RopeProps.Add(prop);
+                selectedProps.Clear();
             }
         }
 

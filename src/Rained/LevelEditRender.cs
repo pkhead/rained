@@ -716,6 +716,17 @@ class LevelEditRender
 
         Raylib.EndShaderMode();
         Rlgl.EnableBackfaceCulling();
+
+        // render rope-type props
+        foreach (var rope in Level.RopeProps)
+        {
+            var points = rope.GetSegmentPositions();
+
+            foreach (var point in points)
+            {
+                Raylib.DrawCircleV(point * Level.TileSize, 5f / ViewZoom, rope.Init.PreviewColor);
+            }
+        }
     }
 
     public void RenderGrid()
