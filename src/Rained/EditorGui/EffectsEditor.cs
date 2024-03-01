@@ -426,7 +426,7 @@ class EffectsEditor : IEditorMode
             var bsize = brushSize;
             if (effect.Data.single) bsize = 1;
 
-            var brushStrength = ImGui.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
+            var brushStrength = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
             if (effect.Data.binary) brushStrength = 100000000f;
 
             float brushFac = 0.0f;
@@ -442,7 +442,7 @@ class EffectsEditor : IEditorMode
             if (window.IsViewportHovered)
             {
                 // shift + scroll to change brush size
-                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 {
                     window.OverrideMouseWheel = true;
 

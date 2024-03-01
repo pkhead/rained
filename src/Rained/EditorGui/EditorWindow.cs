@@ -139,6 +139,26 @@ class EditorWindow
             mode.ReloadLevel();
     }
 
+    public static bool IsKeyDown(ImGuiKey key)
+    {
+        if (ImGui.GetIO().WantTextInput) return false;
+        return ImGui.IsKeyDown(key);
+    }
+
+    public static bool IsKeyPressed(ImGuiKey key)
+    {
+        if (ImGui.GetIO().WantTextInput) return false;
+        return ImGui.IsKeyPressed(key);
+    }
+
+    // need to use Raylib.IsKeyPressed instead of EditorWindow.IsKeyPressed
+    // because i specifically disabled the Tab key in ImGui input handling
+    public static bool IsTabPressed()
+    {
+        if (ImGui.GetIO().WantTextInput) return false;
+        return Raylib.IsKeyPressed(KeyboardKey.Tab);
+    }
+
     public void Render(float dt)
     {
         if (queuedEditMode >= 0)
@@ -193,32 +213,32 @@ class EditorWindow
             if (!ImGui.GetIO().WantTextInput)
             {
                 // scroll keybinds
-                var moveX = Raylib.IsKeyDown(KeyboardKey.Right) - Raylib.IsKeyDown(KeyboardKey.Left);
-                var moveY = Raylib.IsKeyDown(KeyboardKey.Down) - Raylib.IsKeyDown(KeyboardKey.Up);
-                var moveSpeed = Raylib.IsKeyDown(KeyboardKey.LeftShift) ? 60f : 30f;
+                var moveX = (IsKeyDown(ImGuiKey.RightArrow)?1:0) - (IsKeyDown(ImGuiKey.LeftArrow)?1:0);
+                var moveY = (IsKeyDown(ImGuiKey.DownArrow)?1:0) - (IsKeyDown(ImGuiKey.UpArrow)?1:0);
+                var moveSpeed = IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
                 viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
                 viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
 
                 // edit mode keybinds
-                if (Raylib.IsKeyPressed(KeyboardKey.One))
+                if (IsKeyPressed(ImGuiKey._1))
                     newEditMode = (int) EditModeEnum.Environment;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Two))
+                if (IsKeyPressed(ImGuiKey._2))
                     newEditMode = (int) EditModeEnum.Geometry;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Three))
+                if (IsKeyPressed(ImGuiKey._3))
                     newEditMode = (int) EditModeEnum.Tile;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Four))
+                if (IsKeyPressed(ImGuiKey._4))
                     newEditMode = (int) EditModeEnum.Camera;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Five))
+                if (IsKeyPressed(ImGuiKey._5))
                     newEditMode = (int) EditModeEnum.Light;
                 
-                if (Raylib.IsKeyPressed(KeyboardKey.Six))
+                if (IsKeyPressed(ImGuiKey._6))
                     newEditMode = (int) EditModeEnum.Effect;
 
-                if (Raylib.IsKeyPressed(KeyboardKey.Seven))
+                if (IsKeyPressed(ImGuiKey._7))
                     newEditMode = (int) EditModeEnum.Prop;
             }
 
@@ -381,6 +401,6 @@ class EditorWindow
         );
     }
 
-    public bool IsShortcutActivated(string id)
+    public bool IsShortcutActivated(RainEd.ShortcutID id)
         => Editor.IsShortcutActivated(id);
 }

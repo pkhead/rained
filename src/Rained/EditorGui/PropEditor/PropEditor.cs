@@ -479,7 +479,7 @@ partial class PropEditor : IEditorMode
                 if (ImGui.Selectable(prop.PropInit.Name))
                 {
                     ImGui.CloseCurrentPopup();
-                    if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                         selectedProps.Clear();
                     SelectProp(prop);
                 }
@@ -497,7 +497,7 @@ partial class PropEditor : IEditorMode
 
     private void SelectProp(Prop prop)
     {
-        if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
             // if prop is in selection, remove it from selection
             // if prop is not in selection, add it to the selection
@@ -525,7 +525,7 @@ partial class PropEditor : IEditorMode
                     dragMode = DragMode.Select;
 
                     // if shift is held, rect select Adds instead of Replace
-                    if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                         initSelectedProps = selectedProps.ToList(); // clone selection list
                     else
                         initSelectedProps = null;
@@ -591,7 +591,7 @@ partial class PropEditor : IEditorMode
         // user clicked a prop, so add it to the selection
         if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
         {
-            if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+            if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 selectedProps.Clear();
             
             var prop = GetPropAt(window.MouseCellFloat);
@@ -606,7 +606,7 @@ partial class PropEditor : IEditorMode
             propSelectionList = GetPropsAt(window.MouseCellFloat);
             if (propSelectionList.Length == 1)
             {
-                if (!ImGui.IsKeyDown(ImGuiKey.ModShift))
+                if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                     selectedProps.Clear();
                 
                 SelectProp(propSelectionList[0]);
@@ -618,7 +618,7 @@ partial class PropEditor : IEditorMode
 
         // when N is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (RainEd.Instance.IsShortcutActivated("NewObject") || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.NewObject) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
             if (selectedInit is not null)
             {
@@ -643,7 +643,7 @@ partial class PropEditor : IEditorMode
         }
 
         // delete key to delete selected props
-        if (ImGui.IsKeyPressed(ImGuiKey.Delete) || ImGui.IsKeyPressed(ImGuiKey.Backspace))
+        if (EditorWindow.IsKeyPressed(ImGuiKey.Delete) || EditorWindow.IsKeyPressed(ImGuiKey.Backspace))
         {
             foreach (var prop in selectedProps)
             {
@@ -655,7 +655,7 @@ partial class PropEditor : IEditorMode
         }
 
         // duplicate props
-        if (ImGui.IsKeyPressed(ImGuiKey.D) && ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+        if (EditorWindow.IsKeyPressed(ImGuiKey.D) && EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
         {
             var propsToDup = selectedProps.ToArray();
             selectedProps.Clear();

@@ -384,9 +384,14 @@ partial class PropEditor : IEditorMode
 
         } ImGui.End();
 
-        if (ImGui.IsKeyPressed(ImGuiKey.F) && !ImGui.GetIO().WantCaptureKeyboard)
+        if (EditorWindow.IsKeyPressed(ImGuiKey.F))
         {
             isWarpMode = !isWarpMode;
+        }
+
+        if (EditorWindow.IsTabPressed())
+        {
+            window.WorkLayer = (window.WorkLayer + 1) % 3;
         }
 
         if (isWarpMode)

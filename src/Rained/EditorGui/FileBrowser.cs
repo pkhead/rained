@@ -511,7 +511,7 @@ class FileBrowser
             // ok and cancel buttons
             if (ImGui.Button("OK")) ok = true;
             ImGui.SameLine();
-            if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.Escape)))
+            if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && EditorWindow.IsKeyPressed(ImGuiKey.Escape)))
             {
                 isDone = true;
             }

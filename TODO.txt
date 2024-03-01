@@ -6,7 +6,6 @@ Overall:
 - split up tile and prop editor source code
 - on cell change, only remesh the mesh chunk that it is in
 - undo/redo for level resize
-- open file browser in directory of current level
 - help pages/hints/tooltips/whatever
 - Edit/View menu buttons for specific editors
   e.g. New Camera button in camera editor,
@@ -48,7 +47,6 @@ Effects Editor:
 - community effects
 
 Prop Editor:
-- tab to change view layer
 - render order (forgot i forgot to put that back in)
 - undo/redo
 - save props

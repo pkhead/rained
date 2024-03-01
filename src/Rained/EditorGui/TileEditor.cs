@@ -152,12 +152,6 @@ class TileEditor : IEditorMode
                 }
             } ImGui.EndChild();
         }
-
-        // tab to change work layer
-        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
-        {
-            window.WorkLayer = (window.WorkLayer + 1) % 3;
-        }
     }
     */
 
@@ -225,7 +219,7 @@ class TileEditor : IEditorMode
             if (selectedTile != null)
                 ImGui.BeginDisabled();
             
-            if ((ImGui.Button("Set Selected Material as Default") || ImGui.IsKeyPressed(ImGuiKey.Q)) && selectedTile == null)
+            if ((ImGui.Button("Set Selected Material as Default") || EditorWindow.IsKeyPressed(ImGuiKey.Q)) && selectedTile == null)
             {
                 var oldMat = window.Editor.Level.DefaultMaterial;
                 var newMat = (Material)(selectedMaterialIdx + 1);
@@ -333,15 +327,13 @@ class TileEditor : IEditorMode
         }
 
         // tab to change work layer
-        // need to use Raylib.IsKeyPressed instead of ImGui.IsKeyPressed
-        // because i specifically disabled the Tab key in ImGui input handling
-        if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+        if (EditorWindow.IsTabPressed())
         {
             window.WorkLayer = (window.WorkLayer + 1) % 3;
         }
 
         // A and D to change selected group
-        if (window.Editor.IsShortcutActivated("NavLeft"))
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
         {
             selectedGroup--;
             if (selectedGroup < -1)
@@ -359,7 +351,7 @@ class TileEditor : IEditorMode
             }
         }
 
-        if (window.Editor.IsShortcutActivated("NavRight"))
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavRight))
         {
             selectedGroup++;
             if (selectedGroup >= tileDb.Categories.Count)
@@ -378,7 +370,7 @@ class TileEditor : IEditorMode
         }
 
         // W and S to change selected tile in group
-        if (window.Editor.IsShortcutActivated("NavDown")) // S
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavDown)) // S
         {
             if (selectedGroup == -1)
             {
@@ -399,7 +391,7 @@ class TileEditor : IEditorMode
             }
         }
 
-        if (window.Editor.IsShortcutActivated("NavUp")) // W
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavUp)) // W
         {
             if (selectedGroup == -1)
             {
@@ -564,8 +556,8 @@ class TileEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            var modifyGeometry = Raylib.IsKeyDown(KeyboardKey.G);
-            var forcePlace = Raylib.IsKeyDown(KeyboardKey.F);
+            var modifyGeometry = EditorWindow.IsKeyDown(ImGuiKey.G);
+            var forcePlace = EditorWindow.IsKeyDown(ImGuiKey.F);
 
             // begin change if left or right button is down
             // regardless of what it's doing
@@ -667,7 +659,7 @@ class TileEditor : IEditorMode
             // render selected material
             else
             {
-                if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 {
                     window.OverrideMouseWheel = true;
 
@@ -743,7 +735,7 @@ class TileEditor : IEditorMode
                 }
 
                 // eyedropper
-                if (ImGui.IsKeyPressed(ImGuiKey.E))
+                if (EditorWindow.IsKeyPressed(ImGuiKey.E))
                 {
                     // tile eyedropper
                     if (mouseCell.HasTile())

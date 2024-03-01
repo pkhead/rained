@@ -118,7 +118,7 @@ partial class PropEditor : IEditorMode
         {
             Vector2 scaleAnchor;
 
-            if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
             {
                 scaleAnchor = origRect.Center;
             }
@@ -149,7 +149,7 @@ partial class PropEditor : IEditorMode
             
             // hold shift to maintain proportions
             // if scaling multiple props at once, this is the only valid mode. curse you, rotation!!!  
-            if (mustMaintainProportions || ImGui.IsKeyDown(ImGuiKey.ModShift))
+            if (mustMaintainProportions || EditorWindow.IsKeyDown(ImGuiKey.ModShift))
             {
                 if (handleOffset.X == 0f)
                 {
@@ -177,7 +177,7 @@ partial class PropEditor : IEditorMode
             //newRect.Size.Y = MathF.Max(0.1f, newRect.Size.Y);
 
             // anchor the prop to the anchor point
-            if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
             {
                 newRect.Center = origRect.Center;
             }
@@ -272,7 +272,7 @@ partial class PropEditor : IEditorMode
             var curDir = Vector2.Normalize(mousePos - rotCenter);
             var angleDiff = MathF.Atan2(curDir.Y, curDir.X) - MathF.Atan2(startDir.Y, startDir.X);
 
-            if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
             {
                 var snap = MathF.PI / 8f;
                 angleDiff = MathF.Round(angleDiff / snap) * snap; 

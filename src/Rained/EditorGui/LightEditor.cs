@@ -83,7 +83,7 @@ class LightEditor : IEditorMode
 
             level.LightAngle = lightDeg / 180f * MathF.PI;
 
-            if (ImGui.Button("Reset Brush") || (!ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.R)))
+            if (ImGui.Button("Reset Brush") || (!ImGui.GetIO().WantTextInput && EditorWindow.IsKeyPressed(ImGuiKey.R)))
             {
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;
@@ -292,8 +292,8 @@ class LightEditor : IEditorMode
                 );
             }
 
-            var doScale = Raylib.IsKeyDown(KeyboardKey.Q);
-            var doRotate = Raylib.IsKeyDown(KeyboardKey.E);
+            var doScale = EditorWindow.IsKeyDown(ImGuiKey.Q);
+            var doRotate = EditorWindow.IsKeyDown(ImGuiKey.E);
 
             if (doScale || doRotate)
             {

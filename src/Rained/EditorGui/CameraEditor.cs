@@ -139,7 +139,7 @@ class CameraEditor : IEditorMode
         if (!ImGui.GetIO().WantCaptureKeyboard && activeCamera is null)
         {
             // N to create new camera
-            if (window.IsShortcutActivated("NewObject") && level.Cameras.Count < Level.MaxCameraCount)
+            if (window.IsShortcutActivated(RainEd.ShortcutID.NewObject) && level.Cameras.Count < Level.MaxCameraCount)
             {
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
@@ -152,8 +152,8 @@ class CameraEditor : IEditorMode
             // if hovering over a corner, it instead resets the corner transform
             if (cameraHoveredOver is not null)
             {
-                if (Raylib.IsKeyPressed(KeyboardKey.Delete)
-                    || Raylib.IsKeyPressed(KeyboardKey.Backspace)
+                if (EditorWindow.IsKeyPressed(ImGuiKey.Delete)
+                    || EditorWindow.IsKeyPressed(ImGuiKey.Backspace)
                     || Raylib.IsMouseButtonPressed(MouseButton.Right)
                 )
                 {

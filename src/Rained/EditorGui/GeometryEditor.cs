@@ -222,13 +222,13 @@ class GeometryEditor : IEditorMode
         } ImGui.End();
 
         // layer mask toggle shortcuts
-        if (ImGui.IsKeyPressed(ImGuiKey.E))
+        if (EditorWindow.IsKeyPressed(ImGuiKey.E))
             layerMask[0] = !layerMask[0];
 
-        if (ImGui.IsKeyPressed(ImGuiKey.R))
+        if (EditorWindow.IsKeyPressed(ImGuiKey.R))
             layerMask[1] = !layerMask[1];
 
-        if (ImGui.IsKeyPressed(ImGuiKey.T))
+        if (EditorWindow.IsKeyPressed(ImGuiKey.T))
             layerMask[2] = !layerMask[2];
     }
 
@@ -289,7 +289,7 @@ class GeometryEditor : IEditorMode
             int toolCol = (int) selectedTool % 4;
             int toolCount = (int) Tool.ToolCount;
             
-            if (window.IsShortcutActivated("NavRight"))
+            if (window.IsShortcutActivated(RainEd.ShortcutID.NavRight))
             {
                 if ((int) selectedTool == (toolCount-1))
                 {
@@ -303,7 +303,7 @@ class GeometryEditor : IEditorMode
                 }
             }
 
-            if (window.IsShortcutActivated("NavLeft"))
+            if (window.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
             {
                 toolCol--;
                 if (toolCol < 0)
@@ -313,12 +313,12 @@ class GeometryEditor : IEditorMode
                 }
             }
 
-            if (window.IsShortcutActivated("NavUp"))
+            if (window.IsShortcutActivated(RainEd.ShortcutID.NavUp))
             {
                 toolRow--;
             }
 
-            if (window.IsShortcutActivated("NavDown"))
+            if (window.IsShortcutActivated(RainEd.ShortcutID.NavDown))
             {
                 // if on the last row, wrap back to first row
                 // else, just go to next row
@@ -339,7 +339,7 @@ class GeometryEditor : IEditorMode
         if (window.IsViewportHovered)
         {
             // cursor rect mode
-            if (isToolRectActive && Raylib.IsKeyDown(KeyboardKey.LeftShift))
+            if (isToolRectActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
             {
                 var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
                 var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
@@ -391,7 +391,7 @@ class GeometryEditor : IEditorMode
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
                     {
                         if (!isToolRectActive)
-                            ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), Raylib.IsKeyDown(KeyboardKey.LeftShift));
+                            ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
                     }
 
                     if (Raylib.IsMouseButtonReleased(MouseButton.Left))

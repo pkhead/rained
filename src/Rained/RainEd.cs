@@ -233,16 +233,25 @@ sealed class RainEd
     }
 
 #region Shortcuts
+    public enum ShortcutID
+    {
+        NavUp, NavLeft, NavDown, NavRight,
+        NewObject, SwitchLayer,
+
+        New, Open, Save, SaveAs,
+        Cut, Copy, Paste, Undo, Redo
+    };
+
     private class KeyShortcut
     {
-        public string Name;
+        public ShortcutID ID;
         public string ShortcutString;
         public ImGuiKey Key;
         public ImGuiModFlags Mods;
         public bool IsActivated = false;
         public bool AllowRepeat = false;
 
-        public KeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
+        public KeyShortcut(ShortcutID id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
         {
             // build shortcut string
             var str = new List<string>();
@@ -264,7 +273,7 @@ sealed class RainEd
             ShortcutString = string.Join('+', str);
 
             // initialize other properties
-            Name = name;
+            ID = id;
             Key = key;
             Mods = mods;
             AllowRepeat = allowRepeat;
@@ -278,45 +287,45 @@ sealed class RainEd
                 (Mods.HasFlag(ImGuiModFlags.Alt) == ImGui.IsKeyDown(ImGuiKey.ModAlt)) &&
                 (Mods.HasFlag(ImGuiModFlags.Super) == ImGui.IsKeyDown(ImGuiKey.ModSuper));
     }
-    private readonly Dictionary<string, KeyShortcut> keyShortcuts = new();
+    private readonly Dictionary<ShortcutID, KeyShortcut> keyShortcuts = new();
 
-    public void RegisterKeyShortcut(string name, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
+    public void RegisterKeyShortcut(ShortcutID id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
     {
-        keyShortcuts.Add(name, new KeyShortcut(name, key, mods, allowRepeat));
+        keyShortcuts.Add(id, new KeyShortcut(id, key, mods, allowRepeat));
     }
 
-    public bool IsShortcutActivated(string id)
+    public bool IsShortcutActivated(ShortcutID id)
         => keyShortcuts[id].IsActivated;
 
-    public void ImGuiMenuItemShortcut(string shortcutId, string name)
+    public void ImGuiMenuItemShortcut(ShortcutID id, string name)
     {
-        var shortcutData = keyShortcuts[shortcutId];
+        var shortcutData = keyShortcuts[id];
         if (ImGui.MenuItem(name, shortcutData.ShortcutString))
             shortcutData.IsActivated = true;
     }
 
     private void RegisterShortcuts()
     {
-        RegisterKeyShortcut("NavUp", ImGuiKey.W, ImGuiModFlags.None, true);
-        RegisterKeyShortcut("NavLeft", ImGuiKey.A, ImGuiModFlags.None, true);
-        RegisterKeyShortcut("NavDown", ImGuiKey.S, ImGuiModFlags.None, true);
-        RegisterKeyShortcut("NavRight", ImGuiKey.D, ImGuiModFlags.None, true);
-        RegisterKeyShortcut("NewObject", ImGuiKey.N, ImGuiModFlags.None, true);
+        RegisterKeyShortcut(ShortcutID.NavUp, ImGuiKey.W, ImGuiModFlags.None, true);
+        RegisterKeyShortcut(ShortcutID.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
+        RegisterKeyShortcut(ShortcutID.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
+        RegisterKeyShortcut(ShortcutID.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
+        RegisterKeyShortcut(ShortcutID.NewObject, ImGuiKey.N, ImGuiModFlags.None, true);
 
-        RegisterKeyShortcut("New", ImGuiKey.N, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("Open", ImGuiKey.O, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("Save", ImGuiKey.S, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("SaveAs", ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+        RegisterKeyShortcut(ShortcutID.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
 
-        RegisterKeyShortcut("Cut", ImGuiKey.X, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("Copy", ImGuiKey.C, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("Paste", ImGuiKey.V, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut("Undo", ImGuiKey.Z, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Paste, ImGuiKey.V, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            RegisterKeyShortcut("Redo", ImGuiKey.Y, ImGuiModFlags.Ctrl);
+            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl);
         else
-            RegisterKeyShortcut("Redo", ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
     }
 
     private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
@@ -342,7 +351,7 @@ sealed class RainEd
             }
         }
 
-        if (IsShortcutActivated("New"))
+        if (IsShortcutActivated(ShortcutID.New))
         {
             PromptUnsavedChanges(() =>
             {
@@ -361,7 +370,7 @@ sealed class RainEd
             });
         }
 
-        if (IsShortcutActivated("Open"))
+        if (IsShortcutActivated(ShortcutID.Open))
         {
             PromptUnsavedChanges(() =>
             {
@@ -369,7 +378,7 @@ sealed class RainEd
             });
         }
 
-        if (IsShortcutActivated("Save"))
+        if (IsShortcutActivated(ShortcutID.Save))
         {
             if (string.IsNullOrEmpty(currentFilePath))
                 OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
@@ -377,17 +386,17 @@ sealed class RainEd
                 SaveLevel(currentFilePath);
         }
 
-        if (IsShortcutActivated("SaveAs"))
+        if (IsShortcutActivated(ShortcutID.SaveAs))
         {
             OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
         }
 
-        if (IsShortcutActivated("Undo"))
+        if (IsShortcutActivated(ShortcutID.Undo))
         {
             Undo();
         }
 
-        if (IsShortcutActivated("Redo"))
+        if (IsShortcutActivated(ShortcutID.Redo))
         {
             Redo();
         }
@@ -412,10 +421,10 @@ sealed class RainEd
         {
             if (ImGui.BeginMenu("File"))
             {
-                ImGuiMenuItemShortcut("New", "New");
-                ImGuiMenuItemShortcut("Open", "Open");
-                ImGuiMenuItemShortcut("Save", "Save");
-                ImGuiMenuItemShortcut("SaveAs", "Save As...");
+                ImGuiMenuItemShortcut(ShortcutID.New, "New");
+                ImGuiMenuItemShortcut(ShortcutID.Open, "Open");
+                ImGuiMenuItemShortcut(ShortcutID.Save, "Save");
+                ImGuiMenuItemShortcut(ShortcutID.SaveAs, "Save As...");
 
                 ImGui.Separator();
                 
@@ -440,12 +449,12 @@ sealed class RainEd
 
             if (ImGui.BeginMenu("Edit"))
             {
-                ImGuiMenuItemShortcut("Undo", "Undo");
-                ImGuiMenuItemShortcut("Redo", "Redo");
+                ImGuiMenuItemShortcut(ShortcutID.Undo, "Undo");
+                ImGuiMenuItemShortcut(ShortcutID.Redo, "Redo");
                 ImGui.Separator();
-                ImGuiMenuItemShortcut("Cut", "Cut");
-                ImGuiMenuItemShortcut("Copy", "Copy");
-                ImGuiMenuItemShortcut("Paste", "Paste");
+                ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
+                ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
+                ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
                 ImGui.Separator();
 
                 if (ImGui.MenuItem("Resize Level..."))
