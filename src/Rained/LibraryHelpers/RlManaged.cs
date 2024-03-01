@@ -5,12 +5,68 @@ using Raylib_cs;
 
 namespace RlManaged
 {
-    class RenderTexture2D : IDisposable
+    abstract class RlObject : IDisposable
+    {
+        private readonly static Mutex freeQueueMut = new();
+        private readonly static Queue<RlObject> freeQueue = new();
+
+        private bool _disposed = false;
+        private long bytesAllocated = 0;
+
+        ~RlObject() => Dispose(false);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Unload(disposing);
+                }
+                else
+                {
+                    freeQueueMut.WaitOne();
+                    freeQueue.Enqueue(this);
+                    freeQueueMut.ReleaseMutex();
+                }
+
+                _disposed = true;
+            }
+        }
+
+        protected void AddMemoryPressure(long bytesAllocated)
+        {
+            if (bytesAllocated == 0) return;
+            GC.AddMemoryPressure(bytesAllocated);
+            this.bytesAllocated += bytesAllocated;
+        }
+
+        protected abstract void Unload(bool disposing);
+
+        public static void UnloadGCQueue()
+        {
+            freeQueueMut.WaitOne();
+            foreach (var a in freeQueue)
+            {
+                a.Unload(false);
+                if (a.bytesAllocated > 0) GC.RemoveMemoryPressure(a.bytesAllocated);
+            }
+            freeQueue.Clear();
+            freeQueueMut.ReleaseMutex();
+        }
+    }
+
+    class RenderTexture2D : RlObject
     {
         private Raylib_cs.RenderTexture2D raw;
-        private bool _disposed = false;
 
-        private RenderTexture2D(Raylib_cs.RenderTexture2D raw)
+        private RenderTexture2D(Raylib_cs.RenderTexture2D raw) : base()
         {
             this.raw = raw;
         }
@@ -60,22 +116,11 @@ namespace RlManaged
 
             return new RenderTexture2D(raw);
         }
-
-        ~RenderTexture2D() => Dispose(false);
-
-        public void Dispose()
+        
+        protected override void Unload(bool disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                Raylib.UnloadRenderTexture(raw);
-                _disposed = true;
-            }
+            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject RenderTexture2D");
+            Raylib.UnloadRenderTexture(raw);
         }
 
         // OpenGL Framebuffer object ID
@@ -90,20 +135,49 @@ namespace RlManaged
         public static implicit operator Raylib_cs.RenderTexture2D(RenderTexture2D tex) => tex.raw;
     }
 
-    class Image : IDisposable
+    class Image : RlObject
     {
         private Raylib_cs.Image raw;
-        private bool _disposed = false;
 
         public int Width { get => raw.Width; }
         public int Height { get => raw.Height; }
         public int Mipmaps { get => raw.Mipmaps; }
         public PixelFormat PixelFormat { get => raw.Format; }
         public unsafe void* Data { get => raw.Data; }
+
+        private static int GetBitsPerPixel(PixelFormat format)
+        {
+            return format switch
+            {
+                PixelFormat.UncompressedGrayscale => 8,
+                PixelFormat.UncompressedGrayAlpha => 16,
+                PixelFormat.UncompressedR5G6B5 => 16,
+                PixelFormat.UncompressedR8G8B8 => 24,
+                PixelFormat.UncompressedR5G5B5A1 => 16,
+                PixelFormat.UncompressedR4G4B4A4 => 16,
+                PixelFormat.UncompressedR8G8B8A8 => 32,
+                PixelFormat.UncompressedR32 => 32,
+                PixelFormat.UncompressedR32G32B32 => 32*3,
+                PixelFormat.UncompressedR32G32B32A32 => 32*4,
+                PixelFormat.CompressedDxt1Rgb => 4,
+                PixelFormat.CompressedDxt1Rgba => 4,
+                PixelFormat.CompressedDxt3Rgba => 8,
+                PixelFormat.CompressedDxt5Rgba => 8,
+                PixelFormat.CompressedEtc1Rgb => 4,
+                PixelFormat.CompressedEtc2Rgb => 4,
+                PixelFormat.CompressedEtc2EacRgba => 8,
+                PixelFormat.CompressedPvrtRgb => 4,
+                PixelFormat.CompressedPvrtRgba => 4,
+                PixelFormat.CompressedAstc4X4Rgba => 8,
+                PixelFormat.CompressedAstc8X8Rgba => 2,
+                _ => throw new Exception("Invalid pixel format")
+            };
+        }
         
-        private Image(Raylib_cs.Image raw)
+        private Image(Raylib_cs.Image raw) : base()
         {
             this.raw = raw;
+            AddMemoryPressure((long)raw.Width * raw.Height * GetBitsPerPixel(raw.Format) / 8);
         }
 
         public static Image Load(string fileName)
@@ -156,21 +230,10 @@ namespace RlManaged
                 Raylib.ImageFormat(rawPtr, newFormat);
         }
 
-        ~Image() => Dispose(false);
-
-        public void Dispose()
+        protected override void Unload(bool disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                Raylib.UnloadImage(raw);
-            }
+            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Image");
+            Raylib.UnloadImage(raw);
         }
 
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
@@ -178,7 +241,7 @@ namespace RlManaged
         public ref Raylib_cs.Image Ref() => ref raw;
     }
 
-    class Texture2D : IDisposable
+    class Texture2D : RlObject
     {
         private Raylib_cs.Texture2D raw;
         private bool _disposed = false;
@@ -197,37 +260,20 @@ namespace RlManaged
 
         public static Texture2D Load(string fileName)
             => new(Raylib.LoadTexture(fileName));
-
-        ~Texture2D() => Dispose(false);
-
-        public void Dispose()
+        
+        protected override void Unload(bool disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposing)
-            {
-                throw new Exception("Must manually call Dispose");
-            }
-            
-            if (!_disposed)
-            {
-                _disposed = true;
-                Raylib.UnloadTexture(raw);
-            }
+            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Texture2D");
+            Raylib.UnloadTexture(raw);
         }
 
         public static implicit operator Raylib_cs.Texture2D(Texture2D tex) => tex.raw;
     }
 
-    class Shader : IDisposable
+    class Shader : RlObject
     {
         private Raylib_cs.Shader raw;
-        private bool _disposed = false;
-
+        
         private Shader(Raylib_cs.Shader src)
         {
             raw = src;
@@ -239,27 +285,16 @@ namespace RlManaged
         public static Shader Load(string? vsFileName, string? fsFileName)
             => new(Raylib.LoadShader(vsFileName, fsFileName));
 
-        ~Shader() => Dispose(false);
-
-        public void Dispose()
+        protected override void Unload(bool disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                Raylib.UnloadShader(raw);
-            }
+            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Shader");
+            Raylib.UnloadShader(raw);
         }
 
         public static implicit operator Raylib_cs.Shader(Shader tex) => tex.raw;
     }
 
-    class Mesh : IDisposable
+    class Mesh : RlObject
     {
         private enum MeshIndex : int
         {
@@ -273,9 +308,8 @@ namespace RlManaged
         }
 
         private Raylib_cs.Mesh raw;
-        private bool _disposed = false;
 
-        public Mesh()
+        public Mesh() : base()
         {
             raw = new Raylib_cs.Mesh();
         }
@@ -299,9 +333,9 @@ namespace RlManaged
                 Marshal.FreeHGlobal((nint) raw.Vertices);
 
             raw.VertexCount = vertices.Length;
-            //raw.Vertices = (float*) Marshal.AllocHGlobal(vertices.Length * 3 * sizeof(float));
-            raw.AllocVertices();
+            AddMemoryPressure(raw.VertexCount * 3 * sizeof(float));
 
+            raw.AllocVertices();
             var k = 0;
             for (int i = 0; i < vertices.Length; i++)
             {
@@ -325,9 +359,9 @@ namespace RlManaged
                 Marshal.FreeHGlobal((nint) raw.Indices);
             
             raw.TriangleCount = indices.Length / 3;
-            //raw.Indices = (ushort*) Marshal.AllocHGlobal(indices.Length * sizeof(ushort));
-            raw.AllocIndices();
+            AddMemoryPressure(raw.TriangleCount * 3 * sizeof(float));
 
+            raw.AllocIndices();
             fixed (ushort* arrPtr = indices)
             {
                 Buffer.MemoryCopy(arrPtr, raw.Indices, indices.Length * sizeof(ushort), indices.Length * sizeof(ushort));
@@ -356,7 +390,8 @@ namespace RlManaged
             if (raw.Colors != null)
                 Marshal.FreeHGlobal((nint) raw.Colors);
             
-            //raw.Colors = (byte*) Marshal.AllocHGlobal(colors.Length * 4 * sizeof(byte));
+            AddMemoryPressure(raw.VertexCount * 4 * sizeof(float));
+
             raw.AllocColors();
             
             int k = 0;
@@ -379,26 +414,10 @@ namespace RlManaged
             Raylib.UploadMesh(ref raw, dynamic);
         }
 
-        ~Mesh() => Dispose(false);
-
-        public void Dispose()
+        protected override void Unload(bool disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposing)
-            {
-                throw new Exception("Must manually call Mesh.Dispose()");
-            }
-
-            if (!_disposed)
-            {
-                _disposed = true;
-                Raylib.UnloadMesh(ref raw);
-            }
+            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Mesh");
+            Raylib.UnloadMesh(ref raw);
         }
 
         public static implicit operator Raylib_cs.Mesh(Mesh mesh) => mesh.raw;

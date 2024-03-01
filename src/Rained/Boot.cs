@@ -101,6 +101,8 @@ namespace RainEd
                     Raylib.BeginDrawing();
                     app.Draw(Raylib.GetFrameTime());
                     Raylib.EndDrawing();
+
+                    RlManaged.RlObject.UnloadGCQueue();
                 }
 
                 RainEd.Logger.Information("Shutting down Rained...");
@@ -109,7 +111,8 @@ namespace RainEd
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-
+            RlManaged.RlObject.UnloadGCQueue();
+            
             Raylib.CloseWindow();
             splashScreenWindow?.Close();
         }

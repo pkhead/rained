@@ -126,7 +126,6 @@ sealed class RainEd
 
             try
             {
-                level.LightMap.Dispose();
                 level = LevelSerialization.Load(path);
                 ReloadLevel();
                 currentFilePath = path;

@@ -4,7 +4,6 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
-- gc free queue? to free on main thread? (how?)
 - split up tile and prop editor source code
 - on cell change, only remesh the mesh chunk that it is in
 - undo/redo for level resize
