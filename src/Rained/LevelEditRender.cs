@@ -720,11 +720,13 @@ class LevelEditRender
         // render rope-type props
         foreach (var rope in Level.RopeProps)
         {
-            var points = rope.GetSegmentPositions();
-
-            foreach (var point in points)
+            for (int i = 0; i < rope.Model.SegmentCount; i++)
             {
-                Raylib.DrawCircleV(point * Level.TileSize, 5f / ViewZoom, rope.Init.PreviewColor);
+                var newPos = rope.Model.GetSegmentPos(i);
+                var oldPos = rope.Model.GetLastSegmentPos(i);
+                var lerpPos = (newPos - oldPos) * (RainEd.Instance.SimulationTimeRemainder) + oldPos;
+
+                Raylib.DrawCircleV(lerpPos * Level.TileSize, 5f / ViewZoom, rope.Init.PreviewColor);
             }
         }
     }

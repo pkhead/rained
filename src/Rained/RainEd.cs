@@ -50,6 +50,8 @@ sealed class RainEd
     public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
 
     private double lastRopeUpdateTime = 0f;
+    private float simTimeLeftOver = 0f;
+    public float SimulationTimeRemainder { get => simTimeLeftOver; }
     
     public RainEd(string levelPath = "") {
         if (Instance != null)
@@ -661,7 +663,7 @@ sealed class RainEd
     public void UpdateRopeSimulation()
     {
         double nowTime = Raylib.GetTime();
-        double stepTime = 1.0 / 60.0;
+        double stepTime = 1.0 / 30.0;
 
         for (int i = 0; nowTime >= lastRopeUpdateTime + stepTime; i++)
         {
@@ -680,6 +682,8 @@ sealed class RainEd
                 break;
             }
         }
+
+        simTimeLeftOver = (float)((nowTime - lastRopeUpdateTime) / stepTime);
     }
     
     public void Undo() => changeHistory.Undo();

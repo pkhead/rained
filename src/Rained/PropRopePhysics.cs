@@ -92,6 +92,16 @@ class RopeModel
         return _segmentsVec2;
     }
 
+    public int SegmentCount { get => segments.Length; }
+    public Vector2 GetSegmentPos(int i)
+    {
+        return SmoothPos(i) / 20f - Vector2.One;
+    }
+    public Vector2 GetLastSegmentPos(int i)
+    {
+        return SmoothPosOld(i) / 20f - Vector2.One;
+    }
+
     /*
     public RopeReleaseMode Release {
         get
@@ -393,6 +403,30 @@ class RopeModel
         {
             var smoothpos = (segments[A-1].pos + segments[A+1].pos) / 2f;
             return (segments[A].pos + smoothpos) / 2f;
+        }
+    }
+
+    // not in the lingo source code
+    private Vector2 SmoothPosOld(int A)
+    {
+        if (A == 0)
+        {
+            if (release > -1)
+                return posA;
+            else
+                return segments[A].lastPos;
+        }
+        else if (A == segments.Length - 1)
+        {
+            if (release < 1)
+                return posB;
+            else
+                return segments[A].lastPos;
+        }
+        else
+        {
+            var smoothpos = (segments[A-1].lastPos + segments[A+1].lastPos) / 2f;
+            return (segments[A].lastPos + smoothpos) / 2f;
         }
     }
 

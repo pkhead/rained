@@ -395,11 +395,8 @@ class RopeProp
 
         ropeModel = new RopeModel(PointA, PointB, init.PhysicalProperties, lengthFac, layer, Release);
     }
-
-    public Vector2[] GetSegmentPositions()
-    {
-        return ropeModel.GetSegmentPositions();
-    }
+    
+    public RopeModel Model { get => ropeModel; }
 
     public void SimulationStep()
     {
