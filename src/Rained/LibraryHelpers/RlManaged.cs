@@ -8,7 +8,7 @@ namespace RlManaged
     abstract class RlObject : IDisposable
     {
         private readonly static Mutex freeQueueMut = new();
-        private readonly static Queue<RlObject> freeQueue = new();
+        private readonly static Queue<object> freeQueue = new();
 
         private bool _disposed = false;
         private long bytesAllocated = 0;
@@ -21,18 +21,23 @@ namespace RlManaged
             GC.SuppressFinalize(this);
         }
 
+        protected abstract object GetHandle();
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
             {
+                if (bytesAllocated > 0) GC.RemoveMemoryPressure(bytesAllocated);
+                bytesAllocated = 0;
+
                 if (disposing)
                 {
-                    Unload(disposing);
+                    UnloadRlHandle(GetHandle(), true);
                 }
                 else
                 {
                     freeQueueMut.WaitOne();
-                    freeQueue.Enqueue(this);
+                    freeQueue.Enqueue(GetHandle());
                     freeQueueMut.ReleaseMutex();
                 }
 
@@ -47,15 +52,51 @@ namespace RlManaged
             this.bytesAllocated += bytesAllocated;
         }
 
-        protected abstract void Unload(bool disposing);
+        private static void UnloadRlHandle(object h, bool disposed)
+        {
+            switch (h)
+            {
+                case Raylib_cs.RenderTexture2D:
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject RenderTexture2D");
+                    Raylib.UnloadRenderTexture((Raylib_cs.RenderTexture2D) h);
+                    break;
+                
+                case Raylib_cs.Image:
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Image");
+                    Raylib.UnloadImage((Raylib_cs.Image) h);
+                    break;
+                
+                case Raylib_cs.Texture2D:
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Texture2D");
+                    Raylib.UnloadTexture((Raylib_cs.Texture2D) h);
+                    break;
+                
+                case Raylib_cs.Shader:
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Shader");
+                    Raylib.UnloadShader((Raylib_cs.Shader) h);
+                    break;
+                
+                case Raylib_cs.Mesh:
+                {
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Mesh");
+                    var mesh = (Raylib_cs.Mesh) h;
+                    Raylib.UnloadMesh(ref mesh);
+                    break;
+                }
+                
+                case Raylib_cs.Material:
+                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Material");
+                    Raylib.UnloadMaterial((Raylib_cs.Material) h);
+                    break;
+            }
+        }
 
         public static void UnloadGCQueue()
         {
             freeQueueMut.WaitOne();
-            foreach (var a in freeQueue)
+            foreach (var handle in freeQueue)
             {
-                a.Unload(false);
-                if (a.bytesAllocated > 0) GC.RemoveMemoryPressure(a.bytesAllocated);
+                UnloadRlHandle(handle, false);
             }
             freeQueue.Clear();
             freeQueueMut.ReleaseMutex();
@@ -65,6 +106,7 @@ namespace RlManaged
     class RenderTexture2D : RlObject
     {
         private Raylib_cs.RenderTexture2D raw;
+        protected override object GetHandle() => raw;
 
         private RenderTexture2D(Raylib_cs.RenderTexture2D raw) : base()
         {
@@ -116,12 +158,6 @@ namespace RlManaged
 
             return new RenderTexture2D(raw);
         }
-        
-        protected override void Unload(bool disposing)
-        {
-            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject RenderTexture2D");
-            Raylib.UnloadRenderTexture(raw);
-        }
 
         // OpenGL Framebuffer object ID
         public uint Id { get => raw.Id; }
@@ -138,6 +174,7 @@ namespace RlManaged
     class Image : RlObject
     {
         private Raylib_cs.Image raw;
+        protected override object GetHandle() => raw;
 
         public int Width { get => raw.Width; }
         public int Height { get => raw.Height; }
@@ -230,12 +267,6 @@ namespace RlManaged
                 Raylib.ImageFormat(rawPtr, newFormat);
         }
 
-        protected override void Unload(bool disposing)
-        {
-            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Image");
-            Raylib.UnloadImage(raw);
-        }
-
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
 
         public ref Raylib_cs.Image Ref() => ref raw;
@@ -244,7 +275,7 @@ namespace RlManaged
     class Texture2D : RlObject
     {
         private Raylib_cs.Texture2D raw;
-        private bool _disposed = false;
+        protected override object GetHandle() => raw;
 
         public uint Id { get => raw.Id; }
         public int Width { get => raw.Width; }
@@ -261,18 +292,13 @@ namespace RlManaged
         public static Texture2D Load(string fileName)
             => new(Raylib.LoadTexture(fileName));
         
-        protected override void Unload(bool disposing)
-        {
-            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Texture2D");
-            Raylib.UnloadTexture(raw);
-        }
-
         public static implicit operator Raylib_cs.Texture2D(Texture2D tex) => tex.raw;
     }
 
     class Shader : RlObject
     {
         private Raylib_cs.Shader raw;
+        protected override object GetHandle() => raw;
         
         private Shader(Raylib_cs.Shader src)
         {
@@ -284,12 +310,6 @@ namespace RlManaged
         
         public static Shader Load(string? vsFileName, string? fsFileName)
             => new(Raylib.LoadShader(vsFileName, fsFileName));
-
-        protected override void Unload(bool disposing)
-        {
-            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Shader");
-            Raylib.UnloadShader(raw);
-        }
 
         public static implicit operator Raylib_cs.Shader(Shader tex) => tex.raw;
     }
@@ -308,6 +328,7 @@ namespace RlManaged
         }
 
         private Raylib_cs.Mesh raw;
+        protected override object GetHandle() => raw;
 
         public Mesh() : base()
         {
@@ -412,12 +433,6 @@ namespace RlManaged
         public void UploadMesh(bool dynamic)
         {
             Raylib.UploadMesh(ref raw, dynamic);
-        }
-
-        protected override void Unload(bool disposing)
-        {
-            if (!disposing) RainEd.RainEd.Logger.Information("GC RlObject Mesh");
-            Raylib.UnloadMesh(ref raw);
         }
 
         public static implicit operator Raylib_cs.Mesh(Mesh mesh) => mesh.raw;
