@@ -147,6 +147,20 @@ partial class PropEditor : IEditorMode
             if (handleOffset.Y == 0f)
                 scale.Y = 1f;
             
+            // maintain a minimum size, because if the length at one axis
+            // is 0, and the user resizes it afterwards, it will cause the length at that axis
+            // to be NaN, which would make the prop disappear and, more urgently, crash the
+            // program if it's a rope simulation
+            if (MathF.Abs(origRect.Size.X * scale.X) < 0.5f)
+            {
+                scale.X = MathF.Abs(0.5f / origRect.Size.X) * (scale.X >= 0f ? 1f : -1f);
+            }
+
+            if (MathF.Abs(origRect.Size.Y * scale.Y) < 0.5f)
+            {
+                scale.Y = MathF.Abs(0.5f / origRect.Size.Y) * (scale.Y >= 0f ? 1f : -1f);
+            }
+            
             // hold shift to maintain proportions
             // if scaling multiple props at once, this is the only valid mode. curse you, rotation!!!  
             if (mustMaintainProportions || EditorWindow.IsKeyDown(ImGuiKey.ModShift))
@@ -171,10 +185,6 @@ partial class PropEditor : IEditorMode
             // apply size scale
             var newRect = origRect;
             newRect.Size *= scale;
-
-            // clamp size
-            //newRect.Size.X = MathF.Max(0.1f, newRect.Size.X);
-            //newRect.Size.Y = MathF.Max(0.1f, newRect.Size.Y);
 
             // anchor the prop to the anchor point
             if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
@@ -273,21 +283,53 @@ partial class PropEditor : IEditorMode
             origPB = rope.PointB;
         }
 
+        private static Vector2 DirectionTo(Vector2 from, Vector2 to)
+        {
+            if (from == to)
+                return Vector2.UnitX;
+            else
+                return Vector2.Normalize(to - from);
+        }
+
         public void Update(Vector2 dragStart, Vector2 mousePos)
         {
             var pA = origPA;
             var pB = origPB;
+            Vector2 anchor;
 
             if (handleId == 0)
+            {
                 pA = Snap(mousePos, snap);
+                anchor = pB;
+            }
             else
+            {
                 pB = Snap(mousePos, snap);
+                anchor = pA;
+            }
+
+            // minimum size of 0.5 units
+            {
+                var diff = pB - pA;
+                if (diff.LengthSquared() < 0.5f * 0.5f)
+                {
+                    diff = DirectionTo(pA, pB) * 0.5f;
+
+                    if (handleId == 0)
+                    {
+                        pA = DirectionTo(anchor, pA) * 0.5f + anchor;
+                    }
+                    else
+                    {
+                        pB = DirectionTo(anchor, pB) * 0.5f + anchor;
+                    }
+                }
+            }
 
             // enforce constraint
-            var diff = pB - pA;
-
+            var dir = DirectionTo(pA, pB);
             prop.Rect.Center = (pA + pB) / 2f;
-            prop.Rect.Rotation = MathF.Atan2(diff.Y, diff.X);
+            prop.Rect.Rotation = MathF.Atan2(dir.Y, dir.X);
             prop.Rect.Size.X = Vector2.Distance(pA, pB);
         }
     }

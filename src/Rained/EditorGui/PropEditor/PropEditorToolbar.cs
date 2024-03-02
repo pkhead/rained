@@ -401,6 +401,7 @@ partial class PropEditor : IEditorMode
                         // cus it doesn't directly control a value
                         bool sameFlexi = true;
                         float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
+                        float minFlexi = 0.5f / selectedProps[0].PropInit.Height;
 
                         for (int i = 1; i < selectedProps.Count; i++)
                         {
@@ -410,6 +411,13 @@ partial class PropEditor : IEditorMode
                             if (MathF.Abs(flexi - targetFlexi) > 0.01f)
                             {
                                 sameFlexi = false;
+                                
+                                // idk why i did this cus every rope-type prop
+                                // starts out at the same size anyway
+                                float min = 0.5f / prop.PropInit.Height;
+                                if (min > minFlexi)
+                                    minFlexi = min;
+                                
                                 break;
                             }
                         }
@@ -421,7 +429,7 @@ partial class PropEditor : IEditorMode
 
                         // if not all props have the same flexibility value, the display text will be empty
                         // and interacting it will set them all to the default
-                        if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, 0.0f, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
+                        if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, minFlexi, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
                         {
                             foreach (var prop in selectedProps)
                             {
