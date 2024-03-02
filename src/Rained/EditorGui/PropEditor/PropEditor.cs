@@ -18,10 +18,20 @@ partial class PropEditor : IEditorMode
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
 
-    private readonly Color HighlightColor = new(0, 0, 255, 255);
-    private readonly Color HighlightColorGlow = new(50, 50, 255, 255);
-    private readonly Color HighlightColor2 = new(180, 180, 180, 255);
-    private readonly Color HighlightColor2Glow = new(255, 255, 255, 255);
+    private readonly Color[] OutlineColors = new Color[]
+    {
+        new(0, 0, 255, 255),
+        new(180, 180, 180, 255),
+        new(0, 255, 0, 255)
+    };
+
+    private readonly Color[] OutlineGlowColors = new Color[]
+    {
+        new(50, 50, 255, 255),
+        new(255, 255, 255, 255),
+        new(100, 255, 100, 255)
+    };
+    
     private readonly List<string> propColorNames;
 
     private bool isMouseDragging = false;
@@ -169,20 +179,12 @@ partial class PropEditor : IEditorMode
     }
 
     // returns true if gizmo is hovered, false if not
-    private bool DrawGizmoHandle(Vector2 pos, bool secondaryColor = false)
+    private bool DrawGizmoHandle(Vector2 pos, int colorIndex)
     {
         bool isGizmoHovered = window.IsViewportHovered && (window.MouseCellFloat - pos).Length() < 0.5f / window.ViewZoom;
         
-        Color color;
-        if (secondaryColor)
-        {
-            color = isGizmoHovered ? HighlightColor2Glow : HighlightColor2;
-        }
-        else
-        {
-            color = isGizmoHovered ? HighlightColorGlow : HighlightColor;
-        }
-
+        Color color = isGizmoHovered ? OutlineGlowColors[colorIndex] : OutlineColors[colorIndex];
+        
         Raylib.DrawCircleV(
             pos * Level.TileSize,
             (isGizmoHovered ? 8f : 4f) / window.ViewZoom,
@@ -241,7 +243,7 @@ partial class PropEditor : IEditorMode
                 if (prop == highlightedProp) continue;
 
                 var pts = prop.QuadPoints;
-                var col = prop.IsAffine ? HighlightColor : HighlightColor2;
+                var col = prop.Rope is not null ? OutlineColors[2] : prop.IsAffine ? OutlineColors[0] : OutlineColors[1];
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -255,7 +257,7 @@ partial class PropEditor : IEditorMode
                 if (prop == highlightedProp) continue;
 
                 var pts = prop.QuadPoints;
-                var col = HighlightColor;
+                var col = OutlineColors[0];
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -266,7 +268,7 @@ partial class PropEditor : IEditorMode
         if (highlightedProp is not null)
         {
             var pts = highlightedProp.QuadPoints;
-            var col = HighlightColorGlow;
+            var col = OutlineGlowColors[0];
             Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
             Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
             Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -291,7 +293,7 @@ partial class PropEditor : IEditorMode
                         aabb.Size * Level.TileSize
                     ),
                     1f / window.ViewZoom,
-                    HighlightColor
+                    OutlineColors[0]
                 );
             }
             
@@ -333,7 +335,7 @@ partial class PropEditor : IEditorMode
                     var handlePos = (handle1 + handle2) / 2f;
                     
                     // draw gizmo handle at corner
-                    if (DrawGizmoHandle(handlePos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    if (DrawGizmoHandle(handlePos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         transformMode = new ScaleTransformMode(
                             handleId: i,
@@ -365,11 +367,11 @@ partial class PropEditor : IEditorMode
                     startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
                     1f / window.ViewZoom,
-                    HighlightColor
+                    OutlineColors[0]
                 );
 
                 // draw gizmo handle
-                if (DrawGizmoHandle(rotDotPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (DrawGizmoHandle(rotDotPos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     transformMode = new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
@@ -397,7 +399,7 @@ partial class PropEditor : IEditorMode
                         var handlePos = corners[i];
                         
                         // draw gizmo handle at corner
-                        if (DrawGizmoHandle(handlePos, true) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        if (DrawGizmoHandle(handlePos, 1) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                         {
                             transformMode = new WarpTransformMode(
                                 handleId: i,
@@ -424,7 +426,7 @@ partial class PropEditor : IEditorMode
                         if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
                             continue;
                         
-                        if (DrawGizmoHandle(i == 1 ? pB : pA) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                         {
                             transformMode = new RopePointTransformMode(
                                 handleId: i,
@@ -451,8 +453,8 @@ partial class PropEditor : IEditorMode
                 (maxX - minX) * Level.TileSize,
                 (maxY - minY) * Level.TileSize
             );
-            Raylib.DrawRectangleRec(rect, new Color(HighlightColor.R, HighlightColor.G, HighlightColor.B, (byte)80));
-            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, HighlightColor);
+            Raylib.DrawRectangleRec(rect, new Color(OutlineColors[0].R, OutlineColors[0].G, OutlineColors[0].B, (byte)80));
+            Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, OutlineColors[0]);
 
             // select all props within selection rectangle
             selectedProps.Clear();
