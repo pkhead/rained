@@ -239,14 +239,14 @@ class PropRope
     public bool Simulate;
     public Vector2 PointA = Vector2.Zero;
     public Vector2 PointB = Vector2.Zero;
-    public float LengthFactor = 1f;
+    public float Width;
     public int Layer = 0;
 
     // due to the fact that RopeModel's PointA and PointB are converted between units,
     // i cannot check those if they are equal
     private Vector2 lastPointA;
     private Vector2 lastPointB;
-    private float lastLengthFac;
+    private float lastWidth;
 
     public RopeModel? Model { get => model; }
 
@@ -257,10 +257,11 @@ class PropRope
         this.init = init;
         ReleaseMode = RopeReleaseMode.None;
         Simulate = true;
+        Width = init.Height;
         
         lastPointA = PointA;
         lastPointB = PointB;
-        lastLengthFac = LengthFactor;
+        lastWidth = Width;
     }
 
     public void SimluationStep()
@@ -268,18 +269,18 @@ class PropRope
         // if rope properties changed, reset rope model
         if (model == null|| Layer != model.Layer ||
             lastPointA != PointA || lastPointB != PointB ||
-            ReleaseMode != model.Release || LengthFactor != lastLengthFac
+            ReleaseMode != model.Release || Width != lastWidth
         )
         {
             if (model == null)
-                model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, LengthFactor, Layer, ReleaseMode);
+                model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
             else
-                model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, LengthFactor, Layer, ReleaseMode);
+                model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
         }
 
         lastPointA = PointA;
         lastPointB = PointB;
-        lastLengthFac = LengthFactor;
+        lastWidth = Width;
         
         model.Update();
     }
@@ -442,6 +443,7 @@ class Prop
         rope.PointA = affineTransform.Center + new Vector2(cos, sin) * -affineTransform.Size.X / 2f;
         rope.PointB = affineTransform.Center + new Vector2(cos, sin) * affineTransform.Size.X / 2f;
         rope.Layer = DepthOffset / 10;
+        rope.Width = affineTransform.Size.Y;
         rope.SimluationStep();
     }
 }
