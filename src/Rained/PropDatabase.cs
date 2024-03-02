@@ -77,9 +77,18 @@ record PropInit
             "rope" => PropType.Rope,
             _ => throw new Exception("Invalid prop init file")
         };
-        Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png"));
-        var randVar = false;
 
+        // find prop path
+        // for some reason, previews for drought props are in cast data instead of in the Props folder
+        // kind of annoying. so i just put those images in assets/extra-previews
+        string texturePath = Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png");
+        if (!File.Exists(texturePath))
+        {
+            texturePath = Path.Combine(Boot.AppDataPath, "assets", "extra-previews", Name + ".png");
+        }
+        Texture = RlManaged.Texture2D.Load(texturePath);
+
+        var randVar = false;
         if (Type == PropType.Rope)
         {
             Rope = new RopeInit(init);
