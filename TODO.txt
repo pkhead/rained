@@ -49,7 +49,6 @@ Effects Editor:
 
 Prop Editor:
 - rope collision resolution physics is inaccurate
-- render order (forgot i forgot to put that back in)
 - undo/redo
 - save props
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
