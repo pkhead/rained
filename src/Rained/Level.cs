@@ -608,6 +608,21 @@ class Level
         y = Math.Clamp(y, 0, Height - 1);
         return Layers[layer, x, y];
     }
+
+    private class PropDepthSorter : IComparer<Prop>
+    {
+        int IComparer<Prop>.Compare(Prop? a, Prop? b) =>
+                a!.DepthOffset == b!.DepthOffset
+            ?
+                a!.RenderOrder.CompareTo(b!.RenderOrder)
+            :
+                b!.DepthOffset.CompareTo(a!.DepthOffset);
+    }
+
+    public void SortPropsByDepth()
+    {
+        Props.Sort(new PropDepthSorter());
+    }
     
     public void Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
     {

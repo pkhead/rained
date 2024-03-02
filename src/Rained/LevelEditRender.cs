@@ -80,8 +80,10 @@ class LevelEditRender
         void main()
         {
             vec4 texelColor = texture(texture0, fragTexCoord);
-            bool isTransparent = texelColor.rgb == vec3(1.0f, 1.0f, 1.0f) || texelColor.a == 0.0f;
-            finalColor = vec4(texelColor.rgb, 1.0f - float(isTransparent)) * fragColor * colDiffuse;
+            bool isTransparent = texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0;
+            vec3 color = mix(texelColor.rgb, vec3(1.0), fragColor.y);
+
+            finalColor = vec4(color, (1.0 - float(isTransparent)) * fragColor.x) * colDiffuse;
         }
     ";
 
@@ -669,28 +671,40 @@ class LevelEditRender
         }
     }
 
-    public void RenderProps(int layer, int alpha)
-    {
-        Rlgl.DisableBackfaceCulling();
-        Raylib.BeginShaderMode(transparencyShader);
+    
 
+    public void RenderProps(int srcDepth)
+    {
         foreach (var prop in Level.Props)
         {
-            if (prop.DepthOffset < layer * 10 || prop.DepthOffset >= (layer+1) * 10)
-                continue;
+            var alpha = 255;
+            if (prop.DepthOffset < srcDepth || prop.DepthOffset >= srcDepth + 10)
+                alpha = 50;
             
             var quad = prop.QuadPoints;
             var texture = prop.PropInit.Texture;
+
+            Rlgl.DisableBackfaceCulling();
+            Raylib.BeginShaderMode(transparencyShader);
             Rlgl.SetTexture(texture.Id);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
+            var depthOffset = Math.Max(0, prop.DepthOffset - srcDepth);
+        
             for (int depth = prop.PropInit.LayerCount - 1; depth >= 0; depth--)
             {
+                float startFade =
+                    (prop.PropInit.Type == Props.PropType.SimpleDecal || prop.PropInit.Type == Props.PropType.VariedDecal)
+                    ? 0.364f : 0f;
+                
+                float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth) / 10f) + startFade, 0f, 1f);
+
                 var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
+
                 Rlgl.Begin(DrawMode.Quads);
                 {
-                    Rlgl.Color4ub(255, 255, 255, (byte)alpha);
+                    Rlgl.Color4f(alpha / 255f, whiteFade, 0f, 0f);
 
                     // top-left
                     Rlgl.TexCoord2f(srcRect.X / texture.Width, srcRect.Y / texture.Height);
@@ -712,17 +726,10 @@ class LevelEditRender
             }
 
             Rlgl.SetTexture(0);
-        }
+            Raylib.EndShaderMode();
+            Rlgl.EnableBackfaceCulling();
 
-        Raylib.EndShaderMode();
-        Rlgl.EnableBackfaceCulling();
-
-        // render segments of rope-type props
-        foreach (var prop in Level.Props)
-        {
-            if (prop.DepthOffset < layer * 10 || prop.DepthOffset >= (layer+1) * 10)
-                continue;
-            
+            // render segments of rope-type props
             if (prop.Rope is not null)
             {
                 var rope = prop.Rope.Model;
