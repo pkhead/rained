@@ -670,9 +670,9 @@ sealed class RainEd
             lastRopeUpdateTime += stepTime;
             
             // tick rope simulation
-            foreach (var rope in level.RopeProps)
+            foreach (var prop in level.Props)
             {
-                rope.SimulationStep();
+                prop.TickRopeSimulation();
             }
 
             // break if too many iterations in one frame

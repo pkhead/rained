@@ -717,16 +717,27 @@ class LevelEditRender
         Raylib.EndShaderMode();
         Rlgl.EnableBackfaceCulling();
 
-        // render rope-type props
-        foreach (var rope in Level.RopeProps)
+        // render segments of rope-type props
+        foreach (var prop in Level.Props)
         {
-            for (int i = 0; i < rope.Model.SegmentCount; i++)
+            if (prop.DepthOffset < layer * 10 || prop.DepthOffset >= (layer+1) * 10)
+                continue;
+            
+            if (prop.Rope is not null)
             {
-                var newPos = rope.Model.GetSegmentPos(i);
-                var oldPos = rope.Model.GetLastSegmentPos(i);
-                var lerpPos = (newPos - oldPos) * (RainEd.Instance.SimulationTimeRemainder) + oldPos;
+                var rope = prop.Rope.Model;
 
-                Raylib.DrawCircleV(lerpPos * Level.TileSize, 5f / ViewZoom, rope.Init.PreviewColor);
+                if (rope is not null)
+                {
+                    for (int i = 0; i < rope.SegmentCount; i++)
+                    {
+                        var newPos = rope.GetSegmentPos(i);
+                        var oldPos = rope.GetLastSegmentPos(i);
+                        var lerpPos = (newPos - oldPos) * RainEd.Instance.SimulationTimeRemainder + oldPos;
+
+                        Raylib.DrawCircleV(lerpPos * Level.TileSize, 2f, prop.PropInit.Rope!.PreviewColor);
+                    }
+                }
             }
         }
     }

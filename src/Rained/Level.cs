@@ -231,6 +231,59 @@ public struct RotatedRect
     public float Rotation;
 }
 
+class PropRope
+{
+    private readonly PropInit init; 
+    private RopeModel? model;
+    public RopeReleaseMode ReleaseMode;
+    public bool Simulate;
+    public Vector2 PointA = Vector2.Zero;
+    public Vector2 PointB = Vector2.Zero;
+    public float LengthFactor = 1f;
+    public int Layer = 0;
+
+    // due to the fact that RopeModel's PointA and PointB are converted between units,
+    // i cannot check those if they are equal
+    private Vector2 lastPointA;
+    private Vector2 lastPointB;
+    private float lastLengthFac;
+
+    public RopeModel? Model { get => model; }
+
+    public PropRope(PropInit init)
+    {
+        if (init.Rope is null) throw new ArgumentException("Given PropInit is not a rope-type prop", nameof(init));
+
+        this.init = init;
+        ReleaseMode = RopeReleaseMode.None;
+        Simulate = true;
+        
+        lastPointA = PointA;
+        lastPointB = PointB;
+        lastLengthFac = LengthFactor;
+    }
+
+    public void SimluationStep()
+    {
+        // if rope properties changed, reset rope model
+        if (model == null|| Layer != model.Layer ||
+            lastPointA != PointA || lastPointB != PointB ||
+            ReleaseMode != model.Release || LengthFactor != lastLengthFac
+        )
+        {
+            if (model == null)
+                model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, LengthFactor, Layer, ReleaseMode);
+            else
+                model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, LengthFactor, Layer, ReleaseMode);
+        }
+
+        lastPointA = PointA;
+        lastPointB = PointB;
+        lastLengthFac = LengthFactor;
+        
+        model.Update();
+    }
+}
 class Prop
 {
     public readonly PropInit PropInit;
@@ -244,7 +297,10 @@ class Prop
     private readonly Vector2[] quad;
 
     // only use if Affine is true
-    private RotatedRect affineTransform; 
+    private RotatedRect affineTransform;
+
+    private PropRope? rope;
+    public PropRope? Rope { get => rope; }
 
     public Vector2[] QuadPoints
     {
@@ -282,26 +338,31 @@ class Prop
     public int Seed;
     public PropRenderTime RenderTime = PropRenderTime.PreEffects;
 
-    private Prop(Props.PropInit init)
+    private Prop(PropInit init)
     {
         PropInit = init;
         
         isAffine = true;
         quad = new Vector2[4];
 
-        if (init.PropFlags.HasFlag(Props.PropFlags.RandomVariation)) Variation = -1;
+        if (init.PropFlags.HasFlag(PropFlags.RandomVariation)) Variation = -1;
         Seed = (int)(DateTime.Now.Ticks % 1000);
         CustomDepth = init.Depth;
+
+        if (init.Type == PropType.Rope)
+        {
+            rope = new PropRope(init);
+        }
     }
 
-    public Prop(Props.PropInit init, Vector2 center, Vector2 size) : this(init)
+    public Prop(PropInit init, Vector2 center, Vector2 size) : this(init)
     {
         affineTransform.Center = center;
         affineTransform.Size = size;
         affineTransform.Rotation = 0f;   
     }
 
-    public Prop(Props.PropInit init, Vector2[] points) : this(init)
+    public Prop(PropInit init, Vector2[] points) : this(init)
     {
         isAffine = false;
 
@@ -370,9 +431,21 @@ class Prop
                 quad[i].Y = -(quad[i].Y - ct.Y) + ct.Y;
         }
     }
+
+    public void TickRopeSimulation()
+    {
+        if (rope is null) return;
+
+        var cos = MathF.Cos(affineTransform.Rotation);
+        var sin = MathF.Sin(affineTransform.Rotation);
+        rope.PointA = affineTransform.Center + new Vector2(cos, sin) * -affineTransform.Size.X / 2f;
+        rope.PointB = affineTransform.Center + new Vector2(cos, sin) * affineTransform.Size.X / 2f;
+        rope.Layer = DepthOffset / 10;
+        rope.SimluationStep();
+    }
 }
 
-class RopeProp
+/*class RopeProp
 {
     public readonly RopePropInit Init;
     public Vector2 PointA;
@@ -402,7 +475,7 @@ class RopeProp
     {
         ropeModel.Update();
     }
-}
+}*/
 
 class Level
 {
@@ -456,7 +529,6 @@ class Level
 
     public readonly List<Effect> Effects = new();
     public readonly List<Prop> Props = new();
-    public readonly List<RopeProp> RopeProps = new();
     
     public int TileSeed = 200;
     public bool DefaultMedium = false; // idk what the hell this does

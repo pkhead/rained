@@ -640,13 +640,6 @@ partial class PropEditor : IEditorMode
                 selectedProps.Clear();
                 selectedProps.Add(prop);
             }
-            else if (selectedRopeInit is not null)
-            {
-                Console.WriteLine("Add rope");
-                var prop = new RopeProp(selectedRopeInit, window.WorkLayer, createPos, 10f);
-                RainEd.Instance.Level.RopeProps.Add(prop);
-                selectedProps.Clear();
-            }
         }
 
         // delete key to delete selected props

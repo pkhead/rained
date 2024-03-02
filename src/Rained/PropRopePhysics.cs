@@ -31,11 +31,22 @@ class RopeModel
     private Vector2 posA, posB;
     private int layer;
     private int release;
-    private readonly RopePhysicalProperties physics;
-    private readonly Segment[] segments;
-    private readonly Vector2[] _segmentsVec2;
+    private RopePhysicalProperties physics;
+    private Segment[] segments;
 
     public RopeModel(
+        Vector2 pA, Vector2 pB,
+        RopePhysicalProperties prop,
+        float lengthFac,
+        int layer,
+        RopeReleaseMode release
+    )
+    {
+        segments = Array.Empty<Segment>();
+        ResetRopeModel(pA, pB, prop, lengthFac, layer, release);
+    }
+
+    public void ResetRopeModel(
         Vector2 pA, Vector2 pB,
         RopePhysicalProperties prop,
         float lengthFac,
@@ -59,12 +70,15 @@ class RopeModel
         physics = prop;
 
         float numberOfSegments = Vector2.Distance(posA, posB) / physics.segmentLength * lengthFac;
-        numberOfSegments = Math.Max(numberOfSegments, 3);
+        numberOfSegments = Math.Max(numberOfSegments, 3f);
+        var _nSegmentInt = (int) numberOfSegments;
 
         float step = Vector2.Distance(posA, posB) / numberOfSegments;
         
-        segments = new Segment[(int) numberOfSegments];
-        for (int i = 0; i < (int) numberOfSegments; i++)
+        if (segments.Length != _nSegmentInt)
+            segments = new Segment[_nSegmentInt];
+        
+        for (int i = 0; i < _nSegmentInt; i++)
         {
             segments[i] = new Segment()
             {
@@ -73,23 +87,6 @@ class RopeModel
                 vel = Vector2.Zero
             };
         }
-
-        _segmentsVec2 = new Vector2[segments.Length];
-        UpdateSegmentPositions();
-    }
-
-    private void UpdateSegmentPositions()
-    {
-        for (int i = 0; i < segments.Length; i++)
-        {
-            _segmentsVec2[i] = SmoothPos(i) / 20f - Vector2.One;
-        }
-    }
-
-    public Vector2[] GetSegmentPositions()
-    {
-        UpdateSegmentPositions();
-        return _segmentsVec2;
     }
 
     public int SegmentCount { get => segments.Length; }
@@ -102,7 +99,6 @@ class RopeModel
         return SmoothPosOld(i) / 20f - Vector2.One;
     }
 
-    /*
     public RopeReleaseMode Release {
         get
         {
@@ -136,7 +132,11 @@ class RopeModel
         set => posB = (value + Vector2.One) * 20f;
         get => posB / 20f - Vector2.One;
     }
-    */
+
+    public int Layer {
+        get => layer;
+        set => layer = value;
+    }
 
 #region Lingo Ported
     struct Segment

@@ -12,7 +12,8 @@ enum PropType
     VariedSoft,
     SimpleDecal,
     VariedDecal,
-    Antimatter
+    Antimatter,
+    Rope
 };
 
 // Used to generate note synopses
@@ -40,12 +41,13 @@ record PropInit
 {
     public readonly string Name;
     public readonly PropCategory Category;
-    private readonly PropType Type;
+    public readonly PropType Type;
     public readonly RlManaged.Texture2D Texture;
     public readonly PropFlags PropFlags;
     public readonly int Depth;
     public readonly int VariationCount;
     public readonly string[] Notes;
+    public readonly RopeInit? Rope;
 
     // used for obtaining preview image
     private readonly int pixelWidth;
@@ -58,6 +60,8 @@ record PropInit
 
     public PropInit(PropCategory category, Lingo.List init)
     {
+        object? tempObject; // used with TryGetValue on init list
+
         Category = category;
         Name = (string) init.fields["nm"];
         Type = (string) init.fields["tp"] switch
@@ -70,59 +74,73 @@ record PropInit
             "simpleDecal" => PropType.SimpleDecal,
             "variedDecal" => PropType.VariedDecal,
             "antimatter" => PropType.Antimatter,
+            "rope" => PropType.Rope,
             _ => throw new Exception("Invalid prop init file")
         };
         Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png"));
+        var randVar = false;
 
-        // obtain size of image cel
-        if (init.fields.TryGetValue("pxlSize", out object? tempObject))
+        if (Type == PropType.Rope)
         {
-            var pxlSize = (Vector2) tempObject;
-            pixelWidth = (int) pxlSize.X;
-            pixelHeight = (int) pxlSize.Y;
-        }
-        else if (init.fields.TryGetValue("sz", out tempObject))
-        {
-            var sz = (Vector2) tempObject;
-            pixelWidth = (int)sz.X * 20;
-            pixelHeight = (int)sz.Y * 20;
+            Rope = new RopeInit(init);
+            Depth = (int) init.fields["depth"];
+            VariationCount = 1;
+
+            pixelWidth = Texture.Width;
+            pixelHeight = Texture.Height;
+            layerCount = 1;
         }
         else
         {
-            pixelWidth = Texture.Width;
-            pixelHeight = Texture.Height;
-        }
-
-        // get image layer count and depth
-        Depth = 0;
-        layerCount = 1;
-        
-        if (init.fields.TryGetValue("repeatL", out tempObject))
-        {
-            var list = ((Lingo.List)tempObject).values;
-            layerCount = list.Count;
-            foreach (int n in list.Cast<int>())
+            // obtain size of image cel
+            if (init.fields.TryGetValue("pxlSize", out tempObject))
             {
-                Depth += n;
+                var pxlSize = (Vector2) tempObject;
+                pixelWidth = (int) pxlSize.X;
+                pixelHeight = (int) pxlSize.Y;
             }
-        }
-        else if (init.fields.TryGetValue("depth", out tempObject))
-        {
-            Depth = (int)tempObject;
-        }
+            else if (init.fields.TryGetValue("sz", out tempObject))
+            {
+                var sz = (Vector2) tempObject;
+                pixelWidth = (int)sz.X * 20;
+                pixelHeight = (int)sz.Y * 20;
+            }
+            else
+            {
+                pixelWidth = Texture.Width;
+                pixelHeight = Texture.Height;
+            }
 
-        // variation count
-        VariationCount = 1;
-        var randVar = false;
+            // get image layer count and depth
+            Depth = 0;
+            layerCount = 1;
+            
+            if (init.fields.TryGetValue("repeatL", out tempObject))
+            {
+                var list = ((Lingo.List)tempObject).values;
+                layerCount = list.Count;
+                foreach (int n in list.Cast<int>())
+                {
+                    Depth += n;
+                }
+            }
+            else if (init.fields.TryGetValue("depth", out tempObject))
+            {
+                Depth = (int)tempObject;
+            }
 
-        if (init.fields.TryGetValue("vars", out tempObject))
-        {
-            VariationCount = (int)tempObject;
-        }
+            // variation count
+            VariationCount = 1;
 
-        if (init.fields.TryGetValue("random", out tempObject))
-        {
-            randVar = (int)tempObject != 0;   
+            if (init.fields.TryGetValue("vars", out tempObject))
+            {
+                VariationCount = (int)tempObject;
+            }
+
+            if (init.fields.TryGetValue("random", out tempObject))
+            {
+                randVar = (int)tempObject != 0;   
+            }
         }
 
         // read notes
@@ -265,34 +283,48 @@ record PropTileCategory
     }
 }
 
-record RopePropInit
+record RopeInit
 {
-    public readonly string Name;
     public readonly RopePhysicalProperties PhysicalProperties;
-    public readonly int Depth;
     public readonly int CollisionDepth;
     public readonly Color PreviewColor;
     public readonly int PreviewInterval;
 
-    public RopePropInit(string name, int depth, int collisionDepth, int previewInterval, Color previewColor, RopePhysicalProperties props)
+    // i really need to figure out how to fix this design issue
+    private static float LingoToFloat(object n)
     {
-        Name = name;
-        Depth = depth;
-        CollisionDepth = collisionDepth;
-        PreviewColor = previewColor;
-        PhysicalProperties = props;
-        PreviewInterval = previewInterval;
+        if (n is int vi)
+        {
+            return vi;
+        }
+        else if (n is float vf)
+        {
+            return (float) vf;
+        }
+
+        throw new ArgumentException("Object is not an int or a float", nameof(n));
     }
-}
 
-record RopePropCategory
-{
-    public string Name;
-    public List<RopePropInit> Props = new();
-
-    public RopePropCategory(string name)
+    public RopeInit(Lingo.List init)
     {
-        Name = name;
+        var previewColor = (Lingo.Color)init.fields["previewColor"];
+
+        CollisionDepth = (int)init.fields["collisionDepth"];
+        PreviewInterval = (int)init.fields["previewEvery"];
+        PreviewColor = new Color(previewColor.R, previewColor.G, previewColor.B, 255);
+        PhysicalProperties = new RopePhysicalProperties()
+        {
+            segmentLength = LingoToFloat(init.fields["segmentLength"]),
+            grav = LingoToFloat(init.fields["grav"]),
+            stiff = ((int)init.fields["stiff"]) == 1,
+            friction = LingoToFloat(init.fields["friction"]),
+            airFric = LingoToFloat(init.fields["airFric"]),
+            segRad = LingoToFloat(init.fields["segRad"]),
+            rigid = LingoToFloat(init.fields["rigid"]),
+            edgeDirection = LingoToFloat(init.fields["edgeDirection"]),
+            selfPush = LingoToFloat(init.fields["selfPush"]),
+            sourcePush = LingoToFloat(init.fields["sourcePush"])
+        };
     }
 }
 
@@ -325,15 +357,15 @@ class PropDatabase
 
     public readonly List<PropCategory> Categories;
     public readonly List<PropTileCategory> TileCategories;
-    public readonly List<RopePropCategory> RopeCategories;
     public readonly List<PropColor> PropColors; // custom colors
+
+    private int catIndex = 0;
 
     public PropDatabase(TileDatabase tileDatabase)
     {
         Categories = new List<PropCategory>();
         TileCategories = new List<PropTileCategory>();
         PropColors = new List<PropColor>();
-        RopeCategories = new List<RopePropCategory>();
 
         InitProps(tileDatabase);
         InitRopeTypeProps();
@@ -347,7 +379,6 @@ class PropDatabase
         var lingoParser = new Lingo.LingoParser();
 
         PropCategory? currentCategory = null;
-        int catIndex = 0;
         foreach (var line in File.ReadLines(initFilePath))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
@@ -428,21 +459,6 @@ class PropDatabase
         }
     }
 
-    // i really need to figure out how to fix this design issue
-    private float LingoToFloat(object n)
-    {
-        if (n is int vi)
-        {
-            return vi;
-        }
-        else if (n is float vf)
-        {
-            return (float) vf;
-        }
-
-        throw new ArgumentException("Object is not an int or a float", nameof(n));
-    }
-
     public void InitRopeTypeProps()
     {
         RainEd.Logger.Information("Initialize rope-type props...");
@@ -450,7 +466,7 @@ class PropDatabase
         using StringReader reader = new(RopePropsInit);
         var lingoParser = new Lingo.LingoParser();
 
-        RopePropCategory? curGroup = null;
+        PropCategory? curGroup = null;
 
         string? line;
         while ((line = reader.ReadLine()) is not null)
@@ -460,35 +476,14 @@ class PropDatabase
             if (line[0] == '-')
             {
                 var headerData = (Lingo.List)lingoParser.Read(line[1..])!;
-                curGroup = new RopePropCategory((string)headerData.values[0]);
-                RopeCategories.Add(curGroup);
+                curGroup = new PropCategory(catIndex++, (string)headerData.values[0], (Lingo.Color)headerData.values[1]);
+                Categories.Add(curGroup);
             }
             else
             {
                 var ropeData = (Lingo.List)lingoParser.Read(line)!;
-                var previewColor = (Lingo.Color)ropeData.fields["previewColor"];
-
-                var ropeInit = new RopePropInit(
-                    name: (string)ropeData.fields["nm"],
-                    depth: (int)ropeData.fields["depth"],
-                    collisionDepth: (int)ropeData.fields["collisionDepth"],
-                    previewInterval: (int)ropeData.fields["previewEvery"],
-                    previewColor: new Color(previewColor.R, previewColor.G, previewColor.B, 255),
-                    props: new RopePhysicalProperties()
-                    {
-                        segmentLength = LingoToFloat(ropeData.fields["segmentLength"]),
-                        grav = LingoToFloat(ropeData.fields["grav"]),
-                        stiff = ((int)ropeData.fields["stiff"]) == 1,
-                        friction = LingoToFloat(ropeData.fields["friction"]),
-                        airFric = LingoToFloat(ropeData.fields["airFric"]),
-                        segRad = LingoToFloat(ropeData.fields["segRad"]),
-                        rigid = LingoToFloat(ropeData.fields["rigid"]),
-                        edgeDirection = LingoToFloat(ropeData.fields["edgeDirection"]),
-                        selfPush = LingoToFloat(ropeData.fields["selfPush"]),
-                        sourcePush = LingoToFloat(ropeData.fields["sourcePush"])
-                    }
-                );
-                curGroup!.Props.Add(ropeInit);
+                var propInit = new PropInit(curGroup!, ropeData);
+                curGroup!.Props.Add(propInit);
             }
         }
 
