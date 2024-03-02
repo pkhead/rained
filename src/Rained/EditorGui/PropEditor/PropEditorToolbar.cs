@@ -10,7 +10,8 @@ partial class PropEditor : IEditorMode
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
-    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects "};
+    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects" };
+    private readonly string[] RopeReleaseModeNames = new string[] { "None", "Left", "Right" };
 
 #region Multiselect Inputs
     // what a reflective mess...
@@ -85,15 +86,17 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    private void MultiselectEnumInput<T>(string label, string fieldName, string[] enumNames) where T : Enum
+    // this, specifically, is generic for both the items list and the field type,
+    // because i use this for both prop properties and rope-type rope properties
+    private void MultiselectEnumInput<T, E>(List<T> items, string label, string fieldName, string[] enumNames) where E : Enum
     {
-        var field = typeof(Prop).GetField(fieldName)!;
-        T targetV = (T)field.GetValue(selectedProps[0])!;
+        var field = typeof(T).GetField(fieldName)!;
+        E targetV = (E)field.GetValue(items[0])!;
 
         bool isSame = true;
-        for (int i = 1; i < selectedProps.Count; i++)
+        for (int i = 1; i < items.Count; i++)
         {
-            if (!((T)field.GetValue(selectedProps[i])!).Equals(targetV))
+            if (!((E)field.GetValue(items[i])!).Equals(targetV))
             {
                 isSame = false;
                 break;
@@ -106,12 +109,12 @@ partial class PropEditor : IEditorMode
         {
             for (int i = 0; i < enumNames.Length; i++)
             {
-                T e = (T) Convert.ChangeType(i, targetV.GetTypeCode());
+                E e = (E) Convert.ChangeType(i, targetV.GetTypeCode());
                 bool sel = isSame && e.Equals(targetV);
                 if (ImGui.Selectable(enumNames[i], sel))
                 {
-                    foreach (var prop in selectedProps)
-                        field.SetValue(prop, e);
+                    foreach (var item in items)
+                        field.SetValue(item, e);
                 }
 
                 if (sel)
@@ -345,7 +348,7 @@ partial class PropEditor : IEditorMode
                 MultiselectDragInt("Render Order", "RenderOrder", 0.02f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
-                MultiselectEnumInput<Prop.PropRenderTime>("Render Time", "RenderTime", PropRenderTimeNames);
+                MultiselectEnumInput<Prop, Prop.PropRenderTime>(selectedProps, "Render Time", "RenderTime", PropRenderTimeNames);
 
                 // custom depth, if available
                 {
@@ -379,6 +382,78 @@ partial class PropEditor : IEditorMode
                         MultiselectListInput("Custom Color", "CustomColor", propColorNames);
                 }
 
+                // rope properties, if all selected props are ropes
+                {
+                    bool ropeProps = true;
+                    foreach (var prop in selectedProps)
+                    {
+                        if (prop.Rope is null)
+                        {
+                            ropeProps = false;
+                            break;
+                        }
+                    }
+
+                    if (ropeProps)
+                    {
+                        // flexibility drag float
+                        // can't make a MultiselectDragFloat function for this,
+                        // cus it doesn't directly control a value
+                        bool sameFlexi = true;
+                        float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
+
+                        for (int i = 1; i < selectedProps.Count; i++)
+                        {
+                            var prop = selectedProps[i];
+                            float flexi = prop.Rect.Size.Y / prop.PropInit.Height;
+
+                            if (MathF.Abs(flexi - targetFlexi) > 0.01f)
+                            {
+                                sameFlexi = false;
+                                break;
+                            }
+                        }
+
+                        if (!sameFlexi)
+                        {
+                            targetFlexi = 1f;
+                        }
+
+                        // if not all props have the same flexibility value, the display text will be empty
+                        // and interacting it will set them all to the default
+                        if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, 0.0f, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
+                        {
+                            foreach (var prop in selectedProps)
+                            {
+                                prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
+                            }
+                        }
+
+                        List<PropRope> ropes = new()
+                        {
+                            Capacity = selectedProps.Count
+                        };
+                        foreach (var p in selectedProps)
+                            ropes.Add(p.Rope!);
+                        
+                        MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
+
+                        if (ImGui.Button("Reset Simulation"))
+                        {
+                            foreach (var prop in selectedProps)
+                                prop.Rope!.ResetSimulation();
+                        }
+
+                        ImGui.SameLine();
+                        ImGui.Button("Simulate");
+                        if (ImGui.IsItemActive())
+                        {
+                            foreach (var prop in selectedProps)
+                                prop.Rope!.Simulate = true;
+                        }
+                    }
+                }
+
                 if (selectedProps.Count == 1)
                 {
                     var prop = selectedProps[0];
@@ -406,28 +481,6 @@ partial class PropEditor : IEditorMode
                             bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
                             ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
                         ImGui.EndDisabled();
-                    }
-
-                    // rope-type prop
-                    else
-                    {
-                        var flexibility = prop.Rect.Size.Y / prop.PropInit.Height;
-                        if (ImGui.DragFloat("Flexibility", ref flexibility, 0.02f, 0f, float.PositiveInfinity))
-                            prop.Rect.Size.Y = flexibility * prop.PropInit.Height;
-
-                        int releaseInt = (int) prop.Rope.ReleaseMode;
-                        ImGui.Combo("Release", ref releaseInt, "None\0Left\0Right\0");
-                        prop.Rope.ReleaseMode = (RopeReleaseMode) releaseInt;
-
-                        if (ImGui.Button("Reset Simulation"))
-                        {
-                            prop.Rope.ResetSimulation();
-                        }
-
-                        ImGui.SameLine();
-                        ImGui.Button("Simulate");
-                        if (ImGui.IsItemActive())
-                            prop.Rope.Simulate = true;
                     }
 
                     // notes
