@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Text;
+using RainEd.Props;
 using Raylib_cs;
 namespace RainEd;
 
@@ -31,6 +32,7 @@ static class LevelSerialization
         
         Lingo.List? levelCameraData = (Lingo.List?) lingoParser.Read(levelData[6]);
         Lingo.List? levelWaterData = (Lingo.List?) lingoParser.Read(levelData[7]);
+        Lingo.List? levelPropData = (Lingo.List?) lingoParser.Read(levelData[8]);
 
         // get level dimensions
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];
@@ -354,6 +356,88 @@ static class LevelSerialization
             float offset = (flatnessData is float v1) ? v1 : (int)flatnessData;
             level.LightAngle = angle / 180f * MathF.PI;
             level.LightDistance = offset;
+        }
+
+        // READ PROP DATA
+        if (levelPropData is not null)
+        {
+            var propDb = RainEd.Instance.PropDatabase;
+            var propsList = (Lingo.List) levelPropData.fields["props"];
+            
+            Vector2[] quadPoints = new Vector2[4];
+            foreach (var propData in propsList.values.Cast<Lingo.List>())
+            {
+                var depth = (int) propData.values[0];
+                var name = (string) propData.values[1];
+                var quadCornersData = (Lingo.List) propData.values[3];
+                var moreData = (Lingo.List) propData.values[4];
+                var settingsData = (Lingo.List) moreData.fields["settings"];
+
+                // create prop
+                if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
+                    throw new Exception($"Unrecognized prop '{name}'");
+
+                if (propInit.Rope is not null)
+                {
+
+                }
+                else
+                {
+                    int i = 0;
+                    foreach (var pt in quadCornersData.values.Cast<Vector2>())
+                    {
+                        quadPoints[i++] = pt / 16f;
+                    }
+
+                    var prop = new Prop(propInit, quadPoints)
+                    {
+                        DepthOffset = -depth,
+                        RenderOrder = (int) settingsData.fields["renderorder"],
+                        Seed = (int) settingsData.fields["seed"],
+                        RenderTime = (Prop.PropRenderTime) (int) settingsData.fields["renderTime"]
+                    };
+
+                    // read optional settings
+                    object? tempObject;
+                    if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
+                    {
+                        prop.CustomDepth = (int) tempObject;
+                    }
+
+                    if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
+                    {
+                        /*var index = propDb.GetPropColorIndex((string) tempObject);
+                        if (index == -1)
+                            throw new Exception($"Unrecognized prop color '{(string) tempObject}");
+                        prop.CustomColor = index;*/
+                        prop.CustomColor = (int) tempObject - 1;
+                    }
+
+                    if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
+                    {
+                        if (tempObject is int vi)
+                        {
+                            prop.Variation = vi - 1;
+                        }
+                        else if (tempObject is string vstr)
+                        {
+                            if (vstr != "random")
+                                throw new Exception($"Unrecognized variation type '{vstr}'");
+                            
+                            prop.Variation = -1;
+                        }
+                    }
+
+                    if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
+                    {
+                        var predicate = (string) tempObject;
+                        // prop.ApplyColor = predicate == "YES" ? true : false;
+                    }
+
+                    prop.TryConvertToAffine();
+                    level.Props.Add(prop);
+                }
+            }
         }
 
         return level;

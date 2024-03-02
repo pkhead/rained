@@ -371,6 +371,7 @@ class PropDatabase
     public readonly List<PropCategory> Categories;
     public readonly List<PropTileCategory> TileCategories;
     public readonly List<PropColor> PropColors; // custom colors
+    private readonly Dictionary<string, PropInit> allProps;
 
     private int catIndex = 0;
 
@@ -379,13 +380,32 @@ class PropDatabase
         Categories = new List<PropCategory>();
         TileCategories = new List<PropTileCategory>();
         PropColors = new List<PropColor>();
+        allProps = new Dictionary<string, PropInit>();
 
         InitProps(tileDatabase);
         InitRopeTypeProps();
         InitCustomColors();
     }
 
-    public void InitProps(TileDatabase tileDatabase)
+    public bool TryGetPropFromName(string name, out PropInit? value)
+    {
+        return allProps.TryGetValue(name, out value);
+    }
+
+    public int GetPropColorIndex(string name)
+    {
+        for (int i = 0; i < PropColors.Count; i++)
+        {
+            if (PropColors[i].Name == name)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void InitProps(TileDatabase tileDatabase)
     {
         // read prop init file
         var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "Init.txt");
@@ -416,6 +436,7 @@ class PropDatabase
                     propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
                     var propInit = new PropInit(currentCategory, propData);
                     currentCategory.Props.Add(propInit);
+                    allProps[propInit.Name] = propInit;
                 }
                 catch (Exception e)
                 {
@@ -449,6 +470,7 @@ class PropDatabase
                 var propInit = new PropInit(currentCategory, tile);
                 currentCategory.Props.Add(propInit);
                 tilePropCategory.Props.Add(propInit);
+                allProps[propInit.Name] = propInit;
                 tileIndex++;
 
                 // 21 tiles per page
@@ -472,7 +494,7 @@ class PropDatabase
         }
     }
 
-    public void InitRopeTypeProps()
+    private void InitRopeTypeProps()
     {
         RainEd.Logger.Information("Initialize rope-type props...");
 
@@ -497,13 +519,14 @@ class PropDatabase
                 var ropeData = (Lingo.List)lingoParser.Read(line)!;
                 var propInit = new PropInit(curGroup!, ropeData);
                 curGroup!.Props.Add(propInit);
+                allProps[propInit.Name] = propInit;
             }
         }
 
         RainEd.Logger.Information("Done initialzing rope-type props");
     }
 
-    public void InitCustomColors()
+    private void InitCustomColors()
     {
         // read propColors.txt
         var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "propColors.txt");

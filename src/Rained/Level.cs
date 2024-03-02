@@ -305,7 +305,7 @@ class Prop
     // only use if Affine is true
     private RotatedRect affineTransform;
 
-    private PropRope? rope;
+    private readonly PropRope? rope;
     public PropRope? Rope { get => rope; }
 
     public Vector2[] QuadPoints
@@ -398,7 +398,7 @@ class Prop
     public bool TryConvertToAffine()
     {
         if (isAffine) return true;
-        
+
         // check if all the interior angles of this quad are 90 degrees
         for (int i = 0; i < 4; i++)
         {

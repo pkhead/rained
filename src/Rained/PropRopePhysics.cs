@@ -138,6 +138,23 @@ class RopeModel
         set => layer = value;
     }
 
+    // used when loading
+    public void SetSegmentPositions(Vector2[] points)
+    {
+        segments = new Segment[points.Length];
+
+        for (int i = 0; i < points.Length; i++)
+        {
+            var convertedPos = (points[i] + Vector2.One) * 20f; 
+            segments[i] = new Segment()
+            {
+                pos = convertedPos,
+                lastPos = convertedPos,
+                vel = Vector2.Zero
+            };
+        }
+    }
+
 #region Lingo Ported
     struct Segment
     {

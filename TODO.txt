@@ -48,6 +48,7 @@ Effects Editor:
 - community effects
 
 Prop Editor:
+- applyColor = YES | NO
 - rope collision resolution physics is inaccurate
 - undo/redo
 - save props
@@ -159,6 +160,8 @@ PROP INIT FORMAT
   ]
 
 PROP LEVEL FORMAT
+    (sorted from ascending to descending their sublayer origin (when positive))
+
     PROPDATA: [
       sublayer origin as negative integer
       name as string
