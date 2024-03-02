@@ -487,6 +487,11 @@ partial class PropEditor : IEditorMode
                 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
+                    if (transformMode is WarpTransformMode)
+                    {
+                        selectedProps[0].TryConvertToAffine();
+                    }
+                    
                     transformMode = null;
                 }
             }

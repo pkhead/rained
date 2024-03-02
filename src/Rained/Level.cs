@@ -395,6 +395,45 @@ class Prop
         UpdateQuadPointsFromAffine();
     }
 
+    public bool TryConvertToAffine()
+    {
+        if (isAffine) return true;
+        
+        // check if all the interior angles of this quad are 90 degrees
+        for (int i = 0; i < 4; i++)
+        {
+            // form a triangle with (pA, pB, pc)
+            var pA = quad[i];
+            var pB = quad[(i+1)%4];
+            var pC = quad[(i+2)%4];
+
+            if (pA == pB || pB == pC || pA == pC)
+                return false;
+            
+            // if the triangle is not right
+            // this prop cannot be expressed as an affine rect transformation
+            var pythagLeft = Vector2.DistanceSquared(pA, pB) + Vector2.DistanceSquared(pB, pC);
+            var hyp = Vector2.DistanceSquared(pA, pC);
+            
+            // there can be a small margin of error
+            if (MathF.Abs(pythagLeft - hyp) > 0.5f)
+            {
+                return false;
+            }
+        }
+
+        // calculate dimensions of rotated rect
+        isAffine = true;
+        affineTransform.Center = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+        affineTransform.Size.X = Vector2.Distance(quad[0], quad[1]);
+        affineTransform.Size.Y = Vector2.Distance(quad[3], quad[0]);
+        
+        var dir = quad[1] - quad[0];
+        affineTransform.Rotation = MathF.Atan2(dir.Y, dir.X);
+
+        return true;
+    }
+
     public void ResetTransform()
     {
         if (!isAffine)
@@ -452,38 +491,6 @@ class Prop
         rope.SimluationStep();
     }
 }
-
-/*class RopeProp
-{
-    public readonly RopePropInit Init;
-    public Vector2 PointA;
-    public Vector2 PointB;
-    private int lengthFac;
-    private int layer;
-    public RopeReleaseMode Release;
-
-    private RopeModel ropeModel;
-
-    public RopeProp(RopePropInit init, int layer, Vector2 center, float width)
-    {
-        Init = init;
-        PointA = center - Vector2.UnitX * (width / 2f);
-        PointB = center + Vector2.UnitX * (width / 2f);
-        
-        lengthFac = 1;
-        this.layer = layer;
-        Release = RopeReleaseMode.None;
-
-        ropeModel = new RopeModel(PointA, PointB, init.PhysicalProperties, lengthFac, layer, Release);
-    }
-    
-    public RopeModel Model { get => ropeModel; }
-
-    public void SimulationStep()
-    {
-        ropeModel.Update();
-    }
-}*/
 
 class Level
 {
