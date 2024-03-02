@@ -249,6 +249,49 @@ partial class PropEditor : IEditorMode
         }
     }
 
+    class RopePointTransformMode : ITransformMode
+    {
+        public readonly int handleId;
+        public readonly Prop prop;
+        public readonly float snap;
+
+        private readonly Vector2 origPA;
+        private readonly Vector2 origPB;
+
+        public RopePointTransformMode(
+            int handleId,
+            Prop prop,
+            float snap
+        )
+        {
+            this.prop = prop;
+            this.handleId = handleId;
+            this.snap = snap;
+
+            var rope = prop.Rope!;
+            origPA = rope.PointA;
+            origPB = rope.PointB;
+        }
+
+        public void Update(Vector2 dragStart, Vector2 mousePos)
+        {
+            var pA = origPA;
+            var pB = origPB;
+
+            if (handleId == 0)
+                pA = Snap(mousePos, snap);
+            else
+                pB = Snap(mousePos, snap);
+
+            // enforce constraint
+            var diff = pB - pA;
+
+            prop.Rect.Center = (pA + pB) / 2f;
+            prop.Rect.Rotation = MathF.Atan2(diff.Y, diff.X);
+            prop.Rect.Size.X = Vector2.Distance(pA, pB);
+        }
+    }
+
     class RotateTransformMode : ITransformMode
     {
         private readonly Vector2 rotCenter;

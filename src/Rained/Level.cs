@@ -383,6 +383,7 @@ class Prop
 
     public void ConvertToFreeform()
     {
+        if (rope is not null) throw new Exception("Cannot warp rope-type props");
         if (!isAffine) return;
         isAffine = false;
         UpdateQuadPointsFromAffine();

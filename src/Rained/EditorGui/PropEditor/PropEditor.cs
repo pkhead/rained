@@ -379,29 +379,59 @@ partial class PropEditor : IEditorMode
             }
 
             // freeform warp gizmo
-            if ((transformMode is null && canWarp) || transformMode is WarpTransformMode)
+            if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is RopePointTransformMode)
             {
-                var warpMode = transformMode as WarpTransformMode;
-                Vector2[] corners = selectedProps[0].QuadPoints;
-                
-                for (int i = 0; i < 4; i++)
+                // normal free-form 
+                if (selectedProps[0].Rope is null)
                 {
-                    // don't draw this handle if another scale handle is active
-                    if (warpMode != null && warpMode.handleId != i)
-                    {
-                        continue;
-                    }
+                    Vector2[] corners = selectedProps[0].QuadPoints;
 
-                    var handlePos = corners[i];
-                    
-                    // draw gizmo handle at corner
-                    if (DrawGizmoHandle(handlePos, true) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    for (int i = 0; i < 4; i++)
                     {
-                        transformMode = new WarpTransformMode(
-                            handleId: i,
-                            prop: selectedProps[0],
-                            snap: snappingMode / 2f
-                        );
+                        // don't draw this handle if another scale handle is active
+                        if (transformMode is WarpTransformMode warpMode && warpMode.handleId != i)
+                        {
+                            continue;
+                        }
+
+                        var handlePos = corners[i];
+                        
+                        // draw gizmo handle at corner
+                        if (DrawGizmoHandle(handlePos, true) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        {
+                            transformMode = new WarpTransformMode(
+                                handleId: i,
+                                prop: selectedProps[0],
+                                snap: snappingMode / 2f
+                            );
+                        }
+                    }
+                }
+
+                // on rope-type props, freeform will instead only allow you to drag
+                // point A and point B, and will just modify the RotatedRect so that
+                // the left and right sides touch A and B
+                else
+                {
+                    var prop = selectedProps[0];
+                    var cos = MathF.Cos(prop.Rect.Rotation);
+                    var sin = MathF.Sin(prop.Rect.Rotation);
+                    var pA = prop.Rect.Center + new Vector2(cos, sin) * -prop.Rect.Size.X / 2f;
+                    var pB = prop.Rect.Center + new Vector2(cos, sin) * prop.Rect.Size.X / 2f;
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
+                            continue;
+                        
+                        if (DrawGizmoHandle(i == 1 ? pB : pA) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        {
+                            transformMode = new RopePointTransformMode(
+                                handleId: i,
+                                prop: prop,
+                                snap: snappingMode / 2f
+                            );
+                        }
                     }
                 }
             }

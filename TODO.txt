@@ -48,6 +48,7 @@ Effects Editor:
 - community effects
 
 Prop Editor:
+- rope collision resolution physics is inaccurate
 - render order (forgot i forgot to put that back in)
 - undo/redo
 - save props
