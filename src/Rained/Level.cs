@@ -256,12 +256,20 @@ class PropRope
 
         this.init = init;
         ReleaseMode = RopeReleaseMode.None;
-        Simulate = true;
+        Simulate = false;
         Width = init.Height;
         
         lastPointA = PointA;
         lastPointB = PointB;
         lastWidth = Width;
+    }
+
+    public void ResetSimulation()
+    {
+        if (model == null)
+            model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
+        else
+            model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
     }
 
     public void SimluationStep()
@@ -272,17 +280,14 @@ class PropRope
             ReleaseMode != model.Release || Width != lastWidth
         )
         {
-            if (model == null)
-                model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
-            else
-                model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
+            ResetSimulation();
         }
 
         lastPointA = PointA;
         lastPointB = PointB;
         lastWidth = Width;
         
-        model.Update();
+        if (Simulate) model!.Update();
     }
 }
 class Prop

@@ -164,6 +164,13 @@ partial class PropEditor : IEditorMode
     {
         var propDb = RainEd.Instance.PropDatabase;
 
+        // rope-type props are only simulated while the "Simulate" button is held down
+        // in their prop options
+        foreach (var prop in RainEd.Instance.Level.Props)
+        {
+            if (prop.Rope is not null) prop.Rope.Simulate = false;
+        }
+
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // work layer
@@ -376,25 +383,52 @@ partial class PropEditor : IEditorMode
                 {
                     var prop = selectedProps[0];
 
-                    // prop variation
-                    if (prop.PropInit.VariationCount > 1)
+                    // normal prop
+                    if (prop.Rope is null)
                     {
-                        var varV = prop.Variation + 1;
-                        ImGui.SliderInt(
-                            label: "Variation",
-                            v: ref varV,
-                            v_min: prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariation) ? 0 : 1, // in Prop, a Variation of -1 means random variation
-                            v_max: prop.PropInit.VariationCount,
-                            format: varV == 0 ? "Random" : "%i",
-                            flags: ImGuiSliderFlags.AlwaysClamp
-                        );
-                        prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
+                        // prop variation
+                        if (prop.PropInit.VariationCount > 1)
+                        {
+                            var varV = prop.Variation + 1;
+                            ImGui.SliderInt(
+                                label: "Variation",
+                                v: ref varV,
+                                v_min: prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariation) ? 0 : 1, // in Prop, a Variation of -1 means random variation
+                                v_max: prop.PropInit.VariationCount,
+                                format: varV == 0 ? "Random" : "%i",
+                                flags: ImGuiSliderFlags.AlwaysClamp
+                            );
+                            prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
+                        }
+
+
+                        ImGui.BeginDisabled();
+                            bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
+                            ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
+                        ImGui.EndDisabled();
                     }
 
-                    ImGui.BeginDisabled();
-                        bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
-                        ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
-                    ImGui.EndDisabled();
+                    // rope-type prop
+                    else
+                    {
+                        var flexibility = prop.Rect.Size.Y / prop.PropInit.Height;
+                        if (ImGui.DragFloat("Flexibility", ref flexibility, 0.02f, 0f, float.PositiveInfinity))
+                            prop.Rect.Size.Y = flexibility * prop.PropInit.Height;
+
+                        int releaseInt = (int) prop.Rope.ReleaseMode;
+                        ImGui.Combo("Release", ref releaseInt, "None\0Left\0Right\0");
+                        prop.Rope.ReleaseMode = (RopeReleaseMode) releaseInt;
+
+                        if (ImGui.Button("Reset Simulation"))
+                        {
+                            prop.Rope.ResetSimulation();
+                        }
+
+                        ImGui.SameLine();
+                        ImGui.Button("Simulate");
+                        if (ImGui.IsItemActive())
+                            prop.Rope.Simulate = true;
+                    }
 
                     // notes
                     ImGui.SeparatorText("Notes");

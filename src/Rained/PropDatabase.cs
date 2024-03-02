@@ -179,6 +179,10 @@ record PropInit
                 PropFlags |= PropFlags.ProcedurallyShaded;
             }
         }
+        else if (Type == PropType.Rope)
+        {
+            PropFlags |= PropFlags.ProcedurallyShaded; // ...a technicality
+        }
 
         // is custom color available?
         if (tags.Contains("customColor") || tags.Contains("customColorRainBow"))
