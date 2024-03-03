@@ -658,7 +658,7 @@ class Level
         int IComparer<Prop>.Compare(Prop? a, Prop? b) =>
                 a!.DepthOffset == b!.DepthOffset
             ?
-                a!.RenderOrder.CompareTo(b!.RenderOrder)
+                b!.RenderOrder.CompareTo(a!.RenderOrder)
             :
                 b!.DepthOffset.CompareTo(a!.DepthOffset);
     }

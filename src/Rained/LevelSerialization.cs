@@ -424,7 +424,7 @@ static class LevelSerialization
 
                 if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
                 {
-                    prop.Variation = (int) tempObject;
+                    prop.Variation = (int) tempObject - 1;
                 }
 
                 if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
@@ -660,7 +660,7 @@ static class LevelSerialization
         // default medium and light type
         // otherwise, filled with useless data
         output.AppendFormat(
-            "[#timeLimit: 4800, #defaultTerrain: {0}, #maxFlies: 10, #flySpawnRate: 50, #lizards: [], #ambientSounds: [], #music: \"NONE\", #tags: [], #lightType: \"{1}\", #waterDrips: 1, #lightRect: rect(0, 0, 1040, 800), #Matrix: []]]",
+            "[#timeLimit: 4800, #defaultTerrain: {0}, #maxFlies: 10, #flySpawnRate: 50, #lizards: [], #ambientSounds: [], #music: \"NONE\", #tags: [], #lightType: \"{1}\", #waterDrips: 1, #lightRect: rect(0, 0, 1040, 800), #Matrix: []]",
             level.DefaultMedium ? 1 : 0,
             "Static"    
         );
@@ -724,11 +724,167 @@ static class LevelSerialization
         output.Append(newLine);
 
         // props data
+        output.Append("[#props: [");
+
+        for (int i = 0; i < level.Props.Count; i++)
+        {
+            if (i > 0) output.Append(", ");
+            var prop = level.Props[i];
+            var propInit = prop.PropInit;
+            var catIndex = propInit.Category.Index;
+            var propIndex = propInit.Category.Props.IndexOf(propInit);
+
+            output.AppendFormat("[{0}, \"{1}\", point({2}, {3}), [", -prop.DepthOffset, propInit.Name, catIndex+1, propIndex+1);
+
+            // quad data
+            var quadPoints = prop.QuadPoints;
+            for (int j = 0; j < 4; j++)
+            {
+                if (j > 0) output.Append(", ");
+                output.AppendFormat("point({0}, {1})",
+                    (quadPoints[j].X * 16f).ToString("0.0000"),
+                    (quadPoints[j].Y * 16f).ToString("0.0000")
+                );
+            }
+
+            // prop settings
+            output.Append("], [#settings: [");
+            output.AppendFormat("#renderorder: {0}, #seed: {1}, #renderTime: {2}",
+                prop.RenderOrder,
+                prop.Seed,
+                prop.RenderTime == Prop.PropRenderTime.PostEffects ? 1 : 0
+            );
+
+            if (propInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))
+                output.AppendFormat(", #customDepth: {0}", prop.CustomDepth);
+            
+            if (propInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
+                output.AppendFormat(", #color: {0}", prop.CustomColor + 1);
+            
+            if (propInit.VariationCount > 1)
+                output.AppendFormat(", #variation: {0}", prop.Variation + 1);
+            
+            if (propInit.PropFlags.HasFlag(PropFlags.Colorize))
+                output.AppendFormat(", #applyColor: {0}", prop.ApplyColor ? 1 : 0);
+            
+            if (propInit.Rope is not null)
+            {
+                output.Append(", #release: ");
+                switch (prop.Rope!.ReleaseMode)
+                {
+                    case RopeReleaseMode.None:
+                        output.Append('0');
+                        break;
+                    case RopeReleaseMode.Left:
+                        output.Append("-1");
+                        break;
+                    case RopeReleaseMode.Right:
+                        output.Append('1');
+                        break;
+                    default:
+                        throw new Exception($"Invalid rope release mode for '{propInit.Name}");
+                }
+            }
+
+            // done settings
+            output.Append(']');
+
+            // save rope points
+            if (prop.Rope is not null)
+            {
+                output.Append(", #points: [");
+                var model = prop.Rope.Model!;
+
+                for (int j = 0; j < model.SegmentCount; j++)
+                {
+                    if (i > 0) output.Append(", ");
+                    var segPos = model.GetSegmentPos(i);
+
+                    output.AppendFormat("point({0}, {1})",
+                        (segPos.X * 20f).ToString("0.0000"),
+                        (segPos.Y * 20f).ToString("0.0000")
+                    );
+                }
+
+                output.Append(']');
+            }
+
+            // done prop data
+            output.Append("]]");
+        }
+
         output.AppendFormat(
-            "[#props: [], #lastKeys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #Keys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #workLayer: {0}, #lstMsPs: point(0, 0), #pmPos: point(1, 1), #pmSavPosL: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], #propRotation: 325, #propStretchX: 1, #propStretchY: 1, #propFlipX: 1, #propFlipY: 1, #depth: 0, #color: 0]",
+            "], #lastKeys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #Keys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #workLayer: {0}, #lstMsPs: point(0, 0), #pmPos: point(1, 1), #pmSavPosL: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], #propRotation: 325, #propStretchX: 1, #propStretchY: 1, #propFlipX: 1, #propFlipY: 1, #depth: 0, #color: 0]",
             workLayer
         );
         output.Append(newLine);
+
+        // rained-specific data
+        // hopefully other leditors will ignore this because it's not on a line
+        // that's used by the original editor
+        /*output.AppendFormat("[#extraPropData: [");
+
+        for (int i = 0; i < level.Props.Count; i++)
+        {
+            if (i > 0) output.Append(", ");
+            var prop = level.Props[i];
+
+            output.Append('[');
+            bool needComma = false;
+
+            // affine rect data
+            if (prop.IsAffine)
+            {
+                needComma = true;
+
+                output.Append("#rect: [");
+
+                var rect = prop.Rect;
+                output.AppendFormat("#center: point({0}, {1})",
+                    (rect.Center.X * 16f).ToString("0.0000"),
+                    (rect.Center.Y * 16f).ToString("0.0000")
+                );
+
+                output.AppendFormat(", #size: point({0}, {1})",
+                    (rect.Size.X * 16f).ToString("0.0000"),
+                    (rect.Size.Y * 16f).ToString("0.0000")
+                );
+
+                output.AppendFormat(", #rotation: {0}", (rect.Rotation / MathF.PI * 180f).ToString("0.0000"));
+
+                output.Append(']');
+            }
+
+            // rope segment velocity data
+            if (prop.Rope is not null)
+            {
+                var model = prop.Rope.Model!;
+
+                if (needComma) output.Append(", ");
+                needComma = true;
+
+                output.Append("#ropeVels: [");
+
+                for (int j = 0; j < model.SegmentCount; j++)
+                {
+                    if (j > 0) output.Append(", ");
+                    var vel = model.GetSegmentVel(j);
+
+                    output.AppendFormat("point({0}, {1})",
+                        (vel.X * 20f).ToString("0.0000"),
+                        (vel.Y * 20f).ToString("0.0000")
+                    );
+                }
+
+                output.Append(']');
+            }
+
+            // done prop data
+            output.Append(']');
+        }
+
+        output.Append("]]");
+        output.Append(newLine);*/
 
         // finish writing to txt file
         outputTxtFile.Write(output);

@@ -94,9 +94,15 @@ class RopeModel
     {
         return SmoothPos(i) / 20f - Vector2.One;
     }
+
     public Vector2 GetLastSegmentPos(int i)
     {
         return SmoothPosOld(i) / 20f - Vector2.One;
+    }
+
+    public Vector2 GetSegmentVel(int i)
+    {
+        return segments[i].vel / 20f;
     }
 
     public RopeReleaseMode Release {

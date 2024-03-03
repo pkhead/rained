@@ -174,7 +174,12 @@ PROP LEVEL FORMAT
           #renderorder: any integer
           #seed: integer [0,1000]
           #renderTime: 0 = PreEffects; 1 = PostEffects
-          e.t.c
+          #customDepth?: integer
+          #color?: integer index into colors list, 1-indexed
+          #variation?: integer, starting from 1
+          #applyColor?: 1 if true, 0 if false
+          #release?: (rope release mode) -1 = Left, 0 = None, 1 = Right
+
         ],
         #points: point[] (if rope-type prop)
       ]
