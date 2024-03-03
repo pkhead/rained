@@ -65,8 +65,27 @@ partial class PropEditor : IEditorMode
     public void Load()
     {
         selectedProps.Clear();
+        transformMode = null;
         initSelectedProps = null;
         isMouseDragging = false;
+    }
+
+    public void Unload()
+    {
+
+        if (transformMode is WarpTransformMode)
+        {
+            selectedProps[0].TryConvertToAffine();
+        }
+
+        transformMode = null;
+        propSelectionList = Array.Empty<Prop>();
+
+        foreach (var prop in RainEd.Instance.Level.Props)
+        {
+            if (prop.Rope is not null)
+                prop.Rope.Simulate = false;
+        }
     }
 
     private static bool IsPointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3)
@@ -265,6 +284,10 @@ partial class PropEditor : IEditorMode
                 else if (prop.Rope is not null)
                 {
                     col = OutlineColors[2]; // green
+                }
+                else if (prop.IsAffine)
+                {
+                    col = OutlineColors[0]; // blue
                 }
                 else
                 {
