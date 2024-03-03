@@ -482,7 +482,7 @@ sealed class RainEd
                     editorWindow.LevelRenderer.ViewObscuredBeams = !editorWindow.LevelRenderer.ViewObscuredBeams;
                 }
 
-                if (ImGui.MenuItem("Shortcuts", null, ShortcutsWindow.IsWindowOpen))
+                if (ImGui.MenuItem("Keyboard Shortcuts", null, ShortcutsWindow.IsWindowOpen))
                 {
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }

@@ -4,16 +4,15 @@ Bugs:
 
 Overall:
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
+- edit rlImGui to allow tint in image (for filebrowser)
 - split up tile and prop editor source code
 - on cell change, only remesh the mesh chunk that it is in
+- Move Level
 - undo/redo for level resize
 - help pages/hints/tooltips/whatever
 - Edit/View menu buttons for specific editors
   e.g. New Camera button in camera editor,
   no copy/paste in light/effects editor
-- copy henry
-  (if i were to add a new level config screen, add bool toggle to auto-place cameras)
-  (that is the specific thing i want to copy)
 - tile cat# and index# saving is probably incorrect
 - fix trans flag prop loading
 

@@ -105,9 +105,6 @@ class EffectsEditor : IEditorMode
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
-            var boxHeight = ImGui.GetTextLineHeight() * 20.0f;
-
             // search bar
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite);
@@ -133,6 +130,10 @@ class EffectsEditor : IEditorMode
                     }
                 }
             }
+
+            // calculate list box dimensions
+            var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
+            var boxHeight = ImGui.GetContentRegionAvail().Y;
 
             // group list box
             if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
@@ -167,9 +168,11 @@ class EffectsEditor : IEditorMode
             }
         } ImGui.End();
 
+        int deleteRequest = -1;
+
         if (ImGui.Begin("Active Effects", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            if (ImGui.BeginListBox("##EffectStack", new Vector2(-0.0001f, ImGui.GetTextLineHeight() * 10.0f)))
+            if (ImGui.BeginListBox("##EffectStack", ImGui.GetContentRegionAvail()))
             {
                 if (level.Effects.Count == 0)
                 {
@@ -177,8 +180,6 @@ class EffectsEditor : IEditorMode
                 }
                 else
                 {
-                    int deleteRequest = -1;
-
                     for (int i = 0; i < level.Effects.Count; i++)
                     {
                         var effect = level.Effects[i];
@@ -215,19 +216,25 @@ class EffectsEditor : IEditorMode
 
                         ImGui.PopID();
                     }
-
-                    if (deleteRequest >= 0)
-                    {
-                        changeRecorder.BeginListChange();
-                        level.Effects.RemoveAt(deleteRequest);
-                        selectedEffect = -1;
-                        changeRecorder.PushListChange();
-                    }
                 }
 
                 ImGui.EndListBox();
             }
         } ImGui.End();
+
+        // backspace to delete selected effect
+        if (EditorWindow.IsKeyPressed(ImGuiKey.Backspace) || EditorWindow.IsKeyPressed(ImGuiKey.Delete))
+        {
+            deleteRequest = selectedEffect;
+        }
+
+        if (deleteRequest >= 0)
+        {
+            changeRecorder.BeginListChange();
+            level.Effects.RemoveAt(deleteRequest);
+            selectedEffect = -1;
+            changeRecorder.PushListChange();
+        }
 
         if (ImGui.Begin("Effect Options", ImGuiWindowFlags.NoFocusOnAppearing))
         {
