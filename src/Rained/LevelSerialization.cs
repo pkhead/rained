@@ -363,8 +363,8 @@ static class LevelSerialization
         {
             var propDb = RainEd.Instance.PropDatabase;
             var propsList = (Lingo.List) levelPropData.fields["props"];
+            List<Vector2> pointList = new();
             
-            Vector2[] quadPoints = new Vector2[4];
             foreach (var propData in propsList.values.Cast<Lingo.List>())
             {
                 var depth = (int) propData.values[0];
@@ -377,55 +377,79 @@ static class LevelSerialization
                 if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
                     throw new Exception($"Unrecognized prop '{name}'");
 
+                Prop prop;
+
+                pointList.Clear();
+                foreach (var pt in quadCornersData.values.Cast<Vector2>())
+                {
+                    pointList.Add(pt / 16f);
+                }
+
+                prop = new Prop(propInit, pointList.ToArray())
+                {
+                    DepthOffset = -depth,
+                    RenderOrder = (int) settingsData.fields["renderorder"],
+                    Seed = (int) settingsData.fields["seed"],
+                    RenderTime = (Prop.PropRenderTime) (int) settingsData.fields["renderTime"]
+                };
+
+                prop.TryConvertToAffine();
+                level.Props.Add(prop);
+
+                // read rope points if needed
                 if (propInit.Rope is not null)
                 {
+                    var pointsData = (Lingo.List) moreData.fields["points"];
+                    pointList.Clear();
 
+                    foreach (var pt in pointsData.values.Cast<Vector2>())
+                    {
+                        pointList.Add(pt / 20f);
+                    }
+
+                    prop.Rope!.LoadPoints(pointList.ToArray());
                 }
-                else
+
+                // read optional settings
+                object? tempObject;
+                if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
                 {
-                    int i = 0;
-                    foreach (var pt in quadCornersData.values.Cast<Vector2>())
+                    prop.CustomDepth = (int) tempObject;
+                }
+
+                if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
+                {
+                    prop.CustomColor = (int) tempObject - 1;
+                }
+
+                if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
+                {
+                    prop.Variation = (int) tempObject;
+                }
+
+                if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
+                {
+                    var predicate = (string) tempObject;
+                    prop.ApplyColor = predicate == "YES";
+                }
+
+                if (settingsData.fields.TryGetValue("release", out tempObject) && tempObject is not null)
+                {
+                    if (prop.Rope is not null)
                     {
-                        quadPoints[i++] = pt / 16f;
+                        int v = (int) tempObject;
+                        prop.Rope.ReleaseMode = v switch
+                        {
+                            0 => RopeReleaseMode.None,
+                            -1 => RopeReleaseMode.Left,
+                            1 => RopeReleaseMode.Right,
+                            _ => throw new Exception("Invalid rope release mode")
+                        };
                     }
-
-                    var prop = new Prop(propInit, quadPoints)
+                    else
                     {
-                        DepthOffset = -depth,
-                        RenderOrder = (int) settingsData.fields["renderorder"],
-                        Seed = (int) settingsData.fields["seed"],
-                        RenderTime = (Prop.PropRenderTime) (int) settingsData.fields["renderTime"]
-                    };
-
-                    // read optional settings
-                    object? tempObject;
-                    if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
-                    {
-                        prop.CustomDepth = (int) tempObject;
+                        RainEd.Logger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
                     }
-
-                    if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
-                    {
-                        /*var index = propDb.GetPropColorIndex((string) tempObject);
-                        if (index == -1)
-                            throw new Exception($"Unrecognized prop color '{(string) tempObject}");
-                        prop.CustomColor = index;*/
-                        prop.CustomColor = (int) tempObject - 1;
-                    }
-
-                    if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
-                    {
-                        prop.Variation = (int) tempObject;
-                    }
-
-                    if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
-                    {
-                        var predicate = (string) tempObject;
-                        // prop.ApplyColor = predicate == "YES" ? true : false;
-                    }
-
-                    prop.TryConvertToAffine();
-                    level.Props.Add(prop);
                 }
             }
         }

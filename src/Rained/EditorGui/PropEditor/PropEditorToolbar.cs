@@ -384,7 +384,17 @@ partial class PropEditor : IEditorMode
 
                 // rope properties, if all selected props are ropes
                 bool ropeProps = true;
+                bool affineProps = true;
                 {
+                    foreach (var prop in selectedProps)
+                    {
+                        if (!prop.IsAffine)
+                        {
+                            affineProps = false;
+                            break;
+                        }
+                    }
+
                     foreach (var prop in selectedProps)
                     {
                         if (prop.Rope is null)
@@ -396,44 +406,47 @@ partial class PropEditor : IEditorMode
 
                     if (ropeProps)
                     {
-                        // flexibility drag float
-                        // can't make a MultiselectDragFloat function for this,
-                        // cus it doesn't directly control a value
-                        bool sameFlexi = true;
-                        float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
-                        float minFlexi = 0.5f / selectedProps[0].PropInit.Height;
-
-                        for (int i = 1; i < selectedProps.Count; i++)
+                        if (affineProps)
                         {
-                            var prop = selectedProps[i];
-                            float flexi = prop.Rect.Size.Y / prop.PropInit.Height;
+                            // flexibility drag float
+                            // can't make a MultiselectDragFloat function for this,
+                            // cus it doesn't directly control a value
+                            bool sameFlexi = true;
+                            float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
+                            float minFlexi = 0.5f / selectedProps[0].PropInit.Height;
 
-                            if (MathF.Abs(flexi - targetFlexi) > 0.01f)
+                            for (int i = 1; i < selectedProps.Count; i++)
                             {
-                                sameFlexi = false;
-                                
-                                // idk why i did this cus every rope-type prop
-                                // starts out at the same size anyway
-                                float min = 0.5f / prop.PropInit.Height;
-                                if (min > minFlexi)
-                                    minFlexi = min;
-                                
-                                break;
+                                var prop = selectedProps[i];
+                                float flexi = prop.Rect.Size.Y / prop.PropInit.Height;
+
+                                if (MathF.Abs(flexi - targetFlexi) > 0.01f)
+                                {
+                                    sameFlexi = false;
+                                    
+                                    // idk why i did this cus every rope-type prop
+                                    // starts out at the same size anyway
+                                    float min = 0.5f / prop.PropInit.Height;
+                                    if (min > minFlexi)
+                                        minFlexi = min;
+                                    
+                                    break;
+                                }
                             }
-                        }
 
-                        if (!sameFlexi)
-                        {
-                            targetFlexi = 1f;
-                        }
-
-                        // if not all props have the same flexibility value, the display text will be empty
-                        // and interacting it will set them all to the default
-                        if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, minFlexi, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
-                        {
-                            foreach (var prop in selectedProps)
+                            if (!sameFlexi)
                             {
-                                prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
+                                targetFlexi = 1f;
+                            }
+
+                            // if not all props have the same flexibility value, the display text will be empty
+                            // and interacting it will set them all to the default
+                            if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, minFlexi, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
+                            {
+                                foreach (var prop in selectedProps)
+                                {
+                                    prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
+                                }
                             }
                         }
 
@@ -464,18 +477,21 @@ partial class PropEditor : IEditorMode
                         }
 
                         // rope simulation controls
-                        if (ImGui.Button("Reset Simulation"))
+                        if (affineProps)
                         {
-                            foreach (var prop in selectedProps)
-                                prop.Rope!.ResetSimulation();
-                        }
+                            if (ImGui.Button("Reset Simulation"))
+                            {
+                                foreach (var prop in selectedProps)
+                                    prop.Rope!.ResetModel();
+                            }
 
-                        ImGui.SameLine();
-                        ImGui.Button("Simulate");
-                        if (ImGui.IsItemActive())
-                        {
-                            foreach (var prop in selectedProps)
-                                prop.Rope!.Simulate = true;
+                            ImGui.SameLine();
+                            ImGui.Button("Simulate");
+                            if (ImGui.IsItemActive())
+                            {
+                                foreach (var prop in selectedProps)
+                                    prop.Rope!.Simulate = true;
+                            }
                         }
                     }
                 }
@@ -516,6 +532,12 @@ partial class PropEditor : IEditorMode
                     
                     // notes
                     ImGui.SeparatorText("Notes");
+
+                    if (ropeProps && !affineProps)
+                    {
+                        ImGui.Bullet(); ImGui.SameLine();
+                        ImGui.TextWrapped("One or more selected rope props did not load as a rectangle, so editing is limited.");
+                    }
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                         ImGui.BulletText("Tile as Prop");

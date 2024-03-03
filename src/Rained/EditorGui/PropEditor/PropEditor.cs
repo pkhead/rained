@@ -395,7 +395,7 @@ partial class PropEditor : IEditorMode
             if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is RopePointTransformMode)
             {
                 // normal free-form 
-                if (selectedProps[0].Rope is null)
+                if (selectedProps[0].Rope is null || !selectedProps[0].IsAffine)
                 {
                     Vector2[] corners = selectedProps[0].QuadPoints;
 

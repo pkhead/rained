@@ -249,6 +249,10 @@ class PropRope
     private Vector2 lastPointB;
     private float lastWidth;
 
+    // when LevelSerialization wants to call LoadPoints, the points will be loaded
+    // after the model is created in ResetSimulation rather than directly there
+    private Vector2[]? deferredLoadSegments = null;
+
     public RopeModel? Model { get => model; }
 
     public PropRope(PropInit init)
@@ -265,23 +269,34 @@ class PropRope
         lastWidth = Width;
     }
 
-    public void ResetSimulation()
+    public void LoadPoints(Vector2[] ptPositions)
+    {
+        deferredLoadSegments = ptPositions;
+    }
+
+    public void ResetModel()
     {
         if (model == null)
             model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
         else
             model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
+        
+        if (deferredLoadSegments is not null)
+        {
+            model.SetSegmentPositions(deferredLoadSegments);
+            deferredLoadSegments = null;
+        }
     }
 
     public void SimluationStep()
     {
         // if rope properties changed, reset rope model
-        if (model == null|| Layer != model.Layer ||
+        if (model == null || Layer != model.Layer ||
             lastPointA != PointA || lastPointB != PointB ||
             ReleaseMode != model.Release || Width != lastWidth
         )
         {
-            ResetSimulation();
+            ResetModel();
         }
 
         lastPointA = PointA;
@@ -493,13 +508,26 @@ class Prop
     {
         if (rope is null) return;
 
-        var cos = MathF.Cos(affineTransform.Rotation);
-        var sin = MathF.Sin(affineTransform.Rotation);
-        rope.PointA = affineTransform.Center + new Vector2(cos, sin) * -affineTransform.Size.X / 2f;
-        rope.PointB = affineTransform.Center + new Vector2(cos, sin) * affineTransform.Size.X / 2f;
-        rope.Layer = DepthOffset / 10;
-        rope.Width = affineTransform.Size.Y;
-        rope.SimluationStep();
+        if (IsAffine)
+        {
+            var cos = MathF.Cos(affineTransform.Rotation);
+            var sin = MathF.Sin(affineTransform.Rotation);
+            rope.PointA = affineTransform.Center + new Vector2(cos, sin) * -affineTransform.Size.X / 2f;
+            rope.PointB = affineTransform.Center + new Vector2(cos, sin) * affineTransform.Size.X / 2f;
+            rope.Layer = DepthOffset / 10;
+            rope.Width = affineTransform.Size.Y;
+            rope.SimluationStep();
+        }
+        else
+        {
+            rope.PointA = (quad[0] + quad[3]) / 2f;
+            rope.PointB = (quad[1] + quad[2]) / 2f;
+            rope.Layer = DepthOffset / 10;
+            rope.Width = PropInit.Height;
+
+            if (rope.Model is null)
+                rope.ResetModel();
+        }
     }
 }
 

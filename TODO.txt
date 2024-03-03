@@ -51,6 +51,7 @@ Prop Editor:
 - applyColor = YES | NO
 - instead of having a "Random" variation option, add an "R" button that makes a random variation
 - rope collision resolution physics is inaccurate
+- fix prop layer compositing
 - undo/redo
 - save props
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
