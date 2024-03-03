@@ -248,6 +248,7 @@ class PropRope
     private Vector2 lastPointA;
     private Vector2 lastPointB;
     private float lastWidth;
+    private bool ignoreMovement = false;
 
     // when LevelSerialization wants to call LoadPoints, the points will be loaded
     // after the model is created in ResetSimulation rather than directly there
@@ -274,11 +275,17 @@ class PropRope
         deferredLoadSegments = ptPositions;
     }
 
+    // don't reset the simulation when it moves on this frame
+    public void IgnoreMovement()
+    {
+        ignoreMovement = true;
+    }
+
     public void ResetModel()
     {
         if (model == null)
             model = new RopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
-        else
+        else if (!ignoreMovement)
             model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
         
         if (deferredLoadSegments is not null)
@@ -299,6 +306,7 @@ class PropRope
             ResetModel();
         }
 
+        ignoreMovement = false;
         lastPointA = PointA;
         lastPointB = PointB;
         lastWidth = Width;
@@ -749,7 +757,40 @@ class Level
             camera.Position.Y += dstOriginY;
         }
 
-        // TODO: resize props
+        // resize props
+        foreach (var prop in Props)
+        {
+            // move prop
+            if (prop.IsAffine)
+            {
+                prop.Rect.Center.X += dstOriginX;
+                prop.Rect.Center.Y += dstOriginY;
+            }
+            else
+            {
+                var quadPts = prop.QuadPoints;
+                for (int i = 0; i < 4; i++)
+                {
+                    quadPts[i].X += dstOriginX;
+                    quadPts[i].Y += dstOriginY;
+                }
+            }
+
+            // move rope segments
+            if (prop.Rope is not null && prop.Rope.Model is not null)
+            {
+                var model = prop.Rope.Model;
+                prop.Rope.IgnoreMovement(); // don't reset prop when it moves on this frame
+
+                for (int i = 0; i < model.SegmentCount; i++)
+                {
+                    var pos = model.GetSegmentPos(i);
+                    pos.X += dstOriginX;
+                    pos.Y += dstOriginY;
+                    model.SetSegmentPosition(i, pos);
+                }
+            }
+        }
 
         _width = newWidth;
         _height = newHeight;

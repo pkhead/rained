@@ -90,12 +90,12 @@ class RopeModel
     }
 
     public int SegmentCount { get => segments.Length; }
-    public Vector2 GetSegmentPos(int i)
+    public Vector2 GetSmoothSegmentPos(int i)
     {
         return SmoothPos(i) / 20f - Vector2.One;
     }
 
-    public Vector2 GetLastSegmentPos(int i)
+    public Vector2 GetSmoothLastSegmentPos(int i)
     {
         return SmoothPosOld(i) / 20f - Vector2.One;
     }
@@ -142,6 +142,22 @@ class RopeModel
     public int Layer {
         get => layer;
         set => layer = value;
+    }
+
+    public Vector2 GetSegmentPos(int i)
+    {
+        return (segments[i].pos / 20f) - Vector2.One;
+    }
+
+    public void SetSegmentPosition(int i, Vector2 pt)
+    {
+        var convertedPos = (pt + Vector2.One) * 20f; 
+        segments[i] = new Segment()
+        {
+            pos = convertedPos,
+            lastPos = convertedPos,
+            vel = Vector2.Zero
+        };
     }
 
     // used when loading
