@@ -474,7 +474,12 @@ static class LevelSerialization
         var level = RainEd.Instance.Level;
 
         StringBuilder output = new();
-        var newLine = Environment.NewLine;
+
+        // Wtf this sucks i spent like an hour trying to figure out why drizzle wasn't rendering the props it was because
+        // i saved newlines as Environment.NewLine which was \r\n on windows
+        // Wtf this sucks why does lingo expect \r newlines that's bs \r newlines were deprecated on mac software like 20 years ago
+        // Why is there no compatibilty for \r\n newlines wtf is this bs
+        var newLine = "\r";
         var workLayer = RainEd.Instance.Window.WorkLayer + 1;
 
         // geometry data
@@ -544,13 +549,13 @@ static class LevelSerialization
                         int group = cell.TileHead.Category.Index + 3;
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
-                        output.AppendFormat("[#tp: \"tileHead\", #data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
+                        output.AppendFormat("[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
                     }
                     // tile body
                     else if (cell.HasTile())
                     {
                         output.AppendFormat(
-                            "[#tp: \"tileBody\", #data: [point({0}, {1}), {2}]]",
+                            "[#tp: \"tileBody\", #Data: [point({0}, {1}), {2}]]",
                             cell.TileRootX + 1,
                             cell.TileRootY + 1,
                             cell.TileLayer + 1
@@ -559,11 +564,11 @@ static class LevelSerialization
                     // material
                     else if (cell.Material != Material.None)
                     {
-                        output.AppendFormat("[#tp: \"material\", #data: \"{0}\"]", Level.MaterialNames[(int)cell.Material-1]);
+                        output.AppendFormat("[#tp: \"material\", #Data: \"{0}\"]", Level.MaterialNames[(int)cell.Material-1]);
                     }
                     // no tile/material data here
                     else
-                        output.Append("[#tp: \"default\", #data: 0]");
+                        output.Append("[#tp: \"default\", #Data: 0]");
                 }
                 output.Append(']');
             }
@@ -648,13 +653,13 @@ static class LevelSerialization
             output.AppendFormat("#repeats: {0}, #affectOpenAreas: {1}]", effect.Data.repeats, effect.Data.affectOpenAreas);
         }
 
-        output.Append("], #emPos: point(1, 1), #editEffect: 1, #selectEditEffect: 1, #mode: \"createNew\", #brushSize: 5]");
+        output.Append("], #emPos: point(1, 1), #editEffect: 0, #selectEditEffect: 0, #mode: \"createNew\", #brushSize: 5]");
         output.Append(newLine);
 
         // light data
         output.Append("[#pos: point(0, 0), #rot: 0, #sz: point(50, 70), #col: 1, #Keys: 0, #lastKeys: 0, #lastTm: 0, ");
         output.AppendFormat("#lightAngle: {0}, #flatness: {1}, ", level.LightAngle / MathF.PI * 180f, level.LightDistance);
-        output.Append("#lightRect: rect(1000, 1000, -1000, -1000), #paintShape: \"px1\"]");
+        output.Append("#lightRect: rect(1000, 1000, -1000, -1000), #paintShape: \"pxl\"]");
         output.Append(newLine);
 
         // default medium and light type
@@ -688,7 +693,7 @@ static class LevelSerialization
             if (i < level.Cameras.Count - 1)
                 output.Append(", ");
         }
-        output.Append("], #selectedCamera: 0, #Keys: [#n: 0, #d: 0, #e: 0, #p: 0], #lastKeys: [#n: 0, #d: 0, #e: 0, #p: 0], ");
+        output.Append("], #selectedCamera: 0, ");
 
         // camera corner data
         output.Append("#quads: [");
@@ -712,7 +717,7 @@ static class LevelSerialization
             if (i < level.Cameras.Count - 1)
                 output.Append(", ");
         }
-        output.Append("]]");
+        output.Append("], #Keys: [#n: 0, #d: 0, #e: 0, #p: 0], #lastKeys: [#n: 0, #d: 0, #e: 0, #p: 0]]");
         output.Append(newLine);
 
         // water data
@@ -814,7 +819,7 @@ static class LevelSerialization
         }
 
         output.AppendFormat(
-            "], #lastKeys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #Keys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #workLayer: {0}, #lstMsPs: point(0, 0), #pmPos: point(1, 1), #pmSavPosL: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], #propRotation: 325, #propStretchX: 1, #propStretchY: 1, #propFlipX: 1, #propFlipY: 1, #depth: 0, #color: 0]",
+            "], #lastKeys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #Keys: [#w: 0, #a: 0, #s: 0, #d: 0, #L: 0, #n: 0, #m1: 0, #m2: 0, #c: 0, #z: 0], #workLayer: {0}, #lstMsPs: point(0, 0), #pmPos: point(1, 1), #pmSavPosL: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], #propRotation: 0, #propStretchX: 1, #propStretchY: 1, #propFlipX: 1, #propFlipY: 1, #depth: 0, #color: 0]",
             workLayer
         );
         output.Append(newLine);
