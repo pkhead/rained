@@ -383,8 +383,8 @@ partial class PropEditor : IEditorMode
                 }
 
                 // rope properties, if all selected props are ropes
+                bool ropeProps = true;
                 {
-                    bool ropeProps = true;
                     foreach (var prop in selectedProps)
                     {
                         if (prop.Rope is null)
@@ -446,6 +446,24 @@ partial class PropEditor : IEditorMode
                         
                         MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
 
+                        if (selectedProps.Count == 1)
+                        {
+                            var prop = selectedProps[0];
+
+                            // thickness
+                            if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
+                            {
+                                ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 2f, 5f, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+                            }
+
+                            // color Zero-G Tube white
+                            if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
+                            {
+                                ImGui.Checkbox("Apply Color", ref prop.ApplyColor);
+                            }
+                        }
+
+                        // rope simulation controls
                         if (ImGui.Button("Reset Simulation"))
                         {
                             foreach (var prop in selectedProps)
@@ -466,7 +484,7 @@ partial class PropEditor : IEditorMode
                 {
                     var prop = selectedProps[0];
 
-                    // normal prop
+                    // if is a normal prop
                     if (prop.Rope is null)
                     {
                         // prop variation
@@ -476,7 +494,7 @@ partial class PropEditor : IEditorMode
                             ImGui.SliderInt(
                                 label: "Variation",
                                 v: ref varV,
-                                v_min: prop.PropInit.PropFlags.HasFlag(PropFlags.RandomVariation) ? 0 : 1, // in Prop, a Variation of -1 means random variation
+                                v_min: 1,
                                 v_max: prop.PropInit.VariationCount,
                                 format: varV == 0 ? "Random" : "%i",
                                 flags: ImGuiSliderFlags.AlwaysClamp
@@ -484,23 +502,36 @@ partial class PropEditor : IEditorMode
                             prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
                         }
 
+                        // apply color
+                        if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
+                        {
+                            ImGui.Checkbox("Apply Color", ref prop.ApplyColor);
+                        }
 
                         ImGui.BeginDisabled();
                             bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
                             ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
                         ImGui.EndDisabled();
                     }
-
+                    
                     // notes
                     ImGui.SeparatorText("Notes");
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                         ImGui.BulletText("Tile as Prop");
 
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.PostEffectsWhenColorized))
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
                     {
                         ImGui.Bullet(); ImGui.SameLine();
-                        ImGui.TextWrapped("It's recommended to render this prop after the effects if the color is activated, as the effects won't affect the color layers.");
+
+                        if (prop.Rope is not null)
+                        {
+                            ImGui.TextWrapped("The tube can be colored white through settings");
+                        }
+                        else
+                        {
+                            ImGui.TextWrapped("It's recommended to render this prop after the effects if the color is activated, as the effects won't affect the color layers.");
+                        }
                     }
                     
                     // user notes

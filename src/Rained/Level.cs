@@ -241,6 +241,7 @@ class PropRope
     public Vector2 PointB = Vector2.Zero;
     public float Width;
     public int Layer = 0;
+    public float Thickness = 2f;
 
     // due to the fact that RopeModel's PointA and PointB are converted between units,
     // i cannot check those if they are equal
@@ -340,9 +341,10 @@ class Prop
     public int CustomDepth;
     public int CustomColor = 0; // index into the PropDatabase.PropColors list
     public int RenderOrder = 0;
-    public int Variation = 0; // A variation of -1 means Random Variation
+    public int Variation = 0;
     public int Seed;
     public PropRenderTime RenderTime = PropRenderTime.PreEffects;
+    public bool ApplyColor = false;
 
     private Prop(PropInit init)
     {
@@ -351,9 +353,18 @@ class Prop
         isAffine = true;
         quad = new Vector2[4];
 
-        if (init.PropFlags.HasFlag(PropFlags.RandomVariation)) Variation = -1;
         Seed = (int)(DateTime.Now.Ticks % 1000);
         CustomDepth = init.Depth;
+
+        if (init.PropFlags.HasFlag(PropFlags.RandomVariation))
+        {
+            var rand = new Random(Seed);
+            Variation = rand.Next(0, init.VariationCount);
+        }
+        else
+        {
+            Variation = 0;
+        }
 
         if (init.Type == PropType.Rope)
         {

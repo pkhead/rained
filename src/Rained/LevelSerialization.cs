@@ -415,17 +415,7 @@ static class LevelSerialization
 
                     if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
                     {
-                        if (tempObject is int vi)
-                        {
-                            prop.Variation = vi - 1;
-                        }
-                        else if (tempObject is string vstr)
-                        {
-                            if (vstr != "random")
-                                throw new Exception($"Unrecognized variation type '{vstr}'");
-                            
-                            prop.Variation = -1;
-                        }
+                        prop.Variation = (int) tempObject;
                     }
 
                     if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)

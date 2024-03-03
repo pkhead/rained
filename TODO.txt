@@ -49,6 +49,7 @@ Effects Editor:
 
 Prop Editor:
 - applyColor = YES | NO
+- instead of having a "Random" variation option, add an "R" button that makes a random variation
 - rope collision resolution physics is inaccurate
 - undo/redo
 - save props
