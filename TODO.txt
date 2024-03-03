@@ -47,9 +47,11 @@ Effects Editor:
 - community effects
 
 Prop Editor:
+- figure out cause of performance issues
+- Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
+- bug when resizing: PointA and PointB do not update?
 - search bar
-- rope collision resolution physics is inaccurate
 - undo/redo
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props

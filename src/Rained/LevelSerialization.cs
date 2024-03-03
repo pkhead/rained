@@ -802,8 +802,8 @@ static class LevelSerialization
 
                 for (int j = 0; j < model.SegmentCount; j++)
                 {
-                    if (i > 0) output.Append(", ");
-                    var segPos = model.GetSmoothSegmentPos(i);
+                    if (j > 0) output.Append(", ");
+                    var segPos = model.GetSmoothSegmentPos(j);
 
                     output.AppendFormat("point({0}, {1})",
                         (segPos.X * 20f).ToString("0.0000"),

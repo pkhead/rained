@@ -63,10 +63,8 @@ class RopeModel
             _ => throw new ArgumentOutOfRangeException(nameof(release))
         };
 
-        // convert RainEd coordinates to a coordinate system where
-        // topleft is at (1, 1), and each tile is 20 px large
-        posA = (pA + Vector2.One) * 20f;
-        posB = (pB + Vector2.One) * 20f;
+        posA = pA * 20f;
+        posB = pB * 20f;
         physics = prop;
 
         float numberOfSegments = Vector2.Distance(posA, posB) / physics.segmentLength * lengthFac;
@@ -92,12 +90,12 @@ class RopeModel
     public int SegmentCount { get => segments.Length; }
     public Vector2 GetSmoothSegmentPos(int i)
     {
-        return SmoothPos(i) / 20f - Vector2.One;
+        return SmoothPos(i) / 20f;
     }
 
     public Vector2 GetSmoothLastSegmentPos(int i)
     {
-        return SmoothPosOld(i) / 20f - Vector2.One;
+        return SmoothPosOld(i) / 20f;
     }
 
     public Vector2 GetSegmentVel(int i)
@@ -129,14 +127,14 @@ class RopeModel
 
     public Vector2 PointA
     {
-        set => posA = (value + Vector2.One) * 20f;
-        get => posA / 20f - Vector2.One;
+        set => posA = value * 20f;
+        get => posA / 20f;
     }
 
     public Vector2 PointB
     {
-        set => posB = (value + Vector2.One) * 20f;
-        get => posB / 20f - Vector2.One;
+        set => posB = value * 20f;
+        get => posB / 20f;
     }
 
     public int Layer {
@@ -146,12 +144,12 @@ class RopeModel
 
     public Vector2 GetSegmentPos(int i)
     {
-        return (segments[i].pos / 20f) - Vector2.One;
+        return segments[i].pos / 20f;
     }
 
     public void SetSegmentPosition(int i, Vector2 pt)
     {
-        var convertedPos = (pt + Vector2.One) * 20f; 
+        var convertedPos = pt * 20f; 
         segments[i] = new Segment()
         {
             pos = convertedPos,
@@ -167,7 +165,7 @@ class RopeModel
 
         for (int i = 0; i < points.Length; i++)
         {
-            var convertedPos = (points[i] + Vector2.One) * 20f; 
+            var convertedPos = points[i] * 20f; 
             segments[i] = new Segment()
             {
                 pos = convertedPos,
@@ -214,8 +212,8 @@ class RopeModel
             MathF.Floor((pos.Y / 20f) + 0.4999f)
         );*/
         return new Vector2(
-            MathF.Floor(pos.X / 20f),
-            MathF.Floor(pos.Y / 20f)
+            MathF.Floor(pos.X / 20f + 1f),
+            MathF.Floor(pos.Y / 20f + 1f)
         );
     }
 
@@ -248,8 +246,8 @@ class RopeModel
     // wtf is this function name?
     private static int AfaMvLvlEdit(Vector2 p, int layer)
     {
-        int x = (int)p.X - 2;
-        int y = (int)p.Y - 2;
+        int x = (int)p.X - 1;
+        int y = (int)p.Y - 1;
         var level = RainEd.Instance.Level;
         if (level.IsInBounds(x, y))
             return (int) RainEd.Instance.Level.Layers[layer, x, y].Cell;
@@ -521,7 +519,7 @@ class RopeModel
     {
         var bounce = 0f;
 
-        if (p.Frc.Y > 0)
+        if (p.Frc.Y > 0f)
         {
             var lastGridPos = GiveGridPos(p.LastLoc);
             var feetPos = GiveGridPos(p.Loc + new Vector2(0f, p.SizePnt.Y + 0.01f));
@@ -530,11 +528,11 @@ class RopeModel
             var rightPos = GiveGridPos(p.Loc + new Vector2(p.SizePnt.X - 1f, p.SizePnt.Y + 0.01f));
 
             // WARNING - idk if lingo calculate the loop direction
-            for (float q = lastFeetPos.Y; q <= feetPos.Y; q++)
+            for (int q = (int)lastFeetPos.Y; q <= feetPos.Y; q++)
             {
-                for (float c = leftPos.X; c <= rightPos.X; c++)
+                for (int c = (int)leftPos.X; c <= rightPos.X; c++)
                 {
-                    if (AfaMvLvlEdit(new Vector2(c, q), layer) == 1 && AfaMvLvlEdit(new Vector2(c, q-1f), layer) != 1)
+                    if (AfaMvLvlEdit(new(c, q), layer) == 1 && AfaMvLvlEdit(new Vector2(c, q-1f), layer) != 1)
                     {
                         if (lastGridPos.Y >= q && AfaMvLvlEdit(lastGridPos, layer) == 1)
                         {}
@@ -549,7 +547,7 @@ class RopeModel
                 }
             }
         }
-        else if (p.Frc.Y < 0)
+        else if (p.Frc.Y < 0f)
         {
             var lastGridPos = GiveGridPos(p.LastLoc);
             var headPos = GiveGridPos(p.Loc - new Vector2(0f, p.SizePnt.Y + 0.01f));
@@ -558,13 +556,12 @@ class RopeModel
             var rightPos = GiveGridPos(p.Loc + new Vector2(p.SizePnt.X - 1f, p.SizePnt.Y + 0.01f));
 
             // WARNING - idk if lingo calculates the loop direction
-            for (float d = headPos.Y; d <= lastHeadPos.Y; d++)
+            for (int d = (int)headPos.Y; d <= lastHeadPos.Y; d++)
             {
-                var q = (lastHeadPos.Y) - (d-headPos.Y);
-                for (float c = leftPos.X; c <= rightPos.X; c++)
+                var q = lastHeadPos.Y - (d-headPos.Y);
+                for (int c = (int)leftPos.X; c <= rightPos.X; c++)
                 {
-                    // WARNING - does <> mean not equal to?
-                    if (AfaMvLvlEdit(new(c, q), layer) == 1 && AfaMvLvlEdit(new(c, q+1), layer) != 1)
+                    if (AfaMvLvlEdit(new(c, q), layer) == 1 && AfaMvLvlEdit(new(c, q+1f), layer) != 1)
                     {
                         if (lastGridPos.Y <= q && AfaMvLvlEdit(lastGridPos, layer) != 1)
                         {}

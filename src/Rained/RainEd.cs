@@ -692,6 +692,12 @@ sealed class RainEd
         }
 
         simTimeLeftOver = (float)((nowTime - lastRopeUpdateTime) / stepTime);
+
+        foreach (var prop in level.Props)
+        {
+            if (prop.Rope is not null && prop.Rope.Simulate)
+                prop.Rope.SimulationTimeRemainder = simTimeLeftOver;
+        }
     }
     
     public void Undo() => changeHistory.Undo();

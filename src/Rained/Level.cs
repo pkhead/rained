@@ -256,6 +256,11 @@ class PropRope
 
     public RopeModel? Model { get => model; }
 
+    // this is set by RainEd's UpdateRopeSimulation. it is important that I set this per prop
+    // and is only updated while it is simulating, so that ropes don't
+    // jitter while their simulation is paused
+    public float SimulationTimeRemainder = 0f;
+
     public PropRope(PropInit init)
     {
         if (init.Rope is null) throw new ArgumentException("Given PropInit is not a rope-type prop", nameof(init));
@@ -311,7 +316,10 @@ class PropRope
         lastPointB = PointB;
         lastWidth = Width;
         
-        if (Simulate) model!.Update();
+        if (Simulate)
+        {
+            model!.Update();
+        }
     }
 }
 class Prop

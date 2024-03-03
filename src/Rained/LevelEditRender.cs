@@ -741,7 +741,7 @@ class LevelEditRender
                     {
                         var newPos = rope.GetSmoothSegmentPos(i);
                         var oldPos = rope.GetSmoothLastSegmentPos(i);
-                        var lerpPos = (newPos - oldPos) * RainEd.Instance.SimulationTimeRemainder + oldPos;
+                        var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
 
                         Raylib.DrawCircleV(lerpPos * Level.TileSize, 2f, prop.PropInit.Rope!.PreviewColor);
                     }
