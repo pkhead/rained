@@ -438,10 +438,10 @@ class TileEditor : IEditorMode
         }
         else if (tileInt > 0)
         {
-            var cellType = (CellType) tileInt;
+            var cellType = (GeoType) tileInt;
             switch (cellType)
             {
-                case CellType.Solid:
+                case GeoType.Solid:
                     Raylib.DrawRectangleLinesEx(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
                         lineWidth,
@@ -449,7 +449,7 @@ class TileEditor : IEditorMode
                     );
                     break;
                 
-                case CellType.Platform:
+                case GeoType.Platform:
                     Raylib.DrawRectangleLinesEx(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10),
                         lineWidth,
@@ -457,7 +457,7 @@ class TileEditor : IEditorMode
                     );
                     break;
                 
-                case CellType.Glass:
+                case GeoType.Glass:
                     Raylib.DrawRectangleLinesEx(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
                         lineWidth,
@@ -465,7 +465,7 @@ class TileEditor : IEditorMode
                     );
                     break;
 
-                case CellType.ShortcutEntrance:
+                case GeoType.ShortcutEntrance:
                     Raylib.DrawRectangleLinesEx(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
                         lineWidth,
@@ -473,7 +473,7 @@ class TileEditor : IEditorMode
                     );
                     break;
 
-                case CellType.SlopeLeftDown:
+                case GeoType.SlopeLeftDown:
                     Raylib.DrawTriangleLines(
                         new Vector2(x+1, y+1) * Level.TileSize,
                         new Vector2(x+1, y) * Level.TileSize,
@@ -482,7 +482,7 @@ class TileEditor : IEditorMode
                     );
                     break;
 
-                case CellType.SlopeLeftUp:
+                case GeoType.SlopeLeftUp:
                     Raylib.DrawTriangleLines(
                         new Vector2(x, y+1) * Level.TileSize,
                         new Vector2(x+1, y+1) * Level.TileSize,
@@ -491,7 +491,7 @@ class TileEditor : IEditorMode
                     );
                     break;
 
-                case CellType.SlopeRightDown:
+                case GeoType.SlopeRightDown:
                     Raylib.DrawTriangleLines(
                         new Vector2(x+1, y) * Level.TileSize,
                         new Vector2(x, y) * Level.TileSize,
@@ -500,7 +500,7 @@ class TileEditor : IEditorMode
                     );
                     break;
 
-                case CellType.SlopeRightUp:
+                case GeoType.SlopeRightUp:
                     Raylib.DrawTriangleLines(
                         new Vector2(x+1, y+1) * Level.TileSize,
                         new Vector2(x, y) * Level.TileSize,
@@ -832,7 +832,7 @@ class TileEditor : IEditorMode
                 {
                     // check first layer geometry
                     if (specInt == -1) continue;
-                    if (level.GetClamped(window.WorkLayer, gx, gy).Cell != (CellType) specInt)
+                    if (level.GetClamped(window.WorkLayer, gx, gy).Geo != (GeoType) specInt)
                         return TilePlacementStatus.Geometry;
 
                     // check second layer geometry
@@ -841,7 +841,7 @@ class TileEditor : IEditorMode
                     if (window.WorkLayer == 2) continue;
                     
                     if (spec2Int == -1) continue;
-                    if (level.GetClamped(window.WorkLayer+1, gx, gy).Cell != (CellType) spec2Int)
+                    if (level.GetClamped(window.WorkLayer+1, gx, gy).Geo != (GeoType) spec2Int)
                         return TilePlacementStatus.Geometry;
                 }
             }
@@ -875,13 +875,13 @@ class TileEditor : IEditorMode
                     // place first layer    
                     if (specInt >= 0)
                     {
-                        level.Layers[layer, gx, gy].Cell = (CellType) specInt;
+                        level.Layers[layer, gx, gy].Geo = (GeoType) specInt;
                     }
 
                     // place second layer
                     if (layer < 2 && spec2Int >= 0)
                     {
-                        level.Layers[layer+1, gx, gy].Cell = (CellType) spec2Int;
+                        level.Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
                     }
                 }
 
@@ -951,10 +951,10 @@ class TileEditor : IEditorMode
                 if (removeGeometry)
                 {
                     if (specInt >= 0)
-                        level.Layers[layer, gx, gy].Cell = CellType.Air;
+                        level.Layers[layer, gx, gy].Geo = GeoType.Air;
 
                     if (spec2Int >= 0 && layer < 2)
-                        level.Layers[layer+1, gx, gy].Cell = CellType.Air;
+                        level.Layers[layer+1, gx, gy].Geo = GeoType.Air;
                 }
             }
         }

@@ -204,7 +204,7 @@ class LevelEditRender
             if (!Level.IsInBounds(x, y)) return false;
             ref var cell = ref Level.Layers[layer, x, y];
             
-            return cell.Cell != CellType.Solid || cell.Has(LevelObject.Crack);
+            return cell.Geo != GeoType.Solid || cell.Has(LevelObject.Crack);
         }
 
         for (int x = subL; x < subR; x++)
@@ -229,9 +229,9 @@ class LevelEditRender
                     crackV = nUp || nDown;
                 }
 
-                switch (c.Cell)
+                switch (c.Geo)
                 {
-                    case CellType.Solid:
+                    case GeoType.Solid:
                         if (hasCrack)
                         {
                             if (crackH && crackV)
@@ -303,15 +303,15 @@ class LevelEditRender
 
                         break;
                         
-                    case CellType.Platform:
+                    case GeoType.Platform:
                         drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, Color.White);
                         break;
                     
-                    case CellType.Glass:
+                    case GeoType.Glass:
                         drawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
                         break;
 
-                    case CellType.ShortcutEntrance:
+                    case GeoType.ShortcutEntrance:
                         // draw a lighter square
                         drawRect(
                             x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
@@ -319,7 +319,7 @@ class LevelEditRender
                         );
                         break;
 
-                    case CellType.SlopeLeftDown:
+                    case GeoType.SlopeLeftDown:
                         drawTri(
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
@@ -328,7 +328,7 @@ class LevelEditRender
                         );
                         break;
 
-                    case CellType.SlopeLeftUp:
+                    case GeoType.SlopeLeftUp:
                         drawTri(
                             new Vector2(x, y+1) * Level.TileSize,
                             new Vector2(x+1, y+1) * Level.TileSize,
@@ -337,7 +337,7 @@ class LevelEditRender
                         );
                         break;
 
-                    case CellType.SlopeRightDown:
+                    case GeoType.SlopeRightDown:
                         drawTri(
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
@@ -346,7 +346,7 @@ class LevelEditRender
                         );
                         break;
 
-                    case CellType.SlopeRightUp:
+                    case GeoType.SlopeRightUp:
                         drawTri(
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
@@ -356,7 +356,7 @@ class LevelEditRender
                         break;
                 }
 
-                if (c.Cell != CellType.Solid)
+                if (c.Geo != GeoType.Solid)
                 {
                     // draw horizontal beam
                     if (hasHBeam)
@@ -501,7 +501,7 @@ class LevelEditRender
         static bool isWallBlock(Level level, int x, int y)
         {
             if (!level.IsInBounds(x, y)) return false;
-            return level.Layers[0,x,y].Cell == CellType.Solid;
+            return level.Layers[0,x,y].Geo == GeoType.Solid;
         }
 
         int neighborCount = 0;
@@ -557,16 +557,16 @@ class LevelEditRender
             
             // the shortcut it's facing toward has to be over a solid block (wall, glass, slope(?))
             if (
-                toCell.Cell != CellType.Solid &&
-                toCell.Cell != CellType.Glass &&
-                !(toCell.Cell >= CellType.SlopeRightUp && toCell.Cell <= CellType.SlopeLeftDown) // check if any slope?
+                toCell.Geo != GeoType.Solid &&
+                toCell.Geo != GeoType.Glass &&
+                !(toCell.Geo >= GeoType.SlopeRightUp && toCell.Geo <= GeoType.SlopeLeftDown) // check if any slope?
             )
             {
                 return ShortcutDirection.Invalid;
             }
             
             // the tile opposite to the shortcut direction must be an air or platform block
-            else if (fromCell.Cell != CellType.Air && fromCell.Cell != CellType.Platform)
+            else if (fromCell.Geo != GeoType.Air && fromCell.Geo != GeoType.Platform)
             {
                 return ShortcutDirection.Invalid;
             }
@@ -600,7 +600,7 @@ class LevelEditRender
 
                 // shortcut entrance changes appearance
                 // based on neighbor Shortcuts
-                if (cell.Cell == CellType.ShortcutEntrance)
+                if (cell.Geo == GeoType.ShortcutEntrance)
                 {
                     int texX = 0;
                     int texY = 0;
@@ -715,7 +715,7 @@ class LevelEditRender
             {
                 ref var cell = ref Level.Layers[layer, x, y];
 
-                if (!cell.HasTile() && cell.Material != Material.None && cell.Cell != CellType.Air)
+                if (!cell.HasTile() && cell.Material != Material.None && cell.Geo != GeoType.Air)
                 {
                     var col = MaterialColors[(int) cell.Material - 1];
                     Raylib.DrawRectangle(

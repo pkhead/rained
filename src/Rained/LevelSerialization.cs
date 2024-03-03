@@ -74,7 +74,7 @@ static class LevelSerialization
                 z = 0;
                 foreach (var cellData in yv.values.Cast<Lingo.List>())
                 {
-                    level.Layers[z,x,y].Cell = (CellType) (int) cellData.values[0];
+                    level.Layers[z,x,y].Geo = (GeoType) (int) cellData.values[0];
                     
                     var flags = (Lingo.List) cellData.values[1];
                     foreach (int flag in flags.values.Cast<int>())
@@ -498,12 +498,12 @@ static class LevelSerialization
                     output.Append('[');
 
                     ref var cell = ref level.Layers[l,x,y];
-                    output.Append((int)cell.Cell);
+                    output.Append((int)cell.Geo);
                     output.Append(", [");
 
                     // objects
                     bool hasObject = false;
-                    if (cell.Cell == CellType.ShortcutEntrance)
+                    if (cell.Geo == GeoType.ShortcutEntrance)
                     {
                         hasObject = true;
                         output.Append('4');

@@ -250,7 +250,7 @@ class RopeModel
         int y = (int)p.Y - 1;
         var level = RainEd.Instance.Level;
         if (level.IsInBounds(x, y))
-            return (int) RainEd.Instance.Level.Layers[layer, x, y].Cell;
+            return (int) RainEd.Instance.Level.Layers[layer, x, y].Geo;
         else
             return 1;
     }

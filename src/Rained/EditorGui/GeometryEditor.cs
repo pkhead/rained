@@ -435,7 +435,7 @@ class GeometryEditor : IEditorMode
                     }
                     else
                     {
-                        cell.Cell = CellType.Solid;
+                        cell.Geo = GeoType.Solid;
                     }
 
                     break;
@@ -449,13 +449,13 @@ class GeometryEditor : IEditorMode
                     }
                     else
                     {
-                        cell.Cell = CellType.Air;
+                        cell.Geo = GeoType.Air;
                     }
 
                     break;
 
                 case Tool.Platform:
-                    cell.Cell = CellType.Platform;
+                    cell.Geo = GeoType.Platform;
                     break;
 
                 case Tool.Glass:
@@ -467,7 +467,7 @@ class GeometryEditor : IEditorMode
                     }
                     else
                     {
-                        cell.Cell = CellType.Glass;
+                        cell.Geo = GeoType.Glass;
                     }
 
                     break;
@@ -481,14 +481,14 @@ class GeometryEditor : IEditorMode
                     }
                     else
                     {
-                        if (pressed) toolPlaceMode = cell.Cell == CellType.Air;
-                        cell.Cell = toolPlaceMode ? CellType.Solid : CellType.Air;
+                        if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
+                        cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
                     }
 
                     break;
 
                 case Tool.ShortcutEntrance:
-                    if (pressed) cell.Cell = cell.Cell == CellType.ShortcutEntrance ? CellType.Air : CellType.ShortcutEntrance;
+                    if (pressed) cell.Geo = cell.Geo == GeoType.ShortcutEntrance ? GeoType.Air : GeoType.ShortcutEntrance;
                     break;
                 
                 case Tool.Slope:
@@ -498,39 +498,39 @@ class GeometryEditor : IEditorMode
                     {
                         if (x < 0 || y < 0) return false;
                         if (x >= level.Width || y >= level.Height) return false;
-                        return level.Layers[l,x,y].Cell == CellType.Solid;
+                        return level.Layers[l,x,y].Geo == GeoType.Solid;
                     }
 
-                    CellType newType = CellType.Air;
+                    GeoType newType = GeoType.Air;
                     int possibleConfigs = 0;
 
                     // figure out how to orient the slope using solid neighbors
                     if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty+1))
                     {
-                        newType = CellType.SlopeRightUp;
+                        newType = GeoType.SlopeRightUp;
                         possibleConfigs++;
                     }
                     
                     if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty+1))
                     {
-                        newType = CellType.SlopeLeftUp;
+                        newType = GeoType.SlopeLeftUp;
                         possibleConfigs++;
                     }
                     
                     if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty-1))
                     {
-                        newType = CellType.SlopeRightDown;
+                        newType = GeoType.SlopeRightDown;
                         possibleConfigs++;
                     }
                     
                     if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty-1))
                     {
-                        newType = CellType.SlopeLeftDown;
+                        newType = GeoType.SlopeLeftDown;
                         possibleConfigs++;
                     }
 
                     if (possibleConfigs == 1)
-                        cell.Cell = newType;
+                        cell.Geo = newType;
 
                     break;
                 }

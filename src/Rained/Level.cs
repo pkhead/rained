@@ -4,7 +4,7 @@ using RainEd.Props;
 using Raylib_cs;
 namespace RainEd;
 
-public enum CellType : sbyte
+public enum GeoType : sbyte
 {
     Air,
     Solid,
@@ -72,7 +72,7 @@ public enum LevelObject : uint
 
 struct LevelCell
 {
-    public CellType Cell = CellType.Air;
+    public GeoType Geo = GeoType.Air;
     public LevelObject Objects = 0;
     public Material Material = Material.None;
 
@@ -651,7 +651,7 @@ class Level
             {
                 for (int y = 0; y < level.Height; y++)
                 {
-                    level.Layers[l,x,y].Cell = l == 2 ? CellType.Air : CellType.Solid;
+                    level.Layers[l,x,y].Geo = l == 2 ? GeoType.Air : GeoType.Solid;
                 }
             }
         }
@@ -739,7 +739,7 @@ class Level
                     {
                         Layers[l,x,y] = new LevelCell()
                         {
-                            Cell = DefaultMedium ? CellType.Solid : CellType.Air
+                            Geo = DefaultMedium ? GeoType.Solid : GeoType.Air
                         };
                     }
                 }
