@@ -429,8 +429,7 @@ static class LevelSerialization
 
                 if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
                 {
-                    var predicate = (string) tempObject;
-                    prop.ApplyColor = predicate == "YES";
+                    prop.ApplyColor = (int)tempObject != 0;
                 }
 
                 if (settingsData.fields.TryGetValue("release", out tempObject) && tempObject is not null)

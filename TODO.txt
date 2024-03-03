@@ -48,7 +48,7 @@ Effects Editor:
 - community effects
 
 Prop Editor:
-- applyColor = YES | NO
+- do tile as prop depth change based on if specs2 is active?
 - instead of having a "Random" variation option, add an "R" button that makes a random variation
 - rope collision resolution physics is inaccurate
 - fix prop layer compositing

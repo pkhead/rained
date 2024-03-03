@@ -72,7 +72,6 @@ partial class PropEditor : IEditorMode
 
     public void Unload()
     {
-
         if (transformMode is WarpTransformMode)
         {
             selectedProps[0].TryConvertToAffine();

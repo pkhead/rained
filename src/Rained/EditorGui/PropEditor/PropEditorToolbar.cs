@@ -544,7 +544,14 @@ partial class PropEditor : IEditorMode
                 if (selectedProps.Count == 1)
                 {
                     var prop = selectedProps[0];
-                    
+
+                    bool isDecal = prop.PropInit.Type == PropType.SimpleDecal || prop.PropInit.Type == PropType.VariedDecal;
+                    if (!isDecal && prop.DepthOffset <= 5 && prop.DepthOffset + prop.CustomDepth >= 6)
+                    {
+                        ImGui.Bullet(); ImGui.SameLine();
+                        ImGui.TextWrapped("Warning: This prop will intersect with the play layer (depth 5-6)");
+                    }
+
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                         ImGui.BulletText("Tile as Prop");
 
