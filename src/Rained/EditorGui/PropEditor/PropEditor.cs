@@ -22,14 +22,16 @@ partial class PropEditor : IEditorMode
     {
         new(0, 0, 255, 255),
         new(180, 180, 180, 255),
-        new(0, 255, 0, 255)
+        new(0, 255, 0, 255),
+        new(255, 0, 0, 255),
     };
 
     private readonly Color[] OutlineGlowColors = new Color[]
     {
-        new(50, 50, 255, 255),
+        new(100, 100, 255, 255),
         new(255, 255, 255, 255),
-        new(100, 255, 100, 255)
+        new(100, 255, 100, 255),
+        new(255, 100, 100, 255)
     };
     
     private readonly List<string> propColorNames;
@@ -144,10 +146,10 @@ partial class PropEditor : IEditorMode
         var maxY = Math.Max(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }*/
-    private Rectangle GetSelectionAABB()
-        => CalcPropExtents(selectedProps);
+    private Rectangle GetSelectionAABB(bool excludeNonmovable = false)
+        => CalcPropExtents(selectedProps, excludeNonmovable);
 
-    private static Rectangle CalcPropExtents(List<Prop> props)
+    private static Rectangle CalcPropExtents(List<Prop> props, bool excludeNonmovable = false)
     {
         var minX = float.PositiveInfinity;
         var maxX = float.NegativeInfinity;
@@ -156,6 +158,8 @@ partial class PropEditor : IEditorMode
 
         foreach (var prop in props)
         {
+            if (excludeNonmovable && !prop.IsMovable) continue;
+            
             for (int i = 0; i < 4; i++)
             {
                 var pts = prop.QuadPoints;
@@ -253,8 +257,21 @@ partial class PropEditor : IEditorMode
             {
                 if (prop == highlightedProp) continue;
 
+                Color col;
+                if (!prop.IsMovable)
+                {
+                    col = OutlineColors[3]; // red
+                }
+                else if (prop.Rope is not null)
+                {
+                    col = OutlineColors[2]; // green
+                }
+                else
+                {
+                    col = OutlineColors[1]; // white
+                }
+                
                 var pts = prop.QuadPoints;
-                var col = prop.Rope is not null ? OutlineColors[2] : prop.IsAffine ? OutlineColors[0] : OutlineColors[1];
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -268,7 +285,7 @@ partial class PropEditor : IEditorMode
                 if (prop == highlightedProp) continue;
 
                 var pts = prop.QuadPoints;
-                var col = OutlineColors[0];
+                var col = prop.IsMovable ? OutlineColors[0] : OutlineColors[3];;
                 Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
                 Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
@@ -292,7 +309,7 @@ partial class PropEditor : IEditorMode
             bool canWarp = transformMode is WarpTransformMode ||
                 (isWarpMode && selectedProps.Count == 1);
             
-            var aabb = GetSelectionAABB();
+            var aabb = GetSelectionAABB(excludeNonmovable: transformMode is not null);
 
             // draw selection AABB if there is more than
             // one prop selected
@@ -394,56 +411,59 @@ partial class PropEditor : IEditorMode
             // freeform warp gizmo
             if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is RopePointTransformMode)
             {
-                // normal free-form 
-                if (selectedProps[0].Rope is null || !selectedProps[0].IsAffine)
+                if (selectedProps[0].IsMovable)
                 {
-                    Vector2[] corners = selectedProps[0].QuadPoints;
-
-                    for (int i = 0; i < 4; i++)
+                    // normal free-form 
+                    if (selectedProps[0].Rope is null)
                     {
-                        // don't draw this handle if another scale handle is active
-                        if (transformMode is WarpTransformMode warpMode && warpMode.handleId != i)
-                        {
-                            continue;
-                        }
+                        Vector2[] corners = selectedProps[0].QuadPoints;
 
-                        var handlePos = corners[i];
-                        
-                        // draw gizmo handle at corner
-                        if (DrawGizmoHandle(handlePos, 1) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        for (int i = 0; i < 4; i++)
                         {
-                            transformMode = new WarpTransformMode(
-                                handleId: i,
-                                prop: selectedProps[0],
-                                snap: snappingMode / 2f
-                            );
+                            // don't draw this handle if another scale handle is active
+                            if (transformMode is WarpTransformMode warpMode && warpMode.handleId != i)
+                            {
+                                continue;
+                            }
+
+                            var handlePos = corners[i];
+                            
+                            // draw gizmo handle at corner
+                            if (DrawGizmoHandle(handlePos, 1) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                            {
+                                transformMode = new WarpTransformMode(
+                                    handleId: i,
+                                    prop: selectedProps[0],
+                                    snap: snappingMode / 2f
+                                );
+                            }
                         }
                     }
-                }
 
-                // on rope-type props, freeform will instead only allow you to drag
-                // point A and point B, and will just modify the RotatedRect so that
-                // the left and right sides touch A and B
-                else
-                {
-                    var prop = selectedProps[0];
-                    var cos = MathF.Cos(prop.Rect.Rotation);
-                    var sin = MathF.Sin(prop.Rect.Rotation);
-                    var pA = prop.Rect.Center + new Vector2(cos, sin) * -prop.Rect.Size.X / 2f;
-                    var pB = prop.Rect.Center + new Vector2(cos, sin) * prop.Rect.Size.X / 2f;
-
-                    for (int i = 0; i < 2; i++)
+                    // on rope-type props, freeform will instead only allow you to drag
+                    // point A and point B, and will just modify the RotatedRect so that
+                    // the left and right sides touch A and B
+                    else
                     {
-                        if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
-                            continue;
-                        
-                        if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        var prop = selectedProps[0];
+                        var cos = MathF.Cos(prop.Rect.Rotation);
+                        var sin = MathF.Sin(prop.Rect.Rotation);
+                        var pA = prop.Rect.Center + new Vector2(cos, sin) * -prop.Rect.Size.X / 2f;
+                        var pB = prop.Rect.Center + new Vector2(cos, sin) * prop.Rect.Size.X / 2f;
+
+                        for (int i = 0; i < 2; i++)
                         {
-                            transformMode = new RopePointTransformMode(
-                                handleId: i,
-                                prop: prop,
-                                snap: snappingMode / 2f
-                            );
+                            if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
+                                continue;
+                            
+                            if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                            {
+                                transformMode = new RopePointTransformMode(
+                                    handleId: i,
+                                    prop: prop,
+                                    snap: snappingMode / 2f
+                                );
+                            }
                         }
                     }
                 }
@@ -580,7 +600,7 @@ partial class PropEditor : IEditorMode
                 }
                 else
                 {
-                    // if draggging over a prop, drag all currently selected props
+                    // if dragging over a prop, drag all currently selected props
                     // if active prop is in selection. if not, then set selection
                     // to this prop
                     dragMode = DragMode.Move;
@@ -590,50 +610,14 @@ partial class PropEditor : IEditorMode
                         selectedProps.Add(hoverProp);
                     }
 
-                    // record initial drag positions
-                    dragInitPositions.Clear();
-                    foreach (var prop in selectedProps)
-                    {
-                        dragInitPositions.Add(new PropTransform(prop));
-                    }
+                    transformMode = new MoveTransformMode(
+                        selectedProps,
+                        snappingMode / 2f
+                    );
                 }
             }
+            
             isMouseDragging = true;
-
-            // move drag
-            if (dragMode == DragMode.Move)
-            {
-                float snap = snappingMode / 2f;
-                bool posSnap = selectedProps.Count == 1 && selectedProps[0].IsAffine;
-
-                var mouseDelta = window.MouseCellFloat - dragStartPos;
-                
-                if (snap > 0 && !posSnap)
-                {
-                    mouseDelta = Snap(mouseDelta, snap);
-                }
-
-                for (int i = 0; i < selectedProps.Count; i++)
-                {
-                    var prop = selectedProps[i];
-
-                    if (prop.IsAffine)
-                        prop.Rect.Center = dragInitPositions[i].rect.Center + mouseDelta;
-
-                        if (snap > 0 && posSnap)
-                        {
-                            prop.Rect.Center = Snap(prop.Rect.Center, snap);
-                        }
-                    else
-                    {
-                        var pts = prop.QuadPoints;
-                        pts[0] = dragInitPositions[i].quad[0] + mouseDelta;
-                        pts[1] = dragInitPositions[i].quad[1] + mouseDelta;
-                        pts[2] = dragInitPositions[i].quad[2] + mouseDelta;
-                        pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
-                    }
-                }
-            }
         }
 
         // user clicked a prop, so add it to the selection

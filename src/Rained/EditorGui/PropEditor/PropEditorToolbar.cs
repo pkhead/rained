@@ -531,14 +531,20 @@ partial class PropEditor : IEditorMode
                     }
                     
                     // notes
-                    ImGui.SeparatorText("Notes");
+                }
 
-                    if (ropeProps && !affineProps)
-                    {
-                        ImGui.Bullet(); ImGui.SameLine();
-                        ImGui.TextWrapped("One or more selected rope props did not load as a rectangle, so editing is limited.");
-                    }
+                ImGui.SeparatorText("Notes");
 
+                if (ropeProps && !affineProps)
+                {
+                    ImGui.Bullet(); ImGui.SameLine();
+                    ImGui.TextWrapped("One or more selected rope props did not load as a rectangle, so editing is limited.");
+                }
+
+                if (selectedProps.Count == 1)
+                {
+                    var prop = selectedProps[0];
+                    
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                         ImGui.BulletText("Tile as Prop");
 

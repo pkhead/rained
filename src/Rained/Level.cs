@@ -347,6 +347,11 @@ class Prop
 
     public bool IsAffine { get => isAffine; }
 
+    public bool IsMovable
+    {
+        get => rope == null || isAffine;
+    }
+
     public enum PropRenderTime
     {
         PreEffects, PostEffects

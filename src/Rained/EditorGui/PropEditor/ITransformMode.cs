@@ -35,6 +35,60 @@ partial class PropEditor : IEditorMode
             }
         }
     }
+
+    class MoveTransformMode : ITransformMode
+    {
+        private readonly PropTransform[] dragInitPositions;
+        private readonly Prop[] props;
+        private readonly float snap;
+
+        public MoveTransformMode(List<Prop> props, float snap)
+        {
+            this.props = props.ToArray();
+            this.snap = snap;
+
+            // record initial drag positions
+            dragInitPositions = new PropTransform[props.Count];
+            for (int i = 0; i < props.Count; i++)
+            {
+                dragInitPositions[i] = new PropTransform(props[i]);
+            }
+        }
+
+        public void Update(Vector2 dragStartPos, Vector2 mousePos)
+        {
+            bool posSnap = props.Length == 1 && props[0].IsAffine;
+
+            var mouseDelta = mousePos - dragStartPos;
+            
+            if (snap > 0 && !posSnap)
+            {
+                mouseDelta = Snap(mouseDelta, snap);
+            }
+
+            for (int i = 0; i < props.Length; i++)
+            {
+                var prop = props[i];
+                if (!prop.IsMovable) continue;
+
+                if (prop.IsAffine)
+                    prop.Rect.Center = dragInitPositions[i].rect.Center + mouseDelta;
+
+                    if (snap > 0 && posSnap)
+                    {
+                        prop.Rect.Center = Snap(prop.Rect.Center, snap);
+                    }
+                else
+                {
+                    var pts = prop.QuadPoints;
+                    pts[0] = dragInitPositions[i].quad[0] + mouseDelta;
+                    pts[1] = dragInitPositions[i].quad[1] + mouseDelta;
+                    pts[2] = dragInitPositions[i].quad[2] + mouseDelta;
+                    pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
+                }
+            }
+        }
+    }
     
     class ScaleTransformMode : ITransformMode
     {
@@ -200,6 +254,7 @@ partial class PropEditor : IEditorMode
             for (int i = 0; i < props.Length; i++)
             {
                 var prop = props[i];
+                if (!prop.IsMovable) continue;
 
                 if (prop.IsAffine)
                 {
@@ -368,6 +423,8 @@ partial class PropEditor : IEditorMode
             for (int i = 0; i < props.Length; i++)
             {
                 var prop = props[i];
+                if (!prop.IsMovable) continue;
+
                 if (prop.IsAffine)
                 {
                     var origTransform = origTransforms[i].rect;
