@@ -3,6 +3,7 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- rename Cell to Geo
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - edit rlImGui to allow tint in image (for filebrowser)
 - split up tile and prop editor source code
@@ -19,7 +20,6 @@ Overall:
 Level Properties:
 
 Geometry Editor:
-- Fissure (still haven't made that yet, lol)
 - select and copy/paste
 - show tool preview over mouse
 - ability to view tiles

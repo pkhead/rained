@@ -199,6 +199,14 @@ class LevelEditRender
             colors.Add(color);
         }
 
+        bool crackCanConnect(int x, int y, int layer)
+        {
+            if (!Level.IsInBounds(x, y)) return false;
+            ref var cell = ref Level.Layers[layer, x, y];
+            
+            return cell.Cell != CellType.Solid || cell.Has(LevelObject.Crack);
+        }
+
         for (int x = subL; x < subR; x++)
         {
             for (int y = subT; y < subB; y++)
@@ -207,11 +215,60 @@ class LevelEditRender
 
                 var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
                 var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
+                var hasCrack = (c.Objects & LevelObject.Crack) != 0;
+
+                bool crackH = false;
+                bool crackV = false;
+                if ((c.Objects & LevelObject.Crack) != 0)
+                {
+                    bool nUp = crackCanConnect(x, y-1, layer);
+                    bool nDown = crackCanConnect(x, y+1, layer);
+                    bool nLeft = crackCanConnect(x-1, y, layer);
+                    bool nRight = crackCanConnect(x+1, y, layer);
+                    crackH = nLeft || nRight;
+                    crackV = nUp || nDown;
+                }
 
                 switch (c.Cell)
                 {
                     case CellType.Solid:
-                        if (ViewObscuredBeams)
+                        if (hasCrack)
+                        {
+                            if (crackH && crackV)
+                            {
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, 4, Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, 4, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, 4, 4, Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize + 16, 4, 4, Color.White);
+                            }
+                            else if (crackH)
+                            {
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 4, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, Level.TileSize, 4, Color.White);
+                            }
+                            else if (crackV)
+                            {
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                            }
+                            else
+                            {
+                                // draw negative diagonal line
+                                drawTri(
+                                    new Vector2(x, y) * Level.TileSize,
+                                    new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
+                                    new Vector2((x+1) * Level.TileSize - 2f, y * Level.TileSize),
+                                    Color.White
+                                );
+                                drawTri(
+                                    new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
+                                    new Vector2(x * Level.TileSize + 2f, (y+1) * Level.TileSize),
+                                    new Vector2(x+1, y+1) * Level.TileSize,
+                                    Color.White
+                                );
+                            }
+                        }
+                        else if (ViewObscuredBeams)
                         {
                             // extra logic to signify that there is a beam here
                             // when beam is completely covered

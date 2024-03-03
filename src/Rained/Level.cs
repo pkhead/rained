@@ -93,7 +93,7 @@ struct LevelCell
 
     public void Add(LevelObject obj) => Objects |= obj;
     public void Remove(LevelObject obj) => Objects &= ~obj;
-    public readonly bool Has(LevelObject obj) => Objects.HasFlag(obj);
+    public readonly bool Has(LevelObject obj) => (Objects & obj) != 0;
 }
 
 class Camera

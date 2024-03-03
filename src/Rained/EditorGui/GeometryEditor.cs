@@ -600,8 +600,8 @@ class GeometryEditor : IEditorMode
 
             if (levelObject != LevelObject.None)
             {
-                // player can only place objects on work layer 1 (except if it's a beam)
-                if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam)
+                // player can only place objects on work layer 1 (except if it's a beam or crack)
+                if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack)
                 {
                     if (pressed) toolPlaceMode = cell.Has(levelObject);
                     if (toolPlaceMode)
