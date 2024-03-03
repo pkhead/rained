@@ -528,24 +528,28 @@ class TileEditor : IEditorMode
         // draw layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
+            int offset = l * 2;
+
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrame);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-            levelRender.RenderTiles(l, 255);
+            Rlgl.PushMatrix();
+                Rlgl.Translatef(offset, offset, 0f);
+                levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+                levelRender.RenderTiles(l, 255);
+            Rlgl.PopMatrix();
             
             // draw alpha-blended result into main frame
             Raylib.BeginTextureMode(mainFrame);
             Rlgl.PushMatrix();
             Rlgl.LoadIdentity();
 
-            int offset = l * 2;
             var alpha = l == window.WorkLayer ? 255 : 50;
             Raylib.DrawTextureRec(
                 layerFrame.Texture,
                 new Rectangle(0f, layerFrame.Texture.Height, layerFrame.Texture.Width, -layerFrame.Texture.Height),
-                Vector2.One * offset,
+                Vector2.Zero,
                 new Color(255, 255, 255, alpha)
             );
             Rlgl.PopMatrix();

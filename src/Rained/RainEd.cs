@@ -481,6 +481,11 @@ sealed class RainEd
                 {
                     editorWindow.LevelRenderer.ViewObscuredBeams = !editorWindow.LevelRenderer.ViewObscuredBeams;
                 }
+
+                if (ImGui.MenuItem("Shortcuts", null, ShortcutsWindow.IsWindowOpen))
+                {
+                    ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
+                }
                 
                 ImGui.EndMenu();
             }
@@ -572,6 +577,9 @@ sealed class RainEd
             notificationTime -= dt;
             notifFlash += dt;
         }
+
+        // shortcuts window
+        ShortcutsWindow.ShowWindow();
 
         // about screen
         if (promptAbout)

@@ -103,10 +103,8 @@ class EffectsEditor : IEditorMode
         var level = window.Editor.Level;
         var fxDatabase = window.Editor.EffectsDatabase;
 
-        if (ImGui.Begin("Effects", ImGuiWindowFlags.NoFocusOnAppearing))
+        if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            ImGui.SeparatorText("Add Effect");
-
             var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
             var boxHeight = ImGui.GetTextLineHeight() * 20.0f;
 
@@ -167,9 +165,10 @@ class EffectsEditor : IEditorMode
                 
                 ImGui.EndListBox();
             }
+        } ImGui.End();
 
-            ImGui.SeparatorText("Effect Stack");
-
+        if (ImGui.Begin("Active Effects", ImGuiWindowFlags.NoFocusOnAppearing))
+        {
             if (ImGui.BeginListBox("##EffectStack", new Vector2(-0.0001f, ImGui.GetTextLineHeight() * 10.0f)))
             {
                 if (level.Effects.Count == 0)
@@ -228,12 +227,14 @@ class EffectsEditor : IEditorMode
 
                 ImGui.EndListBox();
             }
+        } ImGui.End();
 
+        if (ImGui.Begin("Effect Options", ImGuiWindowFlags.NoFocusOnAppearing))
+        {
             // effect properties
             if (selectedEffect >= 0)
             {
                 var effect = level.Effects[selectedEffect];
-                ImGui.SeparatorText("Effect Options");
 
                 // on delete action, only delete effect after UI has been processed
                 bool doDelete = false;
@@ -369,7 +370,10 @@ class EffectsEditor : IEditorMode
                     changeRecorder.PushListChange();
                 }
             }
-            
+            else
+            {
+                ImGui.TextDisabled("No effect selected");
+            }
         } ImGui.End();
     }
 
@@ -397,18 +401,21 @@ class EffectsEditor : IEditorMode
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
+            int offset = l * 2;
             Raylib.BeginTextureMode(layerFrame);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-            levelRender.RenderTiles(l, 255);
-            
+            Rlgl.PushMatrix();
+                Rlgl.Translatef(offset, offset, 0f);
+                levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+                levelRender.RenderTiles(l, 100);
+            Rlgl.PopMatrix();
+
             // draw alpha-blended result into main frame
             Raylib.BeginTextureMode(mainFrame);
             Rlgl.PushMatrix();
             Rlgl.LoadIdentity();
 
-            int offset = l * 2;
             var alpha = l == 0 ? 255 : 50;
             Raylib.DrawTextureRec(
                 layerFrame.Texture,

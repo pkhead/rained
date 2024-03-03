@@ -49,17 +49,12 @@ Effects Editor:
 
 Prop Editor:
 - do tile as prop depth change based on if specs2 is active?
-- instead of having a "Random" variation option, add an "R" button that makes a random variation
+- search bar
 - rope collision resolution physics is inaccurate
-- fix prop layer compositing
 - undo/redo
-- save props
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
-- rope-type props will have a "Simulate" button in an always-visible prop properties field.
-  holding down this button will perform the simulation for as long as it is held.
-- for rope-type props, copy henry's design
 
 Render:
 - select camera to render first
