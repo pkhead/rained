@@ -402,6 +402,16 @@ class PropDatabase
     {
         return allProps.TryGetValue(name, out value);
     }
+    
+    private void AddPropToIndex(PropInit prop)
+    {
+        if (allProps.ContainsKey(prop.Name))
+        {
+            RainEd.Logger.Warning("Already added prop {PropName}", prop.Name);
+        }
+
+        allProps[prop.Name] = prop;
+    }
 
     public int GetPropColorIndex(string name)
     {
@@ -447,7 +457,7 @@ class PropDatabase
                     propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
                     var propInit = new PropInit(currentCategory, propData);
                     currentCategory.Props.Add(propInit);
-                    allProps[propInit.Name] = propInit;
+                    AddPropToIndex(propInit);
                 }
                 catch (Exception e)
                 {
@@ -481,7 +491,7 @@ class PropDatabase
                 var propInit = new PropInit(currentCategory, tile);
                 currentCategory.Props.Add(propInit);
                 tilePropCategory.Props.Add(propInit);
-                allProps[propInit.Name] = propInit;
+                AddPropToIndex(propInit);
                 tileIndex++;
 
                 // 21 tiles per page
@@ -530,7 +540,7 @@ class PropDatabase
                 var ropeData = (Lingo.List)lingoParser.Read(line)!;
                 var propInit = new PropInit(curGroup!, ropeData);
                 curGroup!.Props.Add(propInit);
-                allProps[propInit.Name] = propInit;
+                AddPropToIndex(propInit);
             }
         }
 

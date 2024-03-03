@@ -673,13 +673,14 @@ class LevelEditRender
 
     
 
-    public void RenderProps(int srcDepth)
+    public void RenderProps(int srcLayer, int alpha)
     {
+        int srcDepth = srcLayer * 10;
+
         foreach (var prop in Level.Props)
         {
-            var alpha = 255;
             if (prop.DepthOffset < srcDepth || prop.DepthOffset >= srcDepth + 10)
-                alpha = 50;
+                continue;
             
             var quad = prop.QuadPoints;
             var texture = prop.PropInit.Texture;
@@ -698,7 +699,7 @@ class LevelEditRender
                     (prop.PropInit.Type == Props.PropType.SimpleDecal || prop.PropInit.Type == Props.PropType.VariedDecal)
                     ? 0.364f : 0f;
                 
-                float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth) / 10f) + startFade, 0f, 1f);
+                float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
 
                 var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
 
