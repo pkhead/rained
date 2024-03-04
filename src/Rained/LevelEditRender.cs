@@ -99,12 +99,55 @@ class LevelEditRender
     private float lastViewZoom = 0f;
 
     private RlManaged.Texture2D gridTexture = null!;
+    private readonly RlManaged.Shader propPreviewShader;
     
-    private Raylib_cs.Material geoMaterial;
-    private List<RlManaged.Mesh>[] meshLayers;
-    private readonly bool[] dirtyMeshLayers; // if meshes need updating
-    private RlManaged.Shader transparencyShader;
+    private const int ChunkWidth = 32;
+    private const int ChunkHeight = 32;
 
+    struct ChunkPos
+    {
+        public int X;
+        public int Y;
+        public int Layer;
+
+        public ChunkPos(int x, int y, int layer)
+        {
+            X = x;
+            Y = y;
+            Layer = layer;
+        }
+
+        public readonly override bool Equals(object? obj)
+        {
+            //
+            // See the full list of guidelines at
+            //   http://go.microsoft.com/fwlink/?LinkID=85237
+            // and also the guidance for operator== at
+            //   http://go.microsoft.com/fwlink/?LinkId=85238
+            //
+            
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            ChunkPos other = (ChunkPos) obj;
+            return X == other.X && Y == other.Y && Layer == other.Layer;
+        }
+        
+        // override object.GetHashCode
+        public readonly override int GetHashCode()
+        {
+            return HashCode.Combine(X.GetHashCode(), Y.GetHashCode(), Layer.GetHashCode());
+        }
+    }
+
+    private Raylib_cs.Material geoMaterial;
+    private RlManaged.Mesh?[,,] chunkLayers;
+    private int chunkRowCount; // Y
+    private int chunkColCount; // X
+    private List<ChunkPos> dirtyChunks;
+    
     private readonly List<Vector3> verticesBuf = new();
     private readonly List<Color> colorsBuf = new();
 
@@ -114,17 +157,34 @@ class LevelEditRender
         ReloadGridTexture();
 
         geoMaterial = Raylib.LoadMaterialDefault();
+        chunkLayers = null!;
+        dirtyChunks = null!;
+        ReloadLevel();
+        
+        propPreviewShader = RlManaged.Shader.LoadFromMemory(null, RWTransparencyShaderSrc);
+    }
 
-        meshLayers = new List<RlManaged.Mesh>[3];
-        dirtyMeshLayers = new bool[3];
+    public void ReloadLevel()
+    {
+        // TODO: dispose old chunk layers
+        chunkColCount = (Level.Width-1) / ChunkWidth + 1;
+        chunkRowCount = (Level.Height-1) / ChunkHeight + 1;
+        chunkLayers = new RlManaged.Mesh?[chunkColCount, chunkRowCount, 3];
+        dirtyChunks = new List<ChunkPos>();
 
-        for (int i = 0; i < 3; i++)
+        for (int x = 0; x < chunkColCount; x++)
         {
-            meshLayers[i] = new List<RlManaged.Mesh>();
-            dirtyMeshLayers[i] = true;
+            for (int y = 0; y < chunkRowCount; y++)
+            {
+                chunkLayers[x,y,0] = null;
+                chunkLayers[x,y,1] = null;
+                chunkLayers[x,y,2] = null;
+            }
         }
-
-        transparencyShader = RlManaged.Shader.LoadFromMemory(null, RWTransparencyShaderSrc);
+        
+        MarkNeedsRedraw(0);
+        MarkNeedsRedraw(1);
+        MarkNeedsRedraw(2);
     }
 
     // re-render the grid texture for the new zoom level
@@ -378,41 +438,28 @@ class LevelEditRender
         geoMesh.UploadMesh(true);
     }
 
-    public void ReloadGeometryMesh(int layer)
+    public void ReloadGeometryMesh()
     {
-        if (!dirtyMeshLayers[layer]) return;
-        dirtyMeshLayers[layer] = false;
+        if (dirtyChunks.Count == 0) return;
+        RainEd.Logger.Debug("Remesh geometry chunks");
 
-        RainEd.Logger.Debug("Remesh geometry for layer {Layer}", layer);
-
-        var geoList = meshLayers[layer];
-        int index = 0;
-
-        for (int x = 0; x < Level.Width; x += 100)
+        foreach (var chunkPos in dirtyChunks)
         {
-            for (int y = 0; y < Level.Height; y += 100)
-            {
-                if (index >= geoList.Count)
-                {
-                    var mesh = new RlManaged.Mesh();
-                    geoList.Add(mesh);
-                }
-                else
-                {
-                    geoList[index].Dispose();
-                    geoList[index] = new RlManaged.Mesh();
-                }
+            ref RlManaged.Mesh? chunk = ref chunkLayers[chunkPos.X, chunkPos.Y, chunkPos.Layer];
 
-                MeshGeometry(geoList[index], layer, x, y, Math.Min(x + 100, Level.Width), Math.Min(y + 100, Level.Height));
-                index++;
-            }
-        }
+            chunk?.Dispose();
+            chunk = new RlManaged.Mesh();
 
-        while (geoList.Count > index)
-        {
-            geoList[^1].Dispose();
-            geoList.RemoveAt(geoList.Count - 1);
+            MeshGeometry(
+                geoMesh: chunk,
+                layer: chunkPos.Layer,
+                subL: chunkPos.X * ChunkWidth,
+                subT: chunkPos.Y * ChunkHeight,
+                subR: Math.Min(Level.Width, (chunkPos.X + 1) * ChunkWidth),
+                subB: Math.Min(Level.Height, (chunkPos.Y + 1) * ChunkHeight)
+            );
         }
+        dirtyChunks.Clear();
     }
 
     private bool IsInBorder(int x, int y)
@@ -424,7 +471,7 @@ class LevelEditRender
 
     public void RenderGeometry(int layer, Color color)
     {
-        ReloadGeometryMesh(layer);
+        ReloadGeometryMesh();
 
         unsafe
         {
@@ -432,17 +479,59 @@ class LevelEditRender
         }
 
         var mat = Matrix4x4.Identity;
-        Rlgl.DrawRenderBatchActive(); // should raylib not do this automatically??
 
-        foreach (var mesh in meshLayers[layer])
+        // should raylib not do this automatically??
+        // i suppose raylib isn't designed for raw meshes to drawn in Drawing/2D mode
+        Rlgl.DrawRenderBatchActive();
+
+        int viewL = (int) Math.Floor(ViewTopLeft.X / ChunkWidth);
+        int viewT = (int) Math.Floor(ViewTopLeft.Y / ChunkHeight);
+        int viewR = (int) Math.Ceiling(ViewBottomRight.X / ChunkWidth);
+        int viewB = (int) Math.Ceiling(ViewBottomRight.Y / ChunkHeight);
+
+        for (int x = Math.Max(viewL, 0); x < Math.Min(viewR, chunkColCount); x++)
         {
-            Raylib.DrawMesh(mesh, geoMaterial, mat);
+            for (int y = Math.Max(viewT, 0); y < Math.Min(viewB, chunkRowCount); y++)
+            {
+                var mesh = chunkLayers[x,y,layer];
+                if (mesh is not null)
+                    Raylib.DrawMesh(mesh, geoMaterial, mat);
+            }
         }
     }
 
+    private void MarkNeedsRedraw(ChunkPos cpos)
+    {
+        if (!dirtyChunks.Contains(cpos))
+            dirtyChunks.Add(cpos);
+    }
+
+    // mark entire layer as dirty
     public void MarkNeedsRedraw(int layer)
     {
-        dirtyMeshLayers[layer] = true;
+        for (int x = 0; x < chunkColCount; x++)
+        {
+            for (int y = 0; y < chunkRowCount; y++)
+            {
+                MarkNeedsRedraw(new ChunkPos(x, y, layer));
+            }
+        }
+    }
+
+    public void MarkNeedsRedraw(int x, int y, int layer)
+    {
+        var cpos = new ChunkPos(x / ChunkWidth, y / ChunkHeight, layer);
+        MarkNeedsRedraw(cpos);
+
+        // if on edge, mark neighboring chunks (because of terrain crack)
+        if (x % ChunkWidth == 0)
+            MarkNeedsRedraw(new ChunkPos((x-1) / ChunkWidth, y / ChunkHeight, layer));
+        if (y % ChunkHeight == 0)
+            MarkNeedsRedraw(new ChunkPos(x / ChunkWidth, (y-1) / ChunkHeight, layer));
+        if ((x+1) % ChunkWidth == 0)
+            MarkNeedsRedraw(new ChunkPos((x+1) / ChunkWidth, y / ChunkHeight, layer));
+        if ((y+1) % ChunkHeight == 0)
+            MarkNeedsRedraw(new ChunkPos(x / ChunkWidth, (y+1) / ChunkHeight, layer));
     }
 
     public void RenderObjects(Color color)
@@ -743,7 +832,7 @@ class LevelEditRender
             var texture = prop.PropInit.Texture;
 
             Rlgl.DisableBackfaceCulling();
-            Raylib.BeginShaderMode(transparencyShader);
+            Raylib.BeginShaderMode(propPreviewShader);
             Rlgl.SetTexture(texture.Id);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;

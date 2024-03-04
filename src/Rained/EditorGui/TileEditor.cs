@@ -876,12 +876,14 @@ class TileEditor : IEditorMode
                     if (specInt >= 0)
                     {
                         level.Layers[layer, gx, gy].Geo = (GeoType) specInt;
+                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
                     }
 
                     // place second layer
                     if (layer < 2 && spec2Int >= 0)
                     {
                         level.Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
+                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
                     }
                 }
 
@@ -905,12 +907,6 @@ class TileEditor : IEditorMode
 
         // place tile root
         level.Layers[layer, tileRootX, tileRootY].TileHead = tile;
-
-        if (placeGeometry)
-        {
-            window.LevelRenderer.MarkNeedsRedraw(layer);
-            window.LevelRenderer.MarkNeedsRedraw(layer+1);
-        }
     }
 
     private void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
@@ -951,21 +947,21 @@ class TileEditor : IEditorMode
                 if (removeGeometry)
                 {
                     if (specInt >= 0)
+                    {
                         level.Layers[layer, gx, gy].Geo = GeoType.Air;
+                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
+                    }
 
                     if (spec2Int >= 0 && layer < 2)
+                    {
                         level.Layers[layer+1, gx, gy].Geo = GeoType.Air;
+                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
+                    }
                 }
             }
         }
 
         // remove tile root
         level.Layers[layer, tileRootX, tileRootY].TileHead = null;
-
-        if (removeGeometry)
-        {
-            window.LevelRenderer.MarkNeedsRedraw(layer);
-            window.LevelRenderer.MarkNeedsRedraw(layer+1);
-        }
     }
 }
