@@ -3,6 +3,7 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- save user settings
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - edit rlImGui to allow tint in image (for filebrowser)
 - split up tile and prop editor source code
@@ -46,6 +47,8 @@ Effects Editor:
 - community effects
 
 Prop Editor:
+- prop sampling
+- fix prop preview in prop selector
 - figure out cause of performance issues
 - Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
