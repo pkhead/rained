@@ -451,10 +451,10 @@ sealed class RainEd
             {
                 ImGuiMenuItemShortcut(ShortcutID.Undo, "Undo");
                 ImGuiMenuItemShortcut(ShortcutID.Redo, "Redo");
-                ImGui.Separator();
-                ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
-                ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
-                ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
+                //ImGui.Separator();
+                //ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
+                //ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
+                //ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
                 ImGui.Separator();
 
                 if (ImGui.MenuItem("Resize Level..."))

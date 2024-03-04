@@ -6,7 +6,6 @@ Overall:
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - edit rlImGui to allow tint in image (for filebrowser)
 - split up tile and prop editor source code
-- on cell change, only remesh the mesh chunk that it is in
 - Move Level
 - undo/redo for level resize
 - help pages/hints/tooltips/whatever
@@ -27,6 +26,7 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
+- optimized tile rendering
 - rect material place
 
 Camera Editor:
