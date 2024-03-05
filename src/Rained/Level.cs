@@ -326,6 +326,15 @@ class Prop
 {
     public readonly PropInit PropInit;
 
+    // this is just used for prop depth sorting
+    // if both RenderOrder and DepthOffset is the same on a stack of props
+    // it might cause a "z-fighting" coming from the
+    // sorted list being re-sorted and stuf...
+    // so I can't return 0 in the comparer function
+    // i need a number unique to each prop
+    public readonly uint ID;
+    private static uint nextId = 0;
+
     // A prop is affine by default
     // The user can then "convert" it to a freeform quad,
     // which then will allow the Quad field to be used
@@ -385,6 +394,7 @@ class Prop
     private Prop(PropInit init)
     {
         PropInit = init;
+        ID = nextId++;
         
         isAffine = true;
         quad = new Vector2[4];
@@ -604,6 +614,7 @@ class Level
 
     public readonly List<Effect> Effects = new();
     public readonly List<Prop> Props = new();
+    public readonly List<Prop> SortedProps = new();
     
     public int TileSeed = 200;
     public bool DefaultMedium = false; // idk what the hell this does
@@ -671,12 +682,20 @@ class Level
 
     private class PropDepthSorter : IComparer<Prop>
     {
-        int IComparer<Prop>.Compare(Prop? a, Prop? b) =>
-                a!.DepthOffset == b!.DepthOffset
-            ?
-                b!.RenderOrder.CompareTo(a!.RenderOrder)
-            :
-                b!.DepthOffset.CompareTo(a!.DepthOffset);
+        int IComparer<Prop>.Compare(Prop? a, Prop? b)
+        {
+            if (a!.DepthOffset == b!.DepthOffset)
+            {
+                if (a!.RenderOrder == b!.RenderOrder)
+                    return a!.ID.CompareTo(b!.ID);
+                else
+                    return b!.RenderOrder.CompareTo(a!.RenderOrder);
+            }
+            else
+            {
+                return b!.DepthOffset.CompareTo(a!.DepthOffset);
+            }
+        }
     }
 
     public void SortPropsByDepth()
