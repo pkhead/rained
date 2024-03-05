@@ -27,6 +27,7 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
+- make sure tile rendering/placement code is correct
 - optimized tile rendering
 - rect material place
 
@@ -47,7 +48,7 @@ Effects Editor:
 - community effects
 
 Prop Editor:
-- prop sampling
+- prop draw culling
 - fix prop preview in prop selector
 - figure out cause of performance issues
 - Drought Long Props

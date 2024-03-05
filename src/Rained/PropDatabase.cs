@@ -187,9 +187,9 @@ record PropInit
                 PropFlags |= PropFlags.ProcedurallyShaded;
             }
         }
-        else if (Type == PropType.Rope)
+        else if (Type == PropType.Rope || Type == PropType.SimpleDecal || Type == PropType.VariedDecal || Type == PropType.Antimatter)
         {
-            PropFlags |= PropFlags.ProcedurallyShaded; // ...a technicality
+            PropFlags |= PropFlags.ProcedurallyShaded;
         }
 
         // is custom color available?

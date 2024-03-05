@@ -524,10 +524,10 @@ partial class PropEditor : IEditorMode
                             ImGui.Checkbox("Apply Color", ref prop.ApplyColor);
                         }
 
-                        ImGui.BeginDisabled();
-                            bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
-                            ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
-                        ImGui.EndDisabled();
+                        //ImGui.BeginDisabled();
+                        //    bool selfShaded = prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded);
+                        //    ImGui.Checkbox("Procedurally Shaded", ref selfShaded);
+                        //ImGui.EndDisabled();
                     }
                     
                     // notes
@@ -549,7 +549,7 @@ partial class PropEditor : IEditorMode
                     if (!isDecal && prop.DepthOffset <= 5 && prop.DepthOffset + prop.CustomDepth >= 6)
                     {
                         ImGui.Bullet(); ImGui.SameLine();
-                        ImGui.TextWrapped("Warning: This prop will intersect with the play layer (depth 5-6)");
+                        ImGui.TextWrapped("Warning: This prop will intersect with the play layer (depth 5-6)!");
                     }
 
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
@@ -561,12 +561,18 @@ partial class PropEditor : IEditorMode
 
                         if (prop.Rope is not null)
                         {
-                            ImGui.TextWrapped("The tube can be colored white through settings");
+                            ImGui.TextWrapped("The tube can be colored white through settings.");
                         }
                         else
                         {
                             ImGui.TextWrapped("It's recommended to render this prop after the effects if the color is activated, as the effects won't affect the color layers.");
                         }
+                    }
+
+                    if (!prop.PropInit.PropFlags.HasFlag(PropFlags.ProcedurallyShaded))
+                    {
+                        ImGui.Bullet(); ImGui.SameLine();
+                        ImGui.TextWrapped("Be aware that shadows and highlights will not rotate with the prop, so extreme rotations may cause incorrect shading.");
                     }
                     
                     // user notes
