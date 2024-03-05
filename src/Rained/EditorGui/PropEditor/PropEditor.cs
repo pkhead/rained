@@ -715,6 +715,40 @@ partial class PropEditor : IEditorMode
             }
         }
 
+        // when E is pressed, sample prop
+        if (EditorWindow.IsKeyPressed(ImGuiKey.E))
+        {
+            var prop = GetPropAt(window.MouseCellFloat);
+            if (prop is not null)
+            {
+                // if prop is a tile as prop
+                if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
+                {
+                    for (int i = 0; i < RainEd.Instance.PropDatabase.TileCategories.Count; i++)
+                    {
+                        var group = RainEd.Instance.PropDatabase.TileCategories[i];
+                        var idx = group.Props.IndexOf(prop.PropInit);
+
+                        if (idx >= 0)
+                        {
+                            currentSelectorMode = 1;
+                            selectedGroup = i;
+                            selectedInit = prop.PropInit;
+                            break;
+                        }
+                    }
+                }
+
+                // prop is a regular prop
+                else
+                {
+                    selectedInit = prop.PropInit;
+                    selectedGroup = prop.PropInit.Category.Index;
+                    currentSelectorMode = 0;
+                }
+            }
+        }
+
         // delete key to delete selected props
         if (EditorWindow.IsKeyPressed(ImGuiKey.Delete) || EditorWindow.IsKeyPressed(ImGuiKey.Backspace))
         {
@@ -749,6 +783,17 @@ partial class PropEditor : IEditorMode
                     newProp.QuadPoints[2] += Vector2.One;
                     newProp.QuadPoints[3] += Vector2.One;
                 }
+
+                // copy other properties to the new prop
+                // (this is the best way to do this)
+                newProp.DepthOffset = srcProp.DepthOffset;
+                newProp.ApplyColor = srcProp.ApplyColor;
+                newProp.CustomColor = srcProp.CustomColor;
+                newProp.CustomDepth = srcProp.CustomDepth;
+                newProp.RenderOrder = srcProp.RenderOrder;
+                newProp.Variation = srcProp.Variation;
+                newProp.Seed = srcProp.Seed;
+                newProp.RenderTime = srcProp.RenderTime;
 
                 RainEd.Instance.Level.Props.Add(newProp);
                 selectedProps.Add(newProp);

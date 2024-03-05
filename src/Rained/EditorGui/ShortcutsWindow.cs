@@ -96,7 +96,8 @@ static class ShortcutsWindow
         {
             ("W/S", "Browse selected category"),
             ("A/D", "Browse prop categories"),
-            ("E", "Toggle tile/prop tabs"),
+            ("E", "Sample prop under mouse"),
+            ("Q", "Toggle tile/prop tabs"),
             ("Double-click", "Create prop"),
             ("Mouse Left", "Select prop"),
             ("Shift+Mouse Left", "Add prop to selection"),
