@@ -654,7 +654,7 @@ class TileEditor : IEditorMode
                             _ => "Unknown tile placement error"
                         };
 
-                        window.Editor.ShowError(errStr);
+                        window.Editor.ShowNotification(errStr);
                     }
                 }
             }

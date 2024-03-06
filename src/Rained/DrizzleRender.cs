@@ -272,7 +272,7 @@ class DrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFailed msgFail:
-                    RainEd.Instance.ShowError("Error occured while rendering level");
+                    RainEd.Instance.ShowNotification("Error occured while rendering level");
                     RainEd.Logger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
                     break;
                 

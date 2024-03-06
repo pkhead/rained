@@ -116,6 +116,14 @@ class DrizzleRenderWindow : IDisposable
                 doClose = true;
                 ImGui.CloseCurrentPopup();
             }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Show In File Browser"))
+                RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(
+                    Boot.AppDataPath,
+                    "Data", "Levels",
+                    Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath) + ".txt"
+                ), true);
             
             if (!drizzleRenderer.IsDone)
                 ImGui.EndDisabled();

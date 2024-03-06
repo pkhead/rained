@@ -5,6 +5,7 @@ using ImGuiNET;
 using Serilog;
 using System.Runtime.InteropServices;
 using Serilog.Core;
+using System.Diagnostics;
 
 namespace RainEd;
 
@@ -114,12 +115,42 @@ sealed class RainEd
         lastRopeUpdateTime = Raylib.GetTime();
     }
 
-    // TODO: rename this to ShowNotification
-    public void ShowError(string msg)
+    public void ShowNotification(string msg)
     {
         notification = msg;
         notificationTime = 3f;
         notifFlash = 0f;
+    }
+
+    public void ShowPathInSystemBrowser(string path, bool reveal)
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (reveal)
+                    Process.Start("explorer.exe", "/select," + path);
+                else
+                    Process.Start("explorer.exe", path);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // I can't test if this actually works as intended
+                if (reveal)
+                    Process.Start("open", "-R " + path);
+                else
+                    Process.Start("open", path);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("xdg-open", path);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error("Could not show path '{Path}':\n{Error}", e);
+            ShowNotification("Could not open the system file browser");
+        }
     }
 
     private void LoadLevel(string path)
@@ -142,7 +173,7 @@ sealed class RainEd
             catch (Exception e)
             {
                 Logger.Error("Error loading file {Path}:\n{ErrorMessage}", path, e);
-                ShowError("Could not load level");
+                ShowNotification("Could not load level");
             }
 
             GC.Collect();
@@ -171,7 +202,7 @@ sealed class RainEd
             catch (Exception e)
             {
                 Logger.Error("Could not write level file:\n{ErrorMessage}", e);
-                ShowError("Could not write level file");
+                ShowNotification("Could not write level file");
             }
             
             if (promptCallback is not null)
@@ -179,7 +210,7 @@ sealed class RainEd
                 promptCallback();
             }
 
-            ShowError("Saved!");
+            ShowNotification("Saved!");
         }
 
         promptCallback = null;
@@ -484,6 +515,14 @@ sealed class RainEd
                 {
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }
+
+                ImGui.Separator();
+                
+                if (ImGui.MenuItem("Show Data Folder..."))
+                    ShowPathInSystemBrowser(Path.Combine(Boot.AppDataPath, "Data"), false);
+                
+                if (ImGui.MenuItem("Show Render Folder..."))
+                    ShowPathInSystemBrowser(Path.Combine(Boot.AppDataPath, "Data", "Levels"), false);
                 
                 ImGui.EndMenu();
             }
