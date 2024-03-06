@@ -60,6 +60,9 @@ partial class PropEditor : IEditorMode
         {
             propColorNames.Add(col.Name);
         }
+
+        // this function is defined in PropEditorToolbar.cs
+        ProcessSearch();
     }
 
     public void Load()

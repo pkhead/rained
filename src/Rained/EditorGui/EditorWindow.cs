@@ -209,6 +209,7 @@ class EditorWindow
 
             ImGui.SameLine();
             ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})    {StatusText}");
+            StatusText = string.Empty;
 
             if (!ImGui.GetIO().WantTextInput)
             {
@@ -273,7 +274,6 @@ class EditorWindow
             }
         }
         
-        StatusText = string.Empty;
         editorModes[selectedMode].DrawToolbar();
     }
 

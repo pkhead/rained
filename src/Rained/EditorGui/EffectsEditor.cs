@@ -107,7 +107,7 @@ class EffectsEditor : IEditorMode
         {
             // search bar
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite);
+            ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll);
 
             var groupsPassingSearch = new List<int>();
             var queryLower = searchQuery.ToLower();

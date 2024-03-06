@@ -7,11 +7,21 @@ namespace RainEd;
 
 partial class PropEditor : IEditorMode
 {
+    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects" };
+    private readonly string[] RopeReleaseModeNames = new string[] { "None", "Left", "Right" };
+
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
-    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects" };
-    private readonly string[] RopeReleaseModeNames = new string[] { "None", "Left", "Right" };
+
+    // search results only process groups because i'm too lazy to have
+    // it also process the resulting props
+    // plus, i don't think it's much of an optimization concern because then
+    // it'd only need to filter props per one category, and there's not
+    // that many props per category
+    private string searchQuery = "";
+    private readonly List<(int, PropCategory)> searchResults = new();
+    private readonly List<(int, PropTileCategory)> tileSearchResults = new();
 
 #region Multiselect Inputs
     // what a reflective mess...
@@ -163,6 +173,54 @@ partial class PropEditor : IEditorMode
     }
 #endregion
 
+    private void ProcessSearch()
+    {
+        searchResults.Clear();
+        tileSearchResults.Clear();
+        var propDb = RainEd.Instance.PropDatabase;
+        var queryLower = searchQuery.ToLower();
+
+        // normal props (too lazy to add 5 extra lines that makes this an enum)
+        // (and this field is only used like 2 other times so )
+        if (currentSelectorMode == 0)
+        {
+            for (int i = 0; i < propDb.Categories.Count; i++)
+            {
+                var group = propDb.Categories[i];
+
+                // skip "Tiles as props" categories
+                if (group.IsTileCategory) continue;
+
+                foreach (var prop in group.Props)
+                {
+                    if (prop.Name.ToLower().Contains(queryLower))
+                    {
+                        searchResults.Add((i, group));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // tile props
+        else if (currentSelectorMode == 1)
+        {
+            for (int i = 0; i < propDb.TileCategories.Count; i++)
+            {
+                var group = propDb.TileCategories[i];
+
+                foreach (var prop in group.Props)
+                {
+                    if (prop.Name.ToLower().Contains(queryLower))
+                    {
+                        tileSearchResults.Add((i, group));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     public void DrawToolbar()
     {
         var propDb = RainEd.Instance.PropDatabase;
@@ -188,10 +246,12 @@ partial class PropEditor : IEditorMode
             ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
             ImGui.Combo("Snap", ref snappingMode, "Off\00.5x\01x");
             
+            // flags for search bar
+            var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
+
             if (ImGui.BeginTabBar("PropSelector"))
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
-                var boxHeight = ImGui.GetContentRegionAvail().Y;
 
                 // Props tab
                 if (ImGui.BeginTabItem("Props"))
@@ -201,17 +261,27 @@ partial class PropEditor : IEditorMode
                     {
                         currentSelectorMode = 0;
                         selectedGroup = 0;
+                        ProcessSearch();
                     }
 
+                    // search bar
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                    if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
+                    {
+                        ProcessSearch();
+                    }
+                    var queryLower = searchQuery.ToLower();
+
                     // group list box
+                    var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
-                        for (int i = 0; i < propDb.Categories.Count; i++)
+                        foreach ((var i, var group) in searchResults)
                         {
-                            var group = propDb.Categories[i];
+                            // redundant skip Tiles as props categories
                             if (group.IsTileCategory) continue; // skip Tiles as props categories
 
-                            if (ImGui.Selectable(group.Name, selectedGroup == i))
+                            if (ImGui.Selectable(group.Name, selectedGroup == i) || searchResults.Count == 1)
                                 selectedGroup = i;
                         }
                         
@@ -228,6 +298,10 @@ partial class PropEditor : IEditorMode
                         {
                             var prop = propList[i];
 
+                            // don't show this prop if it doesn't pass search test
+                            if (!prop.Name.ToLower().Contains(queryLower))
+                                continue;
+                            
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {
                                 selectedInit = prop;
@@ -259,14 +333,24 @@ partial class PropEditor : IEditorMode
                     {
                         currentSelectorMode = 1;
                         selectedGroup = 0;
+                        ProcessSearch();
                     }
 
+                    // search bar
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                    if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
+                    {
+                        ProcessSearch();
+                    }
+                    var queryLower = searchQuery.ToLower();
+
                     // group list box
+                    var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
-                        for (int i = 0; i < propDb.TileCategories.Count; i++)
+                        foreach ((var i, var group) in tileSearchResults)
                         {
-                            if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedGroup == i))
+                            if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedGroup == i) || tileSearchResults.Count == 1)
                                 selectedGroup = i;
                         }
                         
@@ -282,6 +366,10 @@ partial class PropEditor : IEditorMode
                         for (int i = 0; i < propList.Count; i++)
                         {
                             var prop = propList[i];
+
+                            // don't show this prop if it doesn't pass search test
+                            if (!prop.Name.ToLower().Contains(queryLower))
+                                continue;
 
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
                             {

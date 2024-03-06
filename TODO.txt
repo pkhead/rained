@@ -3,6 +3,8 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- auto-recovery saves (main problem is figuring out how to do it non-blocking)
+  - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - save user settings
 - Show data folder in menubar
 - Show rendered levels folder in menubar & render window

@@ -239,10 +239,9 @@ class TileEditor : IEditorMode
 
             // search bar
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AlwaysOverwrite))
+            var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
+            if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
             {
-                // when changed
-                RainEd.Logger.Verbose("Tile editor search changed");
                 ProcessSearch(); // find the groups which have at least one tile that passes the search query
             }
 
@@ -630,9 +629,9 @@ class TileEditor : IEditorMode
                 );
 
                 if (modifyGeometry)
-                    ImGui.SetTooltip("Force Geometry");
+                    window.StatusText = "Force Geometry";
                 else if (forcePlace)
-                    ImGui.SetTooltip("Force Placement");
+                    window.StatusText = "Force Placement";
 
                 // place tile on click
                 if (Raylib.IsMouseButtonDown(MouseButton.Left))

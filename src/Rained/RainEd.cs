@@ -114,6 +114,7 @@ sealed class RainEd
         lastRopeUpdateTime = Raylib.GetTime();
     }
 
+    // TODO: rename this to ShowNotification
     public void ShowError(string msg)
     {
         notification = msg;
@@ -177,6 +178,8 @@ sealed class RainEd
             {
                 promptCallback();
             }
+
+            ShowError("Saved!");
         }
 
         promptCallback = null;
