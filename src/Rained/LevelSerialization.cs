@@ -341,8 +341,19 @@ static class LevelSerialization
         if (File.Exists(lightPath))
         {
             var img = RlManaged.Image.Load(lightPath);
-            Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
-            level.LoadLightMap(img);
+
+            // some level pngs have no data written to them.
+            // wtf??
+            if (img.Width == 0 && img.Height == 0)
+            {
+                img.Dispose();
+                RainEd.Logger.Warning("Invalid lightmap image, loaded fallback");
+            }
+            else
+            {
+                Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+                level.LoadLightMap(img);
+            }
         }
 
         // read light parameters

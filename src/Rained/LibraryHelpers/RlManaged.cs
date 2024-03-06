@@ -214,7 +214,9 @@ namespace RlManaged
         private Image(Raylib_cs.Image raw) : base()
         {
             this.raw = raw;
-            AddMemoryPressure((long)raw.Width * raw.Height * GetBitsPerPixel(raw.Format) / 8);
+
+            if (raw.Format != 0)
+                AddMemoryPressure((long)raw.Width * raw.Height * GetBitsPerPixel(raw.Format) / 8);
         }
 
         public static Image Load(string fileName)
