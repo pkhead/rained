@@ -94,6 +94,37 @@ struct LevelCell
     public void Add(LevelObject obj) => Objects |= obj;
     public void Remove(LevelObject obj) => Objects &= ~obj;
     public readonly bool Has(LevelObject obj) => (Objects & obj) != 0;
+
+    public readonly override bool Equals(object? obj)
+    {        
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+        
+        var other = (LevelCell) obj;
+        return
+            Geo == other.Geo &&
+            Objects == other.Objects &&
+            Material == other.Material &&
+            TileRootX == other.TileRootX &&
+            TileRootY == other.TileRootY &&
+            TileLayer == other.TileLayer &&
+            TileHead == other.TileHead;
+    }
+    
+    public readonly override int GetHashCode()
+    {
+        return HashCode.Combine(
+            Geo.GetHashCode(),
+            Objects.GetHashCode(),
+            Material.GetHashCode(),
+            TileRootX.GetHashCode(),
+            TileRootY.GetHashCode(),
+            TileLayer.GetHashCode(), 
+            TileHead?.GetHashCode()
+        );
+    }
 }
 
 class Camera

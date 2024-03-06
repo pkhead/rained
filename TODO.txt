@@ -23,6 +23,9 @@ Overall:
 Level Properties:
 
 Geometry Editor:
+- optimized cell change recorder
+  (i.e. record specific changes in user code instead of scanning the entire level for such)
+  (though, after implementing LevelCell.Equals manually, the pause is barely noticeable)
 - select and copy/paste
 - show tool preview over mouse
 - ability to view tiles
