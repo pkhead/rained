@@ -141,9 +141,12 @@ sealed class RainEd
                 else
                     Process.Start("open", path);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else // assume Linux
             {
-                Process.Start("xdg-open", path);
+                if (reveal)
+                    Process.Start("xdg-open", Path.GetDirectoryName(path)!);
+                else
+                    Process.Start("xdg-open", path);
             }
         }
         catch (Exception e)
