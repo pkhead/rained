@@ -16,6 +16,7 @@ class LightEditor : IEditorMode
 
     private bool isCursorEnabled = true;
     private bool isDrawing = false;
+    private bool isChangingParameters = false; // true if the user is using keyboard shortcuts to change parameters
     private Vector2 savedMouseGp = new();
     private Vector2 savedMousePos = new();
 
@@ -53,6 +54,12 @@ class LightEditor : IEditorMode
 
     public void Unload()
     {
+        if (isChangingParameters)
+        {
+            changeRecorder.PushParameterChanges();
+            isChangingParameters = false;
+        }
+
         if (!isCursorEnabled)
         {
             Raylib.ShowCursor();
@@ -63,7 +70,11 @@ class LightEditor : IEditorMode
 
     public void DrawToolbar()
     {
+        bool wasParamChanging = isChangingParameters;
+        isChangingParameters = false;
+
         var level = window.Editor.Level;
+        var brushDb = RainEd.Instance.LightBrushDatabase;
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -75,7 +86,7 @@ class LightEditor : IEditorMode
             if (ImGui.IsItemDeactivatedAfterEdit())
                 changeRecorder.PushParameterChanges();
             
-            ImGui.SliderFloat("Shadow Dist", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+            ImGui.SliderFloat("Light Distance", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
             if (ImGui.IsItemDeactivatedAfterEdit())
                 changeRecorder.PushParameterChanges();
             
@@ -133,6 +144,116 @@ class LightEditor : IEditorMode
 
             ImGui.PopStyleVar(2);
             ImGui.PopStyleColor();
+        }
+
+        // keyboard brush navigation
+        if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        {
+            // S to move down one row
+            if (EditorWindow.IsKeyPressed(ImGuiKey.S))
+            {
+                int maxRow = brushDb.Brushes.Count / 3;
+                int curRow = selectedBrush / 3;
+                int col = selectedBrush % 3;
+
+                // selected will only wrap around if it was on
+                // the last row
+                if (curRow == maxRow)
+                {
+                    curRow = 0;
+                }
+                else
+                {
+                    curRow++;
+                }
+
+                selectedBrush = Math.Clamp(curRow * 3 + col, 0, brushDb.Brushes.Count - 1);
+            }
+
+            // W to move up one row
+            if (EditorWindow.IsKeyPressed(ImGuiKey.W))
+            {
+                int maxRow = brushDb.Brushes.Count / 3;
+                int curRow = selectedBrush / 3;
+                int col = selectedBrush % 3;
+
+                // selected will only wrap around if it was on
+                // the first row
+                if (curRow == 0)
+                {
+                    curRow = maxRow;
+                }
+                else
+                {
+                    curRow--;
+                }
+
+                selectedBrush = Math.Clamp(curRow * 3 + col, 0, brushDb.Brushes.Count - 1);
+            }
+
+            // D to move right
+            if (EditorWindow.IsKeyPressed(ImGuiKey.D))
+                selectedBrush = (selectedBrush + 1) % brushDb.Brushes.Count;
+            
+            // A to move left
+            if (EditorWindow.IsKeyPressed(ImGuiKey.A))
+            {
+                if (selectedBrush == 0)
+                    selectedBrush = brushDb.Brushes.Count - 1;
+                else
+                    selectedBrush--;
+            }
+        }
+
+        // when shift is held, WASD changes light parameters
+        else
+        {
+            var lightAngleChange = 0f;
+            var lightDistChange = 0f;
+
+            if (EditorWindow.IsKeyDown(ImGuiKey.D))
+            {
+                isChangingParameters = true;
+                lightAngleChange = 1f;
+            }
+
+            if (EditorWindow.IsKeyDown(ImGuiKey.A))
+            {
+                isChangingParameters = true;
+                lightAngleChange = -1f;
+            }
+
+            if (EditorWindow.IsKeyDown(ImGuiKey.W))
+            {
+                isChangingParameters = true;
+                lightDistChange = -1f;
+            }
+
+            if (EditorWindow.IsKeyDown(ImGuiKey.S))
+            {
+                isChangingParameters = true;
+                lightDistChange = 1f;
+            }
+
+            if (isChangingParameters)
+            {
+                level.LightAngle += lightAngleChange * (100f / 180f * MathF.PI) * Raylib.GetFrameTime();
+                level.LightDistance += lightDistChange * 20f * Raylib.GetFrameTime();
+
+                // wrap around light angle
+                if (level.LightAngle > 2f * MathF.PI)
+                    level.LightAngle -= 2f * MathF.PI;
+                if (level.LightAngle < 0)
+                    level.LightAngle += 2f * MathF.PI;
+
+                // clamp light distance
+                level.LightDistance = Math.Clamp(level.LightDistance, 1f, Level.MaxLightDistance);
+            }
+        }
+
+        if (wasParamChanging && !isChangingParameters)
+        {
+            changeRecorder.PushParameterChanges();
         }
     }
 

@@ -75,6 +75,8 @@ static class ShortcutsWindow
         new (string, string)[]
         {
             ("WASD", "Browse brush catalog"),
+            ("Shift+W/D", "Change light distance"),
+            ("Shift+A/D", "Change light angle"),
             ("Q+Mouse Move", "Scale brush"),
             ("E+Mouse Move", "Rotate brush"),
             ("R", "Reset brush transform"),
