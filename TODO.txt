@@ -52,8 +52,6 @@ Effects Editor:
 - community effects
 
 Prop Editor:
-- prop draw culling
-- fix prop preview in prop selector
 - figure out cause of performance issues (might be tile rendering)
 - Drought Long Props
 - do tile as prop depth change based on if specs2 is active?

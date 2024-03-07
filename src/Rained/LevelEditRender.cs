@@ -100,6 +100,7 @@ class LevelEditRender
 
     private RlManaged.Texture2D gridTexture = null!;
     private readonly RlManaged.Shader propPreviewShader;
+    public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
     
     private const int ChunkWidth = 32;
     private const int ChunkHeight = 32;
@@ -825,6 +826,15 @@ class LevelEditRender
 
         foreach (var prop in Level.Props)
         {
+            // cull prop if it is outside of the view bounds
+            var aabb = prop.CalcAABB();
+            var aabbMin = aabb.Position;
+            var aabbMax = aabb.Position + aabb.Size;
+            if (aabbMax.X < ViewTopLeft.X || aabbMax.Y < ViewTopLeft.Y || aabbMin.X > ViewBottomRight.X || aabbMin.Y > ViewBottomRight.Y)
+            {
+                continue;
+            }
+
             if (prop.DepthOffset < srcDepth || prop.DepthOffset >= srcDepth + 10)
                 continue;
             

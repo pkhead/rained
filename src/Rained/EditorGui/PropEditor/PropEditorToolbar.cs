@@ -2,6 +2,7 @@ using ImGuiNET;
 using System.Numerics;
 using rlImGui_cs;
 using RainEd.Props;
+using Raylib_cs;
 
 namespace RainEd;
 
@@ -13,6 +14,8 @@ partial class PropEditor : IEditorMode
     private int selectedGroup = 0;
     private int currentSelectorMode = 0;
     private PropInit? selectedInit = null;
+    private RlManaged.RenderTexture2D previewTexture = null!;
+    private PropInit? curPropPreview = null;
 
     // search results only process groups because i'm too lazy to have
     // it also process the resulting props
@@ -221,6 +224,34 @@ partial class PropEditor : IEditorMode
         }
     }
 
+    private void UpdatePreview(PropInit prop)
+    {
+        var texWidth = (int)(prop.Width * 20f);
+        var texHeight = (int)(prop.Height * 20f);
+
+        if (previewTexture is null || curPropPreview != prop)
+        {
+            curPropPreview = prop;
+
+            previewTexture?.Dispose();
+            previewTexture = RlManaged.RenderTexture2D.Load(texWidth, texHeight);
+            
+            Raylib.BeginTextureMode(previewTexture);
+            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.BeginShaderMode(window.LevelRenderer.PropPreviewShader);
+            {
+                for (int depth = prop.LayerCount - 1; depth >= 0; depth--)
+                {
+                    float whiteFade = Math.Clamp(depth / 16f, 0f, 1f);
+                    var srcRect = prop.GetPreviewRectangle(0, depth);
+                    Raylib.DrawTextureRec(prop.Texture, srcRect, Vector2.Zero, new Color(255, (int)(whiteFade * 255f), 0, 0));
+                }
+            }
+            Raylib.EndShaderMode();
+            Raylib.EndTextureMode();
+        }
+    }
+
     public void DrawToolbar()
     {
         var propDb = RainEd.Instance.PropDatabase;
@@ -309,12 +340,8 @@ partial class PropEditor : IEditorMode
 
                             if (ImGui.BeginItemTooltip())
                             {
-                                var previewRect = prop.GetPreviewRectangle(0, prop.LayerCount / 2);
-                                rlImGui.ImageRect(
-                                    prop.Texture,
-                                    (int)previewRect.Width, (int)previewRect.Height,
-                                    previewRect
-                                );
+                                UpdatePreview(prop);
+                                rlImGui.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }
@@ -378,12 +405,8 @@ partial class PropEditor : IEditorMode
 
                             if (ImGui.BeginItemTooltip())
                             {
-                                var previewRect = prop.GetPreviewRectangle(0, prop.LayerCount / 2);
-                                rlImGui.ImageRect(
-                                    prop.Texture,
-                                    (int)previewRect.Width, (int)previewRect.Height,
-                                    previewRect
-                                );
+                                UpdatePreview(prop);
+                                rlImGui.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }

@@ -571,6 +571,27 @@ class Prop
         }
     }
 
+    public Rectangle CalcAABB()
+    {
+        if (isAffine)
+            UpdateQuadPointsFromAffine();
+        
+        Vector2 max = new(float.NegativeInfinity, float.NegativeInfinity);
+        Vector2 min = new(float.PositiveInfinity, float.PositiveInfinity);
+
+        for (int i = 0; i < 4; i++)
+        {
+            var pt = quad[i];
+
+            if (pt.X > max.X) max.X = pt.X;
+            if (pt.Y > max.Y) max.Y = pt.Y;
+            if (pt.X < min.X) min.X = pt.X;
+            if (pt.Y < min.Y) min.Y = pt.Y;
+        }
+
+        return new Rectangle(min, max - min);
+    }
+
     public void TickRopeSimulation()
     {
         if (rope is null) return;
