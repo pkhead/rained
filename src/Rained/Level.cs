@@ -1,3 +1,8 @@
+/**
+*   Level.cs
+*   Definition for the Level class and all related constructs
+*   that would be edited in the IEditorMode classes
+*/
 using System.Numerics;
 using RainEd.Light;
 using RainEd.Props;

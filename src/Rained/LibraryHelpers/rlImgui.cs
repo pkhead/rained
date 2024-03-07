@@ -697,6 +697,46 @@ namespace rlImGui_cs
         }
 
         /// <summary>
+        /// Draw a portion texture as an image in an ImGui Context at a defined size
+        /// Uses the current ImGui Cursor position and the specified size
+        /// The image will be scaled up or down to fit as needed
+        /// </summary>
+        /// <param name="image">The raylib texture to draw</param>
+        /// <param name="destWidth">The width of the drawn image</param>
+        /// <param name="destHeight">The height of the drawn image</param>
+        /// <param name="sourceRect">The portion of the texture to draw as an image. Negative values for the width and height will flip the image</param>
+        /// <param name="tintColor">The color to tint the image with</param>
+        public static void ImageRect(Texture2D image, int destWidth, int destHeight, Rectangle sourceRect, Vector4 tintColor)
+        {
+            Vector2 uv0 = new Vector2();
+            Vector2 uv1 = new Vector2();
+
+            if (sourceRect.Width < 0)
+            {
+                uv0.X = -((float)sourceRect.X / image.Width);
+                uv1.X = (uv0.X - (float)(Math.Abs(sourceRect.Width) / image.Width));
+            }
+            else
+            {
+                uv0.X = (float)sourceRect.X / image.Width;
+                uv1.X = uv0.X + (float)(sourceRect.Width / image.Width);
+            }
+
+            if (sourceRect.Height < 0)
+            {
+                uv0.Y = -((float)sourceRect.Y / image.Height);
+                uv1.Y = (uv0.Y - (float)(Math.Abs(sourceRect.Height) / image.Height));
+            }
+            else
+            {
+                uv0.Y = (float)sourceRect.Y / image.Height;
+                uv1.Y = uv0.Y + (float)(sourceRect.Height / image.Height);
+            }
+
+            ImGui.Image(new IntPtr(image.Id), new Vector2(destWidth, destHeight), uv0, uv1, tintColor);
+        }
+
+        /// <summary>
         /// Draw a portion texture as an image button in an ImGui Context at a defined size
         /// Uses the current ImGui Cursor position and the specified size
         /// The image will be scaled up or down to fit as needed
@@ -734,6 +774,47 @@ namespace rlImGui_cs
             }
 
             return ImGui.ImageButton(id, new IntPtr(image.Id), new Vector2(destWidth, destHeight), uv0, uv1);
+        }
+
+        /// <summary>
+        /// Draw a portion texture as an image button in an ImGui Context at a defined size
+        /// Uses the current ImGui Cursor position and the specified size
+        /// The image will be scaled up or down to fit as needed
+        /// </summary>
+        /// <param name="id">The string ID of the image button</param>
+        /// <param name="image">The raylib texture to draw</param>
+        /// <param name="destWidth">The width of the drawn image</param>
+        /// <param name="destHeight">The height of the drawn image</param>
+        /// <param name="sourceRect">The portion of the texture to draw as an image. Negative values for the width and height will flip the image</param>
+        /// <param name="tintColor">The color to tint the image with</param>
+        public static bool ImageButtonRect(string id, Texture2D image, int destWidth, int destHeight, Rectangle sourceRect, Vector4 tintColor)
+        {
+            Vector2 uv0 = new Vector2();
+            Vector2 uv1 = new Vector2();
+
+            if (sourceRect.Width < 0)
+            {
+                uv0.X = -((float)sourceRect.X / image.Width);
+                uv1.X = (uv0.X - (float)(Math.Abs(sourceRect.Width) / image.Width));
+            }
+            else
+            {
+                uv0.X = (float)sourceRect.X / image.Width;
+                uv1.X = uv0.X + (float)(sourceRect.Width / image.Width);
+            }
+
+            if (sourceRect.Height < 0)
+            {
+                uv0.Y = -((float)sourceRect.Y / image.Height);
+                uv1.Y = (uv0.Y - (float)(Math.Abs(sourceRect.Height) / image.Height));
+            }
+            else
+            {
+                uv0.Y = (float)sourceRect.Y / image.Height;
+                uv1.Y = uv0.Y + (float)(sourceRect.Height / image.Height);
+            }
+
+            return ImGui.ImageButton(id, new IntPtr(image.Id), new Vector2(destWidth, destHeight), uv0, uv1, Vector4.Zero, tintColor);
         }
 
         /// <summary>

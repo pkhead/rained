@@ -307,6 +307,8 @@ class FileBrowser
 
     private void InstanceRender()
     {
+        Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
+
         var winName = mode == OpenMode.Write ? "Save File" : "Open File";
 
         if (!isOpen)
@@ -322,7 +324,7 @@ class FileBrowser
             var windowSize = ImGui.GetWindowSize();
 
             // back button
-            if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0)))
+            if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0), textColor))
             {
                 if (backStack.TryPop(out string? newPath))
                 {
@@ -337,7 +339,7 @@ class FileBrowser
             ImGui.SetItemTooltip("Back");
 
             // forward button
-            if (rlImGui.ImageButtonRect(">", icons, 13, 13, GetIconRect(1)))
+            if (rlImGui.ImageButtonRect(">", icons, 13, 13, GetIconRect(1), textColor))
             {
                 if (forwardStack.TryPop(out string? newPath))
                 {
@@ -351,7 +353,7 @@ class FileBrowser
             } ImGui.SameLine();
             ImGui.SetItemTooltip("Forward");
 
-            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2))/* && cwd.PathString != "/"*/)
+            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor)/* && cwd.PathString != "/"*/)
             {
                 var oldDir = cwd;
                 if (SetPath(Path.Combine(cwd, "..")))
@@ -364,7 +366,7 @@ class FileBrowser
             ImGui.SameLine();
             ImGui.SetItemTooltip("Go To Parent Directory");
 
-            if (rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4)))
+            if (rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4), textColor))
             {
                 if (Directory.Exists(cwd))
                     SetPath(cwd);
@@ -377,7 +379,7 @@ class FileBrowser
             ImGui.SameLine();
             if (enterPath || showPathInput)
             {
-                bool closeTextInput = rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3));
+                bool closeTextInput = rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3), textColor);
                 ImGui.SameLine();
                 ImGui.SetItemTooltip("Close Text Input");
 
@@ -395,7 +397,7 @@ class FileBrowser
             }
             else
             {
-                if (rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8)))
+                if (rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8), textColor))
                     showPathInput = true;
                 ImGui.SetItemTooltip("Open Text Input");
                 
@@ -481,7 +483,7 @@ class FileBrowser
                     // this is the offset into the file icon texture
                     int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
 
-                    rlImGui.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex));
+                    rlImGui.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex), textColor);
                     ImGui.SameLine();
                     
                     var entryName = entry.Name;

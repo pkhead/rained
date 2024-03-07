@@ -139,6 +139,8 @@ class GeometryEditor : IEditorMode
 
     public void DrawToolbar()
     {
+        Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
+
         if (ImGui.Begin("Build", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // view mode
@@ -191,7 +193,7 @@ class GeometryEditor : IEditorMode
                 ImGui.PushID(i);
                 
                 // create tool button, select if clicked
-                if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24)))
+                if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
                 {
                     selectedTool = toolEnum;
                 }
