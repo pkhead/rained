@@ -18,6 +18,9 @@ namespace RainEd
     public static string AppDataPath = Directory.GetCurrentDirectory();
 #endif
 
+    public const int DefaultWindowWidth = 1200;
+    public const int DefaultWindowHeight = 800;
+
         static void Main(string[] args)
         {
             // parse command arguments
@@ -78,7 +81,7 @@ namespace RainEd
             {
                 Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
-                Raylib.InitWindow(1200, 800, "Rained");
+                Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
                 //Raylib.SetTargetFPS(10);
                 Raylib.SetExitKey(KeyboardKey.Null);
 
@@ -106,6 +109,7 @@ namespace RainEd
                 }
 
                 RainEd.Logger.Information("Shutting down Rained...");
+                app.Shutdown();
                 rlImGui.Shutdown();
             }
 

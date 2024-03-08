@@ -3,9 +3,10 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- update to .NET 8
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
-- save user settings
+- combine geo and tile editor
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - split up prop editor source code
 - Move Level
@@ -41,8 +42,6 @@ Camera Editor:
 
 Light Editor:
 - light ring
-- IJKL light parameter changing
-- WASD catalog navigation
 - save intermediate textures for change history
   (i guess once per every 1000 stroke atoms or something)
 - toggle view shadow plane and occlusion plane

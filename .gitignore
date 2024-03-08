@@ -10,8 +10,9 @@
 /.vs
 /src/Rained/Properties
 
-# ImGui ini file
+# Rained user data
 /assets/imgui.ini
+/preferences.json
 
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated

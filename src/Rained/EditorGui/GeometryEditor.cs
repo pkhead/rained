@@ -117,6 +117,21 @@ class GeometryEditor : IEditorMode
 
         window = editorWindow;
         toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
+
+        switch (RainEd.Instance.Preferences.GeometryViewMode)
+        {
+            case "overlay":
+                layerViewMode = LayerViewMode.Overlay;
+                break;
+            
+            case "stack":
+                layerViewMode = LayerViewMode.Stack;
+                break;
+            
+            default:
+                RainEd.Logger.Error("Invalid layer view mode '{ViewMode}' in preferences.json", RainEd.Instance.Preferences.GeometryViewMode);
+                break;
+        }
     }
     
     public enum LayerViewMode : int
@@ -135,6 +150,24 @@ class GeometryEditor : IEditorMode
         isToolActive = false;
         isToolRectActive = false;
         window.CellChangeRecorder.TryPushChange();
+    }
+
+    public void SavePreferences(UserPreferences prefs)
+    {
+        switch (layerViewMode)
+        {
+            case LayerViewMode.Overlay:
+                prefs.GeometryViewMode = "overlay";
+                break;
+
+            case LayerViewMode.Stack:
+                prefs.GeometryViewMode = "stack";
+                break;
+
+            default:
+                RainEd.Logger.Error("Invalid LayerViewMode {EnumID}", (int) layerViewMode);
+                break;
+        }
     }
 
     public void DrawToolbar()

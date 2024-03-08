@@ -63,6 +63,26 @@ partial class PropEditor : IEditorMode
 
         // this function is defined in PropEditorToolbar.cs
         ProcessSearch();
+
+        // load preferences
+        switch (RainEd.Instance.Preferences.PropSnap)
+        {
+            case "off":
+                snappingMode = 0;
+                break;
+            
+            case "0.5x":
+                snappingMode = 1;
+                break;
+            
+            case "1x":
+                snappingMode = 2;
+                break;
+
+            default:
+                RainEd.Logger.Error("Invalid prop snap '{PropSnap}' in preferences.json", RainEd.Instance.Preferences.PropSnap);
+                break;
+        }
     }
 
     public void Load()
@@ -71,6 +91,18 @@ partial class PropEditor : IEditorMode
         transformMode = null;
         initSelectedProps = null;
         isMouseDragging = false;
+    }
+
+    public void SavePreferences(UserPreferences prefs)
+    {
+        if (snappingMode == 0)
+            prefs.PropSnap = "off";
+        else if (snappingMode == 1)
+            prefs.PropSnap = "0.5x";
+        else if (snappingMode == 2)
+            prefs.PropSnap = "1x";
+        else
+            RainEd.Logger.Error("Invalid prop snap mode {SnapMode}", snappingMode);
     }
 
     public void Unload()

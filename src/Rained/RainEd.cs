@@ -26,6 +26,8 @@ sealed class RainEd
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private bool ShowDemoWindow = false;
 
+    private readonly string prefFilePath;
+    public UserPreferences Preferences;
     public readonly Tiles.TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
@@ -77,6 +79,29 @@ sealed class RainEd
 
         rainedLogo = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
+        // load user preferences
+        prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
+
+        if (File.Exists(prefFilePath))
+        {
+            try
+            {
+                Preferences = UserPreferences.LoadFromFile(prefFilePath);
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Failed to load user preferences!\n{ErrorMessage}", e);
+                Preferences = new UserPreferences();
+                ShowNotification("Failed to load preferences");
+            }
+        }
+        else
+        {
+            // first-time
+            Preferences = new UserPreferences();
+        }
+
+        // load asset database
         Logger.Information("Initializing tile database...");
         TileDatabase = new Tiles.TileDatabase();
 
@@ -111,8 +136,29 @@ sealed class RainEd
         UpdateTitle();
         RegisterShortcuts();
 
+        // apply preferences
+        Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
+        if (Preferences.WindowMaximized)
+        {
+            Raylib.SetWindowState(ConfigFlags.MaximizedWindow);
+        }
+        ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
+
         Logger.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
+    }
+
+    public void Shutdown()
+    {
+        // save user preferences
+        editorWindow.SavePreferences(Preferences);
+        Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
+
+        Preferences.WindowWidth = Raylib.GetScreenWidth();
+        Preferences.WindowHeight = Raylib.GetScreenHeight();
+        Preferences.WindowMaximized = Raylib.IsWindowMaximized();
+        
+        UserPreferences.SaveToFile(Preferences, prefFilePath);
     }
 
     public void ShowNotification(string msg)

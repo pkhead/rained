@@ -10,6 +10,7 @@ interface IEditorMode
 
     void Load() {}
     void Unload() {}
+    void SavePreferences(UserPreferences prefs) {}
 
     // write dirty changes to the Level object
     // this is used by the light editor, since most everything is done in the GPU
@@ -116,6 +117,21 @@ class EditorWindow
         editorModes.Add(new LightEditor(this));
         editorModes.Add(new EffectsEditor(this));
         editorModes.Add(new PropEditor(this));
+
+        // load user preferences
+        LevelRenderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
+        LevelRenderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
+    }
+
+    public void SavePreferences(UserPreferences prefs)
+    {
+        prefs.ViewGrid = LevelRenderer.ViewGrid;
+        prefs.ViewObscuredBeams = LevelRenderer.ViewObscuredBeams;
+        
+        foreach (var mode in editorModes)
+        {
+            mode.SavePreferences(prefs);
+        }
     }
 
     public void UnloadView()
