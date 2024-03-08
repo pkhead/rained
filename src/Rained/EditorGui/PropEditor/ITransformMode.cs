@@ -10,32 +10,6 @@ partial class PropEditor : IEditorMode
         void Update(Vector2 mouseDragStart, Vector2 mousePos);
     }
 
-    // A copy of a prop's transform
-    readonly struct PropTransform
-    {
-        public readonly bool isAffine;
-        public readonly Vector2[] quad;
-        public readonly RotatedRect rect;
-
-        public PropTransform(Prop prop)
-        {
-            quad = new Vector2[4];
-            isAffine = prop.IsAffine;
-            if (isAffine)
-            {
-                rect = prop.Rect;
-            }
-            else
-            {
-                var pts = prop.QuadPoints;
-                for (int i = 0; i < 4; i++)
-                {
-                    quad[i] = pts[i];
-                }
-            }
-        }
-    }
-
     class MoveTransformMode : ITransformMode
     {
         private readonly PropTransform[] dragInitPositions;
@@ -51,7 +25,7 @@ partial class PropEditor : IEditorMode
             dragInitPositions = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                dragInitPositions[i] = new PropTransform(props[i]);
+                dragInitPositions[i] = props[i].Transform;
             }
         }
 
@@ -149,7 +123,7 @@ partial class PropEditor : IEditorMode
             origPropTransforms = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                origPropTransforms[i] = new PropTransform(props[i]);
+                origPropTransforms[i] = props[i].Transform;
             }
 
             // proportion maintenance is required if there is more than
@@ -402,7 +376,7 @@ partial class PropEditor : IEditorMode
             origTransforms = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                origTransforms[i] = new PropTransform(props[i]);
+                origTransforms[i] = props[i].Transform;
             }
         }
 

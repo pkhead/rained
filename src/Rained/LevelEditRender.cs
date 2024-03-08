@@ -827,12 +827,15 @@ class LevelEditRender
         foreach (var prop in Level.Props)
         {
             // cull prop if it is outside of the view bounds
-            var aabb = prop.CalcAABB();
-            var aabbMin = aabb.Position;
-            var aabbMax = aabb.Position + aabb.Size;
-            if (aabbMax.X < ViewTopLeft.X || aabbMax.Y < ViewTopLeft.Y || aabbMin.X > ViewBottomRight.X || aabbMin.Y > ViewBottomRight.Y)
+            if (prop.Rope is null)
             {
-                continue;
+                var aabb = prop.CalcAABB();
+                var aabbMin = aabb.Position;
+                var aabbMax = aabb.Position + aabb.Size;
+                if (aabbMax.X < ViewTopLeft.X || aabbMax.Y < ViewTopLeft.Y || aabbMin.X > ViewBottomRight.X || aabbMin.Y > ViewBottomRight.Y)
+                {
+                    continue;
+                }
             }
 
             if (prop.DepthOffset < srcDepth || prop.DepthOffset >= srcDepth + 10)

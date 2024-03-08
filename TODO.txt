@@ -3,7 +3,6 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
-- update to .NET 8
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor

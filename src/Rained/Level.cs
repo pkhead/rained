@@ -265,6 +265,64 @@ public struct RotatedRect
     public Vector2 Center;
     public Vector2 Size;
     public float Rotation;
+
+    public readonly override bool Equals(object? obj)
+    {
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+
+        var other = (RotatedRect) obj; 
+        return Center == other.Center && Size == other.Size && Rotation == other.Rotation;       
+    }
+    
+    public readonly override int GetHashCode()
+    {
+        return HashCode.Combine(Center.GetHashCode(), Size.GetHashCode(), Rotation.GetHashCode());
+    }
+
+    public static bool operator ==(RotatedRect left, RotatedRect right)
+    {
+        return left.Center == right.Center && left.Size == right.Size && left.Rotation == right.Rotation;
+    }
+
+    public static bool operator !=(RotatedRect left, RotatedRect right)
+    {
+        return !(left == right);
+    }
+}
+
+struct PropTransform
+{
+    // A prop is affine by default
+    // The user can then "convert" it to a freeform quad,
+    // which then will allow the Quad field to be used
+    public bool isAffine;
+
+    // only modify if isAffine is false
+    public Vector2[] quad;
+
+    // only usable if isAffine is true
+    public RotatedRect rect;
+
+    /*public PropTransform(Prop prop)
+    {
+        quad = new Vector2[4];
+        isAffine = prop.IsAffine;
+        if (isAffine)
+        {
+            rect = prop.Rect;
+        }
+        else
+        {
+            var pts = prop.QuadPoints;
+            for (int i = 0; i < 4; i++)
+            {
+                quad[i] = pts[i];
+            }
+        }
+    }*/
 }
 
 class PropRope
@@ -358,6 +416,7 @@ class PropRope
         }
     }
 }
+
 class Prop
 {
     public readonly PropInit PropInit;
@@ -370,17 +429,9 @@ class Prop
     // i need a number unique to each prop
     public readonly uint ID;
     private static uint nextId = 0;
-
-    // A prop is affine by default
-    // The user can then "convert" it to a freeform quad,
-    // which then will allow the Quad field to be used
-    private bool isAffine;
-
-    // only use if Affine is false
-    private readonly Vector2[] quad;
-
-    // only use if Affine is true
-    private RotatedRect affineTransform;
+    
+    private PropTransform transform;
+    public PropTransform Transform { get => transform; set => transform = value; }
 
     private readonly PropRope? rope;
     public PropRope? Rope { get => rope; }
@@ -389,10 +440,10 @@ class Prop
     {
         get
         {
-            if (isAffine)
+            if (transform.isAffine)
                 UpdateQuadPointsFromAffine();
             
-            return quad;
+            return transform.quad;
         }
     }
 
@@ -400,17 +451,17 @@ class Prop
     {
         get
         {
-            if (!isAffine)
+            if (!transform.isAffine)
                 throw new Exception("Attempt to get affine transformation of a freeform-mode prop");
-            return ref affineTransform;
+            return ref transform.rect;
         }
     }
 
-    public bool IsAffine { get => isAffine; }
+    public bool IsAffine { get => transform.isAffine; }
 
     public bool IsMovable
     {
-        get => rope == null || isAffine;
+        get => rope == null || transform.isAffine;
     }
 
     public enum PropRenderTime
@@ -432,8 +483,8 @@ class Prop
         PropInit = init;
         ID = nextId++;
         
-        isAffine = true;
-        quad = new Vector2[4];
+        transform.isAffine = true;
+        transform.quad = new Vector2[4];
 
         Seed = (int)(DateTime.Now.Ticks % 1000);
         CustomDepth = init.Depth;
@@ -456,49 +507,49 @@ class Prop
 
     public Prop(PropInit init, Vector2 center, Vector2 size) : this(init)
     {
-        affineTransform.Center = center;
-        affineTransform.Size = size;
-        affineTransform.Rotation = 0f;   
+        transform.rect.Center = center;
+        transform.rect.Size = size;
+        transform.rect.Rotation = 0f;   
     }
 
     public Prop(PropInit init, Vector2[] points) : this(init)
     {
-        isAffine = false;
+        transform.isAffine = false;
 
         for (int i = 0; i < 4; i++)
         {
-            quad[i] = points[i];
+            transform.quad[i] = points[i];
         }
     }
 
     private void UpdateQuadPointsFromAffine()
     {
-        Matrix3x2 transformMat = Matrix3x2.CreateRotation(affineTransform.Rotation);
-        quad[0] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(-1f, -1f) / 2f, transformMat);
-        quad[1] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(1f, -1f) / 2f, transformMat);
-        quad[2] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(1f, 1f) / 2f, transformMat);
-        quad[3] = affineTransform.Center + Vector2.Transform(affineTransform.Size * new Vector2(-1f, 1f) / 2f, transformMat);
+        Matrix3x2 transformMat = Matrix3x2.CreateRotation(transform.rect.Rotation);
+        transform.quad[0] = transform.rect.Center + Vector2.Transform(transform.rect.Size * new Vector2(-1f, -1f) / 2f, transformMat);
+        transform.quad[1] = transform.rect.Center + Vector2.Transform(transform.rect.Size * new Vector2(1f, -1f) / 2f, transformMat);
+        transform.quad[2] = transform.rect.Center + Vector2.Transform(transform.rect.Size * new Vector2(1f, 1f) / 2f, transformMat);
+        transform.quad[3] = transform.rect.Center + Vector2.Transform(transform.rect.Size * new Vector2(-1f, 1f) / 2f, transformMat);
     }
 
     public void ConvertToFreeform()
     {
         if (rope is not null) throw new Exception("Cannot warp rope-type props");
-        if (!isAffine) return;
-        isAffine = false;
+        if (!transform.isAffine) return;
+        transform.isAffine = false;
         UpdateQuadPointsFromAffine();
     }
 
     public bool TryConvertToAffine()
     {
-        if (isAffine) return true;
+        if (transform.isAffine) return true;
 
         // check if all the interior angles of this quad are 90 degrees
         for (int i = 0; i < 4; i++)
         {
             // form a triangle with (pA, pB, pc)
-            var pA = quad[i];
-            var pB = quad[(i+1)%4];
-            var pC = quad[(i+2)%4];
+            var pA = transform.quad[i];
+            var pB = transform.quad[(i+1)%4];
+            var pC = transform.quad[(i+2)%4];
 
             if (pA == pB || pB == pC || pA == pC)
                 return false;
@@ -516,64 +567,64 @@ class Prop
         }
 
         // calculate dimensions of rotated rect
-        isAffine = true;
-        affineTransform.Center = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
-        affineTransform.Size.X = Vector2.Distance(quad[0], quad[1]);
-        affineTransform.Size.Y = Vector2.Distance(quad[3], quad[0]);
+        transform.isAffine = true;
+        transform.rect.Center = (transform.quad[0] + transform.quad[1] + transform.quad[2] + transform.quad[3]) / 4f;
+        transform.rect.Size.X = Vector2.Distance(transform.quad[0], transform.quad[1]);
+        transform.rect.Size.Y = Vector2.Distance(transform.quad[3], transform.quad[0]);
         
-        var dir = quad[1] - quad[0];
-        affineTransform.Rotation = MathF.Atan2(dir.Y, dir.X);
+        var dir = transform.quad[1] - transform.quad[0];
+        transform.rect.Rotation = MathF.Atan2(dir.Y, dir.X);
 
         return true;
     }
 
     public void ResetTransform()
     {
-        if (!isAffine)
+        if (!transform.isAffine)
         {
             // calculate center of quad
-            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+            var ct = (transform.quad[0] + transform.quad[1] + transform.quad[2] + transform.quad[3]) / 4f;
 
             // convert to affine
-            isAffine = true;
-            affineTransform.Center = ct;
+            transform.isAffine = true;
+            transform.rect.Center = ct;
         }
 
-        affineTransform.Size = new Vector2(PropInit.Width, PropInit.Height);
-        affineTransform.Rotation = 0f;
+        transform.rect.Size = new Vector2(PropInit.Width, PropInit.Height);
+        transform.rect.Rotation = 0f;
     }
 
     public void FlipX()
     {
-        if (isAffine)
+        if (transform.isAffine)
         {
-            affineTransform.Size.X = -affineTransform.Size.X;
+            transform.rect.Size.X = -transform.rect.Size.X;
         }
         else
         {
-            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+            var ct = (transform.quad[0] + transform.quad[1] + transform.quad[2] + transform.quad[3]) / 4f;
             for (int i = 0; i < 4; i++)
-                quad[i].X = -(quad[i].X - ct.X) + ct.X;
+                transform.quad[i].X = -(transform.quad[i].X - ct.X) + ct.X;
         }
     }
 
     public void FlipY()
     {
-        if (isAffine)
+        if (transform.isAffine)
         {
-            affineTransform.Size.Y = -affineTransform.Size.Y;
+            transform.rect.Size.Y = -transform.rect.Size.Y;
         }
         else
         {
-            var ct = (quad[0] + quad[1] + quad[2] + quad[3]) / 4f;
+            var ct = (transform.quad[0] + transform.quad[1] + transform.quad[2] + transform.quad[3]) / 4f;
             for (int i = 0; i < 4; i++)
-                quad[i].Y = -(quad[i].Y - ct.Y) + ct.Y;
+                transform.quad[i].Y = -(transform.quad[i].Y - ct.Y) + ct.Y;
         }
     }
 
     public Rectangle CalcAABB()
     {
-        if (isAffine)
+        if (transform.isAffine)
             UpdateQuadPointsFromAffine();
         
         Vector2 max = new(float.NegativeInfinity, float.NegativeInfinity);
@@ -581,7 +632,7 @@ class Prop
 
         for (int i = 0; i < 4; i++)
         {
-            var pt = quad[i];
+            var pt = transform.quad[i];
 
             if (pt.X > max.X) max.X = pt.X;
             if (pt.Y > max.Y) max.Y = pt.Y;
@@ -598,18 +649,18 @@ class Prop
 
         if (IsAffine)
         {
-            var cos = MathF.Cos(affineTransform.Rotation);
-            var sin = MathF.Sin(affineTransform.Rotation);
-            rope.PointA = affineTransform.Center + new Vector2(cos, sin) * -affineTransform.Size.X / 2f;
-            rope.PointB = affineTransform.Center + new Vector2(cos, sin) * affineTransform.Size.X / 2f;
+            var cos = MathF.Cos(transform.rect.Rotation);
+            var sin = MathF.Sin(transform.rect.Rotation);
+            rope.PointA = transform.rect.Center + new Vector2(cos, sin) * -transform.rect.Size.X / 2f;
+            rope.PointB = transform.rect.Center + new Vector2(cos, sin) * transform.rect.Size.X / 2f;
             rope.Layer = DepthOffset / 10;
-            rope.Width = affineTransform.Size.Y;
+            rope.Width = transform.rect.Size.Y;
             rope.SimluationStep();
         }
         else
         {
-            rope.PointA = (quad[0] + quad[3]) / 2f;
-            rope.PointB = (quad[1] + quad[2]) / 2f;
+            rope.PointA = (transform.quad[0] + transform.quad[3]) / 2f;
+            rope.PointB = (transform.quad[1] + transform.quad[2]) / 2f;
             rope.Layer = DepthOffset / 10;
             rope.Width = PropInit.Height;
 
