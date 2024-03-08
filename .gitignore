@@ -1,3 +1,7 @@
+# Visual Studio files
+/.vs
+/src/Rained/Properties
+
 # MSBuild output
 **/bin
 **/obj
@@ -6,16 +10,11 @@
 # Visual Studio Code fieles
 /.vscode
 
-# Visual Studio files
-/.vs
-/src/Rained/Properties
-
-# Rained user data
-/assets/imgui.ini
-/preferences.json
-
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated
+
+# rained user preferences
+/preferences.json
 
 # rained logs
 /logs

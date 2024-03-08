@@ -87,7 +87,7 @@ namespace RainEd
 
                 // setup imgui
                 rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename(Path.Combine(AppDataPath,"assets","imgui.ini"));
+                rlImGui.SetIniFilename(Path.Combine(AppDataPath,"imgui.ini"));
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
