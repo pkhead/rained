@@ -21,22 +21,10 @@ class TileEditor : IEditorMode
         Materials, Tiles
     }
     private SelectionMode selectionMode = SelectionMode.Materials;
-    private SelectionMode? forceSelection = null;
+    private SelectionMode? forceSelection = null; // can't figure out how to force-select a tab without showing the imgui close button...
     private int selectedTileGroup = 0;
     private int selectedMatGroup = 0;
     private string searchQuery = "";
-    
-    private class AvailableGroup
-    {
-        public int GroupIndex;
-        public List<Tile> Tiles;
-
-        public AvailableGroup(int groupIndex, List<Tile> tiles)
-        {
-            GroupIndex = groupIndex;
-            Tiles = tiles;
-        }
-    }
 
     // available groups (available = passes search)
     private readonly List<int> matSearchResults = [];
@@ -141,10 +129,10 @@ class TileEditor : IEditorMode
             int defaultMat = window.Editor.Level.DefaultMaterial;
             ImGui.TextUnformatted($"Default Material: {matDb.GetMaterial(defaultMat).Name}");
 
-            if (selectedTile != null)
+            if (selectionMode != SelectionMode.Materials)
                 ImGui.BeginDisabled();
             
-            if ((ImGui.Button("Set Selected Material as Default") || EditorWindow.IsKeyPressed(ImGuiKey.Q)) && selectedTile == null)
+            if ((ImGui.Button("Set Selected Material as Default") || EditorWindow.IsKeyPressed(ImGuiKey.Q)) && selectionMode == SelectionMode.Materials)
             {
                 var oldMat = window.Editor.Level.DefaultMaterial;
                 var newMat = selectedMaterial;
@@ -154,10 +142,10 @@ class TileEditor : IEditorMode
                     RainEd.Instance.ChangeHistory.Push(new ChangeHistory.DefaultMaterialChangeRecord(oldMat, newMat));
             }
 
-            if (selectedTile != null)
+            if (selectionMode != SelectionMode.Materials)
                 ImGui.EndDisabled();
 
-            if (ImGui.IsItemHovered() && selectedTile != null)
+            if (ImGui.IsItemHovered() && selectionMode != SelectionMode.Materials)
             {
                 ImGui.SetTooltip("A material is not selected");
             }
@@ -280,7 +268,7 @@ class TileEditor : IEditorMode
                 forceSelection = null;
             }
         }
-
+        
         // tab to change work layer
         if (EditorWindow.IsTabPressed())
         {
@@ -704,7 +692,7 @@ class TileEditor : IEditorMode
                 if (EditorWindow.IsKeyPressed(ImGuiKey.E))
                 {
                     // tile eyedropper
-                    if (mouseCell.HasTile())
+                    if (mouseCell.HasTile() && selectionMode == SelectionMode.Tiles)
                     {
                         var tile = level.Layers[tileLayer, tileX, tileY].TileHead;
                         
@@ -720,7 +708,7 @@ class TileEditor : IEditorMode
                     }
 
                     // material eyedropper
-                    else
+                    else if (selectionMode == SelectionMode.Materials)
                     {
                         if (mouseCell.Material > 0)
                         {
