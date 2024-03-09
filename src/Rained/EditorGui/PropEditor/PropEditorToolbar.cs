@@ -62,6 +62,11 @@ partial class PropEditor : IEditorMode
                     field.SetValue(prop, v);
             }
         }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            changeRecorder.PushSettingsChanges();
+        }
     }
 
     private void MultiselectSliderInt(string label, string fieldName, int v_min, int v_max, string format = "%i", ImGuiSliderFlags flags = 0)
@@ -97,6 +102,11 @@ partial class PropEditor : IEditorMode
                     field.SetValue(prop, v);
             }
         }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            changeRecorder.PushSettingsChanges();
+        }
     }
 
     // this, specifically, is generic for both the items list and the field type,
@@ -128,6 +138,8 @@ partial class PropEditor : IEditorMode
                 {
                     foreach (var item in items)
                         field.SetValue(item, e);
+                    
+                    changeRecorder.PushSettingsChanges();
                 }
 
                 if (sel)
@@ -165,6 +177,8 @@ partial class PropEditor : IEditorMode
                 {
                     foreach (var prop in selectedProps)
                         field.SetValue(prop, i);
+                    
+                    changeRecorder.PushSettingsChanges();
                 }
 
                 if (sel)
@@ -441,25 +455,35 @@ partial class PropEditor : IEditorMode
                 
                 if (ImGui.Button("Reset Transform"))
                 {
-                    foreach (var prop in selectedProps)
-                        prop.ResetTransform();
+                    changeRecorder.BeginTransform();
+                        foreach (var prop in selectedProps)
+                            prop.ResetTransform();
+                    changeRecorder.PushTransform();
                 }
 
                 ImGui.SameLine();
                 if (ImGui.Button("Flip X"))
-                    foreach (var prop in selectedProps)
-                        prop.FlipX();
+                {
+                    changeRecorder.BeginTransform();
+                        foreach (var prop in selectedProps)
+                            prop.FlipX();
+                    changeRecorder.PushTransform();
+                }
 
                 ImGui.SameLine();
                 if (ImGui.Button("Flip Y"))
-                    foreach (var prop in selectedProps)
-                        prop.FlipY();
-                
+                {
+                    changeRecorder.BeginTransform();
+                        foreach (var prop in selectedProps)
+                            prop.FlipY();
+                    changeRecorder.PushTransform();
+                }
+
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
                 MultiselectDragInt("Render Order", "RenderOrder", 0.02f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
-                MultiselectEnumInput<Prop, Prop.PropRenderTime>(selectedProps, "Render Time", "RenderTime", PropRenderTimeNames);
+                MultiselectEnumInput<Prop, PropRenderTime>(selectedProps, "Render Time", "RenderTime", PropRenderTimeNames);
 
                 // custom depth, if available
                 {
@@ -559,6 +583,9 @@ partial class PropEditor : IEditorMode
                                     prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
                                 }
                             }
+
+                            if (ImGui.IsItemDeactivatedAfterEdit())
+                                changeRecorder.PushSettingsChanges();
                         }
 
                         List<PropRope> ropes = new()
@@ -578,12 +605,15 @@ partial class PropEditor : IEditorMode
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                             {
                                 ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 2f, 5f, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+                                if (ImGui.IsItemDeactivatedAfterEdit())
+                                    changeRecorder.PushSettingsChanges();
                             }
 
                             // color Zero-G Tube white
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
                             {
-                                ImGui.Checkbox("Apply Color", ref prop.ApplyColor);
+                                if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
+                                    changeRecorder.PushSettingsChanges();
                             }
                         }
 
@@ -627,12 +657,16 @@ partial class PropEditor : IEditorMode
                                 flags: ImGuiSliderFlags.AlwaysClamp
                             );
                             prop.Variation = Math.Clamp(varV, 0, prop.PropInit.VariationCount) - 1;
+
+                            if (ImGui.IsItemDeactivatedAfterEdit())
+                                changeRecorder.PushSettingsChanges();
                         }
 
                         // apply color
                         if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
                         {
-                            ImGui.Checkbox("Apply Color", ref prop.ApplyColor);
+                            if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
+                                changeRecorder.PushSettingsChanges();
                         }
 
                         //ImGui.BeginDisabled();

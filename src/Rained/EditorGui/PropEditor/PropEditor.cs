@@ -76,6 +76,8 @@ partial class PropEditor : IEditorMode
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
+            changeRecorder.TakeSettingsSnapshot();
+            
             // remove props from selection that no longer exist
             // when the user undos or redos
             var propsList = RainEd.Instance.Level.Props;
