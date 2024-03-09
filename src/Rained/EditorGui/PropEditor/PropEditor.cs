@@ -20,7 +20,7 @@ partial class PropEditor : IEditorMode
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
     
-    private readonly ChangeHistory.PropChangeRecorder changeRecorder;
+    private ChangeHistory.PropChangeRecorder changeRecorder;
 
     private readonly Color[] OutlineColors =
     [
@@ -55,6 +55,7 @@ partial class PropEditor : IEditorMode
     {
         this.window = window;
 
+        // register prop color names to be displayed in the custom color dropdown 
         propColorNames = new List<string>()
         {
             Capacity = RainEd.Instance.PropDatabase.PropColors.Count
@@ -65,7 +66,26 @@ partial class PropEditor : IEditorMode
             propColorNames.Add(col.Name);
         }
 
+        // setup change history
         changeRecorder = new ChangeHistory.PropChangeRecorder();
+
+        RainEd.Instance.ChangeHistory.Cleared += () =>
+        {
+            changeRecorder = new ChangeHistory.PropChangeRecorder();
+        };
+
+        RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
+        {
+            // remove props from selection that no longer exist
+            // when the user undos or redos
+            var propsList = RainEd.Instance.Level.Props;
+
+            for (int i = selectedProps.Count - 1; i >= 0; i--)
+            {
+                if (propsList.IndexOf(selectedProps[i]) == -1)
+                    selectedProps.RemoveAt(i);
+            }
+        };
 
         // this function is defined in PropEditorToolbar.cs
         ProcessSearch();
@@ -717,6 +737,8 @@ partial class PropEditor : IEditorMode
             }
         }
 
+        // right-click opens menu to select one of multiple props under the cursor
+        // useful for when props overlap (which i assume is common)
         if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !wasMouseDragging)
         {
             propSelectionList = GetPropsAt(window.MouseCellFloat);
@@ -747,6 +769,8 @@ partial class PropEditor : IEditorMode
             }
             if (selectedInit is not null)
             {
+                changeRecorder.BeginListChange();
+
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
                     DepthOffset = window.WorkLayer * 10
@@ -755,6 +779,8 @@ partial class PropEditor : IEditorMode
                 RainEd.Instance.Level.Props.Add(prop);
                 selectedProps.Clear();
                 selectedProps.Add(prop);
+
+                changeRecorder.PushListChange();
             }
         }
 
@@ -795,10 +821,12 @@ partial class PropEditor : IEditorMode
         // delete key to delete selected props
         if (EditorWindow.IsKeyPressed(ImGuiKey.Delete) || EditorWindow.IsKeyPressed(ImGuiKey.Backspace))
         {
-            foreach (var prop in selectedProps)
-            {
-                RainEd.Instance.Level.Props.Remove(prop);
-            }
+            changeRecorder.BeginListChange();
+                foreach (var prop in selectedProps)
+                {
+                    RainEd.Instance.Level.Props.Remove(prop);
+                }
+            changeRecorder.PushListChange();
 
             selectedProps.Clear();
             isMouseDragging = false;
@@ -807,6 +835,8 @@ partial class PropEditor : IEditorMode
         // duplicate props
         if (EditorWindow.IsKeyPressed(ImGuiKey.D) && EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
         {
+            changeRecorder.BeginListChange();
+
             var propsToDup = selectedProps.ToArray();
             selectedProps.Clear();
 
@@ -841,6 +871,8 @@ partial class PropEditor : IEditorMode
                 RainEd.Instance.Level.Props.Add(newProp);
                 selectedProps.Add(newProp);
             }
+
+            changeRecorder.PushListChange();
         }
     }
 }
