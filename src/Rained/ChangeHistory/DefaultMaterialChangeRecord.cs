@@ -6,10 +6,10 @@ namespace RainEd.ChangeHistory;
 
 class DefaultMaterialChangeRecord : IChangeRecord
 {
-    private readonly Material oldMat;
-    private readonly Material newMat;
+    private readonly int oldMat;
+    private readonly int newMat;
 
-    public DefaultMaterialChangeRecord(Material oldMat, Material newMat)
+    public DefaultMaterialChangeRecord(int oldMat, int newMat)
     {
         this.oldMat = oldMat;
         this.newMat = newMat;

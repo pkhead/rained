@@ -95,10 +95,10 @@ static class LevelSerialization
 
         // get default material
         {
-            var defaultMat = levelTileData.fields["defaultMaterial"];
-            var matIndex = Array.IndexOf(Level.MaterialNames, defaultMat);
-            if (matIndex == -1) throw new Exception($"Material \"{defaultMat}\" does not exist");
-            level.DefaultMaterial = (Material) matIndex + 1;
+            var defaultMat = (string) levelTileData.fields["defaultMaterial"];
+            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(defaultMat)
+                ?? throw new Exception($"Material \"{defaultMat}\" does not exist");
+            level.DefaultMaterial = matInfo.ID;
         }
 
         // read tile matrix
@@ -126,9 +126,9 @@ static class LevelSerialization
                         case "material":
                         {
                             var data = (string) dataObj;
-                            var matIndex = Array.IndexOf(Level.MaterialNames, data);
-                            if (matIndex == -1) throw new Exception($"Material \"{data}\" does not exist");
-                            level.Layers[z,x,y].Material = (Material) matIndex + 1;
+                            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(data)
+                                ?? throw new Exception($"Material \"{data}\" does not exist");
+                            level.Layers[z,x,y].Material = matInfo.ID;
                             break;
                         }
 
@@ -573,9 +573,9 @@ static class LevelSerialization
                         );
                     }
                     // material
-                    else if (cell.Material != Material.None)
+                    else if (cell.Material != 0)
                     {
-                        output.AppendFormat("[#tp: \"material\", #Data: \"{0}\"]", Level.MaterialNames[(int)cell.Material-1]);
+                        output.AppendFormat("[#tp: \"material\", #Data: \"{0}\"]", RainEd.Instance.MaterialDatabase.GetMaterial(cell.Material).Name);
                     }
                     // no tile/material data here
                     else
@@ -585,7 +585,7 @@ static class LevelSerialization
             }
             output.Append(']');
         }
-        output.AppendFormat("], #defaultMaterial: \"{0}\", ", Level.MaterialNames[(int)level.DefaultMaterial-1]);
+        output.AppendFormat("], #defaultMaterial: \"{0}\", ", RainEd.Instance.MaterialDatabase.GetMaterial(level.DefaultMaterial).Name);
 
         // some lingo tile editor data, irrelevant to this editor
         output.Append("#toolType: \"material\", #toolData: \"Big Metal\", #tmPos: point(1, 1), #tmSavPosL: [], #specialEdit: 0]");

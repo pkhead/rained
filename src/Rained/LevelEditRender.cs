@@ -23,33 +23,6 @@ class LevelEditRender
         { LevelObject.WormGrass,        new(1, 3) },
     };
 
-    public static readonly Color[] MaterialColors = new Color[23]
-    {
-        new(148,    148,    148,    255),
-        new(148,    255,    255,    255),
-        new(0,      0,      255,    255),
-        new(206,    148,    99,     255),
-        new(255,    0,      0,      255),
-        new(255,    206,    255,    255),
-        new(57,     57,     41,     255),
-        new(0,      0,      148,    255),
-        new(165,    181,    255,    255),
-        new(189,    165,    0,      255),
-        new(99,     0,      255,    255),
-        new(255,    0,      255,    255),
-        new(255,    255,    0,      255),
-        new(90,     255,    0,      255),
-        new(206,    206,    206,    255),
-        new(173,    24,     255,    255),
-        new(255,    148,    0,      255),
-        new(74,     115,    82,     255),
-        new(123,    74,     49,     255),
-        new(57,     57,     99,     255),
-        new(0,      123,    181,    255),
-        new(0,      148,    0,      255),
-        new(206,    8,      57,     255),
-    };
-
     // all objects associated with shortcuts
     // (these are tracked because they will be rendered separately from other objects
     // (i.e. without transparency regardless of the user's work layer)
@@ -805,9 +778,9 @@ class LevelEditRender
             {
                 ref var cell = ref Level.Layers[layer, x, y];
 
-                if (!cell.HasTile() && cell.Material != Material.None && cell.Geo != GeoType.Air)
+                if (!cell.HasTile() && cell.Material != 0 && cell.Geo != GeoType.Air)
                 {
-                    var col = MaterialColors[(int) cell.Material - 1];
+                    var col = RainEd.Instance.MaterialDatabase.GetMaterial(cell.Material).Color;
                     Raylib.DrawRectangle(
                         x * Level.TileSize + 7, y * Level.TileSize + 7,
                         Level.TileSize - 14, Level.TileSize - 14,

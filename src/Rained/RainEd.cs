@@ -28,6 +28,7 @@ sealed class RainEd
 
     private readonly string prefFilePath;
     public UserPreferences Preferences;
+    public readonly Tiles.MaterialDatabase MaterialDatabase;
     public readonly Tiles.TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
@@ -102,6 +103,9 @@ sealed class RainEd
         }
 
         // load asset database
+        Logger.Information("Initializing materials database...");
+        MaterialDatabase = new Tiles.MaterialDatabase();
+
         Logger.Information("Initializing tile database...");
         TileDatabase = new Tiles.TileDatabase();
 

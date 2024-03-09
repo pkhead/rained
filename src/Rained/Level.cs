@@ -23,34 +23,6 @@ public enum GeoType : sbyte
     Glass = 9,
 }
 
-public enum Material : byte
-{
-    None,
-    Standard,
-    Concrete,
-    RainStone,
-    Bricks,
-    BigMetal,
-    TinySigns,
-    Scaffolding,
-    DensePipes,
-    SuperStructure,
-    SuperStructure2,
-    TiledStone,
-    ChaoticStone,
-    SmallPipes,
-    Trash,
-    Invisible,
-    LargeTrash,
-    ThreeDBricks,
-    RandomMachines,
-    Dirt,
-    CeramicTile,
-    TempleStone,
-    Circuits,
-    Ridge
-};
-
 [Flags]
 public enum LevelObject : uint
 {
@@ -79,7 +51,7 @@ struct LevelCell
 {
     public GeoType Geo = GeoType.Air;
     public LevelObject Objects = 0;
-    public Material Material = Material.None;
+    public int Material = 0;
 
     // X position of the tile root, -1 if there is no tile here
     public int TileRootX = -1;
@@ -701,7 +673,7 @@ class Level
     private int _width, _height;
     public int BufferTilesLeft, BufferTilesTop;
     public int BufferTilesRight, BufferTilesBot;
-    public Material DefaultMaterial = Material.Standard;
+    public int DefaultMaterial = 1;
 
     public readonly List<Camera> Cameras = new();
 
@@ -711,34 +683,7 @@ class Level
     public const int LayerCount = 3;
     public const int TileSize = 20;
     public const int MaxCameraCount = 20;
-
-    public static readonly string[] MaterialNames = new string[23]
-    {
-        "Standard",
-        "Concrete",
-        "RainStone",
-        "Bricks",
-        "BigMetal",
-        "Tiny Signs",
-        "Scaffolding",
-        "Dense Pipes",
-        "SuperStructure",
-        "SuperStructure2",
-        "Tiled Stone",
-        "Chaotic Stone",
-        "Small Pipes",
-        "Trash",
-        "Invisible",
-        "LargeTrash",
-        "3DBricks",
-        "Random Machines",
-        "Dirt",
-        "Ceramic Tile",
-        "Temple Stone",
-        "Circuits",
-        "Ridge"
-    };
-
+    
     private LightMap lightMap;
     public LightMap LightMap { get => lightMap; }
     public float LightAngle = MathF.PI;
