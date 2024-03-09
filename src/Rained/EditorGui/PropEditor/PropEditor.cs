@@ -9,35 +9,39 @@ partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
     private readonly EditorWindow window;
+    
     private readonly List<Prop> selectedProps = new();
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
     private Prop[] propSelectionList = Array.Empty<Prop>(); // used for being able to select props that are behind others
     private Prop? highlightedProp = null; // used for prop selection list
+    
     private bool isWarpMode = false;
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
+    
+    private readonly ChangeHistory.PropChangeRecorder changeRecorder;
 
-    private readonly Color[] OutlineColors = new Color[]
-    {
+    private readonly Color[] OutlineColors =
+    [
         new(0, 0, 255, 255),
         new(180, 180, 180, 255),
         new(0, 255, 0, 255),
         new(255, 0, 0, 255),
-    };
+    ];
 
-    private readonly Color[] OutlineGlowColors = new Color[]
-    {
+    private readonly Color[] OutlineGlowColors =
+    [
         new(100, 100, 255, 255),
         new(255, 255, 255, 255),
         new(100, 255, 100, 255),
         new(255, 100, 100, 255)
-    };
+    ];
     
     private readonly List<string> propColorNames;
 
     private bool isMouseDragging = false;
-    private readonly List<PropTransform> dragInitPositions = new();
+    private readonly List<PropTransform> dragInitPositions = [];
     private enum DragMode
     {
         Select,
@@ -60,6 +64,8 @@ partial class PropEditor : IEditorMode
         {
             propColorNames.Add(col.Name);
         }
+
+        changeRecorder = new ChangeHistory.PropChangeRecorder();
 
         // this function is defined in PropEditorToolbar.cs
         ProcessSearch();
@@ -107,13 +113,16 @@ partial class PropEditor : IEditorMode
 
     public void Unload()
     {
+        if (changeRecorder.IsTransformActive)
+            changeRecorder.PushTransform();
+        
         if (transformMode is WarpTransformMode)
         {
             selectedProps[0].TryConvertToAffine();
         }
 
         transformMode = null;
-        propSelectionList = Array.Empty<Prop>();
+        propSelectionList = [];
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
@@ -191,14 +200,6 @@ partial class PropEditor : IEditorMode
         return list.ToArray();
     }
 
-    /*private static Rectangle GetPropAABB(Prop prop)
-    {
-        var minX = Math.Min(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
-        var minY = Math.Min(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
-        var maxX = Math.Max(prop.Quad[0].X, Math.Min(prop.Quad[1].X, Math.Min(prop.Quad[2].X, prop.Quad[3].X)));
-        var maxY = Math.Max(prop.Quad[0].Y, Math.Min(prop.Quad[1].Y, Math.Min(prop.Quad[2].Y, prop.Quad[3].Y)));
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }*/
     private Rectangle GetSelectionAABB(bool excludeNonmovable = false)
         => CalcPropExtents(selectedProps, excludeNonmovable);
 
@@ -441,6 +442,7 @@ partial class PropEditor : IEditorMode
                     // draw gizmo handle at corner
                     if (DrawGizmoHandle(handlePos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
+                        changeRecorder.BeginTransform();
                         transformMode = new ScaleTransformMode(
                             handleId: i,
                             props: selectedProps,
@@ -477,6 +479,7 @@ partial class PropEditor : IEditorMode
                 // draw gizmo handle
                 if (DrawGizmoHandle(rotDotPos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
+                    changeRecorder.BeginTransform();
                     transformMode = new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
                         props: selectedProps
@@ -507,6 +510,7 @@ partial class PropEditor : IEditorMode
                             // draw gizmo handle at corner
                             if (DrawGizmoHandle(handlePos, 1) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                             {
+                                changeRecorder.BeginTransform();
                                 transformMode = new WarpTransformMode(
                                     handleId: i,
                                     prop: selectedProps[0],
@@ -534,6 +538,7 @@ partial class PropEditor : IEditorMode
                             
                             if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                             {
+                                changeRecorder.BeginTransform();
                                 transformMode = new RopePointTransformMode(
                                     handleId: i,
                                     prop: prop,
@@ -594,6 +599,8 @@ partial class PropEditor : IEditorMode
                 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
+                    changeRecorder.PushTransform();
+
                     if (transformMode is WarpTransformMode)
                     {
                         selectedProps[0].TryConvertToAffine();
@@ -686,6 +693,7 @@ partial class PropEditor : IEditorMode
                         selectedProps.Add(hoverProp);
                     }
 
+                    changeRecorder.BeginTransform();
                     transformMode = new MoveTransformMode(
                         selectedProps,
                         snappingMode / 2f

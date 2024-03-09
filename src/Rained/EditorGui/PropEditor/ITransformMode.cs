@@ -25,7 +25,7 @@ partial class PropEditor : IEditorMode
             dragInitPositions = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                dragInitPositions[i] = props[i].Transform;
+                dragInitPositions[i] = props[i].Transform.Clone();
             }
         }
 
@@ -123,7 +123,7 @@ partial class PropEditor : IEditorMode
             origPropTransforms = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                origPropTransforms[i] = props[i].Transform;
+                origPropTransforms[i] = props[i].Transform.Clone();
             }
 
             // proportion maintenance is required if there is more than
@@ -376,7 +376,7 @@ partial class PropEditor : IEditorMode
             origTransforms = new PropTransform[props.Count];
             for (int i = 0; i < props.Count; i++)
             {
-                origTransforms[i] = props[i].Transform;
+                origTransforms[i] = props[i].Transform.Clone();
             }
         }
 

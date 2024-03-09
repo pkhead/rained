@@ -293,7 +293,7 @@ public struct RotatedRect
     }
 }
 
-struct PropTransform
+class PropTransform
 {
     // A prop is affine by default
     // The user can then "convert" it to a freeform quad,
@@ -306,23 +306,46 @@ struct PropTransform
     // only usable if isAffine is true
     public RotatedRect rect;
 
-    /*public PropTransform(Prop prop)
+    public PropTransform()
     {
         quad = new Vector2[4];
-        isAffine = prop.IsAffine;
-        if (isAffine)
+    }
+
+    public PropTransform Clone()
+    {
+        var clone = new PropTransform()
         {
-            rect = prop.Rect;
-        }
-        else
+            isAffine = isAffine,
+            rect = rect
+        };
+
+        for (int i = 0; i < 4; i++)
         {
-            var pts = prop.QuadPoints;
-            for (int i = 0; i < 4; i++)
-            {
-                quad[i] = pts[i];
-            }
+            clone.quad[i] = quad[i];
         }
-    }*/
+        
+        return clone;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+
+        var other = (PropTransform) obj;        
+        return isAffine == other.isAffine && rect == other.rect &&
+            quad[0] == other.quad[0] &&
+            quad[1] == other.quad[1] &&
+            quad[2] == other.quad[2] &&
+            quad[3] == other.quad[3];
+    }
+    
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(isAffine.GetHashCode(), quad.GetHashCode(), rect.GetHashCode());
+    }
 }
 
 class PropRope
@@ -482,9 +505,11 @@ class Prop
     {
         PropInit = init;
         ID = nextId++;
-        
-        transform.isAffine = true;
-        transform.quad = new Vector2[4];
+        transform = new PropTransform
+        {
+            isAffine = true,
+            quad = new Vector2[4]
+        };
 
         Seed = (int)(DateTime.Now.Ticks % 1000);
         CustomDepth = init.Depth;
