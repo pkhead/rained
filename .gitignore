@@ -18,3 +18,6 @@
 
 # rained logs
 /logs
+
+# some distribution files
+/dist/Data

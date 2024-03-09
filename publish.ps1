@@ -1,0 +1,1 @@
+dotnet publish -p:AppDataPath=Assembly --sc -o build
