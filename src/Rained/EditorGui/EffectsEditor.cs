@@ -333,25 +333,47 @@ class EffectsEditor : IEditorMode
                         hadChanged = true;
                 }
 
-                // custom property
-                if (!string.IsNullOrEmpty(effect.Data.customSwitchName))
+                // affect colors and gradients
+                if (effect.Data.useDecalAffect)
                 {
-                    if (ImGui.BeginCombo(effect.Data.customSwitchName, effect.Data.customSwitchOptions[effect.CustomValue]))
+                    if (ImGui.Checkbox("Affect Gradients and Decals", ref effect.AffectGradientsAndDecals))
+                        hadChanged = true;
+                }
+
+                // custom properties
+                for (int configIndex = 0; configIndex < effect.Data.customConfigs.Count; configIndex++)
+                {
+                    CustomEffectConfig configInfo = effect.Data.customConfigs[configIndex];
+                    ref int configValue = ref effect.CustomValues[configIndex];
+
+                    // string config
+                    if (configInfo is CustomEffectString strConfig)
                     {
-                        for (int i = 0; i < effect.Data.customSwitchOptions.Length; i++)
+                        if (ImGui.BeginCombo(strConfig.Name, strConfig.Options[configValue]))
                         {
-                            bool isSelected = i == effect.CustomValue;
-                            if (ImGui.Selectable(effect.Data.customSwitchOptions[i], isSelected))
+                            for (int i = 0; i < strConfig.Options.Length; i++)
                             {
-                                effect.CustomValue = i;
-                                hadChanged = true;
+                                bool isSelected = i == configValue;
+                                if (ImGui.Selectable(strConfig.Options[i], isSelected))
+                                {
+                                    configValue = i;
+                                    hadChanged = true;
+                                }
+
+                                if (isSelected)
+                                    ImGui.SetItemDefaultFocus();
                             }
 
-                            if (isSelected)
-                                ImGui.SetItemDefaultFocus();
+                            ImGui.EndCombo();
                         }
+                    }
 
-                        ImGui.EndCombo();
+                    // int config
+                    else if (configInfo is CustomEffectInteger intConfig)
+                    {
+                        ImGui.SliderInt(intConfig.Name, ref configValue, intConfig.MinInclusive, intConfig.MaxInclusive);
+                        if (ImGui.IsItemDeactivatedAfterEdit())
+                            hadChanged = true;
                     }
                 }
 

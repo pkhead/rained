@@ -245,11 +245,11 @@ static class LevelSerialization
                         // the list of options are stored in the level file
                         // alongside the selected option as a string
                         var optionValues = ((Lingo.List) optionData.values[1]).values.Cast<string>().ToList();
-                        var selectedValue = (string) optionData.values[2];
                         var optionIndex = 0;
 
                         if (optionValues.Count > 0)
                         {
+                            var selectedValue = (string) optionData.values[2];
                             optionIndex = optionValues.IndexOf(selectedValue);
                             if (optionIndex == -1) throw new Exception("Invalid option value in effect");
                         }
@@ -265,17 +265,30 @@ static class LevelSerialization
                             case "3D":
                                 effect.Is3D = optionIndex != 0;
                                 break;
+                            case "Affect Gradients and Decals":
+                                effect.AffectGradientsAndDecals = optionIndex == 0;
+                                break;
                             default:
-                                if (optionName == effect.Data.customSwitchName)
-                                {
-                                    effect.CustomValue = optionIndex;
-                                }
-                                else
+                            {
+                                int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
+                                if (cfgIndex == -1)
                                 {
                                     RainEd.Logger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                 }
-                                
+                                else
+                                {
+                                    if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
+                                    {
+                                        effect.CustomValues[cfgIndex] = (int) optionData.values[2];
+                                    }
+                                    else
+                                    {
+                                        effect.CustomValues[cfgIndex] = optionIndex;
+                                    }
+                                }
+
                                 break;
+                            }
                         }
                     }
                 }
@@ -638,20 +651,35 @@ static class LevelSerialization
                 output.AppendFormat(", [\"Color\", [\"Color1\", \"Color2\", \"Dead\"], \"{0}\"]", plantColorEnums[effect.PlantColor]);
             }
 
-            // custom option
-            if (!string.IsNullOrEmpty(effect.Data.customSwitchName))
+            if (effect.Data.useDecalAffect)
             {
-                output.AppendFormat(", [\"{0}\", [", effect.Data.customSwitchName);
+                output.AppendFormat(", [\"Affect Gradients and Decals\", [\"Yes\", \"No\"], \"{0}\"]", effect.AffectGradientsAndDecals ? "Yes": "No");
+            }
 
-                for (int j = 0; j < effect.Data.customSwitchOptions.Length; j++)
+            // custom options
+            for (int cfgIndex = 0; cfgIndex < effect.CustomValues.Length; cfgIndex++)
+            {
+                CustomEffectConfig configInfo = effect.Data.customConfigs[cfgIndex];
+
+                if (configInfo is CustomEffectString strConfig)
                 {
-                    if (j > 0) output.Append(", ");
-                    output.Append('"');
-                    output.Append(effect.Data.customSwitchOptions[j]);
-                    output.Append('"');
+                    output.AppendFormat(", [\"{0}\", [", strConfig.Name);
+
+                    for (int j = 0; j < strConfig.Options.Length; j++)
+                    {
+                        if (j > 0) output.Append(", ");
+                        output.Append('"');
+                        output.Append(strConfig.Options[j]);
+                        output.Append('"');
+                    }
+
+                    output.AppendFormat("], \"{0}\"]", strConfig.Options[effect.CustomValues[cfgIndex]]);
                 }
 
-                output.AppendFormat("], \"{0}\"]", effect.Data.customSwitchOptions[effect.CustomValue]);
+                else if (configInfo is CustomEffectInteger intConfig)
+                {
+                    output.AppendFormat(", [\"{0}\", [], {1}]", intConfig.Name, effect.CustomValues[cfgIndex]);
+                }
             }
 
             // seed

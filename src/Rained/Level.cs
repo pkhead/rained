@@ -163,8 +163,8 @@ class Effect
     public readonly EffectInit Data;
     public LayerMode Layer = LayerMode.All;
     public bool Is3D = false;
-    public int CustomValue = 0;
     public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
+    public bool AffectGradientsAndDecals = false;
     public int Seed;
 
     private int width, height;
@@ -172,24 +172,43 @@ class Effect
     public int Height { get => height; }
     public float[,] Matrix;
 
+    public int[] CustomValues;
+
     public Effect(Level level, EffectInit init)
     {
         Data = init;
         Seed = Raylib.GetRandomValue(0, 500);
 
-        if (!string.IsNullOrEmpty(init.customSwitchName))
+        if (init.useDecalAffect)
+            AffectGradientsAndDecals = init.decalAffectDefault;
+
+        CustomValues = new int[init.customConfigs.Count];
+
+        for (int i = 0; i < init.customConfigs.Count; i++)
         {
-            // find index of default value
-            for (int i = 0; i < init.customSwitchOptions.Length; i++)
+            CustomEffectConfig config = init.customConfigs[i];
+
+            // string config
+            if (config is CustomEffectString strConfig)
             {
-                if (init.customSwitchOptions[i] == init.customSwitchDefault)
+                // find index of default value
+                for (int j = 0; j < strConfig.Options.Length; j++)
                 {
-                    CustomValue = i;
-                    break;
+                    if (strConfig.Options[j] == strConfig.Default)
+                    {
+                        CustomValues[i] = j;
+                        break;
+                    }
                 }
             }
-        }
 
+            // int config
+            else if (config is CustomEffectInteger intConfig)
+            {
+                CustomValues[i] = Raylib.GetRandomValue(intConfig.MinInclusive, intConfig.MaxInclusive);
+            }
+        }
+        
         // create matrix
         width = level.Width;
         height = level.Height;

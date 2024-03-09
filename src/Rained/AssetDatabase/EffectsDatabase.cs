@@ -15,12 +15,12 @@ record CustomEffectConfig
     }
 }
 
-record CustomEffectCombo : CustomEffectConfig
+record CustomEffectString : CustomEffectConfig
 {
     public readonly string Default;
     public readonly string[] Options;
 
-    public CustomEffectCombo(string name, string defaultOption, string[] options) : base(name)
+    public CustomEffectString(string name, string defaultOption, string[] options) : base(name)
     {
         Default = defaultOption;
         Options = options;
@@ -56,22 +56,27 @@ class EffectInit
     public bool useLayers = false;
     public bool use3D = false;
     public bool usePlantColors = false;
-    public bool useEffectColors = false;
     public bool useDecalAffect = false;
-
     public bool decalAffectDefault = false;
-    public int defaultEffectColor = 0;
-    public readonly List<CustomEffectConfig> customConfigs;
 
-    //public string customSwitchName = string.Empty;
-    //public string customSwitchDefault = string.Empty;
-    //public string[] customSwitchOptions = Array.Empty<string>();
+    public readonly List<CustomEffectConfig> customConfigs;
 
     public EffectInit(string name, EffectType type)
     {
         this.name = name;
         this.type = type;
         customConfigs = [];
+    }
+
+    public int GetCustomConfigIndex(string name)
+    {
+        for (int i = 0; i < customConfigs.Count; i++)
+        {
+            if (customConfigs[i].Name == name)
+                return i;
+        }
+
+        return -1;
     }
 }
 
@@ -105,7 +110,9 @@ class EffectsDatabase
                 repeats = 130,
                 affectOpenAreas = 0.5f,
                 use3D = true,
-                useDecalAffect = true
+
+                useDecalAffect = true,
+                decalAffectDefault = true
             });
             
             CreateEffect(new EffectInit("Melt", EffectType.StandardErosion)
@@ -615,19 +622,15 @@ class EffectsDatabase
                 repeats = 60,
                 affectOpenAreas = 0.3f,
                 useLayers = true,
-                use3D = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 2
+                use3D = true
             });
+            CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
             
             CreateEffect(new EffectInit("Colored Rubble", EffectType.NN)
             {
                 useLayers = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 2
             });
+            CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
 
             CreateEffect(new EffectInit("Fat Slime", EffectType.StandardErosion)
             {
@@ -646,36 +649,28 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Assorted Trash", EffectType.NN)
             {
                 useLayers = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 0
             });
+            CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
 
             CreateEffect(new EffectInit("Colored Wires", EffectType.NN)
             {
                 useLayers = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 2
             });
+            CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
             CustomConfig("Fatness", "2px", ["1px", "2px", "3px", "random"]);
 
             CreateEffect(new EffectInit("Colored Chains", EffectType.NN)
             {
                 useLayers = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 2
             });
+            CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
             CustomConfig("Size", "Small", ["Small", "FAT"]);
 
             CreateEffect(new EffectInit("Ring Chains", EffectType.NN)
             {
-                useLayers = true,
-                useEffectColors = true,
-
-                defaultEffectColor = 0
+                useLayers = true
             });
+            CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
         }
 
         BeginGroup("Dakras Plants");
@@ -782,7 +777,7 @@ class EffectsDatabase
 
     private void CustomConfig(string name, string defaultOption, string[] options)
     {
-        activeEffect.customConfigs.Add(new CustomEffectCombo(name, defaultOption, options));
+        activeEffect.customConfigs.Add(new CustomEffectString(name, defaultOption, options));
     }
 
     private void CustomConfig(string name, int min, int max)

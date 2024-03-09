@@ -5,7 +5,8 @@ struct EffectConfigData
     public Effect.LayerMode Layer;
     public bool Is3D;
     public int PlantColor;
-    public int CustomValue;
+    public bool AffectGradientsAndDecals;
+    public int[] CustomValues;
     public int Seed;
 
     public EffectConfigData(Effect effect)
@@ -13,8 +14,14 @@ struct EffectConfigData
         Layer = effect.Layer;
         Is3D = effect.Is3D;
         PlantColor = effect.PlantColor;
-        CustomValue = effect.CustomValue;
+        CustomValues = new int[effect.CustomValues.Length];
         Seed = effect.Seed;
+        AffectGradientsAndDecals = effect.AffectGradientsAndDecals;
+
+        for (int i = 0; i < effect.CustomValues.Length; i++)
+        {
+            CustomValues[i] = effect.CustomValues[i];
+        }
     }
 
     public readonly void Apply(Effect effect)
@@ -22,8 +29,13 @@ struct EffectConfigData
         effect.Layer = Layer;
         effect.Is3D = Is3D;
         effect.PlantColor = PlantColor;
-        effect.CustomValue = CustomValue;
         effect.Seed = Seed;
+        effect.AffectGradientsAndDecals = AffectGradientsAndDecals;
+
+        for (int i = 0; i < CustomValues.Length; i++)
+        {
+            effect.CustomValues[i] = CustomValues[i];
+        }
     }
 };
 
