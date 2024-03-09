@@ -94,8 +94,8 @@ class GeometryEditor : IEditorMode
     private static readonly Color[] LAYER_COLORS =
     [
         new(0, 0, 0, 255),
-        new(50, 255, 50, 127),
-        new(255, 50, 50, 127)
+        new(89, 222, 89, 100),
+        new(255, 60, 60, 70)
     ];
 
     private Tool selectedTool = Tool.Wall;
@@ -183,7 +183,7 @@ class GeometryEditor : IEditorMode
                 ImGui.SetNextItemWidth(-0.0001f);
                 if (ImGui.BeginCombo("##ViewMode", viewModeNames[(int)layerViewMode]))
                 {
-                    for (int i = 0; i < viewModeNames.Count(); i++)
+                    for (int i = 0; i < viewModeNames.Length; i++)
                     {
                         bool isSelected = i == (int)layerViewMode;
                         if (ImGui.Selectable(viewModeNames[i], isSelected))
