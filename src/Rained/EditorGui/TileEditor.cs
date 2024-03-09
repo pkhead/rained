@@ -493,14 +493,11 @@ class TileEditor : IEditorMode
         // draw layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
-            int offset = l * 2;
-
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
-                Rlgl.Translatef(offset, offset, 0f);
                 levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
                 levelRender.RenderTiles(l, 255);
             Rlgl.PopMatrix();
