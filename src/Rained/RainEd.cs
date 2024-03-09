@@ -168,7 +168,7 @@ sealed class RainEd
 
     public void ShowNotification(string msg)
     {
-        if (notification == "")
+        if (notification == "" || notificationTime != 3f)
         {
             notification = msg;
         }
@@ -416,12 +416,12 @@ sealed class RainEd
         RegisterKeyShortcut(ShortcutID.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut(ShortcutID.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut(ShortcutID.Paste, ImGuiKey.V, ImGuiModFlags.Ctrl);
-        RegisterKeyShortcut(ShortcutID.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl);
+        RegisterKeyShortcut(ShortcutID.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl, true);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl);
+            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl, true);
         else
-            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+            RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift, true);
     }
 
     private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)

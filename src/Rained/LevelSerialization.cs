@@ -692,7 +692,10 @@ static class LevelSerialization
             output.AppendFormat("#repeats: {0}, #affectOpenAreas: {1}]", effect.Data.repeats, effect.Data.affectOpenAreas);
         }
 
-        output.Append("], #emPos: point(1, 1), #editEffect: 0, #selectEditEffect: 0, #mode: \"createNew\", #brushSize: 5]");
+        output.AppendFormat(
+            "], #emPos: point(1, 1), #editEffect: {0}, #selectEditEffect: {0}, #mode: \"createNew\", #brushSize: 5]",
+            level.Effects.Count > 0 ? 1 : 0
+        );
         output.Append(newLine);
 
         // light data
