@@ -272,7 +272,7 @@ class LightEditor : IEditorMode
         );
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;

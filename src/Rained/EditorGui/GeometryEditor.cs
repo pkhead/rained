@@ -91,11 +91,12 @@ class GeometryEditor : IEditorMode
         { Tool.WormGrass,       new(2, 5) }
     };
 
-    private static readonly Color[] LAYER_COLORS = new Color[3] {
+    private static readonly Color[] LAYER_COLORS =
+    [
         new(0, 0, 0, 255),
-        new(0, 255, 0, 127),
-        new(255, 0, 0, 127)
-    };
+        new(50, 255, 50, 127),
+        new(255, 50, 50, 127)
+    ];
 
     private Tool selectedTool = Tool.Wall;
     private bool isToolActive = false;
@@ -267,7 +268,7 @@ class GeometryEditor : IEditorMode
             layerMask[2] = !layerMask[2];
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
 

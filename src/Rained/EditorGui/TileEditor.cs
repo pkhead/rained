@@ -511,7 +511,7 @@ class TileEditor : IEditorMode
         }
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
 
@@ -530,7 +530,7 @@ class TileEditor : IEditorMode
             int offset = l * 2;
 
             // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrame);
+            Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
@@ -538,16 +538,19 @@ class TileEditor : IEditorMode
                 levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
                 levelRender.RenderTiles(l, 255);
             Rlgl.PopMatrix();
-            
-            // draw alpha-blended result into main frame
-            Raylib.BeginTextureMode(mainFrame);
+        }
+
+        // draw alpha-blended result into main frame
+        Raylib.BeginTextureMode(mainFrame);
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
             Rlgl.PushMatrix();
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
             Raylib.DrawTextureRec(
-                layerFrame.Texture,
-                new Rectangle(0f, layerFrame.Texture.Height, layerFrame.Texture.Width, -layerFrame.Texture.Height),
+                layerFrames[l].Texture,
+                new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),
                 Vector2.Zero,
                 new Color(255, 255, 255, alpha)
             );

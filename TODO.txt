@@ -3,11 +3,14 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
+- alt+right click to pan
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
+- configurable geo colors
+- configurable keybinds
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
-- split up prop editor source code
+- split up prop editor source code?
 - Move Level
 - undo/redo for level resize
 - help pages/hints/tooltips/whatever
@@ -16,9 +19,7 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - fix trans flag prop loading
-- configurable keybinds
-
-Level Properties:
+- COMMUNITY MATERIALS AND EFFECTS
 
 Geometry Editor:
 - optimized cell change recorder
@@ -33,7 +34,7 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 
 Tile Editor:
 - make sure tile rendering/placement code is correct
-- optimized tile rendering
+- optimize tile rendering
 - rect material place
 
 Camera Editor:
@@ -50,7 +51,6 @@ Effects Editor:
 - community effects
 
 Prop Editor:
-- figure out cause of performance issues (might be tile rendering)
 - Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
 - bug when resizing: PointA and PointB do not update?
@@ -185,64 +185,3 @@ PROP LEVEL FORMAT
     [
       #props: PROPDATA[]
     ]
-
-KEYBINDS:
-  General:
-    Arrow Keys - Scroll
-    Scroll Wheel - Zoom
-    Middle Mouse Button - Pan
-    Ctrl + Z - Undo
-    Ctrl + Shift + Z / Ctrl + Y - Redo
-    1 - Environment Editor
-    2 - Geometry Editor
-    3 - Tile Editor
-    4 - Camera Editor
-    5 - Light Editor
-    6 - Effects Editor
-    7 - Props Editor
-  
-  Geometry Editor:
-    WASD - Browse tool selector
-    LMB - Place/Remove (Context-Specific)
-    Shift+LMB - Rect Fill (Context-Specific)
-    E - Toggle Layer 1
-    R - Toggle Layer 2
-    T - Toggle Layer 3
-
-  Tile Editor:
-    TAB - Switch Layer
-    WASD - Browse tile selector
-    Shift + MouseWheel - Change material brush size
-    E - Select tile from level
-    Q - Set currently selected material as default
-    LMB - Place Tile/Material
-    RMB - Remove Tile/Material
-    G+RMB - Remove Tile and Geometry
-    F+LMB - Force Place
-    G+LMB - Force Geometry
-
-  Camera Editor:
-    N - New Camera
-    RMB/Backspace/Delete - Delete Camera/Reset Corner
-    LMB - Move Camera/Corner
-
-  Light Editor:
-    WASD - Navigate catalog
-    Q + Mouse - Scale brush
-    E + Mouse - Rotate brush
-    R - Reset transform
-
-  Effects Editor:
-    LMB - Paint effect
-    Shift + LMB - Paint effect stronger
-    RMB - Erase effect
-    Shift + MouseWheel - Change brush size
-  
-  Prop Editor:
-    Double-Click or N - Place prop
-    Backspace/Delete - Delete selected prop
-    LMB - Select prop
-    Shift+LMB - Add prop to selection
-    RMB - Select all props under mouse
-    F - Toggle freeform warp mode
-    Ctrl+D - Duplicate selected prop

@@ -274,7 +274,7 @@ partial class PropEditor : IEditorMode
         return isGizmoHovered;
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         bool wasMouseDragging = isMouseDragging;
         isMouseDragging = false;
@@ -291,23 +291,26 @@ partial class PropEditor : IEditorMode
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrame);
+            Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
             levelRender.RenderTiles(l, 100);
-            
-            // draw alpha-blended result into main frame
-            Raylib.BeginTextureMode(mainFrame);
+        }
+
+        // draw alpha-blended result into main frame
+        Raylib.BeginTextureMode(mainFrame);
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
             Rlgl.PushMatrix();
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
                 Raylib.DrawTextureRec(
-                    layerFrame.Texture,
+                    layerFrames[l].Texture,
                     new Rectangle(
-                        new Vector2(0f, layerFrame.Texture.Height),
-                        new Vector2(layerFrame.Texture.Width, -layerFrame.Texture.Height)
+                        new Vector2(0f, layerFrames[l].Texture.Height),
+                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
                     ),
                     Vector2.Zero,
                     new Color(255, 255, 255, alpha)
@@ -319,11 +322,13 @@ partial class PropEditor : IEditorMode
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrame);
-
+            Raylib.BeginTextureMode(layerFrames[l]);
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             levelRender.RenderProps(l, 255);
-            
+        }
+
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
             // draw alpha-blended result into main frame
             Raylib.BeginTextureMode(mainFrame);
             Rlgl.PushMatrix();
@@ -331,17 +336,17 @@ partial class PropEditor : IEditorMode
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
                 Raylib.DrawTextureRec(
-                    layerFrame.Texture,
+                    layerFrames[l].Texture,
                     new Rectangle(
-                        new Vector2(0f, layerFrame.Texture.Height),
-                        new Vector2(layerFrame.Texture.Width, -layerFrame.Texture.Height)
+                        new Vector2(0f, layerFrames[l].Texture.Height),
+                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
                     ),
                     Vector2.Zero,
                     new Color(255, 255, 255, alpha)
                 );
             Rlgl.PopMatrix();
         }
-
+        
         levelRender.RenderGrid();
         levelRender.RenderBorder();
 

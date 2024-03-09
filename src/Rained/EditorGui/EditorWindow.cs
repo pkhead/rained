@@ -19,7 +19,7 @@ interface IEditorMode
     void ReloadLevel() {}
 
     void DrawToolbar();
-    void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame);
+    void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames);
 }
 
 enum EditModeEnum
@@ -74,7 +74,7 @@ class EditorWindow
     }
 
     // render texture given to each editor mode class
-    private RlManaged.RenderTexture2D layerRenderTexture;
+    private RlManaged.RenderTexture2D[] layerRenderTextures;
     public readonly LevelEditRender LevelRenderer;
 
     private ChangeHistory.CellChangeRecorder cellChangeRecorder;
@@ -101,7 +101,12 @@ class EditorWindow
     {
         Editor = RainEd.Instance;
         canvasWidget = new(1, 1);
-        layerRenderTexture = RlManaged.RenderTexture2D.Load(1, 1);
+        layerRenderTextures = new RlManaged.RenderTexture2D[3];
+
+        for (int i = 0; i < 3; i++)
+        {
+            layerRenderTextures[i] = RlManaged.RenderTexture2D.Load(1, 1);
+        }
         
         LevelRenderer = new LevelEditRender();
         cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
@@ -276,10 +281,16 @@ class EditorWindow
                 int canvasH = (int)(regionMax.Y - regionMin.Y);
 
                 canvasWidget.Resize(canvasW, canvasH);
-                if (layerRenderTexture.Texture.Width != canvasW || layerRenderTexture.Texture.Height != canvasH)
+
+                for (int i = 0; i < 3; i++)
                 {
-                    layerRenderTexture.Dispose();
-                    layerRenderTexture = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
+                    ref var renderTex = ref layerRenderTextures[i];
+
+                    if (renderTex.Texture.Width != canvasW || renderTex.Texture.Height != canvasH)
+                    {
+                        renderTex.Dispose();
+                        renderTex = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
+                    }
                 }
                 
                 Raylib.BeginTextureMode(canvasWidget.RenderTexture);
@@ -332,7 +343,7 @@ class EditorWindow
         // I would've figured that was the problem!
         Rlgl.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
         Raylib.BeginBlendMode(BlendMode.CustomSeparate);
-        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTexture);
+        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
 
         // drwa resize preview
         if (Editor.LevelResizeWindow is LevelResizeWindow resizeData)

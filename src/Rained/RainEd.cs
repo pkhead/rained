@@ -11,7 +11,7 @@ namespace RainEd;
 
 sealed class RainEd
 {
-    private const string VERSION = "1.0.0"; 
+    private const string VERSION = "b1.0.0"; 
 
     public static RainEd Instance = null!;
 

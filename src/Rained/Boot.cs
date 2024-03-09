@@ -82,7 +82,7 @@ namespace RainEd
                 Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
-                //Raylib.SetTargetFPS(10);
+                Raylib.SetTargetFPS(240);
                 Raylib.SetExitKey(KeyboardKey.Null);
 
                 // setup imgui
@@ -104,6 +104,7 @@ namespace RainEd
                     Raylib.BeginDrawing();
                     app.Draw(Raylib.GetFrameTime());
                     Raylib.EndDrawing();
+                    //Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
 
                     RlManaged.RlObject.UnloadGCQueue();
                 }

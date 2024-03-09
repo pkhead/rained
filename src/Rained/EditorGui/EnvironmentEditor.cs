@@ -83,7 +83,7 @@ class EnvironmentEditor : IEditorMode
         );
     }
 
-    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
+    public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         bool wasDragging = isDragging;
         isDragging = false;
