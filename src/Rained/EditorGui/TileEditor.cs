@@ -56,8 +56,6 @@ class TileEditor : IEditorMode
 
         tileSearchResults.Clear();
         matSearchResults.Clear();
-        
-        //var queryLower = searchQuery.ToLower();
 
         // find material groups that have any entires that pass the searchq uery
         for (int i = 0; i < matDb.Categories.Count; i++)

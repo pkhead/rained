@@ -197,7 +197,6 @@ partial class PropEditor : IEditorMode
         searchResults.Clear();
         tileSearchResults.Clear();
         var propDb = RainEd.Instance.PropDatabase;
-        var queryLower = searchQuery.ToLower();
 
         // normal props (too lazy to add 5 extra lines that makes this an enum)
         // (and this field is only used like 2 other times so )
@@ -212,7 +211,7 @@ partial class PropEditor : IEditorMode
 
                 foreach (var prop in group.Props)
                 {
-                    if (prop.Name.ToLower().Contains(queryLower))
+                    if (prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                     {
                         searchResults.Add((i, group));
                         break;
@@ -230,7 +229,7 @@ partial class PropEditor : IEditorMode
 
                 foreach (var prop in group.Props)
                 {
-                    if (prop.Name.ToLower().Contains(queryLower))
+                    if (prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                     {
                         tileSearchResults.Add((i, group));
                         break;
@@ -324,7 +323,6 @@ partial class PropEditor : IEditorMode
                     {
                         ProcessSearch();
                     }
-                    var queryLower = searchQuery.ToLower();
 
                     // group list box
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
@@ -353,7 +351,7 @@ partial class PropEditor : IEditorMode
                             var prop = propList[i];
 
                             // don't show this prop if it doesn't pass search test
-                            if (!prop.Name.ToLower().Contains(queryLower))
+                            if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
                             
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))
@@ -391,7 +389,6 @@ partial class PropEditor : IEditorMode
                     {
                         ProcessSearch();
                     }
-                    var queryLower = searchQuery.ToLower();
 
                     // group list box
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
@@ -417,7 +414,7 @@ partial class PropEditor : IEditorMode
                             var prop = propList[i];
 
                             // don't show this prop if it doesn't pass search test
-                            if (!prop.Name.ToLower().Contains(queryLower))
+                            if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
 
                             if (ImGui.Selectable(prop.Name, prop == selectedInit))

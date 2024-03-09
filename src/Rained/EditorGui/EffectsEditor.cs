@@ -110,7 +110,6 @@ class EffectsEditor : IEditorMode
             ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll);
 
             var groupsPassingSearch = new List<int>();
-            var queryLower = searchQuery.ToLower();
 
             // find groups that have any entries that pass the search query
             for (int i = 0; i < fxDatabase.Groups.Count; i++)
@@ -123,7 +122,7 @@ class EffectsEditor : IEditorMode
 
                 for (int j = 0; j < fxDatabase.Groups[i].effects.Count; j++)
                 {
-                    if (fxDatabase.Groups[i].effects[j].name.ToLower().Contains(queryLower))
+                    if (fxDatabase.Groups[i].effects[j].name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                     {
                         groupsPassingSearch.Add(i);
                         break;
@@ -156,7 +155,7 @@ class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
-                    if (searchQuery != "" && !effectData.name.ToLower().Contains(queryLower)) continue;
+                    if (searchQuery != "" && !effectData.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase)) continue;
 
                     if (ImGui.Selectable(effectData.name))
                     {
