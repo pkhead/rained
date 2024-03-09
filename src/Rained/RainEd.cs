@@ -43,6 +43,7 @@ sealed class RainEd
     private string notification = "";
     private float notificationTime = 0f;
     private float notifFlash = 0f;
+    private int timerDelay = 2;
 
     private bool promptAbout = false; // is the about prompt open?
 
@@ -56,7 +57,7 @@ sealed class RainEd
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
-    
+
     public RainEd(string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
@@ -167,7 +168,15 @@ sealed class RainEd
 
     public void ShowNotification(string msg)
     {
-        notification = msg;
+        if (notification == "")
+        {
+            notification = msg;
+        }
+        else
+        {
+            notification += "\n" + msg;
+        }
+        
         notificationTime = 3f;
         notifFlash = 0f;
     }
@@ -664,8 +673,11 @@ sealed class RainEd
 
             ImGui.PopStyleColor();
 
-            notificationTime -= dt;
-            notifFlash += dt;
+            if (timerDelay == 0)
+            {
+                notificationTime -= dt;
+                notifFlash += dt;
+            }
         }
 
         // shortcuts window
@@ -756,6 +768,9 @@ sealed class RainEd
         }
 
         rlImGui.End();
+
+        if (timerDelay > 0)
+            timerDelay--;
     }
 
     public void UpdateRopeSimulation()

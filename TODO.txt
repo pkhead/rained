@@ -18,7 +18,6 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - fix trans flag prop loading
-- COMMUNITY EFFECTS
 - CUSTOM MATERIALS
 
 Geometry Editor:
