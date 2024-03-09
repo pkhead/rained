@@ -401,7 +401,7 @@ static class LevelSerialization
                     DepthOffset = -depth,
                     RenderOrder = (int) settingsData.fields["renderorder"],
                     Seed = (int) settingsData.fields["seed"],
-                    RenderTime = (Prop.PropRenderTime) (int) settingsData.fields["renderTime"]
+                    RenderTime = (PropRenderTime) (int) settingsData.fields["renderTime"]
                 };
 
                 prop.TryConvertToAffine();
@@ -768,7 +768,7 @@ static class LevelSerialization
             output.AppendFormat("#renderorder: {0}, #seed: {1}, #renderTime: {2}",
                 prop.RenderOrder,
                 prop.Seed,
-                prop.RenderTime == Prop.PropRenderTime.PostEffects ? 1 : 0
+                prop.RenderTime == PropRenderTime.PostEffects ? 1 : 0
             );
 
             if (propInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))

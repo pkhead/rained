@@ -440,6 +440,11 @@ class PropRope
     }
 }
 
+public enum PropRenderTime
+{
+    PreEffects, PostEffects
+};
+
 class Prop
 {
     public readonly PropInit PropInit;
@@ -486,11 +491,6 @@ class Prop
     {
         get => rope == null || transform.isAffine;
     }
-
-    public enum PropRenderTime
-    {
-        PreEffects, PostEffects
-    };
 
     public int DepthOffset = 0; // 0-29
     public int CustomDepth;
