@@ -94,8 +94,8 @@ class GeometryEditor : IEditorMode
     private static readonly Color[] LAYER_COLORS =
     [
         new(0, 0, 0, 255),
-        new(89, 222, 89, 100),
-        new(255, 60, 60, 70)
+        new(89, 255, 89, 100),
+        new(255, 30, 30, 70)
     ];
 
     private Tool selectedTool = Tool.Wall;
@@ -394,7 +394,7 @@ class GeometryEditor : IEditorMode
                     Color.White
                 );
 
-                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     ApplyToolRect();
                     window.CellChangeRecorder.PushChange();
@@ -416,7 +416,7 @@ class GeometryEditor : IEditorMode
 
                 // activate tool on click
                 // or if user moves mouse on another tile space
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (window.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     isToolActive = true;
                     window.CellChangeRecorder.BeginChange();
@@ -424,13 +424,13 @@ class GeometryEditor : IEditorMode
                 
                 if (isToolActive)
                 {
-                    if (Raylib.IsMouseButtonPressed(MouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
+                    if (window.IsMouseClicked(ImGuiMouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
                     {
                         if (!isToolRectActive)
-                            ActivateTool(window.MouseCx, window.MouseCy, Raylib.IsMouseButtonPressed(MouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                            ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
                     }
 
-                    if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                    if (window.IsMouseReleased(ImGuiMouseButton.Left))
                     {
                         isToolActive = false;
                         window.CellChangeRecorder.PushChange();

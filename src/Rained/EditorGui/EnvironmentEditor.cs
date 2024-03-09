@@ -94,7 +94,7 @@ class EnvironmentEditor : IEditorMode
         // set water level
         if (window.IsViewportHovered && level.HasWater)
         {
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            if (window.IsMouseDown(ImGuiMouseButton.Left))
             {
                 isDragging = true;
 

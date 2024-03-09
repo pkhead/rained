@@ -567,7 +567,7 @@ class TileEditor : IEditorMode
 
             // begin change if left or right button is down
             // regardless of what it's doing
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right))
+            if (window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right))
             {
                 if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                 isToolActive = true;
@@ -637,7 +637,7 @@ class TileEditor : IEditorMode
                     window.StatusText = "Force Placement";
 
                 // place tile on click
-                if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                if (window.IsMouseDown(ImGuiMouseButton.Left))
                 {
                     if (validationStatus == TilePlacementStatus.Success)
                     {
@@ -648,7 +648,7 @@ class TileEditor : IEditorMode
                             modifyGeometry
                         );
                     }
-                    else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    else if (window.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         string errStr = validationStatus switch {
                             TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
@@ -694,9 +694,9 @@ class TileEditor : IEditorMode
 
                 // place material
                 int placeMode = 0;
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                if (window.IsMouseDown(ImGuiMouseButton.Left))
                     placeMode = 1;
-                else if (ImGui.IsMouseDown(ImGuiMouseButton.Right))
+                else if (window.IsMouseDown(ImGuiMouseButton.Right))
                     placeMode = 2;
                 
                 if (placeMode != 0)
@@ -771,7 +771,7 @@ class TileEditor : IEditorMode
                 }
 
                 // remove tile on right click
-                if (Raylib.IsMouseButtonDown(MouseButton.Right) && mouseCell.HasTile())
+                if (window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                 {
                     RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                 }

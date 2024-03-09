@@ -53,6 +53,12 @@ class EditorWindow
     private int mouseCx = 0;
     private int mouseCy = 0;
     private Vector2 mouseCellFloat = new();
+    
+    // input overrides for lmb because of alt + left click drag
+    private bool isLmbPanning = false;
+    private bool isLmbDown = false;
+    private bool isLmbClicked = false;
+    private bool isLmbReleased = false;
 
     public int MouseCx { get => mouseCx; }
     public int MouseCy { get => mouseCy; }
@@ -178,6 +184,36 @@ class EditorWindow
     {
         if (ImGui.GetIO().WantTextInput) return false;
         return Raylib.IsKeyPressed(KeyboardKey.Tab);
+    }
+
+    public bool IsMouseClicked(ImGuiMouseButton button, bool repeat = false)
+    {
+        if (button == ImGuiMouseButton.Left) return isLmbClicked;
+        return ImGui.IsMouseClicked(button, repeat);
+    }
+
+    public bool IsMouseDown(ImGuiMouseButton button)
+    {
+        if (button == ImGuiMouseButton.Left) return isLmbDown;
+        return ImGui.IsMouseDown(button);
+    }
+
+    public bool IsMouseDoubleClicked(ImGuiMouseButton button)
+    {
+        if (isLmbPanning) return false;
+        return ImGui.IsMouseDoubleClicked(button);
+    }
+
+    public bool IsMouseReleased(ImGuiMouseButton button)
+    {
+        if (button == ImGuiMouseButton.Left) return isLmbReleased;
+        return ImGui.IsMouseReleased(button);
+    }
+
+    public bool IsMouseDragging(ImGuiMouseButton button)
+    {
+        if (button == ImGuiMouseButton.Left && !isLmbDown) return false;
+        return ImGui.IsMouseDragging(button);
     }
 
     public void Render(float dt)
@@ -386,13 +422,23 @@ class EditorWindow
         Raylib.EndBlendMode();
 
         // view controls
+        isLmbClicked = false;
+        isLmbDown = false;
+        isLmbReleased = false;
+
         if (canvasWidget.IsHovered)
         {
             // middle click pan
-            if (Raylib.IsMouseButtonDown(MouseButton.Middle))
+            if (isLmbPanning || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
             {
                 var mouseDelta = Raylib.GetMouseDelta();
                 viewOffset -= mouseDelta / viewZoom;
+            }
+
+            // begin alt+left panning
+            if (ImGui.IsKeyDown(ImGuiKey.ModAlt) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                isLmbPanning = true;
             }
 
             // scroll wheel zooming
@@ -413,6 +459,20 @@ class EditorWindow
                     zoomSteps--;
                 }
             }
+        }
+
+        if (isLmbPanning)
+        {
+            if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            {
+                isLmbPanning = false;
+            }
+        }
+        else
+        {
+            isLmbClicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+            isLmbDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+            isLmbReleased = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
         }
 
         Rlgl.PopMatrix();

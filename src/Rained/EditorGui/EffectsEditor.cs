@@ -471,13 +471,13 @@ class EffectsEditor : IEditorMode
                     brushSize = Math.Clamp(brushSize, 1, 10);
                 }
 
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                if (window.IsMouseClicked(ImGuiMouseButton.Left) || window.IsMouseClicked(ImGuiMouseButton.Right))
                     lastBrushPos = new(-9999, -9999);
                 
                 // paint when user's mouse is down and moving
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                if (window.IsMouseDown(ImGuiMouseButton.Left))
                     brushFac = 1.0f;
-                else if (ImGui.IsMouseDown(ImGuiMouseButton.Right))
+                else if (window.IsMouseDown(ImGuiMouseButton.Right))
                     brushFac = -1.0f;
                 
                 if (brushFac != 0.0f)

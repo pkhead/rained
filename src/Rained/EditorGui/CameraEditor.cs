@@ -101,7 +101,7 @@ class CameraEditor : IEditorMode
             
             var mpos = window.MouseCellFloat;
 
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (window.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragBegin = mpos;
             
@@ -109,7 +109,7 @@ class CameraEditor : IEditorMode
 
             if (isDraggingCamera)
             {
-                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     // stop dragging camera
                     isDraggingCamera = false;
@@ -152,7 +152,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // drag begin
-                if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && ImGui.IsMouseDown(ImGuiMouseButton.Left)))
+                if (window.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && window.IsMouseDown(ImGuiMouseButton.Left)))
                 {
                     if (selectedCorner == -1)
                     {
@@ -167,7 +167,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // right-click to reset corner
-                if (selectedCorner >= 0 && selectedCamera is not null && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                if (selectedCorner >= 0 && selectedCamera is not null && window.IsMouseClicked(ImGuiMouseButton.Right))
                 {
                     changeRecorder.BeginChange();
                     selectedCamera.CornerAngles[selectedCorner] = 0f;
@@ -176,7 +176,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // mouse-pick select when lmb pressed
-                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     PickCameraAt(dragBegin);
                 }
@@ -187,7 +187,7 @@ class CameraEditor : IEditorMode
         if (!isDraggingCamera)
         {
             // N or double-click to create new camera
-            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left);
             if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
             {
                 changeRecorder.BeginChange();

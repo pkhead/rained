@@ -14,8 +14,8 @@ static class ShortcutsWindow
         // General
         [
             ("Scroll Wheel", "Zoom"),
-            ("Middle Mouse Button", "Pan"),
-            ("Arrow Keys", "Pan"),
+            ("Middle Mouse", "Pan"),
+            ("Alt+Left Mouse", "Pan"),
             ("Ctrl+Z", "Undo"),
             ("Ctrl+Shift+Z / Ctrl+Y", "Redo"),
             ("1", "Edit environment"),
@@ -29,15 +29,15 @@ static class ShortcutsWindow
 
         // Environment
         [
-            ("Mouse Left", "Set water level")
+            ("Left Mouse", "Set water level")
         ],
 
         // Geometry
         [
             ("WASD", "Browse tool selector"),
-            ("Mouse Left", "Place/remove"),
-            ("Mouse Right", "Remove"),
-            ("Shift+Mouse Left", "Rect fill"),
+            ("Left Mouse", "Place/remove"),
+            ("Right Mouse", "Remove"),
+            ("Shift+Left Mouse", "Rect fill"),
             ("E", "Toggle layer 1"),
             ("R", "Toggle layer 2"),
             ("T", "Toggle layer 3"),
@@ -51,18 +51,18 @@ static class ShortcutsWindow
             ("Shift+Mouse Wheel", "Change material brush size"),
             ("E", "Sample tile from level"),
             ("Q", "Set selected to default material"),
-            ("Mouse Left", "Place tile/material"),
-            ("Mouse Right", "Remove tile/material"),
-            ("F+Mouse Left", "Force tile placement"),
-            ("G+Mouse Left", "Force tile geometry"),
-            ("G+Mouse Right", "Remove tile and geometry"),
+            ("Left Mouse", "Place tile/material"),
+            ("Right Mouse", "Remove tile/material"),
+            ("F+Left Mouse", "Force tile placement"),
+            ("G+Left Mouse", "Force tile geometry"),
+            ("G+Right Mouse", "Remove tile and geometry"),
         ],
 
         // Camera
         [
             ("Double-click", "Create camera"),
-            ("Mouse Left", "Select camera"),
-            ("Mouse Right", "Reset camera corner"),
+            ("Left Mouse", "Select camera"),
+            ("Right Mouse", "Reset camera corner"),
             ("Backspace/Delete", "Delete selected camera"),
             ("Ctrl+D", "Duplicate selected camera")
         ],
@@ -75,15 +75,15 @@ static class ShortcutsWindow
             ("Q+Mouse Move", "Scale brush"),
             ("E+Mouse Move", "Rotate brush"),
             ("R", "Reset brush transform"),
-            ("Mouse Left", "Paint shadow"),
-            ("Mouse Right", "Paint light"),
+            ("Left Mouse", "Paint shadow"),
+            ("Right Mouse", "Paint light"),
         ],
 
         // Effects
         [
-            ("Mouse Left", "Paint effect"),
-            ("Shift+Mouse Left", "Paint effect stronger"),
-            ("Mouse Right", "Erase effect"),
+            ("Left Mouse", "Paint effect"),
+            ("Shift+Left Mouse", "Paint effect stronger"),
+            ("Right Mouse", "Erase effect"),
             ("Shift+Mouse Wheel", "Change brush size")
         ],
 
@@ -94,9 +94,9 @@ static class ShortcutsWindow
             ("E", "Sample prop under mouse"),
             ("Q", "Toggle tile/prop tabs"),
             ("Double-click", "Create prop"),
-            ("Mouse Left", "Select prop"),
-            ("Shift+Mouse Left", "Add prop to selection"),
-            ("Mouse Right", "Find props under the mouse"),
+            ("Left Mouse", "Select prop"),
+            ("Shift+Left Mouse", "Add prop to selection"),
+            ("Right Mouse", "Find props under the mouse"),
             ("Backspace/Delete", "Delete selected prop(s)"),
             ("F", "Toggle freeform warp mode"),
             ("Ctrl+D", "Duplicate selected prop"),

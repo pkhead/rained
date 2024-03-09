@@ -467,7 +467,7 @@ partial class PropEditor : IEditorMode
                     var handlePos = (handle1 + handle2) / 2f;
                     
                     // draw gizmo handle at corner
-                    if (DrawGizmoHandle(handlePos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    if (DrawGizmoHandle(handlePos, 0) && window.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         changeRecorder.BeginTransform();
                         transformMode = new ScaleTransformMode(
@@ -504,7 +504,7 @@ partial class PropEditor : IEditorMode
                 );
 
                 // draw gizmo handle
-                if (DrawGizmoHandle(rotDotPos, 0) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (DrawGizmoHandle(rotDotPos, 0) && window.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     changeRecorder.BeginTransform();
                     transformMode = new RotateTransformMode(
@@ -535,7 +535,7 @@ partial class PropEditor : IEditorMode
                             var handlePos = corners[i];
                             
                             // draw gizmo handle at corner
-                            if (DrawGizmoHandle(handlePos, 1) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                            if (DrawGizmoHandle(handlePos, 1) && window.IsMouseClicked(ImGuiMouseButton.Left))
                             {
                                 changeRecorder.BeginTransform();
                                 transformMode = new WarpTransformMode(
@@ -563,7 +563,7 @@ partial class PropEditor : IEditorMode
                             if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
                                 continue;
                             
-                            if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                            if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && window.IsMouseClicked(ImGuiMouseButton.Left))
                             {
                                 changeRecorder.BeginTransform();
                                 transformMode = new RopePointTransformMode(
@@ -614,7 +614,7 @@ partial class PropEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (window.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragStartPos = window.MouseCellFloat;
             }
@@ -624,7 +624,7 @@ partial class PropEditor : IEditorMode
             {
                 transformMode.Update(dragStartPos, window.MouseCellFloat);
                 
-                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     changeRecorder.PushTransform();
 
@@ -690,7 +690,7 @@ partial class PropEditor : IEditorMode
 
     public void PropSelectUpdate(bool wasMouseDragging)
     {
-        if (ImGui.IsMouseDragging(ImGuiMouseButton.Left))
+        if (window.IsMouseDragging(ImGuiMouseButton.Left))
         {
             if (!wasMouseDragging)
             {
@@ -732,7 +732,7 @@ partial class PropEditor : IEditorMode
         }
 
         // user clicked a prop, so add it to the selection
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
+        if (window.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
         {
             if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 selectedProps.Clear();
@@ -746,7 +746,7 @@ partial class PropEditor : IEditorMode
 
         // right-click opens menu to select one of multiple props under the cursor
         // useful for when props overlap (which i assume is common)
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !wasMouseDragging)
+        if (window.IsMouseReleased(ImGuiMouseButton.Right) && !wasMouseDragging)
         {
             propSelectionList = GetPropsAt(window.MouseCellFloat);
             if (propSelectionList.Length == 1)
@@ -763,7 +763,7 @@ partial class PropEditor : IEditorMode
 
         // when N is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.NewObject) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
             var createPos = window.MouseCellFloat;
             

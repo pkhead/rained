@@ -343,8 +343,8 @@ class LightEditor : IEditorMode
 
             // render brush preview
             // if drawing, draw on light texture instead of screen
-            var lmb = Raylib.IsMouseButtonDown(MouseButton.Left);
-            var rmb = Raylib.IsMouseButtonDown(MouseButton.Right);
+            var lmb = window.IsMouseDown(ImGuiMouseButton.Left);
+            var rmb = window.IsMouseDown(ImGuiMouseButton.Right);
             if (lmb || rmb)
             {
                 isDrawing = true;
