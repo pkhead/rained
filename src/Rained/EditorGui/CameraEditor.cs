@@ -8,9 +8,13 @@ class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
     private readonly EditorWindow window;
-    private Camera? activeCamera = null;
-    private int activeCorner = -1;
-    private Vector2 mouseOffset = new(); // mouse offset from camera position when drag starts
+
+    private Camera? selectedCamera = null;
+    private int selectedCorner = -1;
+    private bool isDraggingCamera = false;
+    
+    private Vector2 lastMousePos = new();
+    private Vector2 dragBegin = new();
 
     private ChangeHistory.CameraChangeRecorder changeRecorder;
 
@@ -26,11 +30,46 @@ class CameraEditor : IEditorMode
 
     public void Unload()
     {
-        activeCamera = null;
+        selectedCamera = null;
+        isDraggingCamera = false;
+        selectedCorner = -1;
+
         changeRecorder.TryPushChange();
     }
     
     public void DrawToolbar() {
+    }
+
+    private void PickCameraAt(Vector2 mpos)
+    {
+        selectedCamera = null;
+        selectedCorner = -1;
+
+        float minDist = float.PositiveInfinity;
+
+        foreach (Camera camera in RainEd.Instance.Level.Cameras)
+        {
+            // determine if mouse is within camera bounds
+            var cameraA = camera.Position;
+            var cameraB = camera.Position + Camera.WidescreenSize;
+
+            // if so, select this camera
+            if (mpos.X > cameraA.X && mpos.Y > cameraA.Y &&
+                mpos.X < cameraB.X && mpos.Y < cameraB.Y
+            )
+            {
+                // if there are multiple cameras at this point, pick the one
+                // with the center that is closest to the user's cursor
+                var center = (cameraA + cameraB) / 2f;
+                var dist = Vector2.DistanceSquared(center, mpos);
+
+                if (dist < minDist)
+                {
+                    selectedCamera = camera;
+                    minDist = dist;
+                }
+            }
+        }
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D layerFrame)
@@ -57,118 +96,147 @@ class CameraEditor : IEditorMode
         // levelRender.RenderGrid(0.5f / window.ViewZoom);
         levelRender.RenderBorder();
 
-        // mouse-pick cameras
-        Camera? cameraHoveredOver = null;
-        int cornerHover = -1;
-
         if (window.IsViewportHovered)
         {
-            // drag active camera
-            if (activeCamera is not null)
-            {
-                cameraHoveredOver = activeCamera;
-                cornerHover = activeCorner;
+            
+            var mpos = window.MouseCellFloat;
 
-                // drag camera rect
-                if (activeCorner == -1)
-                    activeCamera.Position = window.MouseCellFloat - mouseOffset;
-                else // drag camera corner
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                dragBegin = mpos;
+            
+            }
+
+            if (isDraggingCamera)
+            {
+                if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
-                    var vecDiff = window.MouseCellFloat - activeCamera.GetCornerPosition(activeCorner, false);
+                    // stop dragging camera
+                    isDraggingCamera = false;
+                    changeRecorder.PushChange();
+                }
+
+                // corner drag
+                if (selectedCorner >= 0)
+                {
+                    var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
 
                     var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
                     var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
-                    activeCamera.CornerAngles[activeCorner] = angle;
-                    activeCamera.CornerOffsets[activeCorner] = offset / 4f;
+                    selectedCamera!.CornerAngles[selectedCorner] = angle;
+                    selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
                 }
 
-                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                // camera drag
+                else
                 {
-                    activeCamera = null;
-                    changeRecorder.PushChange();
+                    selectedCamera!.Position += window.MouseCellFloat - lastMousePos;
                 }
             }
-
-            // no active cameras, so mouse-pick cameras
             else
             {
-                var mpos = window.MouseCellFloat;
-                foreach (Camera camera in level.Cameras)
-                {
-                    // determine if mouse is close enough to one of its corners
-                    var foundCorner = false;
+                // determine if mouse is close enough to one of its corners
+                selectedCorner = -1;
 
+                if (selectedCamera is not null)
+                {
                     for (int c = 0; c < 4; c++)
                     {
-                        var cpos = camera.GetCornerPosition(c, true);
+                        var cpos = selectedCamera.GetCornerPosition(c, true);
                         if ((cpos - mpos).Length() < 0.5f / window.ViewZoom)
                         {
-                            cornerHover = c;
-                            cameraHoveredOver = camera;
-                            foundCorner = true;
+                            selectedCorner = c;
+                            break;
                         }
-                    }
-
-                    if (foundCorner) continue;
-
-                    // else, determine if mouse is within camera bounds
-                    var cameraA = camera.Position;
-                    var cameraB = camera.Position + Camera.WidescreenSize;
-
-                    // if so, mark this camera as hovered-over
-                    if (mpos.X > cameraA.X && mpos.Y > cameraA.Y &&
-                        mpos.X < cameraB.X && mpos.Y < cameraB.Y
-                    )
-                    {
-                        cornerHover = -1;
-                        cameraHoveredOver = camera;
                     }
                 }
 
-                if (cameraHoveredOver is not null && Raylib.IsMouseButtonPressed(MouseButton.Left))
+                // drag begin
+                if (ImGui.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && ImGui.IsMouseDown(ImGuiMouseButton.Left)))
                 {
-                    mouseOffset = window.MouseCellFloat - cameraHoveredOver.Position;
-                    activeCamera = cameraHoveredOver;
-                    activeCorner = cornerHover;
+                    if (selectedCorner == -1)
+                    {
+                        PickCameraAt(dragBegin);
+                    }
+
+                    if (selectedCamera is not null)
+                    {
+                        changeRecorder.BeginChange();
+                        isDraggingCamera = true;
+                    }
+                }
+
+                // right-click to reset corner
+                if (selectedCorner >= 0 && selectedCamera is not null && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                {
                     changeRecorder.BeginChange();
+                    selectedCamera.CornerAngles[selectedCorner] = 0f;
+                    selectedCamera.CornerOffsets[selectedCorner] = 0f;
+                    changeRecorder.PushChange();
+                }
+
+                // mouse-pick select when lmb pressed
+                if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                {
+                    PickCameraAt(dragBegin);
                 }
             }
         }
 
         // keybinds
-        if (!ImGui.GetIO().WantCaptureKeyboard && activeCamera is null)
+        if (!isDraggingCamera)
         {
-            // N to create new camera
-            if (window.IsShortcutActivated(RainEd.ShortcutID.NewObject) && level.Cameras.Count < Level.MaxCameraCount)
+            // N or double-click to create new camera
+            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+            if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
             {
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
                 level.Cameras.Add(cam);
+                selectedCamera = cam;
+                selectedCorner =- 1;
                 changeRecorder.PushChange();
             }
 
-            // Right-Click, Delete, or Backspace to delete camera
-            // that is being hovered over
-            // if hovering over a corner, it instead resets the corner transform
-            if (cameraHoveredOver is not null)
+
+            if (selectedCamera is not null)
             {
-                if (EditorWindow.IsKeyPressed(ImGuiKey.Delete)
-                    || EditorWindow.IsKeyPressed(ImGuiKey.Backspace)
-                    || Raylib.IsMouseButtonPressed(MouseButton.Right)
-                )
+                // Ctrl+D to duplicate selected camera (duplicating camera corners) 
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.D))
                 {
                     changeRecorder.BeginChange();
-                    if (cornerHover == -1 && level.Cameras.Count > 1)
                     {
-                        level.Cameras.Remove(cameraHoveredOver);
-                        cameraHoveredOver = null;
-                        activeCamera = null;
-                    } else if (cornerHover >= 0)
-                    {
-                        cameraHoveredOver.CornerAngles[cornerHover] = 0f;
-                        cameraHoveredOver.CornerOffsets[cornerHover] = 0f;
+                        var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
+                        level.Cameras.Add(cam);
+
+                        for (int i = 0; i < 4; i++)
+                        {
+                            cam.CornerAngles[i] = selectedCamera.CornerAngles[i];
+                            cam.CornerOffsets[i] = selectedCamera.CornerOffsets[i];
+                        }
+
+                        selectedCamera = cam;
+                        selectedCorner = -1;
                     }
                     changeRecorder.PushChange();
+                }
+                
+                // Delete, or Backspace to delete the selected camera
+                if (EditorWindow.IsKeyPressed(ImGuiKey.Delete)
+                    || EditorWindow.IsKeyPressed(ImGuiKey.Backspace)
+                )
+                {
+                    if (level.Cameras.Count > 1)
+                    {
+                        changeRecorder.BeginChange();
+                        level.Cameras.Remove(selectedCamera);
+                        selectedCamera = null;
+                        changeRecorder.PushChange();
+                    }
+                    else
+                    {
+                        RainEd.Instance.ShowNotification("Cannot delete only camera");
+                    }
                 }
             }
         }
@@ -176,11 +244,13 @@ class CameraEditor : IEditorMode
         // render cameras
         foreach (Camera camera in level.Cameras)
         {
-            RenderCamera(camera, cameraHoveredOver == camera, cornerHover);
+            RenderCamera(camera, selectedCamera == camera, selectedCorner);
         }
+
+        lastMousePos = window.MouseCellFloat;
     }
 
-    private void RenderCamera(Camera camera, bool isHovered, int corner)
+    private void RenderCamera(Camera camera, bool isHovered, int hoveredCorner)
     {
         var camCenter = camera.Position + Camera.WidescreenSize / 2f;
 
@@ -246,51 +316,60 @@ class CameraEditor : IEditorMode
         );
 
         // draw corner if highlighted
-        if (isHovered && corner >= 0)
+        if (isHovered)
         {
-            var cornerOrigin = camera.GetCornerPosition(corner, false);
-            var cornerPos = camera.GetCornerPosition(corner, true);
+            for (int corner = 0; corner < 4; corner++)
+            {
+                var color = new Color(0, 255, 0, 255);
+                if (corner != hoveredCorner) // corner gizmo is transparent when not hovered over
+                {
+                    color.A = 127;
+                }
 
-            // outer circle
-            Raylib.DrawCircleLines(
-                (int)(cornerOrigin.X * Level.TileSize),
-                (int)(cornerOrigin.Y * Level.TileSize),
-                4f * Level.TileSize,
-                new Color(0, 255, 0, 255)
-            );
+                var cornerOrigin = camera.GetCornerPosition(corner, false);
+                var cornerPos = camera.GetCornerPosition(corner, true);
 
-            // inner circle
-            Raylib.DrawCircleLines(
-                (int)(cornerOrigin.X * Level.TileSize),
-                (int)(cornerOrigin.Y * Level.TileSize),
-                camera.CornerOffsets[corner] * 4f * Level.TileSize,
-                new Color(0, 255, 0, 255)
-            );
+                // outer circle
+                Raylib.DrawCircleLines(
+                    (int)(cornerOrigin.X * Level.TileSize),
+                    (int)(cornerOrigin.Y * Level.TileSize),
+                    4f * Level.TileSize,
+                    color
+                );
 
-            // point at corner
-            Raylib.DrawCircle(
-                (int)(cornerPos.X * Level.TileSize),
-                (int)(cornerPos.Y * Level.TileSize),
-                5f / window.ViewZoom,
-                new Color(0, 255, 0, 255)
-            );
+                // inner circle
+                Raylib.DrawCircleLines(
+                    (int)(cornerOrigin.X * Level.TileSize),
+                    (int)(cornerOrigin.Y * Level.TileSize),
+                    camera.CornerOffsets[corner] * 4f * Level.TileSize,
+                    color
+                );
 
-            // point at corner origin
-            Raylib.DrawCircle(
-                (int)(cornerOrigin.X * Level.TileSize),
-                (int)(cornerOrigin.Y * Level.TileSize),
-                2f / window.ViewZoom,
-                new Color(0, 255, 0, 255)
-            );
+                // point at corner
+                Raylib.DrawCircle(
+                    (int)(cornerPos.X * Level.TileSize),
+                    (int)(cornerPos.Y * Level.TileSize),
+                    5f / window.ViewZoom,
+                    color
+                );
 
-            // line from corner origin to corner
-            Raylib.DrawLine(
-                (int)(cornerOrigin.X * Level.TileSize),
-                (int)(cornerOrigin.Y * Level.TileSize),
-                (int)(cornerPos.X * Level.TileSize),
-                (int)(cornerPos.Y * Level.TileSize),
-                new Color(0, 255, 0, 255)
-            );
+                // point at corner origin
+                Raylib.DrawCircle(
+                    (int)(cornerOrigin.X * Level.TileSize),
+                    (int)(cornerOrigin.Y * Level.TileSize),
+                    2f / window.ViewZoom,
+                    color
+                );
+
+                // line from corner origin to corner
+                Raylib.DrawLine(
+                    (int)(cornerOrigin.X * Level.TileSize),
+                    (int)(cornerOrigin.Y * Level.TileSize),
+                    (int)(cornerPos.X * Level.TileSize),
+                    (int)(cornerPos.Y * Level.TileSize),
+                    color
+                );
+            }
         }
     }
 }

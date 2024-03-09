@@ -12,8 +12,7 @@ static class ShortcutsWindow
     private readonly static (string, string)[][] TabData = new (string, string)[][]
     {
         // General
-        new (string, string)[]
-        {
+        [
             ("Scroll Wheel", "Zoom"),
             ("Middle Mouse Button", "Pan"),
             ("Arrow Keys", "Pan"),
@@ -26,17 +25,15 @@ static class ShortcutsWindow
             ("5", "Edit light"),
             ("6", "Edit effects"),
             ("7", "Edit props"),
-        },
+        ],
 
         // Environment
-        new (string, string)[]
-        {
+        [
             ("Mouse Left", "Set water level")
-        },
+        ],
 
         // Geometry
-        new (string, string)[]
-        {
+        [
             ("WASD", "Browse tool selector"),
             ("Mouse Left", "Place/remove"),
             ("Mouse Right", "Remove"),
@@ -44,11 +41,10 @@ static class ShortcutsWindow
             ("E", "Toggle layer 1"),
             ("R", "Toggle layer 2"),
             ("T", "Toggle layer 3"),
-        },
+        ],
 
         // Tile
-        new (string, string)[]
-        {
+        [
             ("Tab", "Switch layer"),
             ("W/S", "Browse selected category"),
             ("A/D", "Browse tile categories"),
@@ -60,20 +56,19 @@ static class ShortcutsWindow
             ("F+Mouse Left", "Force tile placement"),
             ("G+Mouse Left", "Force tile geometry"),
             ("G+Mouse Right", "Remove tile and geometry"),
-        },
+        ],
 
         // Camera
-        new (string, string)[]
-        {
-            ("N", "Create camera"),
+        [
+            ("Double-click", "Create camera"),
             ("Mouse Left", "Select camera"),
             ("Mouse Right", "Reset camera corner"),
-            ("Backspace/Delete", "Delete selected camera")
-        },
+            ("Backspace/Delete", "Delete selected camera"),
+            ("Ctrl+D", "Duplicate selected camera")
+        ],
 
         // Light
-        new (string, string)[]
-        {
+        [
             ("WASD", "Browse brush catalog"),
             ("Shift+W/D", "Change light distance"),
             ("Shift+A/D", "Change light angle"),
@@ -82,20 +77,18 @@ static class ShortcutsWindow
             ("R", "Reset brush transform"),
             ("Mouse Left", "Paint shadow"),
             ("Mouse Right", "Paint light"),
-        },
+        ],
 
         // Effects
-        new (string, string)[]
-        {
+        [
             ("Mouse Left", "Paint effect"),
             ("Shift+Mouse Left", "Paint effect stronger"),
             ("Mouse Right", "Erase effect"),
             ("Shift+Mouse Wheel", "Change brush size")
-        },
+        ],
 
         // Props
-        new (string, string)[]
-        {
+        [
             ("W/S", "Browse selected category"),
             ("A/D", "Browse prop categories"),
             ("E", "Sample prop under mouse"),
@@ -107,7 +100,7 @@ static class ShortcutsWindow
             ("Backspace/Delete", "Delete selected prop(s)"),
             ("F", "Toggle freeform warp mode"),
             ("Ctrl+D", "Duplicate selected prop"),
-        }
+        ]
     };
 
     public static void ShowWindow()

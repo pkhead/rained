@@ -16,6 +16,7 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - fix trans flag prop loading
+- configurable keybinds
 
 Level Properties:
 
@@ -36,8 +37,7 @@ Tile Editor:
 - rect material place
 
 Camera Editor:
-- way to duplicate camera corner transform
-- Select a camera first, then transform corners
+- render order
 
 Light Editor:
 - light ring
@@ -54,7 +54,6 @@ Prop Editor:
 - Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
 - bug when resizing: PointA and PointB do not update?
-- undo/redo
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
