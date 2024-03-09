@@ -11,8 +11,10 @@ partial class PropEditor : IEditorMode
     private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects" };
     private readonly string[] RopeReleaseModeNames = new string[] { "None", "Left", "Right" };
 
-    private int selectedGroup = 0;
+    private int selectedPropGroup = 0;
+    private int selectedTileGroup = 0;
     private int currentSelectorMode = 0;
+    private int forceSelection = -1;
     private PropInit? selectedInit = null;
     private RlManaged.RenderTexture2D previewTexture = null!;
     private PropInit? curPropPreview = null;
@@ -298,14 +300,21 @@ partial class PropEditor : IEditorMode
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
 
+                ImGuiTabItemFlags propsFlags = ImGuiTabItemFlags.None;
+                ImGuiTabItemFlags tilesFlags = ImGuiTabItemFlags.None;
+
+                // apply force selection
+                if (forceSelection == 0)
+                    propsFlags = ImGuiTabItemFlags.SetSelected;
+                else if (forceSelection == 1)
+                    tilesFlags = ImGuiTabItemFlags.SetSelected;
+
                 // Props tab
-                if (ImGui.BeginTabItem("Props"))
+                if (ImGuiExt.BeginTabItem("Props", propsFlags))
                 {
-                    // if tab changed, reset selected group back to 0
                     if (currentSelectorMode != 0)
                     {
                         currentSelectorMode = 0;
-                        selectedGroup = 0;
                         ProcessSearch();
                     }
 
@@ -326,8 +335,8 @@ partial class PropEditor : IEditorMode
                             // redundant skip Tiles as props categories
                             if (group.IsTileCategory) continue; // skip Tiles as props categories
 
-                            if (ImGui.Selectable(group.Name, selectedGroup == i) || searchResults.Count == 1)
-                                selectedGroup = i;
+                            if (ImGui.Selectable(group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                                selectedPropGroup = i;
                         }
                         
                         ImGui.EndListBox();
@@ -337,7 +346,7 @@ partial class PropEditor : IEditorMode
                     ImGui.SameLine();
                     if (ImGui.BeginListBox("##Props", new Vector2(halfWidth, boxHeight)))
                     {
-                        var propList = propDb.Categories[selectedGroup].Props;
+                        var propList = propDb.Categories[selectedPropGroup].Props;
 
                         for (int i = 0; i < propList.Count; i++)
                         {
@@ -367,13 +376,12 @@ partial class PropEditor : IEditorMode
                 }
 
                 // Tiles as props tab
-                if (ImGui.BeginTabItem("Tiles"))
+                if (ImGuiExt.BeginTabItem("Tiles", tilesFlags))
                 {
                     // if tab changed, reset selected group back to 0
                     if (currentSelectorMode != 1)
                     {
                         currentSelectorMode = 1;
-                        selectedGroup = 0;
                         ProcessSearch();
                     }
 
@@ -391,8 +399,8 @@ partial class PropEditor : IEditorMode
                     {
                         foreach ((var i, var group) in tileSearchResults)
                         {
-                            if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedGroup == i) || tileSearchResults.Count == 1)
-                                selectedGroup = i;
+                            if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                                selectedTileGroup = i;
                         }
                         
                         ImGui.EndListBox();
@@ -402,7 +410,7 @@ partial class PropEditor : IEditorMode
                     ImGui.SameLine();
                     if (ImGui.BeginListBox("##Props", new Vector2(halfWidth, boxHeight)))
                     {
-                        var propList = propDb.TileCategories[selectedGroup].Props;
+                        var propList = propDb.TileCategories[selectedTileGroup].Props;
 
                         for (int i = 0; i < propList.Count; i++)
                         {
@@ -434,6 +442,8 @@ partial class PropEditor : IEditorMode
                 ImGui.EndTabBar();
             }
             
+            forceSelection = -1;
+
         } ImGui.End();
 
         if (ImGui.Begin("Prop Options", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -742,9 +752,21 @@ partial class PropEditor : IEditorMode
             isWarpMode = !isWarpMode;
         }
 
-        if (EditorWindow.IsTabPressed())
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
-            window.WorkLayer = (window.WorkLayer + 1) % 3;
+            // tab to switch between Tiles/Materials tabs
+            if (EditorWindow.IsTabPressed())
+            {
+                forceSelection = (currentSelectorMode + 1) % 2;
+            }
+        }
+        else
+        {
+            // tab to change view layer
+            if (EditorWindow.IsTabPressed())
+            {
+                window.WorkLayer = (window.WorkLayer + 1) % 3;
+            }
         }
 
         if (isWarpMode)

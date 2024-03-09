@@ -807,8 +807,8 @@ partial class PropEditor : IEditorMode
 
                         if (idx >= 0)
                         {
-                            currentSelectorMode = 1;
-                            selectedGroup = i;
+                            forceSelection = 1;
+                            selectedTileGroup = i;
                             selectedInit = prop.PropInit;
                             break;
                         }
@@ -818,9 +818,9 @@ partial class PropEditor : IEditorMode
                 // prop is a regular prop
                 else
                 {
+                    forceSelection = 0;
                     selectedInit = prop.PropInit;
-                    selectedGroup = prop.PropInit.Category.Index;
-                    currentSelectorMode = 0;
+                    selectedPropGroup = prop.PropInit.Category.Index;
                 }
             }
         }

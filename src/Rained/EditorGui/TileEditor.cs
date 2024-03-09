@@ -157,7 +157,16 @@ class TileEditor : IEditorMode
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
 
-                if (ImGui.BeginTabItem("Materials"))
+                ImGuiTabItemFlags materialsFlags = ImGuiTabItemFlags.None;
+                ImGuiTabItemFlags tilesFlags = ImGuiTabItemFlags.None;
+
+                // apply force selection
+                if (forceSelection == SelectionMode.Materials)
+                    materialsFlags = ImGuiTabItemFlags.SetSelected;
+                else if (forceSelection == SelectionMode.Tiles)
+                    tilesFlags = ImGuiTabItemFlags.SetSelected;
+
+                if (ImGuiExt.BeginTabItem("Materials", materialsFlags))
                 {
                     if (selectionMode != SelectionMode.Materials)
                     {
@@ -211,7 +220,7 @@ class TileEditor : IEditorMode
                     ImGui.EndTabItem();
                 }
                 // Tiles tab
-                if (ImGui.BeginTabItem("Tiles"))
+                if (ImGuiExt.BeginTabItem("Tiles", tilesFlags))
                 {
                     if (selectionMode != SelectionMode.Tiles)
                     {
@@ -269,10 +278,21 @@ class TileEditor : IEditorMode
             }
         }
         
-        // tab to change work layer
-        if (EditorWindow.IsTabPressed())
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
-            window.WorkLayer = (window.WorkLayer + 1) % 3;
+            // tab to switch between Tiles/Materials tabs
+            if (EditorWindow.IsTabPressed())
+            {
+                forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
+            }
+        }
+        else
+        {
+            // tab to change work layer
+            if (EditorWindow.IsTabPressed())
+            {
+                window.WorkLayer = (window.WorkLayer + 1) % 3;
+            }
         }
 
         // A and D to change selected group
@@ -692,7 +712,7 @@ class TileEditor : IEditorMode
                 if (EditorWindow.IsKeyPressed(ImGuiKey.E))
                 {
                     // tile eyedropper
-                    if (mouseCell.HasTile() && selectionMode == SelectionMode.Tiles)
+                    if (mouseCell.HasTile())
                     {
                         var tile = level.Layers[tileLayer, tileX, tileY].TileHead;
                         
@@ -702,13 +722,14 @@ class TileEditor : IEditorMode
                         }
                         else
                         {
+                            forceSelection = SelectionMode.Tiles;
                             selectedTile = tile;
                             selectedTileGroup = selectedTile.Category.Index;
                         }
                     }
 
                     // material eyedropper
-                    else if (selectionMode == SelectionMode.Materials)
+                    else
                     {
                         if (mouseCell.Material > 0)
                         {
