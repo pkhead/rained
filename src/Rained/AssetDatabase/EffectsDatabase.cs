@@ -6,6 +6,40 @@ enum EffectType
     StandardErosion
 }
 
+record CustomEffectConfig
+{
+    public readonly string Name;
+    public CustomEffectConfig(string name)
+    {
+        Name = name;
+    }
+}
+
+record CustomEffectCombo : CustomEffectConfig
+{
+    public readonly string Default;
+    public readonly string[] Options;
+
+    public CustomEffectCombo(string name, string defaultOption, string[] options) : base(name)
+    {
+        Default = defaultOption;
+        Options = options;
+    }
+}
+
+// leo... why...
+record CustomEffectInteger : CustomEffectConfig
+{
+    public readonly int MinInclusive;
+    public readonly int MaxInclusive;
+
+    public CustomEffectInteger(string name, int min, int max) : base(name)
+    {
+        MinInclusive = min;
+        MaxInclusive = max;
+    }
+}
+
 class EffectInit
 {
     public string name;
@@ -22,15 +56,22 @@ class EffectInit
     public bool useLayers = false;
     public bool use3D = false;
     public bool usePlantColors = false;
+    public bool useEffectColors = false;
+    public bool useDecalAffect = false;
 
-    public string customSwitchName = string.Empty;
-    public string customSwitchDefault = string.Empty;
-    public string[] customSwitchOptions = Array.Empty<string>();
+    public bool decalAffectDefault = false;
+    public int defaultEffectColor = 0;
+    public readonly List<CustomEffectConfig> customConfigs;
+
+    //public string customSwitchName = string.Empty;
+    //public string customSwitchDefault = string.Empty;
+    //public string[] customSwitchOptions = Array.Empty<string>();
 
     public EffectInit(string name, EffectType type)
     {
         this.name = name;
         this.type = type;
+        customConfigs = [];
     }
 }
 
@@ -63,27 +104,37 @@ class EffectsDatabase
             {
                 repeats = 130,
                 affectOpenAreas = 0.5f,
-                use3D = true
+                use3D = true,
+                useDecalAffect = true
             });
             
             CreateEffect(new EffectInit("Melt", EffectType.StandardErosion)
             {
                 repeats = 60,
-                affectOpenAreas = 0.5f
+                affectOpenAreas = 0.5f,
+                
+                useDecalAffect = true,
+                decalAffectDefault = false
             });
 
             CreateEffect(new EffectInit("Rust", EffectType.StandardErosion)
             {
                 repeats = 60,
                 affectOpenAreas = 0.2f,
-                use3D = true
+                use3D = true,
+                
+                useDecalAffect = true,
+                decalAffectDefault = false
             });
 
             CreateEffect(new EffectInit("Barnacles", EffectType.StandardErosion)
             {
                 repeats = 60,
                 affectOpenAreas = 0.3f,
-                use3D = true
+                use3D = true,
+                
+                useDecalAffect = true,
+                decalAffectDefault = false
             });
 
             CreateEffect(new EffectInit("Rubble", EffectType.NN)
@@ -114,21 +165,30 @@ class EffectsDatabase
             {
                 repeats = 130 * 3,
                 affectOpenAreas = 0.5f,
-                use3D = true
+                use3D = true,
+
+                useDecalAffect = true,
+                decalAffectDefault = true
             });
 
             CreateEffect(new EffectInit("Super Melt", EffectType.StandardErosion)
             {
                 repeats = 50,
                 affectOpenAreas = 0.5f,
-                use3D = true
+                use3D = true,
+                
+                useDecalAffect = true,
+                decalAffectDefault = false
             });
 
             CreateEffect(new EffectInit("Destructive Melt", EffectType.StandardErosion)
             {
                 repeats = 50,
                 affectOpenAreas = 0.5f,
-                use3D = true
+                use3D = true,
+                
+                useDecalAffect = true,
+                decalAffectDefault = false
             });
 
             CreateEffect(new EffectInit("Erode", EffectType.StandardErosion)
@@ -153,20 +213,16 @@ class EffectsDatabase
         {
             CreateEffect(new EffectInit("Wires", EffectType.NN)
             {
-                useLayers = true,
-                customSwitchName = "Fatness",
-                customSwitchOptions = new string[] { "1px", "2px", "3px", "random" },
-                customSwitchDefault = "2px"
+                useLayers = true
             });
+            CustomConfig("Fatness", "2px", [ "1px", "2px", "3px", "random" ]);
 
             CreateEffect(new EffectInit("Chains", EffectType.NN)
             {
                 useLayers = true,
-                crossScreen = true,
-                customSwitchName = "Size",
-                customSwitchOptions = new string[] { "Small", "FAT" },
-                customSwitchDefault = "Small"
+                crossScreen = true
             });
+            CustomConfig("Size", "Small", [ "Small", "FAT" ]);
         }
 
         ////////////
@@ -374,10 +430,8 @@ class EffectsDatabase
 
             CreateEffect(new EffectInit("Ceramic Chaos", EffectType.NN)
             {
-                customSwitchName = "Colored",
-                customSwitchOptions = new string[] { "None", "White" },
-                customSwitchDefault = "White"
             });
+            CustomConfig("Colored", "White", [ "None", "White" ]);
 
             /* AN UNUSED EFFECT
             CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN)
@@ -389,7 +443,306 @@ class EffectsDatabase
             */
         }
 
-        // TODO: community effects
+        ////////////////////
+        // Drought Plants //
+        ////////////////////
+        BeginGroup("Drought Plants");
+        {
+            CreateEffect(new EffectInit("Colored Hang Roots", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Colored Thick Roots", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Colored Shadow Plants", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Colored Lighthouse Flowers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Colored Fungi Flowers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Root Plants", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Foliage", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Mistletoe", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("High Fern", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("High Grass", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Little Flowers", EffectType.NN)
+            {
+                usePlantColors = true,
+                useLayers = true
+            });
+            CustomConfig("Detail Color", "Color2", [ "Color1", "Color2", "Dead" ]);
+            CustomConfig("Rotate", "Off", ["Off", "On"]);
+
+            CreateEffect(new EffectInit("Wastewater Mold", EffectType.NN)
+            {
+                usePlantColors = true,
+                useLayers = true
+            });
+
+            CreateEffect(new EffectInit("Spinets", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Small Springs", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Mini Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Clovers", EffectType.StandardErosion)
+            {
+                repeats = 20,
+                affectOpenAreas = 0.2f,
+                useLayers = true,
+                use3D = true,
+                usePlantColors = true
+            });
+
+            CreateEffect(new EffectInit("Reeds", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Lavenders", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Dense Mold", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true
+            });
+        }
+
+        BeginGroup("Drought Erosion");
+        {
+            CreateEffect(new EffectInit("Ultra Super Erode", EffectType.StandardErosion)
+            {
+                repeats = 60,
+                affectOpenAreas = 0.5f,
+                useLayers = true
+            });
+
+            CreateEffect(new EffectInit("Impacts", EffectType.StandardErosion)
+            {
+                repeats = 75,
+                affectOpenAreas = 0.05f,
+                useLayers = true
+            });
+        }
+
+        BeginGroup("Drought Paint Effects");
+        {
+            CreateEffect(new EffectInit("Super BlackGoo", EffectType.NN)
+            {
+                fillWith = 100,
+                binary = true
+            });
+
+            CreateEffect(new EffectInit("Stained Glass Properties", EffectType.NN)
+            {
+            });
+            CustomConfig("Variation", "1", ["1", "2", "3"]);
+            CustomConfig("Color 1", "EffectColor1", ["EffectColor1", "EffectColor2", "None"]);
+            CustomConfig("Color 2", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
+        }
+
+        BeginGroup("Drought Natural");
+        {
+            CreateEffect(new EffectInit("Colored Barnacles", EffectType.StandardErosion)
+            {
+                repeats = 60,
+                affectOpenAreas = 0.3f,
+                useLayers = true,
+                use3D = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 2
+            });
+            
+            CreateEffect(new EffectInit("Colored Rubble", EffectType.NN)
+            {
+                useLayers = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 2
+            });
+
+            CreateEffect(new EffectInit("Fat Slime", EffectType.StandardErosion)
+            {
+                repeats = 200,
+                affectOpenAreas = 0.5f,
+                useLayers = true,
+                use3D = true,
+
+                useDecalAffect = true,
+                decalAffectDefault = true
+            });
+        }
+
+        BeginGroup("Drought Artificial");
+        {
+            CreateEffect(new EffectInit("Assorted Trash", EffectType.NN)
+            {
+                useLayers = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 0
+            });
+
+            CreateEffect(new EffectInit("Colored Wires", EffectType.NN)
+            {
+                useLayers = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 2
+            });
+            CustomConfig("Fatness", "2px", ["1px", "2px", "3px", "random"]);
+
+            CreateEffect(new EffectInit("Colored Chains", EffectType.NN)
+            {
+                useLayers = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 2
+            });
+            CustomConfig("Size", "Small", ["Small", "FAT"]);
+
+            CreateEffect(new EffectInit("Ring Chains", EffectType.NN)
+            {
+                useLayers = true,
+                useEffectColors = true,
+
+                defaultEffectColor = 0
+            });
+        }
+
+        BeginGroup("Dakras Plants");
+        {
+            CreateEffect(new EffectInit("Left Facing Kelp", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Right Facing Kelp", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Mixed Facing Kelp", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Bubble Grower", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Moss Wall", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Club Moss", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+        }
+
+        BeginGroup("Leo Plants");
+        {
+            CreateEffect(new EffectInit("Ivy", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+            CustomConfig("Color Intensity", "Medium", ["High", "Medium", "Low", "None", "Random"]);
+            CustomConfig("Fruit Density", "None", ["High", "Medium", "Low", "None"]);
+            CustomConfig("Leaf Density", 1, 100);
+        }
+
+        BeginGroup("Nautillo Plants");
+        {
+            CreateEffect(new EffectInit("Fuzzy Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+        }
     }
 
     public EffectInit GetEffectFromName(string name)
@@ -408,6 +761,8 @@ class EffectsDatabase
 
 #region Helpers
     EffectGroup activeGroup;
+    EffectInit activeEffect;
+
     private void BeginGroup(string name)
     {
         activeGroup = new EffectGroup()
@@ -421,7 +776,18 @@ class EffectsDatabase
 
     private void CreateEffect(EffectInit effect)
     {
+        activeEffect = effect;
         activeGroup.effects.Add(effect);
+    }
+
+    private void CustomConfig(string name, string defaultOption, string[] options)
+    {
+        activeEffect.customConfigs.Add(new CustomEffectCombo(name, defaultOption, options));
+    }
+
+    private void CustomConfig(string name, int min, int max)
+    {
+        activeEffect.customConfigs.Add(new CustomEffectInteger(name, min, max));
     }
 #endregion
 }

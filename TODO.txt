@@ -3,7 +3,6 @@ Bugs:
 - crashes when regenerating geo mesh on debian 
 
 Overall:
-- alt+right click to pan
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
@@ -19,7 +18,8 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - fix trans flag prop loading
-- COMMUNITY MATERIALS AND EFFECTS
+- COMMUNITY EFFECTS
+- CUSTOM MATERIALS
 
 Geometry Editor:
 - optimized cell change recorder
@@ -48,7 +48,6 @@ Light Editor:
 
 Effects Editor:
 - only store the pixels that changed in the matrix
-- community effects
 
 Prop Editor:
 - Drought Long Props
