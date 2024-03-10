@@ -78,7 +78,29 @@ namespace RlManaged
                 
                 case Raylib_cs.Mesh mesh:
                 {
-                    Raylib.UnloadMesh(ref mesh);
+                    // manually wrote the definition of Raylib.UnloadMesh
+                    // for some reason, calling the UnloadMesh binding crashes
+                    // the program on my Debian Linux machine, and this is the
+                    // only workaround i found that fixed it.                    
+                    unsafe
+                    {
+                        Rlgl.UnloadVertexArray(mesh.VaoId);
+                        if (mesh.VboId != null) for (int i = 0; i < 7; i++) Rlgl.UnloadVertexBuffer(mesh.VboId[i]);
+                        Raylib.MemFree(mesh.VboId);
+
+                        Raylib.MemFree(mesh.Vertices);
+                        Raylib.MemFree(mesh.TexCoords);
+                        Raylib.MemFree(mesh.Normals);
+                        Raylib.MemFree(mesh.Colors);
+                        Raylib.MemFree(mesh.Tangents);
+                        Raylib.MemFree(mesh.TexCoords2);
+                        Raylib.MemFree(mesh.Indices);
+
+                        Raylib.MemFree(mesh.AnimVertices);
+                        Raylib.MemFree(mesh.AnimNormals);
+                        Raylib.MemFree(mesh.BoneWeights);
+                        Raylib.MemFree(mesh.BoneIds);
+                    }
                     break;
                 }
                 
@@ -353,8 +375,8 @@ namespace RlManaged
         public unsafe void SetVertices(Vector3[] vertices)
         {
             if (raw.Vertices != null)
-                Marshal.FreeHGlobal((nint) raw.Vertices);
-
+                Raylib.MemFree(raw.Vertices);
+            
             raw.VertexCount = vertices.Length;
             AddMemoryPressure(raw.VertexCount * 3 * sizeof(float));
 
@@ -379,7 +401,7 @@ namespace RlManaged
                 throw new Exception("Indices array is not a multiple of 3");
             
             if (raw.Indices != null)
-                Marshal.FreeHGlobal((nint) raw.Indices);
+                Raylib.MemFree(raw.Indices);
             
             raw.TriangleCount = indices.Length / 3;
             AddMemoryPressure(raw.TriangleCount * 3 * sizeof(float));
@@ -411,7 +433,7 @@ namespace RlManaged
         public unsafe void SetColors(Color[] colors)
         {
             if (raw.Colors != null)
-                Marshal.FreeHGlobal((nint) raw.Colors);
+                Raylib.MemFree(raw.Colors);
             
             AddMemoryPressure(raw.VertexCount * 4 * sizeof(float));
 
