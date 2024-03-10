@@ -4,10 +4,11 @@ using rlImGui_cs;
 using SFML.Window;
 using SFML.Graphics;
 using ImGuiNET;
+using System.Runtime.InteropServices;
 
 namespace RainEd
 {
-    class Boot
+    partial class Boot
     {
         // find the location of the app data folder
 #if DATA_ASSEMBLY
@@ -17,6 +18,10 @@ namespace RainEd
 #else
     public static string AppDataPath = Directory.GetCurrentDirectory();
 #endif
+
+    // import win32 MessageBox function
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
     public const int DefaultWindowWidth = 1200;
     public const int DefaultWindowHeight = 800;
@@ -99,18 +104,46 @@ namespace RainEd
                 // and close it when the program ends
                 splashScreenWindow?.SetVisible(false);
                 
-                while (app.Running)
+                try
                 {
-                    Raylib.BeginDrawing();
-                    app.Draw(Raylib.GetFrameTime());
-                    Raylib.EndDrawing();
-                    //Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+                    while (app.Running)
+                    {
+                        Raylib.BeginDrawing();
+                        app.Draw(Raylib.GetFrameTime());
+                        
+                        Raylib.EndDrawing();
 
-                    RlManaged.RlObject.UnloadGCQueue();
+                        RlManaged.RlObject.UnloadGCQueue();
+                    }
+
+                    RainEd.Logger.Information("Shutting down Rained...");
+                    app.Shutdown();
+                }
+                catch (Exception e)
+                {
+                    RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+                    Environment.ExitCode = 1;
+
+                    // show message box
+                    var windowTitle = "Fatal Exception";
+                    var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
+                    }
+                    else
+                    {
+                        while (!Raylib.WindowShouldClose())
+                        {
+                            Raylib.BeginDrawing();
+                            Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
+                            Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
+                            Raylib.EndDrawing();
+                        }
+                    }
                 }
 
-                RainEd.Logger.Information("Shutting down Rained...");
-                app.Shutdown();
                 rlImGui.Shutdown();
             }
 
