@@ -116,7 +116,7 @@ class LevelEditRender
         }
     }
 
-    private Raylib_cs.Material geoMaterial;
+    private RlManaged.Material geoMaterial;
     private RlManaged.Mesh?[,,] chunkLayers;
     private int chunkRowCount; // Y
     private int chunkColCount; // X
@@ -130,7 +130,7 @@ class LevelEditRender
         editor = RainEd.Instance;
         ReloadGridTexture();
 
-        geoMaterial = Raylib.LoadMaterialDefault();
+        geoMaterial = RlManaged.Material.LoadMaterialDefault();
         chunkLayers = null!;
         dirtyChunks = null!;
         ReloadLevel();

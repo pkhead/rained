@@ -1,3 +1,7 @@
+/**
+* Managed wrappers around Raylib resources.
+* This is non-exhaustive
+*/
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -56,37 +60,36 @@ namespace RlManaged
         {
             switch (h)
             {
-                case Raylib_cs.RenderTexture2D:
+                case Raylib_cs.RenderTexture2D rTex:
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject RenderTexture2D");
-                    Raylib.UnloadRenderTexture((Raylib_cs.RenderTexture2D) h);
+                    Raylib.UnloadRenderTexture(rTex);
                     break;
                 
-                case Raylib_cs.Image:
+                case Raylib_cs.Image img:
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Image");
-                    Raylib.UnloadImage((Raylib_cs.Image) h);
+                    Raylib.UnloadImage(img);
                     break;
                 
-                case Raylib_cs.Texture2D:
+                case Raylib_cs.Texture2D tex:
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Texture2D");
-                    Raylib.UnloadTexture((Raylib_cs.Texture2D) h);
+                    Raylib.UnloadTexture(tex);
                     break;
                 
-                case Raylib_cs.Shader:
+                case Raylib_cs.Shader shader:
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Shader");
-                    Raylib.UnloadShader((Raylib_cs.Shader) h);
+                    Raylib.UnloadShader(shader);
                     break;
                 
-                case Raylib_cs.Mesh:
+                case Raylib_cs.Mesh mesh:
                 {
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Mesh");
-                    var mesh = (Raylib_cs.Mesh) h;
                     Raylib.UnloadMesh(ref mesh);
                     break;
                 }
                 
-                case Raylib_cs.Material:
+                case Raylib_cs.Material mat:
                     if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Material");
-                    Raylib.UnloadMaterial((Raylib_cs.Material) h);
+                    Raylib.UnloadMaterial(mat);
                     break;
             }
         }
@@ -438,5 +441,23 @@ namespace RlManaged
         }
 
         public static implicit operator Raylib_cs.Mesh(Mesh mesh) => mesh.raw;
+    }
+
+    class Material : RlObject
+    {
+        private Raylib_cs.Material raw;
+        protected override object GetHandle() => raw;
+
+        private Material(Raylib_cs.Material raw) : base()
+        {
+            this.raw = raw;
+        }
+
+        public unsafe MaterialMap* Maps { get => raw.Maps; }
+
+        public static Material LoadMaterialDefault()
+            => new(Raylib.LoadMaterialDefault());
+        
+        public static implicit operator Raylib_cs.Material(Material mat) => mat.raw;
     }
 }
