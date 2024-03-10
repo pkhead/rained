@@ -59,6 +59,7 @@ class EditorWindow
     private bool isLmbDown = false;
     private bool isLmbClicked = false;
     private bool isLmbReleased = false;
+    private bool isLmbDragging = false;
 
     public int MouseCx { get => mouseCx; }
     public int MouseCy { get => mouseCy; }
@@ -212,7 +213,7 @@ class EditorWindow
 
     public bool IsMouseDragging(ImGuiMouseButton button)
     {
-        if (button == ImGuiMouseButton.Left && !isLmbDown) return false;
+        if (button == ImGuiMouseButton.Left) return isLmbDragging;
         return ImGui.IsMouseDragging(button);
     }
 
@@ -425,6 +426,7 @@ class EditorWindow
         isLmbClicked = false;
         isLmbDown = false;
         isLmbReleased = false;
+        isLmbDragging = false;
 
         if (canvasWidget.IsHovered)
         {
@@ -473,6 +475,7 @@ class EditorWindow
             isLmbClicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
             isLmbDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
             isLmbReleased = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            isLmbDragging = ImGui.IsMouseDragging(ImGuiMouseButton.Left);
         }
 
         Rlgl.PopMatrix();

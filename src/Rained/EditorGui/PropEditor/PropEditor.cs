@@ -277,9 +277,6 @@ partial class PropEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        bool wasMouseDragging = isMouseDragging;
-        isMouseDragging = false;
-
         var level = window.Editor.Level;
         var levelRender = window.LevelRenderer;
 
@@ -580,7 +577,7 @@ partial class PropEditor : IEditorMode
         }
 
         // draw drag rect
-        if (wasMouseDragging && dragMode == DragMode.Select)
+        if (isMouseDragging && dragMode == DragMode.Select)
         {
             var minX = Math.Min(dragStartPos.X, window.MouseCellFloat.X);
             var maxX = Math.Max(dragStartPos.X, window.MouseCellFloat.X);
@@ -640,7 +637,7 @@ partial class PropEditor : IEditorMode
             else
             {
                 // in default mode
-                PropSelectUpdate(wasMouseDragging);
+                PropSelectUpdate();
             }
         }
 
@@ -689,11 +686,11 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    public void PropSelectUpdate(bool wasMouseDragging)
+    public void PropSelectUpdate()
     {
         if (window.IsMouseDragging(ImGuiMouseButton.Left))
         {
-            if (!wasMouseDragging)
+            if (!isMouseDragging)
             {
                 // drag had begun
                 var hoverProp = GetPropAt(dragStartPos);
@@ -733,7 +730,7 @@ partial class PropEditor : IEditorMode
         }
 
         // user clicked a prop, so add it to the selection
-        if (window.IsMouseReleased(ImGuiMouseButton.Left) && !wasMouseDragging)
+        if (window.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
         {
             if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 selectedProps.Clear();
@@ -747,7 +744,7 @@ partial class PropEditor : IEditorMode
 
         // right-click opens menu to select one of multiple props under the cursor
         // useful for when props overlap (which i assume is common)
-        if (window.IsMouseReleased(ImGuiMouseButton.Right) && !wasMouseDragging)
+        if (window.IsMouseReleased(ImGuiMouseButton.Right) && !isMouseDragging)
         {
             propSelectionList = GetPropsAt(window.MouseCellFloat);
             if (propSelectionList.Length == 1)
@@ -761,6 +758,9 @@ partial class PropEditor : IEditorMode
                 ImGui.OpenPopup("PropSelectionList");
             }
         }
+
+        if (!window.IsMouseDragging(ImGuiMouseButton.Left))
+            isMouseDragging = false;
 
         // when N is pressed, create new selected prop
         // TODO: drag and drop from props list
