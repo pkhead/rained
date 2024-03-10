@@ -76,7 +76,7 @@ class LightEditor : IEditorMode
         var level = window.Editor.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
 
-        if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
+        if (ImGui.Begin("Light Angle###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             float lightDeg = level.LightAngle / MathF.PI * 180f;
 
@@ -94,57 +94,105 @@ class LightEditor : IEditorMode
 
             level.LightAngle = lightDeg / 180f * MathF.PI;
 
-            if (ImGui.Button("Reset Brush") || (!ImGui.GetIO().WantTextInput && EditorWindow.IsKeyPressed(ImGuiKey.R)))
+            // draw light angle ring
+            {
+                ImGui.NewLine();
+
+                var drawList = ImGui.GetWindowDrawList();
+                var screenCursor = ImGui.GetCursorScreenPos();
+                
+                var minRadius = 8f;
+                var maxRadius = 70f;
+                var radius = (level.LightDistance - 1f) / (Level.MaxLightDistance - 1f) * (maxRadius - minRadius) + minRadius;
+                var centerRadius = (5f - 1f) / (Level.MaxLightDistance - 1f) * (maxRadius - minRadius) + minRadius;
+
+                var color = ImGui.ColorConvertFloat4ToU32( ImGui.GetStyle().Colors[(int) ImGuiCol.Text] );
+
+                var circleCenter = screenCursor + new Vector2(ImGui.GetContentRegionAvail().X / 2f, maxRadius);
+                drawList.AddCircle(circleCenter, centerRadius, color); // draw center circle
+                drawList.AddCircle(circleCenter, radius, color); // draw distance circle
+                
+                // draw angle
+                drawList.AddCircleFilled(
+                    new Vector2(MathF.Cos(level.LightAngle), MathF.Sin(level.LightAngle)) * radius + circleCenter,
+                    6f,
+                    color
+                );
+
+                ImGui.InvisibleButton("LightRing", new Vector2(ImGui.GetContentRegionAvail().X, maxRadius * 2f));
+                if (ImGui.IsItemActive())
+                {
+                    isChangingParameters = true;
+
+                    var vecDiff = ImGui.GetMousePos() - circleCenter;
+
+                    level.LightAngle = MathF.Atan2(vecDiff.Y, vecDiff.X);
+                    if (level.LightAngle < 0)
+                    {
+                        level.LightAngle += 2f * MathF.PI;
+                    }
+
+                    level.LightDistance = (vecDiff.Length() - minRadius) / (maxRadius - minRadius) * (Level.MaxLightDistance - 1f) + 1f;
+                    level.LightDistance = Math.Clamp(level.LightDistance, 1f, Level.MaxLightDistance);
+                }
+                ImGui.NewLine();
+            }
+        } ImGui.End();
+
+        if (ImGui.Begin("Brush", ImGuiWindowFlags.NoFocusOnAppearing))
+        {
+            if (ImGui.Button("Reset Brush") || EditorWindow.IsKeyPressed(ImGuiKey.R))
             {
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;
             }
 
-            // paint brushes
-            ImGui.Text("Brushes");
-
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
-
-            int i = 0;
-            foreach (var brush in RainEd.Instance.LightBrushDatabase.Brushes)
+            ImGui.BeginChild("BrushCatalog", ImGui.GetContentRegionAvail());
             {
-                var texture = brush.Texture;
-                
-                // highlight selected brush
-                if (i == selectedBrush)
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
+                ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
+
+                int i = 0;
+                foreach (var brush in RainEd.Instance.LightBrushDatabase.Brushes)
                 {
-                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
-                
-                // buttons will have a more transparent hover color
-                } else {
-                    Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
-                        new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                    var texture = brush.Texture;
+                    
+                    // highlight selected brush
+                    if (i == selectedBrush)
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered]);
+                    
+                    // buttons will have a more transparent hover color
+                    } else {
+                        Vector4 col = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
+                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered,
+                            new Vector4(col.X, col.Y, col.Z, col.W / 4f));
+                    }
+
+                    ImGui.PushID(i);
+                    if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                    {
+                        selectedBrush = i;
+                    }
+
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip(brush.Name);
+
+                    ImGui.PopStyleColor();
+
+                    ImGui.PopID();
+
+                    i++;
+
+                    if (!(i % 3 == 0)) ImGui.SameLine();
                 }
 
-                ImGui.PushID(i);
-                if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
-                {
-                    selectedBrush = i;
-                }
-
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(brush.Name);
-
+                ImGui.PopStyleVar(2);
                 ImGui.PopStyleColor();
-
-                ImGui.PopID();
-
-                i++;
-
-                if (!(i % 3 == 0)) ImGui.SameLine();
             }
-
-            ImGui.PopStyleVar(2);
-            ImGui.PopStyleColor();
-        }
+            ImGui.EndChild();
+        } ImGui.End();
 
         // keyboard brush navigation
         if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
