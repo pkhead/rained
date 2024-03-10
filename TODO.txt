@@ -33,6 +33,8 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
+- when holding down to click, don't place trailing props if intersecting with tile At All
+  (makes it easier to place thick pipe tiles) 
 - make sure tile rendering/placement code is correct
 - optimize tile rendering
 - rect material/tile place

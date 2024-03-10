@@ -38,6 +38,7 @@ static class ShortcutsWindow
             ("Left Mouse", "Place/remove"),
             ("Right Mouse", "Remove"),
             ("Shift+Left Mouse", "Rect fill"),
+            ("Tab", "Cycle layers"),
             ("E", "Toggle layer 1"),
             ("R", "Toggle layer 2"),
             ("T", "Toggle layer 3"),

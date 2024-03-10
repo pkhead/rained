@@ -264,6 +264,13 @@ class TileEditor : IEditorMode
                             {
                                 selectedTile = tile;
                             }
+
+                            if (ImGui.IsItemHovered())
+                            {
+                                ImGui.BeginTooltip();
+                                rlImGui.Image(tile.PreviewTexture);
+                                ImGui.EndTooltip();
+                            }
                         }
                         
                         ImGui.EndListBox();

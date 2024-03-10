@@ -257,6 +257,12 @@ class GeometryEditor : IEditorMode
             }
         } ImGui.End();
 
+        // simple layer shortcut
+        if (EditorWindow.IsTabPressed())
+        {
+            (layerMask[1], layerMask[2], layerMask[0]) = (layerMask[0], layerMask[1], layerMask[2]);
+        }
+
         // layer mask toggle shortcuts
         if (EditorWindow.IsKeyPressed(ImGuiKey.E))
             layerMask[0] = !layerMask[0];
