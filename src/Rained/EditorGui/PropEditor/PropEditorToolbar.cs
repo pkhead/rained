@@ -8,14 +8,22 @@ namespace RainEd;
 
 partial class PropEditor : IEditorMode
 {
-    private readonly string[] PropRenderTimeNames = new string[] { "Pre Effects", "Post Effects" };
-    private readonly string[] RopeReleaseModeNames = new string[] { "None", "Left", "Right" };
+    private readonly string[] PropRenderTimeNames = ["Pre Effects", "Post Effects"];
+    private readonly string[] RopeReleaseModeNames = ["None", "Left", "Right"];
+
+    enum SelectionMode
+    {
+        Props,
+        Tiles
+    };
 
     private int selectedPropGroup = 0;
     private int selectedTileGroup = 0;
-    private int currentSelectorMode = 0;
-    private int forceSelection = -1;
-    private PropInit? selectedInit = null;
+    private int selectedPropIdx = 0;
+    private int selectedTileIdx = 0;
+    private SelectionMode selectionMode = SelectionMode.Props;
+    private SelectionMode? forceSelection = null;
+    private PropInit selectedInit;
     private RlManaged.RenderTexture2D previewTexture = null!;
     private PropInit? curPropPreview = null;
 
@@ -198,9 +206,8 @@ partial class PropEditor : IEditorMode
         tileSearchResults.Clear();
         var propDb = RainEd.Instance.PropDatabase;
 
-        // normal props (too lazy to add 5 extra lines that makes this an enum)
-        // (and this field is only used like 2 other times so )
-        if (currentSelectorMode == 0)
+        // normal props
+        if (selectionMode == SelectionMode.Props)
         {
             for (int i = 0; i < propDb.Categories.Count; i++)
             {
@@ -221,7 +228,7 @@ partial class PropEditor : IEditorMode
         }
 
         // tile props
-        else if (currentSelectorMode == 1)
+        else if (selectionMode == SelectionMode.Tiles)
         {
             for (int i = 0; i < propDb.TileCategories.Count; i++)
             {
@@ -269,14 +276,45 @@ partial class PropEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        var propDb = RainEd.Instance.PropDatabase;
-
         // rope-type props are only simulated while the "Simulate" button is held down
         // in their prop options
         foreach (var prop in RainEd.Instance.Level.Props)
         {
             if (prop.Rope is not null) prop.Rope.Simulate = false;
         }
+
+        SelectorToolbar();
+        OptionsToolbar();
+
+        if (EditorWindow.IsKeyPressed(ImGuiKey.F))
+        {
+            isWarpMode = !isWarpMode;
+        }
+
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        {
+            // tab to switch between Tiles/Materials tabs
+            if (EditorWindow.IsTabPressed())
+            {
+                forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
+            }
+        }
+        else
+        {
+            // tab to change view layer
+            if (EditorWindow.IsTabPressed())
+            {
+                window.WorkLayer = (window.WorkLayer + 1) % 3;
+            }
+        }
+
+        if (isWarpMode)
+            RainEd.Instance.Window.StatusText = "Freeform Warp";
+    }
+
+    private void SelectorToolbar()
+    {
+        var propDb = RainEd.Instance.PropDatabase;
 
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -303,17 +341,17 @@ partial class PropEditor : IEditorMode
                 ImGuiTabItemFlags tilesFlags = ImGuiTabItemFlags.None;
 
                 // apply force selection
-                if (forceSelection == 0)
+                if (forceSelection == SelectionMode.Props)
                     propsFlags = ImGuiTabItemFlags.SetSelected;
-                else if (forceSelection == 1)
+                else if (forceSelection == SelectionMode.Tiles)
                     tilesFlags = ImGuiTabItemFlags.SetSelected;
 
                 // Props tab
                 if (ImGuiExt.BeginTabItem("Props", propsFlags))
                 {
-                    if (currentSelectorMode != 0)
+                    if (selectionMode != SelectionMode.Props)
                     {
-                        currentSelectorMode = 0;
+                        selectionMode = SelectionMode.Props;
                         ProcessSearch();
                     }
 
@@ -354,9 +392,9 @@ partial class PropEditor : IEditorMode
                             if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
                             
-                            if (ImGui.Selectable(prop.Name, prop == selectedInit))
+                            if (ImGui.Selectable(prop.Name, i == selectedPropIdx))
                             {
-                                selectedInit = prop;
+                                selectedPropIdx = i;
                             }
 
                             if (ImGui.BeginItemTooltip())
@@ -377,9 +415,9 @@ partial class PropEditor : IEditorMode
                 if (ImGuiExt.BeginTabItem("Tiles", tilesFlags))
                 {
                     // if tab changed, reset selected group back to 0
-                    if (currentSelectorMode != 1)
+                    if (selectionMode != SelectionMode.Tiles)
                     {
-                        currentSelectorMode = 1;
+                        selectionMode = SelectionMode.Tiles;
                         ProcessSearch();
                     }
 
@@ -417,9 +455,9 @@ partial class PropEditor : IEditorMode
                             if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
 
-                            if (ImGui.Selectable(prop.Name, prop == selectedInit))
+                            if (ImGui.Selectable(prop.Name, selectedTileIdx == i))
                             {
-                                selectedInit = prop;
+                                selectedTileIdx = i;
                             }
 
                             if (ImGui.BeginItemTooltip())
@@ -439,9 +477,98 @@ partial class PropEditor : IEditorMode
                 ImGui.EndTabBar();
             }
             
-            forceSelection = -1;
+            forceSelection = null;
 
         } ImGui.End();
+
+        // A/D to change selected group
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
+        {
+            if (selectionMode == SelectionMode.Props)
+            {
+                while (true) // must skip over the hidden Tiles as props categories (i now doubt the goodiness of this idea)
+                {
+                    selectedPropGroup = Mod(selectedPropGroup - 1, propDb.Categories.Count);
+                    var group = propDb.Categories[selectedPropGroup];
+                    if (!group.IsTileCategory && group.Props.Count > 0) break;
+                }
+                
+                selectedPropIdx = 0;
+            }
+            else if (selectionMode == SelectionMode.Tiles)
+            {
+                selectedTileGroup = Mod(selectedTileGroup - 1, propDb.TileCategories.Count);
+                selectedTileIdx = 0;
+            }
+        }
+
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavRight))
+        {
+             if (selectionMode == SelectionMode.Props)
+            {
+                while (true) // must skip over the hidden Tiles as props categories (i now doubt the goodiness of this idea)
+                {
+                    selectedPropGroup = Mod(selectedPropGroup + 1, propDb.Categories.Count);
+                    var group = propDb.Categories[selectedPropGroup];
+                    if (!group.IsTileCategory && group.Props.Count > 0) break;
+                }
+
+                selectedPropIdx = 0;
+            }
+            else if (selectionMode == SelectionMode.Tiles)
+            {
+                selectedTileGroup = Mod(selectedTileGroup + 1, propDb.TileCategories.Count);
+                selectedTileIdx = 0;
+            }
+        }
+
+        // W/S to change selected tile in group
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavUp))
+        {
+            if (selectionMode == SelectionMode.Props)
+            {
+                var propList = propDb.Categories[selectedPropGroup].Props;
+                selectedPropIdx = Mod(selectedPropIdx - 1, propList.Count);
+            }
+            else if (selectionMode == SelectionMode.Tiles)
+            {
+                var propList = propDb.TileCategories[selectedTileGroup].Props;
+                selectedTileIdx = Mod(selectedTileIdx - 1, propList.Count);
+            }
+        }
+
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavDown))
+        {
+            if (selectionMode == SelectionMode.Props)
+            {
+                var propList = propDb.Categories[selectedPropGroup].Props;
+                selectedPropIdx = Mod(selectedPropIdx + 1, propList.Count);
+            }
+            else if (selectionMode == SelectionMode.Tiles)
+            {
+                var propList = propDb.TileCategories[selectedTileGroup].Props;
+                selectedTileIdx = Mod(selectedTileIdx + 1, propList.Count);
+            }
+        }
+
+        // update selected init
+        if (selectionMode == SelectionMode.Props)
+        {
+            selectedInit = propDb.Categories[selectedPropGroup].Props[selectedPropIdx];
+        }
+        else if (selectionMode == SelectionMode.Tiles)
+        {
+            selectedInit = propDb.TileCategories[selectedTileGroup].Props[selectedTileIdx];
+        }
+        else
+        {
+            throw new Exception("Prop Editor selectionMode is not Props or Tiles");
+        }
+    }
+
+    private void OptionsToolbar()
+    {
+        var propDb = RainEd.Instance.PropDatabase;
 
         if (ImGui.Begin("Prop Options", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -743,30 +870,8 @@ partial class PropEditor : IEditorMode
             }
 
         } ImGui.End();
-
-        if (EditorWindow.IsKeyPressed(ImGuiKey.F))
-        {
-            isWarpMode = !isWarpMode;
-        }
-
-        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-        {
-            // tab to switch between Tiles/Materials tabs
-            if (EditorWindow.IsTabPressed())
-            {
-                forceSelection = (currentSelectorMode + 1) % 2;
-            }
-        }
-        else
-        {
-            // tab to change view layer
-            if (EditorWindow.IsTabPressed())
-            {
-                window.WorkLayer = (window.WorkLayer + 1) % 3;
-            }
-        }
-
-        if (isWarpMode)
-            RainEd.Instance.Window.StatusText = "Freeform Warp";
     }
+
+    private static int Mod(int a, int b)
+        => (a%b + b)%b;
 }

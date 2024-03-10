@@ -14,6 +14,11 @@ partial class TileEditor : IEditorMode
     private int selectedMaterial = 1;
     private bool isToolActive = false;
 
+    private SelectionMode selectionMode = SelectionMode.Materials;
+    private SelectionMode? forceSelection = null;
+    private int selectedTileGroup = 0;
+    private int selectedMatGroup = 0;
+
     private int materialBrushSize = 1;
 
     public TileEditor(EditorWindow window) {

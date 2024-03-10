@@ -48,8 +48,8 @@ static class ShortcutsWindow
         [
             ("Tab", "Switch layer"),
             ("Shift+Tab", "Switch selector tab"),
-            //("W/S", "Browse selected category"),
-            //("A/D", "Browse tile categories"),
+            ("W/S", "Browse selected category"),
+            ("A/D", "Browse tile categories"),
             ("Shift+Mouse Wheel", "Change material brush size"),
             ("E", "Sample tile from level"),
             ("Q", "Set selected to default material"),
@@ -93,8 +93,8 @@ static class ShortcutsWindow
         [
             ("Tab", "Switch layer"),
             ("Shift+Tab", "Switch selector tab"),
-            //("W/S", "Browse selected category"),
-            //("A/D", "Browse prop categories"),
+            ("W/S", "Browse selected category"),
+            ("A/D", "Browse prop categories"),
             ("E", "Sample prop under mouse"),
             ("Q", "Toggle tile/prop tabs"),
             ("Double-click", "Create prop"),

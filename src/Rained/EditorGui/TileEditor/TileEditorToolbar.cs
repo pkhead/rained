@@ -10,10 +10,6 @@ partial class TileEditor : IEditorMode
     {
         Materials, Tiles
     }
-    private SelectionMode selectionMode = SelectionMode.Materials;
-    private SelectionMode? forceSelection = null;
-    private int selectedTileGroup = 0;
-    private int selectedMatGroup = 0;
     private string searchQuery = "";
 
     // available groups (available = passes search)

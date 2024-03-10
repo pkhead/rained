@@ -54,6 +54,7 @@ partial class PropEditor : IEditorMode
     public PropEditor(EditorWindow window)
     {
         this.window = window;
+        selectedInit = RainEd.Instance.PropDatabase.Categories[selectedPropGroup].Props[0];
 
         // register prop color names to be displayed in the custom color dropdown 
         propColorNames = new List<string>()
@@ -807,9 +808,9 @@ partial class PropEditor : IEditorMode
 
                         if (idx >= 0)
                         {
-                            forceSelection = 1;
+                            forceSelection = SelectionMode.Tiles;
                             selectedTileGroup = i;
-                            selectedInit = prop.PropInit;
+                            selectedTileIdx = idx;
                             break;
                         }
                     }
@@ -818,9 +819,9 @@ partial class PropEditor : IEditorMode
                 // prop is a regular prop
                 else
                 {
-                    forceSelection = 0;
-                    selectedInit = prop.PropInit;
+                    forceSelection = SelectionMode.Props;
                     selectedPropGroup = prop.PropInit.Category.Index;
+                    selectedPropIdx = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
                 }
             }
         }
