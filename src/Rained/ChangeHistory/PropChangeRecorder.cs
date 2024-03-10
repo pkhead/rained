@@ -40,14 +40,11 @@ record PropTransformExt
         {
             rope.IgnoreMovement();
             rope.ResetModel();
-            if (rope.Model!.SegmentCount != RopePoints.Length)
-            {
-                throw new Exception("Rope model segment count mismatch");
-            }
+            
+            rope.Model!.SetSegmentPositions(RopePoints);
 
             for (int i = 0; i < RopePoints.Length; i++)
             {
-                rope.Model!.SetSegmentPositions(RopePoints);
                 rope.Model!.SetSegmentVel(i, RopeVelocities[i]);
             }
         }
