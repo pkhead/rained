@@ -103,6 +103,11 @@ class RopeModel
         return segments[i].vel / 20f;
     }
 
+    public void SetSegmentVel(int i, Vector2 vel)
+    {
+        segments[i].vel = vel * 20f;
+    }
+
     public RopeReleaseMode Release {
         get
         {

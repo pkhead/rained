@@ -36,6 +36,9 @@ partial class PropEditor : IEditorMode
     private readonly List<(int, PropCategory)> searchResults = new();
     private readonly List<(int, PropTileCategory)> tileSearchResults = new();
 
+    private bool isRopeSimulationActive = false;
+    private bool wasRopeSimulationActive = false;
+
 #region Multiselect Inputs
     // what a reflective mess...
 
@@ -278,6 +281,9 @@ partial class PropEditor : IEditorMode
     {
         // rope-type props are only simulated while the "Simulate" button is held down
         // in their prop options
+        wasRopeSimulationActive = isRopeSimulationActive;
+        isRopeSimulationActive = false;
+
         foreach (var prop in RainEd.Instance.Level.Props)
         {
             if (prop.Rope is not null) prop.Rope.Simulate = false;
@@ -310,6 +316,13 @@ partial class PropEditor : IEditorMode
 
         if (isWarpMode)
             RainEd.Instance.Window.StatusText = "Freeform Warp";
+
+        // push rope transform if simulation had just ended
+        if (wasRopeSimulationActive && !isRopeSimulationActive)
+        {
+            RainEd.Logger.Information("End rope simulation");
+            changeRecorder.PushTransform();
+        }
     }
 
     private void SelectorToolbar()
@@ -756,14 +769,27 @@ partial class PropEditor : IEditorMode
                         {
                             if (ImGui.Button("Reset Simulation"))
                             {
+                                changeRecorder.BeginTransform();
+
                                 foreach (var prop in selectedProps)
                                     prop.Rope!.ResetModel();
+                                
+                                changeRecorder.PushTransform();
                             }
 
                             ImGui.SameLine();
                             ImGui.Button("Simulate");
+
                             if (ImGui.IsItemActive())
                             {
+                                isRopeSimulationActive = true;
+
+                                if (!wasRopeSimulationActive)
+                                {
+                                    changeRecorder.BeginTransform();
+                                    RainEd.Logger.Information("Begin rope simulation");
+                                }
+
                                 foreach (var prop in selectedProps)
                                     prop.Rope!.Simulate = true;
                             }

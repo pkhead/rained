@@ -1,22 +1,74 @@
 using RainEd.Props;
+using System.Numerics;
 
 namespace RainEd.ChangeHistory;
+
+record PropTransformExt
+{
+    public PropTransform Transform;
+    public Vector2[] RopePoints;
+    public Vector2[] RopeVelocities;
+
+    public PropTransformExt(Prop prop)
+    {
+        Transform = prop.Transform.Clone();
+
+        var ropeModel = prop.Rope?.Model;
+        if (ropeModel is not null)
+        {
+            RopePoints = new Vector2[ropeModel.SegmentCount];
+            RopeVelocities = new Vector2[ropeModel.SegmentCount];
+            for (int i = 0; i < ropeModel.SegmentCount; i++)
+            {
+                RopePoints[i] = ropeModel.GetSegmentPos(i);
+                RopeVelocities[i] = ropeModel.GetSegmentVel(i);
+            }
+        }
+        else
+        {
+            RopePoints = [];
+            RopeVelocities = [];
+        }
+    }
+
+    public void Apply(Prop prop)
+    {
+        prop.Transform = Transform.Clone();
+
+        var rope = prop.Rope;
+        if (rope is not null)
+        {
+            rope.IgnoreMovement();
+            rope.ResetModel();
+            if (rope.Model!.SegmentCount != RopePoints.Length)
+            {
+                throw new Exception("Rope model segment count mismatch");
+            }
+
+            for (int i = 0; i < RopePoints.Length; i++)
+            {
+                rope.Model!.SetSegmentPositions(RopePoints);
+                rope.Model!.SetSegmentVel(i, RopeVelocities[i]);
+            }
+        }
+    }
+}
 
 class PropTransformChangeRecord : IChangeRecord
 {
     private readonly Prop[] targetProps;
-    private readonly PropTransform[] oldTransforms;
-    private readonly PropTransform[] newTransforms;
+    private readonly PropTransformExt[] oldTransforms;
+    private readonly PropTransformExt[] newTransforms;
 
-    public PropTransformChangeRecord(Prop[] targetProps, PropTransform[] oldTransforms)
+    public PropTransformChangeRecord(Prop[] targetProps, PropTransformExt[] oldTransforms)
     {
         this.targetProps = targetProps;
         this.oldTransforms = oldTransforms;
 
-        newTransforms = new PropTransform[targetProps.Length];
+        newTransforms = new PropTransformExt[targetProps.Length];
         for (int i = 0; i < targetProps.Length; i++)
         {
-            newTransforms[i] = targetProps[i].Transform.Clone();
+            newTransforms[i] = new PropTransformExt(targetProps[i]);
         }
     }
 
@@ -30,11 +82,11 @@ class PropTransformChangeRecord : IChangeRecord
 
             if (useNew)
             {
-                prop.Transform = newTransforms[i].Clone();
+                newTransforms[i].Apply(prop);
             }
             else
             {
-                prop.Transform = oldTransforms[i].Clone();
+                oldTransforms[i].Apply(prop);
             }
         }
     }
@@ -136,7 +188,7 @@ class PropSettingsChangeRecord : IChangeRecord
 class PropChangeRecorder
 {
     private bool isTransformActive = false;
-    private readonly List<PropTransform> oldTransforms = [];
+    private readonly List<PropTransformExt> oldTransforms = [];
     private Prop[]? oldProps = null;
 
     private readonly List<PropSettings> oldSettings = [];
@@ -156,7 +208,7 @@ class PropChangeRecorder
         oldTransforms.Clear();
         foreach (var prop in level.Props)
         {
-            oldTransforms.Add(prop.Transform.Clone());
+            oldTransforms.Add(new PropTransformExt(prop));
             recordedProps.Add(prop);
         }
     }
@@ -173,7 +225,7 @@ class PropChangeRecorder
             return;
         }
 
-        bool didChange = false;
+        /*bool didChange = false;
         for (int i = 0; i < level.Props.Count; i++)
         {
             if (!level.Props[i].Transform.Equals(oldTransforms[i]))
@@ -181,13 +233,10 @@ class PropChangeRecorder
                 didChange = true;
                 break;
             }
-        }
+        }*/
 
-        if (didChange)
-        {
-            var changeRecord = new PropTransformChangeRecord(level.Props.ToArray(), oldTransforms.ToArray());
-            RainEd.Instance.ChangeHistory.Push(changeRecord);
-        }
+        var changeRecord = new PropTransformChangeRecord(level.Props.ToArray(), oldTransforms.ToArray());
+        RainEd.Instance.ChangeHistory.Push(changeRecord);
 
         TakeSettingsSnapshot();
     }

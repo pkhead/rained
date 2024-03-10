@@ -152,6 +152,9 @@ partial class PropEditor : IEditorMode
             if (prop.Rope is not null)
                 prop.Rope.Simulate = false;
         }
+
+        isRopeSimulationActive = false;
+        wasRopeSimulationActive = false;
     }
 
     private static bool IsPointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3)
