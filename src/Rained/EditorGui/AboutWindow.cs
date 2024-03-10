@@ -1,0 +1,128 @@
+using ImGuiNET;
+using rlImGui_cs;
+using System.Diagnostics;
+using System.Numerics;
+namespace RainEd;
+
+static class AboutWindow
+{
+    private const string WindowName = "About Rained";
+    public static bool IsWindowOpen = false;
+
+    private static RlManaged.Texture2D? rainedLogo = null;
+
+    public static void ShowWindow()
+    {
+        if (!ImGui.IsPopupOpen(WindowName) && IsWindowOpen)
+        {
+            ImGui.OpenPopup(WindowName);
+
+            // center popup modal
+            var viewport = ImGui.GetMainViewport();
+            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+        }
+
+        if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
+
+            // TODO: version number, build date, os/runtime information, library licenses
+            rlImGui.Image(rainedLogo);
+            ImGui.Text("A Rain World level editor - " + RainEd.Version);
+            ImGui.NewLine();
+            ImGui.Text("(c) 2024 pkhead - MIT License");
+            ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");
+            LinkText("GitHub", "https://github.com/pkhead/rained");
+            
+            ImGui.SeparatorText("Licenses");
+            
+            ImGui.Bullet();
+            LinkText("Drizzle", "https://github.com/pkhead/Drizzle");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2021 Pieter-Jan Briers - MIT License");
+
+            ImGui.Bullet();
+            LinkText("rlImGui-cs", "https://github.com/raylib-extras/rlImGui-cs");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2020-2021 Jeffery Myers - MIT License");
+
+            ImGui.Bullet();
+            LinkText("Raylib-cs", "https://github.com/ChrisDill/Raylib-cs");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2018-2024 ChrisDill - Zlib License");
+            
+            ImGui.Bullet();
+            LinkText("SFML.Net", "https://github.com/SFML/SFML.Net");
+            ImGui.SameLine();
+            ImGui.Text("(C) 2007-2023 Laurent Gomila - laurent@sfml-dev.org - Zlib License");
+
+            ImGui.Bullet();
+            LinkText("CSFML", "https://github.com/SFML/CSFML");
+            ImGui.SameLine();
+            ImGui.Text("(C) 2007-2023 Laurent Gomila - laurent@sfml-dev.org - Zlib License");
+        }
+    }
+
+    private static void LinkText(string id, string link)
+    {
+        string display;
+        if (id[0] == '#')
+        {
+            display = link;
+        }
+        else
+        {
+            display = id;
+        }
+        
+        var cursorPos = ImGui.GetCursorPos();
+        var cursorScreenPos = ImGui.GetCursorScreenPos();
+        var textSize = ImGui.CalcTextSize(display);
+
+        // link interactive
+        if (ImGui.InvisibleButton(id, textSize))
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = link,
+                    UseShellExecute = true
+                });
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                Process.Start("open", link);
+            }
+            else // assume linux
+            {
+                try
+                {
+                    Process.Start("xdg-open", link);
+                }
+                catch
+                {
+                    RainEd.Logger.Error("Could not open URL");
+                }
+            }
+        }
+
+        // draw link text
+        ImGui.SetCursorPos(cursorPos);
+        Vector4 textColor;
+        if (ImGui.IsItemHovered() || ImGui.IsItemActive())
+        {
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.TabHovered];
+        }
+        else
+        {
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Tab];
+        }
+        
+        ImGui.TextColored(textColor, display);
+
+        // underline
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddLine(cursorScreenPos + textSize * new Vector2(0f, 1f), cursorScreenPos + textSize, ImGui.ColorConvertFloat4ToU32(textColor));
+    }
+}

@@ -11,7 +11,7 @@ namespace RainEd;
 
 sealed class RainEd
 {
-    private const string VERSION = "b1.0.0"; 
+    public const string Version = "b1.0.0"; 
 
     public static RainEd Instance = null!;
 
@@ -21,7 +21,6 @@ sealed class RainEd
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
-    private readonly RlManaged.Texture2D rainedLogo;
     private readonly EditorWindow editorWindow;
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private bool ShowDemoWindow = false;
@@ -44,9 +43,7 @@ sealed class RainEd
     private float notificationTime = 0f;
     private float notifFlash = 0f;
     private int timerDelay = 2;
-
-    private bool promptAbout = false; // is the about prompt open?
-
+    
     public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
 
     private DrizzleRenderWindow? drizzleRenderWindow = null;
@@ -78,8 +75,6 @@ sealed class RainEd
 #endif
         Logger.Information("RainEd started");
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
-
-        rainedLogo = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
         // load user preferences
         prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
@@ -592,7 +587,9 @@ sealed class RainEd
             if (ImGui.BeginMenu("Help"))
             {
                 if (ImGui.MenuItem("About..."))
-                    promptAbout = true;
+                {
+                    AboutWindow.IsWindowOpen = true;
+                }
                 
                 ImGui.EndMenu();
             }
@@ -680,30 +677,8 @@ sealed class RainEd
             }
         }
 
-        // shortcuts window
         ShortcutsWindow.ShowWindow();
-
-        // about screen
-        if (promptAbout)
-        {
-            promptAbout = false;
-            ImGui.OpenPopup("About Rained");
-
-            // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-        }
-
-        bool unused = true;
-        if (ImGui.BeginPopupModal("About Rained", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-        {
-            // TODO: version number, build date, os/runtime information, library licenses
-            rlImGui.Image(rainedLogo);
-            ImGui.Text("A Rain World level editor - " + VERSION);
-            ImGui.NewLine();
-            ImGui.Text("(c) 2024 pkhead - MIT License");
-            ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");
-        }
+        AboutWindow.ShowWindow();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
@@ -716,7 +691,7 @@ sealed class RainEd
             ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         }
 
-        unused = true;
+        bool unused = true;
         if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
             if (promptUnsavedChangesCancelable)
