@@ -401,6 +401,9 @@ class PropRope
         else if (!ignoreMovement)
             model.ResetRopeModel(PointA, PointB, init.Rope!.PhysicalProperties, Width / init.Height, Layer, ReleaseMode);
         
+        model.PointA = PointA;
+        model.PointB = PointB;
+        
         if (deferredLoadSegments is not null)
         {
             model.SetSegmentPositions(deferredLoadSegments);

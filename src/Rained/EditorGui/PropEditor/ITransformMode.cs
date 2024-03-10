@@ -14,6 +14,7 @@ partial class PropEditor : IEditorMode
     {
         private readonly PropTransform[] dragInitPositions;
         private readonly Prop[] props;
+        private readonly Dictionary<Prop, Vector2[]> initRopePoints;
         private readonly float snap;
 
         public MoveTransformMode(List<Prop> props, float snap)
@@ -26,6 +27,23 @@ partial class PropEditor : IEditorMode
             for (int i = 0; i < props.Count; i++)
             {
                 dragInitPositions[i] = props[i].Transform.Clone();
+            }
+
+            // record initial rope points
+            initRopePoints = new Dictionary<Prop, Vector2[]>();
+            for (int i = 0; i < props.Count; i++)
+            {
+                var rope = props[i].Rope;
+                if (rope is not null && rope.Model is not null)
+                {
+                    var ptArr = new Vector2[rope.Model.SegmentCount];
+                    for (int j = 0; j < rope.Model.SegmentCount; j++)
+                    {
+                        ptArr[j] = rope.Model.GetSegmentPos(j);
+                    }
+
+                    initRopePoints.Add(props[i], ptArr);
+                }
             }
         }
 
@@ -51,6 +69,19 @@ partial class PropEditor : IEditorMode
                     if (snap > 0 && posSnap)
                     {
                         prop.Rect.Center = Snap(prop.Rect.Center, snap);
+                    }
+
+                    // move rope points as well without resetting it
+                    var rope = prop.Rope;
+                    if (rope is not null && rope.Model is not null)
+                    {
+                        var initPts = initRopePoints[prop];
+
+                        rope.IgnoreMovement();
+                        for (int j = 0; j < rope.Model.SegmentCount; j++)
+                        {
+                            rope.Model.SetSegmentPosition(j, initPts[j] + (prop.Rect.Center - dragInitPositions[i].rect.Center));
+                        }
                     }
                 else
                 {
@@ -342,8 +373,6 @@ partial class PropEditor : IEditorMode
                 var diff = pB - pA;
                 if (diff.LengthSquared() < 0.5f * 0.5f)
                 {
-                    diff = DirectionTo(pA, pB) * 0.5f;
-
                     if (handleId == 0)
                     {
                         pA = DirectionTo(anchor, pA) * 0.5f + anchor;
