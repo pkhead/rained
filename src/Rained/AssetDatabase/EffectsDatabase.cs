@@ -110,6 +110,7 @@ class EffectsDatabase
                 repeats = 130,
                 affectOpenAreas = 0.5f,
                 use3D = true,
+                useLayers = true,
 
                 useDecalAffect = true,
                 decalAffectDefault = true
@@ -119,6 +120,7 @@ class EffectsDatabase
             {
                 repeats = 60,
                 affectOpenAreas = 0.5f,
+                useLayers = true,
                 
                 useDecalAffect = true,
                 decalAffectDefault = false
@@ -129,6 +131,7 @@ class EffectsDatabase
                 repeats = 60,
                 affectOpenAreas = 0.2f,
                 use3D = true,
+                useLayers = true,
                 
                 useDecalAffect = true,
                 decalAffectDefault = false
@@ -139,6 +142,7 @@ class EffectsDatabase
                 repeats = 60,
                 affectOpenAreas = 0.3f,
                 use3D = true,
+                useLayers = true,
                 
                 useDecalAffect = true,
                 decalAffectDefault = false
@@ -153,7 +157,8 @@ class EffectsDatabase
             {
                 repeats = 130,
                 affectOpenAreas = 0.5f,
-                use3D = true
+                use3D = true,
+                useLayers = true
             });
         }
 
@@ -165,7 +170,8 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Roughen", EffectType.StandardErosion)
             {
                 repeats = 30,
-                affectOpenAreas = 0.05f
+                affectOpenAreas = 0.05f,
+                useLayers = true,
             });
 
             CreateEffect(new EffectInit("SlimeX3", EffectType.StandardErosion)
@@ -173,6 +179,7 @@ class EffectsDatabase
                 repeats = 130 * 3,
                 affectOpenAreas = 0.5f,
                 use3D = true,
+                useLayers = true,
 
                 useDecalAffect = true,
                 decalAffectDefault = true
@@ -183,6 +190,7 @@ class EffectsDatabase
                 repeats = 50,
                 affectOpenAreas = 0.5f,
                 use3D = true,
+                useLayers = true,
                 
                 useDecalAffect = true,
                 decalAffectDefault = false
@@ -193,6 +201,7 @@ class EffectsDatabase
                 repeats = 50,
                 affectOpenAreas = 0.5f,
                 use3D = true,
+                useLayers = true,
                 
                 useDecalAffect = true,
                 decalAffectDefault = false
@@ -207,10 +216,15 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Super Erode", EffectType.StandardErosion)
             {
                 repeats = 60,
-                affectOpenAreas = 0.5f
+                affectOpenAreas = 0.5f,
+                useLayers = true,
             });
 
-            CreateEffect(new EffectInit("DaddyCorruption", EffectType.NN));
+            CreateEffect(new EffectInit("DaddyCorruption", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
         }
 
         ///////////////
@@ -261,7 +275,7 @@ class EffectsDatabase
 
             CreateEffect(new EffectInit("Cacti", EffectType.NN)
             {
-                
+                useLayers = true,
             });
 
             CreateEffect(new EffectInit("Rain Moss", EffectType.NN)
@@ -420,7 +434,10 @@ class EffectsDatabase
                 fillWith = 100f
             });
 
-            CreateEffect(new EffectInit("DarkSlime", EffectType.NN));
+            CreateEffect(new EffectInit("DarkSlime", EffectType.NN)
+            {
+                useLayers = true
+            });
         }
 
         /////////////////
@@ -437,8 +454,10 @@ class EffectsDatabase
 
             CreateEffect(new EffectInit("Ceramic Chaos", EffectType.NN)
             {
+                useLayers = true,
             });
-            CustomConfig("Colored", "White", [ "None", "White" ]);
+            CustomConfig("Ceramic Color", "Colored", ["None", "Colored"]);
+            //CustomConfig("Colored", "White", [ "None", "White" ]);
 
             /* AN UNUSED EFFECT
             CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN)
