@@ -253,7 +253,7 @@ class GeometryEditor : IEditorMode
             // show fill rect hint
             if (selectedTool == Tool.Wall || selectedTool == Tool.Air || selectedTool == Tool.Inverse || selectedTool == Tool.Glass)
             {
-                ImGui.Text("Shift+Drag to\nfill rect");
+                window.StatusText = "Shift+Drag to fill rect";
             }
         } ImGui.End();
 
