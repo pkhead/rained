@@ -19,6 +19,7 @@ partial class TileEditor : IEditorMode
     // available groups (available = passes search)
     private readonly List<int> matSearchResults = [];
     private readonly List<int> tileSearchResults = [];
+    
     private void ProcessSearch()
     {
         var tileDb = window.Editor.TileDatabase;
@@ -270,86 +271,67 @@ partial class TileEditor : IEditorMode
             }
         }
 
-        // A and D to change selected group
-        /*
+        // A/D to change selected group
         if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
         {
-            selectedGroup--;
-            if (selectedGroup < -1)
-                selectedGroup = tileDb.Categories.Count - 1;
-            
-            // select the first tile in this group
-            if (selectedGroup == -1)
+            if (selectionMode == SelectionMode.Tiles)
             {
-                selectedTile = null;
-                selectedMaterialIdx = 0;
+                selectedTileGroup = Mod(selectedTileGroup - 1, tileDb.Categories.Count);
+                selectedTile = tileDb.Categories[selectedTileGroup].Tiles[0];
             }
-            else
+            else if (selectionMode == SelectionMode.Materials)
             {
-                selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+                selectedMatGroup = Mod(selectedMatGroup - 1, matDb.Categories.Count);
+                selectedMaterial = matDb.Categories[selectedMatGroup].Materials[0].ID;
             }
         }
 
         if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavRight))
         {
-            selectedGroup++;
-            if (selectedGroup >= tileDb.Categories.Count)
-                selectedGroup = -1;
-            
-            // select the first tile in this group
-            if (selectedGroup == -1)
+            if (selectionMode == SelectionMode.Tiles)
             {
-                selectedTile = null;
-                selectedMaterialIdx = 0;
+                selectedTileGroup = Mod(selectedTileGroup + 1, tileDb.Categories.Count);
+                selectedTile = tileDb.Categories[selectedTileGroup].Tiles[0];
             }
-            else
+            else if (selectionMode == SelectionMode.Materials)
             {
-                selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
+                selectedMatGroup = Mod(selectedMatGroup + 1, matDb.Categories.Count);
+                selectedMaterial = matDb.Categories[selectedMatGroup].Materials[0].ID;
             }
         }
 
-        // W and S to change selected tile in group
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavDown)) // S
+        // W/S to change selected tile in group
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavUp))
         {
-            if (selectedGroup == -1)
+            if (selectionMode == SelectionMode.Tiles)
             {
-                selectedMaterialIdx = Mod(selectedMaterialIdx + 1, Level.MaterialNames.Length);
+                var tileList = selectedTile.Category.Tiles;
+                selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) - 1, tileList.Count)];
             }
-            else if (selectedTile != null)
+            else if (selectionMode == SelectionMode.Materials)
             {
-                // select the next tile, or wrap around if at end of the list
-                if (selectedTile.Category.Index != selectedGroup)
-                {
-                    selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
-                }
-                else
-                {
-                    var tileList = selectedTile.Category.Tiles;
-                    selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) + 1, tileList.Count)];
-                }
+                var mat = matDb.GetMaterial(selectedMaterial);
+                var matList = mat.Category.Materials;
+                selectedMaterial = matList[Mod(matList.IndexOf(mat) - 1, matList.Count)].ID;
             }
         }
 
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavUp)) // W
+        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavDown))
         {
-            if (selectedGroup == -1)
+            if (selectionMode == SelectionMode.Tiles)
             {
-                selectedMaterialIdx = Mod(selectedMaterialIdx - 1, Level.MaterialNames.Length);
+                var tileList = selectedTile.Category.Tiles;
+                selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) + 1, tileList.Count)];
             }
-            else if (selectedTile != null)
+            else if (selectionMode == SelectionMode.Materials)
             {
-                // select the previous tile, or wrap around if at end of the list
-                if (selectedTile.Category.Index != selectedGroup)
-                {
-                    selectedTile = tileDb.Categories[selectedGroup].Tiles[0];
-                }
-                else
-                {
-                    var tileList = selectedTile.Category.Tiles;
-                    selectedTile = tileList[Mod(tileList.IndexOf(selectedTile) - 1, tileList.Count)];
-                }
+                var mat = matDb.GetMaterial(selectedMaterial);
+                var matList = mat.Category.Materials;
+                selectedMaterial = matList[Mod(matList.IndexOf(mat) + 1, matList.Count)].ID; 
             }
         }
-        */
     }
+
+    private static int Mod(int a, int b)
+        => (a%b + b)%b;
 }

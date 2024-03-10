@@ -385,15 +385,17 @@ partial class TileEditor : IEditorMode
                             selectedMaterial = mouseCell.Material;
                             var matInfo = matDb.GetMaterial(selectedMaterial);
 
-                            // select tile gorup that contains this material                            
-                            for (selectedTileGroup = 0; selectedTileGroup < matDb.Categories.Count; selectedTileGroup++)
+                            // select tile group that contains this material
+                            var idx = matDb.Categories.IndexOf(matInfo.Category);
+                            if (idx == -1)
                             {
-                                var group = matDb.Categories[selectedTileGroup];
-                                if (group.Materials.IndexOf(matInfo) >= 0)
-                                {
-                                    forceSelection = SelectionMode.Materials;
-                                    break;
-                                }
+                                RainEd.Instance.ShowNotification("Error");
+                                RainEd.Logger.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
+                            }
+                            else
+                            {
+                                selectedMatGroup = idx;
+                                forceSelection = SelectionMode.Materials;
                             }
                         }
                     }
@@ -458,7 +460,6 @@ partial class TileEditor : IEditorMode
                     }
                 }
 
-                
                 if (!force)
                 {
                     // check first layer geometry
