@@ -756,7 +756,7 @@ class EffectsDatabase
 
 #region Helpers
     EffectGroup activeGroup;
-    EffectInit activeEffect;
+    EffectInit activeEffect = null!;
 
     private void BeginGroup(string name)
     {
