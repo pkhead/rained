@@ -6,4 +6,4 @@
 [submodule "src/Drizzle"]
 	path = src/Drizzle
 	url = git@github.com:pkhead/Drizzle
-	branch = community
+	branch = embedded
