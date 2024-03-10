@@ -3,3 +3,7 @@
 	url = https://github.com/SlimeCubed/Drizzle.Data
 	branch = community
 	ignore = dirty
+[submodule "src/Drizzle"]
+	path = src/Drizzle
+	url = git@github.com:pkhead/Drizzle
+	branch = community
