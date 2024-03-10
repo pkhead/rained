@@ -570,7 +570,7 @@ static class LevelSerialization
                     // tile head
                     if (cell.TileHead is not null)
                     {
-                        int group = cell.TileHead.Category.Index + 3;
+                        int group = cell.TileHead.Category.Index + 2 + RainEd.Instance.MaterialDatabase.Categories.Count;
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
                         output.AppendFormat("[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
