@@ -105,6 +105,14 @@ class EffectsEditor : IEditorMode
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
+            // work layer
+            {
+                int workLayerV = window.WorkLayer + 1;
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
+                ImGui.InputInt("View Layer", ref workLayerV);
+                window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
+            }
+
             // search bar
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
             ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll);
@@ -403,6 +411,12 @@ class EffectsEditor : IEditorMode
                 ImGui.TextDisabled("No effect selected");
             }
         } ImGui.End();
+
+        // tab to change work layer
+        if (EditorWindow.IsTabPressed())
+        {
+            window.WorkLayer = (window.WorkLayer + 1) % 3;
+        }
     }
 
     private static float GetBrushPower(int cx, int cy, int bsize, int x, int y)
@@ -447,7 +461,7 @@ class EffectsEditor : IEditorMode
             Rlgl.PushMatrix();
             Rlgl.LoadIdentity();
 
-            var alpha = l == 0 ? 255 : 50;
+            var alpha = l == window.WorkLayer ? 255 : 50;
             Raylib.DrawTextureRec(
                 layerFrames[l].Texture,
                 new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),

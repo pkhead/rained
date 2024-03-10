@@ -6,6 +6,8 @@ Overall:
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
+- figure out tile/prop editor performance issue
+  (only lags when rendering with my igpu on a bigger window)
 - configurable geo colors
 - configurable keybinds
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
@@ -58,7 +60,6 @@ Effects Editor:
 - only store the pixels that changed in the matrix
 
 Prop Editor:
-- don't reset the rope when moving it (can do)
 - Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
 - bug when resizing: PointA and PointB do not update?
