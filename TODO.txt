@@ -9,7 +9,6 @@ Overall:
 - configurable geo colors
 - configurable keybinds
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
-- split up prop editor source code?
 - Move Level
 - undo/redo for level resize
 - help pages/hints/tooltips/whatever
@@ -42,7 +41,7 @@ Tile Editor:
     (
 - the tiles collision is silly (crap i thought i fixed that)
 - force geo on materials (hm... what if i combined geo/tile editor?)
-- G+right click is buggy with specs2
+- G+right click is buggy with specs2 (really?)
 - category colors
 
 Camera Editor:
