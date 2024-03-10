@@ -103,14 +103,14 @@ namespace RainEd
                 // out raylib, so i just set it invisible
                 // and close it when the program ends
                 splashScreenWindow?.SetVisible(false);
-                
-                try
+
+                void MainLoop()
                 {
                     while (app.Running)
                     {
                         Raylib.BeginDrawing();
                         app.Draw(Raylib.GetFrameTime());
-                        
+
                         Raylib.EndDrawing();
 
                         RlManaged.RlObject.UnloadGCQueue();
@@ -118,6 +118,15 @@ namespace RainEd
 
                     RainEd.Logger.Information("Shutting down Rained...");
                     app.Shutdown();
+                }
+
+#if DEBUG
+                // don't put try/catch in debug mode, so that debugger can break on fatal exceptions
+                MainLoop();
+#else
+                try
+                {
+                    MainLoop();
                 }
                 catch (Exception e)
                 {
@@ -143,7 +152,7 @@ namespace RainEd
                         }
                     }
                 }
-
+#endif
                 rlImGui.Shutdown();
             }
 
