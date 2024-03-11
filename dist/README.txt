@@ -10,6 +10,12 @@ Check [https://github.com/pkhead/rained/releases] for any new releases. If you w
 
 Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue or pinging @chromosoze in the Rain World Discord server.
 
+The Data folder in this zip does not contain all the level files used in the vanilla game and More Slugcats. I did this to decrease download and decompression time.
+If you want all of the levels, you can download them from this repository:
+[https://github.com/SlimeCubed/Drizzle.Data/tree/community]
+
+Direct download: [https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip]
+
 Some usability hints, as I don't yet know a better place to put this:
 - In the effects editor, you can drag effect slots up and down in the active effects list.
 - You can also delete effect slots by right-clicking on them.
@@ -20,4 +26,4 @@ Some usability hints, as I don't yet know a better place to put this:
 - If you load in a rope-type prop that has been warped from another editor, you can't transform it until you press "Reset Transform"
 - If you scale multiple props, it will force proportional scaling.
 
-Other than that, I don't have much to put on here. Hope you like it!
+Hope you like it!

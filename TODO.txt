@@ -35,21 +35,20 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 
 Tile Editor:
 - highlight tile heads
-- when holding down to click, don't place trailing props if intersecting with tile At All
-  (makes it easier to place thick pipe tiles) 
+- when holding down to click w/ Force Geo, don't place trailing props if intersecting with tile At All
+  (makes it easier to place e.g. thick pipe tiles) 
 - make sure tile rendering/placement code is correct
 - optimize tile rendering
 - rect material/tile place
 - materials replaced by different materials (have toggle to prevent that)
     (
-- the tiles collision is silly (crap i thought i fixed that)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
 - category colors
 
 Camera Editor:
 - render order
-- camera snap  (i mean... cameras don't *have* to be perfectly aligned?)
+- camera snap
 
 Light Editor:
 - light ring

@@ -73,7 +73,7 @@ sealed class RainEd
             .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
 #endif
-        Logger.Information("RainEd started");
+        Logger.Information("Rained {Version} started", Version);
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
         // load user preferences
