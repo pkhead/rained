@@ -25,6 +25,8 @@ namespace RainEd
 
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
+        private static bool isAppReady = false;
+        private static RenderWindow? splashScreenWindow = null;
 
         static void Main(string[] args)
         {
@@ -64,8 +66,6 @@ namespace RainEd
                 levelToLoad = str;
             }
             
-            RenderWindow? splashScreenWindow = null;
-
             // create splash screen window using sfml
             // to display while editor is loading
             // funny how i have to use two separate window/graphics libraries
@@ -97,46 +97,19 @@ namespace RainEd
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
                 RainEd app;
+#if !DEBUG
                 try
+#endif
                 {
                     app = new(levelToLoad);
                 }
+#if !DEBUG
                 catch (Exception e)
                 {
-                    if (RainEd.Instance is not null)
-                    {
-                        RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
-                    }
-
-                    Environment.ExitCode = 1;
-
-                    // show message box
-                    var windowTitle = "Fatal Exception";
-                    var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
-
-                    if (OperatingSystem.IsWindows())
-                    {
-                        MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
-                    }
-                    else
-                    {
-                        Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                        splashScreenWindow?.SetVisible(false);
-
-                        while (!Raylib.WindowShouldClose())
-                        {
-                            Raylib.BeginDrawing();
-                            Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                            Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                            Raylib.EndDrawing();
-                        }
-
-                        Raylib.CloseWindow();
-                        splashScreenWindow?.Close();
-                    }
-
+                    NotifyError(e);
                     return;
                 }
+#endif
 
                 Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
                 
@@ -144,14 +117,17 @@ namespace RainEd
                 // out raylib, so i just set it invisible
                 // and close it when the program ends
                 splashScreenWindow?.SetVisible(false);
-
-                void MainLoop()
+                isAppReady = true;
+                
+#if !DEBUG
+                try
+#endif
                 {
                     while (app.Running)
                     {
                         Raylib.BeginDrawing();
                         app.Draw(Raylib.GetFrameTime());
-
+                        
                         Raylib.EndDrawing();
 
                         RlManaged.RlObject.UnloadGCQueue();
@@ -160,40 +136,13 @@ namespace RainEd
                     RainEd.Logger.Information("Shutting down Rained...");
                     app.Shutdown();
                 }
-
-#if DEBUG
-                // don't put try/catch in debug mode, so that debugger can break on fatal exceptions
-                MainLoop();
-#else
-                try
-                {
-                    MainLoop();
-                }
+#if !DEBUG
                 catch (Exception e)
                 {
-                    RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
-                    Environment.ExitCode = 1;
-
-                    // show message box
-                    var windowTitle = "Fatal Exception";
-                    var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
-
-                    if (OperatingSystem.IsWindows())
-                    {
-                        MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
-                    }
-                    else
-                    {
-                        while (!Raylib.WindowShouldClose())
-                        {
-                            Raylib.BeginDrawing();
-                            Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                            Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                            Raylib.EndDrawing();
-                        }
-                    }
+                    NotifyError(e);
                 }
 #endif
+
                 rlImGui.Shutdown();
             }
 
@@ -203,6 +152,54 @@ namespace RainEd
             
             Raylib.CloseWindow();
             splashScreenWindow?.Close();
+        }
+
+        private static void NotifyError(Exception e)
+        {
+            if (RainEd.Instance is not null)
+            {
+                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+            }
+
+            Environment.ExitCode = 1;
+
+            // show message box
+            var windowTitle = "Fatal Exception";
+            var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
+
+            if (OperatingSystem.IsWindows())
+            {
+                MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
+            }
+            else
+            {
+                if (isAppReady)
+                {
+                    while (!Raylib.WindowShouldClose())
+                    {
+                        Raylib.BeginDrawing();
+                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
+                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
+                        Raylib.EndDrawing();
+                    }
+                }
+                else
+                {
+                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                    splashScreenWindow?.SetVisible(false);
+
+                    while (!Raylib.WindowShouldClose())
+                    {
+                        Raylib.BeginDrawing();
+                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
+                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
+                        Raylib.EndDrawing();
+                    }
+
+                    Raylib.CloseWindow();
+                    splashScreenWindow?.Close();
+                }
+            }
         }
     }
 }
