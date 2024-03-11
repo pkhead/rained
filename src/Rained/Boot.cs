@@ -12,19 +12,19 @@ namespace RainEd
     {
         // find the location of the app data folder
 #if DATA_ASSEMBLY
-    public static string AppDataPath = AppContext.BaseDirectory;
+        public static string AppDataPath = AppContext.BaseDirectory;
 #elif DATA_APPDATA
-    public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+        public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
 #else
-    public static string AppDataPath = Directory.GetCurrentDirectory();
+        public static string AppDataPath = Directory.GetCurrentDirectory();
 #endif
 
-    // import win32 MessageBox function
-    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
-    private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
+        // import win32 MessageBox function
+        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
-    public const int DefaultWindowWidth = 1200;
-    public const int DefaultWindowHeight = 800;
+        public const int DefaultWindowWidth = 1200;
+        public const int DefaultWindowHeight = 800;
 
         static void Main(string[] args)
         {
@@ -96,7 +96,48 @@ namespace RainEd
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
-                RainEd app = new(levelToLoad);
+                RainEd app;
+                try
+                {
+                    app = new(levelToLoad);
+                }
+                catch (Exception e)
+                {
+                    if (RainEd.Instance is not null)
+                    {
+                        RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+                    }
+
+                    Environment.ExitCode = 1;
+
+                    // show message box
+                    var windowTitle = "Fatal Exception";
+                    var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
+                    }
+                    else
+                    {
+                        Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                        splashScreenWindow?.SetVisible(false);
+
+                        while (!Raylib.WindowShouldClose())
+                        {
+                            Raylib.BeginDrawing();
+                            Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
+                            Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
+                            Raylib.EndDrawing();
+                        }
+
+                        Raylib.CloseWindow();
+                        splashScreenWindow?.Close();
+                    }
+
+                    return;
+                }
+
                 Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
                 
                 // for some reason, closing the window bugs
