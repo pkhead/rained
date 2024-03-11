@@ -567,6 +567,13 @@ sealed class RainEd
                     editorWindow.LevelRenderer.ViewObscuredBeams = !editorWindow.LevelRenderer.ViewObscuredBeams;
                 }
 
+                if (ImGui.MenuItem("Tile Heads", null, editorWindow.LevelRenderer.ViewTileHeads))
+                {
+                    editorWindow.LevelRenderer.ViewTileHeads = !editorWindow.LevelRenderer.ViewTileHeads;
+                }
+
+                ImGui.Separator();
+
                 if (ImGui.MenuItem("Keyboard Shortcuts", null, ShortcutsWindow.IsWindowOpen))
                 {
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;

@@ -6,6 +6,7 @@ class UserPreferences
     public bool ViewGrid { get; set; }
     public bool ViewObscuredBeams { get; set; }
     public bool ViewKeyboardShortcuts { get; set; }
+    public bool ViewTileHeads { get; set; }
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
@@ -24,6 +25,7 @@ class UserPreferences
         ViewGrid = true;
         ViewObscuredBeams = false;
         ViewKeyboardShortcuts = true;
+        ViewTileHeads = false;
 
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";

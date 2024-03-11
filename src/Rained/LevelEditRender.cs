@@ -67,13 +67,12 @@ class LevelEditRender
 
     public bool ViewGrid = true;
     public bool ViewObscuredBeams = false;
+    public bool ViewTileHeads = false;
 
     public Vector2 ViewTopLeft;
     public Vector2 ViewBottomRight;
     public float ViewZoom = 1f;
-    private float lastViewZoom = 0f;
-
-    private RlManaged.Texture2D gridTexture = null!;
+    
     private readonly RlManaged.Shader propPreviewShader;
     public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
     
@@ -775,6 +774,27 @@ class LevelEditRender
                     0f,
                     new Color(col.R, col.G, col.B, alpha)
                 );
+
+                // highlight tile head
+                if (cell.TileHead is not null && ViewTileHeads)
+                {
+                    Raylib.DrawRectangle(
+                        x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
+                        new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
+                    );
+
+                    Raylib.DrawLineV(
+                        new Vector2(x, y) * Level.TileSize,
+                        new Vector2(x+1, y+1) * Level.TileSize,
+                        col
+                    );
+
+                    Raylib.DrawLineV(
+                        new Vector2(x+1, y) * Level.TileSize,
+                        new Vector2(x, y+1) * Level.TileSize,
+                        col
+                    );
+                }
             }
         }
 
