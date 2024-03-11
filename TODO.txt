@@ -3,13 +3,10 @@ Bugs:
 - crashes when calling UnloadMesh on Debian Linux 
 
 Overall:
-- :rivworried: props doesnt like flipped when saves (IMPORTANT!!!0)
 - keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
-- figure out tile/prop editor performance issue
-  (only lags when rendering with my igpu on a bigger window)
 - configurable geo colors
 - configurable keybinds
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
@@ -37,10 +34,6 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- highlight tile heads
-- when holding down to click w/ Force Geo, don't place trailing props if intersecting with tile At All
-  (makes it easier to place e.g. thick pipe tiles) 
-- make sure tile rendering/placement code is correct
 - optimize tile rendering
 - rect material/tile place
 - materials replaced by different materials (have toggle to prevent that)

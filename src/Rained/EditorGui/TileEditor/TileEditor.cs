@@ -21,6 +21,12 @@ partial class TileEditor : IEditorMode
 
     private int materialBrushSize = 1;
     
+    // this is used to fix force placement when
+    // holding down lmb
+    private int lastPlaceX = -1;
+    private int lastPlaceY = -1;
+    private int lastPlaceL = -1;
+    
     public TileEditor(EditorWindow window) {
         this.window = window;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
@@ -36,6 +42,9 @@ partial class TileEditor : IEditorMode
     public void Unload()
     {
         window.CellChangeRecorder.TryPushChange();
+        lastPlaceX = -1;
+        lastPlaceY = -1;
+        lastPlaceL = -1;
     }
 
     private static void DrawTile(int tileInt, int x, int y, float lineWidth, Color color)
@@ -241,7 +250,11 @@ partial class TileEditor : IEditorMode
                 TilePlacementStatus validationStatus;
 
                 if (level.IsInBounds(window.MouseCx, window.MouseCy))
-                    validationStatus = ValidateTilePlacement(selectedTile, tileOriginX, tileOriginY, modifyGeometry || forcePlace);
+                    validationStatus = ValidateTilePlacement(
+                        selectedTile,
+                        tileOriginX, tileOriginY,
+                        modifyGeometry || forcePlace
+                    );
                 else
                     validationStatus = TilePlacementStatus.OutOfBounds;
 
@@ -264,12 +277,25 @@ partial class TileEditor : IEditorMode
                 {
                     if (validationStatus == TilePlacementStatus.Success)
                     {
-                        PlaceTile(
+                        // extra if statement to prevent overwriting the already placed tile
+                        // when holding down LMB
+                        if (lastPlaceX == -1 || !(modifyGeometry || forcePlace) || !IsIntersectingTile(
                             selectedTile,
                             tileOriginX, tileOriginY,
-                            window.WorkLayer, window.MouseCx, window.MouseCy,
-                            modifyGeometry
-                        );
+                            lastPlaceX, lastPlaceY, lastPlaceL
+                        ))
+                        {
+                            PlaceTile(
+                                selectedTile,
+                                tileOriginX, tileOriginY,
+                                window.WorkLayer, window.MouseCx, window.MouseCy,
+                                modifyGeometry
+                            );
+
+                            lastPlaceX = window.MouseCx;
+                            lastPlaceY = window.MouseCy;
+                            lastPlaceL = window.WorkLayer;
+                        }
                     }
                     else if (window.IsMouseClicked(ImGuiMouseButton.Left))
                     {
@@ -421,7 +447,12 @@ partial class TileEditor : IEditorMode
         }
 
         if (wasToolActive && !isToolActive)
+        {
             window.CellChangeRecorder.PushChange();
+            lastPlaceX = -1;
+            lastPlaceY = -1;
+            lastPlaceL = -1;
+        }
         
         Raylib.EndScissorMode();
     }
@@ -491,6 +522,46 @@ partial class TileEditor : IEditorMode
         }
         
         return TilePlacementStatus.Success;
+    }
+
+    // check that a potential placement isn't intersecting a specific already placed tile
+    private bool IsIntersectingTile(Tile tile, int tileLeft, int tileTop, int testX, int testY, int testL)
+    {
+        var level = window.Editor.Level;
+        var testTilePos = level.GetTileHead(testL, testX, testY);
+        if (testTilePos.X == -1) return false;
+
+        for (int x = 0; x < tile.Width; x++)
+        {
+            for (int y = 0; y < tile.Height; y++)
+            {
+                int gx = tileLeft + x;
+                int gy = tileTop + y;
+                var specInt = tile.Requirements[x,y];
+                var spec2Int = tile.Requirements2[x,y];
+
+                // check that there is not already a tile here
+                if (level.IsInBounds(gx, gy))
+                {
+                    ref var cellAtPos = ref level.Layers[window.WorkLayer, gx, gy];
+
+                    // check on first layer
+                    var isHead = x == tile.CenterX && y == tile.CenterY;
+
+                    if ((isHead || specInt >= 0) && level.GetTileHead(window.WorkLayer, gx, gy) == testTilePos)
+                        return true;
+
+                    // check on second layer
+                    if (window.WorkLayer < 2)
+                    {
+                        if (spec2Int >= 0 && level.GetTileHead(window.WorkLayer+1, gx, gy) == testTilePos)
+                            return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private void PlaceTile(

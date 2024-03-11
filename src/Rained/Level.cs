@@ -698,6 +698,38 @@ class Prop
     }
 }
 
+struct CellPosition(int x, int y, int layer)
+{
+    public int X = x;
+    public int Y = y;
+    public int Layer = layer;
+
+    public readonly override bool Equals(object? obj)
+    {
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+
+        return this == (CellPosition)obj;
+    }
+
+    public static bool operator==(CellPosition left, CellPosition right)
+    {
+        return left.X == right.X && left.Y == right.Y && left.Layer == right.Layer;
+    }
+
+    public static bool operator!=(CellPosition left, CellPosition right)
+    {
+        return !(left == right);
+    }
+    
+    public readonly override int GetHashCode()
+    {
+        return HashCode.Combine(X.GetHashCode(), Y.GetHashCode(), Layer.GetHashCode());
+    }
+}
+
 class Level
 {
     public LevelCell[,,] Layers;
@@ -789,6 +821,42 @@ class Level
         return Layers[layer, x, y];
     }
 
+    // i added this function recently, so older code won't be using this
+    // utility function (until i rewrite them to do so)
+    public Tiles.Tile? GetTile(LevelCell cell)
+    {
+        if (!cell.HasTile()) return null;
+        
+        if (cell.TileHead is not null)
+        {
+            return cell.TileHead;
+        }
+        else
+        {
+            return Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead!;
+        }
+    }
+
+    public Tiles.Tile? GetTile(int layer, int x, int y)
+        => GetTile(Layers[layer,x,y]);
+
+    public CellPosition GetTileHead(int layer, int x, int y)
+    {
+        if (!IsInBounds(x, y)) return new CellPosition(-1, -1, -1);
+        
+        ref var cell = ref Layers[layer,x,y];
+
+        if (cell.TileHead is not null)
+        {
+            return new CellPosition(x, y, layer);
+        }
+        else if (cell.HasTile())
+        {
+            return new CellPosition(cell.TileRootX, cell.TileRootY, cell.TileLayer);
+        }
+
+        return new CellPosition(-1, -1, -1);
+    }
     private class PropDepthSorter : IComparer<Prop>
     {
         int IComparer<Prop>.Compare(Prop? a, Prop? b)
