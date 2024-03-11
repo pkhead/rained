@@ -130,7 +130,7 @@ class LevelEditRender
     public LevelEditRender()
     {
         editor = RainEd.Instance;
-        ReloadGridTexture();
+        //ReloadGridTexture();
 
         geoMaterial = RlManaged.Material.LoadMaterialDefault();
         chunkLayers = null!;
@@ -164,11 +164,15 @@ class LevelEditRender
     }
 
     // re-render the grid texture for the new zoom level
+    // i have determined that this causes slowdown on higher zoom levels on the gpu side.
+    // not sure why. i switched to rendering it in real-time using GL_LINES
+    // (a.k.a. Raylib.DrawLine)
+    /*
     public void ReloadGridTexture()
     {
         if (ViewZoom == lastViewZoom) return;
         lastViewZoom = ViewZoom;
-
+        
         var imageW = (int)(Level.TileSize * ViewZoom * 2); 
         var imageH = (int)(Level.TileSize * ViewZoom * 2);
         using var image = RlManaged.Image.GenColor(imageW, imageH, new Color(0, 0, 0, 0));
@@ -188,6 +192,7 @@ class LevelEditRender
         gridTexture?.Dispose();
         gridTexture = RlManaged.Texture2D.LoadFromImage(image);
     }
+    */
 
     // build the mesh for the sub-rectangle of a layer
     private void MeshGeometry(RlManaged.Mesh geoMesh, int layer, int subL, int subT, int subR, int subB)
@@ -888,36 +893,19 @@ class LevelEditRender
     {
         if (!ViewGrid) return;
 
-        ReloadGridTexture();
-        
-        var levelW = editor.Level.Width;
-        var levelH = editor.Level.Height;
-
-        Raylib.DrawTexturePro(
-            texture:    gridTexture,
-            source:     new Rectangle(0, 0, gridTexture.Width * levelW / 2f, gridTexture.Height * levelH / 2f),
-            dest:       new Rectangle(0, 0, Level.TileSize * levelW, Level.TileSize * levelH),
-            origin:     Vector2.Zero,
-            rotation:   0f,
-            tint:       Color.White
-        );
-        
-        /*var lineWidth = 0.5f / ViewZoom;
         int viewL = (int) Math.Floor(ViewTopLeft.X);
         int viewT = (int) Math.Floor(ViewTopLeft.Y);
         int viewR = (int) Math.Ceiling(ViewBottomRight.X);
         int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
         
+        var col = new Color(255, 255, 255, 50);
         for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
                 var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
-                Raylib.DrawRectangleLinesEx(
-                    cellRect,
-                    lineWidth,
-                    new Color(255, 255, 255, 60)
-                );
+                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
+                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
             }
         }
 
@@ -926,13 +914,11 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y += 2)
             {
-                Raylib.DrawRectangleLinesEx(
-                    new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2),
-                    lineWidth,
-                    new Color(255, 255, 255, 100)
-                );
+                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2);
+                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
+                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
             }
-        }*/
+        }
     }
 
     public void RenderBorder()
