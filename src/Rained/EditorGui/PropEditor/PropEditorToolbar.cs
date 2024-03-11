@@ -395,7 +395,10 @@ partial class PropEditor : IEditorMode
                             if (group.IsTileCategory) continue; // skip Tiles as props categories
 
                             if (ImGui.Selectable(group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                            {
                                 selectedPropGroup = i;
+                                selectedPropIdx = 0;
+                            }
                         }
                         
                         ImGui.EndListBox();
@@ -458,7 +461,10 @@ partial class PropEditor : IEditorMode
                         foreach ((var i, var group) in tileSearchResults)
                         {
                             if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            {
                                 selectedTileGroup = i;
+                                selectedTileIdx = 0;
+                            }
                         }
                         
                         ImGui.EndListBox();

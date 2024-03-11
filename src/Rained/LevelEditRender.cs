@@ -52,8 +52,10 @@ class LevelEditRender
 
         void main()
         {
+            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+
             vec4 texelColor = texture(texture0, fragTexCoord);
-            bool isTransparent = texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0;
+            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             vec3 color = mix(texelColor.rgb, vec3(1.0), fragColor.y);
 
             finalColor = vec4(color, (1.0 - float(isTransparent)) * fragColor.x) * colDiffuse;
