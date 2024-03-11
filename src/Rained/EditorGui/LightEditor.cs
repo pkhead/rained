@@ -76,7 +76,7 @@ class LightEditor : IEditorMode
         var level = window.Editor.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
 
-        if (ImGui.Begin("Light Angle###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
+        if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             float lightDeg = level.LightAngle / MathF.PI * 180f;
 
@@ -113,8 +113,10 @@ class LightEditor : IEditorMode
                 drawList.AddCircle(circleCenter, radius, color); // draw distance circle
                 
                 // draw angle
+                var correctedAngle = MathF.PI / 2f + level.LightAngle;
+
                 drawList.AddCircleFilled(
-                    new Vector2(MathF.Cos(level.LightAngle), MathF.Sin(level.LightAngle)) * radius + circleCenter,
+                    new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)) * radius + circleCenter,
                     6f,
                     color
                 );
@@ -126,7 +128,7 @@ class LightEditor : IEditorMode
 
                     var vecDiff = ImGui.GetMousePos() - circleCenter;
 
-                    level.LightAngle = MathF.Atan2(vecDiff.Y, vecDiff.X);
+                    level.LightAngle = MathF.Atan2(vecDiff.Y, vecDiff.X) - MathF.PI / 2f;
                     if (level.LightAngle < 0)
                     {
                         level.LightAngle += 2f * MathF.PI;
@@ -368,9 +370,10 @@ class LightEditor : IEditorMode
         Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
 
         // render cast
+        var correctedAngle = level.LightAngle + MathF.PI / 2f;
         Vector2 castOffset = new(
-            MathF.Sin(level.LightAngle) * level.LightDistance * Level.TileSize,
-            -MathF.Cos(level.LightAngle) * level.LightDistance * Level.TileSize
+            -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
+            -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
         );
 
         Raylib.DrawTextureRec(
