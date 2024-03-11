@@ -591,8 +591,17 @@ class Prop
         transform.rect.Size.X = Vector2.Distance(transform.quad[0], transform.quad[1]);
         transform.rect.Size.Y = Vector2.Distance(transform.quad[3], transform.quad[0]);
         
-        var dir = transform.quad[1] - transform.quad[0];
-        transform.rect.Rotation = MathF.Atan2(dir.Y, dir.X);
+        var right = transform.quad[1] - transform.quad[0];
+        var down = transform.quad[3] - transform.quad[0];
+        var crossZ = right.X * down.Y - right.Y * down.X;
+        transform.rect.Rotation = MathF.Atan2(right.Y, right.X);
+
+        // Z component of the cross product is used to
+        // detect if the prop has been flipped
+        if (MathF.Sign(crossZ) < 0f)
+        {
+            transform.rect.Size.Y = -transform.rect.Size.Y;
+        }
 
         return true;
     }
