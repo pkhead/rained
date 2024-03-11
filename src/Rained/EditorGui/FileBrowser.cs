@@ -139,7 +139,7 @@ class FileBrowser
 
         public string Enforce(string fileName)
         {
-            if (Path.GetExtension(fileName) != AllowedExtensions[0])
+            if (AllowedExtensions[0] != ".*" && Path.GetExtension(fileName) != AllowedExtensions[0])
                 return fileName + AllowedExtensions[0];
 
             return fileName;
@@ -261,12 +261,17 @@ class FileBrowser
             var icon = 6; // file icon
             if (Path.GetExtension(filePath) == ".txt")
             {
-                using var stream = File.OpenText(filePath);
-                int n = stream.ReadBlock(charBuf, 0, 4);
-                if (n == 4 && charBuf[0] == '[' && charBuf[1] == '[' && charBuf[2] == '[' && charBuf[3] == '[')
+                try
                 {
-                    icon = 7; // slugcat icon
+                    using var stream = File.OpenText(filePath);
+                    int n = stream.ReadBlock(charBuf, 0, 4);
+                    if (n == 4 && charBuf[0] == '[' && charBuf[1] == '[' && charBuf[2] == '[' && charBuf[3] == '[')
+                    {
+                        icon = 7; // slugcat icon
+                    }
                 }
+                catch
+                {}
             }
 
             entries.Add(new Entry(fileName, EntryType.File)

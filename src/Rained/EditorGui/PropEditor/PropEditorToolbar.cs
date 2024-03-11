@@ -396,8 +396,11 @@ partial class PropEditor : IEditorMode
 
                             if (ImGui.Selectable(group.Name, selectedPropGroup == i) || searchResults.Count == 1)
                             {
-                                selectedPropGroup = i;
-                                selectedPropIdx = 0;
+                                if (i != selectedPropGroup)
+                                {
+                                    selectedPropGroup = i;
+                                    selectedPropIdx = 0;
+                                }
                             }
                         }
                         
@@ -462,8 +465,11 @@ partial class PropEditor : IEditorMode
                         {
                             if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                             {
-                                selectedTileGroup = i;
-                                selectedTileIdx = 0;
+                                if (i != selectedTileGroup)
+                                {
+                                    selectedTileGroup = i;
+                                    selectedTileIdx = 0;
+                                }
                             }
                         }
                         

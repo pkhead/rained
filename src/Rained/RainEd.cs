@@ -255,6 +255,7 @@ sealed class RainEd
                 UpdateTitle();
                 changeHistory.MarkUpToDate();
                 Logger.Information("Done!");
+                ShowNotification("Saved!");
             }
             catch (Exception e)
             {
@@ -266,8 +267,6 @@ sealed class RainEd
             {
                 promptCallback();
             }
-
-            ShowNotification("Saved!");
         }
 
         promptCallback = null;
@@ -709,7 +708,7 @@ sealed class RainEd
 
                 // unsaved change callback is run in SaveLevel
                 if (string.IsNullOrEmpty(currentFilePath))
-                    FileBrowser.Open(FileBrowser.OpenMode.Write, SaveLevel, currentFilePath);
+                    OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
                 else
                     SaveLevel(currentFilePath);
             }
