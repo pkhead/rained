@@ -20,7 +20,7 @@ partial class TileEditor : IEditorMode
     private int selectedMatGroup = 0;
 
     private int materialBrushSize = 1;
-
+    
     public TileEditor(EditorWindow window) {
         this.window = window;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
@@ -186,6 +186,7 @@ partial class TileEditor : IEditorMode
         {
             var modifyGeometry = EditorWindow.IsKeyDown(ImGuiKey.G);
             var forcePlace = EditorWindow.IsKeyDown(ImGuiKey.F);
+            var disallowMatOverwrite = EditorWindow.IsKeyDown(ImGuiKey.R);
 
             // begin change if left or right button is down
             // regardless of what it's doing
@@ -287,6 +288,9 @@ partial class TileEditor : IEditorMode
             // render selected material
             else
             {
+                if (disallowMatOverwrite)
+                    window.StatusText = "Disallow Overwrite";
+
                 if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 {
                     window.OverrideMouseWheel = true;
@@ -335,11 +339,13 @@ partial class TileEditor : IEditorMode
 
                             if (placeMode == 1)
                             {
-                                cell.Material = selectedMaterial;
+                                if (!disallowMatOverwrite || cell.Material == 0)
+                                    cell.Material = selectedMaterial;
                             }
                             else
                             {
-                                cell.Material = 0;
+                                if (!disallowMatOverwrite || cell.Material == selectedMaterial)
+                                    cell.Material = 0;
                             }
                         }
                     }

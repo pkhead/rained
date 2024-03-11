@@ -55,6 +55,8 @@ static class ShortcutsWindow
             ("Q", "Set selected to default material"),
             ("Left Mouse", "Place tile/material"),
             ("Right Mouse", "Remove tile/material"),
+            ("R+Left Mouse", "Disallow overwriting materials"),
+            ("R+Right Mouse", "Disallow erasing other materials"),
             ("F+Left Mouse", "Force tile placement"),
             ("G+Left Mouse", "Force tile geometry"),
             ("G+Right Mouse", "Remove tile and geometry"),
