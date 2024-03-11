@@ -138,7 +138,10 @@ class DrizzleRender : IDisposable
         threadState = new RenderThread(filePath);
         threadState.StatusChanged += StatusChanged;
         Configuration.Default.PreferContiguousImageBuffers = true;
-        thread = new Thread(new ThreadStart(threadState.ThreadProc));
+        thread = new Thread(new ThreadStart(threadState.ThreadProc))
+        {
+            CurrentCulture = Thread.CurrentThread.CurrentCulture
+        };
         thread.Start();
     }
 

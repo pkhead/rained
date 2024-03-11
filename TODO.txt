@@ -3,6 +3,8 @@ Bugs:
 - crashes when calling UnloadMesh on Debian Linux 
 
 Overall:
+- :rivworried: props doesnt like flipped when saves (IMPORTANT!!!0)
+- keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
@@ -18,6 +20,7 @@ Overall:
   e.g. New Camera button in camera editor,
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
+- favorite tiles and props
 - fix trans flag prop loading
 - CUSTOM MATERIALS
 
@@ -51,7 +54,6 @@ Camera Editor:
 - camera snap
 
 Light Editor:
-- light ring
 - save intermediate textures for change history
   (i guess once per every 1000 stroke atoms or something)
 - toggle view shadow plane and occlusion plane

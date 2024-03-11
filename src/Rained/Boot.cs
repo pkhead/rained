@@ -1,10 +1,10 @@
 using Raylib_cs;
 using rlImGui_cs;
-
 using SFML.Window;
 using SFML.Graphics;
 using ImGuiNET;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace RainEd
 {
@@ -30,6 +30,8 @@ namespace RainEd
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            
             // parse command arguments
             bool showSplashScreen = true;
             bool showAltSplashScreen = false;
