@@ -9,7 +9,7 @@ Another Rain World level editor. Currently in development.
 - [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community) level rendering with a preview
 - Dark Mode for the Miros Birds
 
-Read [this document](dist/README.txt) for more information on how to use Rained.
+Read [this document](dist/README.md) for more information on how to use Rained.
 
 ## Building
 ### .NET CLI
