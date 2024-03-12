@@ -1,3 +1,6 @@
+GET LONG TYPE PROPS!!
+GEO EDITOR SELECT-COPY-PASTE
+
 Bugs:
 - loading a new level with the prop editor open will load light map data incorrectly?
 - crashes when calling UnloadMesh on Debian Linux 
@@ -20,6 +23,7 @@ Overall:
 - tile cat# and index# saving is probably incorrect
 - favorite tiles and props
 - fix trans flag prop loading
+- option to use "legacy" shortcut icons
 - CUSTOM MATERIALS
 
 Geometry Editor:
@@ -37,6 +41,7 @@ Geometry Editor:
 NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
+- make 2nd geo spec layer a lighter red 
 - optimize tile rendering
 - rect material/tile place
 - customizable autotiling (what's a way to do this without scripting?)

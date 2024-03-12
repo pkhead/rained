@@ -8,7 +8,7 @@ Check https://github.com/pkhead/rained/releases for any new releases. If you wan
 - Data/
 - logs/
 
-Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue or pinging @chromosoze in the Rain World Discord server.
+Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
 
 The Data folder in this zip does not contain all the level files used in the vanilla game and More Slugcats. I did this to decrease download and decompression time.
 If you want all of the levels, you can download them from this repository:
