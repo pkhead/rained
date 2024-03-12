@@ -15,8 +15,11 @@ If you want all of the levels, you can download them from this repository:
 https://github.com/SlimeCubed/Drizzle.Data/tree/community ([Direct download](https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip))
 
 Some usability hints, as I don't yet know a better place to put this:
+- Check out the menus (on the top) and the shortcuts!
+  (In the future I may make keyboard actions in each editor accessible through a menu)
 - In the effects editor, you can drag effect slots up and down in the active effects list.
 - You can also delete effect slots by right-clicking on them.
+- In the prop editor, double-click or press N in the level to add a prop.
 - In the prop editor's freeform warp mode, the outline colors for each prop mean different things about the way they're moved/rotated/scaled:
   - Blue: The scale axis is determined by the prop's rotation - this will keep rectangles rectangles.
   - White: In contrast to blue, the scale axis is not determined by its rotation - it will be distorted if it's rotated.
