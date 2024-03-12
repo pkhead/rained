@@ -18,6 +18,7 @@ static class ShortcutsWindow
             ("Alt+Left Mouse", "Pan"),
             ("Ctrl+Z", "Undo"),
             ("Ctrl+Shift+Z / Ctrl+Y", "Redo"),
+            ("Ctrl+R", "Render"),
             ("1", "Edit environment"),
             ("2", "Edit geometry"),
             ("3", "Edit tiles"),

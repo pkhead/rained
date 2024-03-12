@@ -9,6 +9,7 @@ Overall:
 - combine geo and tile editor
 - configurable geo colors
 - configurable keybinds
+- revamp shortcut system (prefer shortcuts over raw IsKeypressed)
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - Move Level
 - undo/redo for level resize
@@ -24,6 +25,8 @@ Overall:
 Geometry Editor:
 - select and copy/paste
 - show tool preview over mouse
+- mirror
+- select and move geometry (make in conjunction with copy/paste)
 - ability to view tiles (hm... what if i combined geo/tile editor?)
 - right-click to remove cells/objects
 - keyboard shortcut for shortcut & shortcut dots
@@ -36,8 +39,7 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 Tile Editor:
 - optimize tile rendering
 - rect material/tile place
-- materials replaced by different materials (have toggle to prevent that)
-    (
+- customizable autotiling (what's a way to do this without scripting?)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
 - category colors

@@ -96,15 +96,17 @@ class CameraEditor : IEditorMode
         // levelRender.RenderGrid(0.5f / window.ViewZoom);
         levelRender.RenderBorder();
 
+        bool doubleClick = false;
+
         if (window.IsViewportHovered)
         {
-            
+            doubleClick = window.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+
             var mpos = window.MouseCellFloat;
 
             if (window.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragBegin = mpos;
-            
             }
 
             if (isDraggingCamera)
@@ -187,7 +189,7 @@ class CameraEditor : IEditorMode
         if (!isDraggingCamera)
         {
             // N or double-click to create new camera
-            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || doubleClick;
             if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
             {
                 changeRecorder.BeginChange();

@@ -329,7 +329,15 @@ sealed class RainEd
         NewObject, SwitchLayer,
 
         New, Open, Save, SaveAs,
-        Cut, Copy, Paste, Undo, Redo
+        Cut, Copy, Paste, Undo, Redo,
+
+        Render,
+
+        // Geometry
+        ToggleLayer1, ToggleLayer2, ToggleLayer3,
+
+        // Light
+        ResetBrushTransform
     };
 
     private class KeyShortcut
@@ -406,6 +414,7 @@ sealed class RainEd
         RegisterKeyShortcut(ShortcutID.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut(ShortcutID.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut(ShortcutID.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+        RegisterKeyShortcut(ShortcutID.Render, ImGuiKey.R, ImGuiModFlags.Ctrl);
 
         RegisterKeyShortcut(ShortcutID.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
         RegisterKeyShortcut(ShortcutID.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
@@ -416,6 +425,12 @@ sealed class RainEd
             RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl, true);
         else
             RegisterKeyShortcut(ShortcutID.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift, true);
+        
+        RegisterKeyShortcut(ShortcutID.ToggleLayer1, ImGuiKey.E, ImGuiModFlags.None);
+        RegisterKeyShortcut(ShortcutID.ToggleLayer2, ImGuiKey.R, ImGuiModFlags.None);
+        RegisterKeyShortcut(ShortcutID.ToggleLayer3, ImGuiKey.T, ImGuiModFlags.None);
+
+        RegisterKeyShortcut(ShortcutID.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
     }
 
     private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
@@ -490,6 +505,14 @@ sealed class RainEd
         {
             Redo();
         }
+
+        if (IsShortcutActivated(ShortcutID.Render))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                drizzleRenderWindow = new DrizzleRenderWindow();
+            }, false);
+        }
     }
 #endregion
 
@@ -517,15 +540,8 @@ sealed class RainEd
                 ImGuiMenuItemShortcut(ShortcutID.SaveAs, "Save As...");
 
                 ImGui.Separator();
-                
-                if (ImGui.MenuItem("Render"))
-                {
-                    PromptUnsavedChanges(() =>
-                    {
-                        drizzleRenderWindow = new DrizzleRenderWindow();
-                    }, false);
-                }
 
+                ImGuiMenuItemShortcut(ShortcutID.Render, "Render...");
                 ImGui.MenuItem("Mass Render", false);
 
                 ImGui.Separator();
@@ -709,7 +725,7 @@ sealed class RainEd
                 ImGui.Text("You must save before proceeding.\nDo you want to save now?");
             }
 
-            if (ImGui.Button("Yes"))
+            if (ImGui.Button("Yes") || ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.Space))
             {
                 ImGui.CloseCurrentPopup();
 

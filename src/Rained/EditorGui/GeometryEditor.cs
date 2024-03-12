@@ -264,13 +264,13 @@ class GeometryEditor : IEditorMode
         }
 
         // layer mask toggle shortcuts
-        if (EditorWindow.IsKeyPressed(ImGuiKey.E))
+        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer1))
             layerMask[0] = !layerMask[0];
 
-        if (EditorWindow.IsKeyPressed(ImGuiKey.R))
+        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer2))
             layerMask[1] = !layerMask[1];
 
-        if (EditorWindow.IsKeyPressed(ImGuiKey.T))
+        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer3))
             layerMask[2] = !layerMask[2];
     }
 
@@ -381,7 +381,7 @@ class GeometryEditor : IEditorMode
         if (window.IsViewportHovered)
         {
             // cursor rect mode
-            if (isToolRectActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+            if (isToolRectActive)
             {
                 var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
                 var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
