@@ -94,7 +94,8 @@ class DrizzleRender : IDisposable
         Rendering,
         Finished,
         Cancelling,
-        Canceled
+        Canceled,
+        Errored
     };
 
     private RenderState state;
@@ -275,8 +276,9 @@ class DrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFailed msgFail:
-                    RainEd.Instance.ShowNotification("Error occured while rendering level");
                     RainEd.Logger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
+                    thread.Join();
+                    state = RenderState.Errored;
                     break;
                 
                 case MessageRenderCancelled:

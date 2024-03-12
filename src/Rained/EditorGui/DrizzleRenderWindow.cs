@@ -94,20 +94,24 @@ class DrizzleRenderWindow : IDisposable
 
         if (ImGui.BeginPopupModal("Render"))
         {
-            var cancel = drizzleRenderer.State == RenderState.Cancelling || drizzleRenderer.IsDone;
+            // yes i know this code is a bit iffy
+            var cancelDisabled =
+                drizzleRenderer.State == RenderState.Cancelling ||
+                drizzleRenderer.State == RenderState.Errored || drizzleRenderer.IsDone;
 
             // cancel button (disabled if cancelling/canceled)
-            if (cancel)
+            if (cancelDisabled)
                 ImGui.BeginDisabled();
             
             if (ImGui.Button("Cancel"))
                 drizzleRenderer.Cancel();
             
-            if (cancel)
+            if (cancelDisabled)
                 ImGui.EndDisabled();
 
             // close button (disabled if render process is not done)
-            if (!drizzleRenderer.IsDone)
+            bool closeDisabled = !drizzleRenderer.IsDone && drizzleRenderer.State != RenderState.Errored;
+            if (closeDisabled)
                 ImGui.BeginDisabled();
             
             ImGui.SameLine();
@@ -117,6 +121,15 @@ class DrizzleRenderWindow : IDisposable
                 ImGui.CloseCurrentPopup();
             }
 
+            if (closeDisabled)
+                ImGui.EndDisabled();
+
+            // show in file browser button
+            bool revealDisabled = !drizzleRenderer.IsDone || drizzleRenderer.State == RenderState.Canceled;
+
+            if (revealDisabled)
+                ImGui.BeginDisabled();
+            
             ImGui.SameLine();
             if (ImGui.Button("Show In File Browser"))
                 RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(
@@ -125,7 +138,7 @@ class DrizzleRenderWindow : IDisposable
                     Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath) + ".txt"
                 ), true);
             
-            if (!drizzleRenderer.IsDone)
+            if (revealDisabled)
                 ImGui.EndDisabled();
             
             ImGui.SameLine();
@@ -141,6 +154,10 @@ class DrizzleRenderWindow : IDisposable
                 else if (drizzleRenderer.State == RenderState.Canceled)
                 {
                     ImGui.Text("Canceled");
+                }
+                else if (drizzleRenderer.State == RenderState.Errored)
+                {
+                    ImGui.Text("An error occured!\nCheck the logs for more info.");
                 }
                 else
                 {
