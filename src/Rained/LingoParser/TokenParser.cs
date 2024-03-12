@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace RainEd.Lingo;
 
 class TokenParser
@@ -120,9 +122,9 @@ class TokenParser
         }
 
         if (isFloat)
-            return float.Parse(string.Join("", strBuffer)) * (negative ? -1f : 1f);
+            return float.Parse(string.Join("", strBuffer), CultureInfo.InvariantCulture) * (negative ? -1f : 1f);
         else
-            return int.Parse(string.Join("", strBuffer)) * (negative ? -1 : 1);
+            return int.Parse(string.Join("", strBuffer), CultureInfo.InvariantCulture) * (negative ? -1 : 1);
     }
 
     private void ParseNumber(bool negative = false)

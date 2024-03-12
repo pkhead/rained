@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using System.Text;
 using RainEd.Props;
@@ -626,7 +627,7 @@ static class LevelSerialization
                 for (int y = 0; y < level.Height; y++)
                 {
                     if (y > 0) output.Append(", ");
-                    output.Append(effect.Matrix[x,y].ToString("0.0000"));
+                    output.Append(effect.Matrix[x,y].ToString("0.0000", CultureInfo.InvariantCulture));
                 }
                 output.Append(']');
             }
@@ -700,7 +701,10 @@ static class LevelSerialization
 
         // light data
         output.Append("[#pos: point(0, 0), #rot: 0, #sz: point(50, 70), #col: 1, #Keys: 0, #lastKeys: 0, #lastTm: 0, ");
-        output.AppendFormat("#lightAngle: {0}, #flatness: {1}, ", level.LightAngle / MathF.PI * 180f, level.LightDistance);
+        output.AppendFormat("#lightAngle: {0}, #flatness: {1}, ",
+            (level.LightAngle / MathF.PI * 180f).ToString(CultureInfo.InvariantCulture),
+            (level.LightDistance).ToString(CultureInfo.InvariantCulture)
+        );
         output.Append("#lightRect: rect(1000, 1000, -1000, -1000), #paintShape: \"pxl\"]");
         output.Append(newLine);
 
@@ -748,8 +752,8 @@ static class LevelSerialization
             {
                 output.AppendFormat(
                     "[{0}, {1}]",
-                    cam.CornerAngles[j] / MathF.PI * 180f,
-                    cam.CornerOffsets[j]
+                    (cam.CornerAngles[j] / MathF.PI * 180f).ToString(CultureInfo.InvariantCulture),
+                    cam.CornerOffsets[j].ToString(CultureInfo.InvariantCulture)
                 );
 
                 if (j < 3) output.Append(", ");
@@ -789,8 +793,8 @@ static class LevelSerialization
             {
                 if (j > 0) output.Append(", ");
                 output.AppendFormat("point({0}, {1})",
-                    (quadPoints[j].X * 16f).ToString("0.0000"),
-                    (quadPoints[j].Y * 16f).ToString("0.0000")
+                    (quadPoints[j].X * 16f).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (quadPoints[j].Y * 16f).ToString("0.0000", CultureInfo.InvariantCulture)
                 );
             }
 
@@ -848,8 +852,8 @@ static class LevelSerialization
                     var segPos = model.GetSmoothSegmentPos(j);
 
                     output.AppendFormat("point({0}, {1})",
-                        (segPos.X * 20f).ToString("0.0000"),
-                        (segPos.Y * 20f).ToString("0.0000")
+                        (segPos.X * 20f).ToString("0.0000", CultureInfo.InvariantCulture),
+                        (segPos.Y * 20f).ToString("0.0000", CultureInfo.InvariantCulture)
                     );
                 }
 
@@ -888,16 +892,16 @@ static class LevelSerialization
 
                 var rect = prop.Rect;
                 output.AppendFormat("#center: point({0}, {1})",
-                    (rect.Center.X * 16f).ToString("0.0000"),
-                    (rect.Center.Y * 16f).ToString("0.0000")
+                    (rect.Center.X * 16f).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (rect.Center.Y * 16f).ToString("0.0000", CultureInfo.InvariantCulture)
                 );
 
                 output.AppendFormat(", #size: point({0}, {1})",
-                    (rect.Size.X * 16f).ToString("0.0000"),
-                    (rect.Size.Y * 16f).ToString("0.0000")
+                    (rect.Size.X * 16f).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (rect.Size.Y * 16f).ToString("0.0000", CultureInfo.InvariantCulture)
                 );
 
-                output.AppendFormat(", #rotation: {0}", (rect.Rotation / MathF.PI * 180f).ToString("0.0000"));
+                output.AppendFormat(", #rotation: {0}", (rect.Rotation / MathF.PI * 180f).ToString("0.0000", CultureInfo.InvariantCulture));
 
                 output.Append(']');
             }
@@ -918,8 +922,8 @@ static class LevelSerialization
                     var vel = model.GetSegmentVel(j);
 
                     output.AppendFormat("point({0}, {1})",
-                        (vel.X * 20f).ToString("0.0000"),
-                        (vel.Y * 20f).ToString("0.0000")
+                        (vel.X * 20f).ToString("0.0000", CultureInfo.InvariantCulture),
+                        (vel.Y * 20f).ToString("0.0000", CultureInfo.InvariantCulture)
                     );
                 }
 

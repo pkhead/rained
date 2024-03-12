@@ -30,7 +30,7 @@ namespace RainEd
 
         static void Main(string[] args)
         {
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             
             // parse command arguments
             bool showSplashScreen = true;
