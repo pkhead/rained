@@ -34,8 +34,39 @@ namespace RainEd
             
             // parse command arguments
             bool showSplashScreen = true;
-            bool showAltSplashScreen = false;
+            bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
             string levelToLoad = string.Empty;
+
+            if (args.Length == 1)
+            {
+                if (args[0] == "--help" || args[0] == "-h")
+                {
+                    Console.WriteLine(
+                    $"""
+                    Rained {RainEd.Version}
+
+                    Usage:
+                        Rained [-v | --version]
+                        Rained [-h | --help]
+                        Rained [--no-splash-screen] [--app-data <path>] [--ogscule] [<level path>]
+                        
+                    --version -v            Print out version
+                    --help                  Show this help menu
+                    --no-splash-screen      Do not show the splash screen when starting
+                    --app-data <path>       Run with app data directory at <path>
+                    --ogscule               the intrusive thoughts defeated me
+                    <level path>            The path of the level to load
+                    """
+                    );
+
+                    return;
+                }
+                else if (args[0] == "--version" || args[0] == "-v")
+                {
+                    Console.WriteLine($"Rained {RainEd.Version}");
+                    return;
+                }
+            }
 
             for (int i = 0; i < args.Length; i++)
             {
