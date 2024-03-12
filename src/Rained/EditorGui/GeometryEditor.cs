@@ -403,7 +403,6 @@ class GeometryEditor : IEditorMode
                 if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     ApplyToolRect();
-                    window.CellChangeRecorder.PushChange();
                 }
             }
             
@@ -435,14 +434,14 @@ class GeometryEditor : IEditorMode
                         if (!isToolRectActive)
                             ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
                     }
-
-                    if (window.IsMouseReleased(ImGuiMouseButton.Left))
-                    {
-                        isToolActive = false;
-                        window.CellChangeRecorder.PushChange();
-                    }
                 }
             }
+        }
+
+        if (isToolActive && window.IsMouseReleased(ImGuiMouseButton.Left))
+        {
+            isToolActive = false;
+            window.CellChangeRecorder.PushChange();
         }
         
         lastMouseX = window.MouseCx;
@@ -679,6 +678,5 @@ class GeometryEditor : IEditorMode
         }
         
         isToolRectActive = false;
-        isToolActive = false;
     }
 }

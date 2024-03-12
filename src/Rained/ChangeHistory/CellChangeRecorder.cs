@@ -34,7 +34,7 @@ class CellChangeRecorder
     public void BeginChange()
     {
         if (snapshotLayers != null)
-            throw new Exception("CameraChangeRecorder.BeginChange() called twice");
+            throw new Exception("CellChangeRecorder.BeginChange() called twice");
 
         snapshotLayers = (LevelCell[,,]) RainEd.Instance.Level.Layers.Clone();
     }
