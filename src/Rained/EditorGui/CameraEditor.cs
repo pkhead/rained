@@ -12,6 +12,7 @@ class CameraEditor : IEditorMode
     private Camera? selectedCamera = null;
     private int selectedCorner = -1;
     private bool isDraggingCamera = false;
+    private Vector2 dragTargetPos = new(); // unaffected by camera snapping
     
     private Vector2 lastMousePos = new();
     private Vector2 dragBegin = new();
@@ -97,6 +98,21 @@ class CameraEditor : IEditorMode
         levelRender.RenderBorder();
 
         bool doubleClick = false;
+        bool horizSnap = EditorWindow.IsKeyDown(ImGuiKey.W) || EditorWindow.IsKeyDown(ImGuiKey.S);
+        bool vertSnap = EditorWindow.IsKeyDown(ImGuiKey.D) || EditorWindow.IsKeyDown(ImGuiKey.A);
+
+        if (horizSnap && vertSnap)
+        {
+            window.StatusText = "X and Y Snap";
+        }
+        else if (horizSnap)
+        {
+            window.StatusText = "X snap";
+        }
+        else if (vertSnap)
+        {
+            window.StatusText = "Y snap";
+        }
 
         if (window.IsViewportHovered)
         {
@@ -132,7 +148,36 @@ class CameraEditor : IEditorMode
                 // camera drag
                 else
                 {
-                    selectedCamera!.Position += window.MouseCellFloat - lastMousePos;
+                    dragTargetPos += window.MouseCellFloat - lastMousePos;
+
+                    // camera snap
+                    var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
+                    var snapThreshold = 1.5f / window.ViewZoom;
+
+                    float minDistX = float.PositiveInfinity;
+                    float minDistY = float.PositiveInfinity;
+
+                    selectedCamera!.Position = dragTargetPos;
+                    foreach (var camera in level.Cameras)
+                    {
+                        if (selectedCamera == camera) continue;
+
+                        var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+                        var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
+                        var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
+
+                        if (horizSnap && distX < snapThreshold && distX < minDistX)
+                        {
+                            minDistX = distX;
+                            selectedCamera!.Position.X = camera.Position.X;
+                        }
+
+                        if (vertSnap && distY < snapThreshold && distY < minDistY)
+                        {
+                            minDistY = distY;
+                            selectedCamera!.Position.Y = camera.Position.Y;
+                        }
+                    }
                 }
             }
             else
@@ -165,6 +210,7 @@ class CameraEditor : IEditorMode
                     {
                         changeRecorder.BeginChange();
                         isDraggingCamera = true;
+                        dragTargetPos = selectedCamera.Position;
                     }
                 }
 
