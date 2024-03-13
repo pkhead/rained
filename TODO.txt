@@ -3,6 +3,7 @@ GEO EDITOR SELECT-COPY-PASTE
 Bugs:
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux 
+- won't remove materials while tiles, but will remove tiles in material mode
 
 Overall:
 - keyboard replacements for scroll wheel stuff
