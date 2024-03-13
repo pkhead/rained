@@ -70,8 +70,8 @@ static class ShortcutsWindow
             ("Right Mouse", "Reset camera corner"),
             ("Backspace/Delete", "Delete selected camera"),
             ("Ctrl+D", "Duplicate selected camera"),
-            ("W/S", "Snap Y to other cameras"),
-            ("A/D", "Snap X to other cameras"),
+            ("W/S", "Snap X to other cameras"),
+            ("A/D", "Snap Y to other cameras"),
         ],
 
         // Light
