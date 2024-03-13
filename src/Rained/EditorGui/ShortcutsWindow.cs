@@ -69,7 +69,9 @@ static class ShortcutsWindow
             ("Left Mouse", "Select camera"),
             ("Right Mouse", "Reset camera corner"),
             ("Backspace/Delete", "Delete selected camera"),
-            ("Ctrl+D", "Duplicate selected camera")
+            ("Ctrl+D", "Duplicate selected camera"),
+            ("W/S", "Snap Y to other cameras"),
+            ("A/D", "Snap X to other cameras"),
         ],
 
         // Light
@@ -99,7 +101,6 @@ static class ShortcutsWindow
             ("W/S", "Browse selected category"),
             ("A/D", "Browse prop categories"),
             ("E", "Sample prop under mouse"),
-            ("Q", "Toggle tile/prop tabs"),
             ("Double-click", "Create prop"),
             ("Left Mouse", "Select prop"),
             ("Shift+Left Mouse", "Add prop to selection"),
