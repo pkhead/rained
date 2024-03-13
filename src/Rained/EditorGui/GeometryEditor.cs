@@ -264,13 +264,13 @@ class GeometryEditor : IEditorMode
         }
 
         // layer mask toggle shortcuts
-        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer1))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleLayer1))
             layerMask[0] = !layerMask[0];
 
-        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer2))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleLayer2))
             layerMask[1] = !layerMask[1];
 
-        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ToggleLayer3))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleLayer3))
             layerMask[2] = !layerMask[2];
     }
 
@@ -331,7 +331,7 @@ class GeometryEditor : IEditorMode
             int toolCol = (int) selectedTool % 4;
             int toolCount = (int) Tool.ToolCount;
             
-            if (window.IsShortcutActivated(RainEd.ShortcutID.NavRight))
+            if (KeyShortcuts.Activated(KeyShortcut.NavRight))
             {
                 if ((int) selectedTool == (toolCount-1))
                 {
@@ -345,7 +345,7 @@ class GeometryEditor : IEditorMode
                 }
             }
 
-            if (window.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
+            if (KeyShortcuts.Activated(KeyShortcut.NavLeft))
             {
                 toolCol--;
                 if (toolCol < 0)
@@ -355,12 +355,12 @@ class GeometryEditor : IEditorMode
                 }
             }
 
-            if (window.IsShortcutActivated(RainEd.ShortcutID.NavUp))
+            if (KeyShortcuts.Activated(KeyShortcut.NavUp))
             {
                 toolRow--;
             }
 
-            if (window.IsShortcutActivated(RainEd.ShortcutID.NavDown))
+            if (KeyShortcuts.Activated(KeyShortcut.NavDown))
             {
                 // if on the last row, wrap back to first row
                 // else, just go to next row

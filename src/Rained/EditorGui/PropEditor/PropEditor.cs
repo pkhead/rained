@@ -767,7 +767,7 @@ partial class PropEditor : IEditorMode
 
         // when N is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
             var createPos = window.MouseCellFloat;
             

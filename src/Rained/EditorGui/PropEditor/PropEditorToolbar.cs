@@ -517,7 +517,7 @@ partial class PropEditor : IEditorMode
         } ImGui.End();
 
         // A/D to change selected group
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavLeft))
+        if (KeyShortcuts.Activated(KeyShortcut.NavLeft))
         {
             if (selectionMode == SelectionMode.Props)
             {
@@ -537,7 +537,7 @@ partial class PropEditor : IEditorMode
             }
         }
 
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavRight))
+        if (KeyShortcuts.Activated(KeyShortcut.NavRight))
         {
              if (selectionMode == SelectionMode.Props)
             {
@@ -558,7 +558,7 @@ partial class PropEditor : IEditorMode
         }
 
         // W/S to change selected tile in group
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavUp))
+        if (KeyShortcuts.Activated(KeyShortcut.NavUp))
         {
             if (selectionMode == SelectionMode.Props)
             {
@@ -572,7 +572,7 @@ partial class PropEditor : IEditorMode
             }
         }
 
-        if (window.Editor.IsShortcutActivated(RainEd.ShortcutID.NavDown))
+        if (KeyShortcuts.Activated(KeyShortcut.NavDown))
         {
             if (selectionMode == SelectionMode.Props)
             {

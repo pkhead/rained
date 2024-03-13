@@ -492,7 +492,4 @@ class EditorWindow
             (int) (Editor.Level.Height * Level.TileSize * viewZoom)
         );
     }
-
-    public bool IsShortcutActivated(RainEd.ShortcutID id)
-        => Editor.IsShortcutActivated(id);
 }

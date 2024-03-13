@@ -143,7 +143,7 @@ class LightEditor : IEditorMode
 
         if (ImGui.Begin("Brush", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            if (ImGui.Button("Reset Brush") || RainEd.Instance.IsShortcutActivated(RainEd.ShortcutID.ResetBrushTransform))
+            if (ImGui.Button("Reset Brush") || KeyShortcuts.Activated(KeyShortcut.ResetBrushTransform))
             {
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;

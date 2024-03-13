@@ -235,7 +235,7 @@ class CameraEditor : IEditorMode
         if (!isDraggingCamera)
         {
             // N or double-click to create new camera
-            bool wantCreate = window.IsShortcutActivated(RainEd.ShortcutID.NewObject) || doubleClick;
+            bool wantCreate = KeyShortcuts.Activated(KeyShortcut.NewObject) || doubleClick;
             if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
             {
                 changeRecorder.BeginChange();
