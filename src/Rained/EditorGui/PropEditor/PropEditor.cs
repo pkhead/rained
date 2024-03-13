@@ -830,7 +830,7 @@ partial class PropEditor : IEditorMode
         }
 
         // delete key to delete selected props
-        if (EditorWindow.IsKeyPressed(ImGuiKey.Delete) || EditorWindow.IsKeyPressed(ImGuiKey.Backspace))
+        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
                 foreach (var prop in selectedProps)

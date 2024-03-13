@@ -134,7 +134,7 @@ sealed class RainEd
         editorWindow = new EditorWindow();
 
         UpdateTitle();
-        RegisterShortcuts();
+        KeyShortcuts.InitShortcuts();
 
         // apply preferences
         Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
@@ -320,37 +320,6 @@ sealed class RainEd
             Path.GetFileNameWithoutExtension(currentFilePath);
         
         Raylib.SetWindowTitle($"Rained - {levelName}");
-    }
-
-    private void RegisterShortcuts()
-    {
-        KeyShortcuts.Register(KeyShortcut.NavUp, ImGuiKey.W, ImGuiModFlags.None, true);
-        KeyShortcuts.Register(KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
-        KeyShortcuts.Register(KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
-        KeyShortcuts.Register(KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
-        KeyShortcuts.Register(KeyShortcut.NewObject, ImGuiKey.N, ImGuiModFlags.None, true);
-
-        KeyShortcuts.Register(KeyShortcut.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
-        KeyShortcuts.Register(KeyShortcut.Render, ImGuiKey.R, ImGuiModFlags.Ctrl);
-
-        KeyShortcuts.Register(KeyShortcut.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.Paste, ImGuiKey.V, ImGuiModFlags.Ctrl);
-        KeyShortcuts.Register(KeyShortcut.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl, true);
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            KeyShortcuts.Register(KeyShortcut.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl, true);
-        else
-            KeyShortcuts.Register(KeyShortcut.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift, true);
-        
-        KeyShortcuts.Register(KeyShortcut.ToggleLayer1, ImGuiKey.E, ImGuiModFlags.None);
-        KeyShortcuts.Register(KeyShortcut.ToggleLayer2, ImGuiKey.R, ImGuiModFlags.None);
-        KeyShortcuts.Register(KeyShortcut.ToggleLayer3, ImGuiKey.T, ImGuiModFlags.None);
-
-        KeyShortcuts.Register(KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
     }
 
     private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)

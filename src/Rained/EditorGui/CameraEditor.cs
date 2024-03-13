@@ -270,9 +270,7 @@ class CameraEditor : IEditorMode
                 }
                 
                 // Delete, or Backspace to delete the selected camera
-                if (EditorWindow.IsKeyPressed(ImGuiKey.Delete)
-                    || EditorWindow.IsKeyPressed(ImGuiKey.Backspace)
-                )
+                if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
                 {
                     if (level.Cameras.Count > 1)
                     {

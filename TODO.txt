@@ -11,7 +11,6 @@ Overall:
 - combine geo and tile editor
 - configurable geo colors
 - configurable keybinds
-- revamp shortcut system (prefer shortcuts over raw IsKeypressed)
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - Move Level
 - undo/redo for level resize
@@ -62,7 +61,6 @@ Effects Editor:
 
 Prop Editor:
 - do tile as prop depth change based on if specs2 is active?
-- bug when resizing: PointA and PointB do not update?
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB

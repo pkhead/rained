@@ -258,7 +258,7 @@ class GeometryEditor : IEditorMode
         } ImGui.End();
 
         // simple layer shortcut
-        if (EditorWindow.IsTabPressed())
+        if (KeyShortcuts.Activated(KeyShortcut.SwitchLayer))
         {
             (layerMask[1], layerMask[2], layerMask[0]) = (layerMask[0], layerMask[1], layerMask[2]);
         }

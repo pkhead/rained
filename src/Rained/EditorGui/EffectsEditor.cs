@@ -229,8 +229,8 @@ class EffectsEditor : IEditorMode
             }
         } ImGui.End();
 
-        // backspace to delete selected effect
-        if (EditorWindow.IsKeyPressed(ImGuiKey.Backspace) || EditorWindow.IsKeyPressed(ImGuiKey.Delete))
+        // delete/backspace to delete selected effect
+        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             deleteRequest = selectedEffect;
         }
@@ -413,7 +413,7 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
 
         // tab to change work layer
-        if (EditorWindow.IsTabPressed())
+        if (KeyShortcuts.Activated(KeyShortcut.SwitchLayer))
         {
             window.WorkLayer = (window.WorkLayer + 1) % 3;
         }

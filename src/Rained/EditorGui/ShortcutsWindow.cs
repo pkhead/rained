@@ -103,10 +103,10 @@ static class ShortcutsWindow
             ("Double-click", "Create prop"),
             ("Left Mouse", "Select prop"),
             ("Shift+Left Mouse", "Add prop to selection"),
-            ("Right Mouse", "Find props under the mouse"),
+            ("Right Mouse", "Find prop(s) under the mouse"),
             ("Backspace/Delete", "Delete selected prop(s)"),
             ("F", "Toggle vertex mode"),
-            ("Ctrl+D", "Duplicate selected prop"),
+            ("Ctrl+D", "Duplicate selected prop(s)"),
         ]
     };
 

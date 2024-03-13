@@ -250,21 +250,16 @@ partial class TileEditor : IEditorMode
             }
         }
         
-        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        // shift+tab to switch between Tiles/Materials tabs
+        if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
         {
-            // tab to switch between Tiles/Materials tabs
-            if (EditorWindow.IsTabPressed())
-            {
-                forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
-            }
+            forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
         }
-        else
+        
+        // tab to change work layer
+        if (KeyShortcuts.Activated(KeyShortcut.SwitchLayer))
         {
-            // tab to change work layer
-            if (EditorWindow.IsTabPressed())
-            {
-                window.WorkLayer = (window.WorkLayer + 1) % 3;
-            }
+            window.WorkLayer = (window.WorkLayer + 1) % 3;
         }
 
         // A/D to change selected group

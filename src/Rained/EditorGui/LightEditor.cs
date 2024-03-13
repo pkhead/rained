@@ -196,11 +196,10 @@ class LightEditor : IEditorMode
             ImGui.EndChild();
         } ImGui.End();
 
-        // keyboard brush navigation
-        if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        // keyboard catalog navigation
         {
             // S to move down one row
-            if (EditorWindow.IsKeyPressed(ImGuiKey.S))
+            if (KeyShortcuts.Activated(KeyShortcut.NavDown))
             {
                 int maxRow = brushDb.Brushes.Count / 3;
                 int curRow = selectedBrush / 3;
@@ -221,7 +220,7 @@ class LightEditor : IEditorMode
             }
 
             // W to move up one row
-            if (EditorWindow.IsKeyPressed(ImGuiKey.W))
+            if (KeyShortcuts.Activated(KeyShortcut.NavUp))
             {
                 int maxRow = brushDb.Brushes.Count / 3;
                 int curRow = selectedBrush / 3;
@@ -242,11 +241,11 @@ class LightEditor : IEditorMode
             }
 
             // D to move right
-            if (EditorWindow.IsKeyPressed(ImGuiKey.D))
+            if (KeyShortcuts.Activated(KeyShortcut.NavRight))
                 selectedBrush = (selectedBrush + 1) % brushDb.Brushes.Count;
             
             // A to move left
-            if (EditorWindow.IsKeyPressed(ImGuiKey.A))
+            if (KeyShortcuts.Activated(KeyShortcut.NavLeft))
             {
                 if (selectedBrush == 0)
                     selectedBrush = brushDb.Brushes.Count - 1;
@@ -256,30 +255,29 @@ class LightEditor : IEditorMode
         }
 
         // when shift is held, WASD changes light parameters
-        else
         {
             var lightAngleChange = 0f;
             var lightDistChange = 0f;
 
-            if (EditorWindow.IsKeyDown(ImGuiKey.D))
+            if (KeyShortcuts.Active(KeyShortcut.RotateLightCW))
             {
                 isChangingParameters = true;
                 lightAngleChange = 1f;
             }
 
-            if (EditorWindow.IsKeyDown(ImGuiKey.A))
+            if (KeyShortcuts.Active(KeyShortcut.RotateLightCCW))
             {
                 isChangingParameters = true;
                 lightAngleChange = -1f;
             }
 
-            if (EditorWindow.IsKeyDown(ImGuiKey.W))
+            if (KeyShortcuts.Active(KeyShortcut.ZoomLightIn))
             {
                 isChangingParameters = true;
                 lightDistChange = -1f;
             }
 
-            if (EditorWindow.IsKeyDown(ImGuiKey.S))
+            if (KeyShortcuts.Active(KeyShortcut.ZoomLightOut))
             {
                 isChangingParameters = true;
                 lightDistChange = 1f;
