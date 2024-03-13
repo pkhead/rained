@@ -885,9 +885,9 @@ class Level
         Props.Sort(new PropDepthSorter());
     }
     
-    public void Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
+    public Vector2 Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
     {
-        if (newWidth == _width && newHeight == _height) return;
+        if (newWidth == _width && newHeight == _height) return Vector2.Zero;
 
         // resize geometry
         var oldLayers = Layers;
@@ -1003,6 +1003,8 @@ class Level
 
         _width = newWidth;
         _height = newHeight;
+
+        return new Vector2(dstOriginX, dstOriginY);
     }
 
     public void LoadLightMap(Image image)

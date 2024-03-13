@@ -48,7 +48,7 @@ class EditorWindow
     public float ViewZoom { get => viewZoom; }
     public int WorkLayer { get => workLayer; set => workLayer = value; }
 
-    public Vector2 ViewOffset { get => viewOffset; }
+    public Vector2 ViewOffset { get => viewOffset; set => viewOffset = value; }
 
     private int mouseCx = 0;
     private int mouseCy = 0;

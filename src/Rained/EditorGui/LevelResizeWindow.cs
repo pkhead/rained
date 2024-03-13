@@ -51,7 +51,21 @@ class LevelResizeWindow
 
             ImGui.SeparatorText("Level Size");
             {
+                // tile size
+                ImGui.BeginGroup();
+                if (ImGui.InputInt("Width", ref newWidth))
+                    screenW = (newWidth - 20) / 52f;
+                
+                newWidth = Math.Max(newWidth, 1); // minimum value is 1
+
+                if (ImGui.InputInt("Height", ref newHeight))
+                    screenH = (newHeight - 3) / 40f;
+                
+                newHeight = Math.Max(newHeight, 1); // minimum value is 1
+                ImGui.EndGroup();
+
                 // screen size, using the formula from the modding wiki
+                ImGui.SameLine();
                 ImGui.BeginGroup();
                 if (ImGui.InputFloat("Screen Width", ref screenW))
                 {
@@ -64,20 +78,6 @@ class LevelResizeWindow
                     newHeight = (int)(screenH * 40f + 3f);
                 }
                 screenH = Math.Max(screenH, 0); // minimum value is 1
-                ImGui.EndGroup();
-
-                // tile size
-                ImGui.SameLine();
-                ImGui.BeginGroup();
-                if (ImGui.InputInt("Width", ref newWidth))
-                    screenW = (newWidth - 20) / 52f;
-                
-                newWidth = Math.Max(newWidth, 1); // minimum value is 1
-
-                if (ImGui.InputInt("Height", ref newHeight))
-                    screenH = (newHeight - 3) / 40f;
-                
-                newHeight = Math.Max(newHeight, 1); // minimum value is 1
                 ImGui.EndGroup();
             }
 

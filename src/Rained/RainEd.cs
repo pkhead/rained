@@ -73,6 +73,7 @@ sealed class RainEd
             .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
             .CreateLogger();
 #endif
+        Logger.Information("========================");
         Logger.Information("Rained {Version} started", Version);
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
@@ -278,10 +279,11 @@ sealed class RainEd
         Logger.Information("Resizing level...");
 
         Window.FlushDirty();
-        level.Resize(newWidth, newHeight, anchorX, anchorY);
+        var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
         Window.ReloadLevel();
         changeHistory.Clear();
         Window.LevelRenderer.ReloadLevel();
+        editorWindow.ViewOffset += dstOrigin * Level.TileSize;
 
         Logger.Information("Done!");
     }
