@@ -457,6 +457,9 @@ class Prop
 
     private readonly PropRope? rope;
     public PropRope? Rope { get => rope; }
+    
+    // returns true if it's a rope or a long-type prop
+    public bool IsLong { get => PropInit.Type == PropType.Rope || PropInit.Type == PropType.Long; }
 
     public Vector2[] QuadPoints
     {

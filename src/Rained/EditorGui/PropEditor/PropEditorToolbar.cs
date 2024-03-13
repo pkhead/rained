@@ -824,7 +824,7 @@ partial class PropEditor : IEditorMode
                     var prop = selectedProps[0];
 
                     // if is a normal prop
-                    if (prop.Rope is null)
+                    if (!prop.IsLong)
                     {
                         // prop variation
                         if (prop.PropInit.VariationCount > 1)

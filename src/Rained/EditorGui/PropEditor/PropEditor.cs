@@ -363,7 +363,7 @@ partial class PropEditor : IEditorMode
                 {
                     col = OutlineColors[3]; // red
                 }
-                else if (prop.Rope is not null)
+                else if (prop.IsLong)
                 {
                     col = OutlineColors[2]; // green
                 }
@@ -516,12 +516,12 @@ partial class PropEditor : IEditorMode
             }
 
             // freeform warp gizmo
-            if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is RopePointTransformMode)
+            if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is LongTransformMode)
             {
                 if (selectedProps[0].IsMovable)
                 {
                     // normal free-form 
-                    if (selectedProps[0].Rope is null)
+                    if (!selectedProps[0].IsLong)
                     {
                         Vector2[] corners = selectedProps[0].QuadPoints;
 
@@ -561,13 +561,13 @@ partial class PropEditor : IEditorMode
 
                         for (int i = 0; i < 2; i++)
                         {
-                            if (transformMode is RopePointTransformMode ropeMode && ropeMode.handleId != i)
+                            if (transformMode is LongTransformMode ropeMode && ropeMode.handleId != i)
                                 continue;
                             
                             if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && window.IsMouseClicked(ImGuiMouseButton.Left))
                             {
                                 changeRecorder.BeginTransform();
-                                transformMode = new RopePointTransformMode(
+                                transformMode = new LongTransformMode(
                                     handleId: i,
                                     prop: prop,
                                     snap: snappingMode / 2f

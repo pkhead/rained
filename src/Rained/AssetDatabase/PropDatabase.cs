@@ -13,7 +13,8 @@ enum PropType
     SimpleDecal,
     VariedDecal,
     Antimatter,
-    Rope
+    Rope,
+    Long
 };
 
 // Used to generate note synopses
@@ -74,6 +75,7 @@ record PropInit
             "variedDecal" => PropType.VariedDecal,
             "antimatter" => PropType.Antimatter,
             "rope" => PropType.Rope,
+            "long" => PropType.Long,
             _ => throw new Exception("Invalid prop init file")
         };
 
@@ -88,6 +90,8 @@ record PropInit
         Texture = RlManaged.Texture2D.Load(texturePath);
 
         var randVar = false;
+
+        // initialize rope-type prop
         if (Type == PropType.Rope)
         {
             Rope = new RopeInit(init);
@@ -98,6 +102,19 @@ record PropInit
             pixelHeight = Texture.Height;
             layerCount = 1;
         }
+
+        // initialize long-type prop
+        else if (Type == PropType.Long)
+        {
+            Depth = (int) init.fields["depth"];
+            VariationCount = 1;
+
+            pixelWidth = Texture.Width;
+            pixelHeight = Texture.Height;
+            layerCount = 1;
+        }
+
+        // initialize other types of props
         else
         {
             // obtain size of image cel
@@ -187,7 +204,11 @@ record PropInit
                 PropFlags |= PropFlags.ProcedurallyShaded;
             }
         }
-        else if (Type == PropType.Rope || Type == PropType.SimpleDecal || Type == PropType.VariedDecal || Type == PropType.Antimatter)
+        else if (
+            Type == PropType.Rope || Type == PropType.Long ||
+            Type == PropType.SimpleDecal || Type == PropType.VariedDecal
+            || Type == PropType.Antimatter
+        )
         {
             PropFlags |= PropFlags.ProcedurallyShaded;
         }
@@ -355,7 +376,7 @@ record RopeInit
 class PropDatabase
 {
     // taken from startUp.lingo, and re-formatted
-    private const string RopePropsInit = """
+    private const string ExtraPropsInit = """
     -["Rope type props", color(0, 255, 0)]
     [#nm:"Wire", #tp:"rope", #depth:0, #tags:["wire"], #notes:[], #segmentLength:3, #collisionDepth:0, #segRad:1, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(255,0, 0), #previewEvery:4, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
     [#nm:"Tube", #tp:"rope", #depth:4, #tags:[], #notes:[], #segmentLength:10, #collisionDepth:2, #segRad:4.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:1, #previewColor:color(0,0, 255), #previewEvery:2, #edgeDirection:5, #rigid:1.6, #selfPush:0, #sourcePush:0]
@@ -377,6 +398,18 @@ class PropDatabase
     [#nm:"Ring Chain", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(100,200,0), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
     [#nm:"Christmas Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(200,0, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
     [#nm:"Ornate Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(0,200, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
+    
+    -["Long props", color(0, 255, 0)]
+    [#nm:"Cabinet Clamp", #tp:"long", #depth:0, #tags:[], #notes:[]]
+    [#nm:"Drill Suspender", #tp:"long", #depth:5, #tags:[], #notes:[]]
+    [#nm:"Thick Chain", #tp:"long", #depth:0, #tags:[], #notes:[]]
+    [#nm:"Drill", #tp:"long", #depth:10, #tags:[], #notes:[]]
+    [#nm:"Piston", #tp:"long", #depth:4, #tags:[], #notes:[]]
+
+    -["Drought Long Props", color(0, 255, 0)]
+    [#nm:"Stretched Pipe", #tp:"long", #depth:0, #tags:[], #notes:[]]
+    [#nm:"Twisted Thread", #tp:"long", #depth:0, #tags:[], #notes:[]]
+    [#nm:"Stretched Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]
     """;
 
     public readonly List<PropCategory> Categories;
@@ -394,7 +427,7 @@ class PropDatabase
         allProps = new Dictionary<string, PropInit>();
 
         InitProps(tileDatabase);
-        InitRopeTypeProps();
+        InitExtraProps();
         InitCustomColors();
     }
 
@@ -515,11 +548,11 @@ class PropDatabase
         }
     }
 
-    private void InitRopeTypeProps()
+    private void InitExtraProps()
     {
         RainEd.Logger.Information("Initialize rope-type props...");
 
-        using StringReader reader = new(RopePropsInit);
+        using StringReader reader = new(ExtraPropsInit);
         var lingoParser = new Lingo.LingoParser();
 
         PropCategory? curGroup = null;
@@ -544,7 +577,7 @@ class PropDatabase
             }
         }
 
-        RainEd.Logger.Information("Done initialzing rope-type props");
+        RainEd.Logger.Information("Done initialzing rope and long props");
     }
 
     private void InitCustomColors()

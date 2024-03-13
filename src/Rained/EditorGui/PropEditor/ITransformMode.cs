@@ -319,7 +319,7 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    class RopePointTransformMode : ITransformMode
+    class LongTransformMode : ITransformMode
     {
         public readonly int handleId;
         public readonly Prop prop;
@@ -328,7 +328,7 @@ partial class PropEditor : IEditorMode
         private readonly Vector2 origPA;
         private readonly Vector2 origPB;
 
-        public RopePointTransformMode(
+        public LongTransformMode(
             int handleId,
             Prop prop,
             float snap
@@ -338,9 +338,19 @@ partial class PropEditor : IEditorMode
             this.handleId = handleId;
             this.snap = snap;
 
-            var rope = prop.Rope!;
-            origPA = rope.PointA;
-            origPB = rope.PointB;
+            var rope = prop.Rope;
+            if (rope is not null)
+            {
+                origPA = rope.PointA;
+                origPB = rope.PointB;
+            }
+            else
+            {
+                var cos = MathF.Cos(prop.Rect.Rotation);
+                var sin = MathF.Sin(prop.Rect.Rotation);
+                origPA = prop.Rect.Center + new Vector2(cos, sin) * -prop.Rect.Size.X / 2f;
+                origPB = prop.Rect.Center + new Vector2(cos, sin) * prop.Rect.Size.X / 2f;
+            }
         }
 
         private static Vector2 DirectionTo(Vector2 from, Vector2 to)
