@@ -105,7 +105,7 @@ static class ShortcutsWindow
             ("Shift+Left Mouse", "Add prop to selection"),
             ("Right Mouse", "Find props under the mouse"),
             ("Backspace/Delete", "Delete selected prop(s)"),
-            ("F", "Toggle freeform warp mode"),
+            ("F", "Toggle vertex mode"),
             ("Ctrl+D", "Duplicate selected prop"),
         ]
     };

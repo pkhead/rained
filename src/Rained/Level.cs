@@ -484,9 +484,11 @@ class Prop
 
     public bool IsAffine { get => transform.isAffine; }
 
+    // this is here so that the user can't edit warped rope or long props
+    // because that is invalid
     public bool IsMovable
     {
-        get => rope == null || transform.isAffine;
+        get => !IsLong || transform.isAffine;
     }
 
     public int DepthOffset = 0; // 0-29

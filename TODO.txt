@@ -1,4 +1,3 @@
-GET LONG TYPE PROPS!!
 GEO EDITOR SELECT-COPY-PASTE
 
 Bugs:
@@ -62,7 +61,6 @@ Effects Editor:
 - only store the pixels that changed in the matrix
 
 Prop Editor:
-- Drought Long Props
 - do tile as prop depth change based on if specs2 is active?
 - bug when resizing: PointA and PointB do not update?
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo

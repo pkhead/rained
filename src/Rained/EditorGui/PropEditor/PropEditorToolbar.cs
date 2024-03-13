@@ -315,7 +315,7 @@ partial class PropEditor : IEditorMode
         }
 
         if (isWarpMode)
-            RainEd.Instance.Window.StatusText = "Freeform Warp";
+            RainEd.Instance.Window.StatusText = "Vertex Mode";
         
         // transform mode hints
         if (transformMode is ScaleTransformMode)
@@ -687,9 +687,11 @@ partial class PropEditor : IEditorMode
                 }
 
                 // rope properties, if all selected props are ropes
+                bool longProps = true;
                 bool ropeProps = true;
                 bool affineProps = true;
                 {
+                    // check if they're all affine
                     foreach (var prop in selectedProps)
                     {
                         if (!prop.IsAffine)
@@ -699,6 +701,17 @@ partial class PropEditor : IEditorMode
                         }
                     }
 
+                    // check if they're all long props
+                    foreach (var prop in selectedProps)
+                    {
+                        if (!prop.IsLong)
+                        {
+                            longProps = false;
+                            break;
+                        }
+                    }
+
+                    // check if they're all rope props
                     foreach (var prop in selectedProps)
                     {
                         if (prop.Rope is null)
@@ -862,10 +875,10 @@ partial class PropEditor : IEditorMode
 
                 ImGui.SeparatorText("Notes");
 
-                if (ropeProps && !affineProps)
+                if (longProps && !affineProps)
                 {
                     ImGui.Bullet(); ImGui.SameLine();
-                    ImGui.TextWrapped("One or more selected rope props did not load as a rectangle, so editing is limited.");
+                    ImGui.TextWrapped("One or more selected rope or long props did not load as a rectangle, so editing is limited. Reset its transformation to edit it again.");
                 }
 
                 if (selectedProps.Count == 1)
