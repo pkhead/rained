@@ -8,6 +8,7 @@ static class ShortcutsWindow
     
     private readonly static string[] NavTabs = new string[] { "General", "Environment Edit", "Geometry Edit", "Tile Edit", "Camera Edit", "Light Edit", "Effects Edit", "Prop Edit" };
     private static int selectedNavTab = 0;
+    private static int lastEditMode = -1;
 
     private readonly static (string, string)[][] TabData = new (string, string)[][]
     {
@@ -113,6 +114,22 @@ static class ShortcutsWindow
 
     public static void ShowWindow()
     {
+        var editMode = RainEd.Instance.Window.EditMode;
+
+        if (lastEditMode == -1)
+        {
+            lastEditMode = editMode;
+        }
+
+        if (editMode != lastEditMode)
+        {
+            // if not selected general, switch tab to whatever editor user is currently one
+            if (selectedNavTab > 0)
+                selectedNavTab = editMode + 1;
+            
+            lastEditMode = editMode;
+        }
+
         if (!IsWindowOpen) return;
 
         if (ImGui.Begin("Shortcuts", ref IsWindowOpen))

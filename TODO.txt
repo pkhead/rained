@@ -1,6 +1,8 @@
 High Priority:
+- Q and E does something different in comms
+- Remove set default material keybind?
+- Showing geo specs in tile preview?
 - GEO EDITOR SELECT-COPY-PASTE
-- EditorMode folder
 - Log editor mode switches
 - view option to show camera border
 - geo mirror
