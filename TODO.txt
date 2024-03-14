@@ -1,4 +1,4 @@
-High Priority:
+Changes for Next Minor Update:
 - Q and E does something different in comms
 - Remove set default material keybind?
 - Showing geo specs in tile preview?
@@ -10,6 +10,7 @@ High Priority:
 - category color
 
 Bugs:
+- render doesn't check if file saving has failed
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux 
 - won't remove materials while tiles, but will remove tiles in material mode
