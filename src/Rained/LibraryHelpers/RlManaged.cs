@@ -61,34 +61,28 @@ namespace RlManaged
             switch (h)
             {
                 case Raylib_cs.RenderTexture2D rTex:
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject RenderTexture2D");
                     Raylib.UnloadRenderTexture(rTex);
                     break;
                 
                 case Raylib_cs.Image img:
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Image");
                     Raylib.UnloadImage(img);
                     break;
                 
                 case Raylib_cs.Texture2D tex:
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Texture2D");
                     Raylib.UnloadTexture(tex);
                     break;
                 
                 case Raylib_cs.Shader shader:
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Shader");
                     Raylib.UnloadShader(shader);
                     break;
                 
                 case Raylib_cs.Mesh mesh:
                 {
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Mesh");
                     Raylib.UnloadMesh(ref mesh);
                     break;
                 }
                 
                 case Raylib_cs.Material mat:
-                    if (!disposed) RainEd.RainEd.Logger.Information("GC RlObject Material");
                     Raylib.UnloadMaterial(mat);
                     break;
             }
