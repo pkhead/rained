@@ -225,6 +225,7 @@ class EditorWindow
         {
             if (queuedEditMode != selectedMode)
             {
+                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[queuedEditMode].Name);
                 editorModes[selectedMode].Unload();
                 selectedMode = queuedEditMode;
                 editorModes[selectedMode].Load();
@@ -306,6 +307,7 @@ class EditorWindow
             // change edit mode if requested
             if (newEditMode != selectedMode)
             {
+                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
                 editorModes[selectedMode].Unload();
                 selectedMode = newEditMode;
                 editorModes[selectedMode].Load();
