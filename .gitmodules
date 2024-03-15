@@ -5,5 +5,5 @@
 	ignore = dirty
 [submodule "src/Drizzle"]
 	path = src/Drizzle
-	url = git@github.com:pkhead/Drizzle
+	url = https://github.com/pkhead/Drizzle
 	branch = embedded
