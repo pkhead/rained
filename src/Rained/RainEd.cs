@@ -119,6 +119,7 @@ sealed class RainEd
         {
             Logger.Information("Boot load " + levelPath);
             level = LevelSerialization.Load(levelPath);
+            currentFilePath = levelPath;
         }
         else
         {
