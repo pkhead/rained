@@ -81,11 +81,11 @@ record PropInit
 
         // find prop path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
-        // kind of annoying. so i just put those images in assets/extra-previews
+        // kind of annoying. so i just put those images in assets/internal
         string texturePath = Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png");
         if (!File.Exists(texturePath))
         {
-            texturePath = Path.Combine(Boot.AppDataPath, "assets", "extra-previews", Name + ".png");
+            texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", Name + ".png");
         }
         Texture = RlManaged.Texture2D.Load(texturePath);
 
@@ -262,7 +262,7 @@ record PropInit
         Category = category;
         Name = srcTile.Name;
         Type = srcTile.VariationCount > 1 ? PropType.VariedStandard : PropType.Standard;
-        Texture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", Name + ".png"));
+        Texture = RlManaged.Texture2D.Load(srcTile.GraphicsPath);
         PropFlags = PropFlags.Tile;
         Notes = Array.Empty<string>();
 

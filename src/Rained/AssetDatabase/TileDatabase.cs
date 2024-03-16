@@ -32,6 +32,8 @@ class Tile
     public readonly int CenterX;
     public readonly int CenterY;
 
+    public readonly string GraphicsPath;
+
     public Tile(
         string name,
         TileCategory category,
@@ -113,7 +115,15 @@ class Tile
                 break;
         }
         
-        using var fullImage = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png"));
+        // find path to image
+        // if it doesn't exist in Data/Graphics, check in assets/internal
+        GraphicsPath = Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png");
+        if (!File.Exists(GraphicsPath))
+        {
+            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", name + ".png");
+        }
+
+        using var fullImage = RlManaged.Image.Load(GraphicsPath);
         var previewRect = new Rectangle(
             0,
             rowCount * 20 + imageOffset,
