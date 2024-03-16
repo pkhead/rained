@@ -9,10 +9,8 @@ Changes for Next Minor Update:
 - view geo specs in tile preview?
 
 Bugs:
-- render doesn't check if file saving has failed
 - change history doesn't work well with level resize
-- crashes when calling UnloadMesh on Debian Linux 
-- won't remove materials while tiles, but will remove tiles in material mode
+- crashes when calling UnloadMesh on Debian Linux
 
 Overall:
 - keyboard replacements for scroll wheel stuff
@@ -62,7 +60,6 @@ Tile Editor:
 - customizable autotiling (what's a way to do this without scripting?)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
-- category colors
 
 Camera Editor:
 - render order

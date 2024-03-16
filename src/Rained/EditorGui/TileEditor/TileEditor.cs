@@ -439,7 +439,7 @@ partial class TileEditor : IEditorMode
                 }
 
                 // remove tile on right click
-                if (window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
+                if (selectionMode == SelectionMode.Tiles && window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                 {
                     RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                 }
