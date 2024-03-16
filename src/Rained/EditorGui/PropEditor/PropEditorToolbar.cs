@@ -456,9 +456,13 @@ partial class PropEditor : IEditorMode
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
+                        var drawList = ImGui.GetWindowDrawList();
+                        float textHeight = ImGui.GetTextLineHeight();
+
                         foreach ((var i, var group) in tileSearchResults)
                         {
-                            if (ImGui.Selectable(propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            var cursor = ImGui.GetCursorScreenPos();
+                            if (ImGui.Selectable("  " + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                             {
                                 if (i != selectedTileGroup)
                                 {
@@ -466,6 +470,13 @@ partial class PropEditor : IEditorMode
                                     selectedTileIdx = 0;
                                 }
                             }
+
+                            // draw color square
+                            drawList.AddRectFilled(
+                                p_min: cursor,
+                                p_max: cursor + new Vector2(10f, textHeight),
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                            );
                         }
                         
                         ImGui.EndListBox();

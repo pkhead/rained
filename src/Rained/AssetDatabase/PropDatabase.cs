@@ -264,7 +264,7 @@ record PropInit
         Type = srcTile.VariationCount > 1 ? PropType.VariedStandard : PropType.Standard;
         Texture = RlManaged.Texture2D.Load(srcTile.GraphicsPath);
         PropFlags = PropFlags.Tile;
-        Notes = Array.Empty<string>();
+        Notes = [];
 
         layerCount = srcTile.LayerCount;
         Depth = srcTile.LayerDepth;
@@ -319,12 +319,14 @@ record PropCategory
 
 record PropTileCategory
 {
-    public string Name;
-    public List<PropInit> Props = new();
+    public readonly string Name;
+    public readonly Color Color;
+    public readonly List<PropInit> Props = [];
 
-    public PropTileCategory(string name)
+    public PropTileCategory(string name, Color color)
     {
         Name = name;
+        Color = color;
     }
 }
 
@@ -515,7 +517,7 @@ class PropDatabase
         int tileIndex = 0;
         foreach (var category in tileDatabase.Categories)
         {
-            var tilePropCategory = new PropTileCategory(category.Name);
+            var tilePropCategory = new PropTileCategory(category.Name, category.Color);
 
             foreach (var tile in category.Tiles)
             {
