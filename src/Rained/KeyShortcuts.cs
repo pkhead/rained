@@ -18,6 +18,10 @@ enum KeyShortcut
     // Geometry
     ToggleLayer1, ToggleLayer2, ToggleLayer3,
 
+    // Tile Editor
+    Eyedropper, SetMaterial,
+    TileForceGeometry, TileForcePlacement, TileIgnoreDifferent,
+
     // Light
     ResetBrushTransform,
     ZoomLightIn, ZoomLightOut,
@@ -173,6 +177,14 @@ static class KeyShortcuts
         Register(KeyShortcut.ToggleLayer2, ImGuiKey.R, ImGuiModFlags.None);
         Register(KeyShortcut.ToggleLayer3, ImGuiKey.T, ImGuiModFlags.None);
 
+        // Tile Editor
+        Register(KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);
+        Register(KeyShortcut.SetMaterial, ImGuiKey.E, ImGuiModFlags.None, true);
+        Register(KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None);
+        Register(KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None);
+        Register(KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None);
+
+        // Light Editor
         Register(KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
         Register(KeyShortcut.ZoomLightIn, ImGuiKey.W, ImGuiModFlags.Shift);
         Register(KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiModFlags.Shift);

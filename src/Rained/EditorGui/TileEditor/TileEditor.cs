@@ -193,9 +193,9 @@ partial class TileEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            var modifyGeometry = EditorWindow.IsKeyDown(ImGuiKey.G);
-            var forcePlace = EditorWindow.IsKeyDown(ImGuiKey.F);
-            var disallowMatOverwrite = EditorWindow.IsKeyDown(ImGuiKey.R);
+            var modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
+            var forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
+            var disallowMatOverwrite = KeyShortcuts.Active(KeyShortcut.TileIgnoreDifferent);
 
             // begin change if left or right button is down
             // regardless of what it's doing
@@ -395,7 +395,7 @@ partial class TileEditor : IEditorMode
                 }
 
                 // eyedropper
-                if (EditorWindow.IsKeyPressed(ImGuiKey.E))
+                if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
                 {
                     // tile eyedropper
                     if (mouseCell.HasTile())

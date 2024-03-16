@@ -1,5 +1,4 @@
 Changes for Next Minor Update:
-- Q and E does something different in comms
 - Remove set default material keybind?
 - Showing geo specs in tile preview?
 - GEO EDITOR SELECT-COPY-PASTE
@@ -74,6 +73,7 @@ Light Editor:
 - toggle view shadow plane and occlusion plane
 
 Effects Editor:
+- WASD navigation
 - only store the pixels that changed in the matrix
 
 Prop Editor:

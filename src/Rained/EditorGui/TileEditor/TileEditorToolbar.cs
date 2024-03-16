@@ -97,7 +97,7 @@ partial class TileEditor : IEditorMode
             if (selectionMode != SelectionMode.Materials)
                 ImGui.BeginDisabled();
             
-            if ((ImGui.Button("Set Selected Material as Default") || EditorWindow.IsKeyPressed(ImGuiKey.Q)) && selectionMode == SelectionMode.Materials)
+            if ((ImGui.Button("Set Selected Material as Default") || KeyShortcuts.Activated(KeyShortcut.SetMaterial)) && selectionMode == SelectionMode.Materials)
             {
                 var oldMat = window.Editor.Level.DefaultMaterial;
                 var newMat = selectedMaterial;
