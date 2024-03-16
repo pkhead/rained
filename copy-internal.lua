@@ -6,22 +6,24 @@ local initFile = assert(io.open("Data/Cast/Drought_393439_Drought Needed Init.tx
 local initTxt = initFile:read("a")
 initFile:close()
 
-local files = {}
+local castData = {}
 
 for name in lfs.dir("Data/Cast/") do
-    if string.sub(name, 1, 8) == "Drought_" then
-        table.insert(files, name)
+    if string.sub(name, string.len(name) - 3) == ".png" then
+        table.insert(castData, {
+            fileName = name,
+            name = string.match(name, "[A-Za-z ]+_%d+_(.*)")
+        })
     end
 end
 
 for tileName in string.gmatch(initTxt, "%[#nm:\"(.-)\",.-%]") do
-    for _, fileName in ipairs(files) do
-        local castName = string.sub(fileName, 16)
-        if castName:lower() == tileName:lower() .. ".png" then
-            print(castName)
+    for _, cast in ipairs(castData) do
+        if cast.name:lower() == tileName:lower() .. ".png" then
+            print(cast.name)
 
-            local destFile = assert(io.open("assets/internal/" .. castName, "wb"))
-            local srcFile = assert(io.open("Data/Cast/" .. fileName, "rb"))
+            local destFile = assert(io.open("assets/internal/" .. cast.name, "wb"))
+            local srcFile = assert(io.open("Data/Cast/" .. cast.fileName, "rb"))
             destFile:write(srcFile:read("a"))
 
             destFile:close()
