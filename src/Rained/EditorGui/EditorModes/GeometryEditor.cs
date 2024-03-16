@@ -45,7 +45,7 @@ class GeometryEditor : IEditorMode
         { Tool.Air,             "Air"               },
         { Tool.Inverse,         "Toggle Wall/Air"   },
         { Tool.Slope,           "Slope"             },
-        { Tool.Platform,        "Platform"          },
+        { Tool.Platform,        "Half-Block"        },
         { Tool.Rock,            "Rock"              },
         { Tool.Spear,           "Spear"             },
         { Tool.Crack,           "Fissure"           },
@@ -109,7 +109,7 @@ class GeometryEditor : IEditorMode
     private int lastMouseX, lastMouseY;
 
     // work layer
-    private bool[] layerMask;
+    private readonly bool[] layerMask;
 
     public GeometryEditor(EditorWindow editorWindow)
     {
@@ -325,6 +325,8 @@ class GeometryEditor : IEditorMode
         levelRender.RenderBorder();
 
         // WASD navigation
+        bool isMouseDown = window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right);
+        
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
         {
             int toolRow = (int) selectedTool / 4;
@@ -400,7 +402,7 @@ class GeometryEditor : IEditorMode
                     Color.White
                 );
 
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
+                if (!isMouseDown)
                 {
                     ApplyToolRect();
                 }
@@ -410,6 +412,7 @@ class GeometryEditor : IEditorMode
             // if mouse is within level bounds?
             else if (window.IsMouseInLevel())
             {
+                bool wasToolActive = isToolActive;
                 isToolRectActive = false;
 
                 // draw grid cursor otherwise
@@ -421,7 +424,7 @@ class GeometryEditor : IEditorMode
 
                 // activate tool on click
                 // or if user moves mouse on another tile space
-                if (window.IsMouseClicked(ImGuiMouseButton.Left))
+                if (isMouseDown && !isToolActive)
                 {
                     isToolActive = true;
                     window.CellChangeRecorder.BeginChange();
@@ -429,16 +432,22 @@ class GeometryEditor : IEditorMode
                 
                 if (isToolActive)
                 {
-                    if (window.IsMouseClicked(ImGuiMouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
+                    if (!wasToolActive || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
                     {
                         if (!isToolRectActive)
-                            ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                        {
+                            // left = place, right = erase
+                            if (window.IsMouseDown(ImGuiMouseButton.Left))
+                                ActivateTool(window.MouseCx, window.MouseCy, !wasToolActive, EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                            else if (window.IsMouseDown(ImGuiMouseButton.Right))
+                                Erase(window.MouseCx, window.MouseCy);
+                        }
                     }
                 }
             }
         }
 
-        if (isToolActive && window.IsMouseReleased(ImGuiMouseButton.Left))
+        if (isToolActive && !isMouseDown)
         {
             isToolActive = false;
             window.CellChangeRecorder.PushChange();
@@ -654,6 +663,20 @@ class GeometryEditor : IEditorMode
 
             level.Layers[workLayer, tx, ty] = cell;
             window.LevelRenderer.MarkNeedsRedraw(tx, ty, workLayer);
+        }
+    }
+
+    private void Erase(int x, int y)
+    {
+        var level = RainEd.Instance.Level;
+
+        for (int workLayer = 0; workLayer < 3; workLayer++)
+        {
+            if (!layerMask[workLayer]) continue;
+            ref var cell = ref level.Layers[workLayer, x, y];
+            cell.Objects = LevelObject.None;
+
+            window.LevelRenderer.MarkNeedsRedraw(x, y, workLayer);
         }
     }
 

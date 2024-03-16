@@ -2,6 +2,7 @@ Changes for Next Minor Update:
 - Remove set default material keybind?
 - Showing geo specs in tile preview?
 - GEO EDITOR SELECT-COPY-PASTE
+- keep track of recent files
 - view option to show camera border
 - geo mirror
 - rect/material tile place
@@ -13,6 +14,7 @@ Bugs:
 - crashes when calling UnloadMesh on Debian Linux
 
 Overall:
+- shortcut window: General and Current sections (not tabs)
 - keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
@@ -46,7 +48,6 @@ Geometry Editor:
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
 - ability to view tiles (hm... what if i combined geo/tile editor?)
-- right-click to remove cells/objects
 - keyboard shortcut for shortcut & shortcut dots
 - optimized cell change recorder
   (i.e. record specific changes in user code instead of scanning the entire level for such)
