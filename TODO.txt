@@ -3,11 +3,11 @@ Changes for Next Minor Update:
 - Remove set default material keybind?
 - Showing geo specs in tile preview?
 - GEO EDITOR SELECT-COPY-PASTE
-- Log editor mode switches
 - view option to show camera border
 - geo mirror
 - rect/material tile place
-- category color
+- change geo spec color
+- view geo specs in tile preview?
 
 Bugs:
 - render doesn't check if file saving has failed

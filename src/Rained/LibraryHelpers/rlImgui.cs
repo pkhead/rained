@@ -633,6 +633,22 @@ namespace rlImGui_cs
         }
 
         /// <summary>
+        /// Draw a texture as an image in an ImGui Context
+        /// Uses the current ImGui Cursor position and the full texture size.
+        /// </summary>
+        /// <param name="image">The raylib texture to draw</param>
+        /// <param name="color">The color to draw the texture with</param>
+        public static void Image(Texture2D image, Color color)
+        {
+            ImGui.Image(
+                new IntPtr(image.Id),
+                new Vector2(image.Width, image.Height),
+                Vector2.Zero, Vector2.One,
+                new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f)
+            );
+        }
+
+        /// <summary>
         /// Draw a texture as an image in an ImGui Context at a specific size
         /// Uses the current ImGui Cursor position and the specified width and height
         /// The image will be scaled up or down to fit as needed

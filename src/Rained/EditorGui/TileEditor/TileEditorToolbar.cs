@@ -151,7 +151,7 @@ partial class TileEditor : IEditorMode
                         foreach (var i in matSearchResults)
                         {
                             var group = matDb.Categories[i];
-
+                            
                             if (ImGui.Selectable(group.Name, selectedMatGroup == i) || matSearchResults.Count == 1)
                                 selectedMatGroup = i;
                         }
@@ -202,12 +202,22 @@ partial class TileEditor : IEditorMode
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
+                        var drawList = ImGui.GetWindowDrawList();
+                        float textHeight = ImGui.GetTextLineHeight();
+
                         foreach (var i in tileSearchResults)
                         {
                             var group = tileDb.Categories[i];
+                            var cursor = ImGui.GetCursorScreenPos();
 
-                            if (ImGui.Selectable(group.Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            if (ImGui.Selectable("  " + group.Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                                 selectedTileGroup = i;
+                            
+                            drawList.AddRectFilled(
+                                p_min: cursor,
+                                p_max: cursor + new Vector2(10f, textHeight),
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                            );
                         }
                         
                         ImGui.EndListBox();
@@ -235,7 +245,7 @@ partial class TileEditor : IEditorMode
                             if (ImGui.IsItemHovered())
                             {
                                 ImGui.BeginTooltip();
-                                rlImGui.Image(tile.PreviewTexture);
+                                rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
                                 ImGui.EndTooltip();
                             }
                         }
