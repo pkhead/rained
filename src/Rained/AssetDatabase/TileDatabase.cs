@@ -9,7 +9,8 @@ public enum TileType
     VoxelStructRockType,
     VoxelStructRandomDisplaceVertical,
     VoxelStructRandomDisplaceHorizontal,
-    Box
+    Box,
+    VoxelStructSandType,
 }
 
 class Tile
@@ -103,6 +104,7 @@ class Tile
                 break;
             
             case TileType.VoxelStructRockType:
+            case TileType.VoxelStructSandType:
                 break;
             
             case TileType.Box:
@@ -189,9 +191,10 @@ class TileDatabase
 
         TileCategory? curGroup = null;
         int groupIndex = 0;
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data","Graphics","Init.txt")))
+
+        void ProcessLine(string line)
         {
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            if (string.IsNullOrWhiteSpace(line)) return;
             
             // read header
             if (line[0] == '-')
@@ -239,6 +242,7 @@ class TileDatabase
                 {
                     "voxelStruct" => TileType.VoxelStruct,
                     "voxelStructRockType" => TileType.VoxelStructRockType,
+                    "voxelStructSandType" => TileType.VoxelStructSandType,
                     "voxelStructRandomDisplaceHorizontal" => TileType.VoxelStructRandomDisplaceHorizontal,
                     "voxelStructRandomDisplaceVertical" => TileType.VoxelStructRandomDisplaceVertical,
                     "box" => TileType.Box,
@@ -267,8 +271,129 @@ class TileDatabase
                 }
             }
         }
+
+        // read Init.txt
+        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data","Graphics","Init.txt")))
+        {
+            ProcessLine(line);
+        }
+
+        // read internal extra tiles
+        using var reader = new StringReader(ExtraTiles);
+        string? line2;
+        while ((line2 = reader.ReadLine()) is not null)
+        {
+            ProcessLine(line2);
+        }
     }
 
     public bool HasTile(string name) => stringToTile.ContainsKey(name);
     public Tile GetTileFromName(string name) => stringToTile[name];
+
+    // From Cast/Drought_393439_Drought Needed Init.txt
+    private const string ExtraTiles = """
+    -["Drought 4Mosaic", color(227, 76, 13)]
+    [#nm:"4Mosaic Square", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"4Mosaic Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"4Mosaic Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"4Mosaic Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"4Mosaic Slope SE", #sz:point(1,1), #specs:[4], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"4Mosaic Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+
+
+    -["Drought Missing 3DBricks", color(255, 150, 0)]
+    [#nm:"3DBrick Square", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"3DBrick Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"3DBrick Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"3DBrick Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"3DBrick Slope SE", #sz:point(1,1), #specs:[4], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"3DBrick Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+
+
+    -["Drought Alt Grates", color(75, 75, 240)]
+    [#nm:"AltGrateA", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateB1", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateB2", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateB3", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateB4", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateC1", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateC2", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateE1", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateE2", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateF1", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateF2", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateF3", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateF4", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateG1", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateG2", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateH", #sz:point(3,4), #specs:[0,0,0, 0,0,0, 0,0,0, 0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+
+    [#nm:"AltGrateI", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateJ1", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateJ2", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateJ3", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateJ4", #sz:point(1,2), #specs:[0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateK1", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateK2", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateK3", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateK4", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateL", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateM", #sz:point(2,2), #specs:[0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateN", #sz:point(4,4), #specs:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+    [#nm:"AltGrateO", #sz:point(5,5), #specs:[0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
+
+
+    -["Drought Missing Stone", color(200, 165, 135)]
+    [#nm:"Small Stone Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Stone Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Stone Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Stone Slope SE", #sz:point(1,1), #specs:[4], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Stone Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+
+    [#nm:"Small Stone Marked", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "chaoticStone2 : very rare", "INTERNAL"]]
+    [#nm:"Square Stone Marked", #sz:point(2,2), #specs:[1, 1, 1, 1], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:3, #ptPos:0, #tags:["chaoticStone2 : rare", "INTERNAL"]]
+
+
+    -["Drought Missing Machine", color(230, 160, 230)]
+    [#nm:"Small Machine Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Machine Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Machine Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Machine Slope SE", #sz:point(1,1), #specs:[4], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    [#nm:"Small Machine Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+
+
+    -["Drought Metal", color(100, 185, 245)]
+    [#nm:"Small Metal Alt", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Small Metal Marked", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Small Metal X", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Metal Floor Alt", #sz:point(2,1), #specs:[1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Metal Wall", #sz:point(1,2), #specs:[1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Metal Wall Alt", #sz:point(1,2), #specs:[1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Square Metal Marked", #sz:point(2,2), #specs:[1, 1, 1, 1], #specs2:0, #tp:"box", #bfTiles:1, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Square Metal X", #sz:point(2,2), #specs:[1, 1, 1, 1], #specs2:0, #tp:"box", #bfTiles:1, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Wide Metal", #sz:point(3,2), #specs:[1,1, 1,1, 1,1], #specs2:0, #tp:"box", #bfTiles:1, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Tall Metal", #sz:point(2,3), #specs:[1,1,1, 1,1,1], #specs2:0, #tp:"box", #bfTiles:1, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Big Metal X", #sz:point(3,3), #specs:[1, 1, 1, 1, 1, 1, 1, 1, 1], #specs2:0, #tp:"box", #bfTiles:1, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+    [#nm:"Large Big Metal", #sz:point(4,4), #specs:[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Large Big Metal Marked", #sz:point(4,4), #specs:[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+    [#nm:"Large Big Metal X", #sz:point(4,4), #specs:[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
+
+
+    -["Drought Missing Metal", color(180, 10, 10)]
+    [#nm:"Missing Metal Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"Missing Metal Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"Missing Metal Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"Missing Metal Slope SE", #sz:point(1,1), #specs:[4], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+    [#nm:"Missing Metal Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[5,1,1,1,1,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
+
+    -["Dune", color(255, 255, 180)]
+    [#nm:"Dune Sand", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStructSandType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
+    """;
 }

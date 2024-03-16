@@ -99,7 +99,34 @@ class MaterialDatabase
         CreateMaterial(     "MassiveBulkMetal",    new Color(255,19,19, 255));
         CreateMaterial(     "Dune Sand",           new Color(255, 255, 100, 255));
 
+        // read from init.txt
+        RegisterCustomMaterials();
+
         Materials = [..materialList];
+    }
+
+    private void RegisterCustomMaterials()
+    {
+        var parser = new Lingo.LingoParser();
+
+        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data", "Materials", "Init.txt")))
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line[0] == '-')
+            {
+                Categories.Add(new MaterialCategory(line[1..]));
+            }
+            else
+            {
+                var data = (Lingo.List) parser.Read(line)!;
+                
+                var name = (string) data.fields["nm"];
+                var color = (Lingo.Color) data.fields["color"];
+
+                CreateMaterial(name, new Color(color.R, color.G, color.B, 255));
+            }
+        }
     }
 
     private MaterialInfo CreateMaterial(string name, Color color)
