@@ -607,6 +607,8 @@ partial class PropEditor : IEditorMode
 
             foreach (var prop in level.Props)
             {
+                if (selectedProps.Contains(prop)) continue;
+                
                 var pc = GetPropCenter(prop);
                 if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
                     selectedProps.Add(prop);
