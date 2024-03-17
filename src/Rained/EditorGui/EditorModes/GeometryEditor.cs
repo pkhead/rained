@@ -102,14 +102,50 @@ class GeometryEditor : IEditorMode
     private bool isToolActive = false;
     private readonly RlManaged.Texture2D toolIcons;
 
-    // tool rect - for wall/air/inverse/geometry tools
-    private bool isToolRectActive;
-    private int toolRectX;
-    private int toolRectY;
+    // tool rect
+    enum RectMode
+    {
+        None,
+        Fill,
+        Select
+    };
+    private RectMode toolRectMode;
+    private int rectSX;
+    private int rectSY;
+    private int rectEX;
+    private int rectEY;
+
+    private bool isSelectionActive = false;
+    private int selectSX, selectSY;
+    private int selectEX, selectEY;
+
     private int lastMouseX, lastMouseY;
 
     // work layer
     private readonly bool[] layerMask;
+
+    private readonly static string OutlineMarqueeShaderSource = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        uniform float time;
+
+        void main()
+        {
+            vec4 col = texture(texture0, fragTexCoord) * colDiffuse * fragColor;
+            bool marquee = mod(gl_FragCoord.x + gl_FragCoord.y + time * 50.0, 10.0) < 5.0;
+            finalColor = vec4(col.rgb, col.a * float(marquee));
+        }
+    ";
+    private readonly RlManaged.Shader outlineMarqueeShader;
+    private int uTime; // for outlineMarqueeShader
 
     public GeometryEditor(EditorWindow editorWindow)
     {
@@ -133,6 +169,15 @@ class GeometryEditor : IEditorMode
                 RainEd.Logger.Error("Invalid layer view mode '{ViewMode}' in preferences.json", RainEd.Instance.Preferences.GeometryViewMode);
                 break;
         }
+
+        outlineMarqueeShader = RlManaged.Shader.LoadFromMemory(null, OutlineMarqueeShaderSource);
+        uTime = Raylib.GetShaderLocation(outlineMarqueeShader, "time");
+
+        isSelectionActive = false;
+        selectSX = 0;
+        selectSY = 0;
+        selectEX = 0;
+        selectEY = 0;
     }
     
     public enum LayerViewMode : int
@@ -149,7 +194,7 @@ class GeometryEditor : IEditorMode
     public void Unload()
     {
         isToolActive = false;
-        isToolRectActive = false;
+        toolRectMode = RectMode.None;
         window.CellChangeRecorder.TryPushChange();
     }
 
@@ -382,40 +427,42 @@ class GeometryEditor : IEditorMode
         
         if (window.IsViewportHovered)
         {
-            // cursor rect mode
-            if (isToolRectActive)
+            // rect fill mode
+            if (toolRectMode != RectMode.None)
             {
-                var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
-                var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
-
-                // draw tool rect
-                var rectMinX = Math.Min(mx, toolRectX);
-                var rectMinY = Math.Min(my, toolRectY);
-                var rectMaxX = Math.Max(mx, toolRectX);
-                var rectMaxY = Math.Max(my, toolRectY);
-                var rectW = rectMaxX - rectMinX + 1;
-                var rectH = rectMaxY - rectMinY + 1;
-
-                Raylib.DrawRectangleLinesEx(
-                    new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
-                    1f / window.ViewZoom,
-                    Color.White
-                );
-
-                if (!isMouseDown)
+                if (isMouseDown)
                 {
-                    ApplyToolRect();
+                    rectEX = Math.Clamp(window.MouseCx, 0, level.Width - 1);
+                    rectEY = Math.Clamp(window.MouseCy, 0, level.Height - 1);
+                }
+                
+                if (toolRectMode == RectMode.Fill)
+                {
+                    if (!isMouseDown)
+                    {
+                        ApplyToolRect();
+                    }
+                }
+                else if (toolRectMode == RectMode.Select)
+                {
+                    isSelectionActive = true;
+                    selectSX = rectSX;
+                    selectSY = rectSY;
+                    selectEX = rectEX;
+                    selectEY = rectEY;
+
+                    if (!isMouseDown)
+                        toolRectMode = RectMode.None;
                 }
             }
             
             // normal cursor mode
-            // if mouse is within level bounds?
-            else if (window.IsMouseInLevel())
+            else
             {
                 bool wasToolActive = isToolActive;
-                isToolRectActive = false;
+                toolRectMode = RectMode.None;
 
-                // draw grid cursor otherwise
+                // draw grid cursor
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
                     1f / window.ViewZoom,
@@ -434,13 +481,35 @@ class GeometryEditor : IEditorMode
                 {
                     if (!wasToolActive || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
                     {
-                        if (!isToolRectActive)
+                        if (toolRectMode == RectMode.None)
                         {
-                            // left = place, right = erase
-                            if (window.IsMouseDown(ImGuiMouseButton.Left))
-                                ActivateTool(window.MouseCx, window.MouseCy, !wasToolActive, EditorWindow.IsKeyDown(ImGuiKey.ModShift));
-                            else if (window.IsMouseDown(ImGuiMouseButton.Right))
-                                Erase(window.MouseCx, window.MouseCy);
+                            bool fillMode = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+                            bool selectMode = EditorWindow.IsKeyDown(ImGuiKey.ModCtrl);
+
+                            if (selectMode)
+                            {
+                                toolRectMode = RectMode.Select;
+                                rectSX = window.MouseCx;
+                                rectSY = window.MouseCy;
+                                rectEX = rectSX;
+                                rectEY = rectSY;
+                            }
+                            else if (fillMode)
+                            {
+                                toolRectMode = RectMode.Fill;
+                                rectSX = window.MouseCx;
+                                rectSY = window.MouseCy;
+                                rectEX = rectSX;
+                                rectEY = rectSY;
+                            }
+                            else
+                            {
+                                // left = place, right = erase
+                                if (window.IsMouseDown(ImGuiMouseButton.Left))
+                                    ActivateTool(window.MouseCx, window.MouseCy, !wasToolActive);
+                                else if (window.IsMouseDown(ImGuiMouseButton.Right))
+                                    Erase(window.MouseCx, window.MouseCy);
+                            }
                         }
                     }
                 }
@@ -452,6 +521,63 @@ class GeometryEditor : IEditorMode
             isToolActive = false;
             window.CellChangeRecorder.PushChange();
         }
+
+        // draw tool rect
+        if (toolRectMode == RectMode.Fill)
+        {
+            var rectMinX = Math.Min(rectSX, rectEX);
+            var rectMinY = Math.Min(rectSY, rectEY);
+            var rectMaxX = Math.Max(rectSX, rectEX);
+            var rectMaxY = Math.Max(rectSY, rectEY);
+            var rectW = rectMaxX - rectMinX + 1;
+            var rectH = rectMaxY - rectMinY + 1;
+
+            bool marquee = toolRectMode == RectMode.Select;
+            if (marquee)
+            {
+                Raylib.BeginShaderMode(outlineMarqueeShader);
+                Raylib.SetShaderValue(outlineMarqueeShader, uTime, (float)Raylib.GetTime(), ShaderUniformDataType.Float);
+            }
+
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
+                1f / window.ViewZoom,
+                Color.White
+            );
+
+            if (marquee)
+            {
+                Raylib.EndShaderMode();
+            }
+        }
+
+        // escape to clear selection
+        if (window.IsFocused && EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+        {
+            isSelectionActive = false;
+        }
+
+        // draw selection rect
+        if (isSelectionActive)
+        {
+            var rectMinX = Math.Min(selectSX, selectEX);
+            var rectMinY = Math.Min(selectSY, selectEY);
+            var rectMaxX = Math.Max(selectSX, selectEX);
+            var rectMaxY = Math.Max(selectSY, selectEY);
+            var rectW = rectMaxX - rectMinX + 1;
+            var rectH = rectMaxY - rectMinY + 1;
+
+            Raylib.BeginShaderMode(outlineMarqueeShader);
+            Raylib.SetShaderValue(outlineMarqueeShader, uTime, (float)Raylib.GetTime(), ShaderUniformDataType.Float);
+
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
+                1f / window.ViewZoom,
+                Color.White
+            );
+            
+            Raylib.EndShaderMode();
+        }
         
         lastMouseX = window.MouseCx;
         lastMouseY = window.MouseCy;
@@ -461,11 +587,10 @@ class GeometryEditor : IEditorMode
 
     private bool toolPlaceMode;
 
-    private void ActivateTool(int tx, int ty, bool pressed, bool shift)
+    private void ActivateTool(int tx, int ty, bool pressed)
     {
         var level = window.Editor.Level;
-
-        isToolRectActive = false;
+        if (!level.IsInBounds(tx, ty)) return;
 
         for (int workLayer = 0; workLayer < 3; workLayer++)
         {
@@ -477,31 +602,11 @@ class GeometryEditor : IEditorMode
             switch (selectedTool)
             {
                 case Tool.Wall:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Solid;
-                    }
-
+                    cell.Geo = GeoType.Solid;
                     break;
                 
                 case Tool.Air:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Air;
-                    }
-
+                    cell.Geo = GeoType.Air;
                     break;
 
                 case Tool.Platform:
@@ -509,32 +614,12 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.Glass:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Glass;
-                    }
-
+                    cell.Geo = GeoType.Glass;
                     break;
                 
                 case Tool.Inverse:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
-                        cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
-                    }
-
+                    if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
+                    cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
                     break;
 
                 case Tool.ShortcutEntrance:
@@ -685,21 +770,19 @@ class GeometryEditor : IEditorMode
         // apply the rect to the tool by
         // applying the tool at every cell
         // in the rectangle.
-        var mx = Math.Clamp(window.MouseCx, 0, window.Editor.Level.Width - 1);
-        var my = Math.Clamp(window.MouseCy, 0, window.Editor.Level.Height - 1);
-        var rectMinX = Math.Min(mx, toolRectX);
-        var rectMinY = Math.Min(my, toolRectY);
-        var rectMaxX = Math.Max(mx, toolRectX);
-        var rectMaxY = Math.Max(my, toolRectY);
+        var rectMinX = Math.Min(rectSX, rectEX);
+        var rectMinY = Math.Min(rectSY, rectEY);
+        var rectMaxX = Math.Max(rectSX, rectEX);
+        var rectMaxY = Math.Max(rectSY, rectEY);
 
         for (int x = rectMinX; x <= rectMaxX; x++)
         {
             for (int y = rectMinY; y <= rectMaxY; y++)
             {
-                ActivateTool(x, y, true, false);
+                ActivateTool(x, y, true);
             }
         }
         
-        isToolRectActive = false;
+        toolRectMode = RectMode.None;
     }
 }

@@ -60,10 +60,12 @@ class EditorWindow
     private bool isLmbClicked = false;
     private bool isLmbReleased = false;
     private bool isLmbDragging = false;
+    private bool isFocused = false;
 
     public int MouseCx { get => mouseCx; }
     public int MouseCy { get => mouseCy; }
     public Vector2 MouseCellFloat { get => mouseCellFloat; }
+    public bool IsFocused { get => isFocused; }
     public bool IsMouseInLevel() => Editor.Level.IsInBounds(mouseCx, mouseCy);
     public bool OverrideMouseWheel = false;
     public string StatusText = string.Empty;
@@ -234,8 +236,11 @@ class EditorWindow
             queuedEditMode = -1;
         }
         
+        isFocused = false;
         if (IsWindowOpen && ImGui.Begin("Level"))
         {
+            isFocused = ImGui.IsWindowFocused();
+            
             var newEditMode = selectedMode;
 
             // edit mode

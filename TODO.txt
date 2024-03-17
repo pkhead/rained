@@ -1,4 +1,6 @@
 Changes for Next Minor Update:
+- SELECT TOOL...
+- slope rect mode
 - Remove set default material keybind?
 - Showing geo specs in tile preview?
 - GEO EDITOR SELECT-COPY-PASTE
