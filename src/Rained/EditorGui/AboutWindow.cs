@@ -42,6 +42,16 @@ static class AboutWindow
             ImGui.Text("(c) 2021 Pieter-Jan Briers - MIT License");
 
             ImGui.Bullet();
+            LinkText("ImGui.NET", "https://github.com/ImGuiNET/ImGui.NET");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2017 Eric Mellino and ImGui.NET contributors - MIT License");
+
+            ImGui.Bullet();
+            LinkText("Dear ImGui", "https://github.com/ocornut/imgui");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2014-2024 Omar Cornut - MIT License");
+
+            ImGui.Bullet();
             LinkText("rlImGui-cs", "https://github.com/raylib-extras/rlImGui-cs");
             ImGui.SameLine();
             ImGui.Text("(c) 2020-2021 Jeffery Myers - MIT License");
