@@ -88,8 +88,10 @@ class CellChangeRecorder
     {
         if (snapshotLayers != null)
             throw new Exception("CellChangeRecorder.BeginChange() called twice");
+        
+        var level = RainEd.Instance.Level;
 
-        snapshotLayers = (LevelCell[,,]) RainEd.Instance.Level.Layers.Clone();
+        snapshotLayers = (LevelCell[,,]) level.Layers.Clone();
 
         // account for level rendering overlay
         var geoRenderer = RainEd.Instance.Window.LevelRenderer.Geometry;
@@ -104,6 +106,8 @@ class CellChangeRecorder
             {
                 for (int y = sy; y < sy + height; y++)
                 {
+                    if (!level.IsInBounds(x, y)) continue;
+                    
                     for (int l = 0; l < 3; l++)
                     {
                         snapshotLayers[l,x,y] = geoRenderer.GetDrawnCell(l, x, y);
