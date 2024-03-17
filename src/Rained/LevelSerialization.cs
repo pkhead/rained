@@ -700,10 +700,10 @@ static class LevelSerialization
         output.Append(newLine);
 
         // light data
-        output.Append("[#pos: point(0, 0), #rot: 0, #sz: point(50, 70), #col: 1, #Keys: 0, #lastKeys: 0, #lastTm: 0, ");
+        output.Append("[#pos: point(0, 0), #rot: 0, #sz: point(50, 70), #col: 1, #Keys: [#m1: 0, #m2: 0, #w: 0, #a: 0, #s: 0, #d: 0, #r: 0, #f: 0, #z: 0, #m: 0], #lastKeys: [#m1: 0, #m2: 0, #w: 0, #a: 0, #s: 0, #d: 0, #r: 0, #f: 0, #z: 0, #m: 0], #lastTm: 0, ");
         output.AppendFormat("#lightAngle: {0}, #flatness: {1}, ",
             (level.LightAngle / MathF.PI * 180f).ToString(CultureInfo.InvariantCulture),
-            (level.LightDistance).ToString(CultureInfo.InvariantCulture)
+            level.LightDistance.ToString(CultureInfo.InvariantCulture)
         );
         output.Append("#lightRect: rect(1000, 1000, -1000, -1000), #paintShape: \"pxl\"]");
         output.Append(newLine);
@@ -944,6 +944,8 @@ static class LevelSerialization
         // write light image
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         using var lightMapImg = level.LightMap.GetImage();
+        lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
+        lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
         Raylib.ExportImage(lightMapImg, lightPath);
     }
 }

@@ -348,7 +348,7 @@ class LightEditor : IEditorMode
         );
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize - 30, level.Height * Level.TileSize - 30, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
