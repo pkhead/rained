@@ -13,7 +13,12 @@ class GeometryEditor : IEditorMode
     
     public enum Tool : int
     {
-        Wall = 0,
+        Select,
+        MoveSelected,
+        MoveSelection,
+        MagicWand,
+
+        Wall,
         Air,
         Inverse,
         Glass,
@@ -41,6 +46,10 @@ class GeometryEditor : IEditorMode
 
     private static readonly Dictionary<Tool, string> ToolNames = new()
     {
+        { Tool.Select,          "Select"            },
+        { Tool.MoveSelected,    "Move Selected"     },
+        { Tool.MoveSelection,   "Move Selection"    },
+        { Tool.MagicWand,       "Magic Wand"        },
         { Tool.Wall,            "Wall"              },
         { Tool.Air,             "Air"               },
         { Tool.Inverse,         "Toggle Wall/Air"   },
@@ -67,6 +76,10 @@ class GeometryEditor : IEditorMode
 
     private static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
     {
+        { Tool.Select,          new(0, 6) },
+        { Tool.MoveSelected,    new(1, 6) },
+        { Tool.MoveSelection,   new(2, 6) },
+        { Tool.MagicWand,       new(3, 6) },
         { Tool.Wall,            new(1, 0) },
         { Tool.Air,             new(2, 0) },
         { Tool.Inverse,         new(0, 0) },
@@ -120,6 +133,7 @@ class GeometryEditor : IEditorMode
     private int selectEX, selectEY;
 
     private int lastMouseX, lastMouseY;
+    private Vector2 lastMousePos;
 
     // work layer
     private readonly bool[] layerMask;
@@ -244,6 +258,8 @@ class GeometryEditor : IEditorMode
             }
 
             // draw toolbar
+            ImGui.Text(ToolNames[selectedTool]);
+
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
@@ -296,7 +312,7 @@ class GeometryEditor : IEditorMode
             }
 
             // show fill rect hint
-            if (selectedTool == Tool.Wall || selectedTool == Tool.Air || selectedTool == Tool.Inverse || selectedTool == Tool.Glass)
+            if (CanRectPlace(selectedTool))
             {
                 window.StatusText = "Shift+Drag to fill rect";
             }
@@ -484,17 +500,8 @@ class GeometryEditor : IEditorMode
                         if (toolRectMode == RectMode.None)
                         {
                             bool fillMode = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
-                            bool selectMode = EditorWindow.IsKeyDown(ImGuiKey.ModCtrl);
-
-                            if (selectMode)
-                            {
-                                toolRectMode = RectMode.Select;
-                                rectSX = window.MouseCx;
-                                rectSY = window.MouseCy;
-                                rectEX = rectSX;
-                                rectEY = rectSY;
-                            }
-                            else if (fillMode)
+                            
+                            if (fillMode && CanRectPlace(selectedTool))
                             {
                                 toolRectMode = RectMode.Fill;
                                 rectSX = window.MouseCx;
@@ -581,17 +588,75 @@ class GeometryEditor : IEditorMode
         
         lastMouseX = window.MouseCx;
         lastMouseY = window.MouseCy;
+        lastMousePos = window.MouseCellFloat;
 
         Raylib.EndScissorMode();
     }
 
+    private static bool CanRectPlace(Tool tool) =>
+        tool switch
+        {
+            Tool.Slope => false,
+            Tool.Select => false,
+            Tool.MoveSelection => false,
+            Tool.MoveSelected => false,
+            Tool.MagicWand => false,
+            Tool.ShortcutEntrance => false,
+            _ => true
+        };
+
     private bool toolPlaceMode;
+    private int toolLastX = 0, toolLastY = 0;
 
     private void ActivateTool(int tx, int ty, bool pressed)
     {
         var level = window.Editor.Level;
-        if (!level.IsInBounds(tx, ty)) return;
 
+        // handle the selection tools
+        switch (selectedTool)
+        {
+            case Tool.Select:
+                rectEX = tx;
+                rectEY = ty;
+
+                // only begin rect mode when user moved mouse
+                // otherwise, a mouse tap will reset the selection
+                if (pressed)
+                {
+                    toolRectMode = RectMode.None;
+                    isSelectionActive = false;
+                    rectSX = rectEX;
+                    rectSY = rectEY;
+                }
+
+                if (toolRectMode == RectMode.None && (rectEX != rectSX || rectEY != rectSY))
+                {
+                    toolRectMode = RectMode.Select;
+                }
+                return;
+            
+            case Tool.MoveSelection:
+                if (isSelectionActive)
+                {
+                    if (pressed)
+                    {
+                        toolLastX = tx;
+                        toolLastY = ty;
+                    }
+                    
+                    selectSX += tx - toolLastX;
+                    selectSY += ty - toolLastY;
+                    selectEX += tx - toolLastX;;
+                    selectEY += ty - toolLastY;
+
+                    toolLastX = tx;
+                    toolLastY = ty;
+                }
+                return;
+        }
+
+        // handle geo tools
+        if (!level.IsInBounds(tx, ty)) return;
         for (int workLayer = 0; workLayer < 3; workLayer++)
         {
             if (!layerMask[workLayer]) continue;
