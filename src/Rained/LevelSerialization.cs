@@ -475,6 +475,18 @@ static class LevelSerialization
                         RainEd.Logger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
                     }
                 }
+
+                if (settingsData.fields.TryGetValue("thickness", out tempObject) && tempObject is not null)
+                {
+                    if (prop.Rope is not null && prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
+                    {
+                        prop.Rope.Thickness = (float) tempObject;
+                    }
+                    else
+                    {
+                        RainEd.Logger.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
+                    }
+                }
             }
         }
 
@@ -835,6 +847,9 @@ static class LevelSerialization
                     default:
                         throw new Exception($"Invalid rope release mode for '{propInit.Name}");
                 }
+
+                if (propInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
+                    output.AppendFormat(", #thickness: {0}", prop.Rope!.Thickness.ToString("0.0000", CultureInfo.InvariantCulture));
             }
 
             // done settings

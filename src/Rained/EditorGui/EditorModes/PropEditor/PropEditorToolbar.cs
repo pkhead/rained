@@ -792,7 +792,7 @@ partial class PropEditor : IEditorMode
                             // thickness
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                             {
-                                ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 2f, 5f, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+                                ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 1f, 5f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
                                 if (ImGui.IsItemDeactivatedAfterEdit())
                                     changeRecorder.PushSettingsChanges();
                             }
