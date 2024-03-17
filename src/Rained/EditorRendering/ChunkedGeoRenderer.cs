@@ -9,9 +9,9 @@ interface IRenderOutput
     void Begin();
     void End();
 
-    void DrawRect(float x, float y, float w, float h, Color color);
-    void DrawRectLines(float x, float y, float w, float h, Color color);
-    void DrawTri(Vector2 v1, Vector2 v2, Vector2 v3, Color color);
+    void DrawRect(float x, float y, float w, float h, float alpha);
+    void DrawRectLines(float x, float y, float w, float h, float alpha);
+    void DrawTri(Vector2 v1, Vector2 v2, Vector2 v3, float alpha);
 }
 
 class MeshRenderOutput : IRenderOutput
@@ -41,7 +41,7 @@ class MeshRenderOutput : IRenderOutput
         Mesh.UploadMesh(true);
     }
 
-    public void DrawRect(float x, float y, float w, float h, Color color)
+    public void DrawRect(float x, float y, float w, float h, float alpha)
     {
         verticesBuf.Add(new Vector3(x, y, 0));
         verticesBuf.Add(new Vector3(x, y+h, 0));
@@ -51,6 +51,7 @@ class MeshRenderOutput : IRenderOutput
         verticesBuf.Add(new Vector3(x+w, y, 0));
         verticesBuf.Add(new Vector3(x, y, 0));
 
+        var color = new Color(255, 255, 255, (int)(255 * alpha));
         colorsBuf.Add(color);
         colorsBuf.Add(color);
         colorsBuf.Add(color);
@@ -60,23 +61,54 @@ class MeshRenderOutput : IRenderOutput
         colorsBuf.Add(color);
     }
 
-    public void DrawRectLines(float x, float y, float w, float h, Color color)
+    public void DrawRectLines(float x, float y, float w, float h, float alpha)
     {
-        DrawRect(x, y, 1, h, color);
-        DrawRect(x, y+h-1, w, 1, color);
-        DrawRect(x+w-1, y, 1, h, color);
-        DrawRect(x, y, w, 1, color);
+        DrawRect(x, y, 1, h, alpha);
+        DrawRect(x, y+h-1, w, 1, alpha);
+        DrawRect(x+w-1, y, 1, h, alpha);
+        DrawRect(x, y, w, 1, alpha);
     }
 
-    public void DrawTri(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
+    public void DrawTri(Vector2 v1, Vector2 v2, Vector2 v3, float alpha)
     {
+        
         verticesBuf.Add(new Vector3(v1.X, v1.Y, 0));
         verticesBuf.Add(new Vector3(v2.X, v2.Y, 0));
         verticesBuf.Add(new Vector3(v3.X, v3.Y, 0));
 
+        var color = new Color(255, 255, 255, (int)(255 * alpha));
         colorsBuf.Add(color);
         colorsBuf.Add(color);
         colorsBuf.Add(color);
+    }
+}
+
+struct ImmediateRenderOutput : IRenderOutput
+{
+    public Color DrawColor;
+
+    public ImmediateRenderOutput()
+    {}
+
+    public readonly void Begin()
+    {}
+
+    public readonly void End()
+    {}
+
+    public readonly void DrawRect(float x, float y, float w, float h, float alpha)
+    {
+        Raylib.DrawRectangleRec(new Rectangle(x, y, w, h), new Color(DrawColor.R, DrawColor.G, DrawColor.B, (int)(DrawColor.A * alpha)));
+    }
+
+    public readonly void DrawRectLines(float x, float y, float w, float h, float alpha)
+    {
+        Raylib.DrawRectangleLinesEx(new Rectangle(x, y, w, h), 1f, new Color(DrawColor.R, DrawColor.G, DrawColor.B, (int)(DrawColor.A * alpha)));
+    }
+
+    public readonly void DrawTri(Vector2 v1, Vector2 v2, Vector2 v3, float alpha)
+    {
+        Raylib.DrawTriangle(v1, v2, v3, new Color(DrawColor.R, DrawColor.G, DrawColor.B, (int)(DrawColor.A * alpha)));
     }
 }
 
@@ -123,6 +155,18 @@ class ChunkedGeoRenderer
     private int chunkRowCount; // Y
     private int chunkColCount; // X
     private List<ChunkPos> dirtyChunks;
+
+    private LevelCell[,,]? overlay = null;
+    private bool[,,]? overlayMask = null;
+    private int overlayWidth;
+    private int overlayHeight;
+    public int OverlayX;
+    public int OverlayY;
+
+    public LevelCell[,,]? Overlay { get => overlay; }
+    public bool[,,]? OverlayMask { get => overlayMask; }
+    public int OverlayWidth { get => overlayWidth; }
+    public int OverlayHeight { get => overlayHeight; }
 
     public ChunkedGeoRenderer()
     {
@@ -176,6 +220,18 @@ class ChunkedGeoRenderer
             {
                 ref LevelCell c = ref level.Layers[layer,x,y];
 
+                // if within overlay, draw the cell in the overlay rather than the actual cell
+                if (overlay is not null && x >= OverlayX && y >= OverlayY && x < OverlayX + overlayWidth && y < OverlayY + overlayHeight)
+                {
+                    int ox = x - OverlayX;
+                    int oy = y - OverlayY;
+
+                    if (overlayMask![layer, ox, oy])
+                    {
+                        c = ref overlay[layer, ox, oy];
+                    }
+                }
+
                 var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
                 var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
                 var hasCrack = (c.Objects & LevelObject.Crack) != 0;
@@ -199,20 +255,20 @@ class ChunkedGeoRenderer
                         {
                             if (crackH && crackV)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 4, 4, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, 4, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 16, 4, 4, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize + 16, 4, 4, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 4, 4, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, 4, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 16, 4, 4, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize + 16, 4, 4, 1f);
                             }
                             else if (crackH)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 4, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 16, Level.TileSize, 4, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 4, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 16, Level.TileSize, 4, 1f);
                             }
                             else if (crackV)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 4, Level.TileSize, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 4, Level.TileSize, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, Level.TileSize, 1f);
                             }
                             else
                             {
@@ -221,13 +277,13 @@ class ChunkedGeoRenderer
                                     new Vector2(x, y) * Level.TileSize,
                                     new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
                                     new Vector2((x+1) * Level.TileSize - 2f, y * Level.TileSize),
-                                    Color.White
+                                    1f
                                 );
                                 renderOutput.DrawTri(
                                     new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
                                     new Vector2(x * Level.TileSize + 2f, (y+1) * Level.TileSize),
                                     new Vector2(x+1, y+1) * Level.TileSize,
-                                    Color.White
+                                    1f
                                 );
                             }
                         }
@@ -238,47 +294,47 @@ class ChunkedGeoRenderer
                             // this is done by not drawing on the space where there is a beam
                             if (hasHBeam && hasVBeam)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 8, 8, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 8, 8, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, 1f);
                             }
                             else if (hasHBeam)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, 1f);
                             }
                             else if (hasVBeam)
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, Color.White);
-                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, 1f);
+                                renderOutput.DrawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, 1f);
                             }
                             else
                             {
-                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                                renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, 1f);
                             }
                         }
                         else
                         {
                             // view obscured beams is off, draw as normal
-                            renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                            renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, 1f);
                         }
 
                         break;
                         
                     case GeoType.Platform:
-                        renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, Color.White);
+                        renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, 1f);
                         break;
                     
                     case GeoType.Glass:
-                        renderOutput.DrawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                        renderOutput.DrawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, 1f);
                         break;
 
                     case GeoType.ShortcutEntrance:
                         // draw a lighter square
                         renderOutput.DrawRect(
                             x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                            new Color(255, 255, 255, 127)
+                            0.5f
                         );
                         break;
 
@@ -287,7 +343,7 @@ class ChunkedGeoRenderer
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
-                            Color.White
+                            1f
                         );
                         break;
 
@@ -296,7 +352,7 @@ class ChunkedGeoRenderer
                             new Vector2(x, y+1) * Level.TileSize,
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
-                            Color.White
+                            1f
                         );
                         break;
 
@@ -305,7 +361,7 @@ class ChunkedGeoRenderer
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            Color.White
+                            1f
                         );
                         break;
 
@@ -314,7 +370,7 @@ class ChunkedGeoRenderer
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            Color.White
+                            1f
                         );
                         break;
                 }
@@ -324,13 +380,13 @@ class ChunkedGeoRenderer
                     // draw horizontal beam
                     if (hasHBeam)
                     {
-                        renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, Color.White);
+                        renderOutput.DrawRect(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, 1f);
                     }
 
                     // draw vertical beam
                     if (hasVBeam)
                     {
-                        renderOutput.DrawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                        renderOutput.DrawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, 1f);
                     }
                 }
             }
@@ -368,6 +424,8 @@ class ChunkedGeoRenderer
 
     public void RenderGeometry(int layer, Vector2 viewTopLeft, Vector2 viewBottomRight, Color color)
     {
+        var level = RainEd.Instance.Level;
+
         ReloadGeometryMesh();
 
         unsafe
@@ -386,15 +444,44 @@ class ChunkedGeoRenderer
         int viewR = (int) Math.Ceiling(viewBottomRight.X / ChunkWidth);
         int viewB = (int) Math.Ceiling(viewBottomRight.Y / ChunkHeight);
 
+        int overlayL = OverlayX / ChunkWidth;
+        int overlayT = OverlayY / ChunkHeight;
+        int overlayR = (OverlayX + overlayWidth) / ChunkWidth;
+        int overlayB = (OverlayY + overlayHeight) / ChunkHeight;
+
+        ImmediateRenderOutput immediateRender = new()
+        {
+            DrawColor = color
+        };
+
         for (int x = Math.Max(viewL, 0); x < Math.Min(viewR, chunkColCount); x++)
         {
             for (int y = Math.Max(viewT, 0); y < Math.Min(viewB, chunkRowCount); y++)
             {
-                var mesh = chunkLayers[x,y,layer];
-                if (mesh is not null)
-                    Raylib.DrawMesh(mesh, geoMaterial, mat);
+                // if this chunk intersects with the overlay rect,
+                // draw the chunk immediately rather than drawing
+                // its "cache"
+                if (overlay is not null && x >= overlayL && y >= overlayT && x <= overlayR && y <= overlayB)
+                {
+                    MeshGeometry(
+                        immediateRender,
+                        layer: layer,
+                        subL: x * ChunkWidth,
+                        subT: y * ChunkHeight,
+                        subR: Math.Min(level.Width, (x + 1) * ChunkWidth),
+                        subB: Math.Min(level.Height, (y + 1) * ChunkHeight)
+                    );
+                }
+                else
+                {
+                    var mesh = chunkLayers[x,y,layer];
+                    if (mesh is not null)
+                        Raylib.DrawMesh(mesh, geoMaterial, mat);
+                }
             }
         }
+
+        Rlgl.DrawRenderBatchActive();
     }
 
     private void MarkNeedsRedraw(ChunkPos cpos)
@@ -429,5 +516,22 @@ class ChunkedGeoRenderer
             MarkNeedsRedraw(new ChunkPos((x+1) / ChunkWidth, y / ChunkHeight, layer));
         if ((y+1) % ChunkHeight == 0)
             MarkNeedsRedraw(new ChunkPos(x / ChunkWidth, (y+1) / ChunkHeight, layer));
+    }
+
+    public void ClearOverlay()
+    {
+        overlay = null;
+        overlayMask = null;
+    }
+
+    public void SetOverlay(int x, int y, int width, int height, LevelCell[,,] overlay, bool[,,] mask)
+    {
+        OverlayX = x;
+        OverlayY = y;
+
+        overlayWidth = width;
+        overlayHeight = height;
+        this.overlay = overlay;
+        overlayMask = mask;
     }
 }

@@ -210,6 +210,8 @@ class GeometryEditor : IEditorMode
         isToolActive = false;
         toolRectMode = RectMode.None;
         window.CellChangeRecorder.TryPushChange();
+
+        window.LevelRenderer.Geometry.ClearOverlay();
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -468,7 +470,10 @@ class GeometryEditor : IEditorMode
                     selectEY = rectEY;
 
                     if (!isMouseDown)
+                    {
+                        BeginSelection();
                         toolRectMode = RectMode.None;
+                    }
                 }
             }
             
@@ -561,7 +566,7 @@ class GeometryEditor : IEditorMode
         // escape to clear selection
         if (window.IsFocused && EditorWindow.IsKeyPressed(ImGuiKey.Escape))
         {
-            isSelectionActive = false;
+            ClearSelection();
         }
 
         // draw selection rect
@@ -624,7 +629,7 @@ class GeometryEditor : IEditorMode
                 if (pressed)
                 {
                     toolRectMode = RectMode.None;
-                    isSelectionActive = false;
+                    ClearSelection();
                     rectSX = rectEX;
                     rectSY = rectEY;
                 }
@@ -644,6 +649,30 @@ class GeometryEditor : IEditorMode
                         toolLastY = ty;
                     }
                     
+                    selectSX += tx - toolLastX;
+                    selectSY += ty - toolLastY;
+                    selectEX += tx - toolLastX;;
+                    selectEY += ty - toolLastY;
+
+                    toolLastX = tx;
+                    toolLastY = ty;
+                }
+                return;
+            
+            case Tool.MoveSelected:
+                if (isSelectionActive)
+                {
+                    if (pressed)
+                    {
+                        toolLastX = tx;
+                        toolLastY = ty;
+                    }
+                    
+                    // move selected
+                    window.LevelRenderer.Geometry.OverlayX += tx - toolLastX;
+                    window.LevelRenderer.Geometry.OverlayY += ty - toolLastY;
+                    
+                    // move selection bounds too
                     selectSX += tx - toolLastX;
                     selectSY += ty - toolLastY;
                     selectEX += tx - toolLastX;;
@@ -849,5 +878,65 @@ class GeometryEditor : IEditorMode
         }
         
         toolRectMode = RectMode.None;
+    }
+
+    public void ClearSelection()
+    {
+        isSelectionActive = false;
+        window.LevelRenderer.Geometry.ClearOverlay();
+    }
+
+    public void BeginSelection()
+    {
+        var level = RainEd.Instance.Level;
+
+        var rectMinX = Math.Min(selectSX, selectEX);
+        var rectMinY = Math.Min(selectSY, selectEY);
+        var rectMaxX = Math.Max(selectSX, selectEX);
+        var rectMaxY = Math.Max(selectSY, selectEY);
+        var rectW = rectMaxX - rectMinX + 1;
+        var rectH = rectMaxY - rectMinY + 1;
+
+        // set geometry renderer overlay
+        LevelCell[,,] overlayCells = new LevelCell[3, rectW, rectH];
+        bool[,,] overlayMask = new bool[3, rectW, rectH];
+
+        for (int x = 0; x < rectW; x++)
+        {
+            for (int y = 0; y < rectH; y++)
+            {
+                overlayCells[0, x, y] = new LevelCell();
+                overlayCells[1, x, y] = new LevelCell();
+                overlayCells[2, x, y] = new LevelCell();
+
+                int cellX = rectMinX + x;
+                int cellY = rectMinY + y;
+
+                // if this cell is out of bounds, mask out the cell
+                if (!level.IsInBounds(cellX, cellY))
+                {
+                    overlayMask[0, x, y] = false;
+                    overlayMask[1, x, y] = false;
+                    overlayMask[2, x, y] = false;
+                }
+                else
+                {
+                    // copy the cell from the level
+                    for (int l = 0; l < 3; l++)
+                    {
+                        if (!layerMask[l])
+                        {
+                            overlayMask[l,x,y] = false;
+                            continue;
+                        }
+
+                        overlayCells[l,x,y] = level.Layers[l, cellX, cellY];
+                        overlayMask[l,x,y] = true;
+                    }
+                }
+            }
+        }
+
+        window.LevelRenderer.Geometry.SetOverlay(rectMinX, rectMinY, rectW, rectH, overlayCells, overlayMask);
     }
 }
