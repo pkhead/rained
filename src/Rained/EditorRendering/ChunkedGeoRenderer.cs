@@ -201,7 +201,7 @@ class ChunkedGeoRenderer
     }
 
     // build the mesh for the sub-rectangle of a layer
-    private void MeshGeometry(IRenderOutput renderOutput, int layer, int subL, int subT, int subR, int subB)
+    private void MeshGeometry(IRenderOutput renderOutput, bool drawOverlay, int layer, int subL, int subT, int subR, int subB)
     {
         var level = RainEd.Instance.Level;
         renderOutput.Begin();
@@ -221,7 +221,7 @@ class ChunkedGeoRenderer
                 ref LevelCell c = ref level.Layers[layer,x,y];
 
                 // if within overlay, draw the cell in the overlay rather than the actual cell
-                if (overlay is not null && x >= OverlayX && y >= OverlayY && x < OverlayX + overlayWidth && y < OverlayY + overlayHeight)
+                if (drawOverlay && overlay is not null && x >= OverlayX && y >= OverlayY && x < OverlayX + overlayWidth && y < OverlayY + overlayHeight)
                 {
                     int ox = x - OverlayX;
                     int oy = y - OverlayY;
@@ -412,6 +412,7 @@ class ChunkedGeoRenderer
             meshRenderOutput.Mesh = chunk;
             MeshGeometry(
                 meshRenderOutput,
+                drawOverlay: false,
                 layer: chunkPos.Layer,
                 subL: chunkPos.X * ChunkWidth,
                 subT: chunkPos.Y * ChunkHeight,
@@ -465,6 +466,7 @@ class ChunkedGeoRenderer
                 {
                     MeshGeometry(
                         immediateRender,
+                        drawOverlay: true,
                         layer: layer,
                         subL: x * ChunkWidth,
                         subT: y * ChunkHeight,

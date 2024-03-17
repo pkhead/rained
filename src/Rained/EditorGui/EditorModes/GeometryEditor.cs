@@ -207,11 +207,15 @@ class GeometryEditor : IEditorMode
 
     public void Unload()
     {
+        if (selectedTool == Tool.MoveSelected)
+        {
+            EndSelectedMovement();
+        }
+
         isToolActive = false;
         toolRectMode = RectMode.None;
         window.CellChangeRecorder.TryPushChange();
 
-        window.LevelRenderer.Geometry.ClearOverlay();
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -339,6 +343,7 @@ class GeometryEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
+        bool wasToolActive = isToolActive;
         window.BeginLevelScissorMode();
 
         var level = window.Editor.Level;
@@ -471,7 +476,6 @@ class GeometryEditor : IEditorMode
 
                     if (!isMouseDown)
                     {
-                        BeginSelection();
                         toolRectMode = RectMode.None;
                     }
                 }
@@ -480,7 +484,6 @@ class GeometryEditor : IEditorMode
             // normal cursor mode
             else
             {
-                bool wasToolActive = isToolActive;
                 toolRectMode = RectMode.None;
 
                 // draw grid cursor
@@ -498,6 +501,7 @@ class GeometryEditor : IEditorMode
                     window.CellChangeRecorder.BeginChange();
                 }
                 
+                // when user activates tool, or when mouse cell position moves while tool is active
                 if (isToolActive)
                 {
                     if (!wasToolActive || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
@@ -528,6 +532,7 @@ class GeometryEditor : IEditorMode
             }
         }
 
+        // when user deactivates tool
         if (isToolActive && !isMouseDown)
         {
             isToolActive = false;
@@ -645,6 +650,7 @@ class GeometryEditor : IEditorMode
                 {
                     if (pressed)
                     {
+                        EndSelectedMovement();
                         toolLastX = tx;
                         toolLastY = ty;
                     }
@@ -666,6 +672,7 @@ class GeometryEditor : IEditorMode
                     {
                         toolLastX = tx;
                         toolLastY = ty;
+                        StartSelectedMovement(false);
                     }
                     
                     // move selected
@@ -880,14 +887,24 @@ class GeometryEditor : IEditorMode
         toolRectMode = RectMode.None;
     }
 
-    public void ClearSelection()
+    private void ClearSelection()
     {
         isSelectionActive = false;
-        window.LevelRenderer.Geometry.ClearOverlay();
+        EndSelectedMovement();
     }
-
-    public void BeginSelection()
+    
+    private void StartSelectedMovement(bool canOverwrite)
     {
+        RainEd.Logger.Information("Start selected movement");
+
+        // if an overlay already exists, only continue if canOverwrite is true
+        if (window.LevelRenderer.Geometry.Overlay is not null && !canOverwrite)
+        {
+            return;
+        }
+
+        // set the geometry renderer overlay to the selection,
+        // then clearing the cells in the level data that correspond to the overlay
         var level = RainEd.Instance.Level;
 
         var rectMinX = Math.Min(selectSX, selectEX);
@@ -912,7 +929,7 @@ class GeometryEditor : IEditorMode
                 int cellX = rectMinX + x;
                 int cellY = rectMinY + y;
 
-                // if this cell is out of bounds, mask out the cell
+                // if this cell is out of bounds, ignore the cell
                 if (!level.IsInBounds(cellX, cellY))
                 {
                     overlayMask[0, x, y] = false;
@@ -924,19 +941,65 @@ class GeometryEditor : IEditorMode
                     // copy the cell from the level
                     for (int l = 0; l < 3; l++)
                     {
+                        // if this layer is not active, ignore the cell
                         if (!layerMask[l])
                         {
                             overlayMask[l,x,y] = false;
                             continue;
                         }
 
+                        // set this overlay cell
                         overlayCells[l,x,y] = level.Layers[l, cellX, cellY];
                         overlayMask[l,x,y] = true;
+
+                        // clear original cell
+                        level.Layers[l, cellX, cellY] = new LevelCell();
+                        window.LevelRenderer.Geometry.MarkNeedsRedraw(cellX, cellY, l);
                     }
                 }
             }
         }
 
         window.LevelRenderer.Geometry.SetOverlay(rectMinX, rectMinY, rectW, rectH, overlayCells, overlayMask);
+    }
+
+    private void EndSelectedMovement()
+    {
+        RainEd.Logger.Information("End selected movement");
+
+        // apply geometry overlay into the actual level
+        var level = RainEd.Instance.Level;
+
+        var overlayCells = window.LevelRenderer.Geometry.Overlay;
+        var overlayMask = window.LevelRenderer.Geometry.OverlayMask;
+
+        if (overlayCells is not null && overlayMask is not null)
+        {
+            int overlayX = window.LevelRenderer.Geometry.OverlayX;
+            int overlayY = window.LevelRenderer.Geometry.OverlayY;
+            int overlayW = window.LevelRenderer.Geometry.OverlayWidth;
+            int overlayH = window.LevelRenderer.Geometry.OverlayHeight;
+
+            for (int x = 0; x < overlayW; x++)
+            {
+                for (int y = 0; y < overlayH; y++)
+                {
+                    var cellX = x + overlayX;
+                    var cellY = y + overlayY;
+                    if (!level.IsInBounds(cellX, cellY)) continue;
+
+                    for (int l = 0; l < 3; l++)
+                    {
+                        if (overlayMask[l, x, y])
+                        {
+                            level.Layers[l, cellX, cellY] = overlayCells[l, x, y];
+                            window.LevelRenderer.Geometry.MarkNeedsRedraw(cellX, cellY, l);
+                        }      
+                    }
+                }
+            }
+        }
+
+        window.LevelRenderer.Geometry.ClearOverlay();
     }
 }
