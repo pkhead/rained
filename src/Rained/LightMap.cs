@@ -164,6 +164,13 @@ class LightMap : IDisposable
         using var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
         if (imgMinX >= 0)
         {
+            // show notification if image has been cropped
+            if (imgMinX > 0 || imgMinY > 0 || imgMaxX < lightMapImage.Width - 1 || imgMaxY < lightMapImage.Height - 1)
+            {
+                RainEd.Logger.Information("Adapted light rect. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
+                RainEd.Instance.ShowNotification("Adapted light rect");
+            }
+
             int subWidth = imgMaxX - imgMinX + 1;
             int subHeight = imgMaxY - imgMinY + 1;
 
