@@ -343,21 +343,29 @@ class CameraEditor : IEditorMode
         );
 
         // draw center circle
-        Raylib.DrawCircleLines((int)(camCenter.X * Level.TileSize), (int)(camCenter.Y * Level.TileSize), 50f, Color.Black);
+        Raylib.DrawCircleLinesV(camCenter * Level.TileSize, 50f, Color.Black);
 
-        Raylib.DrawLine(
-            (int)(camCenter.X * Level.TileSize),
-            (int)(camera.Position.Y * Level.TileSize),
-            (int)(camCenter.X * Level.TileSize),
-            (int)((camera.Position.Y + Camera.StandardSize.Y) * Level.TileSize),
+        Raylib.DrawLineV(
+            new Vector2(
+                camCenter.X * Level.TileSize,
+                camera.Position.Y * Level.TileSize
+            ),
+            new Vector2(
+                camCenter.X * Level.TileSize,
+                (camera.Position.Y + Camera.StandardSize.Y) * Level.TileSize
+            ),
             Color.Black
         );
 
-        Raylib.DrawLine(
-            (int)((camCenter.X - 5f) * Level.TileSize),
-            (int)(camCenter.Y * Level.TileSize),
-            (int)((camCenter.X + 5f) * Level.TileSize),
-            (int)(camCenter.Y * Level.TileSize),
+        Raylib.DrawLineV(
+            new Vector2(
+                (camCenter.X - 5f) * Level.TileSize,
+                camCenter.Y * Level.TileSize
+            ),
+            new Vector2(
+                (camCenter.X + 5f) * Level.TileSize,
+                camCenter.Y * Level.TileSize
+            ),
             Color.Black
         );
 
@@ -376,43 +384,37 @@ class CameraEditor : IEditorMode
                 var cornerPos = camera.GetCornerPosition(corner, true);
 
                 // outer circle
-                Raylib.DrawCircleLines(
-                    (int)(cornerOrigin.X * Level.TileSize),
-                    (int)(cornerOrigin.Y * Level.TileSize),
+                Raylib.DrawCircleLinesV(
+                    cornerOrigin * Level.TileSize,
                     4f * Level.TileSize,
                     color
                 );
 
                 // inner circle
-                Raylib.DrawCircleLines(
-                    (int)(cornerOrigin.X * Level.TileSize),
-                    (int)(cornerOrigin.Y * Level.TileSize),
+                Raylib.DrawCircleLinesV(
+                    cornerOrigin * Level.TileSize,
                     camera.CornerOffsets[corner] * 4f * Level.TileSize,
                     color
                 );
 
                 // point at corner
-                Raylib.DrawCircle(
-                    (int)(cornerPos.X * Level.TileSize),
-                    (int)(cornerPos.Y * Level.TileSize),
+                Raylib.DrawCircleV(
+                    cornerPos * Level.TileSize,
                     5f / window.ViewZoom,
                     color
                 );
 
                 // point at corner origin
-                Raylib.DrawCircle(
-                    (int)(cornerOrigin.X * Level.TileSize),
-                    (int)(cornerOrigin.Y * Level.TileSize),
+                Raylib.DrawCircleV(
+                    cornerOrigin * Level.TileSize,
                     2f / window.ViewZoom,
                     color
                 );
 
                 // line from corner origin to corner
-                Raylib.DrawLine(
-                    (int)(cornerOrigin.X * Level.TileSize),
-                    (int)(cornerOrigin.Y * Level.TileSize),
-                    (int)(cornerPos.X * Level.TileSize),
-                    (int)(cornerPos.Y * Level.TileSize),
+                Raylib.DrawLineV(
+                    cornerOrigin * Level.TileSize,
+                    cornerPos * Level.TileSize,
                     color
                 );
             }
