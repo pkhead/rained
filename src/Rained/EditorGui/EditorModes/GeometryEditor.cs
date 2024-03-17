@@ -812,7 +812,7 @@ class GeometryEditor : IEditorMode
             }
 
             level.Layers[workLayer, tx, ty] = cell;
-            window.LevelRenderer.MarkNeedsRedraw(tx, ty, workLayer);
+            window.LevelRenderer.Geometry.MarkNeedsRedraw(tx, ty, workLayer);
         }
     }
 
@@ -826,7 +826,7 @@ class GeometryEditor : IEditorMode
             ref var cell = ref level.Layers[workLayer, x, y];
             cell.Objects = LevelObject.None;
 
-            window.LevelRenderer.MarkNeedsRedraw(x, y, workLayer);
+            window.LevelRenderer.Geometry.MarkNeedsRedraw(x, y, workLayer);
         }
     }
 

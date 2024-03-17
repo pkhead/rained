@@ -590,14 +590,14 @@ partial class TileEditor : IEditorMode
                     if (specInt >= 0)
                     {
                         level.Layers[layer, gx, gy].Geo = (GeoType) specInt;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
+                        window.LevelRenderer.Geometry.MarkNeedsRedraw(gx, gy, layer);
                     }
 
                     // place second layer
                     if (layer < 2 && spec2Int >= 0)
                     {
                         level.Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
+                        window.LevelRenderer.Geometry.MarkNeedsRedraw(gx, gy, layer+1);
                     }
                 }
 
@@ -663,13 +663,13 @@ partial class TileEditor : IEditorMode
                     if (specInt >= 0)
                     {
                         level.Layers[layer, gx, gy].Geo = GeoType.Air;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
+                        window.LevelRenderer.Geometry.MarkNeedsRedraw(gx, gy, layer);
                     }
 
                     if (spec2Int >= 0 && layer < 2)
                     {
                         level.Layers[layer+1, gx, gy].Geo = GeoType.Air;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
+                        window.LevelRenderer.Geometry.MarkNeedsRedraw(gx, gy, layer+1);
                     }
                 }
             }
