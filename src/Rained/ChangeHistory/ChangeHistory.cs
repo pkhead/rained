@@ -3,6 +3,7 @@ namespace RainEd.ChangeHistory;
 interface IChangeRecord
 {
     void Apply(bool useNew);
+    bool Merge(IChangeRecord newer) { return false; }
 }
 
 class ChangeHistory
@@ -25,7 +26,19 @@ class ChangeHistory
     public void Push(IChangeRecord record)
     {
         redoStack.Clear();
-        undoStack.Push(record);
+
+        if (undoStack.Count == 0)
+        {
+            undoStack.Push(record);
+        }
+        else
+        {
+            var last = undoStack.Peek();
+            if (!last.Merge(record))
+            {
+                undoStack.Push(record);
+            }
+        }
     }
 
     public void Undo()

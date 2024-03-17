@@ -448,6 +448,14 @@ class GeometryEditor : IEditorMode
             selectedTool = (Tool) Math.Clamp(toolRow*4 + toolCol, 0, toolCount-1);
         }
         
+        // forward selection data to the cell change recorder
+        window.CellChangeRecorder.IsSelectionActive = isSelectionActive;
+        window.CellChangeRecorder.SelectionX = selectSX;
+        window.CellChangeRecorder.SelectionY = selectSY;
+        window.CellChangeRecorder.SelectionWidth = selectEX - selectSX + 1;
+        window.CellChangeRecorder.SelectionHeight = selectEY - selectSY + 1;
+        
+        // begin mouse interaction code
         if (window.IsViewportHovered)
         {
             // rect fill mode
@@ -692,6 +700,11 @@ class GeometryEditor : IEditorMode
         }
 
         // handle geo tools
+        if (pressed && isSelectionActive)
+        {
+            ClearSelection();
+        }
+
         if (!level.IsInBounds(tx, ty)) return;
         for (int workLayer = 0; workLayer < 3; workLayer++)
         {
@@ -1001,5 +1014,16 @@ class GeometryEditor : IEditorMode
         }
 
         window.LevelRenderer.Geometry.ClearOverlay();
+    }
+
+    public void SetSelection(ChangeHistory.SelectionRecord selection)
+    {
+        window.LevelRenderer.Geometry.ClearOverlay();
+
+        isSelectionActive = selection.IsActive;
+        selectSX = selection.X;
+        selectSY = selection.Y;
+        selectEX = selection.X + selection.Width - 1;
+        selectEY = selection.Y + selection.Height - 1;
     }
 }

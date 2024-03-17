@@ -200,6 +200,23 @@ class ChunkedGeoRenderer
         MarkNeedsRedraw(2);
     }
 
+    // get the cell at (l, x, y) accounting for the overlay
+    public LevelCell GetDrawnCell(int layer, int x, int y)
+    {
+        if (overlay is not null && x >= OverlayX && y >= OverlayY && x < OverlayX + overlayWidth && y < OverlayY + overlayHeight)
+        {
+            int ox = x - OverlayX;
+            int oy = y - OverlayY;
+
+            if (overlayMask![layer, ox, oy])
+            {
+                return overlay[layer, ox, oy];
+            }
+        }
+
+        return RainEd.Instance.Level.Layers[layer, x, y];
+    }
+
     // build the mesh for the sub-rectangle of a layer
     private void MeshGeometry(IRenderOutput renderOutput, bool drawOverlay, int layer, int subL, int subT, int subR, int subB)
     {
@@ -218,19 +235,7 @@ class ChunkedGeoRenderer
         {
             for (int y = subT; y < subB; y++)
             {
-                ref LevelCell c = ref level.Layers[layer,x,y];
-
-                // if within overlay, draw the cell in the overlay rather than the actual cell
-                if (drawOverlay && overlay is not null && x >= OverlayX && y >= OverlayY && x < OverlayX + overlayWidth && y < OverlayY + overlayHeight)
-                {
-                    int ox = x - OverlayX;
-                    int oy = y - OverlayY;
-
-                    if (overlayMask![layer, ox, oy])
-                    {
-                        c = ref overlay[layer, ox, oy];
-                    }
-                }
+                LevelCell c = drawOverlay ? GetDrawnCell(layer, x, y) : level.Layers[layer, x, y];
 
                 var hasHBeam = (c.Objects & LevelObject.HorizontalBeam) != 0;
                 var hasVBeam = (c.Objects & LevelObject.VerticalBeam) != 0;
