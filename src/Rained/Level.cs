@@ -1010,6 +1010,6 @@ class Level
     public void LoadLightMap(Image image)
     {
         lightMap.Dispose();
-        lightMap = new LightMap(image);
+        lightMap = new LightMap(Width, Height, image);
     }
 }
