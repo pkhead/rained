@@ -9,6 +9,7 @@ enum KeyShortcut
     // General
     NavUp, NavLeft, NavDown, NavRight,
     NewObject, RemoveObject, SwitchLayer, SwitchTab,
+    ToggleTiles, ToggleGrid,
 
     New, Open, Save, SaveAs,
     Cut, Copy, Paste, Undo, Redo,
@@ -131,6 +132,9 @@ static class KeyShortcuts
             shortcutData.IsActivated = true;
     }
 
+    public static string GetShortcutString(KeyShortcut id)
+        => keyShortcuts[id].ShortcutString;
+
     public static void Update()
     {
         // activate shortcuts on key press
@@ -154,6 +158,8 @@ static class KeyShortcuts
         Register(KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
         Register(KeyShortcut.NewObject, ImGuiKey.N, ImGuiModFlags.None, true);
         Register(KeyShortcut.RemoveObject, ImGuiKey.Delete, ImGuiModFlags.None, true);
+        Register(KeyShortcut.ToggleTiles, ImGuiKey.T, ImGuiModFlags.Ctrl, true);
+        Register(KeyShortcut.ToggleGrid, ImGuiKey.G, ImGuiModFlags.Ctrl, true);
 
         Register(KeyShortcut.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
         Register(KeyShortcut.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);

@@ -363,7 +363,7 @@ class GeometryEditor : IEditorMode
                 {
                     var color = LAYER_COLORS[l];
                     levelRender.RenderGeometry(l, color);
-                    levelRender.RenderTiles(l, 100);
+                    if (window.ViewTiles) levelRender.RenderTiles(l, 100);
                 }
 
                 break;
@@ -380,7 +380,7 @@ class GeometryEditor : IEditorMode
                     Rlgl.PushMatrix();
                     Rlgl.Translatef(offset, offset, 0f);
                     levelRender.RenderGeometry(l, color);
-                    levelRender.RenderTiles(l, (int)(color.A * 0.39f));
+                    if (window.ViewTiles) levelRender.RenderTiles(l, (int)(color.A * 0.39f));
                     Rlgl.PopMatrix();
                 }
 

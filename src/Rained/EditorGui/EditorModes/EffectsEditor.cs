@@ -450,7 +450,7 @@ class EffectsEditor : IEditorMode
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
                 levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-                levelRender.RenderTiles(l, 100);
+                if (window.ViewTiles) levelRender.RenderTiles(l, 100);
             Rlgl.PopMatrix();
         }
 

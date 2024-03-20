@@ -116,6 +116,7 @@ class EnvironmentEditor : IEditorMode
             Rlgl.PushMatrix();
             Rlgl.Translatef(offset, offset, 0f);
             levelRender.RenderGeometry(l, color);
+            levelRender.RenderTiles(l, (int)(alpha * 100f/255f));
             Rlgl.PopMatrix();
 
             // draw water behind first layer if set

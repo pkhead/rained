@@ -296,7 +296,7 @@ partial class PropEditor : IEditorMode
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-            levelRender.RenderTiles(l, 100);
+            if (window.ViewTiles) levelRender.RenderTiles(l, 100);
         }
 
         // draw alpha-blended result into main frame

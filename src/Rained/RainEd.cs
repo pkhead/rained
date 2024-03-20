@@ -395,6 +395,16 @@ sealed class RainEd
                 drizzleRenderWindow = new DrizzleRenderWindow();
             }, false);
         }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleTiles))
+        {
+            editorWindow.ViewTiles = !editorWindow.ViewTiles;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleGrid))
+        {
+            editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;
+        }
     }
     
     public void Draw(float dt)
@@ -452,10 +462,11 @@ sealed class RainEd
 
             if (ImGui.BeginMenu("View"))
             {
-                if (ImGui.MenuItem("Grid", null, editorWindow.LevelRenderer.ViewGrid))
+                if (ImGui.MenuItem("Grid", KeyShortcuts.GetShortcutString(KeyShortcut.ToggleGrid), editorWindow.LevelRenderer.ViewGrid))
                 {
                     editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;
                 }
+
 
                 if (ImGui.MenuItem("Obscured Beams", null, editorWindow.LevelRenderer.ViewObscuredBeams))
                 {
@@ -465,6 +476,11 @@ sealed class RainEd
                 if (ImGui.MenuItem("Tile Heads", null, editorWindow.LevelRenderer.ViewTileHeads))
                 {
                     editorWindow.LevelRenderer.ViewTileHeads = !editorWindow.LevelRenderer.ViewTileHeads;
+                }
+
+                if (ImGui.MenuItem("Tiles", KeyShortcuts.GetShortcutString(KeyShortcut.ToggleTiles), editorWindow.ViewTiles))
+                {
+                    editorWindow.ViewTiles = !editorWindow.ViewTiles;
                 }
 
                 ImGui.Separator();

@@ -20,6 +20,8 @@ static class ShortcutsWindow
             ("Ctrl+Z", "Undo"),
             ("Ctrl+Shift+Z / Ctrl+Y", "Redo"),
             ("Ctrl+R", "Render"),
+            ("Ctrl+T", "Toggle tile rendering"),
+            ("Ctrl+G", "Toggle grid"),
             ("1", "Edit environment"),
             ("2", "Edit geometry"),
             ("3", "Edit tiles"),
