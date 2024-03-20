@@ -773,6 +773,24 @@ class EffectsDatabase
         throw new Exception($"Effect '{name}' not found");
     }
 
+    public bool TryGetEffectFromName(string name, out EffectInit? effect)
+    {
+        foreach (var group in groups)
+        {
+            foreach (var e in group.effects)
+            {
+                if (e.name == name)
+                {
+                    effect = e;
+                    return true;
+                }
+            }
+        }
+
+        effect = null;
+        return false;
+    }
+
 #region Helpers
     EffectGroup activeGroup;
     EffectInit activeEffect = null!;

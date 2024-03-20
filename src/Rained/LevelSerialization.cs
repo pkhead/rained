@@ -5,10 +5,25 @@ using RainEd.Props;
 using Raylib_cs;
 namespace RainEd;
 
+record LevelLoadResult()
+{
+    public Level? Level = null;
+    public string[] UnrecognizedMaterials = [];
+    public string[] UnrecognizedTiles = [];
+    public string[] UnrecognizedProps = [];
+    public string[] UnrecognizedEffects = [];
+}
+
 static class LevelSerialization
 {
-    public static Level Load(string path)
+    public static LevelLoadResult Load(string path)
     {
+        List<string> unknownMats = [];
+        List<string> unknownTiles = [];
+        List<string> unknownProps = [];
+        List<string> unknownEffects = [];
+        bool loadSuccess = true;
+
         var levelData = File.ReadAllLines(path);
         var lingoParser = new Lingo.LingoParser();
            
@@ -97,9 +112,20 @@ static class LevelSerialization
         // get default material
         {
             var defaultMat = (string) levelTileData.fields["defaultMaterial"];
-            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(defaultMat)
-                ?? throw new Exception($"Material \"{defaultMat}\" does not exist");
-            level.DefaultMaterial = matInfo.ID;
+            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(defaultMat);
+
+            if (matInfo is not null)
+            {
+                level.DefaultMaterial = matInfo.ID;
+            }
+            else
+            {
+                // unrecognized material
+                loadSuccess = false;
+                if (!unknownMats.Contains(defaultMat))
+                    unknownMats.Add(defaultMat);
+                RainEd.Logger.Warning("Unrecognized material '{Name}'", defaultMat);
+            }
         }
 
         // read tile matrix
@@ -127,9 +153,20 @@ static class LevelSerialization
                         case "material":
                         {
                             var data = (string) dataObj;
-                            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(data)
-                                ?? throw new Exception($"Material \"{data}\" does not exist");
-                            level.Layers[z,x,y].Material = matInfo.ID;
+                            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(data);
+
+                            if (matInfo is not null)
+                            {
+                                level.Layers[z,x,y].Material = matInfo.ID;
+                            }
+                            else
+                            {
+                                // unrecognized material
+                                RainEd.Logger.Warning("Material \"{Name}\" does not exist", data);
+                                loadSuccess = false;
+                                if (!unknownMats.Contains(data))
+                                    unknownMats.Add(data);
+                            }
                             break;
                         }
 
@@ -152,10 +189,19 @@ static class LevelSerialization
                             var name = (string) data.values[1];
 
                             if (!RainEd.Instance.TileDatabase.HasTile(name))
-                                throw new Exception($"Unrecognized tile '{name}'");
-                            
-                            var tile = RainEd.Instance.TileDatabase.GetTileFromName(name);
-                            level.Layers[z,x,y].TileHead = tile;
+                            {
+                                // unrecognized tile
+                                RainEd.Logger.Warning("Unrecognized tile '{Name}'", name);
+                                loadSuccess = false;
+                                if (!unknownTiles.Contains(name))
+                                    unknownTiles.Add(name);
+                            }
+                            else
+                            {
+                                var tile = RainEd.Instance.TileDatabase.GetTileFromName(name);
+                                level.Layers[z,x,y].TileHead = tile;
+                            }
+
                             break;
                         }
 
@@ -176,119 +222,130 @@ static class LevelSerialization
             {
                 var nameStr = (string) effectData.fields["nm"];
                 var type = (string) effectData.fields["tp"];
-                var effectInit = RainEd.Instance.EffectsDatabase.GetEffectFromName(nameStr);
-                var effect = new Effect(level, effectInit);
-                level.Effects.Add(effect);
 
-                // validate data
-                var requiredType = effect.Data.type switch
+                if (!RainEd.Instance.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
                 {
-                    EffectType.NN => "nn",
-                    EffectType.StandardErosion => "standardErosion",
-                    _ => throw new Exception("Internal error: invalid EffectType")
-                };
-
-                // check type
-                if (requiredType != (string) effectData.fields["tp"])
-                    throw new Exception($"Effect '{nameStr}' has incompatible parameters");
-                
-                // check crossScreen
-                // actually, nevermind. must maintain compatibility with all erroneously generated level files
-                // that may or may not have missing data
-                /*
-                int crossScreen = effect.Data.crossScreen ? 1 : 0;
-                if (crossScreen != (int) effectData.fields["crossScreen"])
-                    throw new Exception($"Effect '{nameStr}' has incompatible parameters");
-
-                // check repeats
-                if (effect.Data.type == EffectType.StandardErosion)
+                    // unrecognized effect
+                    RainEd.Logger.Warning("Unrecognized effect '{Name}'", nameStr);
+                    loadSuccess = false;
+                    if (!unknownEffects.Contains(nameStr))
+                        unknownEffects.Add(nameStr);
+                }
+                else
                 {
-                    if (effect.Data.repeats != (int) effectData.fields["repeats"])
+                    var effect = new Effect(level, effectInit!);
+                    level.Effects.Add(effect);
+
+                    // validate data
+                    var requiredType = effect.Data.type switch
+                    {
+                        EffectType.NN => "nn",
+                        EffectType.StandardErosion => "standardErosion",
+                        _ => throw new Exception("Internal error: invalid EffectType")
+                    };
+
+                    // check type
+                    if (requiredType != (string) effectData.fields["tp"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                     
-                    if (effect.Data.affectOpenAreas != (float) effectData.fields["affectOpenAreas"])
+                    // check crossScreen
+                    // actually, nevermind. must maintain compatibility with all erroneously generated level files
+                    // that may or may not have missing data
+                    /*
+                    int crossScreen = effect.Data.crossScreen ? 1 : 0;
+                    if (crossScreen != (int) effectData.fields["crossScreen"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
-                }
-                */
-                
-                // read effect matrix
-                var mtrxData = (Lingo.List) effectData.fields["mtrx"];
-                x = 0;
-                foreach (var xv in mtrxData.values.Cast<Lingo.List>())
-                {
-                    y = 0;
-                    foreach (var vo in xv.values)
+
+                    // check repeats
+                    if (effect.Data.type == EffectType.StandardErosion)
                     {
-                        effect.Matrix[x,y] = vo is int v ? v : (float)vo;
-                        y++;
+                        if (effect.Data.repeats != (int) effectData.fields["repeats"])
+                            throw new Exception($"Effect '{nameStr}' has incompatible parameters");
+                        
+                        if (effect.Data.affectOpenAreas != (float) effectData.fields["affectOpenAreas"])
+                            throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                     }
-                    x++;
-                }
-
-                // read effect options
-                if (!effectData.fields.TryGetValue("options", out object? optionsObj))
-                {
-                    optionsObj = effectData.fields["Options"]; // wtf??? again???
-                }
-                var optionsData = (Lingo.List) optionsObj!;
-
-                foreach (var optionData in optionsData.values.Cast<Lingo.List>())
-                {
-                    var optionName = (string) optionData.values[0];
-
-                    if (optionName == "Seed")
+                    */
+                    
+                    // read effect matrix
+                    var mtrxData = (Lingo.List) effectData.fields["mtrx"];
+                    x = 0;
+                    foreach (var xv in mtrxData.values.Cast<Lingo.List>())
                     {
-                        var value = (int) optionData.values[2];
-                        effect.Seed = value;
-                    }
-                    else if (optionName != "Delete/Move")
-                    {
-                        // the list of options are stored in the level file
-                        // alongside the selected option as a string
-                        var optionValues = ((Lingo.List) optionData.values[1]).values.Cast<string>().ToList();
-                        var optionIndex = 0;
-
-                        if (optionValues.Count > 0)
+                        y = 0;
+                        foreach (var vo in xv.values)
                         {
-                            var selectedValue = (string) optionData.values[2];
-                            optionIndex = optionValues.IndexOf(selectedValue);
-                            if (optionIndex == -1) throw new Exception("Invalid option value in effect");
+                            effect.Matrix[x,y] = vo is int v ? v : (float)vo;
+                            y++;
                         }
+                        x++;
+                    }
 
-                        switch (optionName)
+                    // read effect options
+                    if (!effectData.fields.TryGetValue("options", out object? optionsObj))
+                    {
+                        optionsObj = effectData.fields["Options"]; // wtf??? again???
+                    }
+                    var optionsData = (Lingo.List) optionsObj!;
+
+                    foreach (var optionData in optionsData.values.Cast<Lingo.List>())
+                    {
+                        var optionName = (string) optionData.values[0];
+
+                        if (optionName == "Seed")
                         {
-                            case "Layers":
-                                effect.Layer = (Effect.LayerMode) optionIndex;
-                                break;
-                            case "Color":
-                                effect.PlantColor = optionIndex;
-                                break;
-                            case "3D":
-                                effect.Is3D = optionIndex != 0;
-                                break;
-                            case "Affect Gradients and Decals":
-                                effect.AffectGradientsAndDecals = optionIndex == 0;
-                                break;
-                            default:
+                            var value = (int) optionData.values[2];
+                            effect.Seed = value;
+                        }
+                        else if (optionName != "Delete/Move")
+                        {
+                            // the list of options are stored in the level file
+                            // alongside the selected option as a string
+                            var optionValues = ((Lingo.List) optionData.values[1]).values.Cast<string>().ToList();
+                            var optionIndex = 0;
+
+                            if (optionValues.Count > 0)
                             {
-                                int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
-                                if (cfgIndex == -1)
+                                var selectedValue = (string) optionData.values[2];
+                                optionIndex = optionValues.IndexOf(selectedValue);
+                                if (optionIndex == -1) throw new Exception("Invalid option value in effect");
+                            }
+
+                            switch (optionName)
+                            {
+                                case "Layers":
+                                    effect.Layer = (Effect.LayerMode) optionIndex;
+                                    break;
+                                case "Color":
+                                    effect.PlantColor = optionIndex;
+                                    break;
+                                case "3D":
+                                    effect.Is3D = optionIndex != 0;
+                                    break;
+                                case "Affect Gradients and Decals":
+                                    effect.AffectGradientsAndDecals = optionIndex == 0;
+                                    break;
+                                default:
                                 {
-                                    RainEd.Logger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
-                                }
-                                else
-                                {
-                                    if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
+                                    int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
+                                    if (cfgIndex == -1)
                                     {
-                                        effect.CustomValues[cfgIndex] = (int) optionData.values[2];
+                                        RainEd.Logger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                     }
                                     else
                                     {
-                                        effect.CustomValues[cfgIndex] = optionIndex;
+                                        if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
+                                        {
+                                            effect.CustomValues[cfgIndex] = (int) optionData.values[2];
+                                        }
+                                        else
+                                        {
+                                            effect.CustomValues[cfgIndex] = optionIndex;
+                                        }
                                     }
-                                }
 
-                                break;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -400,97 +457,121 @@ static class LevelSerialization
 
                 // create prop
                 if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
-                    throw new Exception($"Unrecognized prop '{name}'");
-
-                Prop prop;
-
-                pointList.Clear();
-                foreach (var pt in quadCornersData.values.Cast<Vector2>())
                 {
-                    pointList.Add(pt / 16f);
+                    // unrecognized prop
+                    RainEd.Logger.Warning("Unrecognized prop '{Name}'", name);
+                    loadSuccess = false;
+                    if (!unknownProps.Contains(name))
+                        unknownProps.Add(name);
                 }
-
-                prop = new Prop(propInit, pointList.ToArray())
+                else
                 {
-                    DepthOffset = -depth,
-                    RenderOrder = (int) settingsData.fields["renderorder"],
-                    Seed = (int) settingsData.fields["seed"],
-                    RenderTime = (PropRenderTime) (int) settingsData.fields["renderTime"]
-                };
+                    Prop prop;
 
-                prop.TryConvertToAffine();
-                level.Props.Add(prop);
-
-                // read rope points if needed
-                if (propInit.Rope is not null)
-                {
-                    var pointsData = (Lingo.List) moreData.fields["points"];
                     pointList.Clear();
-
-                    foreach (var pt in pointsData.values.Cast<Vector2>())
+                    foreach (var pt in quadCornersData.values.Cast<Vector2>())
                     {
-                        pointList.Add(pt / 20f);
+                        pointList.Add(pt / 16f);
                     }
 
-                    prop.Rope!.LoadPoints(pointList.ToArray());
-                }
-
-                // read optional settings
-                object? tempObject;
-                if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
-                {
-                    prop.CustomDepth = (int) tempObject;
-                }
-
-                if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
-                {
-                    prop.CustomColor = (int) tempObject - 1;
-                }
-
-                if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
-                {
-                    prop.Variation = (int) tempObject - 1;
-                }
-
-                if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
-                {
-                    prop.ApplyColor = (int)tempObject != 0;
-                }
-
-                if (settingsData.fields.TryGetValue("release", out tempObject) && tempObject is not null)
-                {
-                    if (prop.Rope is not null)
+                    prop = new Prop(propInit, pointList.ToArray())
                     {
-                        int v = (int) tempObject;
-                        prop.Rope.ReleaseMode = v switch
+                        DepthOffset = -depth,
+                        RenderOrder = (int) settingsData.fields["renderorder"],
+                        Seed = (int) settingsData.fields["seed"],
+                        RenderTime = (PropRenderTime) (int) settingsData.fields["renderTime"]
+                    };
+
+                    prop.TryConvertToAffine();
+                    level.Props.Add(prop);
+
+                    // read rope points if needed
+                    if (propInit.Rope is not null)
+                    {
+                        var pointsData = (Lingo.List) moreData.fields["points"];
+                        pointList.Clear();
+
+                        foreach (var pt in pointsData.values.Cast<Vector2>())
                         {
-                            0 => RopeReleaseMode.None,
-                            -1 => RopeReleaseMode.Left,
-                            1 => RopeReleaseMode.Right,
-                            _ => throw new Exception("Invalid rope release mode")
-                        };
-                    }
-                    else
-                    {
-                        RainEd.Logger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
-                    }
-                }
+                            pointList.Add(pt / 20f);
+                        }
 
-                if (settingsData.fields.TryGetValue("thickness", out tempObject) && tempObject is not null)
-                {
-                    if (prop.Rope is not null && prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
-                    {
-                        prop.Rope.Thickness = (float) tempObject;
+                        prop.Rope!.LoadPoints(pointList.ToArray());
                     }
-                    else
+
+                    // read optional settings
+                    object? tempObject;
+                    if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
                     {
-                        RainEd.Logger.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
+                        prop.CustomDepth = (int) tempObject;
+                    }
+
+                    if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
+                    {
+                        prop.CustomColor = (int) tempObject - 1;
+                    }
+
+                    if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
+                    {
+                        prop.Variation = (int) tempObject - 1;
+                    }
+
+                    if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
+                    {
+                        prop.ApplyColor = (int)tempObject != 0;
+                    }
+
+                    if (settingsData.fields.TryGetValue("release", out tempObject) && tempObject is not null)
+                    {
+                        if (prop.Rope is not null)
+                        {
+                            int v = (int) tempObject;
+                            prop.Rope.ReleaseMode = v switch
+                            {
+                                0 => RopeReleaseMode.None,
+                                -1 => RopeReleaseMode.Left,
+                                1 => RopeReleaseMode.Right,
+                                _ => throw new Exception("Invalid rope release mode")
+                            };
+                        }
+                        else
+                        {
+                            RainEd.Logger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
+                        }
+                    }
+
+                    if (settingsData.fields.TryGetValue("thickness", out tempObject) && tempObject is not null)
+                    {
+                        if (prop.Rope is not null && prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
+                        {
+                            prop.Rope.Thickness = (float) tempObject;
+                        }
+                        else
+                        {
+                            RainEd.Logger.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
+                        }
                     }
                 }
             }
         }
 
-        return level;
+        // return load result
+        var loadResult = new LevelLoadResult();
+
+        // a null Level means the load failed
+        if (loadSuccess)
+        {
+            loadResult.Level = level;
+        }
+        else
+        {
+            loadResult.UnrecognizedEffects = [..unknownEffects];
+            loadResult.UnrecognizedMaterials = [..unknownMats];
+            loadResult.UnrecognizedProps = [..unknownProps];
+            loadResult.UnrecognizedTiles = [..unknownTiles];
+        }
+
+        return loadResult;
     }
 
     private readonly static string[] layerEnums = new string[]

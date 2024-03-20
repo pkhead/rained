@@ -115,17 +115,7 @@ sealed class RainEd
         Logger.Information("Initializing prop database...");
         PropDatabase = new Props.PropDatabase(TileDatabase);
         
-        if (levelPath.Length > 0)
-        {
-            Logger.Information("Boot load " + levelPath);
-            level = LevelSerialization.Load(levelPath);
-            currentFilePath = levelPath;
-        }
-        else
-        {
-            Logger.Information("Boot load default level");
-            level = Level.NewDefaultLevel();
-        }
+        level = Level.NewDefaultLevel();
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
@@ -145,6 +135,13 @@ sealed class RainEd
             Raylib.SetWindowState(ConfigFlags.MaximizedWindow);
         }
         ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
+
+        // level boot load
+        if (levelPath.Length > 0)
+        {
+            Logger.Information("Boot load " + levelPath);
+            LoadLevel(levelPath);
+        }
 
         Logger.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
@@ -222,17 +219,29 @@ sealed class RainEd
 
             try
             {
-                level = LevelSerialization.Load(path);
-                ReloadLevel();
-                currentFilePath = path;
-                UpdateTitle();
+                var loadRes = LevelSerialization.Load(path);
 
-                Logger.Information("Done!");
+                if (loadRes.Level is not null)
+                {
+                    level = loadRes.Level;
+
+                    ReloadLevel();
+                    currentFilePath = path;
+                    UpdateTitle();
+
+                    Logger.Information("Done!");
+                }
+                else
+                {
+                    // level failed to load due to unrecognized assets
+                    LevelLoadFailedWindow.LoadResult = loadRes;
+                    LevelLoadFailedWindow.IsWindowOpen = true;
+                }
             }
             catch (Exception e)
             {
-                Logger.Error("Error loading file {Path}:\n{ErrorMessage}", path, e);
-                ShowNotification("Could not load level");
+                Logger.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
+                ShowNotification("Error while loading level");
             }
 
             GC.Collect();
@@ -578,8 +587,10 @@ sealed class RainEd
             }
         }
 
+        // show miscellaneous windows
         ShortcutsWindow.ShowWindow();
         AboutWindow.ShowWindow();
+        LevelLoadFailedWindow.ShowWindow();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
