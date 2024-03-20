@@ -35,6 +35,7 @@ class GeometryEditor : IEditorMode
         ForbidFlyChain,
         GarbageWorm,
         WormGrass,
+        CopyBackwards, // TODO: this will be superseded whenever i finish the geo-improvements branch
 
         ToolCount // not an enum, just the number of tools
     }
@@ -62,7 +63,8 @@ class GeometryEditor : IEditorMode
         { Tool.WhackAMoleHole,  "Whack-a-mole Hole" },
         { Tool.ScavengerHole,   "Scavenger Hole"    },
         { Tool.GarbageWorm,     "Garbage Worm"      },
-        { Tool.WormGrass,       "Worm Grass"        }
+        { Tool.WormGrass,       "Worm Grass"        },
+        { Tool.CopyBackwards,   "Copy Backwards"    },
     };
 
     private static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
@@ -88,7 +90,8 @@ class GeometryEditor : IEditorMode
         { Tool.WhackAMoleHole,  new(3, 4) },
         { Tool.ScavengerHole,   new(0, 5) },
         { Tool.GarbageWorm,     new(1, 5) },
-        { Tool.WormGrass,       new(2, 5) }
+        { Tool.WormGrass,       new(2, 5) },
+        { Tool.CopyBackwards,   new(3, 5) }
     };
 
     private static readonly Color[] LAYER_COLORS =
@@ -199,6 +202,7 @@ class GeometryEditor : IEditorMode
             }
 
             // draw toolbar
+            ImGui.Text(ToolNames[selectedTool]);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
@@ -576,14 +580,55 @@ class GeometryEditor : IEditorMode
                     break;
                 }
 
+                // TODO: this will be superseded by a finished geo-improvements branch
+                case Tool.CopyBackwards:
+                {
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        int dstLayer = (workLayer + 1) % 3;
+
+                        ref var dstCell = ref level.Layers[dstLayer, tx, ty];
+                        dstCell.Geo = cell.Geo;
+                        dstCell.Objects = cell.Objects;
+                        window.LevelRenderer.MarkNeedsRedraw(tx, ty, dstLayer);
+                    }
+
+                    break;
+                }
+
                 // the following will use the default object tool
                 // handler
                 case Tool.HorizontalBeam:
-                    levelObject = LevelObject.HorizontalBeam;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.HorizontalBeam;
+                    }
                     break;
 
                 case Tool.VerticalBeam:
-                    levelObject = LevelObject.VerticalBeam;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.VerticalBeam;
+                    }
+
                     break;
                     
                 case Tool.Rock:
@@ -595,15 +640,45 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.Crack:
-                    levelObject = LevelObject.Crack;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.Crack;
+                    }
+
                     break;
                 
                 case Tool.Hive:
-                    levelObject = LevelObject.Hive;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.Hive;
+                    }
+
                     break;
                 
                 case Tool.ForbidFlyChain:
-                    levelObject = LevelObject.ForbidFlyChain;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.ForbidFlyChain;
+                    }
+
                     break;
                 
                 case Tool.Waterfall:
@@ -611,11 +686,31 @@ class GeometryEditor : IEditorMode
                     break;
                 
                 case Tool.WormGrass:
-                    levelObject = LevelObject.WormGrass;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.WormGrass;
+                    }
+
                     break;
 
                 case Tool.Shortcut:
-                    levelObject = LevelObject.Shortcut;
+                    if (shift)
+                    {
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
+                    }
+                    else
+                    {
+                        levelObject = LevelObject.Shortcut;
+                    }
+
                     break;
 
                 case Tool.Entrance:
