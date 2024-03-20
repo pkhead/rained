@@ -434,6 +434,12 @@ sealed class RainEd
                 ImGui.MenuItem("Mass Render", false);
 
                 ImGui.Separator();
+                if (ImGui.MenuItem("Preferences"))
+                {
+                    PreferencesWindow.IsWindowOpen = true;
+                }
+
+                ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))
                 {
                     PromptUnsavedChanges(() => Running = false);
@@ -596,6 +602,7 @@ sealed class RainEd
 
         ShortcutsWindow.ShowWindow();
         AboutWindow.ShowWindow();
+        PreferencesWindow.ShowWindow();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
