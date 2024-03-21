@@ -91,15 +91,7 @@ static class PreferencesWindow
                     ImGuiKey key = (ImGuiKey) ki;
                     
                     // don't process if this is a modifier key
-                    if (key == ImGuiKey.LeftShift || key == ImGuiKey.RightShift
-                        || key == ImGuiKey.LeftCtrl || key == ImGuiKey.RightCtrl
-                        || key == ImGuiKey.LeftAlt || key == ImGuiKey.RightAlt
-                        || key == ImGuiKey.LeftSuper || key == ImGuiKey.RightSuper
-                        || key == ImGuiKey.ReservedForModAlt
-                        || key == ImGuiKey.ReservedForModCtrl
-                        || key == ImGuiKey.ReservedForModShift
-                        || key == ImGuiKey.ReservedForModSuper
-                    )
+                    if (KeyShortcuts.IsModifierKey(key))
                         continue;
                     
                     if (ImGui.IsKeyPressed(key))
@@ -121,10 +113,54 @@ static class PreferencesWindow
 
     private static void ShowShortcutsTab()
     {
+        ImGui.SeparatorText("General");
+        ShortcutButton(KeyShortcut.Undo);
+        ShortcutButton(KeyShortcut.Redo);
+        ShortcutButton(KeyShortcut.Cut);
+        ShortcutButton(KeyShortcut.Copy);
+        ShortcutButton(KeyShortcut.Paste);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.New);
+        ShortcutButton(KeyShortcut.Open);
+        ShortcutButton(KeyShortcut.Save);
+        ShortcutButton(KeyShortcut.SaveAs);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.Render);
+
+        ImGui.SeparatorText("General Editing");
         ShortcutButton(KeyShortcut.NavUp);
+        ShortcutButton(KeyShortcut.NavDown);
+        ShortcutButton(KeyShortcut.NavLeft);
+        ShortcutButton(KeyShortcut.NavRight);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.NewObject);
+        ShortcutButton(KeyShortcut.RemoveObject);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.SwitchLayer);
+        ShortcutButton(KeyShortcut.SwitchTab);
+
+        ImGui.SeparatorText("Geometry Edit");
+        ShortcutButton(KeyShortcut.ToggleLayer1);
+        ShortcutButton(KeyShortcut.ToggleLayer2);
+        ShortcutButton(KeyShortcut.ToggleLayer3);
+
+        ImGui.SeparatorText("Tile Edit");
+        ShortcutButton(KeyShortcut.Eyedropper);
+        ShortcutButton(KeyShortcut.SetMaterial);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.TileForceGeometry);
+        ShortcutButton(KeyShortcut.TileForcePlacement);
+        ShortcutButton(KeyShortcut.TileIgnoreDifferent);
+
+        ImGui.SeparatorText("Light Edit");
+        ShortcutButton(KeyShortcut.ResetBrushTransform);
+        ShortcutButton(KeyShortcut.ZoomLightIn);
+        ShortcutButton(KeyShortcut.ZoomLightOut);
+        ShortcutButton(KeyShortcut.RotateLightCW);
+        ShortcutButton(KeyShortcut.RotateLightCCW);
     }
 
-    private static void ShortcutButton(KeyShortcut id)
+    private static void ShortcutButton(KeyShortcut id, string? nameOverride = null)
     {
         ImGui.PushID((int) id);
 
@@ -137,7 +173,7 @@ static class PreferencesWindow
         ImGui.SetItemTooltip(KeyShortcuts.GetShortcutString(id));
 
         ImGui.SameLine();
-        ImGui.Text(KeyShortcuts.GetName(id));
+        ImGui.Text(nameOverride ?? KeyShortcuts.GetName(id));
 
         ImGui.PopID();
     }

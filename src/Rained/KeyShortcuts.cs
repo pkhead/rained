@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace RainEd;
 
-enum KeyShortcut
+enum KeyShortcut : int
 {
-    None,
+    None = -1,
     
     // General
     NavUp, NavLeft, NavDown, NavRight,
@@ -27,20 +27,28 @@ enum KeyShortcut
     // Light
     ResetBrushTransform,
     ZoomLightIn, ZoomLightOut,
-    RotateLightCW, RotateLightCCW
+    RotateLightCW, RotateLightCCW,
+
+    /// <summary>
+    /// Do not bind - this is just the number of shortcut IDs
+    /// </summary>
+    COUNT
 }
 
 static class KeyShortcuts
 {
     private class KeyShortcutBinding
     {
-        public KeyShortcut ID;
-        public string Name;
+        public readonly KeyShortcut ID;
+        public readonly string Name;
         public string ShortcutString = null!;
         public ImGuiKey Key;
         public ImGuiModFlags Mods;
         public bool IsActivated = false;
         public bool AllowRepeat = false;
+
+        public readonly ImGuiKey OriginalKey;
+        public readonly ImGuiModFlags OriginalMods; 
 
         public KeyShortcutBinding(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
         {
@@ -49,6 +57,9 @@ static class KeyShortcuts
             Key = key;
             Mods = mods;
             AllowRepeat = allowRepeat;
+
+            OriginalKey = Key;
+            OriginalMods = Mods;
 
             GenerateShortcutString();
         }
@@ -132,6 +143,62 @@ static class KeyShortcuts
         data.Key = key;
         data.Mods = mods;
         data.GenerateShortcutString();
+    }
+
+    public static void Rebind(KeyShortcut id, string shortcut)
+    {
+        var keyStr = shortcut.Split('+');
+        ImGuiModFlags mods = ImGuiModFlags.None;
+        ImGuiKey tKey = ImGuiKey.None;
+
+        for (int i = 0; i < keyStr.Length - 1; i++)
+        {
+            var modStr = keyStr[i];
+            
+            if (modStr == "Ctrl")
+                mods |= ImGuiModFlags.Ctrl;
+            else if (modStr == "Alt")
+                mods |= ImGuiModFlags.Alt;
+            else if (modStr == "Shift")
+                mods |= ImGuiModFlags.Shift;
+            else if (modStr == "Super")
+                mods |= ImGuiModFlags.Super;
+            else
+                throw new Exception($"Unknown modifier key '{modStr}'");
+        }
+
+        for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+        {
+            ImGuiKey key = (ImGuiKey) ki;
+            if (keyStr[^1] == ImGui.GetKeyName(key))
+            {
+                tKey = key;
+                break;
+            }
+        }
+
+        // throw an exception if the ImGuiKey was not found from the string
+        if (tKey == ImGuiKey.None)
+            throw new Exception($"Unknown key '{keyStr[^1]}'");
+        
+        // assign to binding data
+        KeyShortcutBinding data = keyShortcuts[id];
+        data.Key = tKey;
+        data.Mods = mods;
+        data.GenerateShortcutString();
+    }
+
+    public static bool IsModifierKey(ImGuiKey key)
+    {
+        return key == ImGuiKey.LeftShift || key == ImGuiKey.RightShift
+            || key == ImGuiKey.LeftCtrl || key == ImGuiKey.RightCtrl
+            || key == ImGuiKey.LeftAlt || key == ImGuiKey.RightAlt
+            || key == ImGuiKey.LeftSuper || key == ImGuiKey.RightSuper
+            || key == ImGuiKey.ReservedForModAlt
+            || key == ImGuiKey.ReservedForModCtrl
+            || key == ImGuiKey.ReservedForModShift
+            || key == ImGuiKey.ReservedForModSuper
+            || key == ImGuiKey.ModAlt || key == ImGuiKey.ModShift || key == ImGuiKey.ModCtrl || key == ImGuiKey.ModSuper;
     }
 
     public static bool Activated(KeyShortcut id)

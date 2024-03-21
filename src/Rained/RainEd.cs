@@ -78,6 +78,7 @@ sealed class RainEd
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
         // load user preferences
+        KeyShortcuts.InitShortcuts();
         prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
 
         if (File.Exists(prefFilePath))
@@ -85,6 +86,7 @@ sealed class RainEd
             try
             {
                 Preferences = UserPreferences.LoadFromFile(prefFilePath);
+                Preferences.LoadKeyboardShortcuts();
             }
             catch (Exception e)
             {
@@ -126,7 +128,6 @@ sealed class RainEd
         editorWindow = new EditorWindow();
 
         UpdateTitle();
-        KeyShortcuts.InitShortcuts();
 
         // apply preferences
         Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
