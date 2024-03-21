@@ -59,18 +59,30 @@ record ColoredInitCategory : InitCategory
     }
 }
 
+record CategoryList<T>
+    where T : InitCategory
+{
+    public List<T> Categories = [];
+    public Dictionary<string, InitData> Dictionary = [];
+
+    public void AddInit(InitData data)
+    {
+        Categories[^1].Items.Add(data);
+        Dictionary[data.Name] = data;
+    }
+}
 
 class AssetManager
 {
-    public List<ColoredInitCategory> TileInit;
-    public List<ColoredInitCategory> PropInit;
-    public List<InitCategory> MaterialsInit;
-
+    public readonly CategoryList<ColoredInitCategory> TileInit;
+    public readonly CategoryList<ColoredInitCategory> PropInit;
+    public readonly CategoryList<InitCategory> MaterialsInit;
+    
     public AssetManager()
     {
-        TileInit = [];
-        PropInit = [];
-        MaterialsInit = [];
+        TileInit = new();
+        PropInit = new();
+        MaterialsInit = new();
 
         // parse tile Init.txt
         ParseColoredInit(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), TileInit);
@@ -82,7 +94,10 @@ class AssetManager
         ParseMaterialInit(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), MaterialsInit);
     }
 
-    private static void ParseColoredInit(string path, List<ColoredInitCategory> outputCategories)
+    private static void ParseColoredInit(
+        string path,
+        CategoryList<ColoredInitCategory> outputCategories
+    )
     {
         var parser = new Lingo.LingoParser();
 
@@ -99,7 +114,7 @@ class AssetManager
             if (line[0] == '-')
             {
                 var list = (Lingo.List) parser.Read(line[1..])!;
-                outputCategories.Add(new ColoredInitCategory(
+                outputCategories.Categories.Add(new ColoredInitCategory(
                     name: (string) list.values[0],
                     color: (Lingo.Color) list.values[1],
                     line: lineNo
@@ -109,12 +124,11 @@ class AssetManager
             // tile init
             else
             {
-                var category = outputCategories[^1];
                 var data = parser.Read(line) as Lingo.List;
 
                 if (data is not null)
                 {
-                    category.Items.Add(new InitData(
+                    outputCategories.AddInit(new InitData(
                         name: (string) data.fields["nm"],
                         data: line,
                         line: lineNo
@@ -126,7 +140,7 @@ class AssetManager
         }
     }
 
-    private static void ParseMaterialInit(string path, List<InitCategory> outputCategories)
+    private static void ParseMaterialInit(string path, CategoryList<InitCategory> outputCategories)
     {
         var parser = new Lingo.LingoParser();
 
@@ -142,7 +156,7 @@ class AssetManager
             // category header
             if (line[0] == '-')
             {
-                outputCategories.Add(new InitCategory(
+                outputCategories.Categories.Add(new InitCategory(
                     name: line[1..],
                     line: lineNo
                 ));
@@ -151,10 +165,9 @@ class AssetManager
             // tile init
             else
             {
-                var category = outputCategories[^1];
                 var data = (Lingo.List) parser.Read(line)!;
 
-                category.Items.Add(new InitData(
+                outputCategories.AddInit(new InitData(
                     name: (string) data.fields["nm"],
                     data: line,
                     line: lineNo

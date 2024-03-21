@@ -24,9 +24,11 @@ static class AssetManagerGUI
     private static FileBrowser? fileBrowser = null;
 
     // uncolored variant
-    private static void ShowCategoryList<T>(List<T> categories, ref int selected, Vector2 listSize)
+    private static void ShowCategoryList<T>(CategoryList<T> categoryList, ref int selected, Vector2 listSize)
         where T : InitCategory
     {
+        var categories = categoryList.Categories;
+
         if (ImGui.BeginListBox("##Categories", listSize))
         {
             for (int i = 0; i < categories.Count; i++)
@@ -47,8 +49,10 @@ static class AssetManagerGUI
     }
 
     // colored variant
-    private static void ShowColoredCategoryList(List<ColoredInitCategory> categories, ref int selected, Vector2 listSize)
+    private static void ShowColoredCategoryList(CategoryList<ColoredInitCategory> categoryList, ref int selected, Vector2 listSize)
     {
+        var categories = categoryList.Categories;
+
         if (ImGui.BeginListBox("##Categories", listSize))
         {
             var drawList = ImGui.GetWindowDrawList();
@@ -77,9 +81,11 @@ static class AssetManagerGUI
         }
     }
 
-    private static void ShowItemList<T>(List<T> categories, int selected, Vector2 listSize)
-        where T : ColoredInitCategory
+    private static void ShowItemList<T>(CategoryList<T> categoryList, int selected, Vector2 listSize)
+        where T : InitCategory
     {
+        var categories = categoryList.Categories;
+        
         // group listing list box
         ImGui.SameLine();
         if (ImGui.BeginListBox("##Items", listSize))
@@ -130,14 +136,14 @@ static class AssetManagerGUI
 
     private static void ImportFile(string? path)
     {
-        if (path is null) return;
+        if (string.IsNullOrEmpty(path)) return;
 
         RainEd.Logger.Information("Import Init.txt file '{Path}'", path);
     }
 
     private static void ImportZip(string? path)
     {
-        if (path is null) return;
+        if (string.IsNullOrEmpty(path)) return;
 
         RainEd.Logger.Information("Import zip file '{Path}'", path);
     }
