@@ -1,5 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
+using RainEd.Assets;
+using rlImGui_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
 namespace RainEd;
@@ -218,8 +220,13 @@ static class PreferencesWindow
         }
     }
 
+    private static int selectedTileCategory = 0;
+    private static int groupIndex = 0;
+    private static AssetManager assetManager = null!;
+
     private static void ShowAssetsTab()
     {
+        assetManager ??= new AssetManager();
 
         ImGui.AlignTextToFramePadding();
         ImGui.Text("Data Path");
@@ -242,18 +249,72 @@ static class PreferencesWindow
             ImGui.BeginDisabled();
         }
 
-        ImGui.Button("Import Tiles");
-        var tileDb = RainEd.Instance.TileDatabase;
-
-        ImGui.Text("Categories");
-        ImGui.BeginListBox("##Categories");
+        if (ImGui.Button("Import Tiles"))
         {
-            foreach (var category in tileDb.Categories)
-            {
-                ImGui.Selectable(category.Name);
-            }
+
         }
-        ImGui.EndListBox();
+        ImGui.SameLine();
+        ImGui.Button("Import Props");
+
+        // show tile database
+        if (ImGui.BeginTabBar("AssetType"))
+        {
+            if (ImGui.BeginTabItem("Tiles"))
+            {
+                var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
+                var boxHeight = ImGui.GetContentRegionAvail().Y;
+                ImGui.BeginListBox("##Categories", new Vector2(halfWidth, boxHeight));
+                {
+                    var drawList = ImGui.GetWindowDrawList();
+                    float textHeight = ImGui.GetTextLineHeight();
+
+                    for (int i = 0; i < assetManager.TileInit.Count; i++)
+                    {
+                        var group = assetManager.TileInit[i];
+                        var cursor = ImGui.GetCursorScreenPos();
+                        if (ImGui.Selectable("  " + group.Name, i == selectedTileCategory))
+                        {
+                            if (selectedTileCategory != i)
+                                groupIndex = 0;
+                            
+                            selectedTileCategory = i;
+                        }
+
+                        drawList.AddRectFilled(
+                            p_min: cursor,
+                            p_max: cursor + new Vector2(10f, textHeight),
+                            ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                        );
+                    }
+                }
+                ImGui.EndListBox();
+
+                // group listing list box
+                ImGui.SameLine();
+                if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
+                {
+                    var tileList = assetManager.TileInit[selectedTileCategory].Tiles;
+
+                    for (int i = 0; i < tileList.Count; i++)
+                    {
+                        var tile = tileList[i];
+
+                        // don't show this prop if it doesn't pass search test
+                        //if (!tile.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                        //    continue;
+                        
+                        if (ImGui.Selectable(tile.Name, i == groupIndex))
+                        {
+                            groupIndex = i;
+                        }
+                    }
+                } ImGui.EndListBox();
+
+                ImGui.EndTabItem();
+            }
+
+            ImGui.EndTabBar();
+        }
 
         if (needRestart)
         {
