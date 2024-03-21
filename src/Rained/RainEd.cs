@@ -178,6 +178,7 @@ sealed class RainEd
         Preferences.WindowWidth = Raylib.GetScreenWidth();
         Preferences.WindowHeight = Raylib.GetScreenHeight();
         Preferences.WindowMaximized = Raylib.IsWindowMaximized();
+        Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
     }
@@ -457,7 +458,7 @@ sealed class RainEd
                 ImGui.Separator();
                 if (ImGui.MenuItem("Preferences"))
                 {
-                    PreferencesWindow.IsWindowOpen = true;
+                    PreferencesWindow.OpenWindow();
                 }
 
                 ImGui.Separator();

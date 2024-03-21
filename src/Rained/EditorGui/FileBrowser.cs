@@ -48,7 +48,8 @@ class FileBrowser
     public enum OpenMode
     {
         Write,
-        Read
+        Read,
+        Directory
     };
 
     private readonly OpenMode mode;
@@ -150,15 +151,20 @@ class FileBrowser
     {
         int IComparer<Entry>.Compare(Entry a, Entry b) => a.Name.CompareTo(b.Name);
     }
+
+    private static void LoadIcons()
+    {
+        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
+    } 
     
     private static RlManaged.Texture2D icons = null!;
     private FileBrowser(OpenMode mode, Action<string> callback, string? openDir)
     {
-        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
+        LoadIcons();
 
         this.mode = mode;
         this.callback = callback;
-        fileFilters.Add(new FileFilter("Any", new string[] { ".*" }));
+        fileFilters.Add(new FileFilter("Any", [ ".*" ]));
         selectedFilter = fileFilters[0];
         
         cwd = openDir ?? Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
@@ -298,14 +304,30 @@ class FileBrowser
     {
         filteredEntries.Clear();
 
-        for (int i = 0; i < entries.Count; i++)
+        if (mode == OpenMode.Directory)
         {
-            var entry = entries[i];
-
-            if (entry.Name[0] == '.') continue; // hidden files/folders
-            if (entry.Type == EntryType.Directory || selectedFilter.Match(Path.Combine(cwd, entry.Name), entry.IconIndex == 7))
+            for (int i = 0; i < entries.Count; i++)
             {
-                filteredEntries.Add((i, entry));
+                var entry = entries[i];
+
+                if (entry.Name[0] == '.') continue; // hidden files/folders
+                if (entry.Type == EntryType.Directory)
+                {
+                    filteredEntries.Add((i, entry));
+                }
+            }    
+        }
+        else
+        {
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+
+                if (entry.Name[0] == '.') continue; // hidden files/folders
+                if (entry.Type == EntryType.Directory || selectedFilter.Match(Path.Combine(cwd, entry.Name), entry.IconIndex == 7))
+                {
+                    filteredEntries.Add((i, entry));
+                }
             }
         }
     }
@@ -314,16 +336,22 @@ class FileBrowser
     {
         Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
 
-        var winName = mode == OpenMode.Write ? "Save File" : "Open File";
+        string winName = mode switch
+        {
+            OpenMode.Write => "Save File",
+            OpenMode.Read => "Open File",
+            OpenMode.Directory => "Open Folder",
+            _ => throw new Exception("Invalid open mode")
+        };
 
         if (!isOpen)
         {
             isOpen = true;
             ImGui.OpenPopup(winName + "###File Browser");
             ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
         }
 
-        ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
         {
             var windowSize = ImGui.GetWindowSize();
@@ -358,7 +386,7 @@ class FileBrowser
             } ImGui.SameLine();
             ImGui.SetItemTooltip("Forward");
 
-            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor)/* && cwd.PathString != "/"*/)
+            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor))
             {
                 var oldDir = cwd;
                 if (SetPath(Path.Combine(cwd, "..")))
@@ -467,9 +495,12 @@ class FileBrowser
             ImGui.EndChild();
             ImGui.SameLine();
 
-            // list files in cwd
             var ok = false;
 
+            // used only in directory mode. ok = open subfolder, dirSelect = submit directory
+            var dirSelect = false;
+
+            // list files in cwd
             ImGui.BeginChild("Listing", new Vector2(-0.0001f, listingHeight));
             {
                 if (needFilterRefresh)
@@ -500,10 +531,10 @@ class FileBrowser
                     if (ImGui.Selectable(entryName, selected == i, ImGuiSelectableFlags.AllowDoubleClick))
                     {
                         selected = i;
-
-                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                            ok = true;
                     }
+
+                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                        ok = true;
 
                     if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
                     {
@@ -511,12 +542,25 @@ class FileBrowser
                     }
                 }
             }
-
-            scrollToSelected = false;
             ImGui.EndChild();
 
+            scrollToSelected = false;
+
             // ok and cancel buttons
-            if (ImGui.Button("OK")) ok = true;
+            if (mode == OpenMode.Directory)
+            {
+                if (ImGui.Button("Open"))
+                    ok = true;
+
+                ImGui.SameLine();
+                if (ImGui.Button("OK"))
+                    dirSelect = true; 
+            }
+            else
+            {
+                if (ImGui.Button("OK")) ok = true;
+            }
+
             ImGui.SameLine();
             if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && EditorWindow.IsKeyPressed(ImGuiKey.Escape)))
             {
@@ -525,30 +569,38 @@ class FileBrowser
             ImGui.SameLine();
 
             // file filter
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8f);
-            if (ImGui.BeginCombo("##Filter", selectedFilter.FilterName))
+            if (mode != OpenMode.Directory)
             {
-                foreach (var filter in fileFilters)
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8f);
+                if (ImGui.BeginCombo("##Filter", selectedFilter.FilterName))
                 {
-                    bool isSelected = filter == selectedFilter;
-                    if (ImGui.Selectable(filter.FullText, isSelected))
+                    foreach (var filter in fileFilters)
                     {
-                        selectedFilter = filter;
-                        needFilterRefresh = true;
+                        bool isSelected = filter == selectedFilter;
+                        if (ImGui.Selectable(filter.FullText, isSelected))
+                        {
+                            selectedFilter = filter;
+                            needFilterRefresh = true;
+                        }
+                        
+                        if (isSelected)
+                            ImGui.SetItemDefaultFocus();
                     }
-                    
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
-                }
 
-                ImGui.EndCombo();
+                    ImGui.EndCombo();
+                }
             }
 
             ImGui.SameLine();
             ImGui.SetNextItemWidth(-0.0001f);
 
             var oldName = nameBuf;
-            var enterPressed = ImGui.InputTextWithHint("##Name", "File Name", ref nameBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue);
+            var enterPressed = ImGui.InputTextWithHint(
+                "##Name",
+                mode == OpenMode.Directory ? "Folder Name" : "File Name",
+                ref nameBuf, 128,
+                ImGuiInputTextFlags.EnterReturnsTrue
+            );
 
             // find a file/directory that has the same name
             if (nameBuf != oldName)
@@ -606,6 +658,31 @@ class FileBrowser
                         callback(Path.Combine(cwd, ent.Name));
                     }
                 }
+                else if (mode == OpenMode.Directory && selected >= 0)
+                {
+                    var ent = entries[selected];
+                    if (ent.Type == EntryType.Directory)
+                        ActivateEntry(ent);
+                }
+            }
+
+            // Directory Mode folder submit
+            if (dirSelect)
+            {
+                if (selected >= 0)
+                {
+                    var ent = entries[selected];
+                    if (ent.Type == EntryType.Directory)
+                    {
+                        isDone = true;
+                        callback(Path.Combine(cwd, ent.Name));
+                    }
+                }
+                else
+                {
+                    isDone = true;
+                    callback(cwd);
+                }
             }
 
             // show overwrite popup
@@ -632,6 +709,8 @@ class FileBrowser
                 {
                     ImGui.CloseCurrentPopup();
                 }
+
+                ImGui.EndPopup();
             }
 
             if (isDone)
@@ -658,7 +737,7 @@ class FileBrowser
 
                 ImGui.EndPopup();
             }
-
+            
             ImGui.EndPopup();
         }
     }
@@ -675,5 +754,55 @@ class FileBrowser
                 selected = -1;
             }
         }
+    }
+
+    // file browser button
+    private static uint activeFileBrowserButton = 0;
+    private static string? fileBrowserReturnValue = null;
+    private static bool fileBrowserReturn = false;
+    private static FileBrowser? fileBrowserButtonInstance = null;
+
+    public static bool Button(string id, OpenMode openMode, ref string path)
+    {
+        static void Callback(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            fileBrowserReturn = true;
+            fileBrowserReturnValue = path;
+        }
+
+        LoadIcons();
+
+        var textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
+        if (rlImGui.ImageButtonRect(id, icons, 13, 13, GetIconRect(5), textColor))
+        {
+            activeFileBrowserButton = ImGui.GetItemID();
+            fileBrowserReturn = false;
+            fileBrowserButtonInstance = new FileBrowser(openMode, Callback, Path.GetDirectoryName(path));
+        }
+        uint buttonId = ImGui.GetItemID();
+
+        ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextDisabled(path);
+
+        if (activeFileBrowserButton == buttonId)
+        {
+            fileBrowserButtonInstance!.InstanceRender();
+
+            if (fileBrowserReturn)
+            {
+                if (fileBrowserReturnValue is not null)
+                    path = fileBrowserReturnValue;
+
+                fileBrowserReturn = false;
+                activeFileBrowserButton = 0;
+                fileBrowserButtonInstance = null;
+                return true;
+            }
+
+        }
+
+        return false;
     }
 }

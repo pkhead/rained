@@ -1,11 +1,13 @@
 using System.Numerics;
 using ImGuiNET;
 
+// i probably should create an IGUIWindow interface for the various miscellaneous windows...
 namespace RainEd;
 static class PreferencesWindow
 {
     private const string WindowName = "Preferences";
-    public static bool IsWindowOpen = false;
+    private static bool isWindowOpen = false;
+    public static bool IsWindowOpen { get => isWindowOpen; }
 
     enum NavTabEnum : int
     {
@@ -19,11 +21,20 @@ static class PreferencesWindow
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
+    private static bool needRestart = false;
+
+    private static bool openPopupCmd = false;
+    public static void OpenWindow()
+    {
+        openPopupCmd = true;
+    }
 
     public static void ShowWindow()
     {
-        if (!ImGui.IsPopupOpen(WindowName) && IsWindowOpen)
+        if (openPopupCmd)
         {
+            openPopupCmd = false;
+            isWindowOpen = true;
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
@@ -32,7 +43,7 @@ static class PreferencesWindow
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.FirstUseEver);
         }
 
-        if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen))
+        if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
         {
             // show navigation sidebar
             ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
@@ -209,8 +220,29 @@ static class PreferencesWindow
 
     private static void ShowAssetsTab()
     {
-        ImGui.Text("Data Path: " + RainEd.Instance.AssetDataPath);
+
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("Data Path");
+        ImGui.SameLine();
+
+        var oldPath = RainEd.Instance.AssetDataPath;
+        if (FileBrowser.Button("DataPath", FileBrowser.OpenMode.Directory, ref RainEd.Instance.AssetDataPath))
+        {
+            // if path changed, disable asset import until user restarts Rained
+            if (Path.GetFullPath(oldPath) != Path.GetFullPath(RainEd.Instance.AssetDataPath))
+            {
+                needRestart = true;
+            }
+        }
+        ImGui.Separator();
         
+        if (needRestart)
+        {
+            ImGui.Text("(A restart is required before making further changes)");
+            ImGui.BeginDisabled();
+        }
+
+        ImGui.Button("Import Tiles");
         var tileDb = RainEd.Instance.TileDatabase;
 
         ImGui.Text("Categories");
@@ -222,6 +254,11 @@ static class PreferencesWindow
             }
         }
         ImGui.EndListBox();
+
+        if (needRestart)
+        {
+            ImGui.EndDisabled();
+        }
     }
 
     private static void ShortcutButton(KeyShortcut id, string? nameOverride = null)
