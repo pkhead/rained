@@ -171,6 +171,14 @@ static class PreferencesWindow
         }
 
         ImGui.SetItemTooltip(KeyShortcuts.GetShortcutString(id));
+        
+        // reset button
+        ImGui.SameLine();
+        if (ImGui.Button("X"))
+        {
+            KeyShortcuts.Reset(id);
+        }
+        ImGui.SetItemTooltip("Reset");
 
         ImGui.SameLine();
         ImGui.Text(nameOverride ?? KeyShortcuts.GetName(id));

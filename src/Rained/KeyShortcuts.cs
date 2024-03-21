@@ -132,7 +132,7 @@ static class KeyShortcuts
     }
     private static readonly Dictionary<KeyShortcut, KeyShortcutBinding> keyShortcuts = [];
 
-    public static void Register(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
+    private static void Register(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
     {
         keyShortcuts.Add(id, new KeyShortcutBinding(name, id, key, mods, allowRepeat));
     }
@@ -185,6 +185,14 @@ static class KeyShortcuts
         KeyShortcutBinding data = keyShortcuts[id];
         data.Key = tKey;
         data.Mods = mods;
+        data.GenerateShortcutString();
+    }
+
+    public static void Reset(KeyShortcut id)
+    {
+        var data = keyShortcuts[id];
+        data.Key = data.OriginalKey;
+        data.Mods = data.OriginalMods;
         data.GenerateShortcutString();
     }
 
