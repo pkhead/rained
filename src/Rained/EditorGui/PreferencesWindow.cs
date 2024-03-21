@@ -143,6 +143,23 @@ static class PreferencesWindow
 
         var prefs = RainEd.Instance.Preferences;
 
+        // TODO: initialize zygote runtime on startup
+        bool _u = false;
+        ImGui.Checkbox("Initialize Zygote runtime on startup", ref _u);
+        ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        ImGui.SetItemTooltip(
+            """
+            This will run the Zygote runtime initialization
+            process once, when the app starts. This results
+            in a longer startup time and more idle RAM
+            usage, but will decrease the time it takes to
+            start a render.
+
+            This option requires a restart in order to
+            take effect.    
+            """);
+        
         ImGui.SeparatorText("Level Colors");
         {
             Vector3 layerColor1 = HexColorToVec3(prefs.LayerColor1);
@@ -263,7 +280,7 @@ static class PreferencesWindow
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
                 var boxHeight = ImGui.GetContentRegionAvail().Y;
-                ImGui.BeginListBox("##Categories", new Vector2(halfWidth, boxHeight));
+                if (ImGui.BeginListBox("##Categories", new Vector2(halfWidth, boxHeight)))
                 {
                     var drawList = ImGui.GetWindowDrawList();
                     float textHeight = ImGui.GetTextLineHeight();
@@ -286,8 +303,9 @@ static class PreferencesWindow
                             ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
                         );
                     }
+
+                    ImGui.EndListBox();
                 }
-                ImGui.EndListBox();
 
                 // group listing list box
                 ImGui.SameLine();
@@ -308,7 +326,9 @@ static class PreferencesWindow
                             groupIndex = i;
                         }
                     }
-                } ImGui.EndListBox();
+
+                    ImGui.EndListBox();
+                }
 
                 ImGui.EndTabItem();
             }
