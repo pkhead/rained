@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
-using RainEd;
 
+namespace RainEd;
 static class PreferencesWindow
 {
     private const string WindowName = "Preferences";
@@ -10,10 +10,12 @@ static class PreferencesWindow
     enum NavTabEnum : int
     {
         General = 0,
-        Shortcuts = 1
+        Shortcuts = 1,
+        Theme = 2,
+        Assets = 3,
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
@@ -48,13 +50,23 @@ static class PreferencesWindow
             ImGui.SameLine();
             ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
             
-            if (selectedNavTab == NavTabEnum.General)
+            switch (selectedNavTab)
             {
-                ShowGeneralTab();
-            }
-            else if (selectedNavTab == NavTabEnum.Shortcuts)
-            {
-                ShowShortcutsTab();
+                case NavTabEnum.General:
+                    ShowGeneralTab();
+                    break;
+
+                case NavTabEnum.Shortcuts:
+                    ShowShortcutsTab();
+                    break;
+
+                case NavTabEnum.Theme:
+                    ShowThemeTab();
+                    break;
+                
+                case NavTabEnum.Assets:
+                    ShowAssetsTab();
+                    break;
             }
 
             ImGui.EndChild();
@@ -158,6 +170,32 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ZoomLightOut);
         ShortcutButton(KeyShortcut.RotateLightCW);
         ShortcutButton(KeyShortcut.RotateLightCCW);
+    }
+
+    private static void ShowThemeTab()
+    {
+        ImGui.ShowStyleSelector("Theme");
+
+        if (ImGui.TreeNode("Style Editor"))
+        {
+            ImGui.ShowStyleEditor();
+            ImGui.TreePop();
+        }
+    }
+
+    private static void ShowAssetsTab()
+    {
+        var tileDb = RainEd.Instance.TileDatabase;
+
+        ImGui.Text("Categories");
+        ImGui.BeginListBox("##Categories");
+        {
+            foreach (var category in tileDb.Categories)
+            {
+                ImGui.Selectable(category.Name);
+            }
+        }
+        ImGui.EndListBox();
     }
 
     private static void ShortcutButton(KeyShortcut id, string? nameOverride = null)
