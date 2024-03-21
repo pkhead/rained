@@ -1,6 +1,38 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Raylib_cs;
 namespace RainEd;
+
+struct HexColor(byte r = 0, byte g = 0, byte b = 0)
+{
+    public byte R = r;
+    public byte G = g;
+    public byte B = b;
+
+    public HexColor(string hexString) : this(0, 0, 0)
+    {
+        if (hexString[0] != '#')
+            throw new Exception("Hex string does not begin with a #");
+        
+        int color = int.Parse(hexString[1..], System.Globalization.NumberStyles.HexNumber);
+
+        R = (byte)((color >> 16) & 0xFF);
+        G = (byte)((color >> 8) & 0xFF);
+        B = (byte)(color & 0xFF);
+    }
+
+    public readonly override string ToString()
+    {
+        int combined = (R << 16) | (G << 8) | B;
+        return "#" + combined.ToString("X6");
+    }
+
+    public readonly Color ToRGBA(byte alpha)
+    {
+        return new Color(R, G, B, alpha);
+    }
+}
 
 class UserPreferences
 {
@@ -19,6 +51,20 @@ class UserPreferences
     public int WindowHeight { get; set; }
 
     public string Theme { get; set; }
+
+    public HexColor LayerColor1;
+    public HexColor LayerColor2;
+    public HexColor LayerColor3;
+    public HexColor BackgroundColor; 
+
+    [JsonPropertyName("layerColor1")]
+    public string LayerColor1String { get => LayerColor1.ToString(); set => LayerColor1 = new HexColor(value); }
+    [JsonPropertyName("layerColor2")]
+    public string LayerColor2String { get => LayerColor2.ToString(); set => LayerColor2 = new HexColor(value); }
+    [JsonPropertyName("layerColor3")]
+    public string LayerColor3String { get => LayerColor3.ToString(); set => LayerColor3 = new HexColor(value); }
+    [JsonPropertyName("bgColor")]
+    public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
 
     public Dictionary<string, string> Shortcuts { get; set; }
 
@@ -39,6 +85,10 @@ class UserPreferences
         WindowHeight = Boot.DefaultWindowHeight;
 
         Theme = "dark";
+        LayerColor1 = new HexColor("#000000");
+        LayerColor2 = new HexColor("#59ff59");
+        LayerColor3 = new HexColor("#ff1e1e");
+        BackgroundColor = new HexColor(127, 127, 127);
 
         // initialize shortcuts
         Shortcuts = null!;

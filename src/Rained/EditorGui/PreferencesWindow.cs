@@ -70,6 +70,7 @@ static class PreferencesWindow
             }
 
             ImGui.EndChild();
+            ImGui.EndPopup();
         }
         else
         {
@@ -120,7 +121,32 @@ static class PreferencesWindow
 
     private static void ShowGeneralTab()
     {
-        ImGui.Text("Lorem ipsum dolor sit amet");
+        static Vector3 HexColorToVec3(HexColor color) => new(color.R / 255f, color.G / 255f, color.B / 255f);
+        static HexColor Vec3ToHexColor(Vector3 vec) => new(
+            (byte)(Math.Clamp(vec.X, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Y, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Z, 0f, 1f) * 255f)
+        );
+
+        var prefs = RainEd.Instance.Preferences;
+
+        ImGui.SeparatorText("Level Colors");
+        {
+            Vector3 layerColor1 = HexColorToVec3(prefs.LayerColor1);
+            Vector3 layerColor2 = HexColorToVec3(prefs.LayerColor2);
+            Vector3 layerColor3 = HexColorToVec3(prefs.LayerColor3);
+            Vector3 bgColor = HexColorToVec3(prefs.BackgroundColor);
+
+            if (ImGui.ColorEdit3("Layer Color 1", ref layerColor1))
+                prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
+            if (ImGui.ColorEdit3("Layer Color 2", ref layerColor2))
+                prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
+            if (ImGui.ColorEdit3("Layer Color 3", ref layerColor3))
+                prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
+            
+            if (ImGui.ColorEdit3("Background Color", ref bgColor))
+                prefs.BackgroundColor = Vec3ToHexColor(bgColor);
+        }
     }
 
     private static void ShowShortcutsTab()
