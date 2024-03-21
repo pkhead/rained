@@ -295,8 +295,8 @@ class GeometryEditor : IEditorMode
             var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
 
             LayerColors[0] = new Color(layerCol1.R, layerCol1.G, layerCol1.B, (byte)255);
-            LayerColors[1] = new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)255);
-            LayerColors[2] = new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)255);
+            LayerColors[1] = new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)100);
+            LayerColors[2] = new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)70);
         }
         
         // draw the layers

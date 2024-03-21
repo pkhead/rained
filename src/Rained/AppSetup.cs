@@ -56,8 +56,7 @@ class AppSetup
                 else
                 {
                     ImGui.Text("Do you want to use Rain World level editor asset data already on your computer?");
-                    ImGui.Text("Press \"No\" if you have not installed a Rain World level editor on your computer before.");
-                    ImGui.Text("Pressing \"No\" will begin downloading asset data from the Internet.");
+                    ImGui.Text("Pressing \"No\" will download asset data from the Internet.");
 
                     ImGui.Separator();
 
