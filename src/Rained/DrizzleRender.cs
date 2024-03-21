@@ -42,7 +42,7 @@ class DrizzleRender : IDisposable
             {
                 RainEd.Logger.Information("Initializing Zygote runtime...");
 
-                LingoRuntime.MovieBasePath = Path.Combine(Boot.AppDataPath, "Data") + Path.DirectorySeparatorChar;
+                LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
                 LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
                 
                 var runtime = new LingoRuntime(typeof(MovieScript).Assembly);

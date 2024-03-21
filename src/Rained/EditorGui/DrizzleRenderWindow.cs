@@ -151,8 +151,8 @@ class DrizzleRenderWindow : IDisposable
             ImGui.SameLine();
             if (ImGui.Button("Show In File Browser"))
                 RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(
-                    Boot.AppDataPath,
-                    "Data", "Levels",
+                    RainEd.Instance.AssetDataPath,
+                    "Levels",
                     Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath) + ".txt"
                 ), true);
             

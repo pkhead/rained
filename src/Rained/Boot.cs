@@ -130,11 +130,15 @@ namespace RainEd
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
                 RainEd app;
-#if !DEBUG
+
                 try
-#endif
                 {
                     app = new(levelToLoad);
+                }
+                catch (RainEdStartupException)
+                {
+                    Environment.ExitCode = 1;
+                    return;
                 }
 #if !DEBUG
                 catch (Exception e)
@@ -187,19 +191,8 @@ namespace RainEd
             splashScreenWindow?.Close();
         }
 
-        private static void NotifyError(Exception e)
+        public static void DisplayError(string windowTitle, string windowContents)
         {
-            if (RainEd.Instance is not null)
-            {
-                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
-            }
-
-            Environment.ExitCode = 1;
-
-            // show message box
-            var windowTitle = "Fatal Exception";
-            var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
-
             if (OperatingSystem.IsWindows())
             {
                 MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
@@ -233,6 +226,22 @@ namespace RainEd
                     splashScreenWindow?.Close();
                 }
             }
+        }
+
+        private static void NotifyError(Exception e)
+        {
+            if (RainEd.Instance is not null)
+            {
+                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+            }
+
+            Environment.ExitCode = 1;
+
+            // show message box
+            var windowTitle = "Fatal Exception";
+            var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
+
+            DisplayError(windowTitle, windowContents);
         }
     }
 }

@@ -211,6 +211,8 @@ static class PreferencesWindow
 
     private static void ShowAssetsTab()
     {
+        ImGui.Text("Data Path: " + RainEd.Instance.AssetDataPath);
+        
         var tileDb = RainEd.Instance.TileDatabase;
 
         ImGui.Text("Categories");

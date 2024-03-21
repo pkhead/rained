@@ -109,7 +109,7 @@ class MaterialDatabase
     {
         var parser = new Lingo.LingoParser();
 
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data", "Materials", "Init.txt")))
+        foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt")))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 

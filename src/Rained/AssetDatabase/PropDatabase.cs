@@ -82,7 +82,7 @@ record PropInit
         // find prop path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
         // kind of annoying. so i just put those images in assets/internal
-        string texturePath = Path.Combine(Boot.AppDataPath, "Data", "Props", Name + ".png");
+        string texturePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", Name + ".png");
         if (!File.Exists(texturePath))
         {
             texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", Name + ".png");
@@ -464,7 +464,7 @@ class PropDatabase
     private void InitProps(TileDatabase tileDatabase)
     {
         // read prop init file
-        var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "Init.txt");
+        var initFilePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt");
         var lingoParser = new Lingo.LingoParser();
 
         PropCategory? currentCategory = null;
@@ -585,7 +585,7 @@ class PropDatabase
     private void InitCustomColors()
     {
         // read propColors.txt
-        var initFilePath = Path.Combine(Boot.AppDataPath, "Data", "Props", "propColors.txt");
+        var initFilePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", "propColors.txt");
         var lingoParser = new Lingo.LingoParser();
 
         foreach (var line in File.ReadLines(initFilePath))

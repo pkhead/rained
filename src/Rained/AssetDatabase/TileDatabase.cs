@@ -117,10 +117,10 @@ class Tile
         
         // find path to image
         // if it doesn't exist in Data/Graphics, check in assets/internal
-        GraphicsPath = Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png");
+        GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", name + ".png");
         if (!File.Exists(GraphicsPath))
         {
-            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", name + ".png");
+            GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "internal", name + ".png");
         }
 
         using var fullImage = RlManaged.Image.Load(GraphicsPath);
@@ -283,7 +283,7 @@ class TileDatabase
         }
 
         // read Init.txt
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data","Graphics","Init.txt")))
+        foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt")))
         {
             ProcessLine(line);
         }

@@ -9,6 +9,16 @@ using System.Diagnostics;
 
 namespace RainEd;
 
+[Serializable]
+public class RainEdStartupException : Exception
+{
+    public RainEdStartupException() { }
+    public RainEdStartupException(string message) : base(message) { }
+    public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
+    protected RainEdStartupException(
+        System.Runtime.Serialization.SerializationInfo info,
+        System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+}
 sealed class RainEd
 {
     public const string Version = "b1.3.0"; 
@@ -27,6 +37,8 @@ sealed class RainEd
 
     private readonly string prefFilePath;
     public UserPreferences Preferences;
+
+    public string AssetDataPath;
     public readonly Tiles.MaterialDatabase MaterialDatabase;
     public readonly Tiles.TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
@@ -99,9 +111,19 @@ sealed class RainEd
         {
             // first-time
             Preferences = new UserPreferences();
+            UserPreferences.SaveToFile(Preferences, prefFilePath);
         }
 
         // load asset database
+        AssetDataPath = Preferences.DataPath;
+
+        // halt if asset data path directory doesn't exist
+        if (!Directory.Exists(AssetDataPath))
+        {
+            Boot.DisplayError("Could not start", "The Data directory is missing!\n\nPlease insert the Data directory into the installation directory, or edit \"dataPath\" in preferences.json to point to a valid RWLE data folder.");
+            throw new RainEdStartupException();
+        }
+
         Logger.Information("Initializing materials database...");
         MaterialDatabase = new Tiles.MaterialDatabase();
 
@@ -493,10 +515,10 @@ sealed class RainEd
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
-                    ShowPathInSystemBrowser(Path.Combine(Boot.AppDataPath, "Data"), false);
+                    ShowPathInSystemBrowser(AssetDataPath, false);
                 
                 if (ImGui.MenuItem("Show Render Folder..."))
-                    ShowPathInSystemBrowser(Path.Combine(Boot.AppDataPath, "Data", "Levels"), false);
+                    ShowPathInSystemBrowser(Path.Combine(AssetDataPath, "Levels"), false);
                 
                 ImGui.EndMenu();
             }

@@ -36,6 +36,8 @@ struct HexColor(byte r = 0, byte g = 0, byte b = 0)
 
 class UserPreferences
 {
+    public string DataPath { get; set; }
+
     public bool ViewGrid { get; set; }
     public bool ViewObscuredBeams { get; set; }
     public bool ViewKeyboardShortcuts { get; set; }
@@ -71,6 +73,8 @@ class UserPreferences
     // default user preferences
     public UserPreferences()
     {
+        DataPath = Path.Combine(Boot.AppDataPath, "Data");
+        
         ViewGrid = true;
         ViewObscuredBeams = false;
         ViewKeyboardShortcuts = true;

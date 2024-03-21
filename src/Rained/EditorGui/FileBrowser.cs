@@ -161,13 +161,13 @@ class FileBrowser
         fileFilters.Add(new FileFilter("Any", new string[] { ".*" }));
         selectedFilter = fileFilters[0];
         
-        cwd = openDir ?? Path.Combine(Boot.AppDataPath, "Data", "LevelEditorProjects");
+        cwd = openDir ?? Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
         SetPath(cwd);
         pathBuf = cwd;
         nameBuf = string.Empty;
 
 
-        AddBookmark("Levels", Path.Combine(Boot.AppDataPath, "Data", "LevelEditorProjects"));
+        AddBookmark("Levels", Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects"));
 
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
