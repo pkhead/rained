@@ -17,8 +17,6 @@ Overall:
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
-- configurable geo colors
-- configurable keybinds
 - configurable theme
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - Move Level
@@ -32,14 +30,7 @@ Overall:
 - favorite tiles and props
 - fix trans flag prop loading
 - option to use "legacy" shortcut icons
-- CUSTOM MATERIALS
-
-Post-Full Release:
-(full release will include a combined geo and tile editor)
-- custom tile/prop manager
-- tile init editor
-- ability to change directory of drizzle data folder
-  (so people don't have to copy files or symlink) 
+- tile init editor (maybe?)
 
 Geometry Editor:
 - select and copy/paste
