@@ -158,7 +158,7 @@ class FileBrowser
     } 
     
     private static RlManaged.Texture2D icons = null!;
-    private FileBrowser(OpenMode mode, Action<string> callback, string? openDir)
+    public FileBrowser(OpenMode mode, Action<string> callback, string? openDir)
     {
         LoadIcons();
 
@@ -167,13 +167,23 @@ class FileBrowser
         fileFilters.Add(new FileFilter("Any", [ ".*" ]));
         selectedFilter = fileFilters[0];
         
-        cwd = openDir ?? Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
+        if (RainEd.Instance is not null)
+        {
+            cwd = openDir ?? Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
+        }
+        else
+        {
+            cwd = openDir ?? Boot.AppDataPath;
+        }
+        
         SetPath(cwd);
         pathBuf = cwd;
         nameBuf = string.Empty;
 
-
-        AddBookmark("Levels", Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects"));
+        if (RainEd.Instance is not null)
+        {
+            AddBookmark("Levels", Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects"));
+        }
 
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {

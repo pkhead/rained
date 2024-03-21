@@ -64,7 +64,7 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
-    public RainEd(string levelPath = "") {
+    public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
         
@@ -108,6 +108,11 @@ sealed class RainEd
         {
             // first-time
             Preferences = new UserPreferences();
+            if (assetData is not null)
+            {
+                Preferences.DataPath = assetData;
+            }
+            
             UserPreferences.SaveToFile(Preferences, prefFilePath);
         }
 

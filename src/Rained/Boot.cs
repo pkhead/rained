@@ -129,11 +129,26 @@ namespace RainEd
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
+                string? assetDataPath = null;
+                if (!File.Exists(Path.Combine(AppDataPath, "preferences.json")))
+                {
+                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                    splashScreenWindow?.SetVisible(false);
+
+                    if (!AppSetup.Start(out assetDataPath))
+                    {
+                        rlImGui.Shutdown();
+                        Raylib.CloseWindow();
+                        splashScreenWindow?.Close();
+                        return;
+                    }
+                }
+
                 RainEd app;
 
                 try
                 {
-                    app = new(levelToLoad);
+                    app = new(assetDataPath, levelToLoad);
                 }
                 catch (RainEdStartupException)
                 {
