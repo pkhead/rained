@@ -475,7 +475,7 @@ partial class PropEditor : IEditorMode
                             drawList.AddRectFilled(
                                 p_min: cursor,
                                 p_max: cursor + new Vector2(10f, textHeight),
-                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
                         

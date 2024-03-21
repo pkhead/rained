@@ -56,7 +56,7 @@ static class AssetManagerGUI
                     drawList.AddRectFilled(
                         p_min: cursor,
                         p_max: cursor + new Vector2(10f, textHeight),
-                        ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255, 1f))
+                        ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
                     );
                 }
                 else
