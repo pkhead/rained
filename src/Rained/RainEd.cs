@@ -57,6 +57,7 @@ sealed class RainEd
 
     private DrizzleRenderWindow? drizzleRenderWindow = null;
     private LevelResizeWindow? levelResizeWin = null;
+    private FileBrowser? fileBrowser = null;
 
     public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
 
@@ -369,8 +370,8 @@ sealed class RainEd
             return isRw;
         }
 
-        FileBrowser.Open(openMode, callback, currentFilePath);
-        FileBrowser.AddFilter("Rain World level file", levelCheck, ".txt");
+        fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(currentFilePath));
+        fileBrowser.AddFilter("Rain World level file", levelCheck, ".txt");
     }
 
     private void HandleShortcuts()
@@ -559,8 +560,8 @@ sealed class RainEd
         }
 
         // render level browser
-        FileBrowser.Render();
-
+        FileBrowser.Render(ref fileBrowser);
+        
         // render drizzle render, if in progress
         if (drizzleRenderWindow is not null)
         {

@@ -8,13 +8,6 @@ namespace RainEd;
 
 class FileBrowser
 {
-    private static FileBrowser singleton = null!;
-    public static FileBrowser Instance { get => singleton; }
-    public static void Open(OpenMode openMode, Action<string> callback, string? defaultFileName)
-    {
-        singleton = new FileBrowser(openMode, callback, Path.GetDirectoryName(defaultFileName));
-    }
-
     private bool isOpen = false;
     private bool isDone = false;
     private readonly Action<string> callback;
@@ -209,17 +202,12 @@ class FileBrowser
         bookmarks.Add(new BookmarkItem(name, path));
     }
 
-    public static void AddFilter(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
+    public void AddFilter(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
     {
-        singleton.fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
+        fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
 
         // default filter is the first filter added, else "Any"
-        singleton.selectedFilter = singleton.fileFilters[1];
-    }
-
-    public static void Render()
-    {
-        singleton?.InstanceRender();
+        selectedFilter = fileFilters[1];
     }
 
     private static Rectangle GetIconRect(int index)
@@ -342,7 +330,26 @@ class FileBrowser
         }
     }
 
-    private void InstanceRender()
+    /// <summary>
+    /// Render the file browser window, setting the referenced variable to null
+    /// once the window has closed.
+    /// </summary>
+    /// <param name="fileBrowser"></param>
+    /// <returns></returns>
+    public static void Render(ref FileBrowser? fileBrowser)
+    {
+        if (fileBrowser is not null && !fileBrowser.Render())
+        {
+            fileBrowser = null;
+        }
+    }
+
+    /// <summary>
+    /// Render the file browser window
+    /// </summary>
+    /// <returns>`true` if the file browser window is still open, `false` if not</returns>
+    /// <exception cref="Exception"></exception>
+    public bool Render()
     {
         Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
 
@@ -749,7 +756,11 @@ class FileBrowser
             }
             
             ImGui.EndPopup();
+
+            return true;
         }
+
+        return false;
     }
 
     private void ActivateEntry(Entry entry)
@@ -798,7 +809,7 @@ class FileBrowser
 
         if (activeFileBrowserButton == buttonId)
         {
-            fileBrowserButtonInstance!.InstanceRender();
+            fileBrowserButtonInstance!.Render();
 
             if (fileBrowserReturn)
             {

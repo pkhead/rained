@@ -16,7 +16,8 @@ class AppSetup
     {
         assetDataPath = null;
         string? callbackRes = null;
-        float callbackWait = 1f; 
+        float callbackWait = 1f;
+        FileBrowser? fileBrowser = null;
         
         while (true)
         {
@@ -60,11 +61,11 @@ class AppSetup
 
                     ImGui.Separator();
 
-                    FileBrowser.Render();
+                    FileBrowser.Render(ref fileBrowser);
 
                     if (ImGui.Button("Yes"))
                     {
-                        FileBrowser.Open(FileBrowser.OpenMode.Directory, Callback, Boot.AppDataPath);
+                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Directory, Callback, Boot.AppDataPath);
                     }
 
                     ImGui.SameLine();
