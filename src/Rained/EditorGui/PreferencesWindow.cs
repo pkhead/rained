@@ -200,12 +200,10 @@ static class PreferencesWindow
 
     private static void ShowThemeTab()
     {
-        ImGui.ShowStyleSelector("Theme");
-
-        if (ImGui.TreeNode("Style Editor"))
+        ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12.0f);
+        if (ImGui.Combo("Theme", ref RainEd.Instance.Preferences.ThemeIndex, "Dark\0Light\0ImGui Classic"))
         {
-            ImGui.ShowStyleEditor();
-            ImGui.TreePop();
+            RainEd.Instance.Preferences.ApplyTheme();
         }
     }
 

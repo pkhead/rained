@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Raylib_cs;
+using ImGuiNET;
 namespace RainEd;
 
 struct HexColor(byte r = 0, byte g = 0, byte b = 0)
@@ -52,12 +53,12 @@ class UserPreferences
     public int WindowWidth { get; set; }
     public int WindowHeight { get; set; }
 
-    public string Theme { get; set; }
-
     public HexColor LayerColor1;
     public HexColor LayerColor2;
     public HexColor LayerColor3;
-    public HexColor BackgroundColor; 
+    public HexColor BackgroundColor;
+    public int ThemeIndex;
+    public readonly string[] ThemeNames = [ "Dark", "Light", "ImGui Classic" ];
 
     [JsonPropertyName("layerColor1")]
     public string LayerColor1String { get => LayerColor1.ToString(); set => LayerColor1 = new HexColor(value); }
@@ -68,6 +69,25 @@ class UserPreferences
     [JsonPropertyName("bgColor")]
     public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
 
+    [JsonPropertyName("theme")]
+    public string ThemeSerialized {
+        get => ThemeNames[ThemeIndex];
+        set
+        {
+            for (int i = 0; i < ThemeNames.Length; i++)
+            {
+                if (ThemeNames[i] == value)
+                {
+                    ThemeIndex = i;
+                    return;
+                }
+            }
+
+            ThemeIndex = 0;
+            RainEd.Logger.Error("Invalid theme '{ThemeName}'", value);
+            RainEd.Instance.ShowNotification($"Unknown theme '{value}'");
+        }
+    }
     public Dictionary<string, string> Shortcuts { get; set; }
 
     // default user preferences
@@ -88,7 +108,7 @@ class UserPreferences
         WindowWidth = Boot.DefaultWindowWidth;
         WindowHeight = Boot.DefaultWindowHeight;
 
-        Theme = "dark";
+        ThemeIndex = 0;
         LayerColor1 = new HexColor("#000000");
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
@@ -152,6 +172,16 @@ class UserPreferences
             var key = char.ToLowerInvariant(srcString[0]) + srcString[1..];
 
             Shortcuts[key] = KeyShortcuts.GetShortcutString(shortcut);
+        }
+    }
+
+    public void ApplyTheme()
+    {
+        switch (ThemeIndex)
+        {
+            case 0: ImGui.StyleColorsDark(); break;
+            case 1: ImGui.StyleColorsLight(); break;
+            case 2: ImGui.StyleColorsClassic(); break;
         }
     }
 }

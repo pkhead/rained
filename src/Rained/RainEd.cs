@@ -15,9 +15,6 @@ public class RainEdStartupException : Exception
     public RainEdStartupException() { }
     public RainEdStartupException(string message) : base(message) { }
     public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
-    protected RainEdStartupException(
-        System.Runtime.Serialization.SerializationInfo info,
-        System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
 }
 sealed class RainEd
 {
@@ -113,6 +110,8 @@ sealed class RainEd
             Preferences = new UserPreferences();
             UserPreferences.SaveToFile(Preferences, prefFilePath);
         }
+
+        Preferences.ApplyTheme();
 
         // load asset database
         AssetDataPath = Preferences.DataPath;
