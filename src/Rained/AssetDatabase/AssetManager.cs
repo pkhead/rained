@@ -37,72 +37,35 @@ record InitCategory
     public string Name;
     public List<InitData> Items;
     public int LineNumber;
+    public Lingo.Color? Color;
 
-    public InitCategory(string name, int line)
+    public InitCategory(string name, int line, Lingo.Color? color = null)
     {
         Name = name;
         LineNumber = line;
-        Items = [];
-    }
-}
-
-record ColoredInitCategory : InitCategory
-{
-    public Lingo.Color Color;
-
-    public ColoredInitCategory(string name, Lingo.Color color, int line) : base(name, line)
-    {
-        Name = name;
         Color = color;
         Items = [];
-        LineNumber = line;
     }
 }
 
-record CategoryList<T>
-    where T : InitCategory
+record CategoryList
 {
-    public List<T> Categories = [];
-    public Dictionary<string, InitData> Dictionary = [];
+    public readonly string FilePath;
+    public readonly List<string> Lines;
+    private bool isColored;
 
-    public void AddInit(InitData data)
+    public readonly List<InitCategory> Categories = [];
+    public readonly Dictionary<string, InitData> Dictionary = [];
+
+    public CategoryList(string path, bool colored)
     {
-        Categories[^1].Items.Add(data);
-        Dictionary[data.Name] = data;
-    }
-}
+        isColored = colored;
+        FilePath = path;
+        Lines = new List<string>(File.ReadAllLines(path));
 
-class AssetManager
-{
-    public readonly CategoryList<ColoredInitCategory> TileInit;
-    public readonly CategoryList<ColoredInitCategory> PropInit;
-    public readonly CategoryList<InitCategory> MaterialsInit;
-    
-    public AssetManager()
-    {
-        TileInit = new();
-        PropInit = new();
-        MaterialsInit = new();
-
-        // parse tile Init.txt
-        ParseColoredInit(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), TileInit);
-        
-        // parse prop Init.txt
-        ParseColoredInit(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), PropInit);
-
-        // parse materials Init.txt
-        ParseMaterialInit(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), MaterialsInit);
-    }
-
-    private static void ParseColoredInit(
-        string path,
-        CategoryList<ColoredInitCategory> outputCategories
-    )
-    {
         var parser = new Lingo.LingoParser();
-
         int lineNo = 0;
-        foreach (var line in File.ReadLines(path))
+        foreach (var line in Lines)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
@@ -113,22 +76,32 @@ class AssetManager
             // category header
             if (line[0] == '-')
             {
-                var list = (Lingo.List) parser.Read(line[1..])!;
-                outputCategories.Categories.Add(new ColoredInitCategory(
-                    name: (string) list.values[0],
-                    color: (Lingo.Color) list.values[1],
-                    line: lineNo
-                ));
+                if (colored)
+                {
+                    var list = (Lingo.List) parser.Read(line[1..])!;
+                    Categories.Add(new InitCategory(
+                        name: (string) list.values[0],
+                        color: (Lingo.Color) list.values[1],
+                        line: lineNo
+                    ));
+                }
+                else
+                {
+                    Categories.Add(new InitCategory(
+                        name: line[1..],
+                        line: lineNo
+                    ));
+                }
             }
 
-            // tile init
+            // item
             else
             {
                 var data = parser.Read(line) as Lingo.List;
 
                 if (data is not null)
                 {
-                    outputCategories.AddInit(new InitData(
+                    AddInit(new InitData(
                         name: (string) data.fields["nm"],
                         data: line,
                         line: lineNo
@@ -140,41 +113,143 @@ class AssetManager
         }
     }
 
-    private static void ParseMaterialInit(string path, CategoryList<InitCategory> outputCategories)
+    public void AddInit(InitData data, InitCategory? category = null)
     {
-        var parser = new Lingo.LingoParser();
+        (category ?? Categories[^1]).Items.Add(data);
+        Dictionary[data.Name] = data;
+    }
 
-        int lineNo = 0;
-        foreach (var line in File.ReadLines(path))
+    private InitCategory? GetCategory(string name)
+    {
+        foreach (var cat in Categories)
         {
+            if (cat.Name == name)
+                return cat;
+        }
+
+        return null;
+    }
+
+    public void Merge(string otherPath)
+    {
+        RainEd.Logger.Information("Merge {Path}", otherPath);
+        var parentDir = Path.Combine(FilePath, "..");
+        var otherDir = Path.Combine(otherPath, "..");
+
+        var parser = new Lingo.LingoParser();
+        InitCategory? targetCategory = null; 
+
+        // add extra lines for readability
+        Lines.Add("");
+        Lines.Add("");
+
+        int otherLineNo = -1;
+
+        foreach (var line in File.ReadLines(otherPath))
+        {
+            otherLineNo++;
+            int lineNo = Lines.Count;
+
             if (string.IsNullOrWhiteSpace(line))
             {
-                lineNo++;
+                Lines.Add("");
                 continue;
             }
 
-            // category header
+            // category
             if (line[0] == '-')
             {
-                outputCategories.Categories.Add(new InitCategory(
-                    name: line[1..],
-                    line: lineNo
-                ));
+                InitCategory category;
+
+                if (isColored)
+                {
+                    var list = (Lingo.List) parser.Read(line[1..])!;
+                    category = new InitCategory(
+                        name: (string) list.values[0],
+                        color: (Lingo.Color) list.values[1],
+                        line: lineNo
+                    );
+                }
+                else
+                {
+                    category = new InitCategory(
+                        name: line[1..],
+                        line: lineNo
+                    );
+                }
+
+                // error if category already exists
+                if (GetCategory(category.Name) is not null)
+                {
+                    throw new Exception($"Category '{category.Name}' already exists!");
+                }
+                else
+                {
+                    Lines.Add(line);
+                    Categories.Add(category);
+                    targetCategory = category;
+                }
             }
 
-            // tile init
+            // item
             else
             {
-                var data = (Lingo.List) parser.Read(line)!;
+                if (targetCategory is null)
+                {
+                    throw new Exception("Category definition expected, got item definition");
+                }
 
-                outputCategories.AddInit(new InitData(
-                    name: (string) data.fields["nm"],
-                    data: line,
-                    line: lineNo
-                ));
+                var data = parser.Read(line) as Lingo.List;
+
+                if (data is not null)
+                {
+                    var init = new InitData(
+                        name: (string) data.fields["nm"],
+                        data: line,
+                        line: lineNo
+                    );
+
+                    // error if name already exists
+                    if (Dictionary.ContainsKey(init.Name))
+                    {
+                        throw new Exception($"Item '{init.Name}' already exists!");
+                    }
+                    else
+                    {
+                        var pngName = init.Name + ".png";
+
+                        // copy graphics
+                        RainEd.Logger.Information("Copy {ImageName}", pngName);
+                        
+                        var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
+                        File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
+
+                        Lines.Add(line);
+                        AddInit(init, targetCategory);
+                    }
+                }
             }
-
-            lineNo++;
         }
+
+        RainEd.Logger.Information("Writing merge result to {Path}...", FilePath);
+        
+        // force \r newlines
+        File.WriteAllText(FilePath, string.Join("\r", Lines));
+
+        RainEd.Logger.Information("Merge successful!");
+    }
+}
+
+class AssetManager
+{
+    public readonly CategoryList TileInit;
+    public readonly CategoryList PropInit;
+    public readonly CategoryList MaterialsInit;
+    
+    public AssetManager()
+    {
+        TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true);
+        PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true);
+        MaterialsInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), false);
     }
 }
