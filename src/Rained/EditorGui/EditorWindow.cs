@@ -103,6 +103,34 @@ class EditorWindow
         
         throw new Exception("Could not find editor mode");
     }
+
+    public static Color BackgroundColor
+    {
+        get
+        {
+            var col = RainEd.Instance.Preferences.BackgroundColor;
+            return new Color(col.R, col.G, col.B, (byte)255);        
+        }
+    }
+
+    public static Color GeoColor(int alpha)
+    {
+        var col = RainEd.Instance.Preferences.LayerColor1;
+        return new Color(col.R, col.G, col.B, (byte)alpha);  
+    }
+
+    public static Color GeoColor(float fade, int alpha)
+    {
+        fade = Math.Clamp(fade, 0f, 1f);
+
+        var col = RainEd.Instance.Preferences.LayerColor1;
+        return new Color(
+            (byte)(col.R * (1f - fade) + 255f * fade),
+            (byte)(col.G * (1f - fade) + 255f * fade),
+            (byte)(col.B * (1f - fade) + 255f * fade),
+            (byte)alpha
+        );  
+    }
     
     public EditorWindow()
     {

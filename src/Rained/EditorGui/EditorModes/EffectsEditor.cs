@@ -437,7 +437,7 @@ class EffectsEditor : IEditorMode
         var levelRender = window.LevelRenderer;
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
 
         // draw layers, including tiles
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -449,7 +449,7 @@ class EffectsEditor : IEditorMode
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
-                levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+                levelRender.RenderGeometry(l, EditorWindow.GeoColor(30f / 255f, 255));
                 levelRender.RenderTiles(l, 100);
             Rlgl.PopMatrix();
         }

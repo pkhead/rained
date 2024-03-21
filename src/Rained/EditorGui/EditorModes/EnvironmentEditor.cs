@@ -104,13 +104,13 @@ class EnvironmentEditor : IEditorMode
         }
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = new Color(0, 0, 0, alpha);
+            var color = EditorWindow.GeoColor(alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();

@@ -286,7 +286,7 @@ partial class PropEditor : IEditorMode
         level.SortPropsByDepth();
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
 
         // draw geometry/tile layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -295,7 +295,7 @@ partial class PropEditor : IEditorMode
             Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+            levelRender.RenderGeometry(l, EditorWindow.GeoColor(255));
             levelRender.RenderTiles(l, 100);
         }
 

@@ -94,7 +94,7 @@ class GeometryEditor : IEditorMode
         { Tool.CopyBackwards,   new(3, 5) }
     };
 
-    private static readonly Color[] LAYER_COLORS =
+    private static readonly Color[] LayerColors =
     [
         new(0, 0, 0, 255),
         new(89, 255, 89, 100),
@@ -286,7 +286,18 @@ class GeometryEditor : IEditorMode
         var levelRender = window.LevelRenderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+
+        // update layer colors
+        {
+            var layerCol1 = RainEd.Instance.Preferences.LayerColor1;
+            var layerCol2 = RainEd.Instance.Preferences.LayerColor2;
+            var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
+
+            LayerColors[0] = new Color(layerCol1.R, layerCol1.G, layerCol1.B, (byte)255);
+            LayerColors[1] = new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)255);
+            LayerColors[2] = new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)255);
+        }
         
         // draw the layers
         int foregroundAlpha = 255; // this is stored for drawing objects later
@@ -297,7 +308,7 @@ class GeometryEditor : IEditorMode
             case LayerViewMode.Overlay:
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
-                    var color = LAYER_COLORS[l];
+                    var color = LayerColors[l];
                     levelRender.RenderGeometry(l, color);
                 }
 
@@ -309,7 +320,7 @@ class GeometryEditor : IEditorMode
                 {
                     var alpha = layerMask[l] ? 255 : 50;
                     if (l == 0) foregroundAlpha = alpha;
-                    var color = new Color(LAYER_COLORS[l].R, LAYER_COLORS[l].G, LAYER_COLORS[l].B, alpha);
+                    var color = new Color(LayerColors[l].R, LayerColors[l].G, LayerColors[l].B, alpha);
                     int offset = l * 2;
 
                     Rlgl.PushMatrix();

@@ -156,7 +156,7 @@ partial class TileEditor : IEditorMode
         var matDb = RainEd.Instance.MaterialDatabase;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
 
         // draw layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -166,7 +166,7 @@ partial class TileEditor : IEditorMode
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
-                levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
+                levelRender.RenderGeometry(l, EditorWindow.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
             Rlgl.PopMatrix();
         }
