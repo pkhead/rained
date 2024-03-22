@@ -13,11 +13,10 @@
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated
 
-# rained user preferences
-/preferences.json
-
-# rained logs
-/logs
-
-# some distribution files
+# data
 /dist/Data
+/Data
+
+# rained-generated files
+/preferences.json
+/logs

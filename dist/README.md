@@ -5,14 +5,10 @@ Read LICENSE.md for software licenses
 Check https://github.com/pkhead/rained/releases for any new releases. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
 - preferences.json
 - imgui.ini
-- Data/
 - logs/
+- Your Data folder, if present
 
-Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
-
-The Data folder in this zip does not contain all the level files used in the vanilla game and More Slugcats. I did this to decrease download and decompression time.
-If you want all of the levels, you can download them from this repository:
-https://github.com/SlimeCubed/Drizzle.Data/tree/community ([Direct download](https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip))
+Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs.
 
 Some usability hints, as I don't yet know a better place to put this:
 - Check out the menus (on the top) and the shortcuts!
@@ -28,7 +24,7 @@ Some usability hints, as I don't yet know a better place to put this:
 - If you scale multiple props, it will force proportional scaling.
 - You can use your mouse to manipulate the light circle in the light editor.
 
-Here are some tips on using Dear ImGui (the GUI library I'm using):
+Here are some tips on using the GUI elements:
 - You can freely move and resize docks (e.g. the level dock, the build dock, the shortcuts dock, etc).
 - In the prop editor, some inputs for the prop options are drag inputs, meaning that to change them you
   click and drag left/right in the box.

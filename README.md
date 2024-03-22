@@ -30,6 +30,7 @@ Back to the root directory, build and run Rained
 dotnet build
 dotnet run --project src/Rained/Rained.csproj
 ```
+Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
 ## Contributing
 Report bugs and other complaints by creating an issue or pinging @chromosoze in the Rain World Discord server. DM requests also work, but it's likely

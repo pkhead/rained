@@ -135,7 +135,8 @@ namespace RainEd
                     Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
                     splashScreenWindow?.SetVisible(false);
 
-                    if (!AppSetup.Start(out assetDataPath))
+                    var appSetup = new AppSetup();
+                    if (!appSetup.Start(out assetDataPath))
                     {
                         rlImGui.Shutdown();
                         Raylib.CloseWindow();
