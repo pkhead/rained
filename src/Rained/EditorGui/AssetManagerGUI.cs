@@ -23,22 +23,26 @@ static class AssetManagerGUI
     private static FileBrowser? fileBrowser = null;
 
     // variables related to the merge process
-    private static TaskCompletionSource<bool>? overwritePromptTcs = null;
-    private static string? overwritePromptTarget = null;
-    private static Task? mergeTask = null;
-    private static bool? autoConfirm = null;
+    
 
-    private static async Task<bool> PromptOverwrite(string name)
+    private static TaskCompletionSource<PromptResult>? mergePromptTcs = null;
+    private static PromptOptions? mergePrompt = null;
+    private static Task? mergeTask = null;
+    
+
+    // fields related to delete confirmation prompt
+    private static bool noAskBeforeDeletion = true;
+    private static int wantDelete = 0; // 0 = no, 1 = category, 2 = asset
+
+    private static async Task<PromptResult> PromptOverwrite(PromptOptions prompt)
     {
-        if (autoConfirm.HasValue)
-            return autoConfirm.Value;
+        mergePromptTcs = new();
+        mergePrompt = prompt;
+        var res = await mergePromptTcs.Task;
         
-        overwritePromptTcs = new();
-        overwritePromptTarget = name;
-        var res = await overwritePromptTcs.Task;
-        
-        overwritePromptTarget = null;
-        overwritePromptTcs = null;
+        mergePromptTcs = null;
+        mergePrompt = null;
+
         return res;
     }
 
@@ -140,6 +144,24 @@ static class AssetManagerGUI
         }
     }
 
+    private static void DeleteCategory()
+    {
+        switch (curAssetTab)
+        {
+            case AssetType.Tile:
+                DeleteCategory(assetManager!.TileInit, ref selectedTileCategory);
+                break;
+
+            case AssetType.Prop:
+                DeleteCategory(assetManager!.PropInit, ref selectedPropCategory);
+                break;
+
+            case AssetType.Material:
+                DeleteCategory(assetManager!.MaterialsInit, ref selectedMatCategory);
+                break;
+        }
+    }
+
     private static void DeleteItem(CategoryList assetList, int selectedCategory)
     {
         var category = assetList.Categories[selectedCategory];
@@ -152,6 +174,24 @@ static class AssetManagerGUI
         else
         {
             groupIndex = Math.Clamp(groupIndex, 0, category.Items.Count - 1);
+        }
+    }
+
+    private static void DeleteItem()
+    {
+        switch (curAssetTab)
+        {
+            case AssetType.Tile:
+                DeleteItem(assetManager!.TileInit, selectedTileCategory);
+                break;
+
+            case AssetType.Prop:
+                DeleteItem(assetManager!.PropInit, selectedPropCategory);
+                break;
+
+            case AssetType.Material:
+                DeleteItem(assetManager!.MaterialsInit, selectedMatCategory);
+                break;
         }
     }
 
@@ -168,42 +208,17 @@ static class AssetManagerGUI
             fileBrowser.AddFilter("Init.txt File", isInitFile, ".txt");
         }
 
+        int deleteReq = 0;
         ImGui.SameLine();
         if (ImGui.Button("Delete Category"))
         {
-            switch (curAssetTab)
-            {
-                case AssetType.Tile:
-                    DeleteCategory(assetManager!.TileInit, ref selectedTileCategory);
-                    break;
-
-                case AssetType.Prop:
-                    DeleteCategory(assetManager!.PropInit, ref selectedPropCategory);
-                    break;
-
-                case AssetType.Material:
-                    DeleteCategory(assetManager!.MaterialsInit, ref selectedMatCategory);
-                    break;
-            }
+            deleteReq = 1;
         }
 
         ImGui.SameLine();
         if (ImGui.Button("Delete Asset"))
         {
-            switch (curAssetTab)
-            {
-                case AssetType.Tile:
-                    DeleteItem(assetManager!.TileInit, selectedTileCategory);
-                    break;
-
-                case AssetType.Prop:
-                    DeleteItem(assetManager!.PropInit, selectedPropCategory);
-                    break;
-
-                case AssetType.Material:
-                    DeleteItem(assetManager!.MaterialsInit, selectedMatCategory);
-                    break;
-            }
+            deleteReq = 2;
         }
         
         /*ImGui.SameLine();
@@ -212,6 +227,73 @@ static class AssetManagerGUI
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportZip, RainEd.Instance.AssetDataPath);
             fileBrowser.AddFilter("ZIP File", null, ".zip");
         }*/
+
+        // process delete request
+        // if noAskBeforeDeletion is true, immediately perform the operation
+        // otherwise, show the delete confirmation prompt
+        if (deleteReq > 0)
+        {
+            if (noAskBeforeDeletion)
+            {
+                if (deleteReq == 1)
+                    DeleteCategory();
+                else if (deleteReq == 2)
+                    DeleteItem();
+            }
+            else
+            {
+                wantDelete = deleteReq;
+            }
+        }
+
+        // delete confirmation prompt
+        if (wantDelete > 0)
+        {
+            ImGuiExt.EnsurePopupIsOpen("Delete?");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+
+            if (ImGuiExt.BeginPopupModal("Delete?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                int idx = GetCurrentCategoryIndex();
+
+                if (wantDelete == 1)
+                {
+                    ImGui.TextUnformatted($"Are you sure you want to delete the category \"{GetCurrentAssetList().Categories[idx].Name}\"");
+                }
+                else if (wantDelete == 2)
+                {
+                    ImGui.TextUnformatted($"Are you sure you want to delete the asset \"{GetCurrentAssetList().Categories[idx].Items[groupIndex].Name}\"");
+                }
+
+                ImGui.Separator();
+
+                ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
+                ImGui.Checkbox("Don't ask me next time", ref noAskBeforeDeletion);
+                ImGui.PopStyleVar();
+
+                if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
+                {
+                    if (btn == 0) // if yes was pressed
+                    {
+                        if (wantDelete == 1)
+                            DeleteCategory();
+                        else if (wantDelete == 2)
+                            DeleteItem();
+                    }
+
+                    // if no was pressed
+                    else
+                    {
+                        noAskBeforeDeletion = false;
+                    }
+
+                    ImGui.CloseCurrentPopup();
+                    wantDelete = 0;
+                }
+
+                ImGui.EndPopup();
+            }
+        }
 
         // render file browser
         FileBrowser.Render(ref fileBrowser);
@@ -228,47 +310,69 @@ static class AssetManagerGUI
             {
                 ImGui.Text("Merging...");
 
-                // show overwrite prompt if needed
-                if (overwritePromptTarget is not null)
+                // show prompt if needed
+                if (mergePrompt is not null)
                 {
-                    ImGuiExt.EnsurePopupIsOpen("Overwrite?");
+                    ImGuiExt.EnsurePopupIsOpen("Action Needed");
                     ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
-                    if (ImGuiExt.BeginPopupModal("Overwrite?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                    if (ImGuiExt.BeginPopupModal("Action Needed", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
                     {
-                        ImGui.Text($"Overwrite \"{overwritePromptTarget}\"?");
-                        ImGui.Separator();
+                        ImGui.TextUnformatted(mergePrompt.Text);
+
+                        if (mergePrompt.CheckboxText.Length > 0)
+                        {
+                            for (int i = 0; i < mergePrompt.CheckboxText.Length; i++)
+                            {
+                                ImGui.Checkbox(mergePrompt.CheckboxText[i], ref mergePrompt.CheckboxValues[i]);
+                            }
+
+                            ImGui.Separator();
+                            if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btn))
+                            {
+                                if (btn == 0)
+                                    mergePromptTcs!.SetResult(PromptResult.Yes);
+
+                                else if (btn == 1)
+                                    mergePromptTcs!.SetCanceled();
+
+                                ImGui.CloseCurrentPopup();
+                            }
+                        }
                         
-                        if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
+                        // yes/no prompt
+                        else
                         {
-                            if (btn == 0)
+                            ImGui.Separator();
+                            if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
                             {
-                                // Yes
-                                overwritePromptTcs!.SetResult(true);
+                                if (btn == 0)
+                                {
+                                    // Yes
+                                    mergePromptTcs!.SetResult(PromptResult.Yes);
+                                }
+                                else if (btn == 1)
+                                {
+                                    // No
+                                    mergePromptTcs!.SetResult(PromptResult.No);
+                                }
+
+                                ImGui.CloseCurrentPopup();
                             }
-                            else if (btn == 1)
+
+                            ImGui.SameLine();
+                            if (ImGui.Button("Yes To All", StandardPopupButtons.ButtonSize))
                             {
-                                // No
-                                overwritePromptTcs!.SetResult(false);
+                                mergePromptTcs!.SetResult(PromptResult.YesToAll);
+                                ImGui.CloseCurrentPopup();
                             }
 
-                            ImGui.CloseCurrentPopup();
-                        }
-
-                        ImGui.SameLine();
-                        if (ImGui.Button("Yes To All", StandardPopupButtons.ButtonSize))
-                        {
-                            autoConfirm = true;
-                            overwritePromptTcs!.SetResult(true);
-                            ImGui.CloseCurrentPopup();
-                        }
-
-                        ImGui.SameLine();
-                        if (ImGui.Button("No To All", StandardPopupButtons.ButtonSize))
-                        {
-                            autoConfirm = false;
-                            overwritePromptTcs!.SetResult(false);
-                            ImGui.CloseCurrentPopup();
+                            ImGui.SameLine();
+                            if (ImGui.Button("No To All", StandardPopupButtons.ButtonSize))
+                            {
+                                mergePromptTcs!.SetResult(PromptResult.NoToAll);
+                                ImGui.CloseCurrentPopup();
+                            }
                         }
                         
                         ImGui.End();
@@ -290,11 +394,20 @@ static class AssetManagerGUI
                         {
                             ImGui.CloseCurrentPopup();
                             mergeTask = null;
-                            autoConfirm = null;
+                            assetManager = new AssetManager();
                         }
 
                         ImGui.End();
                     }
+                }
+
+                else if (mergeTask.IsCanceled)
+                {
+                    RainEd.Logger.Information("Merge was canceled");
+                    
+                    ImGui.CloseCurrentPopup();
+                    mergeTask = null;
+                    assetManager = new AssetManager();
                 }
 
                 // end merge task when completed
@@ -302,7 +415,6 @@ static class AssetManagerGUI
                 {
                     ImGui.CloseCurrentPopup();
                     mergeTask = null;
-                    autoConfirm = null;
                 }
 
                 ImGui.EndPopup();
@@ -329,6 +441,15 @@ static class AssetManagerGUI
             AssetType.Tile => assetManager!.TileInit,
             AssetType.Prop => assetManager!.PropInit,
             AssetType.Material => assetManager!.MaterialsInit,
+            _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
+        };
+    
+    private static int GetCurrentCategoryIndex()
+        => curAssetTab switch
+        {
+            AssetType.Tile => selectedTileCategory,
+            AssetType.Prop => selectedPropCategory,
+            AssetType.Material => selectedMatCategory,
             _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
         };
 
@@ -423,6 +544,7 @@ static class AssetManagerGUI
         if (assetManager is not null)
             assetManager = null;
         
+        noAskBeforeDeletion = false;
         selectedTileCategory = 0;
         selectedPropCategory = 0;
         selectedMatCategory = 0;

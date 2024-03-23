@@ -51,6 +51,32 @@ interface IAssetGraphicsManager
     public void DeleteGraphics(InitData init, string dir);
 }
 
+enum PromptResult { Yes, No, YesToAll, NoToAll }
+
+class PromptOptions
+{
+    public string Text = "";
+    public readonly string[] CheckboxText;
+    public readonly bool[] CheckboxValues;
+
+    public PromptOptions(string text)
+    {
+        Text = text;
+        CheckboxText = [];
+        CheckboxValues = [];
+    }
+
+    public PromptOptions(string text, string[] checkboxes)
+    {
+        Text = text;
+        CheckboxText = checkboxes;
+        CheckboxValues = new bool[checkboxes.Length];
+
+        for (int i = 0; i < checkboxes.Length; i++)
+            CheckboxValues[i] = false;
+    }
+}
+
 record CategoryList
 {
     public readonly string FilePath;
@@ -60,7 +86,7 @@ record CategoryList
     private readonly IAssetGraphicsManager graphicsManager;
 
     public readonly List<InitCategory> Categories = [];
-    public readonly Dictionary<string, InitData> Dictionary = [];
+    public readonly Dictionary<string, List<InitData>> ItemDictionary = [];
 
     private record EmptyLine;
 
@@ -135,7 +161,13 @@ record CategoryList
         
         data.Category = category;
         category.Items.Add(data);
-        Dictionary[data.Name] = data;
+
+        if (!ItemDictionary.TryGetValue(data.Name, out List<InitData>? list))
+        {
+            list = [];
+            ItemDictionary.Add(data.Name, list);
+        }
+        list.Add(data);
     }
 
     public void ReplaceInit(InitData oldData, InitData newData)
@@ -152,7 +184,8 @@ record CategoryList
         oldData.Category.Items[oldData.Category.Items.IndexOf(oldData)] = newData;
         newData.Category = oldData.Category;
 
-        Dictionary[newData.Name] = newData;
+        var list = ItemDictionary[newData.Name];
+        list[list.IndexOf(oldData)] = newData;
         parsedLines[i] = newData;
         Lines[i] = newData.RawData;
     }
@@ -180,7 +213,7 @@ record CategoryList
         var parentDir = Path.Combine(FilePath, "..");
         foreach (var tile in category.Items)
         {
-            Dictionary.Remove(tile.Name);
+            ItemDictionary.Remove(tile.Name);
             graphicsManager.DeleteGraphics(tile, parentDir);
         }
 
@@ -198,7 +231,7 @@ record CategoryList
         WriteToFile();
     }
 
-    public void DeleteItem(InitData item)
+    public void DeleteItem(InitData item, bool write = true)
     {
         int lineIndex = parsedLines.IndexOf(item);
         if (lineIndex == -1) throw new Exception("Failed to find line index");
@@ -208,20 +241,26 @@ record CategoryList
             throw new Exception("Item was already removed!");
 
         var parentDir = Path.Combine(FilePath, "..");
-        Dictionary.Remove(item.Name);
-        graphicsManager.DeleteGraphics(item, parentDir);
+        ItemDictionary.Remove(item.Name);
+        if (write) graphicsManager.DeleteGraphics(item, parentDir);
 
         // delete the line
         parsedLines.RemoveAt(lineIndex);
         Lines.RemoveAt(lineIndex);
 
-        WriteToFile();
+        if (write) WriteToFile();
     }
 
-    public async Task Merge(string otherPath, Func<string, Task<bool>> promptOverwrite)
+    public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
+
+    public async Task Merge(string otherPath, PromptRequest promptOverwrite)
     {
         try
         {
+            // automatically overwrite items that are only defined one time
+            // (LOOKING AT YOU, "INSIDE HUGE PIPE HORIZONTAL" DEFINED IN BOTH MISC AND LB INTAKE SYSTEM.)
+            bool? autoOverwrite = null;
+
             RainEd.Logger.Information("Merge {Path}", otherPath);
             var parentDir = Path.Combine(FilePath, "..");
             var otherDir = Path.Combine(otherPath, "..");
@@ -317,30 +356,110 @@ record CategoryList
                             name: (string) data.fields["nm"],
                             data: line
                         );
-
-                        bool success = true;
-                        bool expectImageExistence = true;
+                        
+                        bool doInsert = true;
+                        bool expectGraphics = true;
 
                         // check with user if tile with same name already exists
-                        if (Dictionary.TryGetValue(init.Name, out InitData? oldInit))
+                        if (ItemDictionary.TryGetValue(init.Name, out List<InitData>? initItems))
                         {
-                            if (oldInit.Category != targetCategory)
-                                throw new Exception($"Item '{init.Name}' was imported into '{targetCategory.Name}', but was already in '{oldInit.Name}'");
+                            doInsert = false;
 
-                            if (await promptOverwrite(init.Name))
+                            // if there is more than one item with the same name, or
+                            // if the item is defined in a different category,
+                            // it is a merge conflict that needs Advanced User Intervention.
+
+                            // (IM TALKING ABOUT YOU INSIDE HUGE PIPE HORIZINTAL WHICH IS IN BOTH MISC AND LB INTAKE SYSTEM)
+                            if (initItems.Count > 1 || initItems[0].Category != targetCategory)
                             {
-                                // go ahead and overwrite
-                                RainEd.Logger.Information("Overwrite tile '{TileName}'", init.Name);
-                                ReplaceInit(oldInit, init);
-                                expectImageExistence = false;
+                                RainEd.Logger.Information("Merge conflict with asset '{Name}'", init.Name);
+                                
+                                // there will be an extra checkbox which will insert the new init
+                                // into a new line
+                                var options = new string[initItems.Count + 1];
+                                for (int i = 0; i < initItems.Count; i++)
+                                {
+                                    options[i] = "Overwrite old definition in " + initItems[i].Category.Name;
+                                }
+                                options[^1] = "Add to " + targetCategory.Name;
+
+                                var prompt = new PromptOptions($"Merge conflict with asset \"{init.Name}\"\nNew definition is in {targetCategory.Name}", options);
+                                await promptOverwrite(prompt);
+                                
+                                for (int i = 0; i < initItems.Count; i++)
+                                {
+                                    if (prompt.CheckboxValues[i])
+                                    {
+                                        RainEd.Logger.Information("Overwrite def in '{Category}'", initItems[0].Category);
+                                        ReplaceInit(initItems[i], init);
+                                    }
+                                }
+
+                                if (prompt.CheckboxValues[^1])
+                                {
+                                    RainEd.Logger.Information("Add to '{Category}'", targetCategory);
+
+                                    doInsert = true;
+                                    expectGraphics = false;
+                                }
                             }
+
+                            // simple merge conflict - item is only defined once and
+                            // both new and old items are in the same category
                             else
                             {
-                                RainEd.Logger.Information("Ignore tile '{TileName}'", init.Name);
-                                success = false;
+                                bool doOverwrite;
+
+                                if (autoOverwrite.HasValue)
+                                {
+                                    doOverwrite = autoOverwrite.Value;
+                                }
+                                else
+                                {
+                                    // ask the user if they want to overwrite
+                                    var opt = new PromptOptions($"Overwrite \"{init.Name}\"?");
+                                    
+                                    switch (await promptOverwrite(opt))
+                                    {
+                                        case PromptResult.Yes:
+                                            doOverwrite = true;
+                                            break;
+
+                                        case PromptResult.No:
+                                            doOverwrite = false;
+                                            break;
+
+                                        case PromptResult.YesToAll:
+                                            doOverwrite = true;
+                                            autoOverwrite = true;
+                                            break;
+
+                                        case PromptResult.NoToAll:
+                                            doOverwrite = false;
+                                            autoOverwrite = false;
+                                            break;
+
+                                        default:
+                                            throw new Exception();
+                                    }
+                                }
+
+                                if (doOverwrite)
+                                {
+                                    // go ahead and overwrite
+                                    RainEd.Logger.Information("Overwrite tile '{TileName}'", init.Name);
+                                    ReplaceInit(initItems[0], init);
+                                    
+                                    graphicsManager.CopyGraphics(init, otherDir, parentDir, false);
+                                }
+                                else
+                                {
+                                    RainEd.Logger.Information("Ignore tile '{TileName}'", init.Name);
+                                }
                             }
                         }
-                        else
+                        
+                        if (doInsert)
                         {
                             // insert the new item at the end of the category tile list
                             // by inserting it where the next init category definition is,
@@ -387,12 +506,8 @@ record CategoryList
                             Lines.Insert(insertLoc, line);
                             parsedLines.Insert(insertLoc, init);
                             AddInit(init, targetCategory);
-                        }
-                        
-                        // copy image
-                        if (success)
-                        {
-                            graphicsManager.CopyGraphics(init, otherDir, parentDir, expectImageExistence);
+
+                            graphicsManager.CopyGraphics(init, otherDir, parentDir, expectGraphics);
                         }
                     }
                 }
