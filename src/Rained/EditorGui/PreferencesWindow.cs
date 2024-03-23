@@ -43,6 +43,10 @@ static class PreferencesWindow
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.FirstUseEver);
         }
 
+        // keep track of this, as i want to clear some data
+        // when the asset tab is no longer shown
+        bool showAssetsTab = false;
+
         if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
         {
             // show navigation sidebar
@@ -77,6 +81,7 @@ static class PreferencesWindow
                 
                 case NavTabEnum.Assets:
                     AssetManagerGUI.Show();
+                    showAssetsTab = true;
                     break;
             }
 
@@ -127,6 +132,11 @@ static class PreferencesWindow
                     }
                 }
             }
+        }
+
+        if (!showAssetsTab)
+        {
+            AssetManagerGUI.Unload();
         }
     }
 

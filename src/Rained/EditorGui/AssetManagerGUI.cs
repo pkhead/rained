@@ -18,8 +18,7 @@ static class AssetManagerGUI
     private static int selectedPropCategory = 0;
     private static int selectedMatCategory = 0;
     private static int groupIndex = 0;
-    private static AssetManager assetManager = null!;
-    private static bool needRestart = false;
+    private static AssetManager? assetManager = null;
 
     private static FileBrowser? fileBrowser = null;
 
@@ -249,6 +248,9 @@ static class AssetManagerGUI
     {
         assetManager ??= new AssetManager();
 
+        ImGui.Text("Any changes here require a restart in order to take effect.");
+        ImGui.Separator();
+
         ImGui.AlignTextToFramePadding();
         ImGui.Text("Data Path");
         ImGui.SameLine();
@@ -259,16 +261,10 @@ static class AssetManagerGUI
             // if path changed, disable asset import until user restarts Rained
             if (Path.GetFullPath(oldPath) != Path.GetFullPath(RainEd.Instance.AssetDataPath))
             {
-                needRestart = true;
+                assetManager = new AssetManager();
             }
         }
         ImGui.Separator();
-        
-        if (needRestart)
-        {
-            ImGui.Text("(A restart is required before making further changes)");
-            ImGui.BeginDisabled();
-        }
 
         // show tile database
         if (ImGui.BeginTabBar("AssetType"))
@@ -332,10 +328,16 @@ static class AssetManagerGUI
 
             ImGui.EndTabBar();
         }
+    }
 
-        if (needRestart)
-        {
-            ImGui.EndDisabled();
-        }
+    public static void Unload()
+    {
+        if (assetManager is not null)
+            assetManager = null;
+        
+        selectedTileCategory = 0;
+        selectedPropCategory = 0;
+        selectedMatCategory = 0;
+        groupIndex = 0;
     }
 }
