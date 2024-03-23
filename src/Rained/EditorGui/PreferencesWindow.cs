@@ -150,23 +150,45 @@ static class PreferencesWindow
         );
 
         var prefs = RainEd.Instance.Preferences;
+        bool boolRef;
 
-        // TODO: initialize zygote runtime on startup
-        bool _u = false;
-        ImGui.Checkbox("Initialize Zygote runtime on startup", ref _u);
-        ImGui.SameLine();
-        ImGui.TextDisabled("(?)");
-        ImGui.SetItemTooltip(
-            """
-            This will run the Zygote runtime initialization
-            process once, when the app starts. This results
-            in a longer startup time and more idle RAM
-            usage, but will decrease the time it takes to
-            start a render.
+        ImGui.SeparatorText("Rendering");
+        
+        // static lingo runtime
+        {
+            boolRef = prefs.StaticDrizzleLingoRuntime;
+            if (ImGui.Checkbox("Initialize the Zygote runtime on app startup", ref boolRef))
+                prefs.StaticDrizzleLingoRuntime = boolRef;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will run the Zygote runtime initialization
+                process once, when the app starts. This results
+                in a longer startup time and more idle RAM
+                usage, but will decrease the time it takes to
+                start a render.
 
-            This option requires a restart in order to
-            take effect.    
-            """);
+                This option requires a restart in order to
+                take effect.    
+                """);
+        }
+
+        // show render preview
+        {
+            boolRef = prefs.ShowRenderPreview;
+            if (ImGui.Checkbox("Show preview while rendering", ref boolRef))
+                prefs.ShowRenderPreview = boolRef;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will speed up rendering by a small
+                amount.    
+                """);
+        }
         
         ImGui.SeparatorText("Level Colors");
         {

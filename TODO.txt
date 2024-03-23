@@ -1,23 +1,22 @@
-Changes for Next Minor Update:
-- Remove set default material keybind?
-- Showing geo specs in tile preview?
-- GEO EDITOR SELECT-COPY-PASTE
+Priority:
 - view option to show camera border
-- geo mirror
 - rect/material tile place
-- change geo spec color
-- view geo specs in tile preview?
+- dissolve material/tile separation
+- asset manager item/category removal
+- asset manager materials
+- toggleable render preview
 
 Bugs:
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux
+- render preview no longer works?
 
 Overall:
 - keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
-- configurable theme
+- custom themes
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - Move Level
 - undo/redo for level resize

@@ -154,6 +154,11 @@ sealed class RainEd
         Logger.Information("Creating editor window...");
         editorWindow = new EditorWindow();
 
+        if (Preferences.StaticDrizzleLingoRuntime)
+        {
+            DrizzleRender.InitStaticRuntime();
+        }
+
         UpdateTitle();
 
         // apply preferences

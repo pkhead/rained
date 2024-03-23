@@ -53,6 +53,9 @@ class UserPreferences
     public int WindowWidth { get; set; }
     public int WindowHeight { get; set; }
 
+    public bool StaticDrizzleLingoRuntime { get; set; }
+    public bool ShowRenderPreview { get; set; }
+
     public HexColor LayerColor1;
     public HexColor LayerColor2;
     public HexColor LayerColor3;
@@ -107,6 +110,9 @@ class UserPreferences
         WindowMaximized = false;
         WindowWidth = Boot.DefaultWindowWidth;
         WindowHeight = Boot.DefaultWindowHeight;
+
+        StaticDrizzleLingoRuntime = false;
+        ShowRenderPreview = true;
 
         ThemeIndex = 0;
         LayerColor1 = new HexColor("#000000");

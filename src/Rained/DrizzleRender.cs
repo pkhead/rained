@@ -20,6 +20,8 @@ class DrizzleRender : IDisposable
     private record MessageDoCancel : ThreadMessage;
     private record MessageReceievePreview(RenderPreview Preview) : ThreadMessage;
 
+    private static LingoRuntime? staticRuntime = null; 
+
     private class RenderThread
     {
         public ConcurrentQueue<ThreadMessage> Queue;
@@ -40,20 +42,23 @@ class DrizzleRender : IDisposable
         {
             try
             {
-                RainEd.Logger.Information("Initializing Zygote runtime...");
+                LingoRuntime runtime;
 
-                LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-                LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
-                
-                var runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-                runtime.Init();
-                EditorRuntimeHelpers.RunStartup(runtime);
-                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
+                if (staticRuntime is not null)
+                {
+                    runtime = staticRuntime;
+                }
+                else
+                {
+                    RainEd.Logger.Information("Initializing Zygote runtime...");
 
-                Renderer = new LevelRenderer(runtime, null);
-                Renderer.StatusChanged += StatusChanged;
-                Renderer.PreviewSnapshot += PreviewSnapshot;
-                Queue.Enqueue(new MessageRenderStarted());
+                    LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
+                    LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
+                    
+                    runtime = new LingoRuntime(typeof(MovieScript).Assembly);
+                    runtime.Init();
+                    EditorRuntimeHelpers.RunStartup(runtime);
+                }
 
                 // process user cancel if cancelled while init
                 // zygote runtime
@@ -62,6 +67,13 @@ class DrizzleRender : IDisposable
                     if (msg is MessageDoCancel)
                         throw new RenderCancelledException();
                 }
+                Queue.Enqueue(new MessageRenderStarted());
+
+                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
+
+                Renderer = new LevelRenderer(runtime, null);
+                Renderer.StatusChanged += StatusChanged;
+                Renderer.PreviewSnapshot += PreviewSnapshot;
 
                 RainEd.Logger.Information("Begin render of {LevelName}", Path.GetFileNameWithoutExtension(filePath));
                 Renderer.DoRender();
@@ -150,6 +162,17 @@ class DrizzleRender : IDisposable
     {
         foreach (RlManaged.Image image in RenderLayerPreviews)
             image.Dispose();
+    }
+
+    public static void InitStaticRuntime()
+    {
+        Configuration.Default.PreferContiguousImageBuffers = true;
+        LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
+        LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
+
+        staticRuntime = new LingoRuntime(typeof(MovieScript).Assembly);
+        staticRuntime.Init();
+        EditorRuntimeHelpers.RunStartup(staticRuntime);
     }
 
     private void StatusChanged(RenderStatus status)
