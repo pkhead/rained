@@ -59,6 +59,8 @@ static class KeyShortcuts
 
         public KeyShortcutBinding(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
         {
+            if (key == ImGuiKey.Backspace) key = ImGuiKey.Delete;
+
             Name = name;
             ID = id;
             Key = key;
@@ -146,6 +148,8 @@ static class KeyShortcuts
 
     public static void Rebind(KeyShortcut id, ImGuiKey key, ImGuiModFlags mods)
     {
+        if (key == ImGuiKey.Backspace) key = ImGuiKey.Delete;
+
         var data = keyShortcuts[id];
         data.Key = key;
         data.Mods = mods;
@@ -257,7 +261,7 @@ static class KeyShortcuts
         Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
         Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
         Register("New Object", KeyShortcut.NewObject, ImGuiKey.C, ImGuiModFlags.None, true);
-        Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.Delete, ImGuiModFlags.None, true);
+        Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.X, ImGuiModFlags.None, true);
         Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiModFlags.Ctrl, true);
 
         Register("New File", KeyShortcut.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
