@@ -7,14 +7,36 @@ class ParseException : Exception
     public ParseException(string message, Exception inner) : base(message, inner) {}
 }
 
-struct Color
+struct Color(int r, int g, int b)
 {
-    public int R, G, B;
-    public Color(int r, int g, int b)
+    public int R = r, G = g, B = b;
+
+    public readonly override bool Equals(object? obj)
     {
-        R = r;
-        G = g;
-        B = b;
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+        
+        return this == (Color) obj;
+    }
+    
+    public override readonly int GetHashCode()
+    {
+        return HashCode.Combine(R.GetHashCode(), G.GetHashCode(), B.GetHashCode());
+    }
+
+    public static bool operator==(Color a, Color b)
+    {
+        return
+            a.R == b.R &&
+            a.G == b.G &&
+            a.B == b.B;
+    }
+
+    public static bool operator!=(Color a, Color b)
+    {
+        return !(a == b);
     }
 }
 
