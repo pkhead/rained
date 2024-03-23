@@ -18,8 +18,7 @@ static class AboutWindow
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))

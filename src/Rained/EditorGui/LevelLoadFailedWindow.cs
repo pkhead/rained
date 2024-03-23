@@ -17,8 +17,7 @@ static class LevelLoadFailedWindow
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
@@ -65,7 +64,8 @@ static class LevelLoadFailedWindow
                 }
             }
 
-            if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Escape) || EditorWindow.IsKeyPressed(ImGuiKey.Enter) || EditorWindow.IsKeyPressed(ImGuiKey.Space))
+            ImGui.Separator();
+            if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
             {
                 ImGui.CloseCurrentPopup();
                 IsWindowOpen = false;

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Numerics;
 namespace ImGuiNET;
 
 class ImGuiExt
@@ -45,5 +46,27 @@ class ImGuiExt
         charArr[count] = 0;
 
         return ImGuiNative.igBeginPopupModal(charArr, null, flags) != 0;
+    }
+
+    public static void CenterNextWindow(ImGuiCond cond)
+    {
+        var viewport = ImGui.GetMainViewport();
+        ImGui.SetNextWindowPos(viewport.GetCenter(), cond, new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>
+    /// Ensure that the popup is open
+    /// </summary>
+    /// <param name="id">The ID of the popup to open</param>
+    /// <returns>True if the popup was not open, false if not.</returns>
+    public static bool EnsurePopupIsOpen(string id)
+    {
+        if (!ImGui.IsPopupOpen(id))
+        {
+            ImGui.OpenPopup(id);
+            return true;
+        }
+
+        return false;
     }
 }

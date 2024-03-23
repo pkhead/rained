@@ -145,16 +145,9 @@ static class AssetManagerGUI
         // render merge status
         if (mergeTask is not null)
         {
-            if (!ImGui.IsPopupOpen("Merging"))
-            {
-                ImGui.OpenPopup("Merging");
-                
-                // center popup modal
-                var viewport = ImGui.GetMainViewport();
-                ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-                ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
-            }
-
+            ImGuiExt.EnsurePopupIsOpen("Merging");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
 
             var popupFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove;
             if (ImGuiExt.BeginPopupModal("Merging", popupFlags))
@@ -164,34 +157,30 @@ static class AssetManagerGUI
                 // show overwrite prompt if needed
                 if (overwritePromptTarget is not null)
                 {
-                    if (!ImGui.IsPopupOpen("Overwrite?"))
-                    {
-                        ImGui.OpenPopup("Overwrite?");
-                
-                        // center popup modal
-                        var viewport = ImGui.GetMainViewport();
-                        ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-                        ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
-                    }
-
+                    ImGuiExt.EnsurePopupIsOpen("Overwrite?");
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
                     if (ImGuiExt.BeginPopupModal("Overwrite?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
                     {
                         ImGui.Text($"Overwrite \"{overwritePromptTarget}\"?");
                         ImGui.Separator();
                         
-                        if (ImGui.Button("Yes"))
+                        if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
                         {
-                            overwritePromptTcs!.SetResult(true);
+                            if (btn == 0)
+                            {
+                                // Yes
+                                overwritePromptTcs!.SetResult(true);
+                            }
+                            else if (btn == 1)
+                            {
+                                // No
+                                overwritePromptTcs!.SetResult(false);
+                            }
+
                             ImGui.CloseCurrentPopup();
                         }
-
-                        ImGui.SameLine();
-                        if (ImGui.Button("No"))
-                        {
-                            overwritePromptTcs!.SetResult(false);
-                            ImGui.CloseCurrentPopup();
-                        }
-
+                        
                         ImGui.End();
                     }
                 }
@@ -199,22 +188,15 @@ static class AssetManagerGUI
                 // show error if present
                 if (mergeTask.IsFaulted)
                 {
-                    if (!ImGui.IsPopupOpen("Error"))
-                    {
-                        ImGui.OpenPopup("Error");
-                
-                        // center popup modal
-                        var viewport = ImGui.GetMainViewport();
-                        ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
-                        ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
-                    }
-
+                    ImGuiExt.EnsurePopupIsOpen("Error");
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
                     if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
                     {
                         ImGui.Text($"An error occured while importing the pack.");
                         ImGui.Separator();
                         
-                        if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Space) || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+                        if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
                         {
                             ImGui.CloseCurrentPopup();
                             mergeTask = null;

@@ -365,7 +365,8 @@ class FileBrowser
         {
             isOpen = true;
             ImGui.OpenPopup(winName + "###File Browser");
-            ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
         }
 

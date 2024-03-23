@@ -40,15 +40,9 @@ class AppSetup
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             rlImGui.Begin();
 
-            if (!ImGui.IsPopupOpen("Configure Data"))
-            {
-                ImGui.OpenPopup("Configure Data");
-            }
-
-            // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Always, new Vector2(0.5f, 0.5f));
-
+            ImGuiExt.EnsurePopupIsOpen("Configure Data");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Always);
+            
             if (ImGuiExt.BeginPopupModal("Configure Data", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove))
             {
                 if (callbackRes is not null)

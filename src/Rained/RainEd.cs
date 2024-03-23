@@ -634,9 +634,8 @@ sealed class RainEd
             promptUnsavedChanges = false;
             ImGui.OpenPopup("Unsaved Changes");
 
-            // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            // center popup 
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
 
         bool unused = true;
@@ -651,7 +650,9 @@ sealed class RainEd
                 ImGui.Text("You must save before proceeding.\nDo you want to save now?");
             }
 
-            if (ImGui.Button("Yes") || ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.Space))
+            ImGui.Separator();
+
+            if (ImGui.Button("Yes", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.Space))
             {
                 ImGui.CloseCurrentPopup();
 
@@ -663,7 +664,7 @@ sealed class RainEd
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("No") || (!promptUnsavedChangesCancelable && ImGui.IsKeyPressed(ImGuiKey.Escape)))
+            if (ImGui.Button("No", StandardPopupButtons.ButtonSize) || (!promptUnsavedChangesCancelable && ImGui.IsKeyPressed(ImGuiKey.Escape)))
             {
                 ImGui.CloseCurrentPopup();
 
@@ -672,15 +673,16 @@ sealed class RainEd
                     if (promptCallback is not null)
                     {
                         promptCallback();
-                        promptCallback = null;
                     }
                 }
+                
+                promptCallback = null;
             }
 
             if (promptUnsavedChangesCancelable)
             {
                 ImGui.SameLine();
-                if (ImGui.Button("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape))
+                if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Escape))
                 {
                     ImGui.CloseCurrentPopup();
                     promptCallback = null;

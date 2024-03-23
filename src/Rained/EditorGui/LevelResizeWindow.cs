@@ -44,7 +44,7 @@ class LevelResizeWindow
         if (!IsWindowOpen) return;
 
         var winFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoDocking;
-        ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetWorkCenter(), ImGuiCond.Once, new Vector2(0.5f, 0.5f));
+        ImGuiExt.CenterNextWindow(ImGuiCond.Once);
         if (ImGui.Begin("Resize Level", ref IsWindowOpen, winFlags))
         {
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
@@ -168,6 +168,8 @@ class LevelResizeWindow
                 newBufB = Math.Max(newBufB, 0);
 
                 ImGui.PopItemWidth();
+
+                ImGui.Separator();
 
                 if (ImGui.Button("OK"))
                 {

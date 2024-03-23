@@ -39,8 +39,7 @@ static class PreferencesWindow
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.FirstUseEver);
         }
 
