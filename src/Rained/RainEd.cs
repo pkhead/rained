@@ -271,6 +271,10 @@ sealed class RainEd
                     LevelLoadFailedWindow.LoadResult = loadRes;
                     LevelLoadFailedWindow.IsWindowOpen = true;
                 }
+
+                // i think it may be useful to add it to the list
+                // even if the level failed to load due to unrecognized assets
+                AddToRecentFiles();
             }
             catch (Exception e)
             {
@@ -301,6 +305,7 @@ sealed class RainEd
                 changeHistory.MarkUpToDate();
                 Logger.Information("Done!");
                 ShowNotification("Saved!");
+                AddToRecentFiles();
             }
             catch (Exception e)
             {
@@ -315,6 +320,18 @@ sealed class RainEd
         }
 
         promptCallback = null;
+    }
+
+    private void AddToRecentFiles()
+    {
+        var list = Preferences.RecentFiles;
+        list.Remove(currentFilePath);
+        list.Add(currentFilePath);
+
+        while (list.Count > 10)
+        {
+            list.RemoveAt(0);
+        }
     }
 
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
@@ -458,6 +475,43 @@ sealed class RainEd
             {
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
+
+                var recentFiles = Preferences.RecentFiles;
+                if (ImGui.BeginMenu("Open Recent"))
+                {
+                    if (recentFiles.Count == 0)
+                    {
+                        ImGui.MenuItem("(no recent files)", false);
+                    }
+                    else
+                    {
+                        // traverse backwards
+                        for (int i = recentFiles.Count - 1; i >= 0; i--)
+                        {
+                            var filePath = recentFiles[i];
+
+                            if (ImGui.MenuItem(Path.GetFileName(filePath)))
+                            {
+                                if (File.Exists(filePath))
+                                {
+                                    PromptUnsavedChanges(() =>
+                                    {
+                                        LoadLevel(filePath);
+                                    });
+                                }
+                                else
+                                {
+                                    ShowNotification("File could not be accessed");
+                                    recentFiles.RemoveAt(i);
+                                }
+                            }
+
+                        }
+                    }
+
+                    ImGui.EndMenu();
+                }
+
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Save, "Save");
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.SaveAs, "Save As...");
 

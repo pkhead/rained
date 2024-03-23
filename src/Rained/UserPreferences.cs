@@ -92,6 +92,7 @@ class UserPreferences
         }
     }
     public Dictionary<string, string> Shortcuts { get; set; }
+    public List<string> RecentFiles { get; set; }
 
     // default user preferences
     public UserPreferences()
@@ -119,6 +120,8 @@ class UserPreferences
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
         BackgroundColor = new HexColor(127, 127, 127);
+
+        RecentFiles = [];
 
         // initialize shortcuts
         Shortcuts = null!;
