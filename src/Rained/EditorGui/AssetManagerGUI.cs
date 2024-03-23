@@ -242,6 +242,10 @@ static class AssetManagerGUI
         if (string.IsNullOrEmpty(path)) return;
 
         RainEd.Logger.Information("Import Init.txt file '{Path}'", path);
+
+        // reload asset list in case user modified
+        // (also makes it less bug-prone)
+        assetManager = new AssetManager();
         
         switch (curAssetTab)
         {

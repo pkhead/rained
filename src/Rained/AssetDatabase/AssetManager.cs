@@ -22,6 +22,7 @@ record InitData
 {
     public string Name;
     public string RawData;
+    public InitCategory Category = null!;
 
     public InitData(string name, string data)
     {
@@ -48,24 +49,27 @@ record CategoryList
 {
     public readonly string FilePath;
     public readonly List<string> Lines;
+    private readonly List<object> parsedLines;
     private bool isColored;
 
     public readonly List<InitCategory> Categories = [];
     public readonly Dictionary<string, InitData> Dictionary = [];
+
+    private record EmptyLine;
 
     public CategoryList(string path, bool colored)
     {
         isColored = colored;
         FilePath = path;
         Lines = new List<string>(File.ReadAllLines(path));
+        parsedLines = [];
 
         var parser = new Lingo.LingoParser();
-        int lineNo = 0;
         foreach (var line in Lines)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
-                lineNo++;
+                parsedLines.Add(new EmptyLine());
                 continue;
             }
 
@@ -84,6 +88,8 @@ record CategoryList
                 {
                     Categories.Add(new InitCategory(line[1..]));
                 }
+
+                parsedLines.Add(Categories[^1]);
             }
 
             // item
@@ -93,21 +99,48 @@ record CategoryList
 
                 if (data is not null)
                 {
-                    AddInit(new InitData(
+                    var init = new InitData(
                         name: (string) data.fields["nm"],
                         data: line
-                    ));
+                    );
+                    AddInit(init);
+
+                    parsedLines.Add(init);
+                }
+                else
+                {
+                    parsedLines.Add(new EmptyLine());
                 }
             }
-
-            lineNo++;
         }
     }
 
     public void AddInit(InitData data, InitCategory? category = null)
     {
-        (category ?? Categories[^1]).Items.Add(data);
+        category ??= Categories[^1];
+        
+        data.Category = category;
+        category.Items.Add(data);
         Dictionary[data.Name] = data;
+    }
+
+    public void ReplaceInit(InitData oldData, InitData newData)
+    {
+        if (oldData.Name != newData.Name)
+            throw new ArgumentException("Mismatched names");
+        
+        int i = parsedLines.IndexOf(oldData);
+        if (i == -1) throw new Exception("Could not find line index");
+
+        if (parsedLines[i] is not InitData v || v != oldData || v.RawData != Lines[i])
+            throw new Exception("Line index points to incorrect item");
+        
+        oldData.Category.Items[oldData.Category.Items.IndexOf(oldData)] = newData;
+        newData.Category = oldData.Category;
+
+        Dictionary[newData.Name] = newData;
+        parsedLines[i] = newData;
+        Lines[i] = newData.RawData;
     }
 
     private InitCategory? GetCategory(string name)
@@ -132,11 +165,22 @@ record CategoryList
             var parser = new Lingo.LingoParser();
             InitCategory? targetCategory = null; 
 
-            // add extra lines for readability
-            Lines.Add("");
-            Lines.Add("");
-
+            int lineAccum = 2;
             int otherLineNo = -1;
+
+            int FlushLineAccum(int insert)
+            {
+                int oldAccum = lineAccum;
+
+                for (int i = 0; i < lineAccum; i++)
+                {
+                    Lines.Insert(insert, "");
+                    parsedLines.Insert(insert, new EmptyLine());
+                }
+                lineAccum = 0;
+
+                return oldAccum;
+            }
 
             foreach (var line in File.ReadLines(otherPath))
             {
@@ -145,7 +189,7 @@ record CategoryList
 
                 if (string.IsNullOrWhiteSpace(line))
                 {
-                    Lines.Add("");
+                    if (targetCategory is not null) lineAccum++;
                     continue;
                 }
 
@@ -167,19 +211,30 @@ record CategoryList
                         category = new InitCategory(line[1..]);
                     }
 
-                    // error if category already exists
-                    if (GetCategory(category.Name) is not null)
+                    // don't write new line if overwriting a category with the same name and color
+                    InitCategory? oldCategory = null;
+                    if ((oldCategory = GetCategory(category.Name)) is not null)
                     {
-                        throw new Exception($"Category '{category.Name}' already exists!");
+                        // throw error on color mismatch
+                        if (oldCategory.Color != category.Color)
+                            throw new Exception($"Category '{category.Name}' already exists!");
+                        
+                        targetCategory = oldCategory;
+
+                        // this will insert a newline when adding
+                        // new tiles to the category
+                        lineAccum = 1;
                     }
                     else
                     {
+                        // register the category
+                        FlushLineAccum(Lines.Count);
                         Lines.Add(line);
+                        parsedLines.Add(category);
                         Categories.Add(category);
                         targetCategory = category;
-
-                        Console.WriteLine(await promptOverwrite(category.Name));
                     }
+
                 }
 
                 // item
@@ -199,23 +254,93 @@ record CategoryList
                             data: line
                         );
 
-                        // error if name already exists
-                        if (Dictionary.ContainsKey(init.Name))
+                        bool success = true;
+                        bool expectImageExistence = true;
+
+                        // check with user if tile with same name already exists
+                        if (Dictionary.TryGetValue(init.Name, out InitData? oldInit))
                         {
-                            throw new Exception($"Item '{init.Name}' already exists!");
+                            if (oldInit.Category != targetCategory)
+                                throw new Exception($"Item '{init.Name}' was imported into '{targetCategory.Name}', but was already in '{oldInit.Name}'");
+
+                            if (await promptOverwrite(init.Name))
+                            {
+                                // go ahead and overwrite
+                                RainEd.Logger.Information("Overwrite tile '{TileName}'", init.Name);
+                                ReplaceInit(oldInit, init);
+                                expectImageExistence = false;
+                            }
+                            else
+                            {
+                                RainEd.Logger.Information("Ignore tile '{TileName}'", init.Name);
+                                success = false;
+                            }
                         }
                         else
                         {
+                            // insert the new item at the end of the category tile list
+                            // by inserting it where the next init category definition is,
+                            // or the EOF
+                            int i = parsedLines.IndexOf(targetCategory);
+                            if (i == -1) throw new Exception("Failed to find line number of category");
+
+                            // find where the next category starts (or the EOF)
+                            int insertLoc = -1;
+
+                            i++;
+                            while (i < parsedLines.Count && parsedLines[i] is not InitCategory)
+                            {
+                                if (parsedLines[i] is not EmptyLine)
+                                    insertLoc = i;
+                                
+                                i++;
+                            }
+                            
+                            // if at EOF
+                            if (i == Lines.Count)
+                            {   
+                                i = Lines.Count;
+                                insertLoc = i;
+                            }
+
+                            else
+                            {
+                                // prefer to insert it after the last item def in this category
+                                if (insertLoc >= 0)
+                                {
+                                    insertLoc++;
+                                }
+                                else
+                                {
+                                    insertLoc = i;
+                                }
+                            }
+                            
+                            // flush line accumulator
+                            insertLoc += FlushLineAccum(insertLoc);
+
+                            // insert item
+                            Lines.Insert(insertLoc, line);
+                            parsedLines.Insert(insertLoc, init);
+                            AddInit(init, targetCategory);
+                        }
+                        
+                        // copy image
+                        if (success)
+                        {
                             var pngName = init.Name + ".png";
 
-                            // copy graphics
-                            RainEd.Logger.Information("Copy {ImageName}", pngName);
-                            
-                            var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
-                            File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
-
-                            Lines.Add(line);
-                            AddInit(init, targetCategory);
+                            // if expectImageExistence is false, only copy the image if it exists.
+                            // it is set to false when overwriting an item, in case the new
+                            // Init.txt just wants to change the item data and not its graphics.
+                            if (expectImageExistence || File.Exists(Path.Combine(otherDir, pngName)))
+                            {
+                                // copy graphics
+                                RainEd.Logger.Information("Copy {ImageName}", pngName);
+                                
+                                var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
+                                File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
+                            }
                         }
                     }
                 }
