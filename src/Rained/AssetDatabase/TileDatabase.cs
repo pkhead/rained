@@ -120,7 +120,7 @@ class Tile
         GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", name + ".png");
         if (!File.Exists(GraphicsPath))
         {
-            GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "internal", name + ".png");
+            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", name + ".png");
         }
 
         using var fullImage = RlManaged.Image.Load(GraphicsPath);
