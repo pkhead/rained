@@ -22,13 +22,11 @@ record InitData
 {
     public string Name;
     public string RawData;
-    public int LineNumber;
 
-    public InitData(string name, string data, int line)
+    public InitData(string name, string data)
     {
         Name = name;
         RawData = data;
-        LineNumber = line;
     }
 }
 
@@ -36,13 +34,11 @@ record InitCategory
 {
     public string Name;
     public List<InitData> Items;
-    public int LineNumber;
     public Lingo.Color? Color;
 
-    public InitCategory(string name, int line, Lingo.Color? color = null)
+    public InitCategory(string name, Lingo.Color? color = null)
     {
         Name = name;
-        LineNumber = line;
         Color = color;
         Items = [];
     }
@@ -81,16 +77,12 @@ record CategoryList
                     var list = (Lingo.List) parser.Read(line[1..])!;
                     Categories.Add(new InitCategory(
                         name: (string) list.values[0],
-                        color: (Lingo.Color) list.values[1],
-                        line: lineNo
+                        color: (Lingo.Color) list.values[1]
                     ));
                 }
                 else
                 {
-                    Categories.Add(new InitCategory(
-                        name: line[1..],
-                        line: lineNo
-                    ));
+                    Categories.Add(new InitCategory(line[1..]));
                 }
             }
 
@@ -103,8 +95,7 @@ record CategoryList
                 {
                     AddInit(new InitData(
                         name: (string) data.fields["nm"],
-                        data: line,
-                        line: lineNo
+                        data: line
                     ));
                 }
             }
@@ -130,113 +121,118 @@ record CategoryList
         return null;
     }
 
-    public void Merge(string otherPath)
+    public async Task Merge(string otherPath, Func<string, Task<bool>> promptOverwrite)
     {
-        RainEd.Logger.Information("Merge {Path}", otherPath);
-        var parentDir = Path.Combine(FilePath, "..");
-        var otherDir = Path.Combine(otherPath, "..");
-
-        var parser = new Lingo.LingoParser();
-        InitCategory? targetCategory = null; 
-
-        // add extra lines for readability
-        Lines.Add("");
-        Lines.Add("");
-
-        int otherLineNo = -1;
-
-        foreach (var line in File.ReadLines(otherPath))
+        try
         {
-            otherLineNo++;
-            int lineNo = Lines.Count;
+            RainEd.Logger.Information("Merge {Path}", otherPath);
+            var parentDir = Path.Combine(FilePath, "..");
+            var otherDir = Path.Combine(otherPath, "..");
 
-            if (string.IsNullOrWhiteSpace(line))
+            var parser = new Lingo.LingoParser();
+            InitCategory? targetCategory = null; 
+
+            // add extra lines for readability
+            Lines.Add("");
+            Lines.Add("");
+
+            int otherLineNo = -1;
+
+            foreach (var line in File.ReadLines(otherPath))
             {
-                Lines.Add("");
-                continue;
-            }
+                otherLineNo++;
+                int lineNo = Lines.Count;
 
-            // category
-            if (line[0] == '-')
-            {
-                InitCategory category;
-
-                if (isColored)
+                if (string.IsNullOrWhiteSpace(line))
                 {
-                    var list = (Lingo.List) parser.Read(line[1..])!;
-                    category = new InitCategory(
-                        name: (string) list.values[0],
-                        color: (Lingo.Color) list.values[1],
-                        line: lineNo
-                    );
-                }
-                else
-                {
-                    category = new InitCategory(
-                        name: line[1..],
-                        line: lineNo
-                    );
+                    Lines.Add("");
+                    continue;
                 }
 
-                // error if category already exists
-                if (GetCategory(category.Name) is not null)
+                // category
+                if (line[0] == '-')
                 {
-                    throw new Exception($"Category '{category.Name}' already exists!");
-                }
-                else
-                {
-                    Lines.Add(line);
-                    Categories.Add(category);
-                    targetCategory = category;
-                }
-            }
+                    InitCategory category;
 
-            // item
-            else
-            {
-                if (targetCategory is null)
-                {
-                    throw new Exception("Category definition expected, got item definition");
-                }
-
-                var data = parser.Read(line) as Lingo.List;
-
-                if (data is not null)
-                {
-                    var init = new InitData(
-                        name: (string) data.fields["nm"],
-                        data: line,
-                        line: lineNo
-                    );
-
-                    // error if name already exists
-                    if (Dictionary.ContainsKey(init.Name))
+                    if (isColored)
                     {
-                        throw new Exception($"Item '{init.Name}' already exists!");
+                        var list = (Lingo.List) parser.Read(line[1..])!;
+                        category = new InitCategory(
+                            name: (string) list.values[0],
+                            color: (Lingo.Color) list.values[1]
+                        );
                     }
                     else
                     {
-                        var pngName = init.Name + ".png";
+                        category = new InitCategory(line[1..]);
+                    }
 
-                        // copy graphics
-                        RainEd.Logger.Information("Copy {ImageName}", pngName);
-                        
-                        var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
-                        File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
-
+                    // error if category already exists
+                    if (GetCategory(category.Name) is not null)
+                    {
+                        throw new Exception($"Category '{category.Name}' already exists!");
+                    }
+                    else
+                    {
                         Lines.Add(line);
-                        AddInit(init, targetCategory);
+                        Categories.Add(category);
+                        targetCategory = category;
+
+                        Console.WriteLine(await promptOverwrite(category.Name));
+                    }
+                }
+
+                // item
+                else
+                {
+                    if (targetCategory is null)
+                    {
+                        throw new Exception("Category definition expected, got item definition");
+                    }
+
+                    var data = parser.Read(line) as Lingo.List;
+
+                    if (data is not null)
+                    {
+                        var init = new InitData(
+                            name: (string) data.fields["nm"],
+                            data: line
+                        );
+
+                        // error if name already exists
+                        if (Dictionary.ContainsKey(init.Name))
+                        {
+                            throw new Exception($"Item '{init.Name}' already exists!");
+                        }
+                        else
+                        {
+                            var pngName = init.Name + ".png";
+
+                            // copy graphics
+                            RainEd.Logger.Information("Copy {ImageName}", pngName);
+                            
+                            var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
+                            File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
+
+                            Lines.Add(line);
+                            AddInit(init, targetCategory);
+                        }
                     }
                 }
             }
+
+            RainEd.Logger.Information("Writing merge result to {Path}...", FilePath);
+            
+            // force \r newlines
+            File.WriteAllText(FilePath, string.Join("\r", Lines));
+
+            RainEd.Logger.Information("Merge successful!");
         }
-
-        RainEd.Logger.Information("Writing merge result to {Path}...", FilePath);
-        
-        // force \r newlines
-        File.WriteAllText(FilePath, string.Join("\r", Lines));
-
-        RainEd.Logger.Information("Merge successful!");
+        catch (Exception e)
+        {
+            RainEd.Logger.Error("Error while merging:\n{Error}", e);
+            throw;
+        }
     }
 }
 

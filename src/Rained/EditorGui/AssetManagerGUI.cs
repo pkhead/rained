@@ -23,6 +23,21 @@ static class AssetManagerGUI
 
     private static FileBrowser? fileBrowser = null;
 
+    private static TaskCompletionSource<bool>? overwritePromptTcs = null;
+    private static string? overwritePromptTarget = null;
+    private static Task? mergeTask = null;
+
+    private static async Task<bool> PromptOverwrite(string name)
+    {
+        overwritePromptTcs = new();
+        overwritePromptTarget = name;
+        var res = await overwritePromptTcs.Task;
+        
+        overwritePromptTarget = null;
+        overwritePromptTcs = null;
+        return res;
+    }
+
     // uncolored variant
     private static void ShowCategoryList(CategoryList categoryList, ref int selected, Vector2 listSize)
     {
@@ -117,19 +132,113 @@ static class AssetManagerGUI
             fileBrowser.AddFilter("Init.txt File", isInitFile, ".txt");
         }
         
-        ImGui.SameLine();
+        /*ImGui.SameLine();
         if (ImGui.Button("Import .zip"))
         {
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportZip, RainEd.Instance.AssetDataPath);
             fileBrowser.AddFilter("ZIP File", null, ".zip");
-        }
+        }*/
 
         // render file browser
         FileBrowser.Render(ref fileBrowser);
+
+        // render merge status
+        if (mergeTask is not null)
+        {
+            if (!ImGui.IsPopupOpen("Merging"))
+            {
+                ImGui.OpenPopup("Merging");
+                
+                // center popup modal
+                var viewport = ImGui.GetMainViewport();
+                ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+                ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+            }
+
+
+            var popupFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove;
+            if (ImGuiExt.BeginPopupModal("Merging", popupFlags))
+            {
+                ImGui.Text("Merging...");
+
+                // show overwrite prompt if needed
+                if (overwritePromptTarget is not null)
+                {
+                    if (!ImGui.IsPopupOpen("Overwrite?"))
+                    {
+                        ImGui.OpenPopup("Overwrite?");
+                
+                        // center popup modal
+                        var viewport = ImGui.GetMainViewport();
+                        ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+                        ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+                    }
+
+                    if (ImGuiExt.BeginPopupModal("Overwrite?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                    {
+                        ImGui.Text($"Overwrite \"{overwritePromptTarget}\"?");
+                        ImGui.Separator();
+                        
+                        if (ImGui.Button("Yes"))
+                        {
+                            overwritePromptTcs!.SetResult(true);
+                            ImGui.CloseCurrentPopup();
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("No"))
+                        {
+                            overwritePromptTcs!.SetResult(false);
+                            ImGui.CloseCurrentPopup();
+                        }
+
+                        ImGui.End();
+                    }
+                }
+
+                // show error if present
+                if (mergeTask.IsFaulted)
+                {
+                    if (!ImGui.IsPopupOpen("Error"))
+                    {
+                        ImGui.OpenPopup("Error");
+                
+                        // center popup modal
+                        var viewport = ImGui.GetMainViewport();
+                        ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+                        ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+                    }
+
+                    if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                    {
+                        ImGui.Text($"An error occured while importing the pack.");
+                        ImGui.Separator();
+                        
+                        if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Space) || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+                        {
+                            ImGui.CloseCurrentPopup();
+                            mergeTask = null;
+                        }
+
+                        ImGui.End();
+                    }
+                }
+
+                // end merge task when completed
+                else if (mergeTask.IsCompleted)
+                {
+                    ImGui.CloseCurrentPopup();
+                    mergeTask = null;
+                }
+
+                ImGui.EndPopup();
+            }
+        }
     }
 
     private static void ImportFile(string? path)
     {
+        if (mergeTask is not null) return;
         if (string.IsNullOrEmpty(path)) return;
 
         RainEd.Logger.Information("Import Init.txt file '{Path}'", path);
@@ -137,25 +246,17 @@ static class AssetManagerGUI
         switch (curAssetTab)
         {
             case AssetType.Tile:
-                assetManager.TileInit.Merge(path);
-                
+                mergeTask = assetManager.TileInit.Merge(path, PromptOverwrite);
                 break;
             
             case AssetType.Prop:
-                assetManager.PropInit.Merge(path);
+                mergeTask = assetManager.PropInit.Merge(path, PromptOverwrite);
                 break;
 
             case AssetType.Material:
-                assetManager.MaterialsInit.Merge(path);
+                mergeTask = assetManager.MaterialsInit.Merge(path, PromptOverwrite);
                 break;
         }
-    }
-
-    private static void ImportZip(string? path)
-    {
-        if (string.IsNullOrEmpty(path)) return;
-
-        RainEd.Logger.Information("Import zip file '{Path}'", path);
     }
 
     public static void Show()
