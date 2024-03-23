@@ -22,12 +22,17 @@ static class AssetManagerGUI
 
     private static FileBrowser? fileBrowser = null;
 
+    // variables related to the merge process
     private static TaskCompletionSource<bool>? overwritePromptTcs = null;
     private static string? overwritePromptTarget = null;
     private static Task? mergeTask = null;
+    private static bool? autoConfirm = null;
 
     private static async Task<bool> PromptOverwrite(string name)
     {
+        if (autoConfirm.HasValue)
+            return autoConfirm.Value;
+        
         overwritePromptTcs = new();
         overwritePromptTarget = name;
         var res = await overwritePromptTcs.Task;
@@ -98,23 +103,55 @@ static class AssetManagerGUI
         ImGui.SameLine();
         if (ImGui.BeginListBox("##Items", listSize))
         {
-            var itemList = categories[selected].Items;
-
-            for (int i = 0; i < itemList.Count; i++)
+            if (categories.Count > 0)
             {
-                var tile = itemList[i];
+                var itemList = categories[selected].Items;
 
-                // don't show this prop if it doesn't pass search test
-                //if (!tile.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
-                //    continue;
-                
-                if (ImGui.Selectable(tile.Name, i == groupIndex))
+                for (int i = 0; i < itemList.Count; i++)
                 {
-                    groupIndex = i;
+                    var tile = itemList[i];
+
+                    // don't show this prop if it doesn't pass search test
+                    //if (!tile.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                    //    continue;
+                    
+                    if (ImGui.Selectable(tile.Name, i == groupIndex))
+                    {
+                        groupIndex = i;
+                    }
                 }
             }
 
             ImGui.EndListBox();
+        }
+    }
+
+    private static void DeleteCategory(CategoryList assetList, ref int selected)
+    {
+        assetList.DeleteCategory(assetList.Categories[selected]);
+        
+        if (assetList.Categories.Count == 0)
+        {
+            selected = 0;
+        }
+        else
+        {
+            selected = Math.Clamp(selected, 0, assetList.Categories.Count - 1);
+        }
+    }
+
+    private static void DeleteItem(CategoryList assetList, int selectedCategory)
+    {
+        var category = assetList.Categories[selectedCategory];
+        assetList.DeleteItem(category.Items[groupIndex]);
+        
+        if (category.Items.Count == 0)
+        {
+            groupIndex = 0;
+        }
+        else
+        {
+            groupIndex = Math.Clamp(groupIndex, 0, category.Items.Count - 1);
         }
     }
 
@@ -129,6 +166,44 @@ static class AssetManagerGUI
         {
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportFile, RainEd.Instance.AssetDataPath);
             fileBrowser.AddFilter("Init.txt File", isInitFile, ".txt");
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Delete Category"))
+        {
+            switch (curAssetTab)
+            {
+                case AssetType.Tile:
+                    DeleteCategory(assetManager!.TileInit, ref selectedTileCategory);
+                    break;
+
+                case AssetType.Prop:
+                    DeleteCategory(assetManager!.PropInit, ref selectedPropCategory);
+                    break;
+
+                case AssetType.Material:
+                    DeleteCategory(assetManager!.MaterialsInit, ref selectedMatCategory);
+                    break;
+            }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Delete Asset"))
+        {
+            switch (curAssetTab)
+            {
+                case AssetType.Tile:
+                    DeleteItem(assetManager!.TileInit, selectedTileCategory);
+                    break;
+
+                case AssetType.Prop:
+                    DeleteItem(assetManager!.PropInit, selectedPropCategory);
+                    break;
+
+                case AssetType.Material:
+                    DeleteItem(assetManager!.MaterialsInit, selectedMatCategory);
+                    break;
+            }
         }
         
         /*ImGui.SameLine();
@@ -179,6 +254,22 @@ static class AssetManagerGUI
 
                             ImGui.CloseCurrentPopup();
                         }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Yes To All", StandardPopupButtons.ButtonSize))
+                        {
+                            autoConfirm = true;
+                            overwritePromptTcs!.SetResult(true);
+                            ImGui.CloseCurrentPopup();
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("No To All", StandardPopupButtons.ButtonSize))
+                        {
+                            autoConfirm = false;
+                            overwritePromptTcs!.SetResult(false);
+                            ImGui.CloseCurrentPopup();
+                        }
                         
                         ImGui.End();
                     }
@@ -199,6 +290,7 @@ static class AssetManagerGUI
                         {
                             ImGui.CloseCurrentPopup();
                             mergeTask = null;
+                            autoConfirm = null;
                         }
 
                         ImGui.End();
@@ -210,6 +302,7 @@ static class AssetManagerGUI
                 {
                     ImGui.CloseCurrentPopup();
                     mergeTask = null;
+                    autoConfirm = null;
                 }
 
                 ImGui.EndPopup();
@@ -227,22 +320,17 @@ static class AssetManagerGUI
         // reload asset list in case user modified
         // (also makes it less bug-prone)
         assetManager = new AssetManager();
-        
-        switch (curAssetTab)
-        {
-            case AssetType.Tile:
-                mergeTask = assetManager.TileInit.Merge(path, PromptOverwrite);
-                break;
-            
-            case AssetType.Prop:
-                mergeTask = assetManager.PropInit.Merge(path, PromptOverwrite);
-                break;
-
-            case AssetType.Material:
-                mergeTask = assetManager.MaterialsInit.Merge(path, PromptOverwrite);
-                break;
-        }
+        mergeTask = GetCurrentAssetList().Merge(path, PromptOverwrite);
     }
+
+    private static CategoryList GetCurrentAssetList()
+        => curAssetTab switch
+        {
+            AssetType.Tile => assetManager!.TileInit,
+            AssetType.Prop => assetManager!.PropInit,
+            AssetType.Material => assetManager!.MaterialsInit,
+            _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
+        };
 
     public static void Show()
     {
@@ -307,7 +395,7 @@ static class AssetManagerGUI
                 ImGui.EndTabItem();
             }
 
-            /*if (ImGui.BeginTabItem("Materials"))
+            if (ImGui.BeginTabItem("Materials"))
             {
                 // set group index to 0 when tab changed
                 if (curAssetTab != AssetType.Material)
@@ -321,10 +409,10 @@ static class AssetManagerGUI
                 var boxHeight = ImGui.GetContentRegionAvail().Y;
 
                 ShowCategoryList(assetManager.MaterialsInit, ref selectedMatCategory, new Vector2(halfWidth, boxHeight));
-                ShowItemList(assetManager.TileInit, selectedMatCategory, new Vector2(halfWidth, boxHeight));
+                ShowItemList(assetManager.MaterialsInit, selectedMatCategory, new Vector2(halfWidth, boxHeight));
 
                 ImGui.EndTabItem();
-            }*/
+            }
 
             ImGui.EndTabBar();
         }

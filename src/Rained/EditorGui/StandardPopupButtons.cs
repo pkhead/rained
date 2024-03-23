@@ -37,6 +37,7 @@ static class StandardPopupButtons
                     buttonPressed = 0;
                 }
 
+                ImGui.SameLine();
                 if (ImGui.Button("Cancel", size) || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
                 {
                     pressed = true;
@@ -52,6 +53,7 @@ static class StandardPopupButtons
                     buttonPressed = 0;
                 }
 
+                ImGui.SameLine();
                 if (ImGui.Button("No", size) || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
                 {
                     pressed = true;

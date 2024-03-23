@@ -45,21 +45,29 @@ record InitCategory
     }
 }
 
+interface IAssetGraphicsManager
+{
+    public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect);
+    public void DeleteGraphics(InitData init, string dir);
+}
+
 record CategoryList
 {
     public readonly string FilePath;
     public readonly List<string> Lines;
     private readonly List<object> parsedLines;
     private bool isColored;
+    private readonly IAssetGraphicsManager graphicsManager;
 
     public readonly List<InitCategory> Categories = [];
     public readonly Dictionary<string, InitData> Dictionary = [];
 
     private record EmptyLine;
 
-    public CategoryList(string path, bool colored)
+    public CategoryList(string path, bool colored, IAssetGraphicsManager graphicsManager)
     {
         isColored = colored;
+        this.graphicsManager = graphicsManager;
         FilePath = path;
         Lines = new List<string>(File.ReadAllLines(path));
         parsedLines = [];
@@ -115,6 +123,12 @@ record CategoryList
         }
     }
 
+    private void WriteToFile()
+    {
+        // force \r newlines
+        File.WriteAllText(FilePath, string.Join("\r", Lines));
+    }
+
     public void AddInit(InitData data, InitCategory? category = null)
     {
         category ??= Categories[^1];
@@ -152,6 +166,56 @@ record CategoryList
         }
 
         return null;
+    }
+
+    public void DeleteCategory(InitCategory category)
+    {
+        int lineIndex = parsedLines.IndexOf(category);
+        if (lineIndex == -1) throw new Exception("Failed to find line index");
+
+        if (!Categories.Remove(category))
+            throw new Exception("The category was not in the list");
+        
+        // remove items in the category
+        var parentDir = Path.Combine(FilePath, "..");
+        foreach (var tile in category.Items)
+        {
+            Dictionary.Remove(tile.Name);
+            graphicsManager.DeleteGraphics(tile, parentDir);
+        }
+
+        // remove lines and tiles relating to the category
+        parsedLines.RemoveAt(lineIndex);
+        Lines.RemoveAt(lineIndex);
+
+        // keep removing lines until another category is found or the EOF is reached
+        while (lineIndex < Lines.Count && parsedLines[lineIndex] is not InitCategory)
+        {
+            parsedLines.RemoveAt(lineIndex);
+            Lines.RemoveAt(lineIndex);
+        }
+
+        WriteToFile();
+    }
+
+    public void DeleteItem(InitData item)
+    {
+        int lineIndex = parsedLines.IndexOf(item);
+        if (lineIndex == -1) throw new Exception("Failed to find line index");
+
+        // remove from category data
+        if (!item.Category.Items.Remove(item))
+            throw new Exception("Item was already removed!");
+
+        var parentDir = Path.Combine(FilePath, "..");
+        Dictionary.Remove(item.Name);
+        graphicsManager.DeleteGraphics(item, parentDir);
+
+        // delete the line
+        parsedLines.RemoveAt(lineIndex);
+        Lines.RemoveAt(lineIndex);
+
+        WriteToFile();
     }
 
     public async Task Merge(string otherPath, Func<string, Task<bool>> promptOverwrite)
@@ -328,29 +392,14 @@ record CategoryList
                         // copy image
                         if (success)
                         {
-                            var pngName = init.Name + ".png";
-
-                            // if expectImageExistence is false, only copy the image if it exists.
-                            // it is set to false when overwriting an item, in case the new
-                            // Init.txt just wants to change the item data and not its graphics.
-                            if (expectImageExistence || File.Exists(Path.Combine(otherDir, pngName)))
-                            {
-                                // copy graphics
-                                RainEd.Logger.Information("Copy {ImageName}", pngName);
-                                
-                                var graphicsData = File.ReadAllBytes(Path.Combine(otherDir, pngName));
-                                File.WriteAllBytes(Path.Combine(parentDir, pngName), graphicsData);
-                            }
+                            graphicsManager.CopyGraphics(init, otherDir, parentDir, expectImageExistence);
                         }
                     }
                 }
             }
 
             RainEd.Logger.Information("Writing merge result to {Path}...", FilePath);
-            
-            // force \r newlines
-            File.WriteAllText(FilePath, string.Join("\r", Lines));
-
+            WriteToFile();
             RainEd.Logger.Information("Merge successful!");
         }
         catch (Exception e)
@@ -366,11 +415,86 @@ class AssetManager
     public readonly CategoryList TileInit;
     public readonly CategoryList PropInit;
     public readonly CategoryList MaterialsInit;
+
+    class StandardGraphicsManager : IAssetGraphicsManager
+    {
+        public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect)
+        {
+            var pngName = init.Name + ".png";
+
+            // if expectImageExistence is false, only copy the image if it exists.
+            // it is set to false when overwriting an item, in case the new
+            // Init.txt just wants to change the item data and not its graphics.
+            if (expect || File.Exists(Path.Combine(srcDir, pngName)))
+            {
+                // copy graphics
+                RainEd.Logger.Information("Copy {ImageName}", pngName);
+                
+                var graphicsData = File.ReadAllBytes(Path.Combine(srcDir, pngName));
+                File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
+            }
+        }
+
+        public void DeleteGraphics(InitData init, string dir)
+        {
+            var filePath = Path.Combine(dir, init.Name + ".png");
+
+            if (File.Exists(filePath))
+            {
+                RainEd.Logger.Information("Delete {FilePath}", filePath);
+                File.Delete(filePath);
+            }
+        }
+    }
+
+    class MaterialGraphicsManager : IAssetGraphicsManager
+    {
+        private static readonly string[] PossibleExtensions = [
+            ".png",
+            "Texture.png",
+            "Floor.png",
+            "Slopes.png",
+            "Texture.png",
+        ];
+
+        public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect)
+        {
+            foreach (var ext in PossibleExtensions)
+            {
+                var pngName = init.Name + ext;
+
+                if (File.Exists(Path.Combine(srcDir, pngName)))
+                {
+                    // copy graphics
+                    RainEd.Logger.Information("Copy {ImageName}", pngName);
+                    
+                    var graphicsData = File.ReadAllBytes(Path.Combine(srcDir, pngName));
+                    File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
+                }
+            }
+        }
+
+        public void DeleteGraphics(InitData init, string dir)
+        {
+            foreach (var ext in PossibleExtensions)
+            {
+                var filePath = Path.Combine(dir, init.Name + ext);
+                if (File.Exists(filePath))
+                {
+                    RainEd.Logger.Information("Delete {FilePath}", filePath);
+                    File.Delete(filePath);
+                }
+            }
+        }
+    }
     
     public AssetManager()
     {
-        TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true);
-        PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true);
-        MaterialsInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), false);
+        var graphicsManager1 = new StandardGraphicsManager();
+        var graphicsManager2 = new MaterialGraphicsManager();
+
+        TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true, graphicsManager1);
+        PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true, graphicsManager1);
+        MaterialsInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), false, graphicsManager2);
     }
 }
