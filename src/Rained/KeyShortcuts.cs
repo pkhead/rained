@@ -11,6 +11,7 @@ enum KeyShortcut : int
     // General
     NavUp, NavLeft, NavDown, NavRight,
     NewObject, RemoveObject, SwitchLayer, SwitchTab,
+    Duplicate,
 
     New, Open, Save, SaveAs,
     Cut, Copy, Paste, Undo, Redo,
@@ -28,6 +29,12 @@ enum KeyShortcut : int
     ResetBrushTransform,
     ZoomLightIn, ZoomLightOut,
     RotateLightCW, RotateLightCCW,
+
+    // Camera
+    CameraSnapX, CameraSnapY,
+
+    // Props
+    ToggleVertexMode,
 
     /// <summary>
     /// Do not bind - this is just the number of shortcut IDs
@@ -250,7 +257,8 @@ static class KeyShortcuts
         Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
         Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
         Register("New Object", KeyShortcut.NewObject, ImGuiKey.N, ImGuiModFlags.None, true);
-        Register("Remove Object", KeyShortcut.RemoveObject, ImGuiKey.Delete, ImGuiModFlags.None, true);
+        Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.Delete, ImGuiModFlags.None, true);
+        Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiModFlags.Ctrl, true);
 
         Register("New File", KeyShortcut.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
         Register("Open File", KeyShortcut.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
@@ -287,5 +295,12 @@ static class KeyShortcuts
         Register("Move Light Outward", KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiModFlags.Shift);
         Register("Rotate Light CW", KeyShortcut.RotateLightCW, ImGuiKey.D, ImGuiModFlags.Shift);
         Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiModFlags.Shift);
+
+        // Camera Editor
+        Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.S, ImGuiModFlags.None);
+        Register("Camera Snap Y", KeyShortcut.CameraSnapY, ImGuiKey.D, ImGuiModFlags.None);
+
+        // Prop Editor
+        Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);
     }
 }

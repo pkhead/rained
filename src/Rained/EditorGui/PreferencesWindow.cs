@@ -1,7 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
-using RainEd.Assets;
-using rlImGui_cs;
+using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
 namespace RainEd;
@@ -115,20 +114,28 @@ static class PreferencesWindow
                 if (ImGui.IsKeyDown(ImGuiKey.ModSuper)) modFlags |= ImGuiModFlags.Super;
 
                 // find the key that is currently pressed
-                for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+                if (Raylib.IsKeyPressed(KeyboardKey.Tab))
                 {
-                    ImGuiKey key = (ImGuiKey) ki;
-                    
-                    // don't process if this is a modifier key
-                    if (KeyShortcuts.IsModifierKey(key))
-                        continue;
-                    
-                    if (ImGui.IsKeyPressed(key))
+                    KeyShortcuts.Rebind(activeShortcut, ImGuiKey.Tab, modFlags);
+                    activeShortcut = KeyShortcut.None;
+                }
+                else
+                {
+                    for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
                     {
-                        // rebind the shortcut to this key
-                        KeyShortcuts.Rebind(activeShortcut, key, modFlags);
-                        activeShortcut = KeyShortcut.None;
-                        break;
+                        ImGuiKey key = (ImGuiKey) ki;
+                        
+                        // don't process if this is a modifier key
+                        if (KeyShortcuts.IsModifierKey(key))
+                            continue;
+                        
+                        if (ImGui.IsKeyPressed(key))
+                        {
+                            // rebind the shortcut to this key
+                            KeyShortcuts.Rebind(activeShortcut, key, modFlags);
+                            activeShortcut = KeyShortcut.None;
+                            break;
+                        }
                     }
                 }
             }
@@ -225,7 +232,7 @@ static class PreferencesWindow
         ImGui.Separator();
         ShortcutButton(KeyShortcut.Render);
 
-        ImGui.SeparatorText("General Editing");
+        ImGui.SeparatorText("Editing");
         ShortcutButton(KeyShortcut.NavUp);
         ShortcutButton(KeyShortcut.NavDown);
         ShortcutButton(KeyShortcut.NavLeft);
@@ -233,16 +240,17 @@ static class PreferencesWindow
         ImGui.Separator();
         ShortcutButton(KeyShortcut.NewObject);
         ShortcutButton(KeyShortcut.RemoveObject);
+        ShortcutButton(KeyShortcut.Duplicate);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.SwitchLayer);
         ShortcutButton(KeyShortcut.SwitchTab);
 
-        ImGui.SeparatorText("Geometry Edit");
+        ImGui.SeparatorText("Geometry");
         ShortcutButton(KeyShortcut.ToggleLayer1);
         ShortcutButton(KeyShortcut.ToggleLayer2);
         ShortcutButton(KeyShortcut.ToggleLayer3);
 
-        ImGui.SeparatorText("Tile Edit");
+        ImGui.SeparatorText("Tiles");
         ShortcutButton(KeyShortcut.Eyedropper);
         ShortcutButton(KeyShortcut.SetMaterial);
         ImGui.Separator();
@@ -250,12 +258,19 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.TileForcePlacement);
         ShortcutButton(KeyShortcut.TileIgnoreDifferent);
 
-        ImGui.SeparatorText("Light Edit");
+        ImGui.SeparatorText("Cameras");
+        ShortcutButton(KeyShortcut.CameraSnapX);
+        ShortcutButton(KeyShortcut.CameraSnapY);
+
+        ImGui.SeparatorText("Light");
         ShortcutButton(KeyShortcut.ResetBrushTransform);
         ShortcutButton(KeyShortcut.ZoomLightIn);
         ShortcutButton(KeyShortcut.ZoomLightOut);
         ShortcutButton(KeyShortcut.RotateLightCW);
         ShortcutButton(KeyShortcut.RotateLightCCW);
+
+        ImGui.SeparatorText("Props");
+        ShortcutButton(KeyShortcut.ToggleVertexMode);
     }
 
     private static void ShowThemeTab()
