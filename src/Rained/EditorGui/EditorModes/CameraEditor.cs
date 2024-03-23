@@ -98,8 +98,8 @@ class CameraEditor : IEditorMode
         levelRender.RenderBorder();
 
         bool doubleClick = false;
-        bool horizSnap = EditorWindow.IsKeyDown(ImGuiKey.W) || EditorWindow.IsKeyDown(ImGuiKey.S);
-        bool vertSnap = EditorWindow.IsKeyDown(ImGuiKey.D) || EditorWindow.IsKeyDown(ImGuiKey.A);
+        bool horizSnap = KeyShortcuts.Active(KeyShortcut.NavUp) || KeyShortcuts.Active(KeyShortcut.NavDown) || KeyShortcuts.Active(KeyShortcut.CameraSnapX);
+        bool vertSnap = KeyShortcuts.Active(KeyShortcut.NavRight) || KeyShortcuts.Active(KeyShortcut.NavLeft) || KeyShortcuts.Active(KeyShortcut.CameraSnapY);
 
         if (horizSnap && vertSnap)
         {

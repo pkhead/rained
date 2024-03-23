@@ -241,6 +241,7 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.NewObject);
         ShortcutButton(KeyShortcut.RemoveObject);
         ShortcutButton(KeyShortcut.Duplicate);
+        ShortcutButton(KeyShortcut.Eyedropper);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.SwitchLayer);
         ShortcutButton(KeyShortcut.SwitchTab);
@@ -251,7 +252,6 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ToggleLayer3);
 
         ImGui.SeparatorText("Tiles");
-        ShortcutButton(KeyShortcut.Eyedropper);
         ShortcutButton(KeyShortcut.SetMaterial);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.TileForceGeometry);

@@ -798,7 +798,7 @@ partial class PropEditor : IEditorMode
         }
 
         // when E is pressed, sample prop
-        if (EditorWindow.IsKeyPressed(ImGuiKey.E))
+        if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
         {
             var prop = GetPropAt(window.MouseCellFloat);
             if (prop is not null)
@@ -846,7 +846,7 @@ partial class PropEditor : IEditorMode
         }
 
         // duplicate props
-        if (EditorWindow.IsKeyPressed(ImGuiKey.D) && EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
+        if (KeyShortcuts.Activated(KeyShortcut.Duplicate))
         {
             changeRecorder.BeginListChange();
 

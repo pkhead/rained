@@ -256,7 +256,7 @@ static class KeyShortcuts
         Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
         Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
         Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
-        Register("New Object", KeyShortcut.NewObject, ImGuiKey.N, ImGuiModFlags.None, true);
+        Register("New Object", KeyShortcut.NewObject, ImGuiKey.C, ImGuiModFlags.None, true);
         Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.Delete, ImGuiModFlags.None, true);
         Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiModFlags.Ctrl, true);
 
@@ -297,8 +297,8 @@ static class KeyShortcuts
         Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiModFlags.Shift);
 
         // Camera Editor
-        Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.S, ImGuiModFlags.None);
-        Register("Camera Snap Y", KeyShortcut.CameraSnapY, ImGuiKey.D, ImGuiModFlags.None);
+        Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.Q, ImGuiModFlags.None);
+        Register("Camera Snap Y", KeyShortcut.CameraSnapY, ImGuiKey.E, ImGuiModFlags.None);
 
         // Prop Editor
         Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);

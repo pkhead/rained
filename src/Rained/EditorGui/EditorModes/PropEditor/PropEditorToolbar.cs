@@ -292,7 +292,7 @@ partial class PropEditor : IEditorMode
         SelectorToolbar();
         OptionsToolbar();
 
-        if (EditorWindow.IsKeyPressed(ImGuiKey.F))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleVertexMode))
         {
             isWarpMode = !isWarpMode;
         }

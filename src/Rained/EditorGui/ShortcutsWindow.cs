@@ -73,8 +73,8 @@ static partial class ShortcutsWindow
             ("Right Mouse", "Reset camera corner"),
             ("Backspace/Delete", "Delete selected camera"),
             ("[Duplicate]", "Duplicate selected camera"),
-            ("[CameraSnapX]", "Snap X to other cameras"),
-            ("[CameraSnapY]", "Snap Y to other cameras"),
+            ("[CameraSnapX]/[NavUp]/[NavDown]", "Snap X to other cameras"),
+            ("[CameraSnapY]/[NavLeft]/[NavRight]", "Snap Y to other cameras"),
         ],
 
         // Light
