@@ -49,11 +49,13 @@ class DrizzleRenderWindow : IDisposable
                 needUpdateTextures = true;
             };
 
-            previewTextures = new RlManaged.Texture2D[30];
-
-            for (int i = 0; i < 30; i++)
+            if (drizzleRenderer.RenderLayerPreviews is not null)
             {
-                previewTextures[i] = RlManaged.Texture2D.LoadFromImage(drizzleRenderer.RenderLayerPreviews[i]);
+                previewTextures = new RlManaged.Texture2D[30];
+                for (int i = 0; i < 30; i++)
+                {
+                    previewTextures[i] = RlManaged.Texture2D.LoadFromImage(drizzleRenderer.RenderLayerPreviews![i]);
+                }
             }
         }
         catch (Exception e)
@@ -89,6 +91,100 @@ class DrizzleRenderWindow : IDisposable
         layerPreviewShader.Dispose();
     }
 
+    private void ShowControlButtons(ref bool doClose)
+    {
+        bool cancelDisabled = true;
+        bool closeDisabled = false;
+        bool revealDisabled = true;
+
+        if (drizzleRenderer is not null)
+        {
+            // yes i know this code is a bit iffy
+            cancelDisabled =
+                drizzleRenderer.State == RenderState.Cancelling ||
+                drizzleRenderer.State == RenderState.Errored || drizzleRenderer.IsDone;
+            
+            closeDisabled = !drizzleRenderer.IsDone && drizzleRenderer.State != RenderState.Errored;
+            revealDisabled = !drizzleRenderer.IsDone || drizzleRenderer.State == RenderState.Canceled;
+        }
+
+        // cancel button (disabled if cancelling/canceled)
+        if (cancelDisabled)
+            ImGui.BeginDisabled();
+        
+        if (ImGui.Button("Cancel"))
+            drizzleRenderer?.Cancel();
+        
+        if (cancelDisabled)
+            ImGui.EndDisabled();
+
+        // close button (disabled if render process is not done)
+        if (closeDisabled)
+            ImGui.BeginDisabled();
+        
+        ImGui.SameLine();
+        if (ImGui.Button("Close"))
+        {
+            doClose = true;
+            ImGui.CloseCurrentPopup();
+        }
+
+        if (closeDisabled)
+            ImGui.EndDisabled();
+
+        // show in file browser button
+        if (revealDisabled)
+            ImGui.BeginDisabled();
+        
+        ImGui.SameLine();
+        if (ImGui.Button("Show In File Browser"))
+            RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(
+                RainEd.Instance.AssetDataPath,
+                "Levels",
+                Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath) + ".txt"
+            ), true);
+        
+        if (revealDisabled)
+            ImGui.EndDisabled();
+    }
+
+    private void ShowStatusText()
+    {
+        // status sidebar
+        if (drizzleRenderer is null || drizzleRenderer.State == RenderState.Errored)
+        {
+            ImGui.Text("An error occured!\nCheck the logs for more info.");
+        }
+        else if (drizzleRenderer.State == RenderState.Cancelling)
+        {
+            ImGui.Text("Cancelling...");
+        }
+        else if (drizzleRenderer.State == RenderState.Canceled)
+        {
+            ImGui.Text("Canceled");
+        }
+        else if (drizzleRenderer.State == RenderState.Errored)
+        {
+        }
+        else
+        {
+            if (drizzleRenderer.State == RenderState.Finished)
+            {
+                ImGui.Text("Done!");
+            }
+            else if (drizzleRenderer.State == RenderState.Initializing)
+            {
+                ImGui.Text("Initializing Zygote runtime...");
+            }
+            else
+            {
+                ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");
+            }
+
+            ImGui.TextUnformatted(drizzleRenderer.DisplayString);
+        }
+    }
+
     public bool DrawWindow()
     {
         if (!isOpen)
@@ -101,123 +197,54 @@ class DrizzleRenderWindow : IDisposable
 
         drizzleRenderer?.Update();
 
-        if (ImGui.BeginPopupModal("Render"))
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        ImGui.SetNextWindowSizeConstraints(new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f), Vector2.One * 9999f);
+        if (ImGuiExt.BeginPopupModal("Render", ImGuiWindowFlags.AlwaysAutoResize))
         {
-            bool cancelDisabled = true;
-            bool closeDisabled = false;
-            bool revealDisabled = true;
+            bool isPreviewEnabled = drizzleRenderer!.RenderLayerPreviews is not null;
             float renderProgress = 0f;
 
             if (drizzleRenderer is not null)
-            {
-                // yes i know this code is a bit iffy
-                cancelDisabled =
-                    drizzleRenderer.State == RenderState.Cancelling ||
-                    drizzleRenderer.State == RenderState.Errored || drizzleRenderer.IsDone;
-                
-                closeDisabled = !drizzleRenderer.IsDone && drizzleRenderer.State != RenderState.Errored;
-                revealDisabled = !drizzleRenderer.IsDone || drizzleRenderer.State == RenderState.Canceled;
                 renderProgress = drizzleRenderer.RenderProgress;
-            }
 
-            // cancel button (disabled if cancelling/canceled)
-            if (cancelDisabled)
-                ImGui.BeginDisabled();
-            
-            if (ImGui.Button("Cancel"))
-                drizzleRenderer?.Cancel();
-            
-            if (cancelDisabled)
-                ImGui.EndDisabled();
-
-            // close button (disabled if render process is not done)
-            if (closeDisabled)
-                ImGui.BeginDisabled();
-            
-            ImGui.SameLine();
-            if (ImGui.Button("Close"))
+            // if preview is enabled, show the progress bar above the preview image
+            // otherwise show it below the button line and above the status text
+            if (isPreviewEnabled)
             {
-                doClose = true;
-                ImGui.CloseCurrentPopup();
+                ImGui.BeginGroup();
+                ShowControlButtons(ref doClose);
+                ShowStatusText();
+                ImGui.EndGroup();
+
+                ImGui.SameLine();
+                ImGui.BeginGroup();
+                ImGui.ProgressBar(renderProgress, new Vector2(-0.000001f, 0.0f));
+                
+                if (needUpdateTextures && previewTextures is not null)
+                {
+                    needUpdateTextures = false;
+
+                    for (int i = 0; i < 30; i++)
+                        drizzleRenderer!.RenderLayerPreviews![i].UpdateTexture(previewTextures[i]);
+                    UpdateComposite();
+                }
+
+                int cWidth = previewComposite.Texture.Width;
+                int cHeight = previewComposite.Texture.Height;
+                rlImGui.ImageRect(
+                    previewComposite.Texture,
+                    (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
+                    new Rectangle(0, cHeight, cWidth, -cHeight)
+                );
+                ImGui.EndGroup();
             }
-
-            if (closeDisabled)
-                ImGui.EndDisabled();
-
-            // show in file browser button
-            if (revealDisabled)
-                ImGui.BeginDisabled();
-            
-            ImGui.SameLine();
-            if (ImGui.Button("Show In File Browser"))
-                RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(
-                    RainEd.Instance.AssetDataPath,
-                    "Levels",
-                    Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath) + ".txt"
-                ), true);
-            
-            if (revealDisabled)
-                ImGui.EndDisabled();
-            
-            ImGui.SameLine();
-            ImGui.ProgressBar(renderProgress, new Vector2(-1.0f, 0.0f));
-
-            // status sidebar
-            if (ImGui.BeginChild("##status", new Vector2(ImGui.GetTextLineHeight() * 20.0f, ImGui.GetContentRegionAvail().Y)))
+            else
             {
-                if (drizzleRenderer is null || drizzleRenderer.State == RenderState.Errored)
-                {
-                    ImGui.Text("An error occured!\nCheck the logs for more info.");
-                }
-                else if (drizzleRenderer.State == RenderState.Cancelling)
-                {
-                    ImGui.Text("Cancelling...");
-                }
-                else if (drizzleRenderer.State == RenderState.Canceled)
-                {
-                    ImGui.Text("Canceled");
-                }
-                else if (drizzleRenderer.State == RenderState.Errored)
-                {
-                }
-                else
-                {
-                    if (drizzleRenderer.State == RenderState.Finished)
-                    {
-                        ImGui.Text("Done!");
-                    }
-                    else if (drizzleRenderer.State == RenderState.Initializing)
-                    {
-                        ImGui.Text("Initializing Zygote runtime...");
-                    }
-                    else
-                    {
-                        ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");
-                    }
+                ShowControlButtons(ref doClose);
 
-                    ImGui.TextUnformatted(drizzleRenderer.DisplayString);
-                }
-            } ImGui.EndChild();
-
-            // preview image
-            ImGui.SameLine();
-
-            if (needUpdateTextures && previewTextures is not null)
-            {
-                needUpdateTextures = false;
-
-                for (int i = 0; i < 30; i++)
-                    drizzleRenderer!.RenderLayerPreviews[i].UpdateTexture(previewTextures[i]);
-                UpdateComposite();
+                ImGui.ProgressBar(renderProgress, new Vector2(ImGui.GetContentRegionAvail().X, 0.0f));
+                ShowStatusText();
             }
-
-            int cWidth = previewComposite.Texture.Width;
-            int cHeight = previewComposite.Texture.Height;
-            rlImGui.ImageRect(
-                previewComposite.Texture,
-                (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
-                new Rectangle(0, cHeight, cWidth, -cHeight)
-            );
             
             ImGui.EndPopup();
         }

@@ -125,7 +125,7 @@ class DrizzleRender : IDisposable
     public int CameraCount { get => cameraCount; }
     public int CamerasDone { get => camsDone; }
 
-    public readonly RlManaged.Image[] RenderLayerPreviews;
+    public readonly RlManaged.Image[]? RenderLayerPreviews;
     public Action? PreviewUpdated;
 
     public DrizzleRender()
@@ -137,14 +137,22 @@ class DrizzleRender : IDisposable
         if (string.IsNullOrEmpty(filePath)) throw new Exception("Render called but level wasn't saved");
 
         // create render layer preview images
-        var renderW = 2000;
-        var renderH = 1200;
-        RenderLayerPreviews = new RlManaged.Image[30];
-
-        for (int i = 0; i < 30; i++)
+        if (RainEd.Instance.Preferences.ShowRenderPreview)
         {
-            RenderLayerPreviews[i] = RlManaged.Image.GenColor((int)renderW, (int)renderH, Raylib_cs.Color.Black);
-        } 
+            var renderW = 2000;
+            var renderH = 1200;
+            RenderLayerPreviews = new RlManaged.Image[30];
+
+            for (int i = 0; i < 30; i++)
+            {
+                RenderLayerPreviews[i] = RlManaged.Image.GenColor((int)renderW, (int)renderH, Raylib_cs.Color.Black);
+            } 
+
+        }
+        else
+        {
+            RenderLayerPreviews = null;
+        }
 
         LevelSerialization.Save(filePath);
 
@@ -160,8 +168,11 @@ class DrizzleRender : IDisposable
 
     public void Dispose()
     {
-        foreach (RlManaged.Image image in RenderLayerPreviews)
-            image.Dispose();
+        if (RenderLayerPreviews is not null)
+        {
+            foreach (RlManaged.Image image in RenderLayerPreviews)
+                image.Dispose();
+        }
     }
 
     public static void InitStaticRuntime()
@@ -185,6 +196,9 @@ class DrizzleRender : IDisposable
         var stageEnum = status.Stage.Stage;
 
         camsDone = status.CountCamerasDone;
+
+        // from 0 to 1
+        float stageProgress = 0f;
 
         switch (status.Stage)
         {
@@ -225,7 +239,7 @@ class DrizzleRender : IDisposable
                 
                 for (int i = 0; i < effects.EffectNames.Count; i++)
                 {
-                    if (i == effects.CurrentEffect)
+                    if (i == effects.CurrentEffect - 1)
                         builder.Append("> ");
                     else
                         builder.Append("  ");
@@ -234,6 +248,8 @@ class DrizzleRender : IDisposable
                     builder.Append('\n');
                 }
 
+                stageProgress = Math.Clamp((effects.CurrentEffect - 1f) / effects.EffectNames.Count, 0f, 1f);
+
                 DisplayString = builder.ToString();
                 break;
             }
@@ -241,23 +257,23 @@ class DrizzleRender : IDisposable
 
         // send progress
         currentStage = stageEnum;
-        var renderProgress = status.CountCamerasDone * 10 + stageEnum switch
+        float renderProgress = status.CountCamerasDone * 10 + stageEnum switch
         {
-            RenderStage.Start => 0,
-            RenderStage.CameraSetup => 0,
-            RenderStage.RenderLayers => 1,
-            RenderStage.RenderPropsPreEffects => 2,
-            RenderStage.RenderEffects => 3,
-            RenderStage.RenderPropsPostEffects => 4,
-            RenderStage.RenderLight => 5,
-            RenderStage.Finalize => 6,
-            RenderStage.RenderColors => 7,
-            RenderStage.Finished => 8,
-            RenderStage.SaveFile => 9,
+            RenderStage.Start => 0f,
+            RenderStage.CameraSetup => 0f,
+            RenderStage.RenderLayers => 1f,
+            RenderStage.RenderPropsPreEffects => 2f,
+            RenderStage.RenderEffects => 3f,
+            RenderStage.RenderPropsPostEffects => 4f,
+            RenderStage.RenderLight => 5f,
+            RenderStage.Finalize => 6f,
+            RenderStage.RenderColors => 7f,
+            RenderStage.Finished => 8f,
+            RenderStage.SaveFile => 9f,
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        progress = renderProgress / (cameraCount * 10f);
+        progress = (renderProgress + stageProgress) / (cameraCount * 10f);
     }
 
     public void Cancel()
@@ -320,6 +336,8 @@ class DrizzleRender : IDisposable
 
     private void ProcessPreview(RenderPreview renderPreview)
     {
+        if (RenderLayerPreviews is null) return;
+
         RainEd.Logger.Verbose("Receive preview");
         
         switch (renderPreview)
@@ -343,6 +361,8 @@ class DrizzleRender : IDisposable
 
     private void ProcessLingoImageLayers(LingoImage[] layers)
     {
+        if (RenderLayerPreviews is null) return;
+        
         var srcImage = layers[0];
 
         /*
