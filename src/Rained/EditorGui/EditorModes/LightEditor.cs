@@ -364,6 +364,7 @@ class LightEditor : IEditorMode
         }
 
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
 
         Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
 

@@ -338,6 +338,7 @@ class GeometryEditor : IEditorMode
         levelRender.RenderShortcuts(Color.White);
         levelRender.RenderGrid();
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
 
         // WASD navigation
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)

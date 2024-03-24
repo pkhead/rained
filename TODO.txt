@@ -1,5 +1,4 @@
 Priority:
-- recent files
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - view option to show camera border
@@ -14,6 +13,8 @@ Bugs:
 - render preview no longer works?
 
 Overall:
+- code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
+  also use function/class summaries
 - rect/material tile place
 - keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)

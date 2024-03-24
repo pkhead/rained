@@ -162,6 +162,7 @@ class EditorWindow
         LevelRenderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
         LevelRenderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
         LevelRenderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
+        LevelRenderer.ViewCameras = RainEd.Instance.Preferences.ViewCameras;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -169,6 +170,7 @@ class EditorWindow
         prefs.ViewGrid = LevelRenderer.ViewGrid;
         prefs.ViewObscuredBeams = LevelRenderer.ViewObscuredBeams;
         prefs.ViewTileHeads = LevelRenderer.ViewTileHeads;
+        prefs.ViewCameras = LevelRenderer.ViewCameras;
         
         foreach (var mode in editorModes)
         {

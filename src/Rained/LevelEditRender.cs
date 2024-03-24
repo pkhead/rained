@@ -68,6 +68,7 @@ class LevelEditRender
     public bool ViewGrid = true;
     public bool ViewObscuredBeams = false;
     public bool ViewTileHeads = false;
+    public bool ViewCameras = false;
 
     public Vector2 ViewTopLeft;
     public Vector2 ViewBottomRight;
@@ -938,6 +939,37 @@ class LevelEditRender
                 Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
                 Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
             }
+        }
+    }
+
+    public void RenderCameraBorders()
+    {
+        if (!ViewCameras) return;
+
+        foreach (var camera in Level.Cameras)
+        {
+            var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+
+            // draw full rect ouline
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    camera.Position * Level.TileSize,
+                    Camera.WidescreenSize * Level.TileSize
+                ),
+                2f / ViewZoom,
+                new Color(0, 255, 0, 255)       
+            );
+
+            // 4:3 outline
+            var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    (camCenter - standardResOutlineSize / 2) * Level.TileSize,
+                    standardResOutlineSize * Level.TileSize
+                ),
+                1f / ViewZoom,
+                new Color(0, 255, 0, 255)
+            );
         }
     }
 

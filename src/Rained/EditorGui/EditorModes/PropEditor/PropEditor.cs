@@ -350,7 +350,8 @@ partial class PropEditor : IEditorMode
         
         levelRender.RenderGrid();
         levelRender.RenderBorder();
-
+        levelRender.RenderCameraBorders();
+        
         // highlight selected props
         if (isWarpMode)
         {

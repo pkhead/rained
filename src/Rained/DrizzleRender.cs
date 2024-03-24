@@ -60,6 +60,12 @@ class DrizzleRender : IDisposable
                     EditorRuntimeHelpers.RunStartup(runtime);
                 }
 
+                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
+
+                Renderer = new LevelRenderer(runtime, null);
+                Renderer.StatusChanged += StatusChanged;
+                Renderer.PreviewSnapshot += PreviewSnapshot;
+
                 // process user cancel if cancelled while init
                 // zygote runtime
                 if (InQueue.TryDequeue(out ThreadMessage? msg))
@@ -68,12 +74,6 @@ class DrizzleRender : IDisposable
                         throw new RenderCancelledException();
                 }
                 Queue.Enqueue(new MessageRenderStarted());
-
-                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
-
-                Renderer = new LevelRenderer(runtime, null);
-                Renderer.StatusChanged += StatusChanged;
-                Renderer.PreviewSnapshot += PreviewSnapshot;
 
                 RainEd.Logger.Information("Begin render of {LevelName}", Path.GetFileNameWithoutExtension(filePath));
                 Renderer.DoRender();

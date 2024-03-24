@@ -613,6 +613,7 @@ class EffectsEditor : IEditorMode
         }
 
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
         Raylib.EndScissorMode();
 
         if (!isToolActive && wasToolActive)

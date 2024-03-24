@@ -129,6 +129,7 @@ class EnvironmentEditor : IEditorMode
 
         levelRender.RenderGrid();
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
 
         if (wasDragging && !isDragging)
             changeRecorder.PushChange();

@@ -570,6 +570,11 @@ sealed class RainEd
                     editorWindow.LevelRenderer.ViewTileHeads = !editorWindow.LevelRenderer.ViewTileHeads;
                 }
 
+                if (ImGui.MenuItem("Camera Borders", null, editorWindow.LevelRenderer.ViewCameras))
+                {
+                    editorWindow.LevelRenderer.ViewCameras = !editorWindow.LevelRenderer.ViewCameras;
+                }
+
                 ImGui.Separator();
 
                 if (ImGui.MenuItem("Keyboard Shortcuts", null, ShortcutsWindow.IsWindowOpen))

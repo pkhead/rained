@@ -190,7 +190,8 @@ partial class TileEditor : IEditorMode
 
         levelRender.RenderGrid();
         levelRender.RenderBorder();
-
+        levelRender.RenderCameraBorders();
+        
         if (window.IsViewportHovered)
         {
             var modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
