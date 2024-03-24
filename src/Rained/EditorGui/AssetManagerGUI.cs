@@ -258,11 +258,11 @@ static class AssetManagerGUI
 
                 if (wantDelete == 1)
                 {
-                    ImGui.TextUnformatted($"Are you sure you want to delete the category \"{GetCurrentAssetList().Categories[idx].Name}\"");
+                    ImGui.TextUnformatted($"Are you sure you want to delete the category \"{GetCurrentAssetList().Categories[idx].Name}\"?");
                 }
                 else if (wantDelete == 2)
                 {
-                    ImGui.TextUnformatted($"Are you sure you want to delete the asset \"{GetCurrentAssetList().Categories[idx].Items[groupIndex].Name}\"");
+                    ImGui.TextUnformatted($"Are you sure you want to delete the asset \"{GetCurrentAssetList().Categories[idx].Items[groupIndex].Name}\"?");
                 }
 
                 ImGui.Separator();

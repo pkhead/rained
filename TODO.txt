@@ -1,16 +1,13 @@
 Priority:
 - configurable tile spec colors
 - "General" and "Current" shortcut split
-- view option to show camera border
 - dissolve material/tile separation
-- toggleable render preview
 - Icon!
 
 Bugs:
 - drizzle doesn't build correctly on mac?
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux
-- render preview no longer works?
 
 Overall:
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
