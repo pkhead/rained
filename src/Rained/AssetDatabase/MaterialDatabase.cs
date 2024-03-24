@@ -108,8 +108,14 @@ class MaterialDatabase
     private void RegisterCustomMaterials()
     {
         var parser = new Lingo.LingoParser();
-
-        foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt")))
+        var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
+        if (!File.Exists(initFile))
+        {
+            RainEd.Logger.Error("Materials/Init.txt not found!");
+            return;
+        }
+        
+        foreach (var line in File.ReadLines(initFile))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 

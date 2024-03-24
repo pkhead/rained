@@ -21,6 +21,7 @@ class AppSetup
     private float downloadProgress = 0f;
 
     private string? callbackRes = null;
+    private List<string> missingDirs = [];
     private float callbackWait = 1f;
     private FileBrowser? fileBrowser = null;
     private Task? downloadTask = null;
@@ -45,10 +46,13 @@ class AppSetup
             
             if (ImGuiExt.BeginPopupModal("Configure Data", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove))
             {
+                // show launching screen
                 if (callbackRes is not null)
                 {
                     ImGui.Text("Launching Rained...");
                 }
+
+                // show download screen
                 else if (downloadTask is not null)
                 {
                     if (downloadStage == 1)
@@ -68,7 +72,7 @@ class AppSetup
                 }
                 else
                 {
-                    ImGui.Text("Please configure the Rain World level editor data folder.\nIf you are unsure what to do, select \"Download And Install Data\".");
+                    ImGui.Text("Please configure the Drizzle data folder.\nIf you are unsure what to do, select \"Download And Install Data\".");
 
                     ImGui.Separator();
 
@@ -76,13 +80,35 @@ class AppSetup
 
                     if (ImGui.Button("Choose Data Folder"))
                     {
-                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Directory, FIleBrowserCallback, Boot.AppDataPath);
+                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Directory, FileBrowserCallback, Boot.AppDataPath);
                     }
 
                     ImGui.SameLine();
                     if (ImGui.Button("Download And Install Data"))
                     {
                         downloadTask = DownloadData();
+                    }
+
+                    // show missing dirs popup
+                    if (missingDirs.Count > 0)
+                    {
+                        ImGuiExt.EnsurePopupIsOpen("Error");
+                        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                        if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                        {
+                            ImGui.Text("The given data folder is missing the following subdirectories:");
+                            foreach (var dir in missingDirs)
+                            {
+                                ImGui.BulletText(dir);
+                            }
+
+                            ImGui.Separator();
+                            if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                            {
+                                ImGui.CloseCurrentPopup();
+                                missingDirs.Clear();
+                            }
+                        }
                     }
                 }
 
@@ -115,11 +141,28 @@ class AppSetup
         return true;
     }
 
-    private void FIleBrowserCallback(string? path)
+    private void FileBrowserCallback(string? path)
     {
         if (!string.IsNullOrEmpty(path))
         {
-            callbackRes = path;
+            // check for any missing directories
+            missingDirs.Clear();
+            missingDirs.Add("Cast");
+            missingDirs.Add("Graphics");
+            missingDirs.Add("Props");
+            missingDirs.Add("LevelEditorProjects");
+            missingDirs.Add("Levels");
+
+            for (int i = missingDirs.Count - 1; i >= 0; i--)
+            {
+                if (Directory.Exists(Path.Combine(path, missingDirs[i])))
+                {
+                    missingDirs.RemoveAt(i);
+                }
+            }
+
+            if (missingDirs.Count == 0)
+                callbackRes = path;
         }
     }
 

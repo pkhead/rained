@@ -95,8 +95,16 @@ record CategoryList
         isColored = colored;
         this.graphicsManager = graphicsManager;
         FilePath = path;
-        Lines = new List<string>(File.ReadAllLines(path));
         parsedLines = [];
+
+        if (!File.Exists(path))
+        {
+            RainEd.Logger.Error("{Path} not found!", path);
+            Lines = [];
+            return;
+        }
+
+        Lines = new List<string>(File.ReadAllLines(path));
 
         var parser = new Lingo.LingoParser();
         foreach (var line in Lines)
@@ -152,7 +160,8 @@ record CategoryList
     private void WriteToFile()
     {
         // force \r newlines
-        File.WriteAllText(FilePath, string.Join("\r", Lines));
+        if (File.Exists(FilePath))
+            File.WriteAllText(FilePath, string.Join("\r", Lines));
     }
 
     public void AddInit(InitData data, InitCategory? category = null)
@@ -529,7 +538,7 @@ class AssetManager
 {
     public readonly CategoryList TileInit;
     public readonly CategoryList PropInit;
-    public readonly CategoryList MaterialsInit;
+    public readonly CategoryList? MaterialsInit;
 
     class StandardGraphicsManager : IAssetGraphicsManager
     {
@@ -607,9 +616,18 @@ class AssetManager
     {
         var graphicsManager1 = new StandardGraphicsManager();
         var graphicsManager2 = new MaterialGraphicsManager();
+        var matInitPath = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
 
         TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true, graphicsManager1);
         PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true, graphicsManager1);
-        MaterialsInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt"), false, graphicsManager2);
+
+        if (File.Exists(matInitPath))
+        {
+            MaterialsInit = new(matInitPath, false, graphicsManager2);
+        }
+        else
+        {
+            MaterialsInit = null;
+        }
     }
 }

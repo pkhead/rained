@@ -157,7 +157,7 @@ static class AssetManagerGUI
                 break;
 
             case AssetType.Material:
-                DeleteCategory(assetManager!.MaterialsInit, ref selectedMatCategory);
+                DeleteCategory(assetManager!.MaterialsInit!, ref selectedMatCategory);
                 break;
         }
     }
@@ -190,7 +190,7 @@ static class AssetManagerGUI
                 break;
 
             case AssetType.Material:
-                DeleteItem(assetManager!.MaterialsInit, selectedMatCategory);
+                DeleteItem(assetManager!.MaterialsInit!, selectedMatCategory);
                 break;
         }
     }
@@ -440,7 +440,7 @@ static class AssetManagerGUI
         {
             AssetType.Tile => assetManager!.TileInit,
             AssetType.Prop => assetManager!.PropInit,
-            AssetType.Material => assetManager!.MaterialsInit,
+            AssetType.Material => assetManager!.MaterialsInit!,
             _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
         };
     
@@ -516,23 +516,26 @@ static class AssetManagerGUI
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Materials"))
+            if (assetManager.MaterialsInit is not null)
             {
-                // set group index to 0 when tab changed
-                if (curAssetTab != AssetType.Material)
+                if (ImGui.BeginTabItem("Materials"))
                 {
-                    groupIndex = 0;
-                    curAssetTab = AssetType.Material;
+                    // set group index to 0 when tab changed
+                    if (curAssetTab != AssetType.Material)
+                    {
+                        groupIndex = 0;
+                        curAssetTab = AssetType.Material;
+                    }
+
+                    AssetControls();
+                    var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
+                    var boxHeight = ImGui.GetContentRegionAvail().Y;
+
+                    ShowCategoryList(assetManager.MaterialsInit, ref selectedMatCategory, new Vector2(halfWidth, boxHeight));
+                    ShowItemList(assetManager.MaterialsInit, selectedMatCategory, new Vector2(halfWidth, boxHeight));
+
+                    ImGui.EndTabItem();
                 }
-
-                AssetControls();
-                var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
-                var boxHeight = ImGui.GetContentRegionAvail().Y;
-
-                ShowCategoryList(assetManager.MaterialsInit, ref selectedMatCategory, new Vector2(halfWidth, boxHeight));
-                ShowItemList(assetManager.MaterialsInit, selectedMatCategory, new Vector2(halfWidth, boxHeight));
-
-                ImGui.EndTabItem();
             }
 
             ImGui.EndTabBar();

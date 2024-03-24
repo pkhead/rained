@@ -2,7 +2,6 @@ using ImGuiNET;
 using System.Numerics;
 namespace RainEd;
 
-
 enum PopupButtonList
 {
     OK,
