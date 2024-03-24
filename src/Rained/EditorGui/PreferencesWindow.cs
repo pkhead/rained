@@ -272,6 +272,12 @@ static class PreferencesWindow
         {
             RainEd.Instance.Preferences.ApplyTheme();
         }
+
+        if (ImGui.TreeNode("Theme Editor"))
+        {
+            ThemeEditor.Show();
+            ImGui.TreePop();
+        }
     }
 
     private static void ShortcutButton(KeyShortcut id, string? nameOverride = null)

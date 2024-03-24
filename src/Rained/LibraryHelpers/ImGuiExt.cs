@@ -2,7 +2,7 @@ using System.Text;
 using System.Numerics;
 namespace ImGuiNET;
 
-class ImGuiExt
+static class ImGuiExt
 {
     /// <summary>
     /// stupid ImGuiNET, i have to make my own native function wrapper because
@@ -52,6 +52,56 @@ class ImGuiExt
     {
         var viewport = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(viewport.GetCenter(), cond, new Vector2(0.5f, 0.5f));
+    }
+
+    public static unsafe void FilterDraw(this ref ImGuiTextFilter filter, string label = "Filter (inc,-exc)", float width = 0f)
+    {
+        fixed (ImGuiTextFilter* p = &filter)
+        {
+            ImGuiTextFilterPtr ptr = new(p);
+            ptr.Draw(label, width);
+        }
+    }
+
+    public static unsafe bool FilterPassFilter(this ref ImGuiTextFilter filter, string text)
+    {
+        fixed (ImGuiTextFilter* p = &filter)
+        {
+            ImGuiTextFilterPtr ptr = new(p);
+            return ptr.PassFilter(text);
+        }
+        
+    }
+
+    public static unsafe void SaveStyleRef(ImGuiStylePtr src, ref ImGuiStyle dst)
+    {
+        fixed (ImGuiStyle* dstPtr = &dst)
+        {
+            Buffer.MemoryCopy(src.NativePtr, dstPtr, sizeof(ImGuiStyle), sizeof(ImGuiStyle));
+        }
+    }
+
+    public static unsafe void LoadStyleRef(ImGuiStyle src, ImGuiStylePtr dst)
+    {
+        Buffer.MemoryCopy(&src, dst, sizeof(ImGuiStyle), sizeof(ImGuiStyle)); 
+    }
+
+    public static unsafe Vector4 GetColor(this ref ImGuiStyle self, int index)
+    {
+        if (index < 0 || index >= (int)ImGuiCol.COUNT)
+            throw new ArgumentOutOfRangeException(nameof(index));
+        
+        fixed (Vector4* arrStart = &self.Colors_0)
+            return arrStart[index]; 
+    }
+
+    public static unsafe void SetColor(this ref ImGuiStyle self, int index, Vector4 color)
+    {
+        if (index < 0 || index >= (int)ImGuiCol.COUNT)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        fixed (Vector4* arrStart = &self.Colors_0)
+            arrStart[index] = color; 
     }
 
     /// <summary>
