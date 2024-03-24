@@ -9,7 +9,9 @@ class DrizzleRenderWindow : IDisposable
 {
     public readonly DrizzleRender? drizzleRenderer;
     private bool isOpen = false;
-    private readonly RlManaged.Texture2D[]? previewTextures = null;
+    private readonly RlManaged.Texture2D?[]? previewLayers = null;
+    private RlManaged.Texture2D? previewBlackout1 = null;
+    private RlManaged.Texture2D? previewBlackout2 = null;
     private readonly RlManaged.RenderTexture2D previewComposite;
     private bool needUpdateTextures = false;
 
@@ -49,14 +51,7 @@ class DrizzleRenderWindow : IDisposable
                 needUpdateTextures = true;
             };
 
-            if (drizzleRenderer.RenderLayerPreviews is not null)
-            {
-                previewTextures = new RlManaged.Texture2D[30];
-                for (int i = 0; i < 30; i++)
-                {
-                    previewTextures[i] = RlManaged.Texture2D.LoadFromImage(drizzleRenderer.RenderLayerPreviews![i]);
-                }
-            }
+            previewLayers = new RlManaged.Texture2D[30];
         }
         catch (Exception e)
         {
@@ -80,13 +75,16 @@ class DrizzleRenderWindow : IDisposable
         drizzleRenderer?.Dispose();
         previewComposite.Dispose();
 
-        if (previewTextures is not null)
+        if (previewLayers is not null)
         {
-            for (int i = 0; i < previewTextures.Length; i++)
+            for (int i = 0; i < previewLayers.Length; i++)
             {
-                previewTextures[i].Dispose();
+                previewLayers[i]?.Dispose();
             }
         }
+
+        previewBlackout1?.Dispose();
+        previewBlackout2?.Dispose();
 
         layerPreviewShader.Dispose();
     }
@@ -205,7 +203,7 @@ class DrizzleRenderWindow : IDisposable
         ImGui.SetNextWindowSizeConstraints(new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f), Vector2.One * 9999f);
         if (ImGuiExt.BeginPopupModal("Render", ImGuiWindowFlags.AlwaysAutoResize))
         {
-            bool isPreviewEnabled = drizzleRenderer!.RenderLayerPreviews is not null;
+            bool isPreviewEnabled = drizzleRenderer!.PreviewImages is not null;
             float renderProgress = 0f;
 
             if (drizzleRenderer is not null)
@@ -224,12 +222,25 @@ class DrizzleRenderWindow : IDisposable
                 ImGui.BeginGroup();
                 ImGui.ProgressBar(renderProgress, new Vector2(-0.000001f, 0.0f));
                 
-                if (needUpdateTextures && previewTextures is not null)
+                // update the preview texture
+                var previewImages = drizzleRenderer!.PreviewImages;
+                if (needUpdateTextures && previewImages is not null)
                 {
+                    if (previewLayers is null)
+                        throw new NullReferenceException("previewLayers is null");
+
                     needUpdateTextures = false;
 
+                    drizzleRenderer.UpdatePreviewImages();
+
+                    // update preview images
                     for (int i = 0; i < 30; i++)
-                        drizzleRenderer!.RenderLayerPreviews![i].UpdateTexture(previewTextures[i]);
+                    {
+                        var img = previewImages.Layers[i];
+                        UpdateTexture(img, ref previewLayers[i]);
+                    }
+                    UpdateTexture(previewImages.BlackOut1, ref previewBlackout1);
+                    UpdateTexture(previewImages.BlackOut2, ref previewBlackout2);
                     UpdateComposite();
                 }
 
@@ -256,19 +267,65 @@ class DrizzleRenderWindow : IDisposable
         return doClose;
     }
 
+    private static void UpdateTexture(RlManaged.Image? img, ref RlManaged.Texture2D? tex)
+    {
+        if (img == null)
+        {
+            tex?.Dispose();
+            tex = null;
+            return;
+        }
+
+        if (tex == null || img.Width != tex.Width || img.Height != tex.Height)
+        {
+            tex?.Dispose();
+            tex = RlManaged.Texture2D.LoadFromImage(img);
+        }
+        else
+        {
+            img.UpdateTexture(tex);
+        }
+    }
+
     private void UpdateComposite()
     {
         Raylib.BeginTextureMode(previewComposite);
         Raylib.ClearBackground(Color.White);
 
-        Raylib.BeginShaderMode(layerPreviewShader);
+        var renderStage = drizzleRenderer!.PreviewImages!.Stage;
 
-        for (int i = 29; i >= 0; i--)
+        if (renderStage != RenderPreviewStage.Setup)
         {
-            float fadeValue = i / 30f;
-            Raylib.DrawTexture(previewTextures![i], -300, -200, new Color((int)(fadeValue * 255f), 0, 0, 255));
+            Raylib.BeginShaderMode(layerPreviewShader);
+
+            for (int i = 29; i >= 0; i--)
+            {
+                var tex = previewLayers![i];
+
+                if (tex is not null)
+                {
+                    var ox = (previewComposite.Texture.Width - tex.Width) / 2f;
+                    var oy = (previewComposite.Texture.Height - tex.Height) / 2f;
+
+                    float fadeValue = 0f;
+                    if (renderStage == RenderPreviewStage.Props || renderStage == RenderPreviewStage.Effects)
+                    {
+                        fadeValue = i / 30f;
+                    }
+
+                    Raylib.DrawTextureV(tex, new Vector2(ox - i, oy - i), new Color((int)(fadeValue * 255f), 0, 0, 255));
+                }
+            }
+
+            /*if (previewBlackout2 is not null)
+            {
+                var ox = (previewComposite.Texture.Width - previewBlackout2.Width) / 2f;
+                var oy = (previewComposite.Texture.Height - previewBlackout2.Height) / 2f;
+                Raylib.DrawTexture(previewBlackout2, (int)ox, (int)oy, new Color(0, 0, 0, 255));
+            }*/
+
+            Raylib.EndShaderMode();
         }
-        Raylib.EndShaderMode();
 
         Raylib.EndTextureMode();
     }

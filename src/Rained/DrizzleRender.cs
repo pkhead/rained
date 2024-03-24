@@ -5,8 +5,119 @@ using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
 using Drizzle.Logic.Rendering;
 using Drizzle.Ported;
+using Raylib_cs;
 using SixLabors.ImageSharp;
 namespace RainEd;
+
+enum RenderPreviewStage 
+{
+    Setup,
+    Props,
+    Effects,
+    Lights,
+}
+
+/// <summary>
+/// The collection of render preview images
+/// </summary>
+class RenderPreviewImages : IDisposable
+{
+    public RlManaged.Image[] Layers;
+    
+    // this is used for the effects stage
+    public RlManaged.Image? BlackOut1 = null;
+    public RlManaged.Image? BlackOut2 = null;
+
+    public RenderPreviewStage Stage;
+
+    private int lastWidth = -1;
+    private int lastHeight = -1;
+    private PixelFormat oldPixelFormat;
+
+    public RenderPreviewImages()
+    {
+        Stage = RenderPreviewStage.Setup;
+        Layers = new RlManaged.Image[30];
+        oldPixelFormat = PixelFormat.UncompressedR8G8B8A8;
+    }
+
+    public void SetSize(int newWidth, int newHeight, PixelFormat format)
+    {
+        if (lastWidth == newWidth && lastHeight == newHeight)
+        {
+            if (format != oldPixelFormat)
+            {
+                for (int i = 0; i < 30; i++)
+                {
+                    Layers[i]?.Format(format);
+                }
+            }
+
+            oldPixelFormat = format;
+            return;
+        }
+
+        lastWidth = newWidth;
+        lastHeight = newHeight;
+
+        for (int i = 0; i < 30; i++)
+        {
+            Layers[i]?.Dispose();
+            Layers[i] = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
+            Layers[i].Format(format);
+        }
+        
+        if (BlackOut1 is not null)
+        {
+            BlackOut1.Dispose();
+            BlackOut1 = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
+            //BlackOut1.Format(PixelFormat.UncompressedGrayscale);
+        }
+
+        if (BlackOut2 is not null)
+        {
+            BlackOut2.Dispose();
+            BlackOut2 = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
+            //BlackOut2.Format(PixelFormat.UncompressedGrayscale);
+        }
+    }
+
+    public void EnableBlackOut()
+    {
+        BlackOut1 ??= RlManaged.Image.GenColor(lastWidth, lastHeight, Raylib_cs.Color.Black);
+        BlackOut2 ??= RlManaged.Image.GenColor(lastWidth, lastHeight, Raylib_cs.Color.Black);
+
+        if (BlackOut1.PixelFormat != PixelFormat.UncompressedGrayscale)
+        {
+            //BlackOut1.Format(PixelFormat.UncompressedGrayscale);
+        }
+
+        if (BlackOut2.PixelFormat != PixelFormat.UncompressedGrayscale)
+        {
+            //BlackOut2.Format(PixelFormat.UncompressedGrayscale);
+        }
+    }
+
+    public void DisableBlackOut()
+    {
+        BlackOut1?.Dispose();
+        BlackOut2?.Dispose();
+
+        BlackOut1 = null;
+        BlackOut2 = null;
+    }
+
+    public void Dispose()
+    {
+        for (int i = 0; i < 30; i++)
+        {
+            Layers[i]?.Dispose();
+        }
+
+        BlackOut1?.Dispose();
+        BlackOut2?.Dispose();
+    }
+}
 
 class DrizzleRender : IDisposable
 {
@@ -137,7 +248,7 @@ class DrizzleRender : IDisposable
     public int CameraCount { get => cameraCount; }
     public int CamerasDone { get => camsDone; }
 
-    public readonly RlManaged.Image[]? RenderLayerPreviews;
+    public RenderPreviewImages? PreviewImages;
     public Action? PreviewUpdated;
 
     public DrizzleRender()
@@ -151,21 +262,9 @@ class DrizzleRender : IDisposable
         // create render layer preview images
         if (RainEd.Instance.Preferences.ShowRenderPreview)
         {
-            var renderW = 2000;
-            var renderH = 1200;
-            RenderLayerPreviews = new RlManaged.Image[30];
-
-            for (int i = 0; i < 30; i++)
-            {
-                RenderLayerPreviews[i] = RlManaged.Image.GenColor((int)renderW, (int)renderH, Raylib_cs.Color.Black);
-            } 
-
+            PreviewImages = new RenderPreviewImages();
         }
-        else
-        {
-            RenderLayerPreviews = null;
-        }
-
+        
         LevelSerialization.Save(filePath);
 
         threadState = new RenderThread(filePath);
@@ -180,11 +279,7 @@ class DrizzleRender : IDisposable
 
     public void Dispose()
     {
-        if (RenderLayerPreviews is not null)
-        {
-            foreach (RlManaged.Image image in RenderLayerPreviews)
-                image.Dispose();
-        }
+        PreviewImages?.Dispose();
     }
 
     public static void InitStaticRuntime()
@@ -287,6 +382,11 @@ class DrizzleRender : IDisposable
         };
 
         progress = (renderProgress + stageProgress) / (cameraCount * 10f);
+
+        if (stageEnum == RenderStage.Start && PreviewImages is not null)
+        {
+            PreviewImages.Stage = RenderPreviewStage.Setup;
+        }
     }
 
     public void Cancel()
@@ -351,61 +451,108 @@ class DrizzleRender : IDisposable
         }
     }
 
+    private RenderPreview? lastRenderPreview;
+
     private void ProcessPreview(RenderPreview renderPreview)
     {
-        if (RenderLayerPreviews is null) return;
+        if (PreviewImages is null) return;
 
         RainEd.Logger.Verbose("Receive preview");
         
-        switch (renderPreview)
+        lastRenderPreview = renderPreview;
+        PreviewUpdated?.Invoke();
+    }
+
+    public void UpdatePreviewImages()
+    {
+        if (PreviewImages is null) return;
+
+        switch (lastRenderPreview)
         {
+            case RenderPreviewProps props:
+                PreviewImages.Stage = RenderPreviewStage.Props;
+                PreviewImages.SetSize(2000, 1200, PixelFormat.UncompressedR8G8B8A8);
+                PreviewImages.DisableBlackOut();
+
+                for (int i = 0; i < 30; i++)
+                {
+                    CopyLingoImage(props.Layers[i], PreviewImages.Layers[i]);
+                }
+
+                break;
+            
             case RenderPreviewEffects effects:
             {
-                ProcessLingoImageLayers(effects.Layers);
+                PreviewImages.Stage = RenderPreviewStage.Effects;
+                PreviewImages.SetSize(2000, 1200, PixelFormat.UncompressedR8G8B8A8);
+                PreviewImages.EnableBlackOut();
+
+                for (int i = 0; i < 30; i++)
+                {
+                    CopyLingoImage(effects.Layers[i], PreviewImages.Layers[i]);
+                }
+
+                //CopyLingoImage(effects.BlackOut1, PreviewImages.BlackOut1!);
+                //CopyLingoImage(effects.BlackOut2, PreviewImages.BlackOut2!);
+                
                 break;
             }
 
             case RenderPreviewLights lights:
             {
-                // TODO: light stage uses a differently sized image buffer
-                // ProcessLingoImageLayers(lights.Layers);
+                PreviewImages.Stage = RenderPreviewStage.Lights;
+                PreviewImages.SetSize(2300, 1500, PixelFormat.UncompressedGrayscale);
+                PreviewImages.DisableBlackOut();
+
+                for (int i = 0; i < 30; i++)
+                {
+                    CopyLingoImage(lights.Layers[i], PreviewImages.Layers[i]);
+                }
+                
                 break;
             }
         }
-
-        PreviewUpdated?.Invoke();
     }
 
-    private void ProcessLingoImageLayers(LingoImage[] layers)
+    private unsafe static void CopyLingoImage(LingoImage srcImg, Raylib_cs.Image dstImg)
     {
-        if (RenderLayerPreviews is null) return;
+        if (srcImg.Width != dstImg.Width || srcImg.Height != dstImg.Height)
+            throw new ArgumentException("Mismatched image sizes");
 
-        var srcImage = layers[0];
-
-        /*
-        Console.WriteLine(srcImage.width);
-        Console.WriteLine(PreviewImage.Width);
-
-        Console.WriteLine(srcImage.height);
-        Console.WriteLine(PreviewImage.Height);
-        */
-
-        // Lingo Image:
-        // 2000, 1200
-        // Output:
-        // 1400, 800
-        if (layers.Length != 30)
-            throw new Exception("Count of layers is not 30");
-        
-        for (int i = 0; i < layers.Length; i++)
+        if (srcImg.Depth == 1)
         {
-            var img = layers[i];
-            var dstImage = RenderLayerPreviews[i];
+            if (dstImg.Format != PixelFormat.UncompressedGrayscale)
+                throw new Exception("Mismatched image formats");
 
-            unsafe
+            // convert 1 bit per pixel bitmap to
+            // 8 bits per pixel grayscale image
+            byte* dstData = (byte*) dstImg.Data;
+            
+            int k = 0;
+            for (int i = 0; i < (dstImg.Width * dstImg.Height) / 8; i++)
             {
-                Marshal.Copy(img.ImageBuffer, 0, (nint) dstImage.Data, dstImage.Width * dstImage.Height * 4);
-            }
+                var v = srcImg.ImageBuffer[i];
+                dstData[k++] = (byte)(255 * (v & 1));
+                dstData[k++] = (byte)(255 * ((v >> 1) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 2) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 3) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 4) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 5) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 6) & 1));
+                dstData[k++] = (byte)(255 * ((v >> 7) & 1));
+            } 
+        }
+        else if (srcImg.Depth == 32)
+        {
+            if (dstImg.Format != PixelFormat.UncompressedR8G8B8A8)
+                throw new Exception("Mismatched image formats");
+            
+            // note: BGR format - is converted to RGB in the shader
+            Marshal.Copy(srcImg.ImageBuffer, 0, (nint)dstImg.Data, dstImg.Width * dstImg.Height * 4);
+        }
+        else
+        {
+            throw new Exception("Unknown image depth " + srcImg.Depth);
         }
     }
 }

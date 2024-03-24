@@ -8,6 +8,8 @@ Bugs:
 - drizzle doesn't build correctly on mac?
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux
+- Init files assume a case-insensitive filesystem -- add a way in the asset manager
+  to correct the .png filenames on non-Windows systems
 
 Overall:
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
