@@ -176,6 +176,10 @@ class DrizzleRenderWindow : IDisposable
             {
                 ImGui.Text("Initializing Zygote runtime...");
             }
+            else if (drizzleRenderer.State == RenderState.Loading)
+            {
+                ImGui.Text("Loading level...");
+            }
             else
             {
                 ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");

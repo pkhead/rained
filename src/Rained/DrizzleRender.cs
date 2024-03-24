@@ -13,6 +13,7 @@ class DrizzleRender : IDisposable
     private abstract record ThreadMessage;
 
     private record MessageRenderStarted : ThreadMessage;
+    private record MessageLevelLoading : ThreadMessage;
     private record MessageRenderFailed(Exception Exception) : ThreadMessage;
     private record MessageRenderCancelled : ThreadMessage;
     private record MessageRenderFinished : ThreadMessage;
@@ -60,12 +61,6 @@ class DrizzleRender : IDisposable
                     EditorRuntimeHelpers.RunStartup(runtime);
                 }
 
-                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
-
-                Renderer = new LevelRenderer(runtime, null);
-                Renderer.StatusChanged += StatusChanged;
-                Renderer.PreviewSnapshot += PreviewSnapshot;
-
                 // process user cancel if cancelled while init
                 // zygote runtime
                 if (InQueue.TryDequeue(out ThreadMessage? msg))
@@ -73,9 +68,25 @@ class DrizzleRender : IDisposable
                     if (msg is MessageDoCancel)
                         throw new RenderCancelledException();
                 }
+
+                Queue.Enqueue(new MessageLevelLoading());
+                RainEd.Logger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
+
+                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
+                Renderer = new LevelRenderer(runtime, null);
+                Renderer.StatusChanged += StatusChanged;
+                Renderer.PreviewSnapshot += PreviewSnapshot;
+                
+                // process user cancel if cancelled while init
+                // zygote runtime
+                if (InQueue.TryDequeue(out msg))
+                {
+                    if (msg is MessageDoCancel)
+                        throw new RenderCancelledException();
+                }
                 Queue.Enqueue(new MessageRenderStarted());
 
-                RainEd.Logger.Information("Begin render of {LevelName}", Path.GetFileNameWithoutExtension(filePath));
+                RainEd.Logger.Information("RENDER: Begin");
                 Renderer.DoRender();
                 RainEd.Logger.Information("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
@@ -103,6 +114,7 @@ class DrizzleRender : IDisposable
     public enum RenderState
     {
         Initializing,
+        Loading,
         Rendering,
         Finished,
         Cancelling,
@@ -216,6 +228,7 @@ class DrizzleRender : IDisposable
 
             case RenderStageStatusLight light:
             {
+                stageProgress = light.CurrentLayer / 30f;
                 DisplayString = $"Rendering light...\nLayer: {light.CurrentLayer}";
                 break;
             }
@@ -309,6 +322,10 @@ class DrizzleRender : IDisposable
                     DisplayString = "";
                     thread.Join();
                     break;
+
+                case MessageLevelLoading:
+                    state = RenderState.Loading;
+                    break;
                 
                 case MessageRenderStarted:
                     state = RenderState.Rendering;
@@ -362,7 +379,7 @@ class DrizzleRender : IDisposable
     private void ProcessLingoImageLayers(LingoImage[] layers)
     {
         if (RenderLayerPreviews is null) return;
-        
+
         var srcImage = layers[0];
 
         /*
