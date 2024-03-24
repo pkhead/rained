@@ -185,16 +185,8 @@ static class PreferencesWindow
         // show render preview
         {
             boolRef = prefs.ShowRenderPreview;
-            if (ImGui.Checkbox("Show preview while rendering", ref boolRef))
+            if (ImGui.Checkbox("Show render preview", ref boolRef))
                 prefs.ShowRenderPreview = boolRef;
-
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            ImGui.SetItemTooltip(
-                """
-                This will speed up rendering by a small
-                amount.    
-                """);
         }
         
         ImGui.SeparatorText("Level Colors");

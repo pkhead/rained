@@ -75,9 +75,6 @@ Prop Editor:
 Render:
 - select camera to render first
 - show time elapsed
-- show light render stage
-- if possible, show coloring stage, although i don't think
-  drizzle has the code required to show that?
 
 tile data format (from rwe+):
     {"tp": "tileHead", "data": ["point(C, T)", "N"]}
