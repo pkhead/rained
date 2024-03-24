@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Drizzle.Lingo.Runtime;
@@ -27,6 +28,9 @@ class RenderPreviewImages : IDisposable
     // this is used for the effects stage
     public RlManaged.Image? BlackOut1 = null;
     public RlManaged.Image? BlackOut2 = null;
+
+    public bool RenderBlackOut1 = false;
+    public bool RenderBlackOut2 = false;
 
     public RenderPreviewStage Stage;
 
@@ -295,11 +299,8 @@ class DrizzleRender : IDisposable
 
     private void StatusChanged(RenderStatus status)
     {
-        var renderer = threadState.Renderer!;
-
         RainEd.Logger.Debug("Status changed");
 
-        var camIndex = status.CameraIndex;
         var stageEnum = status.Stage.Stage;
 
         camsDone = status.CountCamerasDone;
@@ -311,6 +312,7 @@ class DrizzleRender : IDisposable
         {
             case RenderStageStatusLayers layers:
             {
+                stageProgress = (3 - layers.CurrentLayer) / 3f;
                 DisplayString = $"Rendering tiles...\nLayer: {layers.CurrentLayer}";
                 break;
             }
@@ -381,7 +383,7 @@ class DrizzleRender : IDisposable
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        progress = (renderProgress + stageProgress) / (cameraCount * 10f);
+        progress = (renderProgress + Math.Clamp(stageProgress, 0f, 1f)) / (cameraCount * 10f);
 
         if (stageEnum == RenderStage.Start && PreviewImages is not null)
         {
@@ -492,8 +494,11 @@ class DrizzleRender : IDisposable
                     CopyLingoImage(effects.Layers[i], PreviewImages.Layers[i]);
                 }
 
-                //CopyLingoImage(effects.BlackOut1, PreviewImages.BlackOut1!);
-                //CopyLingoImage(effects.BlackOut2, PreviewImages.BlackOut2!);
+                CopyLingoImage(effects.BlackOut1, PreviewImages.BlackOut1!);
+                CopyLingoImage(effects.BlackOut2, PreviewImages.BlackOut2!);
+
+                PreviewImages.RenderBlackOut1 = effects.BlackOut1.Width != 1;
+                PreviewImages.RenderBlackOut2 = effects.BlackOut2.Width != 1;
                 
                 break;
             }
@@ -514,11 +519,15 @@ class DrizzleRender : IDisposable
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hopefully this is a good idea...
     private unsafe static void CopyLingoImage(LingoImage srcImg, Raylib_cs.Image dstImg)
     {
         if (srcImg.Width != dstImg.Width || srcImg.Height != dstImg.Height)
-            throw new ArgumentException("Mismatched image sizes");
-
+        {
+            RainEd.Logger.Warning("Mismatched image sizes");
+            return;
+        }
+        
         if (srcImg.Depth == 1)
         {
             if (dstImg.Format != PixelFormat.UncompressedGrayscale)

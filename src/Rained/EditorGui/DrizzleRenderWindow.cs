@@ -33,13 +33,38 @@ class DrizzleRenderWindow : IDisposable
             vec3 correctColor = texelColor.bgr;
             
             finalColor = vec4(
-                mix(correctColor, vec3(1.0, 1.0, 1.0), fragColor.r * 0.8),
+                mix(correctColor, vec3(1.0), fragColor.r * 0.8),
+                1.0 - float(isWhite)
+            ) * colDiffuse;
+        }    
+    ";
+
+    private const string LayerPreviewLightShaderSource = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
+            vec3 correctColor = texelColor.bgr;
+            
+            finalColor = vec4(
+                vec3(1.0, 0.0, 0.0),
                 1.0 - float(isWhite)
             ) * colDiffuse;
         }    
     ";
 
     private RlManaged.Shader layerPreviewShader;
+    private RlManaged.Shader layerPreviewLightShader;
 
     public DrizzleRenderWindow()
     {
@@ -59,6 +84,7 @@ class DrizzleRenderWindow : IDisposable
         }
 
         layerPreviewShader = RlManaged.Shader.LoadFromMemory(null, LayerPreviewShaderSource);
+        layerPreviewLightShader = RlManaged.Shader.LoadFromMemory(null, LayerPreviewLightShaderSource);
 
         previewComposite = RlManaged.RenderTexture2D.Load(
             (int)Camera.WidescreenSize.X * 20,
@@ -292,11 +318,19 @@ class DrizzleRenderWindow : IDisposable
         Raylib.BeginTextureMode(previewComposite);
         Raylib.ClearBackground(Color.White);
 
-        var renderStage = drizzleRenderer!.PreviewImages!.Stage;
+        var previewStatus = drizzleRenderer!.PreviewImages!;
+        var renderStage = previewStatus.Stage;
 
         if (renderStage != RenderPreviewStage.Setup)
         {
-            Raylib.BeginShaderMode(layerPreviewShader);
+            var shader = layerPreviewShader;
+            if (renderStage == RenderPreviewStage.Lights)
+            {
+                shader = layerPreviewLightShader;
+                Raylib.ClearBackground(Color.Black);
+            }
+
+            Raylib.BeginShaderMode(shader);
 
             for (int i = 29; i >= 0; i--)
             {
@@ -307,22 +341,24 @@ class DrizzleRenderWindow : IDisposable
                     var ox = (previewComposite.Texture.Width - tex.Width) / 2f;
                     var oy = (previewComposite.Texture.Height - tex.Height) / 2f;
 
-                    float fadeValue = 0f;
-                    if (renderStage == RenderPreviewStage.Props || renderStage == RenderPreviewStage.Effects)
-                    {
-                        fadeValue = i / 30f;
-                    }
-
+                    float fadeValue = i / 30f;
                     Raylib.DrawTextureV(tex, new Vector2(ox - i, oy - i), new Color((int)(fadeValue * 255f), 0, 0, 255));
                 }
             }
 
-            /*if (previewBlackout2 is not null)
+            if (previewBlackout1 is not null && previewStatus.RenderBlackOut1)
+            {
+                var ox = (previewComposite.Texture.Width - previewBlackout1.Width) / 2f;
+                var oy = (previewComposite.Texture.Height - previewBlackout1.Height) / 2f;
+                Raylib.DrawTexture(previewBlackout1, (int)ox, (int)oy, new Color(0, 0, 0, 255));
+            }
+
+            if (previewBlackout2 is not null && previewStatus.RenderBlackOut2)
             {
                 var ox = (previewComposite.Texture.Width - previewBlackout2.Width) / 2f;
                 var oy = (previewComposite.Texture.Height - previewBlackout2.Height) / 2f;
                 Raylib.DrawTexture(previewBlackout2, (int)ox, (int)oy, new Color(0, 0, 0, 255));
-            }*/
+            }
 
             Raylib.EndShaderMode();
         }
