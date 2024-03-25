@@ -177,6 +177,9 @@ sealed class RainEd
             LoadLevel(levelPath);
         }
 
+        GC.Collect(2, GCCollectionMode.Aggressive, true, true);
+        GC.WaitForPendingFinalizers();
+
         Logger.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
     }
