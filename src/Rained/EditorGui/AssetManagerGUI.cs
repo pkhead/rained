@@ -21,6 +21,7 @@ static class AssetManagerGUI
     private static AssetManager? assetManager = null;
 
     private static FileBrowser? fileBrowser = null;
+    private static readonly List<string> missingDirs = []; // data directory validation
 
     // variables related to the merge process
     
@@ -295,9 +296,6 @@ static class AssetManagerGUI
             }
         }
 
-        // render file browser
-        FileBrowser.Render(ref fileBrowser);
-
         // render merge status
         if (mergeTask is not null)
         {
@@ -453,9 +451,37 @@ static class AssetManagerGUI
             _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
         };
 
+    public static void SetDataPath(string newPath)
+    {
+        // check for any missing directories
+        missingDirs.Clear();
+        missingDirs.Add("Cast");
+        missingDirs.Add("Graphics");
+        missingDirs.Add("Props");
+        missingDirs.Add("LevelEditorProjects");
+        missingDirs.Add("Levels");
+
+        for (int i = missingDirs.Count - 1; i >= 0; i--)
+        {
+            if (Directory.Exists(Path.Combine(newPath, missingDirs[i])))
+            {
+                missingDirs.RemoveAt(i);
+            }
+        }
+
+        if (missingDirs.Count == 0)
+        {
+            RainEd.Instance.AssetDataPath = newPath;
+            assetManager = new AssetManager();
+        }
+    }
+
     public static void Show()
     {
         assetManager ??= new AssetManager();
+
+        // render file browser
+        FileBrowser.Render(ref fileBrowser);
 
         ImGui.Text("Any changes here require a restart in order to take effect.");
         ImGui.Separator();
@@ -465,15 +491,38 @@ static class AssetManagerGUI
         ImGui.SameLine();
 
         var oldPath = RainEd.Instance.AssetDataPath;
-        if (FileBrowser.Button("DataPath", FileBrowser.OpenMode.Directory, ref RainEd.Instance.AssetDataPath))
+        var newPath = oldPath;
+        if (FileBrowser.Button("DataPath", FileBrowser.OpenMode.Directory, ref newPath))
         {
             // if path changed, disable asset import until user restarts Rained
-            if (Path.GetFullPath(oldPath) != Path.GetFullPath(RainEd.Instance.AssetDataPath))
-            {
-                assetManager = new AssetManager();
-            }
+            if (Path.GetFullPath(oldPath) != Path.GetFullPath(newPath))
+                SetDataPath(newPath);
         }
         ImGui.Separator();
+
+        // show missing directory prompt if necessary
+        if (missingDirs.Count > 0)
+        {
+            ImGuiExt.EnsurePopupIsOpen("Error");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.Text("The given data folder is missing the following subdirectories:");
+                foreach (var dir in missingDirs)
+                {
+                    ImGui.BulletText(dir);
+                }
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                {
+                    ImGui.CloseCurrentPopup();
+                    missingDirs.Clear();
+                }
+
+                ImGui.EndPopup();
+            }
+        }
 
         // show tile database
         if (ImGui.BeginTabBar("AssetType"))
