@@ -394,7 +394,7 @@ sealed class RainEd
         }
 
         fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(currentFilePath));
-        fileBrowser.AddFilter("Rain World level file", levelCheck, ".txt");
+        fileBrowser.AddFilter("Level file", levelCheck, ".txt");
     }
 
     private void HandleShortcuts()

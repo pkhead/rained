@@ -589,7 +589,7 @@ class FileBrowser
             // file filter
             if (mode != OpenMode.Directory)
             {
-                ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 8f);
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12f);
                 if (ImGui.BeginCombo("##Filter", selectedFilter.FilterName))
                 {
                     foreach (var filter in fileFilters)
@@ -714,20 +714,17 @@ class FileBrowser
             if (ImGui.BeginPopupModal("Overwrite", ref overwriteClose, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
             {
                 ImGui.TextUnformatted($"{Path.GetFileName(overwriteFileName)} will be overwritten! Are you sure?");
-
-                if (ImGui.Button("Yes"))
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
                 {
-                    isDone = true;
-                    callback(overwriteFileName);
+                    if (btn == 0) // yes
+                    {
+                        isDone = true;
+                        callback(overwriteFileName);
+                    }
                     ImGui.CloseCurrentPopup();
                 }
-
-                ImGui.SameLine();
-                if (ImGui.Button("No"))
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-
+                
                 ImGui.EndPopup();
             }
 
@@ -748,7 +745,8 @@ class FileBrowser
             if (ImGui.BeginPopupModal("Error", ref errorClose, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
             {
                 ImGui.Text(errorMsg);
-                if (ImGui.Button("OK"))
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
                 {
                     ImGui.CloseCurrentPopup();
                 }
