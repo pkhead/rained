@@ -16,6 +16,8 @@ static class ThemeEditor
 
     private static FileBrowser? fileBrowser = null;
 
+    public static event Action? ThemeSaved = null;
+
     private static void HelpMarker(string desc)
     {
         ImGui.TextDisabled("(?)");
@@ -44,6 +46,8 @@ static class ThemeEditor
 
             var style = new SerializableStyle(ImGui.GetStyle());
             style.WriteToFile(path);
+            RainEd.Instance.Preferences.Theme = Path.GetFileNameWithoutExtension(path);
+            ThemeSaved?.Invoke();
         }
     }
 
@@ -111,17 +115,29 @@ static class ThemeEditor
 
         if (ImGui.Button("Save to File"))
         {
+            var styleState = new SerializableStyle(ImGui.GetStyle());
+            styleState.WriteToFile(Path.Combine(Boot.AppDataPath, "themes", RainEd.Instance.Preferences.Theme + ".json"));
+
+            ImGuiExt.SaveStyleRef(style, ref ref_saved_style);
+            ImGuiExt.SaveStyleRef(style, ref @ref);
+
+            ThemeSaved?.Invoke();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Save to File As"))
+        {
             SaveStyle();
 
             ImGuiExt.SaveStyleRef(style, ref ref_saved_style);
             ImGuiExt.SaveStyleRef(style, ref @ref);
         }
 
-        ImGui.SameLine();
+        /*ImGui.SameLine();
         if (ImGui.Button("Load from File"))
         {
             LoadStyle();
-        }
+        }*/
 
         FileBrowser.Render(ref fileBrowser);
 

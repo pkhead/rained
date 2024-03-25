@@ -268,18 +268,31 @@ static class PreferencesWindow
     }
 
     private static readonly List<string> availableThemes = [];
+    private static bool initTheme = true;
+
+    private static void ReloadThemeList()
+    {
+        availableThemes.Clear();
+        foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "themes")))
+        {
+            if (Path.GetExtension(fileName) != ".json") continue;
+            availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
+        }
+        availableThemes.Sort();
+    }
+
     private static void ShowThemeTab(bool entered)
     {
+        if (initTheme)
+        {
+            initTheme = false;
+            ThemeEditor.ThemeSaved += ReloadThemeList;
+        }
+
         // compile available themes when the tab is clicked
         if (entered)
         {
-            availableThemes.Clear();
-            foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "themes")))
-            {
-                if (Path.GetExtension(fileName) != ".json") continue;
-                availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
-            }
-            availableThemes.Sort();
+            ReloadThemeList();        
         }
 
         ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12.0f);
