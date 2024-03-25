@@ -58,6 +58,7 @@ class EffectInit
     public bool usePlantColors = false;
     public bool useDecalAffect = false;
     public bool decalAffectDefault = false;
+    public bool deprecated = false;
 
     public readonly List<CustomEffectConfig> customConfigs;
 
@@ -236,8 +237,10 @@ class EffectsDatabase
             {
                 useLayers = true
             });
+
             CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN)
             {
+                deprecated = true,
                 useLayers = true
             });
         }

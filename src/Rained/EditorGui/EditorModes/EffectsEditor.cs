@@ -130,7 +130,10 @@ class EffectsEditor : IEditorMode
 
                 for (int j = 0; j < fxDatabase.Groups[i].effects.Count; j++)
                 {
-                    if (fxDatabase.Groups[i].effects[j].name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                    var effect = fxDatabase.Groups[i].effects[j];
+                    if (effect.deprecated) continue; // ignore deprecated effects
+
+                    if (effect.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                     {
                         groupsPassingSearch.Add(i);
                         break;
@@ -163,6 +166,8 @@ class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
+                    if (effectData.deprecated) continue; // ignore deprecated effects
+
                     if (searchQuery != "" && !effectData.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase)) continue;
 
                     if (ImGui.Selectable(effectData.name))
@@ -276,6 +281,9 @@ class EffectsEditor : IEditorMode
                     selectedEffect++;
                     changeRecorder.PushListChange();
                 }
+
+                if (effect.Data.deprecated)
+                    ImGui.TextDisabled("This effect is deprecated!");
 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 
