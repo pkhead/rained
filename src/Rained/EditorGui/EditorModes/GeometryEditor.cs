@@ -177,6 +177,7 @@ class GeometryEditor : IEditorMode
     public void DrawToolbar()
     {
         Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
+        var level = RainEd.Instance.Level;
 
         if (ImGui.Begin("Build", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -255,7 +256,28 @@ class GeometryEditor : IEditorMode
             }
 
             // show fill rect hint
-            if (selectedTool == Tool.Wall || selectedTool == Tool.Air || selectedTool == Tool.Inverse || selectedTool == Tool.Glass)
+            if (isToolRectActive)
+            {
+                var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
+                var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
+
+                // draw tool rect
+                var rectMinX = Math.Min(mx, toolRectX);
+                var rectMinY = Math.Min(my, toolRectY);
+                var rectMaxX = Math.Max(mx, toolRectX);
+                var rectMaxY = Math.Max(my, toolRectY);
+                var rectW = rectMaxX - rectMinX + 1;
+                var rectH = rectMaxY - rectMinY + 1;
+
+                window.StatusText = $"({rectW}, {rectH})";
+            }
+            else if (
+                selectedTool == Tool.Wall ||
+                selectedTool == Tool.Air ||
+                selectedTool == Tool.Inverse ||
+                selectedTool == Tool.Glass ||
+                selectedTool == Tool.CopyBackwards
+            )
             {
                 window.StatusText = "Shift+Drag to fill rect";
             }
