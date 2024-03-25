@@ -1,5 +1,4 @@
 Priority:
-- data directory validation in asset manager, too
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
@@ -20,7 +19,6 @@ Overall:
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
-- custom themes
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
 - Move Level
 - undo/redo for level resize

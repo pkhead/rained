@@ -22,16 +22,19 @@ Task("Publish")
 
     CreateDirectory("build/assets");
     CopyDirectory("assets", "build/assets");
+    CopyDirectory("themes", "build/themes");
     CopyFile("imgui.ini", "build/imgui.ini");
     CopyFile("LICENSE.md", "build/LICENSE.md");
 
     CopyDirectory("dist", "build");
 
+    /*
     if (!DirectoryExists("build/Data"))
     {
         CreateDirectory("build/Data");
         CopyDirectory("Data", "build/Data");
     }
+    */
 });
 
 RunTarget(target);
