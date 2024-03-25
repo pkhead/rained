@@ -167,6 +167,9 @@ class EffectsDatabase
         /////////////
         BeginGroup("Erosion");
         {
+            //////////////
+            // Erosion1 //
+            //////////////
             CreateEffect(new EffectInit("Roughen", EffectType.StandardErosion)
             {
                 repeats = 30,
@@ -224,6 +227,18 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
+            });
+
+            //////////////
+            // Erosion2 //
+            //////////////
+            CreateEffect(new EffectInit("Slag", EffectType.NN)
+            {
+                useLayers = true
+            });
+            CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN)
+            {
+                useLayers = true
             });
         }
 
