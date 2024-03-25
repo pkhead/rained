@@ -58,6 +58,7 @@ class EffectInit
     public bool usePlantColors = false;
     public bool useDecalAffect = false;
     public bool decalAffectDefault = false;
+    public bool deprecated = false;
 
     public readonly List<CustomEffectConfig> customConfigs;
 
@@ -167,6 +168,9 @@ class EffectsDatabase
         /////////////
         BeginGroup("Erosion");
         {
+            //////////////
+            // Erosion1 //
+            //////////////
             CreateEffect(new EffectInit("Roughen", EffectType.StandardErosion)
             {
                 repeats = 30,
@@ -224,6 +228,20 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
+            });
+
+            //////////////
+            // Erosion2 //
+            //////////////
+            CreateEffect(new EffectInit("Slag", EffectType.NN)
+            {
+                useLayers = true
+            });
+
+            CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN)
+            {
+                deprecated = true,
+                useLayers = true
             });
         }
 
