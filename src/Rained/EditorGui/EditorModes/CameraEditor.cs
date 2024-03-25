@@ -236,7 +236,7 @@ class CameraEditor : IEditorMode
         {
             // N or double-click to create new camera
             bool wantCreate = KeyShortcuts.Activated(KeyShortcut.NewObject) || doubleClick;
-            if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
+            if (wantCreate)
             {
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);

@@ -750,7 +750,6 @@ class Level
 
     public const int LayerCount = 3;
     public const int TileSize = 20;
-    public const int MaxCameraCount = 20;
     
     private LightMap lightMap;
     public LightMap LightMap { get => lightMap; }

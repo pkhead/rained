@@ -13,8 +13,10 @@ Bugs:
   to correct the .png filenames on non-Windows systems
 
 Overall:
+- file manager "New Folder" button
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
   also use function/class summaries
+- move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET
 - rect/material tile place
 - keyboard replacements for scroll wheel stuff
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
