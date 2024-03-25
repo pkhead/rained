@@ -461,7 +461,6 @@ static class AssetManagerGUI
         missingDirs.Add("Cast");
         missingDirs.Add("Graphics");
         missingDirs.Add("Props");
-        missingDirs.Add("LevelEditorProjects");
         missingDirs.Add("Levels");
 
         for (int i = missingDirs.Count - 1; i >= 0; i--)

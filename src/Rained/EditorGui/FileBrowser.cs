@@ -159,10 +159,26 @@ class FileBrowser
         this.callback = callback;
         fileFilters.Add(new FileFilter("Any", [ ".*" ]));
         selectedFilter = fileFilters[0];
-        
+
+        var projectsFolderPath = string.Empty;
+        var doesProjectsFolderExist = false;
+
         if (RainEd.Instance is not null)
         {
-            cwd = openDir ?? Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
+            projectsFolderPath = Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
+            doesProjectsFolderExist = Directory.Exists(projectsFolderPath);
+        }
+
+        if (RainEd.Instance is not null)
+        {
+            if (openDir is not null)
+            {
+                cwd = openDir;
+            }
+            else
+            {
+                cwd = doesProjectsFolderExist ? projectsFolderPath : RainEd.Instance.AssetDataPath;
+            }
         }
         else
         {
@@ -173,9 +189,9 @@ class FileBrowser
         pathBuf = cwd;
         nameBuf = string.Empty;
 
-        if (RainEd.Instance is not null)
+        if (RainEd.Instance is not null && doesProjectsFolderExist)
         {
-            AddBookmark("Levels", Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects"));
+            AddBookmark("Projects", projectsFolderPath);
         }
 
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
