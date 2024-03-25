@@ -78,11 +78,9 @@ class LightEditor : IEditorMode
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            float lightDeg = level.LightAngle / MathF.PI * 180f;
-
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 
-            ImGui.SliderFloat("Light Angle", ref lightDeg, 0f, 360f, "%.1f deg");
+            ImGui.SliderAngle("Light Angle", ref level.LightAngle, 0f, 360f, "%.1f deg");
             if (ImGui.IsItemDeactivatedAfterEdit())
                 changeRecorder.PushParameterChanges();
             
@@ -91,8 +89,6 @@ class LightEditor : IEditorMode
                 changeRecorder.PushParameterChanges();
             
             ImGui.PopItemWidth();
-
-            level.LightAngle = lightDeg / 180f * MathF.PI;
 
             // draw light angle ring
             {
