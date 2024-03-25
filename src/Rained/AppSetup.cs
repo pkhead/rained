@@ -71,7 +71,7 @@ class AppSetup
                 }
                 else
                 {
-                    ImGui.Text("Please configure the location of the Rain World level editor data folder.\nIf you are unsure what to do, select \"Download And Install Data\".");
+                    ImGui.Text("Please configure the location of the Rain World level editor data folder.\nIf you are unsure what to do, select \"Download Data\".");
 
                     ImGui.Separator();
 
@@ -83,7 +83,7 @@ class AppSetup
                     }
 
                     ImGui.SameLine();
-                    if (ImGui.Button("Download And Install Data"))
+                    if (ImGui.Button("Download Data"))
                     {
                         downloadTask = DownloadData();
                     }
@@ -209,7 +209,19 @@ class AppSetup
             
             using (var zip = ZipFile.OpenRead(tempZipFile))
             {
-                int maxEntries = zip.Entries.Count;
+                // get the number of entries that aren't in the Cast folder
+                // (the cast folder will not be extracted)
+                int entryCount = 0;
+                string ignoreFilter = "Drizzle.Data-community/Cast";
+                foreach (var entry in zip.Entries)
+                {
+                    var fullName = entry.FullName;
+                    if (fullName.Length >= ignoreFilter.Length && fullName[0..ignoreFilter.Length] == ignoreFilter)
+                        continue;
+
+                    entryCount++;
+                }
+
                 int processedEntries = 0;
 
                 foreach (var entry in zip.Entries)
@@ -229,7 +241,7 @@ class AppSetup
                     }
 
                     processedEntries++;
-                    downloadProgress = (float)processedEntries / maxEntries; 
+                    downloadProgress = (float)processedEntries / entryCount; 
                 }
             }
         }

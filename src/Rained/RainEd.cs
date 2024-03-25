@@ -125,7 +125,7 @@ sealed class RainEd
         // halt if asset data path directory doesn't exist
         if (!Directory.Exists(AssetDataPath))
         {
-            Boot.DisplayError("Could not start", "The Data directory is missing!\n\nPlease insert the Data directory into the installation directory, or edit \"dataPath\" in preferences.json to point to a valid RWLE data folder.");
+            Boot.DisplayError("Could not start", "The Data directory is missing!\n\nPlease edit the \"dataPath\" property in preferences.json to point to a valid RWLE data folder.\n\nAlternatively, you may delete preferences.json and re-launch Rained to show the data directory configuration screen.");
             throw new RainEdStartupException();
         }
 
