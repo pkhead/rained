@@ -1,0 +1,1 @@
+Tab + Z + Enter - Close the editorShift + Escape - Close the editorEscape - Close the editor

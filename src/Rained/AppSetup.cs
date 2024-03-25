@@ -10,7 +10,6 @@ using Raylib_cs;
 using rlImGui_cs;
 using System.Numerics;
 using System.IO.Compression;
-using Drizzle.Ported;
 
 class AppSetup
 {
@@ -72,7 +71,7 @@ class AppSetup
                 }
                 else
                 {
-                    ImGui.Text("Please configure the Drizzle data folder.\nIf you are unsure what to do, select \"Download And Install Data\".");
+                    ImGui.Text("Please configure the location of the Rain World level editor data folder.\nIf you are unsure what to do, select \"Download And Install Data\".");
 
                     ImGui.Separator();
 
@@ -147,7 +146,6 @@ class AppSetup
         {
             // check for any missing directories
             missingDirs.Clear();
-            missingDirs.Add("Cast");
             missingDirs.Add("Graphics");
             missingDirs.Add("Props");
             missingDirs.Add("Levels");
@@ -217,7 +215,9 @@ class AppSetup
                 foreach (var entry in zip.Entries)
                 {
                     // replace the root folder name from "Drizzle.Data-community" to simply "Data"
+                    // also, ignore anything in cast - i already copied the data in there into assets/internal
                     var modifiedName = "Data" + entry.FullName[entry.FullName.IndexOf('/')..];
+                    if (modifiedName.Length >= 9 && modifiedName[0..9] == "Data/Cast") continue;
 
                     if (entry.FullName.EndsWith('/'))
                     {

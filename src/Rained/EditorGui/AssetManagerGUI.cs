@@ -458,7 +458,6 @@ static class AssetManagerGUI
     {
         // check for any missing directories
         missingDirs.Clear();
-        missingDirs.Add("Cast");
         missingDirs.Add("Graphics");
         missingDirs.Add("Props");
         missingDirs.Add("Levels");

@@ -118,9 +118,9 @@ class Tile
         // find path to image
         // if it doesn't exist in Data/Graphics, check in assets/internal
         GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", name + ".png");
-        if (!File.Exists(GraphicsPath))
+        if (!File.Exists(GraphicsPath) && DrizzleCastMap.TryGetValue(name, out string? castPath))
         {
-            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", name + ".png");
+            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
         }
 
         using var fullImage = RlManaged.Image.Load(GraphicsPath);

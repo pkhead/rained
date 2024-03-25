@@ -169,7 +169,7 @@ class DrizzleRender : IDisposable
                     RainEd.Logger.Information("Initializing Zygote runtime...");
 
                     LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-                    LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
+                    LingoRuntime.CastPath = Path.Combine(Boot.AppDataPath, "assets", "internal") + Path.DirectorySeparatorChar;
                     
                     runtime = new LingoRuntime(typeof(MovieScript).Assembly);
                     runtime.Init();
@@ -290,7 +290,7 @@ class DrizzleRender : IDisposable
     {
         Configuration.Default.PreferContiguousImageBuffers = true;
         LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-        LingoRuntime.CastPath = Path.Combine(LingoRuntime.MovieBasePath, "Cast");
+        LingoRuntime.CastPath = Path.Combine(Boot.AppDataPath, "assets", "internal") + Path.DirectorySeparatorChar;
 
         staticRuntime = new LingoRuntime(typeof(MovieScript).Assembly);
         staticRuntime.Init();

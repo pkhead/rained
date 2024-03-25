@@ -1,5 +1,5 @@
 Priority:
-- keep Cast data in AppDataPath (maybe like... assets/drizzle)
+- Respect editorConfig.txt
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
