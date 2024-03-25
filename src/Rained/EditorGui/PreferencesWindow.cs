@@ -252,6 +252,18 @@ static class PreferencesWindow
 
             // TODO: font scale
         }
+
+        ImGui.SeparatorText("Miscellaneous");
+        {
+            // they've brainwashed me to not add this
+            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
+            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
+            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
+            
+            bool hideScreenSize = prefs.HideScreenSize;
+            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
+                prefs.HideScreenSize = hideScreenSize;
+        }
     }
 
     private static void ShowShortcutsTab()

@@ -48,7 +48,8 @@ class UserPreferences
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
 
-    public bool ResizeShowScreenSize { get; set; }
+    //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.
+    public bool HideScreenSize { get; set; }
 
     public bool WindowMaximized { get; set; }
     public int WindowWidth { get; set; }
@@ -89,7 +90,7 @@ class UserPreferences
 
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";
-        ResizeShowScreenSize = false;
+        HideScreenSize = false;
 
         WindowMaximized = false;
         WindowWidth = Boot.DefaultWindowWidth;

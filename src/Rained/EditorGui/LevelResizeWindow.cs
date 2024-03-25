@@ -65,20 +65,23 @@ class LevelResizeWindow
                 ImGui.EndGroup();
 
                 // screen size, using the formula from the modding wiki
-                ImGui.SameLine();
-                ImGui.BeginGroup();
-                if (ImGui.InputFloat("Screen Width", ref screenW))
+                if (!RainEd.Instance.Preferences.HideScreenSize)
                 {
-                    newWidth = (int)(screenW * 52f + 20f);
-                }
-                screenW = Math.Max(screenW, 0);
+                    ImGui.SameLine();
+                    ImGui.BeginGroup();
+                    if (ImGui.InputFloat("Screen Width", ref screenW))
+                    {
+                        newWidth = (int)(screenW * 52f + 20f);
+                    }
+                    screenW = Math.Max(screenW, 0);
 
-                if (ImGui.InputFloat("Screen Height", ref screenH))
-                {
-                    newHeight = (int)(screenH * 40f + 3f);
+                    if (ImGui.InputFloat("Screen Height", ref screenH))
+                    {
+                        newHeight = (int)(screenH * 40f + 3f);
+                    }
+                    screenH = Math.Max(screenH, 0); // minimum value is 1
+                    ImGui.EndGroup();
                 }
-                screenH = Math.Max(screenH, 0); // minimum value is 1
-                ImGui.EndGroup();
             }
 
             ImGui.SeparatorText("Anchors");
