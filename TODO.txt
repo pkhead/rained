@@ -1,5 +1,4 @@
 Priority:
-- Respect editorConfig.txt
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
@@ -13,6 +12,7 @@ Bugs:
   to correct the .png filenames on non-Windows systems
 
 Overall:
+- fix cli on windows (perhaps a Rained.exe and Rained.Console.exe)
 - file manager "New Folder" button
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
   also use function/class summaries

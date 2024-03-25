@@ -16,7 +16,7 @@ enum KeyShortcut : int
     New, Open, Save, SaveAs,
     Cut, Copy, Paste, Undo, Redo,
 
-    Render,
+    Render, ExportGeometry,
 
     // Geometry
     ToggleLayer1, ToggleLayer2, ToggleLayer3,
@@ -269,6 +269,7 @@ static class KeyShortcuts
         Register("Save File", KeyShortcut.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
         Register("Save File As", KeyShortcut.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
         Register("Render", KeyShortcut.Render, ImGuiKey.R, ImGuiModFlags.Ctrl);
+        Register("Export Geometry", KeyShortcut.ExportGeometry, ImGuiKey.R, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
 
         Register("Cut", KeyShortcut.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
         Register("Copy", KeyShortcut.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);

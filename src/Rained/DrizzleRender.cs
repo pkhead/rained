@@ -128,6 +128,7 @@ class DrizzleRender : IDisposable
     private abstract record ThreadMessage;
 
     private record MessageRenderStarted : ThreadMessage;
+    private record MessageRenderGeometryStarted : ThreadMessage;
     private record MessageLevelLoading : ThreadMessage;
     private record MessageRenderFailed(Exception Exception) : ThreadMessage;
     private record MessageRenderCancelled : ThreadMessage;
@@ -147,8 +148,12 @@ class DrizzleRender : IDisposable
         public LevelRenderer? Renderer;
         public Action<RenderStatus>? StatusChanged = null;
 
-        public RenderThread(string filePath)
+        public readonly bool GeometryExport;
+
+        public RenderThread(string filePath, bool geoExport)
         {
+            GeometryExport = geoExport;
+
             Queue = new ConcurrentQueue<ThreadMessage>();
             InQueue = new ConcurrentQueue<ThreadMessage>();
             this.filePath = filePath;
@@ -186,23 +191,44 @@ class DrizzleRender : IDisposable
 
                 Queue.Enqueue(new MessageLevelLoading());
                 RainEd.Logger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
-
-                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
-                Renderer = new LevelRenderer(runtime, null);
-                Renderer.StatusChanged += StatusChanged;
-                Renderer.PreviewSnapshot += PreviewSnapshot;
                 
-                // process user cancel if cancelled while init
-                // zygote runtime
-                if (InQueue.TryDequeue(out msg))
-                {
-                    if (msg is MessageDoCancel)
-                        throw new RenderCancelledException();
-                }
-                Queue.Enqueue(new MessageRenderStarted());
+                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
 
-                RainEd.Logger.Information("RENDER: Begin");
-                Renderer.DoRender();
+                if (GeometryExport)
+                {
+                    // process user cancel if cancelled while init
+                    // zygote runtime
+                    if (InQueue.TryDequeue(out msg))
+                    {
+                        if (msg is MessageDoCancel)
+                            throw new RenderCancelledException();
+                    }
+                    Queue.Enqueue(new MessageRenderGeometryStarted());
+
+                    RainEd.Logger.Information("RENDER: Exporting Geometry...");
+
+                    var movie = (MovieScript)runtime.MovieScriptInstance;
+                    movie.newmakelevel(movie.gLoadedName);
+                }
+                else
+                {
+                    Renderer = new LevelRenderer(runtime, null);
+                    Renderer.StatusChanged += StatusChanged;
+                    Renderer.PreviewSnapshot += PreviewSnapshot;
+                    
+                    // process user cancel if cancelled while init
+                    // zygote runtime
+                    if (InQueue.TryDequeue(out msg))
+                    {
+                        if (msg is MessageDoCancel)
+                            throw new RenderCancelledException();
+                    }
+                    Queue.Enqueue(new MessageRenderStarted());
+
+                    RainEd.Logger.Information("RENDER: Begin");
+                    Renderer.DoRender();
+                }
+
                 RainEd.Logger.Information("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
             }
@@ -231,6 +257,7 @@ class DrizzleRender : IDisposable
         Initializing,
         Loading,
         Rendering,
+        GeometryExport,
         Finished,
         Cancelling,
         Canceled,
@@ -255,8 +282,12 @@ class DrizzleRender : IDisposable
     public RenderPreviewImages? PreviewImages;
     public Action? PreviewUpdated;
 
-    public DrizzleRender()
+    public readonly bool OnlyGeometry;
+
+    public DrizzleRender(bool geoExport)
     {
+        OnlyGeometry = geoExport;
+
         cameraCount = RainEd.Instance.Level.Cameras.Count;
 
         state = RenderState.Initializing;
@@ -271,7 +302,7 @@ class DrizzleRender : IDisposable
         
         LevelSerialization.Save(filePath);
 
-        threadState = new RenderThread(filePath);
+        threadState = new RenderThread(filePath, OnlyGeometry);
         threadState.StatusChanged += StatusChanged;
         Configuration.Default.PreferContiguousImageBuffers = true;
         thread = new Thread(new ThreadStart(threadState.ThreadProc))
@@ -431,6 +462,10 @@ class DrizzleRender : IDisposable
                 
                 case MessageRenderStarted:
                     state = RenderState.Rendering;
+                    break;
+                
+                case MessageRenderGeometryStarted:
+                    state = RenderState.GeometryExport;
                     break;
                 
                 case MessageRenderFailed msgFail:

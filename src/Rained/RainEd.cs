@@ -456,7 +456,15 @@ sealed class RainEd
         {
             PromptUnsavedChanges(() =>
             {
-                drizzleRenderWindow = new DrizzleRenderWindow();
+                drizzleRenderWindow = new DrizzleRenderWindow(false);
+            }, false);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ExportGeometry))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                drizzleRenderWindow = new DrizzleRenderWindow(true);
             }, false);
         }
     }
@@ -522,6 +530,7 @@ sealed class RainEd
                 ImGui.Separator();
 
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...");
                 ImGui.MenuItem("Mass Render", false);
 
                 ImGui.Separator();

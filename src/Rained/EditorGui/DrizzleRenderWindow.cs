@@ -63,20 +63,24 @@ class DrizzleRenderWindow : IDisposable
         }    
     ";
 
-    private RlManaged.Shader layerPreviewShader;
-    private RlManaged.Shader layerPreviewLightShader;
+    private readonly RlManaged.Shader layerPreviewShader;
+    private readonly RlManaged.Shader layerPreviewLightShader;
 
-    public DrizzleRenderWindow()
+    public DrizzleRenderWindow(bool onlyGeo)
     {
         try
         {
-            drizzleRenderer = new DrizzleRender();
-            drizzleRenderer.PreviewUpdated += () =>
-            {
-                needUpdateTextures = true;
-            };
+            drizzleRenderer = new DrizzleRender(onlyGeo);
 
-            previewLayers = new RlManaged.Texture2D[30];
+            if (!onlyGeo)
+            {
+                drizzleRenderer.PreviewUpdated += () =>
+                {
+                    needUpdateTextures = true;
+                };
+                previewLayers = new RlManaged.Texture2D[30];
+
+            }
         }
         catch (Exception e)
         {
@@ -91,9 +95,12 @@ class DrizzleRenderWindow : IDisposable
             (int)Camera.WidescreenSize.Y * 20
         );
 
-        Raylib.BeginTextureMode(previewComposite);
-        Raylib.ClearBackground(Color.White);
-        Raylib.EndTextureMode();
+        if (!onlyGeo)
+        {
+            Raylib.BeginTextureMode(previewComposite);
+            Raylib.ClearBackground(Color.White);
+            Raylib.EndTextureMode();
+        }
     }
 
     public void Dispose()
@@ -187,9 +194,6 @@ class DrizzleRenderWindow : IDisposable
         {
             ImGui.Text("Canceled");
         }
-        else if (drizzleRenderer.State == RenderState.Errored)
-        {
-        }
         else
         {
             if (drizzleRenderer.State == RenderState.Finished)
@@ -203,6 +207,10 @@ class DrizzleRenderWindow : IDisposable
             else if (drizzleRenderer.State == RenderState.Loading)
             {
                 ImGui.Text("Loading level...");
+            }
+            else if (drizzleRenderer.State == RenderState.GeometryExport)
+            {
+                ImGui.Text($"Exporting geometry...");
             }
             else
             {
@@ -229,7 +237,7 @@ class DrizzleRenderWindow : IDisposable
         ImGui.SetNextWindowSizeConstraints(new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f), Vector2.One * 9999f);
         if (ImGuiExt.BeginPopupModal("Render", ImGuiWindowFlags.AlwaysAutoResize))
         {
-            bool isPreviewEnabled = drizzleRenderer!.PreviewImages is not null;
+            bool isPreviewEnabled = drizzleRenderer!.PreviewImages is not null && !drizzleRenderer.OnlyGeometry;
             float renderProgress = 0f;
 
             if (drizzleRenderer is not null)
