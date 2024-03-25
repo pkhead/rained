@@ -61,9 +61,7 @@ class UserPreferences
     public HexColor LayerColor2;
     public HexColor LayerColor3;
     public HexColor BackgroundColor;
-    public int ThemeIndex;
-    public readonly string[] ThemeNames = [ "Dark", "Light", "ImGui Classic" ];
-
+    
     [JsonPropertyName("layerColor1")]
     public string LayerColor1String { get => LayerColor1.ToString(); set => LayerColor1 = new HexColor(value); }
     [JsonPropertyName("layerColor2")]
@@ -73,25 +71,8 @@ class UserPreferences
     [JsonPropertyName("bgColor")]
     public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
 
-    [JsonPropertyName("theme")]
-    public string ThemeSerialized {
-        get => ThemeNames[ThemeIndex];
-        set
-        {
-            for (int i = 0; i < ThemeNames.Length; i++)
-            {
-                if (ThemeNames[i] == value)
-                {
-                    ThemeIndex = i;
-                    return;
-                }
-            }
-
-            ThemeIndex = 0;
-            RainEd.Logger.Error("Invalid theme '{ThemeName}'", value);
-            RainEd.Instance.ShowNotification($"Unknown theme '{value}'");
-        }
-    }
+    public string Theme { get; set; }
+    
     public Dictionary<string, string> Shortcuts { get; set; }
     public List<string> RecentFiles { get; set; }
 
@@ -117,7 +98,7 @@ class UserPreferences
         StaticDrizzleLingoRuntime = false;
         ShowRenderPreview = true;
 
-        ThemeIndex = 0;
+        Theme = "Dark";
         LayerColor1 = new HexColor("#000000");
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
@@ -188,11 +169,16 @@ class UserPreferences
 
     public void ApplyTheme()
     {
-        switch (ThemeIndex)
+        try
         {
-            case 0: ImGui.StyleColorsDark(); break;
-            case 1: ImGui.StyleColorsLight(); break;
-            case 2: ImGui.StyleColorsClassic(); break;
+            var filePath = Path.Combine(Boot.AppDataPath, "themes", Theme + ".json");
+            var style = SerializableStyle.FromFile(filePath);
+            style!.Apply(ImGui.GetStyle());
+        }
+        catch (Exception e)
+        {
+            RainEd.Logger.Error("Could not apply theme!\n{Error}", e);
+            RainEd.Instance.ShowNotification("Could not apply theme");
         }
     }
 }

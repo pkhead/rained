@@ -43,11 +43,13 @@ static class PreferencesWindow
         }
 
         // keep track of this, as i want to clear some data
-        // when the asset tab is no longer shown
+        // when the following tabs are no longer shown
         bool showAssetsTab = false;
 
         if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
         {
+            var lastNavTab = selectedNavTab;
+
             // show navigation sidebar
             ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
             {
@@ -75,7 +77,7 @@ static class PreferencesWindow
                     break;
 
                 case NavTabEnum.Theme:
-                    ShowThemeTab();
+                    ShowThemeTab(lastNavTab != selectedNavTab);
                     break;
                 
                 case NavTabEnum.Assets:
@@ -265,13 +267,35 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ToggleVertexMode);
     }
 
-    private static void ShowThemeTab()
+    private static readonly List<string> availableThemes = [];
+    private static void ShowThemeTab(bool entered)
     {
-        ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12.0f);
-        if (ImGui.Combo("Theme", ref RainEd.Instance.Preferences.ThemeIndex, "Dark\0Light\0ImGui Classic"))
+        // compile available themes when the tab is clicked
+        if (entered)
         {
-            RainEd.Instance.Preferences.ApplyTheme();
-            ThemeEditor.SaveRef();
+            availableThemes.Clear();
+            foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "themes")))
+            {
+                if (Path.GetExtension(fileName) != ".json") continue;
+                availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
+            }
+            availableThemes.Sort();
+        }
+
+        ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12.0f);
+        if (ImGui.BeginCombo("Theme", RainEd.Instance.Preferences.Theme))
+        {
+            foreach (var themeName in availableThemes)
+            {
+                if (ImGui.Selectable(themeName, themeName == RainEd.Instance.Preferences.Theme))
+                {
+                    RainEd.Instance.Preferences.Theme = themeName;
+                    RainEd.Instance.Preferences.ApplyTheme();
+                    ThemeEditor.SaveRef();
+                }
+            }
+
+            ImGui.EndCombo();
         }
 
         if (ImGui.TreeNode("Theme Editor"))

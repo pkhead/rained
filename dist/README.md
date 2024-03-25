@@ -6,6 +6,7 @@ Check https://github.com/pkhead/rained/releases for any new releases. If you wan
 - preferences.json
 - imgui.ini
 - logs/
+- themes/
 - Your Data folder, if present
 
 Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs.
