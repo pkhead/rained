@@ -236,7 +236,7 @@ class FileBrowser
         {
             openErrorPopup = true;
             errorMsg = "Directory does not exist";
-            RainEd.Logger.Error("Directory {Path} does not exist", path);
+            if (RainEd.Instance is not null) RainEd.Logger.Error("Directory {Path} does not exist", path);
 
             return false;
         }
