@@ -133,6 +133,8 @@ static class AssetManagerGUI
 
     private static void DeleteCategory(CategoryList assetList, ref int selected)
     {
+        if (assetList.Categories.Count == 0) return;
+        
         assetList.DeleteCategory(assetList.Categories[selected]);
         
         if (assetList.Categories.Count == 0)
@@ -166,6 +168,7 @@ static class AssetManagerGUI
     private static void DeleteItem(CategoryList assetList, int selectedCategory)
     {
         var category = assetList.Categories[selectedCategory];
+        if (category.Items.Count == 0) return;
         assetList.DeleteItem(category.Items[groupIndex]);
         
         if (category.Items.Count == 0)
