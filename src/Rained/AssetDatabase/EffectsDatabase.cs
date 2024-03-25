@@ -230,15 +230,13 @@ class EffectsDatabase
                 usePlantColors = true,
             });
 
-            //////////////
-            // Erosion2 //
-            //////////////
-            CreateEffect(new EffectInit("Slag", EffectType.NN)
+            CreateEffect(new EffectInit("Slag", EffectType.NN) // DEPRECATED
             {
+                deprecated = true,
                 useLayers = true
             });
 
-            CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN)
+            CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN) // DEPRECATED
             {
                 deprecated = true,
                 useLayers = true
@@ -477,14 +475,13 @@ class EffectsDatabase
             CustomConfig("Ceramic Color", "Colored", ["None", "Colored"]);
             //CustomConfig("Colored", "White", [ "None", "White" ]);
 
-            /* AN UNUSED EFFECT
-            CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN)
+            CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN) // DEPRECATED
             {
+                deprecated = true,
                 binary = true,
                 single = true,
                 useLayers = true
             });
-            */
         }
 
         ////////////////////
@@ -644,6 +641,14 @@ class EffectsDatabase
                 binary = true
             });
 
+            CreateEffect(new EffectInit("Scales", EffectType.StandardErosion) // DEPRECATED
+            {
+                deprecated = true,
+                repeats = 200,
+                affectOpenAreas = 0.05f,
+                useLayers = true
+            });
+
             CreateEffect(new EffectInit("Stained Glass Properties", EffectType.NN)
             {
             });
@@ -668,6 +673,15 @@ class EffectsDatabase
                 useLayers = true,
             });
             CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
+
+            CreateEffect(new EffectInit("Sand", EffectType.StandardErosion) // DEPRECATED
+            {
+                deprecated = true,
+                repeats = 80,
+                affectOpenAreas = 0.5f,
+                useLayers = true,
+            });
+            CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
 
             CreateEffect(new EffectInit("Fat Slime", EffectType.StandardErosion)
             {
