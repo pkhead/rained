@@ -198,15 +198,59 @@ static class PreferencesWindow
             Vector3 layerColor3 = HexColorToVec3(prefs.LayerColor3);
             Vector3 bgColor = HexColorToVec3(prefs.BackgroundColor);
 
-            if (ImGui.ColorEdit3("Layer Color 1", ref layerColor1))
+            if (ImGui.ColorEdit3("##Layer Color 1", ref layerColor1))
                 prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
-            if (ImGui.ColorEdit3("Layer Color 2", ref layerColor2))
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC1"))
+            {
+                prefs.LayerColor1 = new HexColor("#000000");
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 1");
+
+            if (ImGui.ColorEdit3("##Layer Color 2", ref layerColor2))
                 prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
-            if (ImGui.ColorEdit3("Layer Color 3", ref layerColor3))
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC2"))
+            {
+                prefs.LayerColor2 = new HexColor("#59ff59");
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 2");
+
+            if (ImGui.ColorEdit3("##Layer Color 3", ref layerColor3))
                 prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
-            
-            if (ImGui.ColorEdit3("Background Color", ref bgColor))
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC3"))
+            {
+                prefs.LayerColor3 = new HexColor("#ff1e1e");
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 3");
+
+            if (ImGui.ColorEdit3("##Background Color", ref bgColor))
                 prefs.BackgroundColor = Vec3ToHexColor(bgColor);
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetBGC"))
+            {
+                prefs.BackgroundColor = new HexColor(127, 127, 127);
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Background Color");
+
+            // TODO: font scale
         }
     }
 
