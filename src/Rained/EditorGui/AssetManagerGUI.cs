@@ -198,6 +198,9 @@ static class AssetManagerGUI
 
     private static void AssetControls()
     {
+        // render file browser
+        FileBrowser.Render(ref fileBrowser);
+        
         static bool isInitFile(string path, bool isRw)
         {
             return Path.GetFileName(path) == "Init.txt";
@@ -479,9 +482,6 @@ static class AssetManagerGUI
     public static void Show()
     {
         assetManager ??= new AssetManager();
-
-        // render file browser
-        FileBrowser.Render(ref fileBrowser);
 
         ImGui.Text("Any changes here require a restart in order to take effect.");
         ImGui.Separator();

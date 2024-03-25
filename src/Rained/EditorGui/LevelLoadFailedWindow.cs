@@ -22,7 +22,7 @@ static class LevelLoadFailedWindow
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            ImGui.Text("The level failed to load because of unrecognized assets.");
+            ImGui.Text("The level failed to load due to unrecognized assets.");
 
             // show unknown props
             if (LoadResult!.UnrecognizedProps.Length > 0)
