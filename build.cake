@@ -35,6 +35,8 @@ Task("Publish")
         CopyDirectory("Data", "build/Data");
     }
     */
+
+    Zip("build", "rained_X.X.X-win-x64.zip");
 });
 
 RunTarget(target);
