@@ -65,6 +65,8 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
+    private LuaInterface luaInterface;
+
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
@@ -129,6 +131,10 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
+        // run lua scripts
+        var luaInterface = new LuaInterface();
+        luaInterface.Initialize();
+
         Logger.Information("Initializing materials database...");
         MaterialDatabase = new Tiles.MaterialDatabase();
 
@@ -162,7 +168,7 @@ sealed class RainEd
 
         UpdateTitle();
 
-        // apply preferences
+        // apply window preferences
         Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
         if (Preferences.WindowMaximized)
         {
