@@ -268,6 +268,9 @@ static class PreferencesWindow
 
     private static void ShowShortcutsTab()
     {
+        ImGui.SeparatorText("Accessibility");
+        ShortcutButton(KeyShortcut.RightMouse);
+        
         ImGui.SeparatorText("General");
         ShortcutButton(KeyShortcut.ViewZoomIn);
         ShortcutButton(KeyShortcut.ViewZoomOut);

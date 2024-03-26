@@ -222,12 +222,14 @@ class EditorWindow
     public bool IsMouseClicked(ImGuiMouseButton button, bool repeat = false)
     {
         if (button == ImGuiMouseButton.Left) return isLmbClicked;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Activated(KeyShortcut.RightMouse);
         return ImGui.IsMouseClicked(button, repeat);
     }
 
     public bool IsMouseDown(ImGuiMouseButton button)
     {
         if (button == ImGuiMouseButton.Left) return isLmbDown;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Active(KeyShortcut.RightMouse);
         return ImGui.IsMouseDown(button);
     }
 
@@ -240,6 +242,7 @@ class EditorWindow
     public bool IsMouseReleased(ImGuiMouseButton button)
     {
         if (button == ImGuiMouseButton.Left) return isLmbReleased;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Deactivated(KeyShortcut.RightMouse);
         return ImGui.IsMouseReleased(button);
     }
 

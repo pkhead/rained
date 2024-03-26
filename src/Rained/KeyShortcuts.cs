@@ -7,6 +7,8 @@ namespace RainEd;
 enum KeyShortcut : int
 {
     None = -1,
+
+    RightMouse,
     
     // General
     NavUp, NavLeft, NavDown, NavRight,
@@ -53,6 +55,8 @@ static class KeyShortcuts
         public ImGuiKey Key;
         public ImGuiModFlags Mods;
         public bool IsActivated = false;
+        public bool IsDeactivated = false;
+        public bool IsDown = false;
         public bool AllowRepeat = false;
 
         public readonly ImGuiKey OriginalKey;
@@ -98,6 +102,13 @@ static class KeyShortcuts
 
         public bool IsKeyPressed()
         {
+            if (ID == KeyShortcut.RightMouse && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            {
+                return true;
+            }
+
+            if (Key == ImGuiKey.None) return false;
+
             bool kp;
 
             // i disable imgui from receiving tab inputs
@@ -120,6 +131,13 @@ static class KeyShortcuts
 
         public bool IsKeyDown()
         {
+            if (ID == KeyShortcut.RightMouse && ImGui.IsMouseDown(ImGuiMouseButton.Right))
+            {
+                return true;
+            }
+
+            if (Key == ImGuiKey.None) return false;
+
             bool kp;
 
             // i disable imgui from receiving tab inputs
@@ -179,19 +197,26 @@ static class KeyShortcuts
                 throw new Exception($"Unknown modifier key '{modStr}'");
         }
 
-        for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+        if (keyStr[^1] == "None")
         {
-            ImGuiKey key = (ImGuiKey) ki;
-            if (keyStr[^1] == ImGui.GetKeyName(key))
-            {
-                tKey = key;
-                break;
-            }
+            tKey = ImGuiKey.None;
         }
+        else
+        {
+            for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+            {
+                ImGuiKey key = (ImGuiKey) ki;
+                if (keyStr[^1] == ImGui.GetKeyName(key))
+                {
+                    tKey = key;
+                    break;
+                }
+            }
 
-        // throw an exception if the ImGuiKey was not found from the string
-        if (tKey == ImGuiKey.None)
-            throw new Exception($"Unknown key '{keyStr[^1]}'");
+            // throw an exception if the ImGuiKey was not found from the string
+            if (tKey == ImGuiKey.None)
+                throw new Exception($"Unknown key '{keyStr[^1]}'");
+        }
         
         // assign to binding data
         KeyShortcutBinding data = keyShortcuts[id];
@@ -225,7 +250,10 @@ static class KeyShortcuts
         => keyShortcuts[id].IsActivated;
     
     public static bool Active(KeyShortcut id)
-        => !ImGui.GetIO().WantTextInput && keyShortcuts[id].IsKeyDown();
+        => keyShortcuts[id].IsDown;
+
+    public static bool Deactivated(KeyShortcut id)
+        => keyShortcuts[id].IsDeactivated;
 
     public static void ImGuiMenuItem(KeyShortcut id, string name)
     {
@@ -243,20 +271,36 @@ static class KeyShortcuts
     public static void Update()
     {
         // activate shortcuts on key press
-        if (!ImGui.GetIO().WantTextInput)
+        bool inputDisabled = ImGui.GetIO().WantTextInput;
+        
+        foreach (var shortcut in keyShortcuts.Values)
         {
-            foreach (var shortcut in keyShortcuts.Values)
+            shortcut.IsActivated = false;
+
+            if (shortcut.IsKeyPressed() && (!inputDisabled || shortcut.ID == KeyShortcut.RightMouse))
             {
-                if (shortcut.IsKeyPressed())
-                    shortcut.IsActivated = true;
-                else
-                    shortcut.IsActivated = false;
+                shortcut.IsActivated = true;
+                shortcut.IsDown = true;
+            }
+
+            if (shortcut.IsDown)
+            {
+                Console.WriteLine("Down " + shortcut.ID);
+            }
+
+            shortcut.IsDeactivated = false;
+            if (shortcut.IsDown && !shortcut.IsKeyDown())
+            {
+                shortcut.IsDown = false;
+                shortcut.IsDeactivated = true;
             }
         }
     }
 
     public static void InitShortcuts()
     {
+        Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiModFlags.None);
+
         Register("Navigate Up", KeyShortcut.NavUp, ImGuiKey.W, ImGuiModFlags.None, true);
         Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
         Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
