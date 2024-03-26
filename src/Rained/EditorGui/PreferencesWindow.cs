@@ -269,6 +269,9 @@ static class PreferencesWindow
     private static void ShowShortcutsTab()
     {
         ImGui.SeparatorText("General");
+        ShortcutButton(KeyShortcut.ViewZoomIn);
+        ShortcutButton(KeyShortcut.ViewZoomOut);
+        ImGui.Separator();
         ShortcutButton(KeyShortcut.Undo);
         ShortcutButton(KeyShortcut.Redo);
         ShortcutButton(KeyShortcut.Cut);
@@ -281,6 +284,7 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.SaveAs);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.Render);
+        ShortcutButton(KeyShortcut.ExportGeometry);
 
         ImGui.SeparatorText("Editing");
         ShortcutButton(KeyShortcut.NavUp);
@@ -295,6 +299,9 @@ static class PreferencesWindow
         ImGui.Separator();
         ShortcutButton(KeyShortcut.SwitchLayer);
         ShortcutButton(KeyShortcut.SwitchTab);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.IncreaseBrushSize);
+        ShortcutButton(KeyShortcut.DecreaseBrushSize);
 
         ImGui.SeparatorText("Geometry");
         ShortcutButton(KeyShortcut.ToggleLayer1);

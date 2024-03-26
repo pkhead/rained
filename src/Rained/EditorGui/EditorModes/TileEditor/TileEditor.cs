@@ -318,13 +318,16 @@ partial class TileEditor : IEditorMode
                 if (disallowMatOverwrite)
                     window.StatusText = "Disallow Overwrite";
 
-                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+                bool brushSizeKey =
+                    KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
+
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift) || brushSizeKey)
                 {
                     window.OverrideMouseWheel = true;
 
-                    if (Raylib.GetMouseWheelMove() > 0.0f)
+                    if (Raylib.GetMouseWheelMove() > 0.0f || KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize))
                         materialBrushSize += 2;
-                    else if (Raylib.GetMouseWheelMove() < 0.0f)
+                    else if (Raylib.GetMouseWheelMove() < 0.0f || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize))
                         materialBrushSize -= 2;
                     
                     materialBrushSize = Math.Clamp(materialBrushSize, 1, 21);

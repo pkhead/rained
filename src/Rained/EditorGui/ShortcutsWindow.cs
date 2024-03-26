@@ -17,6 +17,7 @@ static partial class ShortcutsWindow
         // General
         [
             ("Scroll Wheel", "Zoom"),
+            ("[ViewZoomIn]/[ViewZoomOut]", "Zoom In/Out"),
             ("Middle Mouse", "Pan"),
             ("Alt+Left Mouse", "Pan"),
             ("[Undo]", "Undo"),
@@ -55,6 +56,7 @@ static partial class ShortcutsWindow
             ("[NavUp]/[NavDown]", "Browse selected category"),
             ("[NavLeft]/[NavRight]", "Browse tile categories"),
             ("Shift+Mouse Wheel", "Change material brush size"),
+            ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change material brush size"),
             ("[Eyedropper]", "Sample tile from level"),
             ("[SetMaterial]", "Set selected to default material"),
             ("Left Mouse", "Place tile/material"),
@@ -96,7 +98,8 @@ static partial class ShortcutsWindow
             ("Left Mouse", "Paint effect"),
             ("Shift+Left Mouse", "Paint effect stronger"),
             ("Right Mouse", "Erase effect"),
-            ("Shift+Mouse Wheel", "Change brush size")
+            ("Shift+Mouse Wheel", "Change brush size"),
+            ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change brush size"),
         ],
 
         // Props

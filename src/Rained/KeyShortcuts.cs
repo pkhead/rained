@@ -10,8 +10,9 @@ enum KeyShortcut : int
     
     // General
     NavUp, NavLeft, NavDown, NavRight,
-    NewObject, RemoveObject, SwitchLayer, SwitchTab,
-    Duplicate,
+    NewObject, RemoveObject, SwitchLayer, SwitchTab, Duplicate,
+    ViewZoomIn, ViewZoomOut,
+    IncreaseBrushSize, DecreaseBrushSize,
 
     New, Open, Save, SaveAs,
     Cut, Copy, Paste, Undo, Redo,
@@ -260,6 +261,9 @@ static class KeyShortcuts
         Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
         Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
         Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
+        Register("Zoom View In", KeyShortcut.ViewZoomIn, ImGuiKey.Equal, ImGuiModFlags.None, true);
+        Register("Zoom View Out", KeyShortcut.ViewZoomOut, ImGuiKey.Minus, ImGuiModFlags.None, true);
+
         Register("New Object", KeyShortcut.NewObject, ImGuiKey.C, ImGuiModFlags.None, true);
         Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.X, ImGuiModFlags.None, true);
         Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiModFlags.Ctrl, true);
@@ -286,6 +290,8 @@ static class KeyShortcuts
         Register("Toggle Layer 1", KeyShortcut.ToggleLayer1, ImGuiKey.E, ImGuiModFlags.None);
         Register("Toggle Layer 2", KeyShortcut.ToggleLayer2, ImGuiKey.R, ImGuiModFlags.None);
         Register("Toggle Layer 3", KeyShortcut.ToggleLayer3, ImGuiKey.T, ImGuiModFlags.None);
+        Register("Increase Brush Size", KeyShortcut.IncreaseBrushSize, ImGuiKey.O, ImGuiModFlags.None, true);
+        Register("Decrease Brush Size", KeyShortcut.DecreaseBrushSize, ImGuiKey.I, ImGuiModFlags.None, true);
 
         // Tile Editor
         Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);

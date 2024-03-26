@@ -481,6 +481,16 @@ class EditorWindow
             if (!OverrideMouseWheel)
             {
                 var wheelMove = Raylib.GetMouseWheelMove();
+
+                if (KeyShortcuts.Activated(KeyShortcut.ViewZoomIn))
+                {
+                    wheelMove = 1f;
+                }
+                else if (KeyShortcuts.Activated(KeyShortcut.ViewZoomOut))
+                {
+                    wheelMove = -1f;
+                }
+
                 var zoomFactor = 1.5;
                 if (wheelMove > 0f && zoomSteps < 5)
                 {

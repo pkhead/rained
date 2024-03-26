@@ -502,13 +502,15 @@ class EffectsEditor : IEditorMode
             if (window.IsViewportHovered)
             {
                 // shift + scroll to change brush size
-                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+                bool brushSizeKey =
+                    KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift) || brushSizeKey)
                 {
                     window.OverrideMouseWheel = true;
 
-                    if (Raylib.GetMouseWheelMove() > 0.0f)
+                    if (Raylib.GetMouseWheelMove() > 0.0f || KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize))
                         brushSize += 1;
-                    else if (Raylib.GetMouseWheelMove() < 0.0f)
+                    else if (Raylib.GetMouseWheelMove() < 0.0f || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize))
                         brushSize -= 1;
                     
                     brushSize = Math.Clamp(brushSize, 1, 10);
