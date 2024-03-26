@@ -8,7 +8,7 @@ partial class TileEditor : IEditorMode
 {
     enum SelectionMode
     {
-        Materials, Tiles
+        Materials, Tiles, Autotiles
     }
     private string searchQuery = "";
 
@@ -118,19 +118,23 @@ partial class TileEditor : IEditorMode
             // search bar
             var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
 
-            if (ImGui.BeginTabBar("TileSelector"))
+            if (ImGui.BeginTabBar("ModeSelector"))
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
 
                 ImGuiTabItemFlags materialsFlags = ImGuiTabItemFlags.None;
                 ImGuiTabItemFlags tilesFlags = ImGuiTabItemFlags.None;
+                ImGuiTabItemFlags autotilesFlags = ImGuiTabItemFlags.None;
 
                 // apply force selection
                 if (forceSelection == SelectionMode.Materials)
                     materialsFlags = ImGuiTabItemFlags.SetSelected;
                 else if (forceSelection == SelectionMode.Tiles)
                     tilesFlags = ImGuiTabItemFlags.SetSelected;
+                else if (forceSelection == SelectionMode.Autotiles)
+                    autotilesFlags = ImGuiTabItemFlags.SetSelected;
 
+                // Materials tab
                 if (ImGuiExt.BeginTabItem("Materials", materialsFlags))
                 {
                     if (selectionMode != SelectionMode.Materials)
@@ -184,6 +188,7 @@ partial class TileEditor : IEditorMode
 
                     ImGui.EndTabItem();
                 }
+
                 // Tiles tab
                 if (ImGuiExt.BeginTabItem("Tiles", tilesFlags))
                 {
@@ -256,14 +261,61 @@ partial class TileEditor : IEditorMode
                     ImGui.EndTabItem();
                 }
 
+                // Autotiles tab
+                if (ImGuiExt.BeginTabItem("Autotiles", autotilesFlags))
+                {
+                    if (selectionMode != SelectionMode.Autotiles)
+                    {
+                        selectionMode = SelectionMode.Autotiles;
+                        //ProcessSearch();
+                    }
+
+                    var autotiles = RainEd.Instance.LuaInterface.Autotiles;
+
+                    // autotile list
+                    var boxHeight = ImGui.GetContentRegionAvail().Y;
+                    var boxWidth = ImGui.GetContentRegionAvail().X - ImGui.GetTextLineHeight() * 15f;
+                    if (ImGui.BeginListBox("##Autotiles", new Vector2(boxWidth, boxHeight)))
+                    {
+                        for (int i = 0; i < autotiles.Count; i++)
+                        {
+                            var autotile = autotiles[i];
+                            
+                            if (ImGui.Selectable(autotile.Name, i == selectedAutotile))
+                            {
+                                selectedAutotile = i;
+                            }
+                        }
+                        
+                        ImGui.EndListBox();
+                    }
+
+                    // selected autotile options
+                    if (autotiles.Count > 0)
+                    {
+                        ImGui.SameLine();
+                        ImGui.BeginGroup();
+
+                        var autotile = autotiles[selectedAutotile];
+                        foreach (var opt in autotile.Options.Values)
+                        {
+                            ImGui.Checkbox(opt.Name, ref opt.Value);
+                        }
+
+                        ImGui.EndGroup();
+                    }
+
+                    ImGui.EndTabItem();
+                }
+
                 forceSelection = null;
             }
         }
         
-        // shift+tab to switch between Tiles/Materials tabs
+        // shift+tab to switch between tabs
         if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
         {
-            forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
+            forceSelection = (SelectionMode)(((int)selectionMode + 1) % 3);
         }
         
         // tab to change work layer

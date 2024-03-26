@@ -18,6 +18,7 @@ partial class TileEditor : IEditorMode
     private SelectionMode? forceSelection = null;
     private int selectedTileGroup = 0;
     private int selectedMatGroup = 0;
+    private int selectedAutotile = 0;
 
     private int materialBrushSize = 1;
     
@@ -313,7 +314,7 @@ partial class TileEditor : IEditorMode
             }
 
             // render selected material
-            else
+            else if (selectionMode == SelectionMode.Materials)
             {
                 if (disallowMatOverwrite)
                     window.StatusText = "Disallow Overwrite";
