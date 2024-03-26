@@ -65,7 +65,7 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
-    private LuaInterface luaInterface;
+    public LuaInterface LuaInterface;
 
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -132,8 +132,8 @@ sealed class RainEd
         }
 
         // run lua scripts
-        var luaInterface = new LuaInterface();
-        luaInterface.Initialize();
+        LuaInterface = new LuaInterface();
+        LuaInterface.Initialize();
 
         Logger.Information("Initializing materials database...");
         MaterialDatabase = new Tiles.MaterialDatabase();

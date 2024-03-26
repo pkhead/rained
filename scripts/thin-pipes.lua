@@ -1,11 +1,11 @@
 local autotile = Rained.createAutotile()
 autotile.name = "Thin Pipes"
 autotile.type = "path"
-autotile.pathWidth = 1
+autotile.pathThickness = 1
 autotile.segmentLength = 1
 
-autotile.addOption("inward", "Inward Pipes", true)
-autotile.addOption("plain", "Plain Pipes", false)
+autotile:addOption("inward", "Inward Pipes", true)
+autotile:addOption("plain", "Plain Pipes", false)
 
 autotile.requiredTiles = {
     "Vertical Pipe",
@@ -27,9 +27,9 @@ autotile.requiredTiles = {
     "Pipe Inwards S"
 }
 
-function autotile.fillPath(layer, segments, forceModifier)
-    local vertPipe = autotile.getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
-    local horizPipe = autotile.getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
+function autotile:fillPath(layer, segments, forceModifier)
+    local vertPipe = self.getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
+    local horizPipe = self.getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
 
     for seg in ipairs(segments) do
         -- turns
