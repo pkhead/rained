@@ -252,9 +252,9 @@ partial class TileEditor : IEditorMode
                 TilePlacementStatus validationStatus;
 
                 if (level.IsInBounds(window.MouseCx, window.MouseCy))
-                    validationStatus = ValidateTilePlacement(
+                    validationStatus = level.ValidateTilePlacement(
                         selectedTile,
-                        tileOriginX, tileOriginY,
+                        tileOriginX, tileOriginY, window.WorkLayer,
                         modifyGeometry || forcePlace
                     );
                 else
@@ -281,15 +281,14 @@ partial class TileEditor : IEditorMode
                     {
                         // extra if statement to prevent overwriting the already placed tile
                         // when holding down LMB
-                        if (lastPlaceX == -1 || !(modifyGeometry || forcePlace) || !IsIntersectingTile(
+                        if (lastPlaceX == -1 || !(modifyGeometry || forcePlace) || !level.IsIntersectingTile(
                             selectedTile,
-                            tileOriginX, tileOriginY,
+                            tileOriginX, tileOriginY, window.WorkLayer,
                             lastPlaceX, lastPlaceY, lastPlaceL
                         ))
                         {
-                            PlaceTile(
+                            level.PlaceTile(
                                 selectedTile,
-                                tileOriginX, tileOriginY,
                                 window.WorkLayer, window.MouseCx, window.MouseCy,
                                 modifyGeometry
                             );
@@ -446,7 +445,7 @@ partial class TileEditor : IEditorMode
                 // remove tile on right click
                 if (selectionMode == SelectionMode.Tiles && window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                 {
-                    RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
+                    level.RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
                 }
             }
         }
@@ -460,227 +459,5 @@ partial class TileEditor : IEditorMode
         }
         
         Raylib.EndScissorMode();
-    }
-
-    private enum TilePlacementStatus
-    {
-        Success,
-        OutOfBounds,
-        Overlap,
-        Geometry
-    };
-
-    private TilePlacementStatus ValidateTilePlacement(Tiles.Tile tile, int tileLeft, int tileTop, bool force)
-    {
-        var level = window.Editor.Level;
-
-        for (int x = 0; x < tile.Width; x++)
-        {
-            for (int y = 0; y < tile.Height; y++)
-            {
-                int gx = tileLeft + x;
-                int gy = tileTop + y;
-                var specInt = tile.Requirements[x,y];
-                var spec2Int = tile.Requirements2[x,y];
-
-                // check that there is not already a tile here
-                if (level.IsInBounds(gx, gy))
-                {
-                    // placing it on a tile head can introduce a bugged state,
-                    // soo... even when forced... no
-                    ref var cellAtPos = ref level.Layers[window.WorkLayer, gx, gy];
-
-                    if (specInt >= 0 && cellAtPos.TileHead is not null)
-                        return TilePlacementStatus.Overlap;
-                    
-                    // check on first layer
-                    var isHead = x == tile.CenterX && y == tile.CenterY;
-
-                    if ((isHead || specInt >= 0) && !force && cellAtPos.HasTile())
-                        return TilePlacementStatus.Overlap;
-
-                    // check on second layer
-                    if (window.WorkLayer < 2)
-                    {
-                        if (spec2Int >= 0 && !force && level.Layers[window.WorkLayer+1, gx, gy].HasTile())
-                            return TilePlacementStatus.Overlap;
-                    }
-                }
-
-                if (!force)
-                {
-                    // check first layer geometry
-                    if (specInt == -1) continue;
-                    if (level.GetClamped(window.WorkLayer, gx, gy).Geo != (GeoType) specInt)
-                        return TilePlacementStatus.Geometry;
-
-                    // check second layer geometry
-                    // if we are on layer 3, there is no second layer
-                    // all checks pass
-                    if (window.WorkLayer == 2) continue;
-                    
-                    if (spec2Int == -1) continue;
-                    if (level.GetClamped(window.WorkLayer+1, gx, gy).Geo != (GeoType) spec2Int)
-                        return TilePlacementStatus.Geometry;
-                }
-            }
-        }
-        
-        return TilePlacementStatus.Success;
-    }
-
-    // check that a potential placement isn't intersecting a specific already placed tile
-    private bool IsIntersectingTile(Tile tile, int tileLeft, int tileTop, int testX, int testY, int testL)
-    {
-        var level = window.Editor.Level;
-        var testTilePos = level.GetTileHead(testL, testX, testY);
-        if (testTilePos.X == -1) return false;
-
-        for (int x = 0; x < tile.Width; x++)
-        {
-            for (int y = 0; y < tile.Height; y++)
-            {
-                int gx = tileLeft + x;
-                int gy = tileTop + y;
-                var specInt = tile.Requirements[x,y];
-                var spec2Int = tile.Requirements2[x,y];
-
-                // check that there is not already a tile here
-                if (level.IsInBounds(gx, gy))
-                {
-                    ref var cellAtPos = ref level.Layers[window.WorkLayer, gx, gy];
-
-                    // check on first layer
-                    var isHead = x == tile.CenterX && y == tile.CenterY;
-
-                    if ((isHead || specInt >= 0) && level.GetTileHead(window.WorkLayer, gx, gy) == testTilePos)
-                        return true;
-
-                    // check on second layer
-                    if (window.WorkLayer < 2)
-                    {
-                        if (spec2Int >= 0 && level.GetTileHead(window.WorkLayer+1, gx, gy) == testTilePos)
-                            return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private void PlaceTile(
-        Tile tile,
-        int tileLeft, int tileTop,
-        int layer, int tileRootX, int tileRootY,
-        bool placeGeometry
-    )
-    {
-        var level = window.Editor.Level;
-
-        for (int x = 0; x < tile.Width; x++)
-        {
-            for (int y = 0; y < tile.Height; y++)
-            {
-                int gx = tileLeft + x;
-                int gy = tileTop + y;
-                if (!level.IsInBounds(gx, gy)) continue;
-
-                int specInt = tile.Requirements[x,y];
-                int spec2Int = tile.Requirements2[x,y];
-
-                if (placeGeometry)
-                {
-                    // place first layer    
-                    if (specInt >= 0)
-                    {
-                        level.Layers[layer, gx, gy].Geo = (GeoType) specInt;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
-                    }
-
-                    // place second layer
-                    if (layer < 2 && spec2Int >= 0)
-                    {
-                        level.Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
-                    }
-                }
-
-                // tile first 
-                if (specInt >= 0)
-                {
-                    level.Layers[layer, gx, gy].TileRootX = tileRootX;
-                    level.Layers[layer, gx, gy].TileRootY = tileRootY;
-                    level.Layers[layer, gx, gy].TileLayer = layer;
-                }
-
-                // tile second layer
-                if (spec2Int >= 0 && layer < 2)
-                {
-                    level.Layers[layer+1, gx, gy].TileRootX = tileRootX;
-                    level.Layers[layer+1, gx, gy].TileRootY = tileRootY;
-                    level.Layers[layer+1, gx, gy].TileLayer = layer;
-                }
-            }
-        }
-
-        // place tile root
-        level.Layers[layer, tileRootX, tileRootY].TileHead = tile;
-    }
-
-    private void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
-    {
-        var level = window.Editor.Level;
-        var tile = level.Layers[layer, tileRootX, tileRootY].TileHead
-            ?? throw new Exception("Attempt to remove unknown tile");
-        int tileLeft = tileRootX - tile.CenterX;
-        int tileTop = tileRootY - tile.CenterY;
-
-        for (int x = 0; x < tile.Width; x++)
-        {
-            for (int y = 0; y < tile.Height; y++)
-            {
-                int gx = tileLeft + x;
-                int gy = tileTop + y;
-                if (!level.IsInBounds(gx, gy)) continue;
-
-                int specInt = tile.Requirements[x,y];
-                int spec2Int = tile.Requirements2[x,y];
-                
-                // remove tile bodies
-                if (specInt >= 0)
-                {
-                    level.Layers[layer, gx, gy].TileRootX = -1;
-                    level.Layers[layer, gx, gy].TileRootY = -1;
-                    level.Layers[layer, gx, gy].TileLayer = -1;
-                }
-
-                if (spec2Int >= 0 && layer < 2)
-                {
-                    level.Layers[layer+1, gx, gy].TileRootX = -1;
-                    level.Layers[layer+1, gx, gy].TileRootY = -1;
-                    level.Layers[layer+1, gx, gy].TileLayer = -1;
-                }
-
-                // remove geometry
-                if (removeGeometry)
-                {
-                    if (specInt >= 0)
-                    {
-                        level.Layers[layer, gx, gy].Geo = GeoType.Air;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer);
-                    }
-
-                    if (spec2Int >= 0 && layer < 2)
-                    {
-                        level.Layers[layer+1, gx, gy].Geo = GeoType.Air;
-                        window.LevelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
-                    }
-                }
-            }
-        }
-
-        // remove tile root
-        level.Layers[layer, tileRootX, tileRootY].TileHead = null;
     }
 }

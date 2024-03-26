@@ -28,8 +28,8 @@ autotile.requiredTiles = {
 }
 
 function autotile:fillPath(layer, segments, forceModifier)
-    local vertPipe = self.getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
-    local horizPipe = self.getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
+    local vertPipe = self:getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
+    local horizPipe = self:getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
 
     for seg in ipairs(segments) do
         -- turns

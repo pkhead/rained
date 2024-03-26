@@ -735,7 +735,8 @@ struct CellPosition(int x, int y, int layer)
     }
 }
 
-class Level
+// more functions are defined in LevelTiles.cs
+partial class Level
 {
     public LevelCell[,,] Layers;
     private int _width, _height;
