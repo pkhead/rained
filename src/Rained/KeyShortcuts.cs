@@ -283,11 +283,6 @@ static class KeyShortcuts
                 shortcut.IsDown = true;
             }
 
-            if (shortcut.IsDown)
-            {
-                Console.WriteLine("Down " + shortcut.ID);
-            }
-
             shortcut.IsDeactivated = false;
             if (shortcut.IsDown && !shortcut.IsKeyDown())
             {
