@@ -270,7 +270,7 @@ partial class TileEditor : IEditorMode
                         //ProcessSearch();
                     }
 
-                    var autotiles = RainEd.Instance.LuaInterface.Autotiles;
+                    var autotiles = RainEd.Instance.PluginInterface.Autotiles;
 
                     // autotile list
                     var boxHeight = ImGui.GetContentRegionAvail().Y;

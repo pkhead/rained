@@ -6,6 +6,7 @@ using Serilog;
 using System.Runtime.InteropServices;
 using Serilog.Core;
 using System.Diagnostics;
+using NLua.Exceptions;
 
 namespace RainEd;
 
@@ -65,7 +66,7 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
-    public LuaInterface LuaInterface;
+    public LuaInterface PluginInterface;
 
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -132,8 +133,17 @@ sealed class RainEd
         }
 
         // run lua scripts
-        LuaInterface = new LuaInterface();
-        LuaInterface.Initialize();
+        try
+        {
+            PluginInterface = new LuaInterface();
+            PluginInterface.Initialize();
+        }
+        catch (LuaScriptException e)
+        {
+            _logger.Error("Lua script error:\n{Error}", e);
+            Boot.DisplayError("Could not start", "RainEd could not start due to an error in a Lua script:\n\n" + e.Message);
+            throw new RainEdStartupException();
+        }
 
         Logger.Information("Initializing materials database...");
         MaterialDatabase = new Tiles.MaterialDatabase();
@@ -149,6 +159,8 @@ sealed class RainEd
 
         Logger.Information("Initializing prop database...");
         PropDatabase = new Props.PropDatabase(TileDatabase);
+
+        PluginInterface.CheckAutotileRequirements();
         
         level = Level.NewDefaultLevel();
 
@@ -601,6 +613,11 @@ sealed class RainEd
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }
 
+                if (ImGui.MenuItem("Plugin Logs", null, PluginInterface.IsLogWindowOpen))
+                {
+                    PluginInterface.IsLogWindowOpen = !PluginInterface.IsLogWindowOpen;
+                }
+
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
@@ -710,6 +727,7 @@ sealed class RainEd
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
+        PluginInterface.ShowLogs();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
