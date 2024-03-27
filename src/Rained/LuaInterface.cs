@@ -148,8 +148,12 @@ class LuaInterface
     private int RainedLoader(nint luaStatePtr)
     {
         luaState.State.NewTable();
+
         luaState.Push(new Func<Autotile>(CreateAutotile));
         luaState.State.SetField(-2, "createAutotile");
+
+        luaState.Push(new Func<string>(GetVersion));
+        luaState.State.SetField(-2, "getVersion");
 
         return 1;
     }
@@ -165,6 +169,11 @@ class LuaInterface
         Autotiles.Add(autotile);
 
         return autotile;
+    }
+
+    private string GetVersion()
+    {
+        return RainEd.Version;
     }
 
     public void LogInfo(string msg)
