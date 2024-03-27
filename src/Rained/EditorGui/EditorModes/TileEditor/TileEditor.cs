@@ -486,6 +486,91 @@ partial class TileEditor : IEditorMode
         Raylib.EndScissorMode();
     }
 
+    private bool CanAppendPath(Autotile autotile, Vector2i newPos)
+    {
+        var lastPos = autotilePath[^1];
+        if (MathF.Abs(lastPos.X - newPos.X) + MathF.Abs(lastPos.Y - newPos.Y) != autotile.SegmentLength)
+            return false;
+
+        // prevent user from placing a turn too early
+        if (autotilePath.Count < autotile.PathThickness / 2 + 1)
+        {
+            var lastDir = GetPathDirections(autotilePath.Count - 1);
+            var lastHoriz = lastDir.HasFlag(PathDirection.Left) || lastDir.HasFlag(PathDirection.Right);
+            var lastVert = lastDir.HasFlag(PathDirection.Up) || lastDir.HasFlag(PathDirection.Down);
+
+            if (lastHoriz && lastPos.Y != newPos.Y)
+                return false;
+
+            if (lastVert && lastPos.X != newPos.X)
+                return false;
+        }
+
+        // prevent the user from creating a turn
+        // that will intersect with the last-placed turn segment
+        for (int i = autotilePath.Count - 1; i >= autotilePathDirs.Count - autotile.PathThickness / 2 - 1; i--)
+        {
+            if (i < 0) break;
+            var lastDir = autotilePathDirs[i];
+            var lastHoriz = lastDir.HasFlag(PathDirection.Left) || lastDir.HasFlag(PathDirection.Right);
+            var lastVert = lastDir.HasFlag(PathDirection.Up) || lastDir.HasFlag(PathDirection.Down);
+
+            if (!(lastHoriz && lastVert))
+                continue;
+
+            lastDir = GetPathDirections(i);
+            lastHoriz = lastDir.HasFlag(PathDirection.Left) || lastDir.HasFlag(PathDirection.Right);
+            lastVert = lastDir.HasFlag(PathDirection.Up) || lastDir.HasFlag(PathDirection.Down);
+
+            if (lastHoriz && lastPos.Y != newPos.Y)
+                return false;
+
+            if (lastVert && lastPos.X != newPos.X)
+                return false;
+
+            return true;
+            /*if (!(
+                ((lastDir.HasFlag(PathDirection.Left) || lastDir.HasFlag(PathDirection.Right)) && lastPos.X != newPos.X) ||
+                ((lastDir.HasFlag(PathDirection.Down) || lastDir.HasFlag(PathDirection.Up)) && lastPos.Y != newPos.Y)
+            ))
+            {
+                return false;
+            }*/
+        }
+
+        return true;
+    }
+
+    private PathDirection GetPathDirections(int i)
+    {
+        GetPathDirections(i, out bool left, out bool right, out bool up, out bool down);
+        PathDirection dir = 0;
+        if (left) dir |= PathDirection.Left;
+        if (right) dir |= PathDirection.Right;
+        if (up) dir |= PathDirection.Up;
+        if (down) dir |= PathDirection.Down;
+
+        return dir;
+    }
+
+    private void GetPathDirections(int i, out bool left, out bool right, out bool up, out bool down)
+    {
+        var lastSeg = autotilePath[^1]; // wraps around
+        var curSeg = autotilePath[i];
+        var nextSeg = autotilePath[0]; // wraps around
+
+        if (i > 0)
+            lastSeg = autotilePath[i-1];
+
+        if (i < autotilePath.Count - 1)
+            nextSeg = autotilePath[i+1];
+        
+        left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
+        right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
+        up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
+        down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+    }
+
     private void ProcessAutotiles()
     {
         if (LuaInterface.Autotiles.Count == 0) return;
@@ -496,6 +581,7 @@ partial class TileEditor : IEditorMode
         {
             isAutotileActive = true;
             autotilePath.Clear();
+            autotilePathDirs.Clear();
         }
 
         if (isAutotileActive)
@@ -518,8 +604,7 @@ partial class TileEditor : IEditorMode
                 
                 if (!autotilePath.Contains(mousePos))
                 {
-                    var lastPos = autotilePath[^1];
-                    if (MathF.Abs(lastPos.X - mousePos.X) + MathF.Abs(lastPos.Y - mousePos.Y) == seg)
+                    if (CanAppendPath(autotile, mousePos))
                     {
                         autotilePath.Add(mousePos);
                         autotilePathDirs.Add(0);
@@ -537,26 +622,7 @@ partial class TileEditor : IEditorMode
             // calculate autotile path node directions
             for (int i = 0; i < autotilePath.Count; i++)
             {
-                var lastSeg = autotilePath[^1]; // wraps around
-                var curSeg = autotilePath[i];
-                var nextSeg = autotilePath[0]; // wraps around
-
-                if (i > 0)
-                    lastSeg = autotilePath[i-1];
-
-                if (i < autotilePath.Count - 1)
-                    nextSeg = autotilePath[i+1];
-                
-                bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
-                bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
-                bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
-                bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
-
-                autotilePathDirs[i] = 0;
-                if (left) autotilePathDirs[i] |= PathDirection.Left;
-                if (right) autotilePathDirs[i] |= PathDirection.Right;
-                if (up) autotilePathDirs[i] |= PathDirection.Up;
-                if (down) autotilePathDirs[i] |= PathDirection.Down;
+                autotilePathDirs[i] = GetPathDirections(i);
             }
 
             // process turns
@@ -565,25 +631,7 @@ partial class TileEditor : IEditorMode
                 int i = 1;
                 for (; i < autotilePath.Count - 1; i++)
                 {
-                    var lastPos = autotilePath[^1]; // wraps around
-                    var lastDir = autotilePathDirs[^1];
-                    var curPos = autotilePath[i];
                     var curDir = autotilePathDirs[i];
-                    var nextPos = autotilePath[0]; // wraps around
-                    var nextDir = autotilePathDirs[0];
-
-                    if (i > 0)
-                    {
-                        lastPos = autotilePath[i-1];
-                        lastDir = autotilePathDirs[i-1];
-                    }
-
-                    if (i < autotilePath.Count - 1)
-                    {
-                        nextPos = autotilePath[i+1];
-                        nextDir = autotilePathDirs[i+1];
-                    }
-
                     bool horiz = curDir.HasFlag(PathDirection.Left) || curDir.HasFlag(PathDirection.Right);
                     bool vert = curDir.HasFlag(PathDirection.Up) || curDir.HasFlag(PathDirection.Down);
 
@@ -597,53 +645,6 @@ partial class TileEditor : IEditorMode
                             autotilePathDirs[j] |= curDir;
                         }
                         i += (int)(autotile.PathThickness / 2f);
-                        /*bool isValid = true;
-
-                        for (int j = i - autotile.PathThickness / 2; j <= i + autotile.PathThickness / 2; j++)
-                        {
-                            if (j == i) continue;
-
-                            // not valid if the turn is not complete
-                            if (j < 1 || j >= autotilePath.Count)
-                            {
-                                isValid = false;
-                                break;
-                            }
-
-                            // if this is the node after the turn, make sure that
-                            // the node actually turns
-                            if (j == i+1)
-                            {
-                                var prevDir = autotilePathDirs[i-1];
-                                var nextDir = autotilePathDirs[j];
-
-                                bool prevHoriz = prevDir.HasFlag(PathDirection.Left) || prevDir.HasFlag(PathDirection.Right);
-                                bool prevVert = prevDir.HasFlag(PathDirection.Up) || prevDir.HasFlag(PathDirection.Down);
-                                bool nextHoriz = nextDir.HasFlag(PathDirection.Left) || nextDir.HasFlag(PathDirection.Right);
-                                bool nextVert = nextDir.HasFlag(PathDirection.Up) || nextDir.HasFlag(PathDirection.Down);
-
-                                if (prevHoriz && nextHoriz)
-                                {
-                                    isValid = false;
-                                    break;
-                                }
-
-                                if (prevVert && nextVert)
-                                {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                // directions of the segment must be consistent
-                                if (autotilePathDirs[j-1] != autotilePathDirs[j])
-                                {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-                        }*/
                     }
                 }
             }
@@ -655,21 +656,7 @@ partial class TileEditor : IEditorMode
                 var nodePos = autotilePath[i];
                 var nodeDir = autotilePathDirs[i];
 
-                 var lastSeg = autotilePath[^1]; // wraps around
-                var curSeg = autotilePath[i];
-                var nextSeg = autotilePath[0]; // wraps around
-
-                if (i > 0)
-                    lastSeg = autotilePath[i-1];
-
-                if (i < autotilePath.Count - 1)
-                    nextSeg = autotilePath[i+1];
-                
-                bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
-                bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
-                bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
-                bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
-                
+                GetPathDirections(i, out bool left, out bool right, out bool up, out bool down);
                 bool visLeft = nodeDir.HasFlag(PathDirection.Left);
                 bool visRight = nodeDir.HasFlag(PathDirection.Right);
                 bool visUp = nodeDir.HasFlag(PathDirection.Up);
@@ -699,7 +686,6 @@ partial class TileEditor : IEditorMode
                         Color.White
                     );
 
-                
                 if (!visUp)
                     Raylib.DrawLineV(
                         new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
@@ -736,6 +722,7 @@ partial class TileEditor : IEditorMode
 
                 isAutotileActive = false;
                 autotilePath.Clear();
+                autotilePathDirs.Clear();
             }
         }
     }
