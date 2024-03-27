@@ -10,23 +10,28 @@ static class LuaHelpers
     private static int nextID = 1;
     private static Dictionary<int, Delegate> allocatedObjects = new();
     
-    private static LuaFunction gcDelegate = null!;
-    private static LuaFunction callDelegate = null!;
+    private static LuaFunction gcDelegate = new LuaFunction(GCDelegate);
+    private static LuaFunction callDelegate = new LuaFunction(CallDelegate);
+    private static LuaFunction mtDelegate = new LuaFunction(MetatableDelegate);
 
     public static void Init(Lua lua)
     {
-        callDelegate = new LuaFunction(CallDelegate);
-        gcDelegate = new LuaFunction(GCDelegate);
-
         lua.NewMetaTable(MetatableName);
         lua.PushCFunction(gcDelegate);
         lua.SetField(-2, "__gc");
 
-        lua.PushCFunction(callDelegate);
-        lua.SetField(-2, "__call");
+        lua.PushCFunction(MetatableDelegate);
+        lua.SetField(-2, "__metatable");
 
         lua.Pop(1);
 
+    }
+
+    private static int MetatableDelegate(nint luaPtr)
+    {
+        Lua lua = Lua.FromIntPtr(luaPtr)!;
+        lua.PushString("the metatable is locked");
+        return 1;
     }
 
     private static unsafe int GCDelegate(nint luaPtr)
@@ -43,13 +48,13 @@ static class LuaHelpers
         Lua lua = Lua.FromIntPtr(luaPtr)!;
         var luaNumArgs = lua.GetTop();
         
-        int* userData = (int*) lua.CheckUserData(1, MetatableName);
+        int* userData = (int*) lua.CheckUserData(Lua.UpValueIndex(1), MetatableName);
         int id = *userData;
         var func = allocatedObjects[id];
 
         var paramInfo = func.Method.GetParameters();
         var parameters = new object?[paramInfo.Length];
-        int luaParamIndex = 2;
+        int luaParamIndex = 1;
         for (int i = 0; i < paramInfo.Length; i++)
         {
             var param = paramInfo[i];
@@ -176,6 +181,6 @@ static class LuaHelpers
         lua.SetMetaTable(-2);
         allocatedObjects[nextID++] = func;
 
-        //lua.PushCClosure(callDelegate, 1);
+        lua.PushCClosure(callDelegate, 1);
     }
 }

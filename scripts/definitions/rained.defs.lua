@@ -11,6 +11,14 @@ function rained.getVersion() end
 ---@return Autotile autotile The new autotile
 function rained.createAutotile() end
 
+---Place a tile in the level.
+---@param tileName string The name of the tile to place
+---@param layer integer The layer to place the tile, in the range [1, 3]
+---@param x integer The X coordinate of the tile root
+---@param y integer The Y coordinate of the tile root
+---@param forceModifier ForceModifier? The force-placement mode to use, or nil if placing normally
+function rained.placeTile(tileName, layer, x, y, forceModifier) end
+
 ---@alias AutotileType
 ---| "path"
 ---| "rect"
