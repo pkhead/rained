@@ -1,5 +1,5 @@
 ---@meta
--- Type annotations for sumneko-lua
+-- Type annotations for Lua analzyers and linters, such as sumneko-lua
 
 rained = {}
 
@@ -7,9 +7,18 @@ rained = {}
 ---@return string version The version number as a string 
 function rained.getVersion() end
 
+---Show a notification to the user
+---@param msg string The message to show
+function rained.alert(msg) end
+
 ---Create an autotile.
 ---@return Autotile autotile The new autotile
 function rained.createAutotile() end
+
+---Check if a tile is installed
+---@param tileName string The name of the tile to check
+---@return boolean
+function rained.hasTile(tileName) end
 
 ---Place a tile in the level.
 ---@param tileName string The name of the tile to place

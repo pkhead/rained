@@ -308,12 +308,27 @@ partial class TileEditor : IEditorMode
                         }
 
                         ImGui.Separator();
+
+                        bool disabled = false;
+                        if (autotile.MissingTiles.Length > 0)
+                        {
+                            disabled = true;
+                            ImGui.Text("Missing required tiles:");
+                            foreach (var tileName in autotile.MissingTiles)
+                            {
+                                ImGui.BulletText(tileName);
+                            }
+                        }
                         
+                        if (disabled) ImGui.BeginDisabled();
+
                         // options
                         foreach (var opt in autotile.Options.Values)
                         {
                             ImGui.Checkbox(opt.Name, ref opt.Value);
                         }
+
+                        if (disabled) ImGui.EndDisabled();
 
                         ImGui.EndGroup();
                     }

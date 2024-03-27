@@ -130,10 +130,18 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
-        // run lua scripts
+        Logger.Information("Initializing materials database...");
+        MaterialDatabase = new Tiles.MaterialDatabase();
+
+        Logger.Information("Initializing tile database...");
+        TileDatabase = new Tiles.TileDatabase();
+
+        // run lua scripts after initializing the tiles
+        // (trying to get lua error messages to show as soon as possible)
         try
         {
             LuaInterface.Initialize();
+            LuaInterface.CheckAutotileRequirements();
         }
         catch (LuaScriptException e)
         {
@@ -151,12 +159,6 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
-        Logger.Information("Initializing materials database...");
-        MaterialDatabase = new Tiles.MaterialDatabase();
-
-        Logger.Information("Initializing tile database...");
-        TileDatabase = new Tiles.TileDatabase();
-
         Logger.Information("Initializing effects database...");
         EffectsDatabase = new EffectsDatabase();
 
@@ -165,8 +167,6 @@ sealed class RainEd
 
         Logger.Information("Initializing prop database...");
         PropDatabase = new Props.PropDatabase(TileDatabase);
-
-        LuaInterface.CheckAutotileRequirements();
         
         level = Level.NewDefaultLevel();
 

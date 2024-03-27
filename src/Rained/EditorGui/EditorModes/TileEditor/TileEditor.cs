@@ -396,7 +396,7 @@ partial class TileEditor : IEditorMode
                 var autotile = LuaInterface.Autotiles[selectedAutotile];
 
                 // activated
-                if (isToolActive && !wasToolActive)
+                if (autotile.MissingTiles.Length == 0 && isToolActive && !wasToolActive)
                 {
                     isAutotileActive = true;
                     autotilePath.Clear();

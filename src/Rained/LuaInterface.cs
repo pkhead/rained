@@ -68,7 +68,7 @@ class Autotile
     public LuaTable? LuaRequiredTiles = null;
 
     [LuaHide]
-    public bool IsValid = false;
+    public string[] MissingTiles = [];
 
     public Autotile()
     {
@@ -355,10 +355,7 @@ static class LuaInterface
             var table = autotile.LuaRequiredTiles;
 
             if (table is null)
-            {
-                autotile.IsValid = true;
                 continue;
-            }
 
             List<string> missingTiles = [];
 
@@ -368,7 +365,6 @@ static class LuaInterface
                 {
                     if (!RainEd.Instance.TileDatabase.HasTile(tileName))
                     {
-                        autotile.IsValid = false;
                         missingTiles.Add(tileName);
                     }
                 }
@@ -376,7 +372,6 @@ static class LuaInterface
                 {
                     luaState.Push(table[i]);
                     LogError($"invalid requiredTiles table for autotile '{autotile.Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                    autotile.IsValid = false;
                     RainEd.Instance.ShowNotification($"Error loading autotile {autotile.Name}");
                     break;
                 }
@@ -385,6 +380,7 @@ static class LuaInterface
             if (missingTiles.Count > 0)
             {
                 LogWarning($"missing required tiles for autotile '{autotile.Name}': {string.Join(", ", missingTiles)}");
+                autotile.MissingTiles = missingTiles.ToArray();
             }
         }
     }
