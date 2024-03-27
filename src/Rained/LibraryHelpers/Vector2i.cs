@@ -31,4 +31,14 @@ struct Vector2i
     {
         return HashCode.Combine(X.GetHashCode(), Y.GetHashCode());
     }
+
+    public static bool operator==(Vector2i a, Vector2i b)
+    {
+        return a.X == b.X && a.Y == b.Y;
+    }
+
+    public static bool operator!=(Vector2i a, Vector2i b)
+    {
+        return !(a == b);
+    }
 }

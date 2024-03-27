@@ -407,21 +407,31 @@ partial class TileEditor : IEditorMode
                     // add current position to autotile path
                     // only add the position if it is adjacent to the last
                     // placed position
-                    var posTuple = new Vector2i(window.MouseCx, window.MouseCy);
+                    var mousePos = new Vector2i(window.MouseCx, window.MouseCy);
                     
                     if (autotilePath.Count == 0)
                     {
-                        autotilePath.Add(posTuple);
+                        autotilePath.Add(mousePos);
                     }
                     else
                     {
-                        if (!autotilePath.Contains(posTuple))
+                        var seg = autotile.SegmentLength;
+                        mousePos.X = (int)MathF.Round((float)(mousePos.X - autotilePath[0].X) / seg) * seg + autotilePath[0].X;
+                        mousePos.Y = (int)MathF.Round((float)(mousePos.Y - autotilePath[0].Y) / seg) * seg + autotilePath[0].Y;
+                        
+                        if (!autotilePath.Contains(mousePos))
                         {
                             var lastPos = autotilePath[^1];
-                            if (MathF.Abs(lastPos.X - posTuple.X) + MathF.Abs(lastPos.Y - posTuple.Y) == 1)
+                            if (MathF.Abs(lastPos.X - mousePos.X) + MathF.Abs(lastPos.Y - mousePos.Y) == seg)
                             {
-                                autotilePath.Add(posTuple);
+                                autotilePath.Add(mousePos);
                             }
+                        }
+
+                        // if the user backs their cursor up, erase the last segment
+                        else if (autotilePath.Count >= 2 && autotilePath[^2] == mousePos)
+                        {
+                            autotilePath.RemoveAt(autotilePath.Count - 1);
                         }
                     }
 
@@ -444,20 +454,54 @@ partial class TileEditor : IEditorMode
                         bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
                         bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
 
-                        var x = curSeg.X * Level.TileSize;
-                        var y = curSeg.Y * Level.TileSize;
-                        var w = Level.TileSize;
-                        var h = Level.TileSize;
+                        bool horiz = left || right;
+                        bool vert = up || down;
 
-                        // draw rectangle outlines
+                        var x = curSeg.X + 0.5f;
+                        var y = curSeg.Y + 0.5f;
+                        var cellOrigin = new Vector2(x, y);
+
+                        float vertThickness = vert ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+                        float horizThickness = horiz ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+
                         if (!left)
-                            Raylib.DrawLine(x, y, x, y + h, Color.White);
-                        if (!up)
-                            Raylib.DrawLine(x, y, x+w, y, Color.White);
+                            Raylib.DrawLineV(
+                                new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                                new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
+                                Color.White
+                            );
+
                         if (!right)
-                            Raylib.DrawLine(x+w, y, x+w, y+h, Color.White);
+                            Raylib.DrawLineV(
+                                new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                                new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                                Color.White
+                            );
+
+                        
+                        if (!up)
+                            Raylib.DrawLineV(
+                                new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                                new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                                Color.White
+                            );
+
                         if (!down)
-                            Raylib.DrawLine(x, y+h, x+w, y+h, Color.White);
+                            Raylib.DrawLineV(
+                                new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
+                                new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                                Color.White
+                            );
+                        
+                        // draw tile path line
+                        if (left)
+                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x-0.5f, y)*Level.TileSize, Color.White);
+                        if (right)
+                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x+0.5f, y)*Level.TileSize, Color.White);
+                        if (up)
+                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y-0.5f)*Level.TileSize, Color.White);
+                        if (down)
+                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y+0.5f)*Level.TileSize, Color.White);
                     }
                     
                     // mouse released
@@ -466,7 +510,7 @@ partial class TileEditor : IEditorMode
                         RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
                         
                         //window.CellChangeRecorder.BeginChange();
-                        LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
+                        //LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
                         //window.CellChangeRecorder.PushChange();
 
                         isAutotileActive = false;
