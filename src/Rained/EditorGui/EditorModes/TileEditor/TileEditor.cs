@@ -13,6 +13,7 @@ partial class TileEditor : IEditorMode
     private Tile selectedTile;
     private int selectedMaterial = 1;
     private bool isToolActive = false;
+    private bool wasToolActive = false;
 
     private SelectionMode selectionMode = SelectionMode.Materials;
     private SelectionMode? forceSelection = null;
@@ -22,9 +23,19 @@ partial class TileEditor : IEditorMode
 
     private int materialBrushSize = 1;
 
+    [Flags]
+    enum PathDirection
+    {
+        Left = 1,
+        Right = 2,
+        Up = 4,
+        Down = 8
+    };
+
     private bool isAutotileActive = false;
     private List<Vector2i> autotilePath = [];
-    
+    private List<PathDirection> autotilePathDirs = [];
+
     // this is used to fix force placement when
     // holding down lmb
     private int lastPlaceX = -1;
@@ -151,7 +162,7 @@ partial class TileEditor : IEditorMode
     {
         window.BeginLevelScissorMode();
 
-        var wasToolActive = isToolActive;
+        wasToolActive = isToolActive;
         isToolActive = false;
 
         var level = window.Editor.Level;
@@ -391,132 +402,9 @@ partial class TileEditor : IEditorMode
             }
 
             // render selected autotile
-            else if (selectionMode == SelectionMode.Autotiles && LuaInterface.Autotiles.Count > 0)
+            else if (selectionMode == SelectionMode.Autotiles)
             {
-                var autotile = LuaInterface.Autotiles[selectedAutotile];
-
-                // activated
-                if (autotile.MissingTiles.Length == 0 && isToolActive && !wasToolActive)
-                {
-                    isAutotileActive = true;
-                    autotilePath.Clear();
-                }
-
-                if (isAutotileActive)
-                {
-                    // add current position to autotile path
-                    // only add the position if it is adjacent to the last
-                    // placed position
-                    var mousePos = new Vector2i(window.MouseCx, window.MouseCy);
-                    
-                    if (autotilePath.Count == 0)
-                    {
-                        autotilePath.Add(mousePos);
-                    }
-                    else
-                    {
-                        var seg = autotile.SegmentLength;
-                        mousePos.X = (int)MathF.Round((float)(mousePos.X - autotilePath[0].X) / seg) * seg + autotilePath[0].X;
-                        mousePos.Y = (int)MathF.Round((float)(mousePos.Y - autotilePath[0].Y) / seg) * seg + autotilePath[0].Y;
-                        
-                        if (!autotilePath.Contains(mousePos))
-                        {
-                            var lastPos = autotilePath[^1];
-                            if (MathF.Abs(lastPos.X - mousePos.X) + MathF.Abs(lastPos.Y - mousePos.Y) == seg)
-                            {
-                                autotilePath.Add(mousePos);
-                            }
-                        }
-
-                        // if the user backs their cursor up, erase the last segment
-                        else if (autotilePath.Count >= 2 && autotilePath[^2] == mousePos)
-                        {
-                            autotilePath.RemoveAt(autotilePath.Count - 1);
-                        }
-                    }
-
-                    // draw autotile path
-                    // only drawing lines where the path doesn't connect to another segment
-                    for (int i = 0; i < autotilePath.Count; i++)
-                    {
-                        var lastSeg = autotilePath[^1]; // wraps around
-                        var curSeg = autotilePath[i];
-                        var nextSeg = autotilePath[0]; // wraps around
-
-                        if (i > 0)
-                            lastSeg = autotilePath[i-1];
-
-                        if (i < autotilePath.Count - 1)
-                            nextSeg = autotilePath[i+1];
-                        
-                        bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
-                        bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
-                        bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
-                        bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
-
-                        bool horiz = left || right;
-                        bool vert = up || down;
-
-                        var x = curSeg.X + 0.5f;
-                        var y = curSeg.Y + 0.5f;
-                        var cellOrigin = new Vector2(x, y);
-
-                        float vertThickness = vert ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
-                        float horizThickness = horiz ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
-
-                        if (!left)
-                            Raylib.DrawLineV(
-                                new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
-                                new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
-                                Color.White
-                            );
-
-                        if (!right)
-                            Raylib.DrawLineV(
-                                new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
-                                new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
-                                Color.White
-                            );
-
-                        
-                        if (!up)
-                            Raylib.DrawLineV(
-                                new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
-                                new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
-                                Color.White
-                            );
-
-                        if (!down)
-                            Raylib.DrawLineV(
-                                new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
-                                new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
-                                Color.White
-                            );
-                        
-                        // draw tile path line
-                        if (left)
-                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x-0.5f, y)*Level.TileSize, Color.White);
-                        if (right)
-                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x+0.5f, y)*Level.TileSize, Color.White);
-                        if (up)
-                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y-0.5f)*Level.TileSize, Color.White);
-                        if (down)
-                            Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y+0.5f)*Level.TileSize, Color.White);
-                    }
-                    
-                    // mouse released
-                    if (wasToolActive && !isToolActive)
-                    {
-                        RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
-                        
-                        //window.CellChangeRecorder.BeginChange();
-                        //LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
-                        //window.CellChangeRecorder.PushChange();
-
-                        isAutotileActive = false;
-                        autotilePath.Clear();
-                    }
-                }
+                ProcessAutotiles();
             }
 
             if (window.IsMouseInLevel())
@@ -596,5 +484,259 @@ partial class TileEditor : IEditorMode
         }
         
         Raylib.EndScissorMode();
+    }
+
+    private void ProcessAutotiles()
+    {
+        if (LuaInterface.Autotiles.Count == 0) return;
+        var autotile = LuaInterface.Autotiles[selectedAutotile];
+
+        // activated
+        if (autotile.MissingTiles.Length == 0 && isToolActive && !wasToolActive)
+        {
+            isAutotileActive = true;
+            autotilePath.Clear();
+        }
+
+        if (isAutotileActive)
+        {
+            // add current position to autotile path
+            // only add the position if it is adjacent to the last
+            // placed position
+            var mousePos = new Vector2i(window.MouseCx, window.MouseCy);
+            
+            if (autotilePath.Count == 0)
+            {
+                autotilePath.Add(mousePos);
+                autotilePathDirs.Add(0);
+            }
+            else
+            {
+                var seg = autotile.SegmentLength;
+                mousePos.X = (int)MathF.Round((float)(mousePos.X - autotilePath[0].X) / seg) * seg + autotilePath[0].X;
+                mousePos.Y = (int)MathF.Round((float)(mousePos.Y - autotilePath[0].Y) / seg) * seg + autotilePath[0].Y;
+                
+                if (!autotilePath.Contains(mousePos))
+                {
+                    var lastPos = autotilePath[^1];
+                    if (MathF.Abs(lastPos.X - mousePos.X) + MathF.Abs(lastPos.Y - mousePos.Y) == seg)
+                    {
+                        autotilePath.Add(mousePos);
+                        autotilePathDirs.Add(0);
+                    }
+                }
+
+                // if the user backs their cursor up, erase the last segment
+                else if (autotilePath.Count >= 2 && autotilePath[^2] == mousePos)
+                {
+                    autotilePath.RemoveAt(autotilePath.Count - 1);
+                    autotilePathDirs.RemoveAt(autotilePathDirs.Count - 1);
+                }
+            }
+
+            // calculate autotile path node directions
+            for (int i = 0; i < autotilePath.Count; i++)
+            {
+                var lastSeg = autotilePath[^1]; // wraps around
+                var curSeg = autotilePath[i];
+                var nextSeg = autotilePath[0]; // wraps around
+
+                if (i > 0)
+                    lastSeg = autotilePath[i-1];
+
+                if (i < autotilePath.Count - 1)
+                    nextSeg = autotilePath[i+1];
+                
+                bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
+                bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
+                bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
+                bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+
+                autotilePathDirs[i] = 0;
+                if (left) autotilePathDirs[i] |= PathDirection.Left;
+                if (right) autotilePathDirs[i] |= PathDirection.Right;
+                if (up) autotilePathDirs[i] |= PathDirection.Up;
+                if (down) autotilePathDirs[i] |= PathDirection.Down;
+            }
+
+            // process turns
+            if (autotile.PathThickness > 1)
+            {
+                int i = 1;
+                for (; i < autotilePath.Count - 1; i++)
+                {
+                    var lastPos = autotilePath[^1]; // wraps around
+                    var lastDir = autotilePathDirs[^1];
+                    var curPos = autotilePath[i];
+                    var curDir = autotilePathDirs[i];
+                    var nextPos = autotilePath[0]; // wraps around
+                    var nextDir = autotilePathDirs[0];
+
+                    if (i > 0)
+                    {
+                        lastPos = autotilePath[i-1];
+                        lastDir = autotilePathDirs[i-1];
+                    }
+
+                    if (i < autotilePath.Count - 1)
+                    {
+                        nextPos = autotilePath[i+1];
+                        nextDir = autotilePathDirs[i+1];
+                    }
+
+                    bool horiz = curDir.HasFlag(PathDirection.Left) || curDir.HasFlag(PathDirection.Right);
+                    bool vert = curDir.HasFlag(PathDirection.Up) || curDir.HasFlag(PathDirection.Down);
+
+                    if (horiz && vert)
+                    {
+                        for (int j = i - autotile.PathThickness / 2; j <= i + autotile.PathThickness / 2f; j++)
+                        {
+                            if (j < 0 || j >= autotilePath.Count)
+                                continue;
+                            
+                            autotilePathDirs[j] |= curDir;
+                        }
+                        i += (int)(autotile.PathThickness / 2f);
+                        /*bool isValid = true;
+
+                        for (int j = i - autotile.PathThickness / 2; j <= i + autotile.PathThickness / 2; j++)
+                        {
+                            if (j == i) continue;
+
+                            // not valid if the turn is not complete
+                            if (j < 1 || j >= autotilePath.Count)
+                            {
+                                isValid = false;
+                                break;
+                            }
+
+                            // if this is the node after the turn, make sure that
+                            // the node actually turns
+                            if (j == i+1)
+                            {
+                                var prevDir = autotilePathDirs[i-1];
+                                var nextDir = autotilePathDirs[j];
+
+                                bool prevHoriz = prevDir.HasFlag(PathDirection.Left) || prevDir.HasFlag(PathDirection.Right);
+                                bool prevVert = prevDir.HasFlag(PathDirection.Up) || prevDir.HasFlag(PathDirection.Down);
+                                bool nextHoriz = nextDir.HasFlag(PathDirection.Left) || nextDir.HasFlag(PathDirection.Right);
+                                bool nextVert = nextDir.HasFlag(PathDirection.Up) || nextDir.HasFlag(PathDirection.Down);
+
+                                if (prevHoriz && nextHoriz)
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+
+                                if (prevVert && nextVert)
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // directions of the segment must be consistent
+                                if (autotilePathDirs[j-1] != autotilePathDirs[j])
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+                        }*/
+                    }
+                }
+            }
+
+            // draw autotile path
+            // only drawing lines where the path doesn't connect to another segment
+            for (int i = 0; i < autotilePath.Count; i++)
+            {
+                var nodePos = autotilePath[i];
+                var nodeDir = autotilePathDirs[i];
+
+                 var lastSeg = autotilePath[^1]; // wraps around
+                var curSeg = autotilePath[i];
+                var nextSeg = autotilePath[0]; // wraps around
+
+                if (i > 0)
+                    lastSeg = autotilePath[i-1];
+
+                if (i < autotilePath.Count - 1)
+                    nextSeg = autotilePath[i+1];
+                
+                bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
+                bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
+                bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
+                bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+                
+                bool visLeft = nodeDir.HasFlag(PathDirection.Left);
+                bool visRight = nodeDir.HasFlag(PathDirection.Right);
+                bool visUp = nodeDir.HasFlag(PathDirection.Up);
+                bool visDown = nodeDir.HasFlag(PathDirection.Down);
+
+                bool horiz = left || right;
+                bool vert = up || down;
+
+                var x = nodePos.X + 0.5f;
+                var y = nodePos.Y + 0.5f;
+                var cellOrigin = new Vector2(x, y);
+
+                float vertThickness = (vert && (up || down)) ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+                float horizThickness = (horiz && (right || left)) ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+
+                if (!visLeft)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
+                        Color.White
+                    );
+
+                if (!visRight)
+                    Raylib.DrawLineV(
+                        new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                        Color.White
+                    );
+
+                
+                if (!visUp)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                        Color.White
+                    );
+
+                if (!visDown)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                        Color.White
+                    );
+                
+                // draw tile path line
+                if (left)
+                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x-0.5f, y)*Level.TileSize, Color.White);
+                if (right)
+                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x+0.5f, y)*Level.TileSize, Color.White);
+                if (up)
+                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y-0.5f)*Level.TileSize, Color.White);
+                if (down)
+                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y+0.5f)*Level.TileSize, Color.White);
+            }
+            
+            // mouse released
+            if (wasToolActive && !isToolActive)
+            {
+                RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
+                
+                //window.CellChangeRecorder.BeginChange();
+                //LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
+                //window.CellChangeRecorder.PushChange();
+
+                isAutotileActive = false;
+                autotilePath.Clear();
+            }
+        }
     }
 }
