@@ -1,3 +1,5 @@
+local helpers = require("helpers")
+
 local autotile = rained.createAutotile()
 autotile.name = "Thin Pipes"
 autotile.type = "path"
@@ -27,32 +29,21 @@ autotile.requiredTiles = {
     "Pipe Inwards S"
 }
 
-function autotile:fillPath(layer, segments, forceModifier)
-    local vertPipe = self:getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
-    local horizPipe = self:getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
+local tileTable = {
+    ws = "Pipe WS",
+    wn = "Pipe WN",
+    es = "Pipe ES",
+    en = "Pipe EN",
 
-    for seg in ipairs(segments) do
-        -- turns
-        if seg.left and seg.down then
-            rained.placeTile("Pipe WS", layer, seg.x, seg.y, forceModifier)
-        elseif seg.left and seg.up then
-            rained.placeTile("Pipe WN", layer, seg.x, seg.y, forceModifier)
-        elseif seg.right and seg.down then
-            rained.placeTile("Pipe ES", layer, seg.x, seg.y, forceModifier)
-        elseif seg.right and seg.up then
-            rained.placeTile("Pipe EN", layer, seg.x, seg.y, forceModifier)
-        
-        -- straight
-        elseif seg.down and seg.up then
-            rained.placeTile(
-                vertPipe,
-                layer, seg.x, seg.y, forceModifier
-            )
-        elseif seg.right and seg.left then
-            rained.placeTile(
-                horizPipe,
-                layer, seg.x, seg.y, forceModifier
-            )
-        end
-    end
+    -- these values will be set in autotile:fillPath
+    -- according to the "plain" option
+    -- before tileTable is passed to the helper function
+    vertical = "Vertical Pipe",
+    horizontal = "Horizontal Pipe"
+}
+
+function autotile:fillPath(layer, segments, forceModifier)
+    tileTable.vertical = self:getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
+    tileTable.horizontal = self:getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
+    helpers.autotilePath(tileTable, layer, segments, forceModifier)
 end

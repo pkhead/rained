@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text;
 using ImGuiNET;
 using NLua;
+using NLua.Exceptions;
 namespace RainEd;
 
 class Autotile
@@ -155,6 +156,9 @@ class LuaInterface
         luaState.Push(new Func<string>(GetVersion));
         luaState.State.SetField(-2, "getVersion");
 
+        luaState.Push(new KeraLua.LuaFunction(PlaceTile));
+        luaState.State.SetField(-2, "placeTile");
+
         return 1;
     }
 
@@ -169,6 +173,78 @@ class LuaInterface
         Autotiles.Add(autotile);
 
         return autotile;
+    }
+
+    public int PlaceTile(nint luaStatePtr)
+    {
+        //string tileName, int layer, int x, int y, string? modifier
+        var level = RainEd.Instance.Level;
+        
+        string tileName = luaState.State.ToString(1);
+        int layer = (int) luaState.State.CheckInteger(2);
+        int x = (int) luaState.State.CheckInteger(3);
+        int y = (int) luaState.State.CheckInteger(4);
+        string? modifier = null;
+
+        if (!luaState.State.IsNoneOrNil(5))
+            modifier = luaState.State.ToString(5);
+        
+        // validate arguments
+        if (modifier is not null)
+        {
+            if (modifier != "geometry" && modifier != "force")
+            {
+                return luaState.State.Error("expected 'geometry' or 'force' for argument 5, got '%s'", modifier);
+            }
+        }
+        if (layer < 1 || layer > 3)
+            return luaState.State.Error("invalid layer %i", layer);
+        if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+            return luaState.State.Error("tile '%s' is not recognized", tileName);
+        layer--; // layer is 1-based in the lua world
+        
+        // begin placement
+        var tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+
+        // check if requirements are satisfied
+        TilePlacementStatus validationStatus;
+
+        if (level.IsInBounds(x, y))
+            validationStatus = level.ValidateTilePlacement(
+                tile,
+                x, y, layer,
+                modifier is not null
+            );
+        else
+        {
+            luaState.Push(false);
+            luaState.Push("out of bounds");
+            return 2;
+        }
+        
+        if (validationStatus == TilePlacementStatus.Overlap)
+        {
+            luaState.Push(false);
+            luaState.Push("overlap");
+            return 2;
+        }
+        
+        if (validationStatus == TilePlacementStatus.Geometry)
+        {
+            luaState.Push(false);
+            luaState.Push("geometry");
+            return 2;
+        }
+
+        level.PlaceTile(
+            tile,
+            layer, x, y,
+            modifier == "geometry"
+        );
+
+        luaState.Push(true);
+        luaState.Push(null);
+        return 2;
     }
 
     private string GetVersion()
@@ -318,6 +394,89 @@ class LuaInterface
             {
                 LogWarning($"missing required tiles for autotile '{autotile.Name}': {string.Join(", ", missingTiles)}");
             }
+        }
+    }
+
+    struct SegmentStruct(int x, int y)
+    {
+        public bool Left = false;
+        public bool Right = false;
+        public bool Up = false;
+        public bool Down = false;
+        public int X = x;
+        public int Y = y;
+    }
+    public void RunAutotile(Autotile autotile, int layer, List<Vector2i> pathPositions, bool forcePlace, bool forceGeometry)
+    {
+        void CreateSegment(SegmentStruct seg)
+        {
+            luaState.State.NewTable();
+            luaState.State.PushBoolean(seg.Left);
+            luaState.State.SetField(-2, "left");
+            luaState.State.PushBoolean(seg.Right);
+            luaState.State.SetField(-2, "right");
+            luaState.State.PushBoolean(seg.Up);
+            luaState.State.SetField(-2, "up");
+            luaState.State.PushBoolean(seg.Down);
+            luaState.State.SetField(-2, "down");
+
+            luaState.State.PushInteger(seg.X);
+            luaState.State.SetField(-2, "x");
+            luaState.State.PushInteger(seg.Y);
+            luaState.State.SetField(-2, "y");
+        }
+
+        string? modifierStr = null;
+        if (forceGeometry)
+            modifierStr = "geometry";
+        else if (forcePlace)
+            modifierStr = "force";
+
+        luaState.State.NewTable();
+        LuaTable segmentTable = (LuaTable) luaState.Pop();
+
+        if (pathPositions.Count == 1)
+        {
+            var pos = pathPositions[0];
+            
+            SegmentStruct segment = new(pos.X, pos.Y);
+            CreateSegment(segment);
+            segmentTable[1] = luaState.Pop();
+        }
+        else if (pathPositions.Count > 1)
+        {
+            for (int i = 0; i < pathPositions.Count; i++)
+            {
+                SegmentStruct segment = new(pathPositions[i].X, pathPositions[i].Y);
+
+                var lastSeg = pathPositions[^1]; // wraps around
+                var curSeg = pathPositions[i];
+                var nextSeg = pathPositions[0]; // wraps around
+
+                if (i > 0)
+                    lastSeg = pathPositions[i-1];
+
+                if (i < pathPositions.Count - 1)
+                    nextSeg = pathPositions[i+1];
+                
+                segment.Left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
+                segment.Right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
+                segment.Up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
+                segment.Down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+
+                CreateSegment(segment);
+                segmentTable[i+1] = luaState.Pop();
+            }
+        }
+
+        try
+        {
+            autotile.LuaFillPathProcedure?.Call(autotile, layer + 1, segmentTable, modifierStr);
+        }
+        catch (LuaScriptException e)
+        {
+            RainEd.Instance.ShowNotification("Error!");
+            LogError(e.Message);
         }
     }
 }

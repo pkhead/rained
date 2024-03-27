@@ -295,8 +295,21 @@ partial class TileEditor : IEditorMode
                     {
                         ImGui.SameLine();
                         ImGui.BeginGroup();
-
                         var autotile = autotiles[selectedAutotile];
+
+                        ImGui.SeparatorText(autotile.Name);
+                        if (autotile.Type == Autotile.AutoType.Path)
+                        {
+                            ImGui.Text("Path Autotile");
+                        }
+                        else if (autotile.Type == Autotile.AutoType.Rect)
+                        {
+                            ImGui.Text("Rectangle Autotile");
+                        }
+
+                        ImGui.Separator();
+                        
+                        // options
                         foreach (var opt in autotile.Options.Values)
                         {
                             ImGui.Checkbox(opt.Name, ref opt.Value);

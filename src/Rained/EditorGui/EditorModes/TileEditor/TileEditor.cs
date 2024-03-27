@@ -1,6 +1,7 @@
 using RainEd.Tiles;
 using Raylib_cs;
 using System.Numerics;
+using System.Collections.Generic;
 using ImGuiNET;
 
 namespace RainEd;
@@ -21,6 +22,9 @@ partial class TileEditor : IEditorMode
     private int selectedAutotile = 0;
 
     private int materialBrushSize = 1;
+
+    private bool isAutotileActive = false;
+    private List<Vector2i> autotilePath = [];
     
     // this is used to fix force placement when
     // holding down lmb
@@ -193,12 +197,25 @@ partial class TileEditor : IEditorMode
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
         
+        var modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
+        var forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
+        var disallowMatOverwrite = KeyShortcuts.Active(KeyShortcut.TileIgnoreDifferent);
+
+        if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
+        {
+            if (modifyGeometry)
+                window.StatusText = "Force Geometry";
+            else if (forcePlace)
+                window.StatusText = "Force Placement";
+        }
+        else if (selectionMode == SelectionMode.Materials)
+        {
+            if (disallowMatOverwrite)
+                    window.StatusText = "Disallow Overwrite";
+        }
+
         if (window.IsViewportHovered)
         {
-            var modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
-            var forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
-            var disallowMatOverwrite = KeyShortcuts.Active(KeyShortcut.TileIgnoreDifferent);
-
             // begin change if left or right button is down
             // regardless of what it's doing
             if (window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right))
@@ -269,11 +286,6 @@ partial class TileEditor : IEditorMode
                     validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
                 );
 
-                if (modifyGeometry)
-                    window.StatusText = "Force Geometry";
-                else if (forcePlace)
-                    window.StatusText = "Force Placement";
-
                 // place tile on click
                 if (window.IsMouseDown(ImGuiMouseButton.Left))
                 {
@@ -315,9 +327,6 @@ partial class TileEditor : IEditorMode
             // render selected material
             else if (selectionMode == SelectionMode.Materials)
             {
-                if (disallowMatOverwrite)
-                    window.StatusText = "Disallow Overwrite";
-
                 bool brushSizeKey =
                     KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
 
@@ -378,6 +387,66 @@ partial class TileEditor : IEditorMode
                                     cell.Material = 0;
                             }
                         }
+                    }
+                }
+            }
+
+            // render selected autotile
+            else if (selectionMode == SelectionMode.Autotiles && RainEd.Instance.PluginInterface.Autotiles.Count > 0)
+            {
+                var autotile = RainEd.Instance.PluginInterface.Autotiles[selectedAutotile];
+
+                // activated
+                if (isToolActive && !wasToolActive)
+                {
+                    isAutotileActive = true;
+                    autotilePath.Clear();
+                }
+
+                if (isAutotileActive)
+                {
+                    // add current position to autotile path
+                    // only add the position if it is adjacent to the last
+                    // placed position
+                    var posTuple = new Vector2i(window.MouseCx, window.MouseCy);
+                    
+                    if (autotilePath.Count == 0)
+                    {
+                        autotilePath.Add(posTuple);
+                    }
+                    else
+                    {
+                        if (!autotilePath.Contains(posTuple))
+                        {
+                            var lastPos = autotilePath[^1];
+                            if (MathF.Abs(lastPos.X - posTuple.X) + MathF.Abs(lastPos.Y - posTuple.Y) == 1)
+                            {
+                                autotilePath.Add(posTuple);
+                            }
+                        }
+                    }
+
+                    // draw autotile path
+                    foreach (var pos in autotilePath)
+                    {
+                        Raylib.DrawRectangleLinesEx(
+                            new Rectangle(pos.X * Level.TileSize, pos.Y * Level.TileSize, Level.TileSize, Level.TileSize),
+                            1f / window.ViewZoom,
+                            Color.White
+                        );
+                    }
+
+                    // mouse released
+                    if (wasToolActive && !isToolActive)
+                    {
+                        RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
+                        
+                        //window.CellChangeRecorder.BeginChange();
+                        RainEd.Instance.PluginInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
+                        //window.CellChangeRecorder.PushChange();
+
+                        isAutotileActive = false;
+                        autotilePath.Clear();
                     }
                 }
             }
