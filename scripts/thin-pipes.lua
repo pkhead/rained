@@ -1,3 +1,4 @@
+
 local helpers = require("helpers")
 
 local autotile = rained.createAutotile()
@@ -42,7 +43,7 @@ local tileTable = {
     horizontal = "Horizontal Pipe"
 }
 
-function autotile:fillPath(layer, segments, forceModifier)
+function autotile:tilePath(layer, segments, forceModifier)
     tileTable.vertical = self:getOption("plain") and "Vertical Plain Pipe" or "Vertical Pipe"
     tileTable.horizontal = self:getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
     helpers.autotilePath(tileTable, layer, segments, forceModifier)

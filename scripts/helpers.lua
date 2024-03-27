@@ -14,10 +14,11 @@ function module.autotilePath(tileTable, layer, segments, forceModifier)
         
         -- straight
         elseif seg.down or seg.up then
-            rained.placeTile(
+            local s, msg = rained.placeTile(
                 tileTable.vertical,
                 layer, seg.x, seg.y, forceModifier
             )
+            print(s, msg)
         elseif seg.right or seg.left then
             rained.placeTile(
                 tileTable.horizontal,

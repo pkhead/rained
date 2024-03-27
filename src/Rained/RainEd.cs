@@ -140,8 +140,17 @@ sealed class RainEd
         }
         catch (LuaScriptException e)
         {
-            _logger.Error("Lua script error:\n{Error}", e);
-            Boot.DisplayError("Could not start", "RainEd could not start due to an error in a Lua script:\n\n" + e.Message);
+            Exception actualException = e.IsNetException ? e.InnerException! : e;
+            string? stackTrace = actualException.Data["Traceback"] as string;
+
+            var displayMsg = "RainEd could not start due to an error in a Lua script:\n\n" + actualException.Message;
+            if (stackTrace is not null)
+            {
+                displayMsg += "\n" + stackTrace;
+            }
+
+            _logger.Error(displayMsg);
+            Boot.DisplayError("Could not start", displayMsg);
             throw new RainEdStartupException();
         }
 

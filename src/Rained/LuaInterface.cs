@@ -59,7 +59,7 @@ class Autotile
     [LuaHide]
     public Dictionary<string, ConfigOption> Options = []; 
 
-    [LuaMember(Name = "fillPath")]
+    [LuaMember(Name = "tilePath")]
     public LuaFunction? LuaFillPathProcedure = null;
 
     [LuaMember(Name = "requiredTiles")]
@@ -91,7 +91,7 @@ class Autotile
         }
         else
         {
-            throw new Exception($"option '{id}' does not exist");
+            throw new LuaException($"option '{id}' does not exist");
         }
     }
 }
@@ -119,20 +119,21 @@ class LuaInterface
     delegate void LuaPrintDelegate(params string[] args);
     
     private readonly KeraLua.LuaFunction loaderDelegate;
+    private readonly string scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
 
     public LuaInterface()
     {
-        luaState = new Lua();
-    
-        // disable NLua import function and debug library
-        luaState.DoString("import = nil debug = nil");
+        luaState = new Lua()
+        {
+            UseTraceback = true
+        };
 
         luaState["print"] = new LuaPrintDelegate(LuaPrint);
         luaState["warn"] = new LuaPrintDelegate(LuaWarning); 
 
         // configure package.path
         var package = (LuaTable) luaState["package"];
-        package["path"] = Path.Combine(Boot.AppDataPath, "scripts", "?.lua") + ";" + Path.Combine(Boot.AppDataPath, "scripts", "?", "init.lua");
+        package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua");
 
         // add rained module to require preloader
         // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
@@ -144,6 +145,14 @@ class LuaInterface
 
         // assign module to global variable
         luaState.DoString("rained = require(\"rained\")");
+
+        // disable NLua import function
+        // damn... stupid nlua library
+        // i can't disable the debug library even though
+        // 1. there is a function called luaL_traceback
+        // 2. they could have just saved the function from the debug library into the registry
+        // ...
+        luaState.DoString("import = nil");
     }
 
     private int RainedLoader(nint luaStatePtr)
@@ -156,7 +165,10 @@ class LuaInterface
         luaState.Push(new Func<string>(GetVersion));
         luaState.State.SetField(-2, "getVersion");
 
-        luaState.Push(new KeraLua.LuaFunction(PlaceTile));
+        luaState.Push(new Action<string>(ShowNotification));
+        luaState.State.SetField(-2, "alert");
+
+        luaState.Push(new PlaceTileDelegate(PlaceTile));
         luaState.State.SetField(-2, "placeTile");
 
         return 1;
@@ -164,7 +176,7 @@ class LuaInterface
 
     public void Initialize()
     {
-        luaState.DoFile(Path.Combine(Boot.AppDataPath, "scripts", "init.lua"));
+        luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
     }
     
     private Autotile CreateAutotile()
@@ -175,33 +187,30 @@ class LuaInterface
         return autotile;
     }
 
-    public int PlaceTile(nint luaStatePtr)
+    private void ShowNotification(object? msg)
     {
-        //string tileName, int layer, int x, int y, string? modifier
-        var level = RainEd.Instance.Level;
-        
-        string tileName = luaState.State.ToString(1);
-        int layer = (int) luaState.State.CheckInteger(2);
-        int x = (int) luaState.State.CheckInteger(3);
-        int y = (int) luaState.State.CheckInteger(4);
-        string? modifier = null;
+        if (msg is null) return;
+        RainEd.Instance.ShowNotification(msg.ToString()!);
+    }
 
-        if (!luaState.State.IsNoneOrNil(5))
-            modifier = luaState.State.ToString(5);
+    delegate (bool, string) PlaceTileDelegate(string tileName, int layer, int x, int y, string? modifier);
+    public (bool, string) PlaceTile(string tileName, int layer, int x, int y, string? modifier)
+    {
+        var level = RainEd.Instance.Level;
         
         // validate arguments
         if (modifier is not null)
         {
             if (modifier != "geometry" && modifier != "force")
             {
-                return luaState.State.Error("expected 'geometry' or 'force' for argument 5, got '%s'", modifier);
+                throw new Exception($"expected 'geometry' or 'force' for argument 5, got '{modifier}'");
             }
         }
         if (layer < 1 || layer > 3)
-            return luaState.State.Error("invalid layer %i", layer);
+            throw new Exception($"invalid layer {layer}");
         if (!RainEd.Instance.TileDatabase.HasTile(tileName))
-            return luaState.State.Error("tile '%s' is not recognized", tileName);
-        layer--; // layer is 1-based in the lua world
+            throw new Exception($"tile '{tileName}' is not recognized");
+        layer--; // layer is 1-based in the lua code
         
         // begin placement
         var tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
@@ -217,23 +226,17 @@ class LuaInterface
             );
         else
         {
-            luaState.Push(false);
-            luaState.Push("out of bounds");
-            return 2;
+            return (false, "out of bounds");
         }
         
         if (validationStatus == TilePlacementStatus.Overlap)
         {
-            luaState.Push(false);
-            luaState.Push("overlap");
-            return 2;
+            return (false, "overlap");
         }
         
         if (validationStatus == TilePlacementStatus.Geometry)
         {
-            luaState.Push(false);
-            luaState.Push("geometry");
-            return 2;
+            return (false, "geometry");
         }
 
         level.PlaceTile(
@@ -242,9 +245,7 @@ class LuaInterface
             modifier == "geometry"
         );
 
-        luaState.Push(true);
-        luaState.Push(null);
-        return 2;
+        return (true, null!);
     }
 
     private string GetVersion()
@@ -305,47 +306,32 @@ class LuaInterface
 
         if (ImGui.Begin("Logs", ref IsLogWindowOpen))
         {
-            if (ImGui.IsKeyPressed(ImGuiKey.T))
-            {
-                LogError("Test " + Log.Count);
-            }
-
             if (ImGui.Button("Clear"))
                 Log.Clear();
 
             if (ImGui.BeginChild("scrolling", Vector2.Zero, ImGuiChildFlags.None, ImGuiWindowFlags.HorizontalScrollbar))
             {
-                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-                unsafe
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
+                
+                foreach (var msg in Log)
                 {
-                    ImGuiListClipper clipperStruct = new();
-                    ImGuiListClipperPtr clipper = new(&clipperStruct);
-
-                    clipper.Begin(Log.Count, ImGui.GetTextLineHeight());
-                    while (clipper.Step())
+                    switch (msg.Level)
                     {
-                        for (int lineNo = clipper.DisplayStart; lineNo < clipper.DisplayEnd; lineNo++)
-                        {
-                            switch (Log[lineNo].Level)
-                            {
-                                case LogLevel.Error:
-                                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 48f/255f, 48/255f, 1f));
-                                    break;
+                        case LogLevel.Error:
+                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 48f/255f, 48/255f, 1f));
+                            break;
 
-                                case LogLevel.Warning:
-                                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 165f/255f, 48f/255f, 1f));
-                                    break;
+                        case LogLevel.Warning:
+                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 165f/255f, 48f/255f, 1f));
+                            break;
 
-                                case LogLevel.Info:
-                                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.Text]);
-                                    break;
-                            }
-                            
-                            ImGui.TextUnformatted(Log[lineNo].Message);
-                            ImGui.PopStyleColor();
-                        }
+                        case LogLevel.Info:
+                            ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.Text]);
+                            break;
                     }
-                    clipper.End();
+                    
+                    ImGui.TextUnformatted(msg.Message);
+                    ImGui.PopStyleColor();
                 }
                 ImGui.PopStyleVar();
 
@@ -476,7 +462,10 @@ class LuaInterface
         catch (LuaScriptException e)
         {
             RainEd.Instance.ShowNotification("Error!");
-            LogError(e.Message);
+
+            Exception actualException = e.IsNetException ? e.InnerException! : e;
+            string? stackTrace = actualException.Data["Traceback"] as string;
+            LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
         }
     }
 }

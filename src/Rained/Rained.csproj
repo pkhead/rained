@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(AppDataPath)'=='AppData'">
     <DefineConstants>DATA_APPDATA</DefineConstants>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
     <PackageReference Include="NLua" Version="1.7.2" />
