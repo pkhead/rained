@@ -35,3 +35,8 @@ Here are some tips on using the GUI elements:
 - In the prop editor, some inputs for the prop options are drag inputs, meaning that to change them you
   click and drag left/right in the box.
 - Experiment with activating inputs with a modifier key down (ctrl, shift, alt).
+
+## Custom Autotiles
+Rained has a system to create custom autotilers with Lua scripts. Lua is a pretty simple language, so if you have any experience with coding it hopefully shouldn't be too hard to learn. Just remember that tables start at 1 instead of 0.
+
+Look at the `scripts/init.lua` file as well as the code for the pre-packaged autotilers to get a feeling on how to make custom autotilers.

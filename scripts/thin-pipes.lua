@@ -1,5 +1,5 @@
 
-local helpers = require("helpers")
+local helpers = require("helpers") -- load the helpers.lua module
 
 -- setup autotile data
 local autotile = rained.createAutotile()
@@ -93,8 +93,10 @@ function autotile:tilePath(layer, segments, forceModifier)
     tileTable.horizontal = self:getOption("plain") and "Horizontal Plain Pipe" or "Horizontal Pipe"
     
     -- if the user wants to place inward pipes on the caps
+    -- only place caps if there are at least 2 path segments
     if self:getOption("cap") and #segments >= 2 then
         -- first, call the standard autotiler for the non-cap segments
+        -- so, ignoring the first item and last item
         helpers.autotilePath(tileTable, layer, segments, forceModifier, 2, #segments - 1)
 
         -- then, place the cap segments at the ends of the path
