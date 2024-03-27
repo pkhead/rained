@@ -426,15 +426,40 @@ partial class TileEditor : IEditorMode
                     }
 
                     // draw autotile path
-                    foreach (var pos in autotilePath)
+                    // only drawing lines where the path doesn't connect to another segment
+                    for (int i = 0; i < autotilePath.Count; i++)
                     {
-                        Raylib.DrawRectangleLinesEx(
-                            new Rectangle(pos.X * Level.TileSize, pos.Y * Level.TileSize, Level.TileSize, Level.TileSize),
-                            1f / window.ViewZoom,
-                            Color.White
-                        );
-                    }
+                        var lastSeg = autotilePath[^1]; // wraps around
+                        var curSeg = autotilePath[i];
+                        var nextSeg = autotilePath[0]; // wraps around
 
+                        if (i > 0)
+                            lastSeg = autotilePath[i-1];
+
+                        if (i < autotilePath.Count - 1)
+                            nextSeg = autotilePath[i+1];
+                        
+                        bool left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
+                        bool right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
+                        bool up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
+                        bool down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+
+                        var x = curSeg.X * Level.TileSize;
+                        var y = curSeg.Y * Level.TileSize;
+                        var w = Level.TileSize;
+                        var h = Level.TileSize;
+
+                        // draw rectangle outlines
+                        if (!left)
+                            Raylib.DrawLine(x, y, x, y + h, Color.White);
+                        if (!up)
+                            Raylib.DrawLine(x, y, x+w, y, Color.White);
+                        if (!right)
+                            Raylib.DrawLine(x+w, y, x+w, y+h, Color.White);
+                        if (!down)
+                            Raylib.DrawLine(x, y+h, x+w, y+h, Color.White);
+                    }
+                    
                     // mouse released
                     if (wasToolActive && !isToolActive)
                     {

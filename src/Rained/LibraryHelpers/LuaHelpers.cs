@@ -24,7 +24,6 @@ static class LuaHelpers
         lua.SetField(-2, "__metatable");
 
         lua.Pop(1);
-
     }
 
     private static int MetatableDelegate(nint luaPtr)
