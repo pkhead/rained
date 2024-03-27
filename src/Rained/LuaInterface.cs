@@ -116,6 +116,8 @@ class LuaInterface
     private List<LogEntry> Log = [];
     
     delegate void LuaPrintDelegate(params string[] args);
+    
+    private readonly KeraLua.LuaFunction loaderDelegate;
 
     public LuaInterface()
     {
@@ -131,9 +133,25 @@ class LuaInterface
         var package = (LuaTable) luaState["package"];
         package["path"] = Path.Combine(Boot.AppDataPath, "scripts", "?.lua") + ";" + Path.Combine(Boot.AppDataPath, "scripts", "?", "init.lua");
 
-        luaState.DoString("Rained = {}");
-        var luaRained = (LuaTable) luaState["Rained"];
-        luaRained["createAutotile"] = new Func<Autotile>(CreateAutotile);
+        // add rained module to require preloader
+        // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
+        loaderDelegate = new KeraLua.LuaFunction(RainedLoader);
+        luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
+        luaState.State.PushCFunction(loaderDelegate);
+        luaState.State.SetField(-2, "rained");
+        luaState.State.Pop(1); // pop preload table
+
+        // assign module to global variable
+        luaState.DoString("rained = require(\"rained\")");
+    }
+
+    private int RainedLoader(nint luaStatePtr)
+    {
+        luaState.State.NewTable();
+        luaState.Push(new Func<Autotile>(CreateAutotile));
+        luaState.State.SetField(-2, "createAutotile");
+
+        return 1;
     }
 
     public void Initialize()
@@ -167,12 +185,13 @@ class LuaInterface
         Log.Add(new LogEntry(LogLevel.Error, msg));
     }
 
-    private void LuaPrint(params string[] args)
+    private void LuaPrint(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
-        foreach (var str in args)
+        foreach (var v in args)
         {
+            var str = v is null ? "nil" : v.ToString()!;
             stringBuilder.Append(str);
             stringBuilder.Append(' ', 8 - str.Length % 8);
         }
@@ -180,12 +199,13 @@ class LuaInterface
         LogInfo(stringBuilder.ToString());
     }
 
-    private void LuaWarning(params string[] args)
+    private void LuaWarning(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
-        foreach (var str in args)
+        foreach (var v in args)
         {
+            var str = v is null ? "nil" : v.ToString()!;
             stringBuilder.Append(str);
             stringBuilder.Append(' ', 8 - str.Length % 8);
         }

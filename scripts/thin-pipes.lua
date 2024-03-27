@@ -1,4 +1,4 @@
-local autotile = Rained.createAutotile()
+local autotile = rained.createAutotile()
 autotile.name = "Thin Pipes"
 autotile.type = "path"
 autotile.pathThickness = 1
@@ -34,22 +34,22 @@ function autotile:fillPath(layer, segments, forceModifier)
     for seg in ipairs(segments) do
         -- turns
         if seg.left and seg.down then
-            Rained.placeTile("Pipe WS", layer, seg.x, seg.y, forceModifier)
+            rained.placeTile("Pipe WS", layer, seg.x, seg.y, forceModifier)
         elseif seg.left and seg.up then
-            Rained.placeTile("Pipe WN", layer, seg.x, seg.y, forceModifier)
+            rained.placeTile("Pipe WN", layer, seg.x, seg.y, forceModifier)
         elseif seg.right and seg.down then
-            Rained.placeTile("Pipe ES", layer, seg.x, seg.y, forceModifier)
+            rained.placeTile("Pipe ES", layer, seg.x, seg.y, forceModifier)
         elseif seg.right and seg.up then
-            Rained.placeTile("Pipe EN", layer, seg.x, seg.y, forceModifier)
+            rained.placeTile("Pipe EN", layer, seg.x, seg.y, forceModifier)
         
         -- straight
         elseif seg.down and seg.up then
-            Rained.placeTile(
+            rained.placeTile(
                 vertPipe,
                 layer, seg.x, seg.y, forceModifier
             )
         elseif seg.right and seg.left then
-            Rained.placeTile(
+            rained.placeTile(
                 horizPipe,
                 layer, seg.x, seg.y, forceModifier
             )
