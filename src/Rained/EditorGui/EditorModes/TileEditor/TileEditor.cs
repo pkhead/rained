@@ -489,8 +489,54 @@ partial class TileEditor : IEditorMode
     private bool CanAppendPath(Autotile autotile, Vector2i newPos)
     {
         var lastPos = autotilePath[^1];
-        if (MathF.Abs(lastPos.X - newPos.X) + MathF.Abs(lastPos.Y - newPos.Y) != autotile.SegmentLength)
+        int dx = newPos.X - lastPos.X;
+        int dy = newPos.Y - lastPos.Y;
+
+        // if newPos is too far or if being placed diagonally
+        // (coincidentally, manhattan distance)
+        if (MathF.Abs(dx) + MathF.Abs(dy) != autotile.SegmentLength)
             return false;
+
+        // detect collision
+        /*
+        if (autotile.PathThickness > 1)
+        {
+            var dir = new Vector2(dx, dy);
+            var perp = new Vector2(-dy, dx);
+            var center = new Vector2(newPos.X + 0.5f, newPos.Y + 0.5f);
+
+            float extents = autotile.PathThickness / 2;
+            var rectA = center + dir * extents + perp * extents;
+            var rectB = center + perp * -extents;
+
+            Raylib.DrawCircleV(rectA * Level.TileSize, 8f / window.ViewZoom, Color.Red);
+            Raylib.DrawCircleV(rectB * Level.TileSize, 8f / window.ViewZoom, Color.Red);
+
+            for (int x = (int)Math.Min(rectA.X, rectB.X); x <= (int)Math.Max(rectA.X, rectB.X); x++)
+            {
+                for (int y = (int)Math.Min(rectA.Y, rectB.Y); y <= (int)Math.Max(rectA.Y, rectB.Y); y++)
+                {
+                    if (autotilePath.Contains(new Vector2i(x, y)))
+                        return false;
+                }
+            }
+
+            rectA = center + perp * (int)extents * 2f;
+            rectB = center - perp * (int)extents * 2f;
+
+            Raylib.DrawCircleV(rectA * Level.TileSize, 6f / window.ViewZoom, Color.Blue);
+            Raylib.DrawCircleV(rectB * Level.TileSize, 6f / window.ViewZoom, Color.Blue);
+
+            for (int x = (int)Math.Min(rectA.X, rectB.X); x <= (int)Math.Max(rectA.X, rectB.X); x++)
+            {
+                for (int y = (int)Math.Min(rectA.Y, rectB.Y); y <= (int)Math.Max(rectA.Y, rectB.Y); y++)
+                {
+                    if (autotilePath.Contains(new Vector2i(x, y)))
+                        return false;
+                }
+            }
+        }
+        */
 
         // prevent user from placing a turn too early
         if (autotilePath.Count < autotile.PathThickness / 2 + 1)
@@ -529,13 +575,6 @@ partial class TileEditor : IEditorMode
                 return false;
 
             return true;
-            /*if (!(
-                ((lastDir.HasFlag(PathDirection.Left) || lastDir.HasFlag(PathDirection.Right)) && lastPos.X != newPos.X) ||
-                ((lastDir.HasFlag(PathDirection.Down) || lastDir.HasFlag(PathDirection.Up)) && lastPos.Y != newPos.Y)
-            ))
-            {
-                return false;
-            }*/
         }
 
         return true;
@@ -555,6 +594,8 @@ partial class TileEditor : IEditorMode
 
     private void GetPathDirections(int i, out bool left, out bool right, out bool up, out bool down)
     {
+        var seg = LuaInterface.Autotiles[selectedAutotile].SegmentLength;
+        
         var lastSeg = autotilePath[^1]; // wraps around
         var curSeg = autotilePath[i];
         var nextSeg = autotilePath[0]; // wraps around
@@ -565,10 +606,10 @@ partial class TileEditor : IEditorMode
         if (i < autotilePath.Count - 1)
             nextSeg = autotilePath[i+1];
         
-        left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
-        right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
-        up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
-        down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
+        left =  (curSeg.Y == lastSeg.Y && curSeg.X - seg == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - seg == nextSeg.X);
+        right = (curSeg.Y == lastSeg.Y && curSeg.X + seg == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + seg == nextSeg.X);
+        up =    (curSeg.X == lastSeg.X && curSeg.Y - seg == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - seg == nextSeg.Y);
+        down =  (curSeg.X == lastSeg.X && curSeg.Y + seg == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + seg == nextSeg.Y);
     }
 
     private void ProcessAutotiles()
@@ -591,6 +632,7 @@ partial class TileEditor : IEditorMode
             // placed position
             var mousePos = new Vector2i(window.MouseCx, window.MouseCy);
             
+            // first node to be placed
             if (autotilePath.Count == 0)
             {
                 autotilePath.Add(mousePos);
@@ -598,12 +640,14 @@ partial class TileEditor : IEditorMode
             }
             else
             {
+                // snap to grid according the the segment length
                 var seg = autotile.SegmentLength;
                 mousePos.X = (int)MathF.Round((float)(mousePos.X - autotilePath[0].X) / seg) * seg + autotilePath[0].X;
                 mousePos.Y = (int)MathF.Round((float)(mousePos.Y - autotilePath[0].Y) / seg) * seg + autotilePath[0].Y;
                 
                 if (!autotilePath.Contains(mousePos))
                 {
+                    // add this node to the path list if possible
                     if (CanAppendPath(autotile, mousePos))
                     {
                         autotilePath.Add(mousePos);
@@ -625,7 +669,9 @@ partial class TileEditor : IEditorMode
                 autotilePathDirs[i] = GetPathDirections(i);
             }
 
-            // process turns
+            // make all path nodes that would be inside a turn tile
+            // remove the borders that are facing the directions of the turn
+            // as the path preview borders draw borders according to autotilePathDirs
             if (autotile.PathThickness > 1)
             {
                 int i = 1;
@@ -657,6 +703,8 @@ partial class TileEditor : IEditorMode
                 var nodeDir = autotilePathDirs[i];
 
                 GetPathDirections(i, out bool left, out bool right, out bool up, out bool down);
+
+                // get preview border directions
                 bool visLeft = nodeDir.HasFlag(PathDirection.Left);
                 bool visRight = nodeDir.HasFlag(PathDirection.Right);
                 bool visUp = nodeDir.HasFlag(PathDirection.Up);

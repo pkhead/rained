@@ -41,4 +41,25 @@ struct Vector2i
     {
         return !(a == b);
     }
+
+    public static Vector2i operator+(Vector2i a, Vector2i b)
+        => new(a.X + b.X, a.Y + b.Y);
+
+    public static Vector2i operator-(Vector2i a, Vector2i b)
+        => new(a.X - b.X, a.Y - b.Y);
+
+    public static Vector2i operator-(Vector2i v)
+        => new(-v.X, -v.Y);
+
+    public static Vector2i operator*(Vector2i v, int s)
+        => new(v.X * s, v.Y * s);
+
+    public static Vector2 operator*(Vector2i v, float s)
+        => new(v.X * s, v.Y * s);
+
+    public static Vector2i operator/(Vector2i v, int s)
+        => new(v.X / s, v.Y / s);
+
+    public static Vector2 operator/(Vector2i v, float s)
+        => new(v.X / s, v.Y / s);
 }
