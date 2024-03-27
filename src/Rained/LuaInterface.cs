@@ -5,6 +5,8 @@ using NLua;
 using NLua.Exceptions;
 namespace RainEd;
 
+using LuaNativeFunction = KeraLua.LuaFunction;
+
 class Autotile
 {
     [LuaMember(Name = "name")]
@@ -96,10 +98,10 @@ class Autotile
     }
 }
 
-class LuaInterface
+static class LuaInterface
 {
-    private Lua luaState;
-    public readonly List<Autotile> Autotiles = [];
+    static private Lua luaState = null!;
+    static public readonly List<Autotile> Autotiles = [];
 
     enum LogLevel : byte
     {
@@ -114,19 +116,22 @@ class LuaInterface
         public readonly string Message = msg;
     }
 
-    private List<LogEntry> Log = [];
+    private static readonly List<LogEntry> Log = [];
     
     delegate void LuaPrintDelegate(params string[] args);
-    
-    private readonly KeraLua.LuaFunction loaderDelegate;
-    private readonly string scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
 
-    public LuaInterface()
+    private static LuaNativeFunction loaderDelegate = new(RainedLoader);
+    private static string scriptsPath = null!;
+
+    public static void Initialize()
     {
+        scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
+
         luaState = new Lua()
         {
             UseTraceback = true
         };
+        LuaHelpers.Init(luaState.State);
 
         luaState["print"] = new LuaPrintDelegate(LuaPrint);
         luaState["warn"] = new LuaPrintDelegate(LuaWarning); 
@@ -137,7 +142,6 @@ class LuaInterface
 
         // add rained module to require preloader
         // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
-        loaderDelegate = new KeraLua.LuaFunction(RainedLoader);
         luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
         luaState.State.PushCFunction(loaderDelegate);
         luaState.State.SetField(-2, "rained");
@@ -153,9 +157,11 @@ class LuaInterface
         // 2. they could have just saved the function from the debug library into the registry
         // ...
         luaState.DoString("import = nil");
+
+        luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
     }
 
-    private int RainedLoader(nint luaStatePtr)
+    private static int RainedLoader(nint luaStatePtr)
     {
         luaState.State.NewTable();
 
@@ -168,18 +174,13 @@ class LuaInterface
         luaState.Push(new Action<string>(ShowNotification));
         luaState.State.SetField(-2, "alert");
 
-        luaState.Push(new PlaceTileDelegate(PlaceTile));
+        LuaHelpers.PushDelegate(luaState.State, new PlaceTileDelegate(PlaceTile));
         luaState.State.SetField(-2, "placeTile");
 
         return 1;
     }
 
-    public void Initialize()
-    {
-        luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
-    }
-    
-    private Autotile CreateAutotile()
+    private static Autotile CreateAutotile()
     {
         var autotile = new Autotile();
         Autotiles.Add(autotile);
@@ -187,15 +188,17 @@ class LuaInterface
         return autotile;
     }
 
-    private void ShowNotification(object? msg)
+    private static void ShowNotification(object? msg)
     {
         if (msg is null) return;
         RainEd.Instance.ShowNotification(msg.ToString()!);
     }
 
-    delegate (bool, string) PlaceTileDelegate(string tileName, int layer, int x, int y, string? modifier);
-    public (bool, string) PlaceTile(string tileName, int layer, int x, int y, string? modifier)
+    delegate bool PlaceTileDelegate(out string? result, string tileName, int layer, int x, int y, string? modifier);
+    public static bool PlaceTile(out string? result, string tileName, int layer, int x, int y, string? modifier)
     {
+        result = null;
+
         var level = RainEd.Instance.Level;
         
         // validate arguments
@@ -226,17 +229,20 @@ class LuaInterface
             );
         else
         {
-            return (false, "out of bounds");
+            result = "out of bounds";
+            return false;
         }
         
         if (validationStatus == TilePlacementStatus.Overlap)
         {
-            return (false, "overlap");
+            result = "overlap";
+            return false;
         }
         
         if (validationStatus == TilePlacementStatus.Geometry)
         {
-            return (false, "geometry");
+            result = "geometry";
+            return false;
         }
 
         level.PlaceTile(
@@ -245,33 +251,33 @@ class LuaInterface
             modifier == "geometry"
         );
 
-        return (true, null!);
+        return true;
     }
 
-    private string GetVersion()
+    private static string GetVersion()
     {
         return RainEd.Version;
     }
 
-    public void LogInfo(string msg)
+    public static void LogInfo(string msg)
     {
         RainEd.Logger.Information("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Info, msg));
     }
 
-    public void LogWarning(string msg)
+    public static void LogWarning(string msg)
     {
         RainEd.Logger.Warning("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Warning, msg));
     }
 
-    public void LogError(string msg)
+    public static void LogError(string msg)
     {
         RainEd.Logger.Error("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Error, msg));
     }
 
-    private void LuaPrint(params object[] args)
+    private static void LuaPrint(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
@@ -285,7 +291,7 @@ class LuaInterface
         LogInfo(stringBuilder.ToString());
     }
 
-    private void LuaWarning(params object[] args)
+    private static void LuaWarning(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
@@ -299,8 +305,8 @@ class LuaInterface
         LogWarning(stringBuilder.ToString());        
     }
 
-    public bool IsLogWindowOpen = false;
-    public void ShowLogs()
+    public static bool IsLogWindowOpen = false;
+    public static void ShowLogs()
     {
         if (!IsLogWindowOpen) return;
 
@@ -342,7 +348,7 @@ class LuaInterface
         } ImGui.End();
     }
 
-    public void CheckAutotileRequirements()
+    public static void CheckAutotileRequirements()
     {
         foreach (var autotile in Autotiles)
         {
@@ -392,9 +398,9 @@ class LuaInterface
         public int X = x;
         public int Y = y;
     }
-    public void RunAutotile(Autotile autotile, int layer, List<Vector2i> pathPositions, bool forcePlace, bool forceGeometry)
+    public static void RunAutotile(Autotile autotile, int layer, List<Vector2i> pathPositions, bool forcePlace, bool forceGeometry)
     {
-        void CreateSegment(SegmentStruct seg)
+        static void CreateSegment(SegmentStruct seg)
         {
             luaState.State.NewTable();
             luaState.State.PushBoolean(seg.Left);

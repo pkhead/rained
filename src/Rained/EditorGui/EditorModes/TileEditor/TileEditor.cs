@@ -1,7 +1,6 @@
 using RainEd.Tiles;
 using Raylib_cs;
 using System.Numerics;
-using System.Collections.Generic;
 using ImGuiNET;
 
 namespace RainEd;
@@ -392,9 +391,9 @@ partial class TileEditor : IEditorMode
             }
 
             // render selected autotile
-            else if (selectionMode == SelectionMode.Autotiles && RainEd.Instance.PluginInterface.Autotiles.Count > 0)
+            else if (selectionMode == SelectionMode.Autotiles && LuaInterface.Autotiles.Count > 0)
             {
-                var autotile = RainEd.Instance.PluginInterface.Autotiles[selectedAutotile];
+                var autotile = LuaInterface.Autotiles[selectedAutotile];
 
                 // activated
                 if (isToolActive && !wasToolActive)
@@ -442,7 +441,7 @@ partial class TileEditor : IEditorMode
                         RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
                         
                         //window.CellChangeRecorder.BeginChange();
-                        RainEd.Instance.PluginInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
+                        LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
                         //window.CellChangeRecorder.PushChange();
 
                         isAutotileActive = false;

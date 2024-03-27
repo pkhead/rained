@@ -66,8 +66,6 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
-    public LuaInterface PluginInterface;
-
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
@@ -135,8 +133,7 @@ sealed class RainEd
         // run lua scripts
         try
         {
-            PluginInterface = new LuaInterface();
-            PluginInterface.Initialize();
+            LuaInterface.Initialize();
         }
         catch (LuaScriptException e)
         {
@@ -169,7 +166,7 @@ sealed class RainEd
         Logger.Information("Initializing prop database...");
         PropDatabase = new Props.PropDatabase(TileDatabase);
 
-        PluginInterface.CheckAutotileRequirements();
+        LuaInterface.CheckAutotileRequirements();
         
         level = Level.NewDefaultLevel();
 
@@ -622,9 +619,9 @@ sealed class RainEd
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }
 
-                if (ImGui.MenuItem("Plugin Logs", null, PluginInterface.IsLogWindowOpen))
+                if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
                 {
-                    PluginInterface.IsLogWindowOpen = !PluginInterface.IsLogWindowOpen;
+                    LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
                 }
 
                 ImGui.Separator();
@@ -736,7 +733,7 @@ sealed class RainEd
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
-        PluginInterface.ShowLogs();
+        LuaInterface.ShowLogs();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
