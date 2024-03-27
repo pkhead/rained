@@ -1,7 +1,7 @@
 local module = {}
 
 ---Perform standard path autotiling
----@param tileTable {ws: string, wn: string, es: string, en: string, vertical: string, horizontal: string}
+---@param tileTable {ld: string, lu: string, rd: string, ru: string, vertical: string, horizontal: string}
 ---@param layer integer
 ---@param segments PathSegment[]
 ---@param startIndex integer? The index of the starting segment. Defaults to 1
@@ -13,13 +13,13 @@ function module.autotilePath(tileTable, layer, segments, forceModifier, startInd
 
         -- turns
         if seg.left and seg.down then
-            rained.placeTile(tileTable.ws, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.ld, layer, seg.x, seg.y, forceModifier)
         elseif seg.left and seg.up then
-            rained.placeTile(tileTable.wn, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.lu, layer, seg.x, seg.y, forceModifier)
         elseif seg.right and seg.down then
-            rained.placeTile(tileTable.es, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.rd, layer, seg.x, seg.y, forceModifier)
         elseif seg.right and seg.up then
-            rained.placeTile(tileTable.en, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.ru, layer, seg.x, seg.y, forceModifier)
         
         -- straight
         elseif seg.down or seg.up then

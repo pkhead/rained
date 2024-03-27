@@ -35,10 +35,10 @@ autotile.requiredTiles = {
 -- table of tiles to use for the standard autotiler function
 -- which is helpers.autotilePath
 local tileTable = {
-    ws = "Pipe WS",
-    wn = "Pipe WN",
-    es = "Pipe ES",
-    en = "Pipe EN",
+    ld = "Pipe WS",
+    lu = "Pipe WN",
+    rd = "Pipe ES",
+    ru = "Pipe EN",
 
     -- these values will be set in the autotile callback function
     -- to adjust according the "plain" option

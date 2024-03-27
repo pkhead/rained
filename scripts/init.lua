@@ -9,4 +9,5 @@
 
 print("Rained Version " .. rained.getVersion())
 
-require("thin-pipes") -- load the Thin Pipes autotile
+require("autotiles.thin-pipes") -- load the Thin Pipes autotile
+require("autotiles.big-pipe") -- load the Big Pipe autotile
