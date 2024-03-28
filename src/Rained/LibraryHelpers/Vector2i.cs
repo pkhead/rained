@@ -45,6 +45,9 @@ struct Vector2i
     public static Vector2i operator+(Vector2i a, Vector2i b)
         => new(a.X + b.X, a.Y + b.Y);
 
+    public static Vector2 operator+(Vector2i a, Vector2 b)
+        => new(a.X + b.X, a.Y + b.Y);
+
     public static Vector2i operator-(Vector2i a, Vector2i b)
         => new(a.X - b.X, a.Y - b.Y);
 
