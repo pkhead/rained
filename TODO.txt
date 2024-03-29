@@ -3,6 +3,7 @@ Priority:
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
 - Icon!
+- fix trans flag prop loading
 
 Bugs:
 - drizzle doesn't build correctly on mac?
@@ -12,9 +13,10 @@ Bugs:
   to correct the .png filenames on non-Windows systems
 
 Overall:
+- favorite tiles and props
 - fix cli on windows (perhaps a Rained.exe and Rained.Console.exe)
 - file manager "New Folder" button
-- code cleanup (RainEd.cs is like 1000 lines long... maybe also use update subscriber pattern?)
+- code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET
 - rect/material tile place
@@ -22,6 +24,7 @@ Overall:
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - combine geo and tile editor
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
+  (idk how to do this, it returns a 403 Forbidden)
 - Move Level
 - undo/redo for level resize
 - level resze drag
@@ -30,8 +33,6 @@ Overall:
   e.g. New Camera button in camera editor,
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
-- favorite tiles and props
-- fix trans flag prop loading
 - option to use "legacy" shortcut icons
 - tile init editor (maybe?)
 
@@ -40,7 +41,6 @@ Geometry Editor:
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
 - ability to view tiles (hm... what if i combined geo/tile editor?)
-- right-click to remove cells/objects
 - keyboard shortcut for shortcut & shortcut dots
 - optimized cell change recorder
   (i.e. record specific changes in user code instead of scanning the entire level for such)
@@ -62,6 +62,7 @@ Light Editor:
 - save intermediate textures for change history
   (i guess once per every 1000 stroke atoms or something)
 - toggle view shadow plane and occlusion plane
+- prop/tile as brush
 
 Effects Editor:
 - WASD navigation

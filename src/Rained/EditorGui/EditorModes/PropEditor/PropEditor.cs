@@ -188,11 +188,12 @@ partial class PropEditor : IEditorMode
         return MathF.Round(number / snap) * snap;
     }
 
-    private static Prop? GetPropAt(Vector2 point)
+    private static Prop? GetPropAt(Vector2 point, int layer)
     {
         for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
         {
             var prop = RainEd.Instance.Level.Props[i];
+            if (prop.DepthOffset < layer * 10) continue;
 
             var pts = prop.QuadPoints;
             if (
@@ -207,12 +208,14 @@ partial class PropEditor : IEditorMode
         return null;
     }
 
-    private static Prop[] GetPropsAt(Vector2 point)
+    private static Prop[] GetPropsAt(Vector2 point, int layer)
     {
         var list = new List<Prop>();
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
+            if (prop.DepthOffset < layer * 10) continue;
+
             var pts = prop.QuadPoints;
             if (
                 IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
@@ -609,6 +612,7 @@ partial class PropEditor : IEditorMode
             foreach (var prop in level.Props)
             {
                 if (selectedProps.Contains(prop)) continue;
+                if (prop.DepthOffset < window.WorkLayer * 10) continue;
                 
                 var pc = GetPropCenter(prop);
                 if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
@@ -700,7 +704,7 @@ partial class PropEditor : IEditorMode
             if (!isMouseDragging)
             {
                 // drag had begun
-                var hoverProp = GetPropAt(dragStartPos);
+                var hoverProp = GetPropAt(dragStartPos, window.WorkLayer);
 
                 // if dragging over an empty space, begin rect select
                 if (hoverProp is null)
@@ -742,7 +746,7 @@ partial class PropEditor : IEditorMode
             if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 selectedProps.Clear();
             
-            var prop = GetPropAt(window.MouseCellFloat);
+            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
             if (prop is not null)
             {
                 SelectProp(prop);
@@ -753,7 +757,7 @@ partial class PropEditor : IEditorMode
         // useful for when props overlap (which i assume is common)
         if (window.IsMouseReleased(ImGuiMouseButton.Right) && !isMouseDragging)
         {
-            propSelectionList = GetPropsAt(window.MouseCellFloat);
+            propSelectionList = GetPropsAt(window.MouseCellFloat, window.WorkLayer);
             if (propSelectionList.Length == 1)
             {
                 if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
@@ -802,7 +806,7 @@ partial class PropEditor : IEditorMode
         // when E is pressed, sample prop
         if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
         {
-            var prop = GetPropAt(window.MouseCellFloat);
+            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
             if (prop is not null)
             {
                 // if prop is a tile as prop
