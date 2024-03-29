@@ -39,11 +39,19 @@ namespace RainEd
             {
                 if (AttachConsole(-1) != 0)
                 {
-                    var stream = new StreamWriter(Console.OpenStandardOutput())
+                    var cin = new StreamReader(Console.OpenStandardInput());
+                    var cerr = new StreamWriter(Console.OpenStandardError())
                     {
                         AutoFlush = true
                     };
-                    Console.SetOut(stream);
+                    var cout = new StreamWriter(Console.OpenStandardOutput())
+                    {
+                        AutoFlush = true
+                    };
+
+                    Console.SetOut(cout);
+                    Console.SetIn(cin);
+                    Console.SetError(cerr);
                 }
             }
             
