@@ -23,6 +23,9 @@ namespace RainEd
         [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
+        [LibraryImport("kernel32.dll")]
+        private static partial int AttachConsole(int dwProcessId);
+
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
         private static bool isAppReady = false;
@@ -31,6 +34,18 @@ namespace RainEd
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
+            if (OperatingSystem.IsWindows())
+            {
+                if (AttachConsole(-1) != 0)
+                {
+                    var stream = new StreamWriter(Console.OpenStandardOutput())
+                    {
+                        AutoFlush = true
+                    };
+                    Console.SetOut(stream);
+                }
+            }
             
             // parse command arguments
             bool showSplashScreen = true;
