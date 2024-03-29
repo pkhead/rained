@@ -25,6 +25,7 @@ Overall:
 - combine geo and tile editor
 - check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
   (idk how to do this, it returns a 403 Forbidden)
+- port newmakelevel (geometry exporter) to C#
 - Move Level
 - undo/redo for level resize
 - level resze drag
