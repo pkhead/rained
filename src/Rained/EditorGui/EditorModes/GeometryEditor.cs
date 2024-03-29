@@ -459,7 +459,7 @@ class GeometryEditor : IEditorMode
 
                 // activate tool on click
                 // or if user moves mouse on another tile space
-                if (window.IsMouseClicked(ImGuiMouseButton.Left))
+                if (!isToolActive && window.IsMouseDown(ImGuiMouseButton.Left))
                 {
                     isToolActive = true;
                     window.CellChangeRecorder.BeginChange();
@@ -476,7 +476,7 @@ class GeometryEditor : IEditorMode
             }
         }
 
-        if (isToolActive && window.IsMouseReleased(ImGuiMouseButton.Left))
+        if (isToolActive && !window.IsMouseDown(ImGuiMouseButton.Left))
         {
             isToolActive = false;
             window.CellChangeRecorder.PushChange();

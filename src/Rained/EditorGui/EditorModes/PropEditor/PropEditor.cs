@@ -624,26 +624,27 @@ partial class PropEditor : IEditorMode
             }
 
             // in prop transform mode
-            if (transformMode is not null)
-            {
-                transformMode.Update(dragStartPos, window.MouseCellFloat);
-                
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
-                {
-                    changeRecorder.PushTransform();
-
-                    if (transformMode is WarpTransformMode)
-                    {
-                        selectedProps[0].TryConvertToAffine();
-                    }
-
-                    transformMode = null;
-                }
-            }
-            else
+            if (transformMode is null)
             {
                 // in default mode
                 PropSelectUpdate();
+            }
+        }
+
+        // update transform mode
+        if (transformMode is not null)
+        {
+            transformMode.Update(dragStartPos, window.MouseCellFloat);
+            if (window.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                changeRecorder.PushTransform();
+
+                if (transformMode is WarpTransformMode)
+                {
+                    selectedProps[0].TryConvertToAffine();
+                }
+
+                transformMode = null;
             }
         }
 

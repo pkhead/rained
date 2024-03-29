@@ -460,6 +460,7 @@ class EditorWindow
         Raylib.EndBlendMode();
 
         // view controls
+        bool wasLmbDown = isLmbDown;
         isLmbClicked = false;
         isLmbDown = false;
         isLmbReleased = false;
@@ -519,10 +520,16 @@ class EditorWindow
         }
         else
         {
-            isLmbClicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
             isLmbDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            isLmbReleased = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
             isLmbDragging = ImGui.IsMouseDragging(ImGuiMouseButton.Left);
+
+            // manually set Clicked or Released bools based on lmbdown state changes
+            // this is so it registers that the mouse was released when ther user alt+tabs out of the window
+            if (!wasLmbDown && isLmbDown)
+                isLmbClicked = true;
+
+            if (wasLmbDown && !isLmbDown)
+                isLmbReleased = true;
         }
 
         Rlgl.PopMatrix();

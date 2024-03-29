@@ -125,62 +125,7 @@ class CameraEditor : IEditorMode
                 dragBegin = mpos;
             }
 
-            if (isDraggingCamera)
-            {
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
-                {
-                    // stop dragging camera
-                    isDraggingCamera = false;
-                    changeRecorder.PushChange();
-                }
-
-                // corner drag
-                if (selectedCorner >= 0)
-                {
-                    var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
-
-                    var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
-                    var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
-                    selectedCamera!.CornerAngles[selectedCorner] = angle;
-                    selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
-                }
-
-                // camera drag
-                else
-                {
-                    dragTargetPos += window.MouseCellFloat - lastMousePos;
-
-                    // camera snap
-                    var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
-                    var snapThreshold = 1.5f / window.ViewZoom;
-
-                    float minDistX = float.PositiveInfinity;
-                    float minDistY = float.PositiveInfinity;
-
-                    selectedCamera!.Position = dragTargetPos;
-                    foreach (var camera in level.Cameras)
-                    {
-                        if (selectedCamera == camera) continue;
-
-                        var camCenter = camera.Position + Camera.WidescreenSize / 2f;
-                        var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
-                        var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
-
-                        if (horizSnap && distX < snapThreshold && distX < minDistX)
-                        {
-                            minDistX = distX;
-                            selectedCamera!.Position.X = camera.Position.X;
-                        }
-
-                        if (vertSnap && distY < snapThreshold && distY < minDistY)
-                        {
-                            minDistY = distY;
-                            selectedCamera!.Position.Y = camera.Position.Y;
-                        }
-                    }
-                }
-            }
-            else
+            if (!isDraggingCamera)
             {
                 // determine if mouse is close enough to one of its corners
                 selectedCorner = -1;
@@ -227,6 +172,63 @@ class CameraEditor : IEditorMode
                 if (window.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     PickCameraAt(dragBegin);
+                }
+            }
+        }
+
+        // camera drag mode
+        if (isDraggingCamera)
+        {
+            if (window.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                // stop dragging camera
+                isDraggingCamera = false;
+                changeRecorder.PushChange();
+            }
+
+            // corner drag
+            if (selectedCorner >= 0)
+            {
+                var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
+
+                var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
+                var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
+                selectedCamera!.CornerAngles[selectedCorner] = angle;
+                selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
+            }
+
+            // camera drag
+            else
+            {
+                dragTargetPos += window.MouseCellFloat - lastMousePos;
+
+                // camera snap
+                var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
+                var snapThreshold = 1.5f / window.ViewZoom;
+
+                float minDistX = float.PositiveInfinity;
+                float minDistY = float.PositiveInfinity;
+
+                selectedCamera!.Position = dragTargetPos;
+                foreach (var camera in level.Cameras)
+                {
+                    if (selectedCamera == camera) continue;
+
+                    var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+                    var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
+                    var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
+
+                    if (horizSnap && distX < snapThreshold && distX < minDistX)
+                    {
+                        minDistX = distX;
+                        selectedCamera!.Position.X = camera.Position.X;
+                    }
+
+                    if (vertSnap && distY < snapThreshold && distY < minDistY)
+                    {
+                        minDistY = distY;
+                        selectedCamera!.Position.Y = camera.Position.Y;
+                    }
                 }
             }
         }
