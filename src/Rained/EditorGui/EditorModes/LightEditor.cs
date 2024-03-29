@@ -459,8 +459,8 @@ class LightEditor : IEditorMode
                 );
             }
 
-            var doScale = EditorWindow.IsKeyDown(ImGuiKey.Q);
-            var doRotate = EditorWindow.IsKeyDown(ImGuiKey.E);
+            var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
+            var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
 
             if (doScale || doRotate)
             {

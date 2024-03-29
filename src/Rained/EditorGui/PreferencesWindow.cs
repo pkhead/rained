@@ -324,6 +324,9 @@ static class PreferencesWindow
 
         ImGui.SeparatorText("Light");
         ShortcutButton(KeyShortcut.ResetBrushTransform);
+        ShortcutButton(KeyShortcut.ScaleLightBrush);
+        ShortcutButton(KeyShortcut.RotateLightBrush);
+        ImGui.Separator();
         ShortcutButton(KeyShortcut.ZoomLightIn);
         ShortcutButton(KeyShortcut.ZoomLightOut);
         ShortcutButton(KeyShortcut.RotateLightCW);
