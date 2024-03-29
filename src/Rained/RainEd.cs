@@ -16,9 +16,10 @@ public class RainEdStartupException : Exception
     public RainEdStartupException(string message) : base(message) { }
     public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
 }
+
 sealed class RainEd
 {
-    public const string Version = "b1.3.2"; 
+    public const string Version = "b1.3.3"; 
 
     public static RainEd Instance = null!;
 
