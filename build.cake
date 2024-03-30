@@ -2,9 +2,9 @@
 * just a script to automate the publish process (cus i also need to copy assets and data and stuff)
 */
 
-var target = Argument("Target", "Publish");
+var target = Argument("Target", "Package");
 
-Task("Publish")
+Task("DotNetPublish")
     .Does(() =>
 {
     EnsureDirectoryExists("build");
@@ -35,7 +35,40 @@ Task("Publish")
         CopyDirectory("Data", "build/Data");
     }
     */
+});
 
+Task("ConsoleWrapper")
+    .Does(() =>
+{
+    if (!IsRunningOnWindows()) return;
+
+    EnsureDirectoryExists("build");
+
+    bool clangExists = false;
+    string cxxCompiler = EnvironmentVariable<string>("CXX_COMPILER", "c++");
+    try
+    {
+        StartProcess(cxxCompiler, "-v");
+        clangExists = true;
+    }
+    catch
+    {}
+    
+    if (!clangExists)
+    {
+        Information("A C++ compiler was not found! Rained will still build normally, just without the console wrapper app.");
+    }
+    else
+    {
+        StartProcess(cxxCompiler, "-static -Os src/Rained.Console/console-launch.cpp -o build/Rained.Console.exe");
+    }
+});
+
+Task("Package")
+    .IsDependentOn("DotNetPublish")
+    .IsDependentOn("ConsoleWrapper")
+    .Does(() =>
+{
     Zip("build", "rained_X.X.X-win-x64.zip");
 });
 

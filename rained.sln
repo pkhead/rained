@@ -7,8 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B16D0F71-B9B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rained", "src\Rained\Rained.csproj", "{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rained.Console", "src\Rained.Console\Rained.Console.csproj", "{C73DFF22-6720-43C7-874F-8C753BFE5CD6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,13 +20,8 @@ Global
 		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C73DFF22-6720-43C7-874F-8C753BFE5CD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C73DFF22-6720-43C7-874F-8C753BFE5CD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C73DFF22-6720-43C7-874F-8C753BFE5CD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C73DFF22-6720-43C7-874F-8C753BFE5CD6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2F2033B7-DDE5-4536-BDC2-4EB1BE4FE60A} = {B16D0F71-B9B3-4A94-BADD-508F7E2911CF}
-		{C73DFF22-6720-43C7-874F-8C753BFE5CD6} = {B16D0F71-B9B3-4A94-BADD-508F7E2911CF}
 	EndGlobalSection
 EndGlobal

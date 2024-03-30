@@ -74,16 +74,25 @@ sealed class RainEd
 
         // create serilog logger
         Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
-    
+
+        bool logToStdout = Boot.Options.LogToStdout;
 #if DEBUG
-        _logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .CreateLogger();
-#else
-        _logger = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
-            .CreateLogger();
+        logToStdout = true;
 #endif
+
+        if (logToStdout)
+        {
+            _logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+        }
+        else
+        {
+            _logger = new LoggerConfiguration()
+                .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
+                .CreateLogger();
+        }
+
         Logger.Information("========================");
         Logger.Information("Rained {Version} started", Version);
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);

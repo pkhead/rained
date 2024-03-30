@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace RainEd
 {
-    partial class Boot
+    static partial class Boot
     {
         // find the location of the app data folder
 #if DATA_ASSEMBLY
@@ -23,104 +23,29 @@ namespace RainEd
         [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
-        [LibraryImport("kernel32.dll")]
-        private static partial int AttachConsole(int dwProcessId);
-
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
         private static bool isAppReady = false;
         private static RenderWindow? splashScreenWindow = null;
 
+        private static BootOptions bootOptions = null!;
+        public static BootOptions Options { get => bootOptions; }
+
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
-            if (OperatingSystem.IsWindows())
-            {
-                if (AttachConsole(-1) != 0)
-                {
-                    var cin = new StreamReader(Console.OpenStandardInput());
-                    var cerr = new StreamWriter(Console.OpenStandardError())
-                    {
-                        AutoFlush = true
-                    };
-                    var cout = new StreamWriter(Console.OpenStandardOutput())
-                    {
-                        AutoFlush = true
-                    };
-
-                    Console.SetOut(cout);
-                    Console.SetIn(cin);
-                    Console.SetError(cerr);
-                }
-            }
             
             // parse command arguments
-            bool showSplashScreen = true;
             bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
-            string levelToLoad = string.Empty;
+            
+            bootOptions = new BootOptions(args);
+            AppDataPath = Options.AppDataPath;
 
-            if (args.Length == 1)
-            {
-                if (args[0] == "--help" || args[0] == "-h")
-                {
-                    Console.WriteLine(
-                    $"""
-                    Rained {RainEd.Version}
-
-                    Usage:
-                        Rained [-v | --version]
-                        Rained [-h | --help]
-                        Rained [--no-splash-screen] [--app-data <path>] [--ogscule] [<level path>]
-                        
-                    --version -v            Print out version
-                    --help                  Show this help menu
-                    --no-splash-screen      Do not show the splash screen when starting
-                    --app-data <path>       Run with app data directory at <path>
-                    --ogscule               the intrusive thoughts defeated me
-                    <level path>            The path of the level to load
-                    """
-                    );
-
-                    return;
-                }
-                else if (args[0] == "--version" || args[0] == "-v")
-                {
-                    Console.WriteLine($"Rained {RainEd.Version}");
-                    return;
-                }
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                var str = args[i];
-
-                // this is here because it appears SFML uses some
-                // OpenGL extensions that RenderDoc doesn't support
-                if (str == "--no-splash-screen")
-                {
-                    showSplashScreen = false;
-                    continue;
-                }
-
-                // runtime-configurable app data path because why not
-                if (str == "--app-data")
-                {
-                    i++;
-                    AppDataPath = args[i];
-                    continue;
-                }
-
-                // the intrusive thoughts defeated me
-                if (str == "--ogscule")
-                {
-                    Console.WriteLine("ogscule");
-                    showAltSplashScreen = true;
-                    continue;
-                }
-
-                levelToLoad = str;
-            }
+            if (!bootOptions.ContinueBoot)
+                return;
+            
+            if (bootOptions.ShowOgscule)
+                showAltSplashScreen = true;
             
             // create splash screen window using sfml
             // to display while editor is loading
@@ -128,7 +53,7 @@ namespace RainEd
             // cus raylib doesn't have multi-window support
             // I was originally going to use only SFML, but it didn't have any
             // good C# ImGui integration libraries. (Raylib did, though)
-            if (showSplashScreen)
+            if (!bootOptions.NoSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
                 Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
@@ -172,7 +97,7 @@ namespace RainEd
 
                 try
                 {
-                    app = new(assetDataPath, levelToLoad);
+                    app = new(assetDataPath, bootOptions.LevelToLoad);
                 }
                 catch (RainEdStartupException)
                 {
