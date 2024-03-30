@@ -91,9 +91,19 @@ record PropInit
 
         var randVar = false;
 
+        if (!Raylib.IsTextureReady(Texture))
+        {
+            RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
+        }
+
         // initialize rope-type prop
         if (Type == PropType.Rope)
         {
+            if (!Raylib.IsTextureReady(Texture))
+            {
+                throw new Exception($"Prop image '{Path.GetFileName(texturePath)}' is invalid or missing");
+            }
+
             Rope = new RopeInit(init);
             Depth = (int) init.fields["depth"];
             VariationCount = 1;
