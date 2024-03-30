@@ -7,6 +7,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <Nullable>enable</Nullable>
     <TargetFramework>net8.0</TargetFramework>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppDataPath)'=='Assembly'">

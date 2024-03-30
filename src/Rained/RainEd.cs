@@ -65,7 +65,7 @@ sealed class RainEd
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
-
+    
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
