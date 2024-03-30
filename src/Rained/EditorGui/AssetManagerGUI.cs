@@ -206,7 +206,8 @@ static class AssetManagerGUI
         
         static bool isInitFile(string path, bool isRw)
         {
-            return Path.GetFileName(path) == "Init.txt";
+            var filename = Path.GetFileName(path);
+            return filename == "Init.txt" || string.Equals(filename, "copy to init.txt", StringComparison.InvariantCultureIgnoreCase);
         }
 
         if (ImGui.Button("Import Init.txt"))
@@ -391,7 +392,16 @@ static class AssetManagerGUI
                     ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
                     if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
                     {
-                        ImGui.Text($"An error occured while importing the pack.");
+                        var exception = mergeTask.Exception.InnerExceptions[0];
+                        if (exception is MergeException)
+                        {
+                            ImGui.TextUnformatted(exception.Message);
+                        }
+                        else
+                        {
+                            ImGui.Text($"An error occured while importing the pack.");
+                        }
+
                         ImGui.Separator();
                         
                         if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
