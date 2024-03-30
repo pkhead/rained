@@ -86,7 +86,9 @@ class UserPreferences
                     break;
 
                 default:
-                    RainEd.Logger.Error("Invalid CameraBorderMode '{Value}'", value);
+                    if (RainEd.Instance is not null)
+                        RainEd.Logger.Error("Invalid CameraBorderMode '{Value}'", value);
+                    
                     CameraBorderMode = CameraBorderModeOption.Both;
                     break;
             }
@@ -152,7 +154,9 @@ class UserPreferences
 
         // initialize shortcuts
         Shortcuts = null!;
-        SaveKeyboardShortcuts();
+
+        if (RainEd.Instance is not null)
+            SaveKeyboardShortcuts();
     }
 
     public static void SaveToFile(UserPreferences prefs, string filePath)

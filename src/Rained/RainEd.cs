@@ -127,6 +127,13 @@ sealed class RainEd
             UserPreferences.SaveToFile(Preferences, prefFilePath);
         }
 
+        // if --data was passed into the program arguments,
+        // set the data path value to it
+        if (Boot.Options.DrizzleDataPath is not null)
+        {
+            Preferences.DataPath = Boot.Options.DrizzleDataPath;
+        }
+
         Preferences.ApplyTheme();
 
         // load asset database

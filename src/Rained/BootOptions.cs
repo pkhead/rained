@@ -30,6 +30,7 @@ partial class BootOptions
 
     public readonly bool ContinueBoot = true;
     public readonly string AppDataPath = Boot.AppDataPath;
+    public readonly string? DrizzleDataPath = null;
     public readonly string LevelToLoad = "";
 
     public readonly bool NoSplashScreen = false;
@@ -78,6 +79,7 @@ partial class BootOptions
                 --log-to-stdout         Print logs to the standard output stream instead of to a file
                 --no-splash-screen      Do not show the splash screen when starting
                 --app-data <path>       Run with app data directory at <path>
+                --data <path>           Run with the Drizzle data directory at <path>
                 --ogscule               the intrusive thoughts defeated me
                 """
                 );
@@ -117,6 +119,13 @@ partial class BootOptions
                 continue;
             }
 
+            if (str == "--data")
+            {
+                i++;
+                DrizzleDataPath = args[i];
+                continue;
+            }
+
             if (str == "--log-to-stdout")
             {
                 LogToStdout = true;
@@ -146,6 +155,9 @@ partial class BootOptions
                 Console.Write("error: ");
                 Console.ResetColor();
                 Console.WriteLine($"unknown option: {str}");
+
+                Environment.ExitCode = 2;
+                ContinueBoot = false;
             }
         }
     }

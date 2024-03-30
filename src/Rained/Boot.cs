@@ -31,18 +31,59 @@ namespace RainEd
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             
-            // parse command arguments
-            bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
-            
             bootOptions = new BootOptions(args);
-            AppDataPath = Options.AppDataPath;
-
             if (!bootOptions.ContinueBoot)
                 return;
+
+            if (bootOptions.Render)
+                LaunchRenderer();
+            else
+                LaunchEditor();
+        }
+
+        private static void LaunchRenderer()
+        {
+            if (string.IsNullOrEmpty(bootOptions.LevelToLoad))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+
+                Console.WriteLine("The level path was not given");
+                Environment.ExitCode = 2;
+                return;
+            }
+
+            try
+            {
+                DrizzleRender.Render(bootOptions.LevelToLoad);
+            }
+            catch (DrizzleRenderException e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+                Console.WriteLine(e.Message);
+                Environment.ExitCode = 1;
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+                Console.WriteLine(e);
+                Environment.ExitCode = 1;
+            }
+        }
+
+        private static void LaunchEditor()
+        {
+            bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
+            AppDataPath = Options.AppDataPath;
             
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;

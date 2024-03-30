@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +17,14 @@ enum RenderPreviewStage
     Props,
     Effects,
     Lights,
+}
+
+[Serializable]
+public class DrizzleRenderException : System.Exception
+{
+    public DrizzleRenderException() { }
+    public DrizzleRenderException(string message) : base(message) { }
+    public DrizzleRenderException(string message, System.Exception inner) : base(message, inner) { }
 }
 
 /// <summary>
@@ -598,5 +607,99 @@ class DrizzleRender : IDisposable
         {
             throw new Exception("Unknown image depth " + srcImg.Depth);
         }
+    }
+
+    /// <summary>
+    /// Begin a render of a level, blocking the process until it is finished.
+    /// <br/><br/>
+    /// Intended to be called without the presence of a Rained window.
+    /// (i.e. when --render is passed as a command-line argument)
+    /// </summary>
+    /// <param name="levelPath">The path of the level to render</param>
+    /// <returns></returns>
+    public static void Render(string levelPath)
+    {
+        var levelName = Path.GetFileNameWithoutExtension(levelPath);
+        var pathWithoutExt = Path.Combine(Path.GetDirectoryName(levelPath)!, levelName);
+
+        if (!File.Exists(pathWithoutExt + ".txt"))
+        {
+            throw new DrizzleRenderException($"The file '{pathWithoutExt + ".txt"}' does not exist!");
+        }
+
+        if (!File.Exists(pathWithoutExt + ".png"))
+        {
+            throw new DrizzleRenderException($"The file '{pathWithoutExt + ".png"}' does not exist!");
+        }
+
+        var prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
+        string dataPath;
+
+        if (Boot.Options.DrizzleDataPath is not null)
+        {
+            dataPath = Boot.Options.DrizzleDataPath;
+        }
+        else
+        {
+            // read preferences in order to get the data directory
+            if (File.Exists(prefFilePath))
+            {
+                var prefs = UserPreferences.LoadFromFile(prefFilePath);
+                dataPath = prefs.DataPath;
+            }
+            else
+            {
+                throw new Exception("preferences.json was not found");
+            }
+        }
+
+        if (!Directory.Exists(dataPath))
+        {
+            throw new DrizzleRenderException($"The data directory {dataPath} does not exist.");
+        }
+
+        LingoRuntime runtime;
+
+        if (staticRuntime is not null)
+        {
+            runtime = staticRuntime;
+        }
+        else
+        {
+            Console.WriteLine("Initializing Zygote runtime...");
+
+            Configuration.Default.PreferContiguousImageBuffers = true;
+            LingoRuntime.MovieBasePath = dataPath + Path.DirectorySeparatorChar;
+            LingoRuntime.CastPath = Path.Combine(Boot.AppDataPath, "assets", "internal") + Path.DirectorySeparatorChar;
+            
+            runtime = new LingoRuntime(typeof(MovieScript).Assembly);
+            runtime.Init();
+            EditorRuntimeHelpers.RunStartup(runtime);
+        }
+
+        EditorRuntimeHelpers.RunLoadLevel(runtime, levelPath);
+
+        var movie = (MovieScript)runtime.MovieScriptInstance;
+        var camCount = (int) movie.gCameraProps.cameras.count;
+
+        void StatusChanged(RenderStatus status)
+        {
+            if (status.Stage.Stage == RenderStage.CameraSetup)
+                Console.WriteLine($"Rendering {status.CountCamerasDone + 1} of {camCount} cameras...");
+        }
+
+        void RenderComplete(int index, LingoImage image)
+        {
+            Console.WriteLine($"Finished {levelName}_{index}.png");
+        }
+        
+        var renderer = new LevelRenderer(runtime, null);
+        renderer.StatusChanged += StatusChanged;
+        renderer.OnScreenRenderCompleted += RenderComplete;
+
+        var stopwatch = Stopwatch.StartNew();
+        renderer.DoRender();
+
+        Console.WriteLine($"Render finished in {stopwatch.Elapsed}");
     }
 }
