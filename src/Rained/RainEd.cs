@@ -75,23 +75,18 @@ sealed class RainEd
         // create serilog logger
         Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
 
-        bool logToStdout = Boot.Options.LogToStdout;
+        bool logToStdout = Boot.Options.ConsoleAttached || Boot.Options.LogToStdout;
 #if DEBUG
         logToStdout = true;
 #endif
 
+        var loggerConfig = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day);
+
         if (logToStdout)
-        {
-            _logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .CreateLogger();
-        }
-        else
-        {
-            _logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
-                .CreateLogger();
-        }
+            loggerConfig = loggerConfig.WriteTo.Console();
+
+        _logger = loggerConfig.CreateLogger();
 
         Logger.Information("========================");
         Logger.Information("Rained {Version} started", Version);

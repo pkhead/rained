@@ -29,6 +29,7 @@ partial class BootOptions
     }
 
     public readonly bool ContinueBoot = true;
+    public readonly bool ConsoleAttached = false;
     public readonly string AppDataPath = Boot.AppDataPath;
     public readonly string? DrizzleDataPath = null;
     public readonly string LevelToLoad = "";
@@ -50,6 +51,7 @@ partial class BootOptions
                 if (arg == "--console")
                 {
                     argCount--;
+                    ConsoleAttached = true;
                     AttachConsole();
                     break;
                 }
@@ -146,7 +148,7 @@ partial class BootOptions
                 continue;
             }
 
-            if (string.IsNullOrEmpty(LevelToLoad))
+            if (string.IsNullOrEmpty(LevelToLoad) && str[0] != '-')
                 LevelToLoad = str;
 
             else
