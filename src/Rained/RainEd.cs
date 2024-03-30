@@ -146,20 +146,35 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
-        Logger.Information("Initializing materials database...");
-        MaterialDatabase = new Tiles.MaterialDatabase();
+        string initPhase = null!;
+        try
+        {
+            initPhase = "materials";
+            Logger.Information("Initializing materials database...");
+            MaterialDatabase = new Tiles.MaterialDatabase();
 
-        Logger.Information("Initializing tile database...");
-        TileDatabase = new Tiles.TileDatabase();
+            initPhase = "tiles";
+            Logger.Information("Initializing tile database...");
+            TileDatabase = new Tiles.TileDatabase();
 
-        Logger.Information("Initializing effects database...");
-        EffectsDatabase = new EffectsDatabase();
+            initPhase = "effects";
+            Logger.Information("Initializing effects database...");
+            EffectsDatabase = new EffectsDatabase();
 
-        Logger.Information("Initializing light brush database...");
-        LightBrushDatabase = new Light.LightBrushDatabase();
+            initPhase = "light brushes";
+            Logger.Information("Initializing light brush database...");
+            LightBrushDatabase = new Light.LightBrushDatabase();
 
-        Logger.Information("Initializing prop database...");
-        PropDatabase = new Props.PropDatabase(TileDatabase);
+            initPhase = "props";
+            Logger.Information("Initializing prop database...");
+            PropDatabase = new Props.PropDatabase(TileDatabase);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.ToString());
+            Boot.DisplayError("Could not start", $"There was an error while loading the {initPhase} Init.txt file:\n\n{e}\n\nThe application will now quit.");
+            throw new RainEdStartupException();
+        }
         
         level = Level.NewDefaultLevel();
 

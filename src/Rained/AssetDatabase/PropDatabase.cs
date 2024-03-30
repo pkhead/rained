@@ -76,7 +76,7 @@ record PropInit
             "antimatter" => PropType.Antimatter,
             "rope" => PropType.Rope,
             "long" => PropType.Long,
-            _ => throw new Exception("Invalid prop init file")
+            _ => throw new Exception("Invalid prop init")
         };
 
         // find prop path
@@ -475,7 +475,7 @@ class PropDatabase
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Invalid header"));
+                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Malformed category header"));
                 currentCategory = new PropCategory(catIndex++, (string) header.values[0], (Lingo.Color) header.values[1]);
                 Categories.Add(currentCategory);
                 RainEd.Logger.Information("Register prop category {PropCategory}", currentCategory.Name);
@@ -484,12 +484,12 @@ class PropDatabase
             // read prop
             else
             {
-                if (currentCategory is null) throw new Exception("Invalid prop init file");
+                if (currentCategory is null) throw new Exception("The first category header is missing");
                 
                 Lingo.List? propData = null;
                 try // curse you Wryak
                 {
-                    propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
+                    propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed prop init"));
                     var propInit = new PropInit(currentCategory, propData);
                     currentCategory.Props.Add(propInit);
                     AddPropToIndex(propInit);
