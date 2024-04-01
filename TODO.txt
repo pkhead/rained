@@ -2,7 +2,6 @@ Priority:
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
-- Icon!
 - fix trans flag prop loading
 
 Bugs:
@@ -14,7 +13,6 @@ Bugs:
 
 Overall:
 - favorite tiles and props
-- fix cli on windows (perhaps a Rained.exe and Rained.Console.exe)
 - file manager "New Folder" button
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
@@ -52,7 +50,7 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 Tile Editor:
 - make 2nd geo spec layer a lighter red 
 - optimize tile rendering
-- customizable autotiling (what's a way to do this without scripting?)
+- customizable autotiling (check out autotiling branch)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
 
