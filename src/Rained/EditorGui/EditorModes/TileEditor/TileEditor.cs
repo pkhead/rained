@@ -388,7 +388,7 @@ partial class TileEditor : IEditorMode
                 int tileX = window.MouseCx;
                 int tileY = window.MouseCy;
 
-                var mouseCell = level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+                ref var mouseCell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
 
                 // if this is a tile body, find referenced tile head
                 if (mouseCell.HasTile() && mouseCell.TileHead is null)
@@ -445,7 +445,19 @@ partial class TileEditor : IEditorMode
                 // remove tile on right click
                 if (selectionMode == SelectionMode.Tiles && window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                 {
-                    RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
+                    if (level.Layers[tileLayer, tileX, tileY].TileHead is not null)
+                    {
+                        RemoveTile(tileLayer, tileX, tileY, modifyGeometry);
+                    }
+                    else
+                    {
+                        RainEd.Logger.Information("Removed detached tile body");
+                        RainEd.Instance.ShowNotification("Removed detached tile body");
+
+                        mouseCell.TileLayer = -1;
+                        mouseCell.TileRootX = -1;
+                        mouseCell.TileRootY = -1;
+                    }
                 }
             }
         }
