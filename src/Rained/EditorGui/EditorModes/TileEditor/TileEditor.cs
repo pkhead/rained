@@ -536,13 +536,40 @@ partial class TileEditor : IEditorMode
         if (MathF.Abs(dx) + MathF.Abs(dy) != 1)
             return false;
 
+        bool noTurn = autotilePath.Count <= autotile.PathThickness / 2;
+        
         if (autotilePath.Count > 2 && autotile.SegmentLength > 1)
+        {
+            // can only make a turn if the last node is in the middle of
+            // a straight segment
+            // TODO: this logic may be incorrect
+            if (autotilePath.Count % autotile.SegmentLength != 1)
+                noTurn = true;
+        }
+
+        // can't make a turn inside another turn segment
+        if (autotilePath.Count >= autotile.PathThickness)
+        {
+            for (int i = autotilePath.Count - autotile.PathThickness; i < autotilePath.Count-1; i++)
+            {
+                GetPathDirections(i, out bool l, out bool r, out bool u, out bool d);
+                if ((l || r) && (u || d))
+                {
+                    noTurn = true;
+                    break;
+                }
+            }
+        }
+
+        // if noTurn is true,
+        // disallow placement if the new node will make a turn
+        if (autotilePath.Count >= 2)
         {
             var otherPos = autotilePath[^2];
             var lastDx = lastPos.X - otherPos.X;
             var lastDy = lastPos.Y - otherPos.Y;
 
-            if (autotilePath.Count % autotile.SegmentLength != 1 && (lastDx != dx || lastDy != dy))
+            if (noTurn && (lastDx != dx || lastDy != dy))
                 return false;
         }
         
