@@ -542,7 +542,7 @@ partial class TileEditor : IEditorMode
             var lastDx = lastPos.X - otherPos.X;
             var lastDy = lastPos.Y - otherPos.Y;
 
-            if (autotilePath.Count % autotile.SegmentLength != 0 && (lastDx != dx || lastDy != dy))
+            if (autotilePath.Count % autotile.SegmentLength != 1 && (lastDx != dx || lastDy != dy))
                 return false;
         }
         
@@ -565,7 +565,7 @@ partial class TileEditor : IEditorMode
         if (isAutotileActive)
         {
             float gridOffset = autotile.PathThickness % 2 == 0 ? 0f : 0.5f;
-            float gridOffsetInverse = autotile.PathThickness % 2 == 0 ? 0.5f : 0f;
+            float gridOffsetInverse = 0.5f - gridOffset;
 
             // add current position to autotile path
             // only add the position if it is adjacent to the last
@@ -583,11 +583,8 @@ partial class TileEditor : IEditorMode
             }
             else
             {
-                // snap to grid according the the segment length
-                //var seg = autotile.SegmentLength;
-                //mousePos.X = (int)MathF.Round((float)(mousePos.X - autotilePath[0].X) / seg) * seg + autotilePath[0].X;
-                //mousePos.Y = (int)MathF.Round((float)(mousePos.Y - autotilePath[0].Y) / seg) * seg + autotilePath[0].Y;
-                
+                // only place node if there isn't already a node here
+                // and the CanAppendPath check returns true
                 if (!autotilePath.Contains(mousePos))
                 {
                     if (CanAppendPath(autotile, mousePos))
@@ -605,40 +602,15 @@ partial class TileEditor : IEditorMode
                 }
             }
 
-            // calculate autotile path node directions
+            // pre-calculate autotile path node directions
             for (int i = 0; i < autotilePath.Count; i++)
             {
                 autotilePathDirs[i] = GetPathDirections(i);
             }
 
-            // make all path nodes that would be inside a turn tile
-            // remove the borders that are facing the directions of the turn
-            // as the path preview borders draw borders according to autotilePathDirs
-            /*if (autotile.PathThickness > 1)
-            {
-                int i = 1;
-                for (; i < autotilePath.Count - 1; i++)
-                {
-                    var curDir = autotilePathDirs[i];
-                    bool horiz = curDir.HasFlag(PathDirection.Left) || curDir.HasFlag(PathDirection.Right);
-                    bool vert = curDir.HasFlag(PathDirection.Up) || curDir.HasFlag(PathDirection.Down);
-
-                    if (horiz && vert)
-                    {
-                        for (int j = i - autotile.PathThickness / 2; j <= i + autotile.PathThickness / 2f; j++)
-                        {
-                            if (j < 0 || j >= autotilePath.Count)
-                                continue;
-                            
-                            autotilePathDirs[j] |= curDir;
-                        }
-                        i += (int)(autotile.PathThickness / 2f);
-                    }
-                }
-            }*/
-
-            // draw autotile path
+            // draw autotile path nodes
             // only drawing lines where the path doesn't connect to another segment
+            var color = RainEd.Instance.Preferences.LayerColor2.ToRGBA(120);
             for (int i = 0; i < autotilePath.Count; i++)
             {
                 var nodePos = autotilePath[i];
@@ -649,23 +621,27 @@ partial class TileEditor : IEditorMode
                 var cellOrigin = new Vector2(x, y);
                 
                 // draw tile path line
-                if (left)
+                Raylib.DrawRectangleV(cellOrigin * Level.TileSize - new Vector2(4f, 4f), new Vector2(8f, 8f), color);
+
+                /*if (left)
                     Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x-0.5f, y)*Level.TileSize, Color.White);
                 if (right)
                     Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x+0.5f, y)*Level.TileSize, Color.White);
                 if (up)
                     Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y-0.5f)*Level.TileSize, Color.White);
                 if (down)
-                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y+0.5f)*Level.TileSize, Color.White);
+                    Raylib.DrawLineV(cellOrigin*Level.TileSize, new Vector2(x, y+0.5f)*Level.TileSize, Color.White);*/
             }
 
             previewSegments.Clear();
             
-            int lineStart = 0;
+            int firstIndex = autotile.PathThickness % 2 == 0 ? 1 : 0;
+            int lineStart = firstIndex;
             PathDirection lineDir = 0;
 
             if (autotilePath.Count > 1)
             {
+                // find the turns (or the end of the path)
                 for (int i = 0; i <= autotilePath.Count; i++)
                 {
                     int lineEnd = -1;
@@ -673,9 +649,11 @@ partial class TileEditor : IEditorMode
                     if (i < autotilePath.Count)
                     {
                         var nodePos = autotilePath[i];
-                        var directions = GetPathDirections(i);
+                        var directions = autotilePathDirs[i];
                         bool horiz = directions.HasFlag(PathDirection.Left) || directions.HasFlag(PathDirection.Right);
                         bool vert = directions.HasFlag(PathDirection.Up) || directions.HasFlag(PathDirection.Down);
+
+                        // if this is a node where a turn occurs
                         if (horiz && vert)
                         {
                             previewSegments.Add(new PreviewSegment()
@@ -684,7 +662,11 @@ partial class TileEditor : IEditorMode
                                 Directions = directions
                             });
 
+                            // where the end of the line before the turn is
                             lineEnd = i - autotile.PathThickness / 2;
+                            if (autotile.PathThickness % 2 == 0) lineEnd++;
+
+                            // set the start of the next line
                             i += autotile.PathThickness / 2;
                         }
                         else
@@ -694,13 +676,16 @@ partial class TileEditor : IEditorMode
                     }
                     else
                     {
+                        // end of path reached
                         lineEnd = autotilePath.Count;
                     }
 
+                    // procedure to create the line of segments
+                    // in between lineStart and lineEnd
                     if (lineEnd >= 0 && lineStart < autotilePath.Count)
                     {
+                        // calculate the direction of the line
                         int dx, dy;
-
                         if (lineStart == autotilePath.Count - 1)
                         {
                             dx = autotilePath[lineStart].X - autotilePath[lineStart-1].X;
@@ -716,20 +701,34 @@ partial class TileEditor : IEditorMode
                             throw new Exception();
                         
                         var dir = new Vector2(dx, dy);
+                        var pOffset = autotile.PathThickness % 2 == 0 ? -0.5f : 0f;
 
                         PathDirection dirFlags = 0;
-                        if (dx != 0) dirFlags |= PathDirection.Right;
-                        if (dx != 0) dirFlags |= PathDirection.Left;
-                        if (dy != 0) dirFlags |= PathDirection.Down;
-                        if (dy != 0) dirFlags |= PathDirection.Up;
+                        if (dx != 0) dirFlags |= PathDirection.Right | PathDirection.Left;
+                        if (dy != 0) dirFlags |= PathDirection.Down | PathDirection.Up;
 
+                        // loop to create the segments
                         for (int j = lineStart; j < lineEnd; j += autotile.SegmentLength)
                         {
-                            var nodePos = autotilePath[j] + new Vector2(gridOffset, gridOffset);
+                            Vector2 nodePos = new(autotilePath[j].X, autotilePath[j].Y);
+                            nodePos += new Vector2(gridOffset, gridOffset);
+
+                            // if at the ends of the path, use the raw path direction of that node
+                            // this is so an edge is created at the caps
+                            PathDirection segmentDir;
+
+                            if (j == firstIndex)
+                                segmentDir = autotilePathDirs[0];
+                            else if (j + autotile.SegmentLength >= autotilePath.Count)
+                                segmentDir = autotilePathDirs[^1];
+                            else
+                                segmentDir = dirFlags;
+
+                            // create the segment
                             previewSegments.Add(new PreviewSegment()
                             {
-                                Center = nodePos + dir * (autotile.SegmentLength / 2f - gridOffset),
-                                Directions = dirFlags
+                                Center = nodePos + dir * pOffset,
+                                Directions = segmentDir
                             });
                         }
 
@@ -749,53 +748,40 @@ partial class TileEditor : IEditorMode
                 bool vert = up || down;
 
                 var cellCenter = segment.Center;
+                
+                var x = cellCenter.X;
+                var y = cellCenter.Y;
 
-                if (horiz && vert)
-                {
-                    Vector2 rectA = cellCenter - new Vector2(autotile.PathThickness / 2f, autotile.PathThickness / 2f);
-                    Vector2 rectB = cellCenter + new Vector2(autotile.PathThickness / 2f, autotile.PathThickness / 2f);
-                    Raylib.DrawRectangleLinesEx(
-                        new Rectangle(rectA * Level.TileSize, (rectB - rectA) * Level.TileSize),
-                        1f / window.ViewZoom,
+                float vertThickness = vert ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+                float horizThickness = horiz ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+
+                if (!left)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
                         Color.White
                     );
-                }
-                else
-                {
-                    var x = cellCenter.X;
-                    var y = cellCenter.Y;
 
-                    float vertThickness = (vert && (up || down)) ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
-                    float horizThickness = (horiz && (right || left)) ? autotile.PathThickness / 2f : autotile.SegmentLength / 2f;
+                if (!right)
+                    Raylib.DrawLineV(
+                        new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                        Color.White
+                    );
 
-                    if (!left)
-                        Raylib.DrawLineV(
-                            new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
-                            new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
-                            Color.White
-                        );
+                if (!up)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
+                        Color.White
+                    );
 
-                    if (!right)
-                        Raylib.DrawLineV(
-                            new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
-                            new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
-                            Color.White
-                        );
-
-                    if (!up)
-                        Raylib.DrawLineV(
-                            new Vector2(x - vertThickness, y - horizThickness) * Level.TileSize,
-                            new Vector2(x + vertThickness, y - horizThickness) * Level.TileSize,
-                            Color.White
-                        );
-
-                    if (!down)
-                        Raylib.DrawLineV(
-                            new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
-                            new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
-                            Color.White
-                        );
-                }
+                if (!down)
+                    Raylib.DrawLineV(
+                        new Vector2(x - vertThickness, y + horizThickness) * Level.TileSize,
+                        new Vector2(x + vertThickness, y + horizThickness) * Level.TileSize,
+                        Color.White
+                    );
             }
             
             // mouse released

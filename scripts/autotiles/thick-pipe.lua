@@ -6,7 +6,7 @@ local autotile = rained.createAutotile()
 autotile.name = "Thick Pipe"
 autotile.type = "path"
 autotile.pathThickness = 2
-autotile.segmentLength = 2
+autotile.segmentLength = 1
 
 -- Rained will not allow the user to use this autotile
 -- if any of the tiles in this table are not installed
