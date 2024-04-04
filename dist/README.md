@@ -30,6 +30,9 @@ If you've used a Rain World level editor before, how to use Rained hopefully sho
 - If you scale multiple props, it will force proportional scaling.
 - You can use your mouse to manipulate the light circle in the light editor.
 
+If you do not like the keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
+accessible by going to the "File" clicking on "Preferences".
+
 Here are some tips on using the GUI elements:
 - You can freely move and resize docks (e.g. the level dock, the build dock, the shortcuts dock, etc).
 - In the prop editor, some inputs for the prop options are drag inputs, meaning that to change them you

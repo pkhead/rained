@@ -22,6 +22,7 @@ static class AssetManagerGUI
 
     private static FileBrowser? fileBrowser = null;
     private static readonly List<string> missingDirs = []; // data directory validation
+    private static string errorMsg = string.Empty;
 
     // variables related to the merge process
     
@@ -206,7 +207,8 @@ static class AssetManagerGUI
         
         static bool isInitFile(string path, bool isRw)
         {
-            return Path.GetFileName(path) == "Init.txt";
+            var filename = Path.GetFileName(path);
+            return filename == "Init.txt" || string.Equals(filename, "copy to init.txt", StringComparison.InvariantCultureIgnoreCase);
         }
 
         if (ImGui.Button("Import Init.txt"))
@@ -391,7 +393,16 @@ static class AssetManagerGUI
                     ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
                     if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
                     {
-                        ImGui.Text($"An error occured while importing the pack.");
+                        var exception = mergeTask.Exception.InnerExceptions[0];
+                        if (exception is MergeException)
+                        {
+                            ImGui.TextUnformatted(exception.Message);
+                        }
+                        else
+                        {
+                            ImGui.Text($"An error occured while importing the pack.");
+                        }
+
                         ImGui.Separator();
                         
                         if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
@@ -459,24 +470,36 @@ static class AssetManagerGUI
 
     public static void SetDataPath(string newPath)
     {
-        // check for any missing directories
-        missingDirs.Clear();
-        missingDirs.Add("Graphics");
-        missingDirs.Add("Props");
-        missingDirs.Add("Levels");
+        var oldPath = RainEd.Instance.AssetDataPath;
 
-        for (int i = missingDirs.Count - 1; i >= 0; i--)
+        try
         {
-            if (Directory.Exists(Path.Combine(newPath, missingDirs[i])))
+            // check for any missing directories
+            missingDirs.Clear();
+            missingDirs.Add("Graphics");
+            missingDirs.Add("Props");
+            missingDirs.Add("Levels");
+
+            for (int i = missingDirs.Count - 1; i >= 0; i--)
             {
-                missingDirs.RemoveAt(i);
+                if (Directory.Exists(Path.Combine(newPath, missingDirs[i])))
+                {
+                    missingDirs.RemoveAt(i);
+                }
+            }
+
+            if (missingDirs.Count == 0)
+            {
+                RainEd.Instance.AssetDataPath = newPath;
+                assetManager = new AssetManager();
             }
         }
-
-        if (missingDirs.Count == 0)
+        catch (Exception e)
         {
-            RainEd.Instance.AssetDataPath = newPath;
-            assetManager = new AssetManager();
+            RainEd.Logger.Error(e.ToString());
+            errorMsg = "Malformed Init.txt file in the new data folder";
+
+            RainEd.Instance.AssetDataPath = oldPath;
         }
     }
 
@@ -519,6 +542,26 @@ static class AssetManagerGUI
                 {
                     ImGui.CloseCurrentPopup();
                     missingDirs.Clear();
+                }
+
+                ImGui.EndPopup();
+            }
+        }
+
+        // general error message
+        if (!string.IsNullOrEmpty(errorMsg))
+        {
+            ImGuiExt.EnsurePopupIsOpen("Error");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.TextUnformatted(errorMsg);
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                {
+                    ImGui.CloseCurrentPopup();
+                    errorMsg = string.Empty;
                 }
 
                 ImGui.EndPopup();

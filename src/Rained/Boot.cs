@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace RainEd
 {
-    partial class Boot
+    static partial class Boot
     {
         // find the location of the app data folder
 #if DATA_ASSEMBLY
@@ -28,76 +28,65 @@ namespace RainEd
         private static bool isAppReady = false;
         private static RenderWindow? splashScreenWindow = null;
 
-        static void Main(string[] args)
+        private static BootOptions bootOptions = null!;
+        public static BootOptions Options { get => bootOptions; }
+
+        private static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             
-            // parse command arguments
-            bool showSplashScreen = true;
+            bootOptions = new BootOptions(args);
+            if (!bootOptions.ContinueBoot)
+                return;
+
+            if (bootOptions.Render)
+                LaunchRenderer();
+            else
+                LaunchEditor();
+        }
+
+        private static void LaunchRenderer()
+        {
+            if (string.IsNullOrEmpty(bootOptions.LevelToLoad))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+
+                Console.WriteLine("The level path was not given");
+                Environment.ExitCode = 2;
+                return;
+            }
+
+            try
+            {
+                DrizzleRender.Render(bootOptions.LevelToLoad);
+            }
+            catch (DrizzleRenderException e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+                Console.WriteLine(e.Message);
+                Environment.ExitCode = 1;
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("error: ");
+                Console.ResetColor();
+                Console.WriteLine(e);
+                Environment.ExitCode = 1;
+            }
+        }
+
+        private static void LaunchEditor()
+        {
             bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
-            string levelToLoad = string.Empty;
-
-            if (args.Length == 1)
-            {
-                if (args[0] == "--help" || args[0] == "-h")
-                {
-                    Console.WriteLine(
-                    $"""
-                    Rained {RainEd.Version}
-
-                    Usage:
-                        Rained [-v | --version]
-                        Rained [-h | --help]
-                        Rained [--no-splash-screen] [--app-data <path>] [--ogscule] [<level path>]
-                        
-                    --version -v            Print out version
-                    --help                  Show this help menu
-                    --no-splash-screen      Do not show the splash screen when starting
-                    --app-data <path>       Run with app data directory at <path>
-                    --ogscule               the intrusive thoughts defeated me
-                    <level path>            The path of the level to load
-                    """
-                    );
-
-                    return;
-                }
-                else if (args[0] == "--version" || args[0] == "-v")
-                {
-                    Console.WriteLine($"Rained {RainEd.Version}");
-                    return;
-                }
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                var str = args[i];
-
-                // this is here because it appears SFML uses some
-                // OpenGL extensions that RenderDoc doesn't support
-                if (str == "--no-splash-screen")
-                {
-                    showSplashScreen = false;
-                    continue;
-                }
-
-                // runtime-configurable app data path because why not
-                if (str == "--app-data")
-                {
-                    i++;
-                    AppDataPath = args[i];
-                    continue;
-                }
-
-                // the intrusive thoughts defeated me
-                if (str == "--ogscule")
-                {
-                    Console.WriteLine("ogscule");
-                    showAltSplashScreen = true;
-                    continue;
-                }
-
-                levelToLoad = str;
-            }
+            AppDataPath = Options.AppDataPath;
+            
+            if (bootOptions.ShowOgscule)
+                showAltSplashScreen = true;
             
             // create splash screen window using sfml
             // to display while editor is loading
@@ -105,7 +94,7 @@ namespace RainEd
             // cus raylib doesn't have multi-window support
             // I was originally going to use only SFML, but it didn't have any
             // good C# ImGui integration libraries. (Raylib did, though)
-            if (showSplashScreen)
+            if (!bootOptions.NoSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
                 Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
@@ -122,6 +111,21 @@ namespace RainEd
                 Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
                 Raylib.SetTargetFPS(240);
                 Raylib.SetExitKey(KeyboardKey.Null);
+
+                // set window icons
+                var windowIcons = new Raylib_cs.Image[6];
+                windowIcons[0] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon16.png"));
+                windowIcons[1] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon24.png"));
+                windowIcons[2] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon32.png"));
+                windowIcons[3] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon48.png"));
+                windowIcons[4] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon128.png"));
+                windowIcons[5] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon256.png"));
+                
+                unsafe
+                {
+                    fixed (Raylib_cs.Image* iconArr = windowIcons)
+                        Raylib.SetWindowIcons(iconArr, windowIcons.Length);
+                }
 
                 // setup imgui
                 rlImGui.Setup(true, true);
@@ -149,7 +153,7 @@ namespace RainEd
 
                 try
                 {
-                    app = new(assetDataPath, levelToLoad);
+                    app = new(assetDataPath, bootOptions.LevelToLoad);
                 }
                 catch (RainEdStartupException)
                 {
@@ -197,6 +201,9 @@ namespace RainEd
 #endif
 
                 rlImGui.Shutdown();
+
+                foreach (var img in windowIcons)
+                    Raylib.UnloadImage(img);
             }
 
             GC.Collect();

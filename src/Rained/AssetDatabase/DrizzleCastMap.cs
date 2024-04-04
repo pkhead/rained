@@ -7,6 +7,7 @@ static class DrizzleCastMap
     
     private readonly static Dictionary<string, string> Map = new()
     {
+        // Drought_393439_Drought Needed Init.txt
         {"4Mosaic Square", "Drought_393440_4Mosaic Square.png"},
         {"4Mosaic Slope NE", "Drought_393448_4Mosaic Slope NE.png"},
         {"4Mosaic Slope NW", "Drought_393451_4Mosaic Slope NW.png"},
@@ -80,5 +81,14 @@ static class DrizzleCastMap
         {"Missing Metal Slope SE", "Drought_393507_Missing Metal Slope SE.png"},
         {"Missing Metal Floor", "Drought_393504_Missing Metal Floor.png"},
         {"Dune Sand", "Dry Editor_458767_Dune Sand.png"},
+        
+        // props
+        {"Big Big Pipe", "Drought_393516_Big Big Pipe.png"},
+        {"Ring Chain", "Drought_393512_Ring Chain.png"},
+        {"Christmas Wire", "Drought_393519_Christmas Wire.png"},
+        {"Ornate Wire", "Drought_393554_Ornate Wire.png"},
+        {"Stretched Pipe", "Drought_393513_Stretched Pipe.png"},
+        {"Twisted Thread", "Drought_393515_Twisted Thread.png"},
+        {"Stretched Wire", "Drought_393514_Stretched Wire.png"},
     };
 }

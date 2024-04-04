@@ -209,7 +209,7 @@ class TileDatabase
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Invalid header"));
+                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Malformed category header"));
                 curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
                 {
                     Index = groupIndex
@@ -222,9 +222,9 @@ class TileDatabase
             }
             else
             {
-                if (curGroup is null) throw new Exception("Invalid tile init file");
+                if (curGroup is null) throw new Exception("The first category header is missing");
 
-                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Invalid tile init file"));
+                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
 
                 object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];

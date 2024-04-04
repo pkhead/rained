@@ -1,18 +1,14 @@
 using ImGuiNET;
 using System.Numerics;
-using System.Text.Json;
 namespace RainEd;
 
 // This is a modified version of the code for ImGui.ShowStyleEditor(), converted to C#
 static class ThemeEditor
 {
-    private static int output_dest = 0;
-    private static bool output_only_modified = true;
     private static ImGuiStyle ref_saved_style = new();
     private static bool init = true;
     private static ImGuiTextFilter filter = new();
     private static ImGuiColorEditFlags alpha_flags = 0;
-    private static float window_scale = 1.0f;
 
     private static FileBrowser? fileBrowser = null;
 

@@ -263,6 +263,11 @@ static class PreferencesWindow
             bool hideScreenSize = prefs.HideScreenSize;
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
                 prefs.HideScreenSize = hideScreenSize;
+
+            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 10f);
+            var camBorderMode = (int) prefs.CameraBorderMode;
+            if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
+                prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
         }
     }
 
@@ -324,6 +329,9 @@ static class PreferencesWindow
 
         ImGui.SeparatorText("Light");
         ShortcutButton(KeyShortcut.ResetBrushTransform);
+        ShortcutButton(KeyShortcut.ScaleLightBrush);
+        ShortcutButton(KeyShortcut.RotateLightBrush);
+        ImGui.Separator();
         ShortcutButton(KeyShortcut.ZoomLightIn);
         ShortcutButton(KeyShortcut.ZoomLightOut);
         ShortcutButton(KeyShortcut.RotateLightCW);

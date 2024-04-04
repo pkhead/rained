@@ -103,6 +103,7 @@ class GeometryEditor : IEditorMode
 
     private Tool selectedTool = Tool.Wall;
     private bool isToolActive = false;
+    private bool isErasing = false;
     private readonly RlManaged.Texture2D toolIcons;
 
     // tool rect - for wall/air/inverse/geometry tools
@@ -415,6 +416,8 @@ class GeometryEditor : IEditorMode
 
             selectedTool = (Tool) Math.Clamp(toolRow*4 + toolCol, 0, toolCount-1);
         }
+
+        bool isMouseDown = window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right);
         
         if (window.IsViewportHovered)
         {
@@ -459,24 +462,41 @@ class GeometryEditor : IEditorMode
 
                 // activate tool on click
                 // or if user moves mouse on another tile space
-                if (window.IsMouseClicked(ImGuiMouseButton.Left))
+                bool isClicked = false;
+                if (!isToolActive && isMouseDown)
                 {
+                    isClicked = true;
+                    isErasing = window.IsMouseDown(ImGuiMouseButton.Right);
                     isToolActive = true;
                     window.CellChangeRecorder.BeginChange();
                 }
                 
                 if (isToolActive)
                 {
-                    if (window.IsMouseClicked(ImGuiMouseButton.Left) || (window.MouseCx != lastMouseX || window.MouseCy != lastMouseY))
+                    if (isClicked || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
                     {
-                        if (!isToolRectActive)
-                            ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                        if (isErasing)
+                        {
+                            ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+                            cell.Objects = 0;
+
+                            if (cell.Geo == GeoType.ShortcutEntrance)
+                            {
+                                cell.Geo = GeoType.Air;
+                                window.LevelRenderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, window.WorkLayer);
+                            }
+                        }
+                        else
+                        {
+                            if (!isToolRectActive)
+                                ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                        }
                     }
                 }
             }
         }
 
-        if (isToolActive && window.IsMouseReleased(ImGuiMouseButton.Left))
+        if (isToolActive && !isMouseDown)
         {
             isToolActive = false;
             window.CellChangeRecorder.PushChange();

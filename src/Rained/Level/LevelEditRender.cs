@@ -2,6 +2,7 @@ using Raylib_cs;
 using System.Numerics;
 
 namespace RainEd;
+using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
 class LevelEditRender
 {
@@ -946,30 +947,41 @@ class LevelEditRender
     {
         if (!ViewCameras) return;
 
+        var camBorderMode = RainEd.Instance.Preferences.CameraBorderMode;
+        bool both = camBorderMode == CameraBorderModeOption.Both;
+        bool showWidescreen = camBorderMode == CameraBorderModeOption.Widescreen || both;
+        bool showStandard = camBorderMode == CameraBorderModeOption.Standard || both;
+
         foreach (var camera in Level.Cameras)
         {
             var camCenter = camera.Position + Camera.WidescreenSize / 2f;
 
             // draw full rect ouline
-            Raylib.DrawRectangleLinesEx(
-                new Rectangle(
-                    camera.Position * Level.TileSize,
-                    Camera.WidescreenSize * Level.TileSize
-                ),
-                2f / ViewZoom,
-                new Color(0, 255, 0, 255)       
-            );
+            if (showWidescreen)
+            {
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(
+                        camera.Position * Level.TileSize,
+                        Camera.WidescreenSize * Level.TileSize
+                    ),
+                    2f / ViewZoom,
+                    new Color(0, 255, 0, 255)       
+                );
+            }
 
             // 4:3 outline
-            var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
-            Raylib.DrawRectangleLinesEx(
-                new Rectangle(
-                    (camCenter - standardResOutlineSize / 2) * Level.TileSize,
-                    standardResOutlineSize * Level.TileSize
-                ),
-                1f / ViewZoom,
-                new Color(0, 255, 0, 255)
-            );
+            if (showStandard)
+            {
+                var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
+                Raylib.DrawRectangleLinesEx(
+                    new Rectangle(
+                        (camCenter - standardResOutlineSize / 2) * Level.TileSize,
+                        standardResOutlineSize * Level.TileSize
+                    ),
+                    (both ? 1f : 2f) / ViewZoom,
+                    new Color(0, 255, 0, 255)
+                );
+            }
         }
     }
 

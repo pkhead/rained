@@ -51,6 +51,50 @@ class UserPreferences
     //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.
     public bool HideScreenSize { get; set; }
 
+    public enum CameraBorderModeOption : int
+    {
+        Standard,
+        Widescreen,
+        Both
+    };
+    public CameraBorderModeOption CameraBorderMode;
+
+    [JsonPropertyName("cameraBorderMode")]
+    public string CameraBorderModeString {
+        get => CameraBorderMode switch
+        {
+            CameraBorderModeOption.Standard => "standardBorder",
+            CameraBorderModeOption.Widescreen => "widescreenBorder",
+            CameraBorderModeOption.Both => "both",
+            _ => throw new Exception("Invalid CameraBorderModeOption")
+        };
+
+        set
+        {
+            switch(value)
+            {
+                case "standardBorder":
+                    CameraBorderMode = CameraBorderModeOption.Standard;
+                    break;
+
+                case "widescreenBorder":
+                    CameraBorderMode = CameraBorderModeOption.Widescreen;
+                    break;
+
+                case "both":
+                    CameraBorderMode = CameraBorderModeOption.Both;
+                    break;
+
+                default:
+                    if (RainEd.Instance is not null)
+                        RainEd.Logger.Error("Invalid CameraBorderMode '{Value}'", value);
+                    
+                    CameraBorderMode = CameraBorderModeOption.Both;
+                    break;
+            }
+        }
+    }
+
     public bool WindowMaximized { get; set; }
     public int WindowWidth { get; set; }
     public int WindowHeight { get; set; }
@@ -91,6 +135,7 @@ class UserPreferences
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";
         HideScreenSize = false;
+        CameraBorderMode = CameraBorderModeOption.Both;
 
         WindowMaximized = false;
         WindowWidth = Boot.DefaultWindowWidth;
@@ -109,7 +154,9 @@ class UserPreferences
 
         // initialize shortcuts
         Shortcuts = null!;
-        SaveKeyboardShortcuts();
+
+        if (RainEd.Instance is not null)
+            SaveKeyboardShortcuts();
     }
 
     public static void SaveToFile(UserPreferences prefs, string filePath)

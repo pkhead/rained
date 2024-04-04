@@ -32,6 +32,7 @@ enum KeyShortcut : int
     ResetBrushTransform,
     ZoomLightIn, ZoomLightOut,
     RotateLightCW, RotateLightCCW,
+    ScaleLightBrush, RotateLightBrush,
 
     // Camera
     CameraSnapX, CameraSnapY,
@@ -283,11 +284,6 @@ static class KeyShortcuts
                 shortcut.IsDown = true;
             }
 
-            if (shortcut.IsDown)
-            {
-                Console.WriteLine("Down " + shortcut.ID);
-            }
-
             shortcut.IsDeactivated = false;
             if (shortcut.IsDown && !shortcut.IsKeyDown())
             {
@@ -350,6 +346,8 @@ static class KeyShortcuts
         Register("Move Light Outward", KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiModFlags.Shift);
         Register("Rotate Light CW", KeyShortcut.RotateLightCW, ImGuiKey.D, ImGuiModFlags.Shift);
         Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiModFlags.Shift);
+        Register("Scale Brush", KeyShortcut.ScaleLightBrush, ImGuiKey.Q, ImGuiModFlags.None);
+        Register("Rotate Brush", KeyShortcut.RotateLightBrush, ImGuiKey.E, ImGuiModFlags.None);
 
         // Camera Editor
         Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.Q, ImGuiModFlags.None);

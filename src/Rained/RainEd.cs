@@ -17,9 +17,10 @@ public class RainEdStartupException : Exception
     public RainEdStartupException(string message) : base(message) { }
     public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
 }
+
 sealed class RainEd
 {
-    public const string Version = "b1.3.2"; 
+    public const string Version = "b1.3.5";
 
     public static RainEd Instance = null!;
 
@@ -65,7 +66,7 @@ sealed class RainEd
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
-
+    
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
@@ -74,16 +75,20 @@ sealed class RainEd
 
         // create serilog logger
         Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
-    
+
+        bool logToStdout = Boot.Options.ConsoleAttached || Boot.Options.LogToStdout;
 #if DEBUG
-        _logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .CreateLogger();
-#else
-        _logger = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day)
-            .CreateLogger();
+        logToStdout = true;
 #endif
+
+        var loggerConfig = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day);
+
+        if (logToStdout)
+            loggerConfig = loggerConfig.WriteTo.Console();
+
+        _logger = loggerConfig.CreateLogger();
+
         Logger.Information("========================");
         Logger.Information("Rained {Version} started", Version);
         Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
@@ -118,6 +123,13 @@ sealed class RainEd
             UserPreferences.SaveToFile(Preferences, prefFilePath);
         }
 
+        // if --data was passed into the program arguments,
+        // set the data path value to it
+        if (Boot.Options.DrizzleDataPath is not null)
+        {
+            Preferences.DataPath = Boot.Options.DrizzleDataPath;
+        }
+
         Preferences.ApplyTheme();
 
         // load asset database
@@ -130,43 +142,62 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
-        Logger.Information("Initializing materials database...");
-        MaterialDatabase = new Tiles.MaterialDatabase();
-
-        Logger.Information("Initializing tile database...");
-        TileDatabase = new Tiles.TileDatabase();
-
-        // run lua scripts after initializing the tiles
-        // (trying to get lua error messages to show as soon as possible)
+        string initPhase = null!;
         try
         {
-            LuaInterface.Initialize();
-            LuaInterface.CheckAutotileRequirements();
-        }
-        catch (LuaScriptException e)
-        {
-            Exception actualException = e.IsNetException ? e.InnerException! : e;
-            string? stackTrace = actualException.Data["Traceback"] as string;
+            initPhase = "materials";
+            Logger.Information("Initializing materials database...");
+            MaterialDatabase = new Tiles.MaterialDatabase();
 
-            var displayMsg = "RainEd could not start due to an error in a Lua script:\n\n" + actualException.Message;
-            if (stackTrace is not null)
+            initPhase = "tiles";
+            Logger.Information("Initializing tile database...");
+            TileDatabase = new Tiles.TileDatabase();
+            
+            // run lua scripts after initializing the tiles
+            // (trying to get lua error messages to show as soon as possible)
+            try
             {
-                displayMsg += "\n" + stackTrace;
+                LuaInterface.Initialize();
+                LuaInterface.CheckAutotileRequirements();
             }
+            catch (LuaScriptException e)
+            {
+                Exception actualException = e.IsNetException ? e.InnerException! : e;
+                string? stackTrace = actualException.Data["Traceback"] as string;
 
-            _logger.Error(displayMsg);
-            Boot.DisplayError("Could not start", displayMsg);
+                var displayMsg = "RainEd could not start due to an error in a Lua script:\n\n" + actualException.Message;
+                if (stackTrace is not null)
+                {
+                    displayMsg += "\n" + stackTrace;
+                }
+
+                _logger.Error(displayMsg);
+                Boot.DisplayError("Could not start", displayMsg);
+                throw new RainEdStartupException();
+            }
+            
+            initPhase = "effects";
+            Logger.Information("Initializing effects database...");
+            EffectsDatabase = new EffectsDatabase();
+
+            initPhase = "light brushes";
+            Logger.Information("Initializing light brush database...");
+            LightBrushDatabase = new Light.LightBrushDatabase();
+
+            initPhase = "props";
+            Logger.Information("Initializing prop database...");
+            PropDatabase = new Props.PropDatabase(TileDatabase);
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e.ToString());
+            
+            if (e is RainEdStartupException)
+                throw;
+            
+            Boot.DisplayError("Could not start", $"There was an error while loading the {initPhase} Init.txt file:\n\n{e}\n\nThe application will now quit.");
             throw new RainEdStartupException();
         }
-
-        Logger.Information("Initializing effects database...");
-        EffectsDatabase = new EffectsDatabase();
-
-        Logger.Information("Initializing light brush database...");
-        LightBrushDatabase = new Light.LightBrushDatabase();
-
-        Logger.Information("Initializing prop database...");
-        PropDatabase = new Props.PropDatabase(TileDatabase);
         
         level = Level.NewDefaultLevel();
 

@@ -18,6 +18,14 @@
 */
 namespace RainEd.Assets;
 
+[Serializable]
+public class MergeException : Exception
+{
+    public MergeException() { }
+    public MergeException(string message) : base(message) { }
+    public MergeException(string message, System.Exception inner) : base(message, inner) { }
+}
+
 record InitData
 {
     public string Name;
@@ -264,6 +272,10 @@ record CategoryList
 
     public async Task Merge(string otherPath, PromptRequest promptOverwrite)
     {
+        // damn you solar!!!!
+        // putting comments in init.txt files...
+        bool strict = Path.GetFileName(otherPath) == "Init.txt";
+
         try
         {
             // automatically overwrite items that are only defined one time
@@ -308,15 +320,26 @@ record CategoryList
                 // category
                 if (line[0] == '-')
                 {
-                    InitCategory category;
+                    InitCategory? category = null;
 
                     if (isColored)
                     {
-                        var list = (Lingo.List) parser.Read(line[1..])!;
-                        category = new InitCategory(
-                            name: (string) list.values[0],
-                            color: (Lingo.Color) list.values[1]
-                        );
+                        var list = parser.Read(line[1..])! as Lingo.List;
+
+                        if (list is not null)
+                        {
+                            category = new InitCategory(
+                                name: (string) list.values[0],
+                                color: (Lingo.Color) list.values[1]
+                            );
+                        }
+                        else
+                        {
+                            if (strict)
+                                throw new MergeException("Malformed category header!");
+
+                            RainEd.Logger.Information("Ignore '{Line}'", line);
+                        }
                     }
                     else
                     {
@@ -324,29 +347,31 @@ record CategoryList
                     }
 
                     // don't write new line if overwriting a category with the same name and color
-                    InitCategory? oldCategory = null;
-                    if ((oldCategory = GetCategory(category.Name)) is not null)
+                    if (category is not null)
                     {
-                        // throw error on color mismatch
-                        if (oldCategory.Color != category.Color)
-                            throw new Exception($"Category '{category.Name}' already exists!");
-                        
-                        targetCategory = oldCategory;
+                        InitCategory? oldCategory = null;
+                        if ((oldCategory = GetCategory(category.Name)) is not null)
+                        {
+                            // throw error on color mismatch
+                            if (oldCategory.Color != category.Color)
+                                throw new Exception($"Category '{category.Name}' already exists!");
+                            
+                            targetCategory = oldCategory;
 
-                        // this will insert a newline when adding
-                        // new tiles to the category
-                        lineAccum = 1;
+                            // this will insert a newline when adding
+                            // new tiles to the category
+                            lineAccum = 1;
+                        }
+                        else
+                        {
+                            // register the category
+                            FlushLineAccum(Lines.Count);
+                            Lines.Add(line);
+                            parsedLines.Add(category);
+                            Categories.Add(category);
+                            targetCategory = category;
+                        }
                     }
-                    else
-                    {
-                        // register the category
-                        FlushLineAccum(Lines.Count);
-                        Lines.Add(line);
-                        parsedLines.Add(category);
-                        Categories.Add(category);
-                        targetCategory = category;
-                    }
-
                 }
 
                 // item

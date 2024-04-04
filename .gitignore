@@ -6,6 +6,7 @@
 **/bin
 **/obj
 /build
+/rained_X.X.X-win-x64.zip
 
 # Visual Studio Code fieles
 /.vscode

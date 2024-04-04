@@ -3,7 +3,7 @@
 -- ok i know lua is a weird choice but i never bothered to learn python
 
 local lfs = require("lfs") -- luafilesystem
-local initFile = assert(io.open("Data/Cast/Drought_393439_Drought Needed Init.txt", "r"), "could not open file")
+local initFile = assert(io.open("assets/internal/Drought_393439_Drought Needed Init.txt", "r"), "could not open file")
 local initTxt = initFile:read("a")
 initFile:close()
 
@@ -29,6 +29,9 @@ for tileName in string.gmatch(initTxt, "%[#nm:\"(.-)\",.-%]") do
     end
 end
 
-local outFile = assert(io.open("assets/internal-map.ini", "w"), "could not open file")
+-- i'm running this on msys2 (too lazy to get lua on windows)
+-- wait why doesn't it work
+local outFile = assert(io.open("/dev/clipboard", "w"), "could not open file")
 outFile:write(table.concat(outputLines, "\n"))
 outFile:close()
+print("Copied to clipboard!")

@@ -168,6 +168,14 @@ partial class Level
         Layers[layer, tileRootX, tileRootY].TileHead = tile;
     }
 
+    /// <summary>
+    /// Remove a tile head at a given position
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="tileRootX"></param>
+    /// <param name="tileRootY"></param>
+    /// <param name="removeGeometry"></param>
+    /// <exception cref="Exception">Thrown if the tile at the given position is not a tile head</exception>
     public void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
     {
         var levelRenderer = RainEd.Instance.Window.LevelRenderer;
@@ -223,5 +231,43 @@ partial class Level
 
         // remove tile root
         Layers[layer, tileRootX, tileRootY].TileHead = null;
+    }
+
+    /// <summary>
+    /// Find the tile head at a given location and remove it.
+    /// It will remove the cell's tile body is the tile head is
+    /// detached or non-existent.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="removeGeometry"></param>
+    /// <returns>True if the tile head was not found, false if removed normally</returns>
+    public bool RemoveTileCell(int layer, int x, int y, bool removeGeometry)
+    {
+        ref var cell = ref Layers[layer, x, y];
+
+        // if this is a tile body, find referenced tile head
+        if (cell.HasTile() && cell.TileHead is null)
+        {
+            layer = cell.TileLayer;
+            x = cell.TileRootX;
+            y = cell.TileRootY;
+        }
+
+        if (Layers[layer, x, y].TileHead is not null)
+        {
+            RemoveTile(layer, x, y, removeGeometry);
+            return false;
+        }
+        else
+        {
+            RainEd.Logger.Information("Removed detached tile body");
+
+            cell.TileLayer = -1;
+            cell.TileRootX = -1;
+            cell.TileRootY = -1;
+            return true;
+        }
     }
 }
