@@ -11,9 +11,10 @@ function rained.getVersion() end
 ---@param msg string The message to show
 function rained.alert(msg) end
 
----Create an autotile.
+---Create an autotile
+---@param category string? The category to place the autotiler in. Defaults to Misc
 ---@return Autotile autotile The new autotile
-function rained.createAutotile() end
+function rained.createAutotile(category) end
 
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check

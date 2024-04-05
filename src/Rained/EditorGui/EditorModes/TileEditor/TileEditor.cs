@@ -19,7 +19,7 @@ partial class TileEditor : IEditorMode
     private SelectionMode? forceSelection = null;
     private int selectedTileGroup = 0;
     private int selectedMatGroup = 0;
-    private int selectedAutotile = 0;
+    private Autotile? selectedAutotile = null;
 
     private bool forcePlace, modifyGeometry, disallowMatOverwrite;
 
@@ -582,9 +582,9 @@ partial class TileEditor : IEditorMode
 
     private void ProcessAutotiles()
     {
-        if (LuaInterface.Autotiles.Count == 0) return;
-        var autotile = LuaInterface.Autotiles[selectedAutotile];
-
+        if (selectedAutotile is null) return;
+        var autotile = selectedAutotile; // woops
+        
         // activated
         if (autotile.MissingTiles.Length == 0 && isToolActive && !wasToolActive)
         {

@@ -270,68 +270,82 @@ partial class TileEditor : IEditorMode
                         //ProcessSearch();
                     }
 
-                    var autotiles = LuaInterface.Autotiles;
+                    var autotileGroups = LuaInterface.AutotileCategories;
 
                     // autotile list
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
-                    var boxWidth = ImGui.GetContentRegionAvail().X - ImGui.GetTextLineHeight() * 15f;
+                    var boxWidth = ImGui.GetTextLineHeight() * 16f;
                     if (ImGui.BeginListBox("##Autotiles", new Vector2(boxWidth, boxHeight)))
                     {
-                        for (int i = 0; i < autotiles.Count; i++)
+                        for (int i = 0; i < autotileGroups.Count; i++)
                         {
-                            var autotile = autotiles[i];
-                            
-                            if (ImGui.Selectable(autotile.Name, i == selectedAutotile))
+                            ImGui.PushID(i);
+                            var group = LuaInterface.GetAutotilesInCategory(i);
+
+                            if (group.Count > 0 && ImGui.TreeNode(autotileGroups[i]))
                             {
-                                selectedAutotile = i;
+                                foreach (var autotile in group)
+                                {
+                                    if (ImGui.Selectable(autotile.Name, selectedAutotile == autotile))
+                                    {
+                                        selectedAutotile = autotile;
+                                    }
+                                }
+
+                                ImGui.TreePop();
                             }
+
+                            ImGui.PopID();
                         }
                         
                         ImGui.EndListBox();
                     }
 
                     // selected autotile options
-                    if (autotiles.Count > 0)
-                    {
-                        ImGui.SameLine();
-                        ImGui.BeginGroup();
-                        var autotile = autotiles[selectedAutotile];
-
-                        ImGui.SeparatorText(autotile.Name);
-                        if (autotile.Type == Autotile.AutoType.Path)
+                    ImGui.SameLine();
+                    ImGui.BeginGroup();
+                        if (selectedAutotile is not null)
                         {
-                            ImGui.Text("Path Autotile");
-                        }
-                        else if (autotile.Type == Autotile.AutoType.Rect)
-                        {
-                            ImGui.Text("Rectangle Autotile");
-                        }
+                            var autotile = selectedAutotile;
 
-                        ImGui.Separator();
-
-                        bool disabled = false;
-                        if (autotile.MissingTiles.Length > 0)
-                        {
-                            disabled = true;
-                            ImGui.Text("Missing required tiles:");
-                            foreach (var tileName in autotile.MissingTiles)
+                            ImGui.SeparatorText(autotile.Name);
+                            if (autotile.Type == Autotile.AutoType.Path)
                             {
-                                ImGui.BulletText(tileName);
+                                ImGui.Text("Path Autotile");
                             }
-                        }
-                        
-                        if (disabled) ImGui.BeginDisabled();
+                            else if (autotile.Type == Autotile.AutoType.Rect)
+                            {
+                                ImGui.Text("Rectangle Autotile");
+                            }
 
-                        // options
-                        foreach (var opt in autotile.Options.Values)
+                            ImGui.Separator();
+
+                            bool disabled = false;
+                            if (autotile.MissingTiles.Length > 0)
+                            {
+                                disabled = true;
+                                ImGui.Text("Missing required tiles:");
+                                foreach (var tileName in autotile.MissingTiles)
+                                {
+                                    ImGui.BulletText(tileName);
+                                }
+                            }
+                            
+                            if (disabled) ImGui.BeginDisabled();
+
+                            // options
+                            foreach (var opt in autotile.Options.Values)
+                            {
+                                ImGui.Checkbox(opt.Name, ref opt.Value);
+                            }
+
+                            if (disabled) ImGui.EndDisabled();
+                        }
+                        else
                         {
-                            ImGui.Checkbox(opt.Name, ref opt.Value);
+                            ImGui.TextDisabled("(no autotile selected)");
                         }
-
-                        if (disabled) ImGui.EndDisabled();
-
-                        ImGui.EndGroup();
-                    }
+                    ImGui.EndGroup();
 
                     ImGui.EndTabItem();
                 }

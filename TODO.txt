@@ -3,6 +3,7 @@ Priority:
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
 - fix trans flag prop loading
+- thin pipe join pipes not in path
 
 Bugs:
 - drizzle doesn't build correctly on mac?

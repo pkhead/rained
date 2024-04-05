@@ -101,7 +101,8 @@ class Autotile
 static class LuaInterface
 {
     static private Lua luaState = null!;
-    static public readonly List<Autotile> Autotiles = [];
+    public static readonly List<string> AutotileCategories = ["Misc"];
+    private static readonly List<List<Autotile>> Autotiles = [[]];
 
     enum LogLevel : byte
     {
@@ -165,7 +166,7 @@ static class LuaInterface
     {
         luaState.State.NewTable();
 
-        luaState.Push(new Func<Autotile>(CreateAutotile));
+        luaState.Push(new Func<string?, Autotile>(CreateAutotile));
         luaState.State.SetField(-2, "createAutotile");
 
         luaState.Push(new Func<string>(GetVersion));
@@ -180,13 +181,30 @@ static class LuaInterface
         return 1;
     }
 
-    private static Autotile CreateAutotile()
+    private static Autotile CreateAutotile(string? category)
     {
+        category ??= "Misc";
+
         var autotile = new Autotile();
-        Autotiles.Add(autotile);
+
+        var catIndex = AutotileCategories.IndexOf(category);
+        if (catIndex == -1)
+        {
+            catIndex = AutotileCategories.Count;
+            AutotileCategories.Add(category);
+            Autotiles.Add(new List<Autotile>());
+        }
+
+        Autotiles[catIndex].Add(autotile);
 
         return autotile;
     }
+
+    public static List<Autotile> GetAutotilesInCategory(string category)
+        => Autotiles[AutotileCategories.IndexOf(category)];
+
+    public static List<Autotile> GetAutotilesInCategory(int index)
+        => Autotiles[index];
 
     private static void ShowNotification(object? msg)
     {
@@ -350,37 +368,40 @@ static class LuaInterface
 
     public static void CheckAutotileRequirements()
     {
-        foreach (var autotile in Autotiles)
+        foreach (var list in Autotiles)
         {
-            var table = autotile.LuaRequiredTiles;
-
-            if (table is null)
-                continue;
-
-            List<string> missingTiles = [];
-
-            for (int i = 1; table[i] is not null; i++)
+            foreach (var autotile in list)
             {
-                if (table[i] is string tileName)
+                var table = autotile.LuaRequiredTiles;
+
+                if (table is null)
+                    continue;
+
+                List<string> missingTiles = [];
+
+                for (int i = 1; table[i] is not null; i++)
                 {
-                    if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                    if (table[i] is string tileName)
                     {
-                        missingTiles.Add(tileName);
+                        if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                        {
+                            missingTiles.Add(tileName);
+                        }
+                    }
+                    else
+                    {
+                        luaState.Push(table[i]);
+                        LogError($"invalid requiredTiles table for autotile '{autotile.Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
+                        RainEd.Instance.ShowNotification($"Error loading autotile {autotile.Name}");
+                        break;
                     }
                 }
-                else
-                {
-                    luaState.Push(table[i]);
-                    LogError($"invalid requiredTiles table for autotile '{autotile.Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                    RainEd.Instance.ShowNotification($"Error loading autotile {autotile.Name}");
-                    break;
-                }
-            }
 
-            if (missingTiles.Count > 0)
-            {
-                LogWarning($"missing required tiles for autotile '{autotile.Name}': {string.Join(", ", missingTiles)}");
-                autotile.MissingTiles = missingTiles.ToArray();
+                if (missingTiles.Count > 0)
+                {
+                    LogWarning($"missing required tiles for autotile '{autotile.Name}': {string.Join(", ", missingTiles)}");
+                    autotile.MissingTiles = missingTiles.ToArray();
+                }
             }
         }
     }
