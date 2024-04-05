@@ -5,7 +5,7 @@ local helpers = require("helpers") -- load the helpers.lua module
 local autotile = rained.createAutotile()
 autotile.name = "Big Pipe"
 autotile.type = "path"
-autotile.pathThickness = 5
+autotile.pathThickness = 6
 autotile.segmentLength = 1
 
 -- Rained will not allow the user to use this autotile

@@ -385,7 +385,7 @@ static class LuaInterface
         }
     }
 
-    struct SegmentStruct(int x, int y)
+    public struct PathSegment(int x, int y)
     {
         public bool Left = false;
         public bool Right = false;
@@ -394,9 +394,12 @@ static class LuaInterface
         public int X = x;
         public int Y = y;
     }
-    public static void RunAutotile(Autotile autotile, int layer, List<Vector2i> pathPositions, bool forcePlace, bool forceGeometry)
+
+    public static void RunAutotile(Autotile autotile, int layer, PathSegment[] pathSegments, bool forcePlace, bool forceGeometry)
     {
-        static void CreateSegment(SegmentStruct seg)
+        // push a new table on the stack with data
+        // initialized to the given path segment
+        static void CreateSegment(PathSegment seg)
         {
             luaState.State.NewTable();
             luaState.State.PushBoolean(seg.Left);
@@ -420,45 +423,21 @@ static class LuaInterface
         else if (forcePlace)
             modifierStr = "force";
 
-        luaState.State.NewTable();
-        LuaTable segmentTable = (LuaTable) luaState.Pop();
-
-        if (pathPositions.Count == 1)
+        // create segment table
+        luaState.State.CreateTable(pathSegments.Length, 0);
+        for (int i = 0; i < pathSegments.Length; i++)
         {
-            var pos = pathPositions[0];
-            
-            SegmentStruct segment = new(pos.X, pos.Y);
-            CreateSegment(segment);
-            segmentTable[1] = luaState.Pop();
-        }
-        else if (pathPositions.Count > 1)
-        {
-            for (int i = 0; i < pathPositions.Count; i++)
-            {
-                SegmentStruct segment = new(pathPositions[i].X, pathPositions[i].Y);
+            CreateSegment(pathSegments[i]);
 
-                var lastSeg = pathPositions[^1]; // wraps around
-                var curSeg = pathPositions[i];
-                var nextSeg = pathPositions[0]; // wraps around
-
-                if (i > 0)
-                    lastSeg = pathPositions[i-1];
-
-                if (i < pathPositions.Count - 1)
-                    nextSeg = pathPositions[i+1];
-                
-                segment.Left =  (curSeg.Y == lastSeg.Y && curSeg.X - 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X - 1 == nextSeg.X);
-                segment.Right = (curSeg.Y == lastSeg.Y && curSeg.X + 1 == lastSeg.X) || (curSeg.Y == nextSeg.Y && curSeg.X + 1 == nextSeg.X);
-                segment.Up =    (curSeg.X == lastSeg.X && curSeg.Y - 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y - 1 == nextSeg.Y);
-                segment.Down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
-
-                CreateSegment(segment);
-                segmentTable[i+1] = luaState.Pop();
-            }
+            // segmentTable[i+1] = newSegment
+            // segmentTable is at stack index -2
+            // newSegment is at the top of the stack
+            luaState.State.RawSetInteger(-2, i + 1);
         }
 
         try
         {
+            LuaTable segmentTable = (LuaTable) luaState.Pop();
             autotile.LuaFillPathProcedure?.Call(autotile, layer + 1, segmentTable, modifierStr);
         }
         catch (LuaScriptException e)

@@ -38,6 +38,7 @@ partial class TileEditor : IEditorMode
     {
         public Vector2 Center;
         public PathDirection Directions;
+        public int Index;
     }
 
     private bool isAutotileActive = false;
@@ -689,7 +690,8 @@ partial class TileEditor : IEditorMode
                             previewSegments.Add(new PreviewSegment()
                             {
                                 Center = nodePos + new Vector2(gridOffset, gridOffset),
-                                Directions = directions
+                                Directions = directions,
+                                Index = i
                             });
 
                             // where the end of the line before the turn is
@@ -758,7 +760,8 @@ partial class TileEditor : IEditorMode
                             previewSegments.Add(new PreviewSegment()
                             {
                                 Center = nodePos + dir * pOffset,
-                                Directions = segmentDir
+                                Directions = segmentDir,
+                                Index = j
                             });
                         }
 
@@ -767,6 +770,7 @@ partial class TileEditor : IEditorMode
                 }
             }
 
+            window.StatusText = previewSegments.Count.ToString();
             foreach (var segment in previewSegments)
             {
                 bool left = segment.Directions.HasFlag(PathDirection.Left);
@@ -819,10 +823,28 @@ partial class TileEditor : IEditorMode
             {
                 RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
                 
-                //window.CellChangeRecorder.BeginChange();
-                if (autotile.PathThickness == 1)
-                    LuaInterface.RunAutotile(autotile, window.WorkLayer, autotilePath, forcePlace, modifyGeometry);
-                //window.CellChangeRecorder.PushChange();
+                if (previewSegments.Count > 0)
+                {
+                    previewSegments.Sort(static (PreviewSegment a, PreviewSegment b) => a.Index.CompareTo(b.Index));
+
+                    // create path segment table from the TileEditor PreviewSegment class
+                    var pathSegments = new LuaInterface.PathSegment[previewSegments.Count];
+                    for (int i = 0; i < previewSegments.Count; i++)
+                    {
+                        var seg = previewSegments[i];
+                        pathSegments[i] = new LuaInterface.PathSegment()
+                        {
+                            X = (int)MathF.Ceiling(seg.Center.X) - 1,
+                            Y = (int)MathF.Ceiling(seg.Center.Y) - 1,
+                            Left = seg.Directions.HasFlag(PathDirection.Left),
+                            Right = seg.Directions.HasFlag(PathDirection.Right),
+                            Up = seg.Directions.HasFlag(PathDirection.Up),
+                            Down = seg.Directions.HasFlag(PathDirection.Down)
+                        };
+                    }
+
+                    LuaInterface.RunAutotile(autotile, window.WorkLayer, pathSegments, forcePlace, modifyGeometry);
+                }
 
                 isAutotileActive = false;
                 autotilePath.Clear();
