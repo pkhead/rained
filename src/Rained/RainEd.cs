@@ -618,11 +618,23 @@ sealed class RainEd
                     levelResizeWin = new LevelResizeWindow();
                 }
 
+                ImGui.Separator();
+                editorWindow.ShowEditMenu();
+
                 ImGui.EndMenu();
             }
 
             if (ImGui.BeginMenu("View"))
             {
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
+                if (ImGui.MenuItem("Reset View"))
+                {
+                    editorWindow.ResetView();
+                }
+
+                ImGui.Separator();
+
                 if (ImGui.MenuItem("Grid", null, editorWindow.LevelRenderer.ViewGrid))
                 {
                     editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;

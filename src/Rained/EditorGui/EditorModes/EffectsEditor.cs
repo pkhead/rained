@@ -88,15 +88,36 @@ class EffectsEditor : IEditorMode
         isToolActive = false;
     }
 
-    private static readonly string[] layerModeNames = new string[]
-    {
+    private static readonly string[] layerModeNames =
+    [
         "All", "1", "2", "3", "1+2", "2+3"
-    };
+    ];
 
-    private static readonly string[] plantColorNames = new string[]
-    {
+    private static readonly string[] plantColorNames =
+    [
         "Color1", "Color2", "Dead"
-    };
+    ];
+
+    private bool doDeleteCurrent = false;
+    private bool doMoveCurrentUp = false;
+    private bool doMoveCurrentDown = false;
+    
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Increase Brush Size");
+
+        if (ImGui.MenuItem("Delete Effect", selectedEffect >= 0))
+            doDeleteCurrent = true;
+
+        if (ImGui.MenuItem("Move Effect Up", selectedEffect >= 0))
+            doMoveCurrentUp = true;
+
+        if (ImGui.MenuItem("Move Effect Down", selectedEffect >= 0))
+            doMoveCurrentDown = true;
+
+        // TODO: clear effect menu item
+    }
 
     public void DrawToolbar()
     {
@@ -235,8 +256,9 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
 
         // delete/backspace to delete selected effect
-        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
+        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject) || doDeleteCurrent)
         {
+            doDeleteCurrent = false;
             deleteRequest = selectedEffect;
         }
 
@@ -261,8 +283,10 @@ class EffectsEditor : IEditorMode
                     doDelete = true;
                 
                 ImGui.SameLine();
-                if (ImGui.Button("Move Up") && selectedEffect > 0)
+                if ((ImGui.Button("Move Up") || doMoveCurrentUp) && selectedEffect > 0)
                 {
+                    doMoveCurrentUp = true;
+
                     // swap this effect with up
                     changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect - 1];
@@ -272,8 +296,10 @@ class EffectsEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Move Down") && selectedEffect < level.Effects.Count - 1)
+                if ((ImGui.Button("Move Down") || doMoveCurrentDown) && selectedEffect < level.Effects.Count - 1)
                 {
+                    doMoveCurrentDown = true;
+
                     // swap this effect with down
                     changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect + 1];

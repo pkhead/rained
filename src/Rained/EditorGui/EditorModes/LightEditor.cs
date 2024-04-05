@@ -68,6 +68,11 @@ class LightEditor : IEditorMode
         }
     }
 
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.ResetBrushTransform, "Reset Brush Transform");
+    }
+
     public void DrawToolbar()
     {
         bool wasParamChanging = isChangingParameters;

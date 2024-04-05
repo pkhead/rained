@@ -939,6 +939,13 @@ partial class PropEditor : IEditorMode
         } ImGui.End();
     }
 
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Selected Prop(s)");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Prop(s)");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleVertexMode, "Toggle Vertex Edit");
+    }
+
     private static int Mod(int a, int b)
         => (a%b + b)%b;
 }

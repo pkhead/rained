@@ -11,13 +11,14 @@ Bugs:
 - crashes when calling UnloadMesh on Debian Linux
 - Init files assume a case-insensitive filesystem -- add a way in the asset manager
   to correct the .png filenames on non-Windows systems
+- effects list change recorder doesn't work?
 
 Overall:
 - favorite tiles and props
 - file manager "New Folder" button
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
-- move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET
+- move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
 - rect/material tile place
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit

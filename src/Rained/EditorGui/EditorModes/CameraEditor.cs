@@ -37,9 +37,26 @@ class CameraEditor : IEditorMode
 
         changeRecorder.TryPushChange();
     }
-    
-    public void DrawToolbar() {
+
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Camera");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Camera");
+        if (ImGui.MenuItem("Reset Camera Corners") && selectedCamera is not null)
+        {
+            changeRecorder.BeginChange();
+
+            for (int i = 0; i < 4; i++)
+            {
+                selectedCamera.CornerAngles[i] = 0f;
+                selectedCamera.CornerOffsets[i] = 0f;
+            }
+
+            changeRecorder.PushChange();
+        }
     }
+    
+    public void DrawToolbar() {}
 
     private void PickCameraAt(Vector2 mpos)
     {

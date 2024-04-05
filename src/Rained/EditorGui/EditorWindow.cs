@@ -10,6 +10,7 @@ interface IEditorMode
 
     void Load() {}
     void Unload() {}
+    void ShowEditMenu() {}
     void SavePreferences(UserPreferences prefs) {}
 
     // write dirty changes to the Level object
@@ -252,6 +253,20 @@ class EditorWindow
         return ImGui.IsMouseDragging(button);
     }
 
+    public void ResetView()
+    {
+        viewOffset = Vector2.Zero;
+        viewZoom = 1f;
+        zoomSteps = 0;
+    }
+
+    public void ShowEditMenu()
+    {
+        var mode = editorModes[selectedMode];
+        ImGui.TextDisabled(mode.Name);
+        mode.ShowEditMenu();
+    }
+
     public void Render(float dt)
     {
         if (queuedEditMode >= 0)
@@ -296,9 +311,7 @@ class EditorWindow
             ImGui.SameLine();
             if (ImGui.Button("Reset View"))
             {
-                viewOffset = Vector2.Zero;
-                viewZoom = 1f;
-                zoomSteps = 0;
+                ResetView();
             }
 
             ImGui.SameLine();
@@ -480,34 +493,36 @@ class EditorWindow
             {
                 isLmbPanning = true;
             }
+        }
 
-            // scroll wheel zooming
-            if (!OverrideMouseWheel)
+        // scroll wheel zooming
+        if (!OverrideMouseWheel)
+        {
+            var wheelMove = Raylib.GetMouseWheelMove();
+            if (!canvasWidget.IsHovered)
+                wheelMove = 0f;
+            
+            if (KeyShortcuts.Activated(KeyShortcut.ViewZoomIn))
             {
-                var wheelMove = Raylib.GetMouseWheelMove();
+                wheelMove = 1f;
+            }
+            else if (KeyShortcuts.Activated(KeyShortcut.ViewZoomOut))
+            {
+                wheelMove = -1f;
+            }
 
-                if (KeyShortcuts.Activated(KeyShortcut.ViewZoomIn))
-                {
-                    wheelMove = 1f;
-                }
-                else if (KeyShortcuts.Activated(KeyShortcut.ViewZoomOut))
-                {
-                    wheelMove = -1f;
-                }
-
-                var zoomFactor = 1.5;
-                if (wheelMove > 0f && zoomSteps < 5)
-                {
-                    var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
-                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                    zoomSteps++;
-                }
-                else if (wheelMove < 0f && zoomSteps > -5)
-                {
-                    var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
-                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                    zoomSteps--;
-                }
+            var zoomFactor = 1.5;
+            if (wheelMove > 0f && zoomSteps < 5)
+            {
+                var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
+                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                zoomSteps++;
+            }
+            else if (wheelMove < 0f && zoomSteps > -5)
+            {
+                var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
+                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                zoomSteps--;
             }
         }
 

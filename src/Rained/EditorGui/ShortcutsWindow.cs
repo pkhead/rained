@@ -42,7 +42,7 @@ static partial class ShortcutsWindow
         [
             ("[NavUp][NavLeft][NavDown][NavRight]", "Browse tool selector"),
             ("Left Mouse", "Place/remove"),
-            ("Right Mouse", "Remove"),
+            ("Right Mouse", "Remove object"),
             ("Shift+Left Mouse", "Rect fill"),
             ("[SwitchLayer]", "Cycle layers"),
             ("[ToggleLayer1]", "Toggle layer 1"),
