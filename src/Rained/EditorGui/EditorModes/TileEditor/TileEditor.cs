@@ -770,7 +770,6 @@ partial class TileEditor : IEditorMode
                 }
             }
 
-            window.StatusText = previewSegments.Count.ToString();
             foreach (var segment in previewSegments)
             {
                 bool left = segment.Directions.HasFlag(PathDirection.Left);
