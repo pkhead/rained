@@ -1,6 +1,11 @@
 ---@meta
 -- Type annotations for Lua analzyers and linters, such as sumneko-lua
 
+---automatically require all Lua files in a require path
+---@param path string The path to require
+---@param recurse boolean? If the function should recurse through all sub-paths. Defaults to false.
+function autorequire(path, recurse) end
+
 rained = {}
 
 ---Get the current version number.

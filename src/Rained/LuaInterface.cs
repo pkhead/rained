@@ -141,6 +141,10 @@ static class LuaInterface
         var package = (LuaTable) luaState["package"];
         package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua");
 
+        // global functions
+        LuaHelpers.PushDelegate(luaState.State, new Action<string, bool?>(AutoRequire));
+        luaState.State.SetGlobal("autorequire");
+
         // add rained module to require preloader
         // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
         luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
@@ -275,6 +279,37 @@ static class LuaInterface
     private static string GetVersion()
     {
         return RainEd.Version;
+    }
+
+    private static void AutoRequire(string path, bool? recurse)
+    {
+        List<string> combineParams = [Boot.AppDataPath, "scripts"];
+        combineParams.AddRange(path.Split('.'));
+        var filePath = Path.Combine([..combineParams]);
+
+        if (!Directory.Exists(filePath))
+            throw new Exception($"path '{path}' does not exist");
+
+        var files = Directory.GetFiles(filePath).ToList();
+        files.Sort();
+        foreach (var fileName in files)
+        {
+            if (Path.GetExtension(fileName) != ".lua") continue;
+
+            luaState.State.GetGlobal("require");
+            luaState.State.PushString(path + "." + Path.GetFileNameWithoutExtension(fileName));
+            luaState.State.Call(1, 0);
+        }
+
+        if (recurse.GetValueOrDefault())
+        {
+            var subDirs = Directory.GetDirectories(filePath).ToList();
+            subDirs.Sort();
+            foreach (var dirName in subDirs)
+            {
+                AutoRequire(path + "." + dirName, true);
+            }
+        }
     }
 
     public static void LogInfo(string msg)

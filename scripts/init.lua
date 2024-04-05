@@ -10,6 +10,5 @@
 print("Rained Version " .. rained.getVersion())
 
 -- load the autotiles
-require("autotiles.thin-pipes")
-require("autotiles.big-pipe")
-require("autotiles.thick-pipe")
+-- this is a function not in base Lua
+autorequire("autotiles")
