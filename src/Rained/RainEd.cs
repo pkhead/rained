@@ -65,6 +65,8 @@ sealed class RainEd
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
+
+    public readonly RlManaged.Texture2D PlaceholderTexture;
     
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -139,6 +141,14 @@ sealed class RainEd
         {
             Boot.DisplayError("Could not start", "The Data directory is missing!\n\nPlease edit the \"dataPath\" property in preferences.json to point to a valid RWLE data folder.\n\nAlternatively, you may delete preferences.json and re-launch Rained to show the data directory configuration screen.");
             throw new RainEdStartupException();
+        }
+
+        // create placeholder for missing texture
+        {
+            using var img = RlManaged.Image.GenColor(2, 2, Color.Black);
+            img.DrawPixel(0, 0, new Color(255, 0, 255, 255));
+            img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
+            PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
         }
 
         string initPhase = null!;

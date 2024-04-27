@@ -42,7 +42,7 @@ record PropInit
     public readonly string Name;
     public readonly PropCategory Category;
     public readonly PropType Type;
-    public readonly RlManaged.Texture2D Texture;
+    public readonly RlManaged.Texture2D? Texture;
     public readonly PropFlags PropFlags;
     public readonly int Depth;
     public readonly int VariationCount;
@@ -94,22 +94,27 @@ record PropInit
         if (!Raylib.IsTextureReady(Texture))
         {
             RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
+            Texture.Dispose();
+            Texture = null;
+        }
+
+        if (Texture is not null)
+        {
+            pixelWidth = Texture.Width;
+            pixelHeight = Texture.Height;
+        }
+        else
+        {
+            pixelWidth = 20;
+            pixelHeight = 20;
         }
 
         // initialize rope-type prop
         if (Type == PropType.Rope)
         {
-            if (!Raylib.IsTextureReady(Texture))
-            {
-                throw new Exception($"Prop image '{Path.GetFileName(texturePath)}' is invalid or missing");
-            }
-
             Rope = new RopeInit(init);
             Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
             VariationCount = 1;
-
-            pixelWidth = Texture.Width;
-            pixelHeight = Texture.Height;
             layerCount = 1;
         }
 
@@ -118,9 +123,6 @@ record PropInit
         {
             Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
             VariationCount = 1;
-
-            pixelWidth = Texture.Width;
-            pixelHeight = Texture.Height;
             layerCount = 1;
         }
 
@@ -139,11 +141,6 @@ record PropInit
                 var sz = (Vector2) tempObject;
                 pixelWidth = (int)sz.X * 20;
                 pixelHeight = (int)sz.Y * 20;
-            }
-            else
-            {
-                pixelWidth = Texture.Width;
-                pixelHeight = Texture.Height;
             }
 
             // get image layer count and depth
@@ -254,7 +251,7 @@ record PropInit
             case PropType.VariedSoft:
             case PropType.SimpleDecal:
             case PropType.Soft:
-            // case PropType.SoftEffect:
+            // case PropType.SoftEffect: -- unused prop type?
             case PropType.Antimatter:
             case PropType.ColoredSoft:
                 PropFlags |= PropFlags.CustomDepthAvailable;
@@ -275,6 +272,13 @@ record PropInit
         Texture = RlManaged.Texture2D.Load(srcTile.GraphicsPath);
         PropFlags = PropFlags.Tile;
         Notes = [];
+
+        if (!Raylib.IsTextureReady(Texture))
+        {
+            RainEd.Logger.Warning($"Image {srcTile.GraphicsPath} is invalid or missing!");
+            Texture.Dispose();
+            Texture = null;
+        }
 
         layerCount = srcTile.LayerCount;
         Depth = srcTile.LayerDepth;

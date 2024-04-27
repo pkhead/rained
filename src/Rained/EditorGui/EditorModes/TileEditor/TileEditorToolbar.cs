@@ -245,7 +245,12 @@ partial class TileEditor : IEditorMode
                             if (ImGui.IsItemHovered())
                             {
                                 ImGui.BeginTooltip();
-                                rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
+
+                                if (tile.PreviewTexture is not null)
+                                    rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
+                                else
+                                    rlImGui.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
+
                                 ImGui.EndTooltip();
                             }
                         }

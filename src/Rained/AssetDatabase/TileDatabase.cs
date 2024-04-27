@@ -23,7 +23,7 @@ class Tile
     public readonly sbyte[,] Requirements2;
     public readonly bool HasSecondLayer;
     public readonly int BfTiles = 0;
-    public readonly RlManaged.Texture2D PreviewTexture;
+    public readonly RlManaged.Texture2D? PreviewTexture;
     public readonly bool CanBeProp;
     public readonly int LayerCount;
     public readonly int LayerDepth;
@@ -124,50 +124,58 @@ class Tile
         }
 
         using var fullImage = RlManaged.Image.Load(GraphicsPath);
-        var previewRect = new Rectangle(
-            0,
-            rowCount * 20 + imageOffset,
-            width * 16,
-            height * 16
-        );
-
-        if (previewRect.X < 0 || previewRect.Y < 0 ||
-            previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
-            previewRect.X + previewRect.Width > fullImage.Width ||
-            previewRect.Y + previewRect.Height > fullImage.Height
-        )
+        if (Raylib.IsImageReady(fullImage))
         {
-            RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
-        }
+            var previewRect = new Rectangle(
+                0,
+                rowCount * 20 + imageOffset,
+                width * 16,
+                height * 16
+            );
 
-        using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
-        previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
-
-        Raylib.ImageDraw(
-            ref previewImage.Ref(),
-            fullImage,
-            previewRect,
-            new Rectangle(0, 0, previewRect.Width, previewRect.Height),
-            Color.White
-        );
-
-        // convert black-and-white image to white-and-transparent, respectively
-        for (int x = 0; x < previewImage.Width; x++)
-        {
-            for (int y = 0; y < previewImage.Height; y++)
+            if (previewRect.X < 0 || previewRect.Y < 0 ||
+                previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
+                previewRect.X + previewRect.Width > fullImage.Width ||
+                previewRect.Y + previewRect.Height > fullImage.Height
+            )
             {
-                if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
+                RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
+            }
+
+            using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
+            previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
+
+            Raylib.ImageDraw(
+                ref previewImage.Ref(),
+                fullImage,
+                previewRect,
+                new Rectangle(0, 0, previewRect.Width, previewRect.Height),
+                Color.White
+            );
+
+            // convert black-and-white image to white-and-transparent, respectively
+            for (int x = 0; x < previewImage.Width; x++)
+            {
+                for (int y = 0; y < previewImage.Height; y++)
                 {
-                    previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
-                }
-                else
-                {
-                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
+                    if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
+                    {
+                        previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
+                    }
+                    else
+                    {
+                        previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
+                    }
                 }
             }
-        }
 
-        PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+            PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+        }
+        else
+        {
+            // tile graphics could not be loaded
+            PreviewTexture = null;
+        }
 
         if (noPropTag)
             CanBeProp = false;

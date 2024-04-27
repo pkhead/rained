@@ -268,8 +268,25 @@ partial class PropEditor : IEditorMode
                 for (int depth = prop.LayerCount - 1; depth >= 0; depth--)
                 {
                     float whiteFade = Math.Clamp(depth / 16f, 0f, 1f);
-                    var srcRect = prop.GetPreviewRectangle(0, depth);
-                    Raylib.DrawTextureRec(prop.Texture, srcRect, Vector2.Zero, new Color(255, (int)(whiteFade * 255f), 0, 0));
+                    Rectangle srcRect, dstRec;
+
+                    if (prop.Texture is not null)
+                    {
+                        srcRect = prop.GetPreviewRectangle(0, depth);
+                        dstRec = new Rectangle(Vector2.Zero, srcRect.Size);
+                    }
+                    else
+                    {
+                        srcRect = new Rectangle(Vector2.Zero, 2.0f * Vector2.One);
+                        dstRec = new Rectangle(Vector2.Zero, prop.Width * 20f, prop.Height * 20f);
+                    }
+
+                    Raylib.DrawTexturePro(
+                        prop.Texture ?? RainEd.Instance.PlaceholderTexture,
+                        srcRect, dstRec,
+                        Vector2.Zero, 0f,
+                        new Color(255, (int)(whiteFade * 255f), 0, 0)
+                    );
                 }
             }
             Raylib.EndShaderMode();

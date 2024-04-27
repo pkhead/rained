@@ -1,9 +1,6 @@
 Priority:
-TEST SOLAR PROPS RGHT NOW!!!
 - configurable tile spec colors
 - "General" and "Current" shortcut split
-- need a missing texture placeholder for... missing textures
-  and broken tiles (i.e., tiles that are pointed to but have no tile data)
 - dissolve material/tile separation
 - fix trans flag prop loading
 
@@ -13,10 +10,10 @@ Bugs:
 - crashes when calling UnloadMesh on Debian Linux
 - Init files assume a case-insensitive filesystem -- add a way in the asset manager
   to correct the .png filenames on non-Windows systems
-- weird graphical issue on certain drivers when level is out of bounds 
-- solar's repo does not work
+- weird graphical issue on certain drivers when level is out of bounds
 
 Overall:
+- figure out github actions to make nightly builds
 - favorite tiles and props
 - file manager "New Folder" button
 - retrieve tile/prop textures on-demand instead of ahead of time
@@ -59,6 +56,7 @@ Tile Editor:
 - customizable autotiling (check out autotiling branch)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
+- tool to fix detached tile bodies
 
 Camera Editor:
 - render order

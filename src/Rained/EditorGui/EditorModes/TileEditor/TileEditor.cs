@@ -260,11 +260,25 @@ partial class TileEditor : IEditorMode
                     validationStatus = TilePlacementStatus.OutOfBounds;
 
                 // draw tile preview
-                Raylib.DrawTextureEx(
-                    selectedTile.PreviewTexture,
+                Rectangle srcRect, dstRect;
+                dstRect = new Rectangle(
                     new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
-                    0,
-                    (float)Level.TileSize / 16,
+                    new Vector2(selectedTile.Width, selectedTile.Height) * Level.TileSize
+                );
+
+                if (selectedTile.PreviewTexture is not null)
+                {
+                    srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
+                }
+                else
+                {
+                    srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 2, selectedTile.Height * 2));
+                }
+
+                Raylib.DrawTexturePro(
+                    selectedTile.PreviewTexture ?? RainEd.Instance.PlaceholderTexture,
+                    srcRect, dstRect,
+                    Vector2.Zero, 0f,
                     validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
                 );
 
@@ -396,7 +410,11 @@ partial class TileEditor : IEditorMode
                     tileLayer = mouseCell.TileLayer;
                     tileX = mouseCell.TileRootX;
                     tileY = mouseCell.TileRootY;
+
+                    if (level.Layers[tileLayer, tileX, tileY].TileHead is null)
+                        ImGui.SetTooltip("Detached tile body");
                 }
+
 
                 // eyedropper
                 if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
@@ -408,7 +426,7 @@ partial class TileEditor : IEditorMode
                         
                         if (tile is null)
                         {
-                            throw new Exception("Could not find tile head");
+                            RainEd.Logger.Error("Could not find tile head");
                         }
                         else
                         {
