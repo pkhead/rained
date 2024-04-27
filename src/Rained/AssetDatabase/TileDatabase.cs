@@ -23,7 +23,7 @@ class Tile
     public readonly sbyte[,] Requirements2;
     public readonly bool HasSecondLayer;
     public readonly int BfTiles = 0;
-    public readonly RlManaged.Texture2D PreviewTexture;
+    public readonly RlManaged.Texture2D? PreviewTexture;
     public readonly bool CanBeProp;
     public readonly int LayerCount;
     public readonly int LayerDepth;
@@ -124,50 +124,58 @@ class Tile
         }
 
         using var fullImage = RlManaged.Image.Load(GraphicsPath);
-        var previewRect = new Rectangle(
-            0,
-            rowCount * 20 + imageOffset,
-            width * 16,
-            height * 16
-        );
-
-        if (previewRect.X < 0 || previewRect.Y < 0 ||
-            previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
-            previewRect.X + previewRect.Width > fullImage.Width ||
-            previewRect.Y + previewRect.Height > fullImage.Height
-        )
+        if (Raylib.IsImageReady(fullImage))
         {
-            RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
-        }
+            var previewRect = new Rectangle(
+                0,
+                rowCount * 20 + imageOffset,
+                width * 16,
+                height * 16
+            );
 
-        using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
-        previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
-
-        Raylib.ImageDraw(
-            ref previewImage.Ref(),
-            fullImage,
-            previewRect,
-            new Rectangle(0, 0, previewRect.Width, previewRect.Height),
-            Color.White
-        );
-
-        // convert black-and-white image to white-and-transparent, respectively
-        for (int x = 0; x < previewImage.Width; x++)
-        {
-            for (int y = 0; y < previewImage.Height; y++)
+            if (previewRect.X < 0 || previewRect.Y < 0 ||
+                previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
+                previewRect.X + previewRect.Width > fullImage.Width ||
+                previewRect.Y + previewRect.Height > fullImage.Height
+            )
             {
-                if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
+                RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
+            }
+
+            using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
+            previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
+
+            Raylib.ImageDraw(
+                ref previewImage.Ref(),
+                fullImage,
+                previewRect,
+                new Rectangle(0, 0, previewRect.Width, previewRect.Height),
+                Color.White
+            );
+
+            // convert black-and-white image to white-and-transparent, respectively
+            for (int x = 0; x < previewImage.Width; x++)
+            {
+                for (int y = 0; y < previewImage.Height; y++)
                 {
-                    previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
-                }
-                else
-                {
-                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
+                    if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
+                    {
+                        previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
+                    }
+                    else
+                    {
+                        previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
+                    }
                 }
             }
-        }
 
-        PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+            PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+        }
+        else
+        {
+            // tile graphics could not be loaded
+            PreviewTexture = null;
+        }
 
         if (noPropTag)
             CanBeProp = false;
@@ -202,14 +210,23 @@ class TileDatabase
         TileCategory? curGroup = null;
         int groupIndex = 0;
 
-        void ProcessLine(string line)
+        // helper function to create error string with line information
+        static string ErrorString(int lineNo, string msg)
+            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+
+        void ProcessLine(string line, int lineNo)
         {
             if (string.IsNullOrWhiteSpace(line)) return;
             
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Malformed category header"));
+                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                {
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    return;
+                }
+
                 curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
                 {
                     Index = groupIndex
@@ -222,21 +239,21 @@ class TileDatabase
             }
             else
             {
-                if (curGroup is null) throw new Exception("The first category header is missing");
+                if (curGroup is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
 
-                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
+                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed tile init")));
 
                 object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];
                 var tp = (string) tileInit.fields["tp"];
                 var size = (Vector2) tileInit.fields["sz"];
                 var specsData = (Lingo.List) tileInit.fields["specs"];
-                var bfTiles = (int) tileInit.fields["bfTiles"];
+                var bfTiles = Lingo.LingoNumber.AsInt(tileInit.fields["bfTiles"]);
                 Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
                     tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
                 int rnd =
-                    tileInit.fields.TryGetValue("rnd", out tempValue) ? (int)tempValue : 1;
+                    tileInit.fields.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
                 
                 if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
                 {
@@ -264,7 +281,8 @@ class TileDatabase
                         name: name,
                         category: curGroup,
                         type: tileType,
-                        width: (int)size.X, height: (int)size.Y,
+                        width: (int) size.X,
+                        height: (int) size.Y,
                         bfTiles: bfTiles,
                         repeatL: repeatL,
                         specs: specs,
@@ -277,15 +295,16 @@ class TileDatabase
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    RainEd.Logger.Warning("Could not add tile '{Name}': {ErrorMessage}", name, e.Message);
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }
 
         // read Init.txt
+        int lineNo = 1;
         foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt")))
         {
-            ProcessLine(line);
+            ProcessLine(line, lineNo++);
         }
 
         // read internal extra tiles
@@ -293,7 +312,7 @@ class TileDatabase
         string? line2;
         while ((line2 = reader.ReadLine()) is not null)
         {
-            ProcessLine(line2);
+            ProcessLine(line2, -1);
         }
     }
 

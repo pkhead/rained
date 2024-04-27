@@ -7,6 +7,21 @@ class ParseException : Exception
     public ParseException(string message, Exception inner) : base(message, inner) {}
 }
 
+static class LingoNumber
+{
+    public static float AsFloat(object obj)
+    {
+        if (obj is int vi) return vi;
+        if (obj is float vf) return vf;
+        throw new InvalidCastException($"Unable to cast object of type '{obj.GetType().FullName}' to 'System.Int32'.");
+    }
+
+    public static int AsInt(object obj)
+    {
+        return (int) obj;
+    }
+}
+
 struct Color(int r, int g, int b)
 {
     public int R = r, G = g, B = b;

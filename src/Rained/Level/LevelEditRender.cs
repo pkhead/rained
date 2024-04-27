@@ -761,16 +761,28 @@ class LevelEditRender
                     ty = cell.TileRootY;
                 }
 
-                // TODO: why can this happen?
-                if (tile == null) continue;
+                // detached tile body
+                // probably caused from comms move level tool,
+                // which does not correct tile pointers
+                if (tile == null)
+                {
+                    Raylib.DrawRectangleV(new Vector2(x, y) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
+                    Raylib.DrawRectangleV(new Vector2(x + 0.5f, y) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                    Raylib.DrawRectangleV(new Vector2(x, y + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                    continue;
+                }
 
                 var tileLeft = tx - tile.CenterX;
                 var tileTop = ty - tile.CenterY;
-                var col = tile.Category.Color;
+                var col = tile.PreviewTexture is null ? Color.White : tile.Category.Color;
+
+                var srcRect = tile.PreviewTexture is not null
+                    ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
+                    : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
 
                 Raylib.DrawTexturePro(
-                    tile.PreviewTexture,
-                    new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16),
+                    tile.PreviewTexture ?? RainEd.Instance.PlaceholderTexture,
+                    srcRect,
                     new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
                     Vector2.Zero,
                     0f,
@@ -844,7 +856,7 @@ class LevelEditRender
                 continue;
             
             var quad = prop.QuadPoints;
-            var texture = prop.PropInit.Texture;
+            var texture = prop.PropInit.Texture ?? RainEd.Instance.PlaceholderTexture;
 
             Rlgl.DisableBackfaceCulling();
             Raylib.BeginShaderMode(propPreviewShader);
@@ -862,7 +874,9 @@ class LevelEditRender
                 
                 float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
 
-                var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
+                var srcRect = prop.PropInit.Texture is null
+                    ? new Rectangle(Vector2.Zero, 2.0f * Vector2.One)
+                    : prop.PropInit.GetPreviewRectangle(variation, depth);
 
                 Rlgl.Begin(DrawMode.Quads);
                 {

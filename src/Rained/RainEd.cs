@@ -20,7 +20,7 @@ public class RainEdStartupException : Exception
 
 sealed class RainEd
 {
-    public const string Version = "b1.3.5";
+    public const string Version = "b1.3.6";
 
     public static RainEd Instance = null!;
 
@@ -66,6 +66,8 @@ sealed class RainEd
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
+
+    public readonly RlManaged.Texture2D PlaceholderTexture;
     
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -142,6 +144,14 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
 
+        // create placeholder for missing texture
+        {
+            using var img = RlManaged.Image.GenColor(2, 2, Color.Black);
+            img.DrawPixel(0, 0, new Color(255, 0, 255, 255));
+            img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
+            PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
+        }
+
         string initPhase = null!;
         try
         {
@@ -187,6 +197,8 @@ sealed class RainEd
             initPhase = "props";
             Logger.Information("Initializing prop database...");
             PropDatabase = new Props.PropDatabase(TileDatabase);
+
+            Logger.Information("----- ASSET INIT DONE! -----\n\n\n");
         }
         catch (Exception e)
         {

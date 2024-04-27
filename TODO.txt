@@ -12,10 +12,13 @@ Bugs:
 - Init files assume a case-insensitive filesystem -- add a way in the asset manager
   to correct the .png filenames on non-Windows systems
 - effects list change recorder doesn't work?
+- weird graphical issue on certain drivers when level is out of bounds
 
 Overall:
+- figure out github actions to make nightly builds
 - favorite tiles and props
 - file manager "New Folder" button
+- retrieve tile/prop textures on-demand instead of ahead of time
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
@@ -27,6 +30,7 @@ Overall:
   (idk how to do this, it returns a 403 Forbidden)
 - port newmakelevel (geometry exporter) to C#
 - Move Level
+- level preview in file browser
 - undo/redo for level resize
 - level resze drag
 - help pages/hints/tooltips/whatever
@@ -35,7 +39,6 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
-- tile init editor (maybe?)
 
 Geometry Editor:
 - select and copy/paste
@@ -55,6 +58,7 @@ Tile Editor:
 - customizable autotiling (check out autotiling branch)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
+- tool to fix detached tile bodies
 
 Camera Editor:
 - render order
