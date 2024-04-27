@@ -520,7 +520,7 @@ partial class TileEditor : IEditorMode
 
         if (activeAutotiler is not null)
         {
-            activeAutotiler.AddPoint(window.MouseCellFloat.X, window.MouseCellFloat.Y);
+            activeAutotiler.ExtendToPoint(window.MouseCellFloat.X, window.MouseCellFloat.Y, EditorWindow.IsKeyDown(ImGuiKey.ModShift));
             activeAutotiler.DrawPreview();
 
             // de-activate tool

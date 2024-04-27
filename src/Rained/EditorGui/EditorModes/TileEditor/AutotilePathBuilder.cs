@@ -128,12 +128,39 @@ class AutotilePathBuilder
         return true;
     }
 
+    private bool ProcessPoint(Vector2i pos)
+    {
+        if (autotilePath.Count >= 2 && autotilePath[^2] == pos)
+        {
+            // if the user backs their cursor up, erase the last segment
+            autotilePath.RemoveAt(autotilePath.Count - 1);
+            autotilePathDirs.RemoveAt(autotilePathDirs.Count - 1);
+            return true;
+        }
+        else
+        {
+            // only place node if there isn't already a node here
+            // and the CanAppendPath check returns true
+            if (!autotilePath.Contains(pos))
+            {
+                if (CanAppendPath(autotile, pos))
+                {
+                    autotilePath.Add(pos);
+                    autotilePathDirs.Add(0);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Add a point to the autotiler path.
     /// </summary>
     /// <param name="pointX">The X position of the point to add.</param>
     /// <param name="pointY">The Y position of the point to add.</param>
-    public void AddPoint(float pointX, float pointY)
+    public void ExtendToPoint(float pointX, float pointY, bool straighten)
     {
         if (autotile is null) return;
         
@@ -153,25 +180,71 @@ class AutotilePathBuilder
             autotilePath.Add(mousePos);
             autotilePathDirs.Add(0);
         }
-        else
+        else if (autotilePath[^1] != mousePos)
         {
-            // only place node if there isn't already a node here
-            // and the CanAppendPath check returns true
-            if (!autotilePath.Contains(mousePos))
+            // if the user's mouse pos is not 1 manhattan-distance away from the
+            // last point, then i will do some "interpolation".
+            // tracing the shortest manhattan path from the last point to the
+            // mouse position.
+            
+            // however, there are two shortest manhatten paths, so
+            // "xFirst" determines if the X side will be traversed first,
+            // or if the Y side will be traversed first.
+            // this will be determined by the direction the line has been
+            // facing thus far.
+            bool xFirst;
+
+            // delta vector from last path point to mouse pos
+            var delta = mousePos - autotilePath[^1];
+            int dx = Math.Sign(delta.X);
+            int dy = Math.Sign(delta.Y);
+
+            if (autotilePath.Count >= 2)
             {
-                if (CanAppendPath(autotile, mousePos))
+                var posA = autotilePath[^2];
+                var posB = autotilePath[^1];
+                xFirst = Math.Abs(posB.X - posA.X) == 1;
+
+                if (straighten)
                 {
-                    autotilePath.Add(mousePos);
-                    autotilePathDirs.Add(0);
+                    if (xFirst) dy = 0;
+                    else        dx = 0;
                 }
             }
-
-            // if the user backs their cursor up, erase the last segment
-            else if (autotilePath.Count >= 2 && autotilePath[^2] == mousePos)
+            else
             {
-                autotilePath.RemoveAt(autotilePath.Count - 1);
-                autotilePathDirs.RemoveAt(autotilePathDirs.Count - 1);
+                // if there is only one point in the path,
+                // then there isn't enough info to determine
+                // the recent direction of the path. so,
+                // i use a different method.
+                xFirst = Math.Abs(delta.X) > Math.Abs(delta.Y);
             }
+            
+            if (xFirst)
+            {
+                for (int x = autotilePath[^1].X + dx; x != mousePos.X + dx; x += dx)
+                {
+                    if (!ProcessPoint(new Vector2i(x, autotilePath[^1].Y))) goto interpolateEnd;
+                }
+
+                for (int y = autotilePath[^1].Y + dy; y != mousePos.Y + dy; y += dy)
+                {
+                    if (!ProcessPoint(new Vector2i(mousePos.X, y))) goto interpolateEnd;
+                }
+            }
+            else
+            {
+                for (int y = autotilePath[^1].Y + dy; y != mousePos.Y + dy; y += dy)
+                {
+                    if (!ProcessPoint(new Vector2i(autotilePath[^1].X, y))) goto interpolateEnd;
+                }
+
+                for (int x = autotilePath[^1].X + dx; x != mousePos.X + dx; x += dx)
+                {
+                    if (!ProcessPoint(new Vector2i(x, mousePos.Y))) goto interpolateEnd;
+                }
+            }
+            interpolateEnd:;
         }
 
         // pre-calculate autotile path node directions
