@@ -231,12 +231,12 @@ class TileDatabase
                 var tp = (string) tileInit.fields["tp"];
                 var size = (Vector2) tileInit.fields["sz"];
                 var specsData = (Lingo.List) tileInit.fields["specs"];
-                var bfTiles = (int) tileInit.fields["bfTiles"];
+                var bfTiles = Lingo.LingoNumber.AsInt(tileInit.fields["bfTiles"]);
                 Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
                     tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
                 int rnd =
-                    tileInit.fields.TryGetValue("rnd", out tempValue) ? (int)tempValue : 1;
+                    tileInit.fields.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
                 
                 if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
                 {
@@ -264,7 +264,8 @@ class TileDatabase
                         name: name,
                         category: curGroup,
                         type: tileType,
-                        width: (int)size.X, height: (int)size.Y,
+                        width: (int) size.X,
+                        height: (int) size.Y,
                         bfTiles: bfTiles,
                         repeatL: repeatL,
                         specs: specs,

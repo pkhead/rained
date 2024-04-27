@@ -105,7 +105,7 @@ record PropInit
             }
 
             Rope = new RopeInit(init);
-            Depth = (int) init.fields["depth"];
+            Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
             VariationCount = 1;
 
             pixelWidth = Texture.Width;
@@ -116,7 +116,7 @@ record PropInit
         // initialize long-type prop
         else if (Type == PropType.Long)
         {
-            Depth = (int) init.fields["depth"];
+            Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
             VariationCount = 1;
 
             pixelWidth = Texture.Width;
@@ -161,7 +161,7 @@ record PropInit
             }
             else if (init.fields.TryGetValue("depth", out tempObject))
             {
-                Depth = (int)tempObject;
+                Depth = Lingo.LingoNumber.AsInt(tempObject);
             }
 
             // variation count
@@ -169,12 +169,12 @@ record PropInit
 
             if (init.fields.TryGetValue("vars", out tempObject))
             {
-                VariationCount = (int)tempObject;
+                VariationCount = Lingo.LingoNumber.AsInt(tempObject);
             }
 
             if (init.fields.TryGetValue("random", out tempObject))
             {
-                randVar = (int)tempObject != 0;   
+                randVar = Lingo.LingoNumber.AsInt(tempObject) != 0;   
             }
         }
 
@@ -195,7 +195,7 @@ record PropInit
         // post effects recommended when colorized note
         if (Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
-            if (init.fields.TryGetValue("colorize", out tempObject) && (int)tempObject != 0)
+            if (init.fields.TryGetValue("colorize", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
             {
                 PropFlags |= PropFlags.Colorize;
             }
@@ -209,7 +209,7 @@ record PropInit
         // is procedurally shaded?
         if (Type == PropType.Soft || Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
-            if (init.fields.TryGetValue("selfShade", out tempObject) && (int)tempObject != 0)
+            if (init.fields.TryGetValue("selfShade", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
             {
                 PropFlags |= PropFlags.ProcedurallyShaded;
             }
@@ -347,40 +347,25 @@ record RopeInit
     public readonly Color PreviewColor;
     public readonly int PreviewInterval;
 
-    // i really need to figure out how to fix this design issue
-    private static float LingoToFloat(object n)
-    {
-        if (n is int vi)
-        {
-            return vi;
-        }
-        else if (n is float vf)
-        {
-            return (float) vf;
-        }
-
-        throw new ArgumentException("Object is not an int or a float", nameof(n));
-    }
-
     public RopeInit(Lingo.List init)
     {
         var previewColor = (Lingo.Color)init.fields["previewColor"];
 
-        CollisionDepth = (int)init.fields["collisionDepth"];
-        PreviewInterval = (int)init.fields["previewEvery"];
+        CollisionDepth = Lingo.LingoNumber.AsInt(init.fields["collisionDepth"]);
+        PreviewInterval = Lingo.LingoNumber.AsInt(init.fields["previewEvery"]);
         PreviewColor = new Color(previewColor.R, previewColor.G, previewColor.B, 255);
         PhysicalProperties = new RopePhysicalProperties()
         {
-            segmentLength = LingoToFloat(init.fields["segmentLength"]),
-            grav = LingoToFloat(init.fields["grav"]),
-            stiff = ((int)init.fields["stiff"]) == 1,
-            friction = LingoToFloat(init.fields["friction"]),
-            airFric = LingoToFloat(init.fields["airFric"]),
-            segRad = LingoToFloat(init.fields["segRad"]),
-            rigid = LingoToFloat(init.fields["rigid"]),
-            edgeDirection = LingoToFloat(init.fields["edgeDirection"]),
-            selfPush = LingoToFloat(init.fields["selfPush"]),
-            sourcePush = LingoToFloat(init.fields["sourcePush"])
+            segmentLength = Lingo.LingoNumber.AsFloat(init.fields["segmentLength"]),
+            grav = Lingo.LingoNumber.AsFloat(init.fields["grav"]),
+            stiff = Lingo.LingoNumber.AsInt(init.fields["stiff"]) == 1,
+            friction = Lingo.LingoNumber.AsFloat(init.fields["friction"]),
+            airFric = Lingo.LingoNumber.AsFloat(init.fields["airFric"]),
+            segRad = Lingo.LingoNumber.AsFloat(init.fields["segRad"]),
+            rigid = Lingo.LingoNumber.AsFloat(init.fields["rigid"]),
+            edgeDirection = Lingo.LingoNumber.AsFloat(init.fields["edgeDirection"]),
+            selfPush = Lingo.LingoNumber.AsFloat(init.fields["selfPush"]),
+            sourcePush = Lingo.LingoNumber.AsFloat(init.fields["sourcePush"])
         };
     }
 }
