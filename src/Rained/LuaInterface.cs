@@ -538,7 +538,7 @@ static class LuaInterface
     public static void RunRectAutotile(
         Autotile autotile,
         int layer,
-        Vector2i rectPos, Vector2i rectSize,
+        Vector2i rectMin, Vector2i rectMax,
         bool force, bool geometry
     )
     {
@@ -552,8 +552,8 @@ static class LuaInterface
         {
             autotile.LuaFillRectProcedure?.Call(
                 autotile, layer + 1,
-                rectPos.X, rectPos.Y,
-                rectPos.X + rectSize.X - 1, rectPos.Y + rectSize.Y - 1,
+                rectMin.X, rectMin.Y,
+                rectMax.X, rectMax.Y,
                 modifierStr
             );
         }

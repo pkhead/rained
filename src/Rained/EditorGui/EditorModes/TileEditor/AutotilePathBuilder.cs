@@ -1,8 +1,9 @@
 namespace RainEd;
 using System.Numerics;
 using Raylib_cs;
+using ImGuiNET;
 
-class AutotilePathBuilder
+class AutotilePathBuilder : IAutotileInputBuilder
 {
     [Flags]
     enum PathDirection
@@ -20,12 +21,12 @@ class AutotilePathBuilder
         public int Index;
     }
 
-    private Autotile autotile;
+    private readonly Autotile autotile;
 
-    private List<Vector2i> autotilePath = [];
-    private List<PathDirection> autotilePathDirs = [];
-    private List<PreviewSegment> previewSegments = [];
-    private float gridOffset;
+    private readonly List<Vector2i> autotilePath = [];
+    private readonly List<PathDirection> autotilePathDirs = [];
+    private readonly List<PreviewSegment> previewSegments = [];
+    private readonly float gridOffset;
 
     public AutotilePathBuilder(Autotile autotile) {
         this.autotile = autotile;
@@ -155,23 +156,18 @@ class AutotilePathBuilder
         return false;
     }
 
-    /// <summary>
-    /// Add a point to the autotiler path.
-    /// </summary>
-    /// <param name="pointX">The X position of the point to add.</param>
-    /// <param name="pointY">The Y position of the point to add.</param>
-    public void ExtendToPoint(float pointX, float pointY, bool straighten)
+    public void Update()
     {
         if (autotile is null) return;
-        
+
         float gridOffsetInverse = 0.5f - gridOffset;
 
         // add current position to autotile path
         // only add the position if it is adjacent to the last
         // placed position
         var mousePos = new Vector2i(
-            (int)(pointX + gridOffsetInverse),
-            (int)(pointY + gridOffsetInverse)
+            (int)(RainEd.Instance.Window.MouseCellFloat.X + gridOffsetInverse),
+            (int)(RainEd.Instance.Window.MouseCellFloat.Y + gridOffsetInverse)
         );
         
         // first node to be placed
@@ -205,7 +201,8 @@ class AutotilePathBuilder
                 var posB = autotilePath[^1];
                 xFirst = Math.Abs(posB.X - posA.X) == 1;
 
-                if (straighten)
+                // if shift is held down, attempt to straighten path
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 {
                     if (xFirst) dy = 0;
                     else        dx = 0;
@@ -358,12 +355,14 @@ class AutotilePathBuilder
                 }
             }
         }
+
+        DrawPreview();
     }
 
     /// <summary>
     /// Draw the preview of the autotiler path.
     /// </summary>
-    public void DrawPreview()
+    private void DrawPreview()
     {
         // draw autotile path nodes
         // only drawing lines where the path doesn't connect to another segment

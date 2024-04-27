@@ -25,7 +25,7 @@ partial class TileEditor : IEditorMode
     private int materialBrushSize = 1;
 
     private Autotile? selectedAutotile = null;
-    private AutotilePathBuilder? activeAutotiler = null;
+    private IAutotileInputBuilder? activePathBuilder = null;
 
     // this is used to fix force placement when
     // holding down lmb
@@ -41,7 +41,7 @@ partial class TileEditor : IEditorMode
 
     public void Load()
     {
-        activeAutotiler = null;
+        activePathBuilder = null;
         isToolActive = false;
         ProcessSearch(); // defined in TileEditorToolbar.cs
     }
@@ -328,7 +328,7 @@ partial class TileEditor : IEditorMode
 
     private void ProcessMaterials()
     {
-        activeAutotiler = null;
+        activePathBuilder = null;
 
         var level = RainEd.Instance.Level;
 
@@ -398,7 +398,7 @@ partial class TileEditor : IEditorMode
 
     private void ProcessTiles()
     {
-        activeAutotiler = null;
+        activePathBuilder = null;
 
         var level = RainEd.Instance.Level;
 
@@ -519,26 +519,37 @@ partial class TileEditor : IEditorMode
         // activate tool
         if (wasToolActive && !isToolActive)
         {
-            if (activeAutotiler is null)
+            if (activePathBuilder is null)
             {
                 if (selectedAutotile is not null)
-                    activeAutotiler = new AutotilePathBuilder(selectedAutotile);
+                {
+                    activePathBuilder = selectedAutotile.Type switch {
+                        Autotile.AutoType.Path => new AutotilePathBuilder(selectedAutotile),
+                        Autotile.AutoType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
+                        _ => null
+                    };
+                }
             }
             else
             {
-                activeAutotiler.Finish(window.WorkLayer, forcePlace, modifyGeometry);
-                activeAutotiler = null;
+                activePathBuilder.Finish(window.WorkLayer, forcePlace, modifyGeometry);
+                activePathBuilder = null;
             }
         }
 
-        if (activeAutotiler is not null)
+        if (activePathBuilder is not null)
         {
-            activeAutotiler.ExtendToPoint(window.MouseCellFloat.X, window.MouseCellFloat.Y, EditorWindow.IsKeyDown(ImGuiKey.ModShift));
-            activeAutotiler.DrawPreview();
+            activePathBuilder.Update();
 
             // press escape to cancel path building
             if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
-                activeAutotiler = null;
+                activePathBuilder = null;
         }
     }
+}
+
+interface IAutotileInputBuilder
+{
+    void Update();
+    void Finish(int layer, bool force, bool geometry);
 }
