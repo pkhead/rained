@@ -377,6 +377,7 @@ static class LuaInterface
         result = null;
 
         var level = RainEd.Instance.Level;
+        var placeMode = TilePlacementMode.Normal;
         
         // validate arguments
         if (modifier is not null)
@@ -385,6 +386,9 @@ static class LuaInterface
             {
                 throw new Exception($"expected 'geometry' or 'force' for argument 5, got '{modifier}'");
             }
+
+            if (modifier == "geometry")   placeMode = TilePlacementMode.Geometry;
+            else if (modifier == "force") placeMode = TilePlacementMode.Force;
         }
         if (layer < 1 || layer > 3)
             throw new Exception($"invalid layer {layer}");
@@ -395,38 +399,21 @@ static class LuaInterface
         // begin placement
         var tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
 
-        // check if requirements are satisfied
-        TilePlacementStatus validationStatus;
-
-        if (level.IsInBounds(x, y))
-            validationStatus = level.ValidateTilePlacement(
-                tile,
-                x, y, layer,
-                modifier is not null
-            );
-        else
+        var validationStatus = level.SafePlaceTile(tile, layer, x, y, placeMode);
+        switch (validationStatus)
         {
-            result = "out of bounds";
-            return false;
+            case TilePlacementStatus.OutOfBounds:
+                result = "out of bounds";
+                return false;
+            case TilePlacementStatus.Overlap:
+                result = "overlap";
+                return false;
+            case TilePlacementStatus.Geometry:
+                result = "geometry";
+                return false;
+            case TilePlacementStatus.Success:
+                return true;
         }
-        
-        if (validationStatus == TilePlacementStatus.Overlap)
-        {
-            result = "overlap";
-            return false;
-        }
-        
-        if (validationStatus == TilePlacementStatus.Geometry)
-        {
-            result = "geometry";
-            return false;
-        }
-
-        level.PlaceTile(
-            tile,
-            layer, x, y,
-            modifier == "geometry"
-        );
 
         return true;
     }

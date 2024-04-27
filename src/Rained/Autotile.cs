@@ -30,6 +30,19 @@ record ConfigOption
     }
 }
 
+/// <summary>
+/// A table of segment directions associated with tile names.
+/// </summary>
+struct PathTileTable
+{
+    public Tiles.Tile LeftDown;
+    public Tiles.Tile LeftUp;
+    public Tiles.Tile RightDown;
+    public Tiles.Tile RightUp;
+    public Tiles.Tile Vertical;
+    public Tiles.Tile Horizontal;
+}
+
 abstract class Autotile
 {
     public bool IsReady = true;
@@ -92,6 +105,54 @@ abstract class Autotile
     public abstract void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry);
 
     public abstract string[] MissingTiles { get; }
+
+    // C# version of lua autotilePath.
+    // I suppose I could just make it so you can call this function directly within Lua,
+    // but I don't feel like it. Also, the Lua version is probably a good
+    // example on how to use autotiling
+    public static void StandardTilePath(
+        PathTileTable tileTable,
+        int layer,
+        PathSegment[] pathSegments,
+        TilePlacementMode modifier,
+        int startIndex = 0, int endIndex = -1
+    )
+    {
+        if (endIndex < 0) endIndex += pathSegments.Length;
+
+        for (int i = startIndex; i < endIndex; i++)
+        {
+            var seg = pathSegments[i];
+
+            // turns
+            if (seg.Left && seg.Down)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.LeftDown, layer, seg.X, seg.Y, modifier);
+            }
+            else if (seg.Left && seg.Up)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.LeftUp, layer, seg.X, seg.Y, modifier);
+            }
+            else if (seg.Right && seg.Down)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.RightDown, layer, seg.X, seg.Y, modifier);
+            }
+            else if (seg.Right && seg.Up)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.RightUp, layer, seg.X, seg.Y, modifier);
+            }
+
+            // straight
+            else if (seg.Down || seg.Up)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.Vertical, layer, seg.X, seg.Y, modifier);
+            }
+            else if (seg.Right || seg.Left)
+            {
+                RainEd.Instance.Level.SafePlaceTile(tileTable.Horizontal, layer, seg.X, seg.Y, modifier);
+            }
+        }
+    }
 }
 
 class AutotileCatalog

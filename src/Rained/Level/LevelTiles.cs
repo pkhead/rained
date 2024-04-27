@@ -9,6 +9,13 @@ enum TilePlacementStatus
     Geometry
 };
 
+enum TilePlacementMode : int
+{
+    Normal = 0,
+    Force = 1,
+    Geometry = 2
+};
+
 partial class Level
 {
     public TilePlacementStatus ValidateTilePlacement(Tile tile, int tileLeft, int tileTop, int layer, bool force)
@@ -105,6 +112,38 @@ partial class Level
         }
 
         return false;
+    }
+
+    public TilePlacementStatus SafePlaceTile(
+        Tile tile,
+        int layer, int tileRootX, int tileRootY,
+        TilePlacementMode placeMode
+    )
+    {
+        // check if requirements are satisfied
+        TilePlacementStatus validationStatus;
+
+        if (IsInBounds(tileRootX, tileRootY))
+            validationStatus = ValidateTilePlacement(
+                tile,
+                tileRootX, tileRootY, layer,
+                placeMode != TilePlacementMode.Normal
+            );
+        else
+        {
+            return TilePlacementStatus.OutOfBounds;
+        }
+
+        if (validationStatus == TilePlacementStatus.Success)
+        {
+            PlaceTile(
+                tile,
+                layer, tileRootX, tileRootY,
+                placeMode == TilePlacementMode.Geometry
+            );
+        }
+
+        return validationStatus;
     }
 
     public void PlaceTile(
