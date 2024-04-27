@@ -138,7 +138,6 @@ class LuaAutotile : Autotile.Autotile
                 {
                     luaState.Push(table[i]);
                     LuaInterface.LogError($"invalid requiredTiles table for autotile '{Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                    RainEd.Instance.ShowNotification($"Error loading autotile {Name}");
                     IsReady = false;
                     break;
                 }
@@ -146,7 +145,6 @@ class LuaAutotile : Autotile.Autotile
 
             if (missingTiles.Count > 0)
             {
-                LuaInterface.LogWarning($"missing required tiles for autotile '{Name}': {string.Join(", ", missingTiles)}");
                 missingCache = missingTiles.ToArray();
             }
             else

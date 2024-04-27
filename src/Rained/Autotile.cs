@@ -106,6 +106,15 @@ abstract class Autotile
 
     public abstract string[] MissingTiles { get; }
 
+    public void CheckMissingTiles()
+    {
+        var tiles = MissingTiles;
+        if (tiles.Length > 0)
+        {
+            LuaInterface.LogWarning($"missing required tiles for autotile '{Name}': {string.Join(", ", tiles)}");
+        }
+    }
+
     // C# version of lua autotilePath.
     // I suppose I could just make it so you can call this function directly within Lua,
     // but I don't feel like it. Also, the Lua version is probably a good
@@ -183,5 +192,15 @@ class AutotileCatalog
 
     public List<Autotile> GetAutotilesInCategory(int index)
         => Autotiles[index];
-
+    
+    public void CheckMissingTiles()
+    {
+        foreach (var group in Autotiles)
+        {
+            foreach (var tile in group)
+            {
+                tile.CheckMissingTiles();
+            }
+        }
+    }
 }

@@ -213,7 +213,8 @@ sealed class RainEd
             Boot.DisplayError("Could not start", $"There was an error while loading the {initPhase} Init.txt file:\n\n{e}\n\nThe application will now quit.");
             throw new RainEdStartupException();
         }
-        
+
+        Autotiles.CheckMissingTiles();
         level = Level.NewDefaultLevel();
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
