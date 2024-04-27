@@ -358,7 +358,7 @@ partial class TileEditor : IEditorMode
                         Level.TileSize * materialBrushSize,
                         Level.TileSize * materialBrushSize
                     ),
-                    1f / window.ViewZoom,
+                    2f / window.ViewZoom,
                     RainEd.Instance.MaterialDatabase.GetMaterial(selectedMaterial).Color
                 );
 
@@ -470,7 +470,6 @@ partial class TileEditor : IEditorMode
                     else
                     {
                         RainEd.Logger.Information("Removed detached tile body");
-                        RainEd.Instance.ShowNotification("Removed detached tile body");
 
                         mouseCell.TileLayer = -1;
                         mouseCell.TileRootX = -1;
