@@ -5,221 +5,223 @@ using System.Text;
 using ImGuiNET;
 using NLua;
 using NLua.Exceptions;
-using Autotile;
+using Autotiles;
 
 using LuaNativeFunction = KeraLua.LuaFunction;
 
-class LuaAutotile : Autotile.Autotile
+static class LuaInterface
 {
-    public LuaAutotile(LuaAutotileInterface wrapper) : base() {
-        LuaWrapper = wrapper;
-    }
-
-    public LuaAutotile(LuaAutotileInterface wrapper, string name) : base(name) {
-        LuaWrapper = wrapper;
-    }
-
-    public LuaFunction? LuaFillPathProcedure = null;
-    public LuaFunction? LuaFillRectProcedure = null;
-    public LuaAutotileInterface LuaWrapper;
-
-     private static void HandleException(LuaScriptException e)
+    // this is the C# side for autotiles programmed in Lua
+    class LuaAutotile : Autotiles.Autotile
     {
-        RainEd.Instance.ShowNotification("Error!");
-
-        Exception actualException = e.IsNetException ? e.InnerException! : e;
-        string? stackTrace = actualException.Data["Traceback"] as string;
-        LuaInterface.LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
-    }
-
-    public override void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry)
-    {
-        string? modifierStr = null;
-        if (geometry)
-            modifierStr = "geometry";
-        else if (force)
-            modifierStr = "force";
-
-        try
-        {
-            LuaFillRectProcedure?.Call(
-                LuaWrapper, layer + 1,
-                rectMin.X, rectMin.Y,
-                rectMax.X, rectMax.Y,
-                modifierStr
-            );
-        }
-        catch (LuaScriptException e)
-        {
-            HandleException(e);
-        }
-    }
-
-    public override void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry)
-    {
-        var luaState = LuaInterface.NLuaState;
-
-        // push a new table on the stack with data
-        // initialized to the given path segment
-        static void CreateSegment(PathSegment seg)
-        {
-            var state = LuaInterface.NLuaState.State;
-            state.NewTable();
-            state.PushBoolean(seg.Left);
-            state.SetField(-2, "left");
-            state.PushBoolean(seg.Right);
-            state.SetField(-2, "right");
-            state.PushBoolean(seg.Up);
-            state.SetField(-2, "up");
-            state.PushBoolean(seg.Down);
-            state.SetField(-2, "down");
-
-            state.PushInteger(seg.X);
-            state.SetField(-2, "x");
-            state.PushInteger(seg.Y);
-            state.SetField(-2, "y");
+        public LuaAutotile(LuaAutotileInterface wrapper) : base() {
+            LuaWrapper = wrapper;
         }
 
-        string? modifierStr = null;
-        if (geometry)
-            modifierStr = "geometry";
-        else if (force)
-            modifierStr = "force";
-
-        // create segment table
-        luaState.State.CreateTable(pathSegments.Length, 0);
-        for (int i = 0; i < pathSegments.Length; i++)
-        {
-            CreateSegment(pathSegments[i]);
-
-            // segmentTable[i+1] = newSegment
-            // segmentTable is at stack index -2
-            // newSegment is at the top of the stack
-            luaState.State.RawSetInteger(-2, i + 1);
+        public LuaAutotile(LuaAutotileInterface wrapper, string name) : base(name) {
+            LuaWrapper = wrapper;
         }
 
-        try
-        {
-            LuaTable segmentTable = (LuaTable) luaState.Pop();
-            LuaFillPathProcedure?.Call(LuaWrapper, layer + 1, segmentTable, modifierStr);
-        }
-        catch (LuaScriptException e)
-        {
-            HandleException(e);
-        }
-    }
+        public LuaFunction? LuaFillPathProcedure = null;
+        public LuaFunction? LuaFillRectProcedure = null;
+        public LuaAutotileInterface LuaWrapper;
 
-    private string[]? missingCache = null;
+        private static void HandleException(LuaScriptException e)
+        {
+            RainEd.Instance.ShowNotification("Error!");
 
-    public override string[] MissingTiles {
-        get {
-            if (missingCache is not null) return missingCache;
+            Exception actualException = e.IsNetException ? e.InnerException! : e;
+            string? stackTrace = actualException.Data["Traceback"] as string;
+            LuaInterface.LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
+        }
+
+        public override void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry)
+        {
+            string? modifierStr = null;
+            if (geometry)
+                modifierStr = "geometry";
+            else if (force)
+                modifierStr = "force";
+
+            try
+            {
+                LuaFillRectProcedure?.Call(
+                    LuaWrapper, layer + 1,
+                    rectMin.X, rectMin.Y,
+                    rectMax.X, rectMax.Y,
+                    modifierStr
+                );
+            }
+            catch (LuaScriptException e)
+            {
+                HandleException(e);
+            }
+        }
+
+        public override void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry)
+        {
             var luaState = LuaInterface.NLuaState;
 
-            var table = LuaWrapper.RequiredTiles;
-            if (table is null)
+            // push a new table on the stack with data
+            // initialized to the given path segment
+            static void CreateSegment(PathSegment seg)
             {
-                missingCache = [];
-                return missingCache;
+                var state = LuaInterface.NLuaState.State;
+                state.NewTable();
+                state.PushBoolean(seg.Left);
+                state.SetField(-2, "left");
+                state.PushBoolean(seg.Right);
+                state.SetField(-2, "right");
+                state.PushBoolean(seg.Up);
+                state.SetField(-2, "up");
+                state.PushBoolean(seg.Down);
+                state.SetField(-2, "down");
+
+                state.PushInteger(seg.X);
+                state.SetField(-2, "x");
+                state.PushInteger(seg.Y);
+                state.SetField(-2, "y");
             }
 
-            List<string> missingTiles = [];
+            string? modifierStr = null;
+            if (geometry)
+                modifierStr = "geometry";
+            else if (force)
+                modifierStr = "force";
 
-            for (int i = 1; table[i] is not null; i++)
+            // create segment table
+            luaState.State.CreateTable(pathSegments.Length, 0);
+            for (int i = 0; i < pathSegments.Length; i++)
             {
-                if (table[i] is string tileName)
+                CreateSegment(pathSegments[i]);
+
+                // segmentTable[i+1] = newSegment
+                // segmentTable is at stack index -2
+                // newSegment is at the top of the stack
+                luaState.State.RawSetInteger(-2, i + 1);
+            }
+
+            try
+            {
+                LuaTable segmentTable = (LuaTable) luaState.Pop();
+                LuaFillPathProcedure?.Call(LuaWrapper, layer + 1, segmentTable, modifierStr);
+            }
+            catch (LuaScriptException e)
+            {
+                HandleException(e);
+            }
+        }
+
+        private string[]? missingCache = null;
+
+        public override string[] MissingTiles {
+            get {
+                if (missingCache is not null) return missingCache;
+                var luaState = LuaInterface.NLuaState;
+
+                var table = LuaWrapper.RequiredTiles;
+                if (table is null)
                 {
-                    if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                    missingCache = [];
+                    return missingCache;
+                }
+
+                List<string> missingTiles = [];
+
+                for (int i = 1; table[i] is not null; i++)
+                {
+                    if (table[i] is string tileName)
                     {
-                        missingTiles.Add(tileName);
+                        if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                        {
+                            missingTiles.Add(tileName);
+                        }
                     }
+                    else
+                    {
+                        luaState.Push(table[i]);
+                        LuaInterface.LogError($"invalid requiredTiles table for autotile '{Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
+                        IsReady = false;
+                        break;
+                    }
+                }
+
+                if (missingTiles.Count > 0)
+                {
+                    missingCache = missingTiles.ToArray();
                 }
                 else
                 {
-                    luaState.Push(table[i]);
-                    LuaInterface.LogError($"invalid requiredTiles table for autotile '{Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                    IsReady = false;
-                    break;
+                    missingCache = [];
                 }
-            }
 
-            if (missingTiles.Count > 0)
-            {
-                missingCache = missingTiles.ToArray();
+                return missingCache;
             }
-            else
-            {
-                missingCache = [];
-            }
-
-            return missingCache;
         }
     }
-}
 
-class LuaAutotileInterface
-{
-    [LuaHide]
-    public readonly LuaAutotile autotile;
-
-    [LuaMember(Name = "name")]
-    public string Name { get => autotile.Name; set => autotile.Name = value; }
-
-    [LuaMember(Name = "pathThickness")]
-    public int PathThickness { get => autotile.PathThickness; set => autotile.PathThickness = value; }
-    
-    [LuaMember(Name = "segmentLength")]
-    public int SegmentLength { get => autotile.SegmentLength; set => autotile.SegmentLength = value; }
-
-    [LuaMember(Name = "type")]
-    public string Type
+    // this is what Lua interacts with when creating autotiles
+    class LuaAutotileInterface
     {
-        get => autotile.Type switch
+        [LuaHide]
+        public readonly LuaAutotile autotile;
+
+        [LuaMember(Name = "name")]
+        public string Name { get => autotile.Name; set => autotile.Name = value; }
+
+        [LuaMember(Name = "pathThickness")]
+        public int PathThickness { get => autotile.PathThickness; set => autotile.PathThickness = value; }
+        
+        [LuaMember(Name = "segmentLength")]
+        public int SegmentLength { get => autotile.SegmentLength; set => autotile.SegmentLength = value; }
+
+        [LuaMember(Name = "type")]
+        public string Type
         {
-            AutotileType.Path => "path",
-            AutotileType.Rect => "rect",
-            _ => throw new Exception()
-        };
+            get => autotile.Type switch
+            {
+                AutotileType.Path => "path",
+                AutotileType.Rect => "rect",
+                _ => throw new Exception()
+            };
 
-        set => autotile.Type = value switch
-        {
-            "path" => AutotileType.Path,
-            "rect" => AutotileType.Rect,
-            _ => throw new Exception($"invalid autotile type '{value}'"),
-        };
-    }
-
-    [LuaMember(Name = "tilePath")]
-    public LuaFunction? TilePath { get => autotile.LuaFillPathProcedure; set => autotile.LuaFillPathProcedure = value; }
-    
-    [LuaMember(Name = "tileRect")]
-    public LuaFunction? TileRect { get => autotile.LuaFillRectProcedure; set => autotile.LuaFillRectProcedure = value; }
-    
-    [LuaMember(Name = "requiredTiles")]
-    public LuaTable? RequiredTiles = null;
-
-    public LuaAutotileInterface()
-    {
-        autotile = new LuaAutotile(this);
-    }
-
-    [LuaMember(Name = "addOption")]
-    public void AddOption(string id, string name, bool defaultValue) => autotile.AddOption(id, name, defaultValue);
-
-    [LuaMember(Name = "getOption")]
-    public bool GetOption(string id)
-    {
-        if (autotile.TryGetOption(id, out ConfigOption? data))
-        {
-            return data!.Value;
+            set => autotile.Type = value switch
+            {
+                "path" => AutotileType.Path,
+                "rect" => AutotileType.Rect,
+                _ => throw new Exception($"invalid autotile type '{value}'"),
+            };
         }
 
-        throw new LuaException($"option '{id}' does not exist");
-    }
-}
+        [LuaMember(Name = "tilePath")]
+        public LuaFunction? TilePath { get => autotile.LuaFillPathProcedure; set => autotile.LuaFillPathProcedure = value; }
+        
+        [LuaMember(Name = "tileRect")]
+        public LuaFunction? TileRect { get => autotile.LuaFillRectProcedure; set => autotile.LuaFillRectProcedure = value; }
+        
+        [LuaMember(Name = "requiredTiles")]
+        public LuaTable? RequiredTiles = null;
 
-static class LuaInterface
-{
+        public LuaAutotileInterface()
+        {
+            autotile = new LuaAutotile(this);
+        }
+
+        [LuaMember(Name = "addOption")]
+        public void AddOption(string id, string name, bool defaultValue) => autotile.AddOption(id, name, defaultValue);
+
+        [LuaMember(Name = "getOption")]
+        public bool GetOption(string id)
+        {
+            if (autotile.TryGetOption(id, out ConfigOption? data))
+            {
+                return data!.Value;
+            }
+
+            throw new LuaException($"option '{id}' does not exist");
+        }
+    }
+
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
 

@@ -1,4 +1,4 @@
-namespace RainEd.Autotile;
+namespace RainEd.Autotiles;
 using System.Numerics;
 
 enum AutotileType

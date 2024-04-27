@@ -322,11 +322,11 @@ partial class TileEditor : IEditorMode
                             var autotile = selectedAutotile;
 
                             ImGui.SeparatorText(autotile.Name);
-                            if (autotile.Type == Autotile.AutotileType.Path)
+                            if (autotile.Type == Autotiles.AutotileType.Path)
                             {
                                 ImGui.Text("Path Autotile");
                             }
-                            else if (autotile.Type == Autotile.AutotileType.Rect)
+                            else if (autotile.Type == Autotiles.AutotileType.Rect)
                             {
                                 ImGui.Text("Rectangle Autotile");
                             }

@@ -43,7 +43,7 @@ sealed class RainEd
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
     public readonly Props.PropDatabase PropDatabase;
-    public readonly Autotile.AutotileCatalog Autotiles;
+    public readonly Autotiles.AutotileCatalog Autotiles;
 
     private string currentFilePath = string.Empty;
 
@@ -154,7 +154,7 @@ sealed class RainEd
         }
 
         // init autotile catalog
-        Autotiles = new Autotile.AutotileCatalog();
+        Autotiles = new Autotiles.AutotileCatalog();
 
         string initPhase = null!;
         try

@@ -2,7 +2,7 @@ namespace RainEd;
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
-using Autotile;
+using Autotiles;
 
 class AutotilePathBuilder : IAutotileInputBuilder
 {
@@ -22,14 +22,14 @@ class AutotilePathBuilder : IAutotileInputBuilder
         public int Index;
     }
 
-    private readonly Autotile.Autotile autotile;
+    private readonly Autotiles.Autotile autotile;
 
     private readonly List<Vector2i> autotilePath = [];
     private readonly List<PathDirection> autotilePathDirs = [];
     private readonly List<PreviewSegment> previewSegments = [];
     private readonly float gridOffset;
 
-    public AutotilePathBuilder(Autotile.Autotile autotile) {
+    public AutotilePathBuilder(Autotiles.Autotile autotile) {
         this.autotile = autotile;
         gridOffset = autotile.PathThickness % 2 == 0 ? 0f : 0.5f;
     }
@@ -79,7 +79,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
         down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
     }
 
-    private bool CanAppendPath(Autotile.Autotile autotile, Vector2i newPos)
+    private bool CanAppendPath(Autotiles.Autotile autotile, Vector2i newPos)
     {
         var lastPos = autotilePath[^1];
         int dx = newPos.X - lastPos.X;

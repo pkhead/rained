@@ -1,11 +1,11 @@
 namespace RainEd;
 using System.Numerics;
 using Raylib_cs;
-using Autotile;
+using Autotiles;
 
-class AutotileRectBuilder(Autotile.Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
+class AutotileRectBuilder(Autotiles.Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
 {
-    private readonly Autotile.Autotile autotile = autotile;
+    private readonly Autotiles.Autotile autotile = autotile;
     private readonly Vector2i startPos = startPos;
     private Vector2i endPos = startPos;
 
