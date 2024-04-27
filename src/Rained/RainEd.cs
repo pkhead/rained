@@ -43,6 +43,7 @@ sealed class RainEd
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
     public readonly Props.PropDatabase PropDatabase;
+    public readonly Autotile.AutotileCatalog Autotiles;
 
     private string currentFilePath = string.Empty;
 
@@ -152,6 +153,9 @@ sealed class RainEd
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
         }
 
+        // init autotile catalog
+        Autotiles = new Autotile.AutotileCatalog();
+
         string initPhase = null!;
         try
         {
@@ -168,7 +172,6 @@ sealed class RainEd
             try
             {
                 LuaInterface.Initialize();
-                LuaInterface.CheckAutotileRequirements();
             }
             catch (LuaScriptException e)
             {

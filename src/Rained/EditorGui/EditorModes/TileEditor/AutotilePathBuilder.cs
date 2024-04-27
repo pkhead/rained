@@ -2,6 +2,7 @@ namespace RainEd;
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
+using Autotile;
 
 class AutotilePathBuilder : IAutotileInputBuilder
 {
@@ -21,14 +22,14 @@ class AutotilePathBuilder : IAutotileInputBuilder
         public int Index;
     }
 
-    private readonly Autotile autotile;
+    private readonly Autotile.Autotile autotile;
 
     private readonly List<Vector2i> autotilePath = [];
     private readonly List<PathDirection> autotilePathDirs = [];
     private readonly List<PreviewSegment> previewSegments = [];
     private readonly float gridOffset;
 
-    public AutotilePathBuilder(Autotile autotile) {
+    public AutotilePathBuilder(Autotile.Autotile autotile) {
         this.autotile = autotile;
         gridOffset = autotile.PathThickness % 2 == 0 ? 0f : 0.5f;
     }
@@ -78,7 +79,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
         down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
     }
 
-    private bool CanAppendPath(Autotile autotile, Vector2i newPos)
+    private bool CanAppendPath(Autotile.Autotile autotile, Vector2i newPos)
     {
         var lastPos = autotilePath[^1];
         int dx = newPos.X - lastPos.X;
@@ -452,11 +453,11 @@ class AutotilePathBuilder : IAutotileInputBuilder
             previewSegments.Sort(static (PreviewSegment a, PreviewSegment b) => a.Index.CompareTo(b.Index));
 
             // create path segment table from the TileEditor PreviewSegment class
-            var pathSegments = new LuaInterface.PathSegment[previewSegments.Count];
+            var pathSegments = new PathSegment[previewSegments.Count];
             for (int i = 0; i < previewSegments.Count; i++)
             {
                 var seg = previewSegments[i];
-                pathSegments[i] = new LuaInterface.PathSegment()
+                pathSegments[i] = new PathSegment()
                 {
                     X = (int)MathF.Ceiling(seg.Center.X) - 1,
                     Y = (int)MathF.Ceiling(seg.Center.Y) - 1,
@@ -467,7 +468,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
                 };
             }
 
-            LuaInterface.RunPathAutotile(autotile, layer, pathSegments, force, geometry);
+            autotile.TilePath(layer, pathSegments, force, geometry);
         }
     }
 }

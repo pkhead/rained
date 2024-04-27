@@ -2,6 +2,7 @@ using RainEd.Tiles;
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
+using RainEd.Autotile;
 
 namespace RainEd;
 
@@ -24,7 +25,7 @@ partial class TileEditor : IEditorMode
 
     private int materialBrushSize = 1;
 
-    private Autotile? selectedAutotile = null;
+    private Autotile.Autotile? selectedAutotile = null;
     private IAutotileInputBuilder? activePathBuilder = null;
 
     // this is used to fix force placement when
@@ -524,8 +525,8 @@ partial class TileEditor : IEditorMode
                 if (selectedAutotile is not null)
                 {
                     activePathBuilder = selectedAutotile.Type switch {
-                        Autotile.AutoType.Path => new AutotilePathBuilder(selectedAutotile),
-                        Autotile.AutoType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
+                        AutotileType.Path => new AutotilePathBuilder(selectedAutotile),
+                        AutotileType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
                         _ => null
                     };
                 }

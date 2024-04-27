@@ -282,7 +282,8 @@ partial class TileEditor : IEditorMode
                         //ProcessSearch();
                     }
 
-                    var autotileGroups = LuaInterface.AutotileCategories;
+                    var catalog = RainEd.Instance.Autotiles;
+                    var autotileGroups = catalog.AutotileCategories;
 
                     // autotile list
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
@@ -292,7 +293,7 @@ partial class TileEditor : IEditorMode
                         for (int i = 0; i < autotileGroups.Count; i++)
                         {
                             ImGui.PushID(i);
-                            var group = LuaInterface.GetAutotilesInCategory(i);
+                            var group = catalog.GetAutotilesInCategory(i);
 
                             if (group.Count > 0 && ImGui.TreeNode(autotileGroups[i]))
                             {
@@ -321,11 +322,11 @@ partial class TileEditor : IEditorMode
                             var autotile = selectedAutotile;
 
                             ImGui.SeparatorText(autotile.Name);
-                            if (autotile.Type == Autotile.AutoType.Path)
+                            if (autotile.Type == Autotile.AutotileType.Path)
                             {
                                 ImGui.Text("Path Autotile");
                             }
-                            else if (autotile.Type == Autotile.AutoType.Rect)
+                            else if (autotile.Type == Autotile.AutotileType.Rect)
                             {
                                 ImGui.Text("Rectangle Autotile");
                             }

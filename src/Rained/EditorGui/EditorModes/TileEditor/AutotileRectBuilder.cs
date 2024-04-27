@@ -1,10 +1,11 @@
 namespace RainEd;
 using System.Numerics;
 using Raylib_cs;
+using Autotile;
 
-class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
+class AutotileRectBuilder(Autotile.Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
 {
-    private readonly Autotile autotile = autotile;
+    private readonly Autotile.Autotile autotile = autotile;
     private readonly Vector2i startPos = startPos;
     private Vector2i endPos = startPos;
 
@@ -37,8 +38,8 @@ class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInput
         var maxX = Math.Max(startPos.X, endPos.X);
         var maxY = Math.Max(startPos.Y, endPos.Y);
 
-        LuaInterface.RunRectAutotile(
-            autotile, layer,
+        autotile.TileRect(
+            layer,
             rectMin: new Vector2i(minX, minY),
             rectMax: new Vector2i(maxX, maxY),
             force, geometry
