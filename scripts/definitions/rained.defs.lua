@@ -20,6 +20,7 @@ function rained.alert(msg) end
 ---@param name string The name of the autotile.
 ---@param category string? The category to place the autotile in. Defaults to Misc
 ---@return Autotile autotile The new autotile
+---@overload fun(name: string)
 function rained.createAutotile(name, category) end
 
 ---Check if a tile is installed
@@ -29,11 +30,33 @@ function rained.hasTile(tileName) end
 
 ---Place a tile in the level.
 ---@param tileName string The name of the tile to place
----@param layer integer The layer to place the tile, in the range [1, 3]
 ---@param x integer The X coordinate of the tile root
 ---@param y integer The Y coordinate of the tile root
+---@param layer integer The layer to place the tile, in the range [1, 3]
 ---@param forceModifier ForceModifier? The force-placement mode to use, or nil if placing normally
-function rained.placeTile(tileName, layer, x, y, forceModifier) end
+function rained.placeTile(tileName, x, y, layer, forceModifier) end
+
+---Get the name of the tile at the given position.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3]
+---@return string? tileName The name of the tile, or nil if there is no tile at the given location.
+function rained.getTileAt(x, y, layer) end
+
+---Check if the tile at the given position is a tile head.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3]
+---@return boolean hasTileHead True if the cell has a tile head, false if not.
+function rained.hasTileHead(x, y, layer) end
+
+---Delete the tile at the given position
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3]
+---@param removeGeo boolean? If the action should also remove the geometry.
+---@overload fun(x: integer, y: integer, layer: integer)
+function rained.deleteTile(x, y, layer, removeGeo) end
 
 ---@alias AutotileType
 ---| "path"

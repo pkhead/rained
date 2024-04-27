@@ -54,13 +54,13 @@ function autotile:tilePath(layer, segments, forceModifier)
         if not skipSegment then
             -- turns
             if seg.left and seg.down then
-                rained.placeTile(tileTable.ld, layer, seg.x, seg.y, forceModifier)
+                rained.placeTile(tileTable.ld, seg.x, seg.y, layer, forceModifier)
             elseif seg.left and seg.up then
-                rained.placeTile(tileTable.lu, layer, seg.x, seg.y, forceModifier)
+                rained.placeTile(tileTable.lu, seg.x, seg.y, layer, forceModifier)
             elseif seg.right and seg.down then
-                rained.placeTile(tileTable.rd, layer, seg.x, seg.y, forceModifier)
+                rained.placeTile(tileTable.rd, seg.x, seg.y, layer, forceModifier)
             elseif seg.right and seg.up then
-                rained.placeTile(tileTable.ru, layer, seg.x, seg.y, forceModifier)
+                rained.placeTile(tileTable.ru, seg.x, seg.y, layer, forceModifier)
 
             -- straight tiles
             else
@@ -92,14 +92,14 @@ function autotile:tilePath(layer, segments, forceModifier)
                 if seg.down or seg.up then
                     rained.placeTile(
                         vertical,
-                        layer, x, y, forceModifier
+                        x, y, layer, forceModifier
                     )
 
                 -- horizontal
                 elseif seg.right or seg.left then
                     rained.placeTile(
                         horizontal,
-                        layer, x, y, forceModifier
+                        x, y, layer, forceModifier
                     )
                 end
             end

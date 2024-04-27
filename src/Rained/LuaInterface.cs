@@ -186,6 +186,43 @@ static class LuaInterface
         LuaHelpers.PushDelegate(luaState.State, new PlaceTileDelegate(PlaceTile));
         luaState.State.SetField(-2, "placeTile");
 
+        // function getTileAt
+        luaState.Push(static (int x, int y, int layer) => {
+            var level = RainEd.Instance.Level;
+            if (layer < 1 || layer > 3) return null;
+            if (!level.IsInBounds(x, y)) return null;
+            var tile = RainEd.Instance.Level.GetTile(level.Layers[layer-1, x, y]);
+            return tile?.Name;
+        });
+        luaState.State.SetField(-2, "getTileAt");
+
+        // function hasTileHead
+        luaState.Push(static (int x, int y, int layer) => {
+            var level = RainEd.Instance.Level;
+            if (layer < 1 || layer > 3) return false;
+            if (!level.IsInBounds(x, y)) return false;
+            return level.Layers[layer-1, x, y].TileHead is not null;
+        });
+        luaState.State.SetField(-2, "hasTileHead");
+
+        // function deleteTile
+        luaState.State.PushCFunction(static (nint luaStatePtr) => {
+            int x = (int) luaState.State.CheckInteger(1);
+            int y = (int) luaState.State.CheckInteger(2);
+            int layer = (int) luaState.State.CheckInteger(3);
+            bool removeGeo = false;
+
+            if (!luaState.State.IsNoneOrNil(4))
+                removeGeo = luaState.State.ToBoolean(4);
+            
+            var level = RainEd.Instance.Level;
+            if (layer < 1 || layer > 3) return 0;
+            if (!level.IsInBounds(x, y)) return 0;
+            level.RemoveTileCell(layer, x, y, removeGeo);
+            return 0;
+        });
+        luaState.State.SetField(-2, "deleteTile");
+
         return 1;
     }
 
@@ -231,8 +268,8 @@ static class LuaInterface
         RainEd.Instance.ShowNotification(msg.ToString()!);
     }
 
-    delegate bool PlaceTileDelegate(out string? result, string tileName, int layer, int x, int y, string? modifier);
-    public static bool PlaceTile(out string? result, string tileName, int layer, int x, int y, string? modifier)
+    delegate bool PlaceTileDelegate(out string? result, string tileName, int x, int y, int layer, string? modifier);
+    public static bool PlaceTile(out string? result, string tileName, int x, int y, int layer, string? modifier)
     {
         result = null;
 

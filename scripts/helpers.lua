@@ -13,24 +13,24 @@ function module.autotilePath(tileTable, layer, segments, forceModifier, startInd
 
         -- turns
         if seg.left and seg.down then
-            rained.placeTile(tileTable.ld, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.ld, seg.x, seg.y, layer, forceModifier)
         elseif seg.left and seg.up then
-            rained.placeTile(tileTable.lu, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.lu, seg.x, seg.y, layer, forceModifier)
         elseif seg.right and seg.down then
-            rained.placeTile(tileTable.rd, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.rd, seg.x, seg.y, layer, forceModifier)
         elseif seg.right and seg.up then
-            rained.placeTile(tileTable.ru, layer, seg.x, seg.y, forceModifier)
+            rained.placeTile(tileTable.ru, seg.x, seg.y, layer, forceModifier)
         
         -- straight
         elseif seg.down or seg.up then
             rained.placeTile(
                 tileTable.vertical,
-                layer, seg.x, seg.y, forceModifier
+                seg.x, seg.y, layer, forceModifier
             )
         elseif seg.right or seg.left then
             rained.placeTile(
                 tileTable.horizontal,
-                layer, seg.x, seg.y, forceModifier
+                seg.x, seg.y, layer, forceModifier
             )
         end
     end
@@ -75,20 +75,20 @@ local patterns = {
 ---@param forceModifier ForceModifier
 function module.patternBox(prefix, layer, left, top, right, bottom, forceModifier)
     -- place corner tiles
-    rained.placeTile("Block Corner NW", layer, left, top, forceModifier)
-    rained.placeTile("Block Corner NE", layer, right, top, forceModifier)
-    rained.placeTile("Block Corner SE", layer, right, bottom, forceModifier)
-    rained.placeTile("Block Corner SW", layer, left, bottom, forceModifier)
+    rained.placeTile("Block Corner NW", left, top, layer, forceModifier)
+    rained.placeTile("Block Corner NE", right, top, layer, forceModifier)
+    rained.placeTile("Block Corner SE", right, bottom, layer, forceModifier)
+    rained.placeTile("Block Corner SW", left, bottom, layer, forceModifier)
 
     -- fill sides
     for x = left + 1, right - 1 do
-        rained.placeTile("Block Edge N", layer, x, top, forceModifier)
-        rained.placeTile("Block Edge S", layer, x, bottom, forceModifier)
+        rained.placeTile("Block Edge N", x, top, layer, forceModifier)
+        rained.placeTile("Block Edge S", x, bottom, layer, forceModifier)
     end
 
     for y = top + 1, bottom - 1 do
-        rained.placeTile("Block Edge W", layer, left, y, forceModifier)
-        rained.placeTile("Block Edge E", layer, right, y, forceModifier)
+        rained.placeTile("Block Edge W", left, y, layer, forceModifier)
+        rained.placeTile("Block Edge E", right, y, layer, forceModifier)
     end
 
     -- the following code is translated straight from the lingo code
@@ -115,7 +115,7 @@ function module.patternBox(prefix, layer, left, top, right, bottom, forceModifie
                 tl = 1
             end
 
-            rained.placeTile(prefix .. currentPattern.tiles[tl], layer, px, py, forceModifier)
+            rained.placeTile(prefix .. currentPattern.tiles[tl], px, py, layer, forceModifier)
         end
 
         py = py + currentPattern.tall

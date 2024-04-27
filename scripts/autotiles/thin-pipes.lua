@@ -65,19 +65,19 @@ local function placePathCap(layer, segments, index, forceModifier)
     end
 
     if seg.left then
-        rained.placeTile("Pipe Inwards E", layer, seg.x, seg.y, forceModifier)
+        rained.placeTile("Pipe Inwards E", seg.x, seg.y, layer, forceModifier)
     end
 
     if seg.right then
-        rained.placeTile("Pipe Inwards W", layer, seg.x, seg.y, forceModifier)
+        rained.placeTile("Pipe Inwards W", seg.x, seg.y, layer, forceModifier)
     end
 
     if seg.up then
-        rained.placeTile("Pipe Inwards N", layer, seg.x, seg.y, forceModifier)
+        rained.placeTile("Pipe Inwards N", seg.x, seg.y, layer, forceModifier)
     end
 
     if seg.down then
-        rained.placeTile("Pipe Inwards S", layer, seg.x, seg.y, forceModifier)
+        rained.placeTile("Pipe Inwards S", seg.x, seg.y, layer, forceModifier)
     end
 end
 
