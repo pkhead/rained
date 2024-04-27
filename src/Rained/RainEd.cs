@@ -163,6 +163,8 @@ sealed class RainEd
             initPhase = "props";
             Logger.Information("Initializing prop database...");
             PropDatabase = new Props.PropDatabase(TileDatabase);
+
+            Logger.Information("----- ASSET INIT DONE! -----\n\n\n");
         }
         catch (Exception e)
         {

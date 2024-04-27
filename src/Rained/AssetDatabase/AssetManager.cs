@@ -128,7 +128,8 @@ record CategoryList
             {
                 if (colored)
                 {
-                    var list = (Lingo.List) parser.Read(line[1..])!;
+                    if (parser.Read(line[1..]) is not Lingo.List list) continue;
+
                     Categories.Add(new InitCategory(
                         name: (string) list.values[0],
                         color: (Lingo.Color) list.values[1]
@@ -272,10 +273,6 @@ record CategoryList
 
     public async Task Merge(string otherPath, PromptRequest promptOverwrite)
     {
-        // damn you solar!!!!
-        // putting comments in init.txt files...
-        bool strict = Path.GetFileName(otherPath) == "Init.txt";
-
         try
         {
             // automatically overwrite items that are only defined one time
@@ -324,7 +321,7 @@ record CategoryList
 
                     if (isColored)
                     {
-                        var list = parser.Read(line[1..])! as Lingo.List;
+                        var list = parser.Read(line[1..]) as Lingo.List;
 
                         if (list is not null)
                         {
@@ -335,10 +332,7 @@ record CategoryList
                         }
                         else
                         {
-                            if (strict)
-                                throw new MergeException("Malformed category header!");
-
-                            RainEd.Logger.Information("Ignore '{Line}'", line);
+                            RainEd.Logger.Information("Ignore malformed category header at '{Line}'", line);
                         }
                     }
                     else

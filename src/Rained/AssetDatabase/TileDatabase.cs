@@ -202,14 +202,23 @@ class TileDatabase
         TileCategory? curGroup = null;
         int groupIndex = 0;
 
-        void ProcessLine(string line)
+        // helper function to create error string with line information
+        static string ErrorString(int lineNo, string msg)
+            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+
+        void ProcessLine(string line, int lineNo)
         {
             if (string.IsNullOrWhiteSpace(line)) return;
             
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Malformed category header"));
+                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                {
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    return;
+                }
+
                 curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
                 {
                     Index = groupIndex
@@ -222,9 +231,9 @@ class TileDatabase
             }
             else
             {
-                if (curGroup is null) throw new Exception("The first category header is missing");
+                if (curGroup is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
 
-                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed tile init"));
+                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed tile init")));
 
                 object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];
@@ -278,15 +287,16 @@ class TileDatabase
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    RainEd.Logger.Warning("Could not add tile '{Name}': {ErrorMessage}", name, e.Message);
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }
 
         // read Init.txt
+        int lineNo = 1;
         foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt")))
         {
-            ProcessLine(line);
+            ProcessLine(line, lineNo++);
         }
 
         // read internal extra tiles
@@ -294,7 +304,7 @@ class TileDatabase
         string? line2;
         while ((line2 = reader.ReadLine()) is not null)
         {
-            ProcessLine(line2);
+            ProcessLine(line2, -1);
         }
     }
 

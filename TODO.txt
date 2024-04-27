@@ -1,4 +1,5 @@
 Priority:
+TEST SOLAR PROPS RGHT NOW!!!
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - need a missing texture placeholder for... missing textures
@@ -18,6 +19,7 @@ Bugs:
 Overall:
 - favorite tiles and props
 - file manager "New Folder" button
+- retrieve tile/prop textures on-demand instead of ahead of time
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET
@@ -29,6 +31,7 @@ Overall:
   (idk how to do this, it returns a 403 Forbidden)
 - port newmakelevel (geometry exporter) to C#
 - Move Level
+- level preview in file browser
 - undo/redo for level resize
 - level resze drag
 - help pages/hints/tooltips/whatever
@@ -37,7 +40,6 @@ Overall:
   no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
-- tile init editor (maybe?)
 
 Geometry Editor:
 - select and copy/paste

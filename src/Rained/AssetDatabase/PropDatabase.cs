@@ -456,21 +456,33 @@ class PropDatabase
         return -1;
     }
 
+    // helper function to create error message with line inforamtion
+    private static string ErrorString(int lineNo, string msg)
+            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+
     private void InitProps(TileDatabase tileDatabase)
     {
         // read prop init file
         var initFilePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt");
         var lingoParser = new Lingo.LingoParser();
+        int lineNo = 0;
 
         PropCategory? currentCategory = null;
         foreach (var line in File.ReadLines(initFilePath))
         {
+            lineNo++;
+
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Malformed category header"));
+                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                {
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    continue;
+                }
+
                 currentCategory = new PropCategory(catIndex++, (string) header.values[0], (Lingo.Color) header.values[1]);
                 Categories.Add(currentCategory);
                 RainEd.Logger.Information("Register prop category {PropCategory}", currentCategory.Name);
@@ -479,12 +491,12 @@ class PropDatabase
             // read prop
             else
             {
-                if (currentCategory is null) throw new Exception("The first category header is missing");
+                if (currentCategory is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
                 
                 Lingo.List? propData = null;
                 try // curse you Wryak
                 {
-                    propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed prop init"));
+                    propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed prop init")));
                     var propInit = new PropInit(currentCategory, propData);
                     currentCategory.Props.Add(propInit);
                     AddPropToIndex(propInit);
@@ -492,7 +504,7 @@ class PropDatabase
                 catch (Exception e)
                 {
                     var name = propData is null ? "Unknown Prop" : (string) propData.fields["nm"];
-                    RainEd.Logger.Warning("Could not add prop '{PropName}': {ErrorMessage}", name, e.Message);
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }
@@ -574,7 +586,7 @@ class PropDatabase
             }
         }
 
-        RainEd.Logger.Information("Done initialzing rope and long props");
+        RainEd.Logger.Information("Done initializing rope and long props");
     }
 
     private void InitCustomColors()
