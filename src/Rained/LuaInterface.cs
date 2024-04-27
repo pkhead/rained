@@ -64,6 +64,9 @@ class Autotile
     [LuaMember(Name = "tilePath")]
     public LuaFunction? LuaFillPathProcedure = null;
 
+    [LuaMember(Name = "tileRect")]
+    public LuaFunction? LuaFillRectProcedure = null;
+
     [LuaMember(Name = "requiredTiles")]
     public LuaTable? LuaRequiredTiles = null;
 
@@ -170,7 +173,8 @@ static class LuaInterface
     {
         luaState.State.NewTable();
 
-        luaState.Push(new Func<string?, Autotile>(CreateAutotile));
+        //luaState.Push(new Func<string, object?, Autotile>(CreateAutotile));
+        luaState.State.PushCFunction(LuaCreateAutotile);
         luaState.State.SetField(-2, "createAutotile");
 
         luaState.Push(new Func<string>(GetVersion));
@@ -185,23 +189,34 @@ static class LuaInterface
         return 1;
     }
 
-    private static Autotile CreateAutotile(string? category)
+    private static int LuaCreateAutotile(nint luaStatePtr)
     {
-        category ??= "Misc";
+        var name = luaState.State.CheckString(1);
+        var category = "Misc";
 
-        var autotile = new Autotile();
+        // the optional second argument is the category name
+        if (!luaState.State.IsNoneOrNil(2))
+        {
+            category = luaState.State.CheckString(2);
+        }
 
+        var autotile = new Autotile()
+        {
+            Name = name
+        };
+        
         var catIndex = AutotileCategories.IndexOf(category);
         if (catIndex == -1)
         {
             catIndex = AutotileCategories.Count;
             AutotileCategories.Add(category);
-            Autotiles.Add(new List<Autotile>());
+            Autotiles.Add([]);
         }
 
         Autotiles[catIndex].Add(autotile);
 
-        return autotile;
+        luaState.Push(autotile);
+        return 1;
     }
 
     public static List<Autotile> GetAutotilesInCategory(string category)
@@ -451,7 +466,16 @@ static class LuaInterface
         public int Y = y;
     }
 
-    public static void RunAutotile(Autotile autotile, int layer, PathSegment[] pathSegments, bool forcePlace, bool forceGeometry)
+    private static void HandleException(LuaScriptException e)
+    {
+        RainEd.Instance.ShowNotification("Error!");
+
+        Exception actualException = e.IsNetException ? e.InnerException! : e;
+        string? stackTrace = actualException.Data["Traceback"] as string;
+        LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
+    }
+
+    public static void RunPathAutotile(Autotile autotile, int layer, PathSegment[] pathSegments, bool forcePlace, bool forceGeometry)
     {
         // push a new table on the stack with data
         // initialized to the given path segment
@@ -498,11 +522,44 @@ static class LuaInterface
         }
         catch (LuaScriptException e)
         {
-            RainEd.Instance.ShowNotification("Error!");
+            HandleException(e);
+        }
+    }
 
-            Exception actualException = e.IsNetException ? e.InnerException! : e;
-            string? stackTrace = actualException.Data["Traceback"] as string;
-            LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
+    /// <summary>
+    /// Run the given rect autotiler.
+    /// </summary>
+    /// <param name="autotile">The autotiler to invoke.</param>
+    /// <param name="layer">The layer to autotile.</param>
+    /// <param name="rectPos">The position of the input rectangle.</param>
+    /// <param name="rectSize">The size of the input rectangle.</param>
+    /// <param name="force">If the autotiler should force-place</param>
+    /// <param name="geometry">If the autotiler should force geometry.</param>
+    public static void RunRectAutotile(
+        Autotile autotile,
+        int layer,
+        Vector2i rectPos, Vector2i rectSize,
+        bool force, bool geometry
+    )
+    {
+        string? modifierStr = null;
+        if (geometry)
+            modifierStr = "geometry";
+        else if (force)
+            modifierStr = "force";
+
+        try
+        {
+            autotile.LuaFillRectProcedure?.Call(
+                autotile, layer + 1,
+                rectPos.X, rectPos.Y,
+                rectPos.X + rectSize.X - 1, rectPos.Y + rectSize.Y - 1,
+                modifierStr
+            );
+        }
+        catch (LuaScriptException e)
+        {
+            HandleException(e);
         }
     }
 }

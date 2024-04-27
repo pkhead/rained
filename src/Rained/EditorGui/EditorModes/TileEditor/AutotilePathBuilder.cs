@@ -468,7 +468,7 @@ class AutotilePathBuilder
                 };
             }
 
-            LuaInterface.RunAutotile(autotile, layer, pathSegments, force, geometry);
+            LuaInterface.RunPathAutotile(autotile, layer, pathSegments, force, geometry);
         }
     }
 }

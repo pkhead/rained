@@ -1,6 +1,5 @@
 -- setup autotile data
-local autotile = rained.createAutotile("Pipes")
-autotile.name = "Thick Pipe"
+local autotile = rained.createAutotile("Thick Pipe", "Pipes")
 autotile.type = "path"
 autotile.pathThickness = 2
 autotile.segmentLength = 1

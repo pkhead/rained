@@ -2,8 +2,7 @@
 local helpers = require("helpers") -- load the helpers.lua module
 
 -- setup autotile data
-local autotile = rained.createAutotile("Pipes")
-autotile.name = "Big Pipe"
+local autotile = rained.createAutotile("Big Pipe", "Pipes")
 autotile.type = "path"
 autotile.pathThickness = 6
 autotile.segmentLength = 1

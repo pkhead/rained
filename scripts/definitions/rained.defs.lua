@@ -17,9 +17,10 @@ function rained.getVersion() end
 function rained.alert(msg) end
 
 ---Create an autotile
----@param category string? The category to place the autotiler in. Defaults to Misc
+---@param name string The name of the autotile.
+---@param category string? The category to place the autotile in. Defaults to Misc
 ---@return Autotile autotile The new autotile
-function rained.createAutotile(category) end
+function rained.createAutotile(name, category) end
 
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check
@@ -51,7 +52,7 @@ function rained.placeTile(tileName, layer, x, y, forceModifier) end
 ---@field segmentLength integer The size of each path segment
 ---@field requiredTiles string[]? The list of all the tiles required by the autotile
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
----@field tileRect fun(self: Autotile, layer: integer, top: integer, left: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
+---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
 local Autotile = {}
 
 ---Add an on/off option to the autotile.
