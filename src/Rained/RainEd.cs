@@ -511,12 +511,12 @@ sealed class RainEd
 
         if (KeyShortcuts.Activated(KeyShortcut.Undo))
         {
-            Undo();
+            changeHistory.Undo();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Redo))
         {
-            Redo();
+            changeHistory.Redo();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Render))
@@ -535,19 +535,9 @@ sealed class RainEd
             }, false);
         }
     }
-    
-    public void Draw(float dt)
-    {
-        if (Raylib.WindowShouldClose())
-            PromptUnsavedChanges(() => Running = false);
-        
-        Raylib.ClearBackground(Color.DarkGray);
-        
-        rlImGui.Begin();
-        KeyShortcuts.Update();
-        ImGui.DockSpaceOverViewport();
 
-        // main menu bar
+    private void DrawMenuBar()
+    {
         if (ImGui.BeginMainMenuBar())
         {
             if (ImGui.BeginMenu("File"))
@@ -702,7 +692,21 @@ sealed class RainEd
 
             ImGui.EndMainMenuBar();
         }
+    }
+    
+    public void Draw(float dt)
+    {
+        if (Raylib.WindowShouldClose())
+            PromptUnsavedChanges(() => Running = false);
+        
+        Raylib.ClearBackground(Color.DarkGray);
+        
+        rlImGui.Begin();
+        KeyShortcuts.Update();
+        ImGui.DockSpaceOverViewport();
 
+        // main menu bar
+        DrawMenuBar();
         HandleShortcuts();
 
         UpdateRopeSimulation();
@@ -891,7 +895,4 @@ sealed class RainEd
                 prop.Rope.SimulationTimeRemainder = simTimeLeftOver;
         }
     }
-    
-    public void Undo() => changeHistory.Undo();
-    public void Redo() => changeHistory.Redo();
 }
