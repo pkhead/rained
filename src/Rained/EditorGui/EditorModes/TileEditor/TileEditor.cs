@@ -328,6 +328,8 @@ partial class TileEditor : IEditorMode
 
     private void ProcessMaterials()
     {
+        activeAutotiler = null;
+
         var level = RainEd.Instance.Level;
 
         bool brushSizeKey =
@@ -396,6 +398,8 @@ partial class TileEditor : IEditorMode
 
     private void ProcessTiles()
     {
+        activeAutotiler = null;
+
         var level = RainEd.Instance.Level;
 
         // mouse position is at center of tile
@@ -513,9 +517,18 @@ partial class TileEditor : IEditorMode
     private void ProcessAutotiles()
     {
         // activate tool
-        if (isToolActive && !wasToolActive && selectedAutotile is not null)
+        if (wasToolActive && !isToolActive)
         {
-            activeAutotiler = new AutotilePathBuilder(selectedAutotile);
+            if (activeAutotiler is null)
+            {
+                if (selectedAutotile is not null)
+                    activeAutotiler = new AutotilePathBuilder(selectedAutotile);
+            }
+            else
+            {
+                activeAutotiler.Finish(window.WorkLayer, forcePlace, modifyGeometry);
+                activeAutotiler = null;
+            }
         }
 
         if (activeAutotiler is not null)
@@ -523,12 +536,9 @@ partial class TileEditor : IEditorMode
             activeAutotiler.ExtendToPoint(window.MouseCellFloat.X, window.MouseCellFloat.Y, EditorWindow.IsKeyDown(ImGuiKey.ModShift));
             activeAutotiler.DrawPreview();
 
-            // de-activate tool
-            if (wasToolActive && !isToolActive)
-            {
-                activeAutotiler.Finish(window.WorkLayer, forcePlace, modifyGeometry);
+            // press escape to cancel path building
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
                 activeAutotiler = null;
-            }
         }
     }
 }
