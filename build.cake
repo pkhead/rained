@@ -22,8 +22,9 @@ Task("DotNetPublish")
 
     CreateDirectory("build/assets");
     CopyDirectory("assets", "build/assets");
-    CopyDirectory("themes", "build/themes");
-    CopyFile("imgui.ini", "build/imgui.ini");
+    CopyDirectory("scripts", "build/scripts");
+    CopyDirectory("config", "build/config");
+    DeleteFile("build/config/preferences.json");
     CopyFile("LICENSE.md", "build/LICENSE.md");
 
     CopyDirectory("dist", "build");
