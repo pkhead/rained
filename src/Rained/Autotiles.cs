@@ -1,6 +1,7 @@
 namespace RainEd.Autotiles;
 using System.Numerics;
 using ImGuiNET;
+using rlImGui_cs;
 
 enum AutotileType
 {
@@ -153,35 +154,90 @@ class StandardPathAutotile : Autotile
         TileTable.RightUp = RainEd.Instance.TileDatabase.GetTileFromName("Pipe EN");
         TileTable.Vertical = RainEd.Instance.TileDatabase.GetTileFromName("Vertical Pipe");
         TileTable.Horizontal = RainEd.Instance.TileDatabase.GetTileFromName("Horizontal Pipe");
+
+        ProcessSearch();
     }
+
+    enum TileType
+    {
+        Horizontal,
+        Vertical,
+        Turn
+    };
 
     public override void ConfigGui()
     {
-        var btnSize = new Vector2(ImGui.GetTextLineHeight() * 10f, 0f);
-
-        ImGui.Button(TileTable.LeftDown.Name, btnSize);
-        ImGui.SameLine();
-        ImGui.Text("Left-Down");
+        ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
         
-        ImGui.Button(TileTable.LeftUp.Name, btnSize);
-        ImGui.SameLine();
-        ImGui.Text("Left-Up");
+        TileButton(ref TileTable.LeftDown, "Left-Down", TileType.Turn);
+        TileButton(ref TileTable.LeftUp, "Left-Up", TileType.Turn);
+        TileButton(ref TileTable.RightDown, "Right-Down", TileType.Turn);
+        TileButton(ref TileTable.RightUp, "Right-Up", TileType.Turn);
+        TileButton(ref TileTable.Vertical, "Vertical", TileType.Vertical);
+        TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
 
-        ImGui.Button(TileTable.RightDown.Name, btnSize);
-        ImGui.SameLine();
-        ImGui.Text("Right-Down");
-        
-        ImGui.Button(TileTable.RightUp.Name, btnSize);
-        ImGui.SameLine();
-        ImGui.Text("Right-Up");
-        
-        ImGui.Button(TileTable.Vertical.Name, btnSize);
-        ImGui.SameLine();
-        ImGui.Text("Vertical");
+        if (ImGui.InputInt("##Thickness", ref PathThickness))
+            PathThickness = Math.Clamp(PathThickness, 1, 10);
+        ImGui.SameLine(); // WHY DOESN'T THE TEXT ALIGN!!!
+        ImGui.Text("Thickness");
 
-        ImGui.Button(TileTable.Horizontal.Name, btnSize);
+        if (ImGui.InputInt("##Length", ref SegmentLength))
+            SegmentLength = Math.Clamp(SegmentLength, 1, 10);
+        ImGui.SameLine(); // WHY DOESN'T THE TEXT ALIGN!!!
+        ImGui.Text("Segment Length");
+
+        ImGui.PopItemWidth();
+    }
+
+    private void TileButton(ref Tiles.Tile tile, string label, TileType tileType)
+    {
+        ImGui.PushID(label);
+        if (ImGui.Button(tile.Name, new Vector2(ImGui.GetTextLineHeight() * 10f, 0f)))
+        {
+            ImGui.OpenPopup("PopupTileSelector");
+        }
+
         ImGui.SameLine();
-        ImGui.Text("Horizontal");
+        ImGui.Text(label);
+
+        if (ImGui.BeginPopup("PopupTileSelector"))
+        {
+            TileSelectorGui();
+
+            if (selectedTile != null)
+            {
+                // determine that the tile dimensions are valid given
+                // the tile direction type
+                bool dimValid = tileType switch
+                {
+                    TileType.Horizontal => selectedTile.Width == SegmentLength && selectedTile.Height == PathThickness,
+                    TileType.Vertical => selectedTile.Width == PathThickness && selectedTile.Height == SegmentLength,
+                    TileType.Turn => selectedTile.Width == selectedTile.Height && selectedTile.Width == PathThickness,
+                    _ => false
+                };
+                
+                if (dimValid)
+                {
+                    tile = selectedTile;
+                }
+                else
+                {
+                    RainEd.Instance.ShowNotification("Tile dimensions do not match autotile dimensions");
+                }
+
+                selectedTile = null;
+                ImGui.CloseCurrentPopup();
+            }
+
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+
+        ImGui.PopID();
     }
 
     public override string[] MissingTiles { get => []; }
@@ -193,6 +249,147 @@ class StandardPathAutotile : Autotile
         else if (force) modifier = TilePlacementMode.Force;
 
         StandardTilePath(TileTable, layer, pathSegments, modifier);
+    }
+
+    // copied from TileEditorToolbar.cs
+    private string searchQuery = "";
+    private int selectedTileGroup = 0;
+    private Tiles.Tile? selectedTile = null;
+
+    // available groups (available = passes search)
+    private readonly List<int> matSearchResults = [];
+    private readonly List<int> tileSearchResults = [];
+
+    private void ProcessSearch()
+    {
+        var tileDb = RainEd.Instance.TileDatabase;
+        var matDb = RainEd.Instance.MaterialDatabase;
+
+        tileSearchResults.Clear();
+        matSearchResults.Clear();
+
+        // find material groups that have any entires that pass the searchq uery
+        for (int i = 0; i < matDb.Categories.Count; i++)
+        {
+            // if search query is empty, add this group to the results
+            if (searchQuery == "")
+            {
+                matSearchResults.Add(i);
+                continue;
+            }
+
+            // search is not empty, so scan the materials in this group
+            // if there is one material that that passes the search query, the
+            // group gets put in the list
+            // (further searching is done in DrawViewport)
+            for (int j = 0; j < matDb.Categories[i].Materials.Count; j++)
+            {
+                // this material passes the search, so add this group to the search results
+                if (matDb.Categories[i].Materials[j].Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    matSearchResults.Add(i);
+                    break;
+                }
+            }
+        }
+
+        // find groups that have any entries that pass the search query
+        for (int i = 0; i < tileDb.Categories.Count; i++)
+        {
+            // if search query is empty, add this group to the search query
+            if (searchQuery == "")
+            {
+                tileSearchResults.Add(i);
+                continue;
+            }
+
+            // search is not empty, so scan the tiles in this group
+            // if there is one tile that that passes the search query, the
+            // group gets put in the list
+            // (further searching is done in DrawViewport)
+            for (int j = 0; j < tileDb.Categories[i].Tiles.Count; j++)
+            {
+                // this tile passes the search, so add this group to the search results
+                if (tileDb.Categories[i].Tiles[j].Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    tileSearchResults.Add(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void TileSelectorGui()
+    {
+        var tileDb = RainEd.Instance.TileDatabase;
+
+        var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
+
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
+        {
+            ProcessSearch();
+        }
+
+        var halfWidth = ImGui.GetTextLineHeight() * 16f;
+        var boxHeight = ImGui.GetTextLineHeight() * 25f;
+        if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
+        {
+            var drawList = ImGui.GetWindowDrawList();
+            float textHeight = ImGui.GetTextLineHeight();
+
+            foreach (var i in tileSearchResults)
+            {
+                var group = tileDb.Categories[i];
+                var cursor = ImGui.GetCursorScreenPos();
+
+                if (ImGui.Selectable("  " + group.Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                    selectedTileGroup = i;
+                
+                drawList.AddRectFilled(
+                    p_min: cursor,
+                    p_max: cursor + new Vector2(10f, textHeight),
+                    ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
+                );
+            }
+            
+            ImGui.EndListBox();
+        }
+        
+        // group listing (effects) list box
+        ImGui.SameLine();
+        if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
+        {
+            var tileList = tileDb.Categories[selectedTileGroup].Tiles;
+
+            for (int i = 0; i < tileList.Count; i++)
+            {
+                var tile = tileList[i];
+
+                // don't show this prop if it doesn't pass search test
+                if (!tile.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                    continue;
+                
+                if (ImGui.Selectable(tile.Name))
+                {
+                    selectedTile = tile;
+                }
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.BeginTooltip();
+
+                    if (tile.PreviewTexture is not null)
+                        rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
+                    else
+                        rlImGui.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
+
+                    ImGui.EndTooltip();
+                }
+            }
+            
+            ImGui.EndListBox();
+        }
     }
 }
 
