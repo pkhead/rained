@@ -19,5 +19,5 @@
 /Data
 
 # rained-generated files
-/preferences.json
+/config/preferences.json
 /logs

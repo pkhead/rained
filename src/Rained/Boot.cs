@@ -129,12 +129,12 @@ namespace RainEd
 
                 // setup imgui
                 rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename(Path.Combine(AppDataPath,"imgui.ini"));
+                rlImGui.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
                 ImGui.GetIO().KeyRepeatDelay = 0.5f;
                 ImGui.GetIO().KeyRepeatRate = 0.03f;
 
                 string? assetDataPath = null;
-                if (!File.Exists(Path.Combine(AppDataPath, "preferences.json")))
+                if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
                     Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
                     splashScreenWindow?.SetVisible(false);

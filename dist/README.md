@@ -6,10 +6,9 @@ Also, this is still in beta, so expect changes and bugs. Please report bugs, com
 
 ## Updates
 Check https://github.com/pkhead/rained/releases for any new releases. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
-- preferences.json
-- imgui.ini
 - logs/
-- themes/
+- config/
+- scripts/
 - Your Data folder, if present
 
 ## Importing Custom Tiles, Props, or Materials

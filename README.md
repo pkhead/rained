@@ -3,6 +3,9 @@
 
 Another Rain World level editor. Currently in development.
 
+Please note that the "main" branch is ahead of the latest release. If you want to access the repository
+at the time of a certain release, use the Git tags system.
+
 ## Features
 - Ease of use (hopefully)
 - Undo/redo everything

@@ -219,7 +219,7 @@ class UserPreferences
     {
         try
         {
-            var filePath = Path.Combine(Boot.AppDataPath, "themes", Theme + ".json");
+            var filePath = Path.Combine(Boot.AppDataPath, "config", "themes", Theme + ".json");
             var style = SerializableStyle.FromFile(filePath);
             style!.Apply(ImGui.GetStyle());
         }

@@ -632,7 +632,7 @@ class DrizzleRender : IDisposable
             throw new DrizzleRenderException($"The file '{pathWithoutExt + ".png"}' does not exist!");
         }
 
-        var prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
+        var prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
         string dataPath;
 
         if (Boot.Options.DrizzleDataPath is not null)

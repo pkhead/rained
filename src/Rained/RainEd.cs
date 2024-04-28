@@ -99,7 +99,7 @@ sealed class RainEd
 
         // load user preferences
         KeyShortcuts.InitShortcuts();
-        prefFilePath = Path.Combine(Boot.AppDataPath, "preferences.json");
+        prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
 
         if (File.Exists(prefFilePath))
         {
@@ -154,9 +154,6 @@ sealed class RainEd
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
         }
 
-        // init autotile catalog
-        Autotiles = new Autotiles.AutotileCatalog();
-
         string initPhase = null!;
         try
         {
@@ -167,6 +164,9 @@ sealed class RainEd
             initPhase = "tiles";
             Logger.Information("Initializing tile database...");
             TileDatabase = new Tiles.TileDatabase();
+
+            // init autotile catalog
+            Autotiles = new AutotileCatalog();
             
             // run lua scripts after initializing the tiles
             // (trying to get lua error messages to show as soon as possible)
@@ -214,8 +214,6 @@ sealed class RainEd
             Boot.DisplayError("Could not start", $"There was an error while loading the {initPhase} Init.txt file:\n\n{e}\n\nThe application will now quit.");
             throw new RainEdStartupException();
         }
-
-        Autotiles.AddAutotile(new StandardPathAutotile());
 
         Autotiles.CheckMissingTiles();
         level = Level.NewDefaultLevel();
