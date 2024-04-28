@@ -592,6 +592,7 @@ class StandardPathAutotile : Autotile
         if (location >= 0)
         {
             lines[location] = newCategory == "Misc" ? $"[{newName}]" : $"[{newName}:{newCategory}]";
+            RainEd.Logger.Information("Rename autotile {Old} to {New}", header, lines[location]);
         }
     }
 }
@@ -608,7 +609,7 @@ class AutotileCatalog
 {
     public readonly List<string> AutotileCategories = ["Misc"];
     private readonly List<List<Autotile>> Autotiles = [[]];
-    private readonly Dictionary<Autotile, int> autotileCategoryMap = new();
+    private readonly Dictionary<Autotile, string> autotileCategoryMap = [];
 
     private static readonly string ConfigPath = Path.Combine(Boot.AppDataPath, "config", "autotiles.txt");
 
@@ -628,7 +629,7 @@ class AutotileCatalog
         }
 
         Autotiles[catIndex].Add(autotile);
-        autotileCategoryMap.Add(autotile, catIndex);
+        autotileCategoryMap.Add(autotile, category);
     }
 
     public List<Autotile> GetAutotilesInCategory(string category)
@@ -639,20 +640,15 @@ class AutotileCatalog
     
     public bool HasAutotile(Autotile autotile)
         => autotileCategoryMap.ContainsKey(autotile);
-    
-    public int GetCategoryIndexOf(Autotile autotile)
+
+    public string GetCategoryNameOf(Autotile autotile)
     {
         return autotileCategoryMap[autotile];
     }
 
-    public string GetCategoryNameOf(Autotile autotile)
-    {
-        return AutotileCategories[autotileCategoryMap[autotile]];
-    }
-
     public void RemoveAutotile(Autotile autotile)
     {
-        var catIndex = autotileCategoryMap[autotile];
+        var catIndex = AutotileCategories.IndexOf(autotileCategoryMap[autotile]);
 
         // remove references to the autotile
         Autotiles[catIndex].Remove(autotile);

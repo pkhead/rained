@@ -1,21 +1,11 @@
 # this is where standard path autotilers created from the GUI are saved/loaded
 
-[Test Autotile:Group1]
-thickness=1
+[Custom Big Pipe:Pipes]
+thickness=6
 length=1
-ld=Pipe WS
-lu=Pipe WN
-rd=Pipe ES
-ru=Pipe EN
-vertical=Vertical Pipe
-horizontal=Horizontal Pipe
-
-[Autotile2:Group2]
-thickness=1
-length=1
-ld=Pipe WSk
-lu=Pipe WN
-rd=Pipe ES
-ru=Pipe EN
-vertical=Vertical Pipe
-horizontal=Horizontal Pipe
+ld=Big Pipe LD
+lu=Big Pipe LU
+rd=Big Pipe RD
+ru=Big Pipe RU
+vertical=Big Pipe Vertical
+horizontal=Big Pipe Horizontal
