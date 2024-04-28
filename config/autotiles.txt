@@ -1,6 +1,6 @@
 # this is where standard path autotilers created from the GUI are saved/loaded
 
-[Custom Big Pipe:Pipes]
+[Big Pipe:Pipes]
 thickness=6
 length=1
 ld=Big Pipe LD
