@@ -462,6 +462,54 @@ class StandardPathAutotile : Autotile
             ImGui.EndListBox();
         }
     }
+
+    public void Save(List<string> lines)
+    {
+        var catName = RainEd.Instance.Autotiles.GetCategoryNameOf(this);
+        var header = $"[{Name}:{catName}]";
+
+        // find the location of the autotile in the line list    
+        var location = lines.IndexOf(header);
+
+        // a tile in the Misc category may have its category name omitted, so we search for that too.
+        if (location == -1 && catName == "Misc")
+        {
+            header = $"[{Name}]";
+            location = lines.IndexOf(header);
+        }
+    
+        // not found, append lines
+        if (location == -1)
+        {
+            RainEd.Logger.Information("Append autotile {Header}", header);
+
+            lines.Add("");
+            lines.Add(header);
+            lines.Add("thickness=" + PathThickness.ToString(CultureInfo.InvariantCulture));
+            lines.Add("length=" + SegmentLength.ToString(CultureInfo.InvariantCulture));
+            lines.Add("ld=" + TileTable.LeftDown);
+            lines.Add("lu=" + TileTable.LeftUp);
+            lines.Add("rd=" + TileTable.RightDown);
+            lines.Add("ru=" + TileTable.RightUp);
+            lines.Add("vertical=" + TileTable.Vertical);
+            lines.Add("horizontal=" + TileTable.Horizontal);
+        }
+
+        // was found, overwrite lines
+        else
+        {
+            RainEd.Logger.Information("Overwrite autotile {Header}", header);
+
+            lines[location+1] = "thickness=" + PathThickness.ToString(CultureInfo.InvariantCulture);
+            lines[location+2] = "length=" + SegmentLength.ToString(CultureInfo.InvariantCulture);
+            lines[location+3] = "ld=" + TileTable.LeftDown;
+            lines[location+4] = "lu=" + TileTable.LeftUp;
+            lines[location+5] = "rd=" + TileTable.RightDown;
+            lines[location+6] = "ru=" + TileTable.RightUp;
+            lines[location+7] = "vertical=" + TileTable.Vertical;
+            lines[location+8] = "horizontal=" + TileTable.Horizontal;
+        }
+    }
 }
 
 [Serializable]
@@ -476,6 +524,7 @@ class AutotileCatalog
 {
     public readonly List<string> AutotileCategories = ["Misc"];
     private readonly List<List<Autotile>> Autotiles = [[]];
+    private readonly Dictionary<Autotile, int> autotileCategoryMap = new();
 
     /// <summary>
     /// Adds the given autotile to the catalog.
@@ -493,6 +542,7 @@ class AutotileCatalog
         }
 
         Autotiles[catIndex].Add(autotile);
+        autotileCategoryMap.Add(autotile, catIndex);
     }
 
     public List<Autotile> GetAutotilesInCategory(string category)
@@ -500,6 +550,33 @@ class AutotileCatalog
 
     public List<Autotile> GetAutotilesInCategory(int index)
         => Autotiles[index];
+    
+    public int GetCategoryIndexOf(Autotile autotile)
+    {
+        return autotileCategoryMap[autotile];
+    }
+
+    public string GetCategoryNameOf(Autotile autotile)
+    {
+        return AutotileCategories[autotileCategoryMap[autotile]];
+    }
+
+    public void RemoveAutotile(Autotile autotile)
+    {
+        var catIndex = autotileCategoryMap[autotile];
+
+        // remove references to the autotile
+        Autotiles[catIndex].Remove(autotile);
+        autotileCategoryMap.Remove(autotile);
+
+        // if there are no autotiles left in the category,
+        // remove that also.
+        if (Autotiles[catIndex].Count == 0)
+        {
+            Autotiles.RemoveAt(catIndex);
+            AutotileCategories.RemoveAt(catIndex);
+        }
+    }
     
     public void CheckMissingTiles()
     {
@@ -571,14 +648,12 @@ class AutotileCatalog
             groupName = "Misc";
         }
 
-        foreach (var rawLine in File.ReadLines(Path.Combine(Boot.AppDataPath, "config", "autotiles.txt")))
+        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "config", "autotiles.txt")))
         {
             lineNo++;
 
             // skip empty lines
-            if (string.IsNullOrWhiteSpace(rawLine)) continue;
-
-            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line)) continue;
 
             // ignore comments
             if (line[0] == '#') continue;
@@ -749,5 +824,27 @@ class AutotileCatalog
 
             ImGui.EndPopup();
         }
+    }
+
+    /// <summary>
+    /// Save user-created autotiles.
+    /// </summary>
+    public void SaveConfig()
+    {
+        var filePath = Path.Combine(Boot.AppDataPath, "config", "autotiles.txt");
+        var fileLines = new List<string>(File.ReadAllLines(filePath));
+
+        foreach (var category in Autotiles)
+        {
+            foreach (var genericAutotile in category)
+            {
+                if (genericAutotile is StandardPathAutotile autotile)
+                {
+                    autotile.Save(fileLines);
+                }
+            }
+        }
+
+        File.WriteAllLines(filePath, fileLines);
     }
 }

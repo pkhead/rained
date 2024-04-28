@@ -258,6 +258,9 @@ sealed class RainEd
 
     public void Shutdown()
     {
+        // save user-created autotiles
+        Autotiles.SaveConfig();
+
         // save user preferences
         editorWindow.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
