@@ -285,9 +285,21 @@ partial class TileEditor : IEditorMode
                     var catalog = RainEd.Instance.Autotiles;
                     var autotileGroups = catalog.AutotileCategories;
 
+                    var boxWidth = ImGui.GetTextLineHeight() * 16f;
+
+                    // create autotile button
+                    ImGui.BeginGroup();
+                    if (ImGui.Button("Create Autotile", new Vector2(boxWidth, 0f)))
+                    {
+                        RainEd.Instance.Autotiles.OpenCreatePopup();
+                        ImGui.OpenPopup("Create Autotile");
+                        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    }
+
+                    RainEd.Instance.Autotiles.RenderCreatePopup();
+
                     // autotile list
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
-                    var boxWidth = ImGui.GetTextLineHeight() * 16f;
                     if (ImGui.BeginListBox("##Autotiles", new Vector2(boxWidth, boxHeight)))
                     {
                         for (int i = 0; i < autotileGroups.Count; i++)
@@ -313,6 +325,7 @@ partial class TileEditor : IEditorMode
                         
                         ImGui.EndListBox();
                     }
+                    ImGui.EndGroup();
 
                     // selected autotile options
                     ImGui.SameLine();

@@ -243,6 +243,11 @@ class StandardPathAutotile : Autotile
         ImGui.Text("Segment Length");
 
         ImGui.PopItemWidth();
+
+        ImGui.SeparatorText("Options");
+        ImGui.Button("Delete"); ImGui.SameLine();
+        ImGui.Button("Rename"); ImGui.SameLine();
+        ImGui.Button("Convert to Plugin");
     }
 
     private void TileButton(ref string tile, string label, TileType tileType)
@@ -655,5 +660,94 @@ class AutotileCatalog
         }
 
         SubmitAutotile();
+    }
+
+    private static string createName = "My Autotile";
+    private static string createCategory = "Misc";
+    private static string createError = "";
+
+    /// <summary>
+    /// Open the Create Autotile popup.
+    /// </summary>
+    public void OpenCreatePopup()
+    {
+        ImGui.OpenPopup("Create Autotile");
+        createName = "My Autotile";
+        createCategory = "Misc";
+    }
+
+    /// <summary>
+    /// Render the Create Autotile popup.
+    /// </summary>
+    public void RenderCreatePopup()
+    {
+        bool p_open = true;
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        if (ImGui.BeginPopupModal("Create Autotile", ref p_open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 12.0f);
+            ImGui.InputText("Name", ref createName, 128);
+            ImGui.InputText("Category", ref createCategory, 128);
+            ImGui.PopItemWidth();
+
+            ImGui.Separator();
+            if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btnPressed))
+            {
+                if (btnPressed == 0 && !string.IsNullOrWhiteSpace(createName) && !string.IsNullOrWhiteSpace(createCategory)) // OK
+                {
+                    // check if autotile in the same category does not already exist
+                    var catIndex = AutotileCategories.IndexOf(createCategory);
+                    if (catIndex >= 0)
+                    {
+                        foreach (var t in Autotiles[catIndex])
+                            if (t.Name == createName)
+                            {
+                                createError = "An autotile with the same name and category already exists!";
+                                break;
+                            }
+                    }
+
+                    // if there was no error, create the autotile
+                    if (createError == "")
+                    {
+                        var autotile = new StandardPathAutotile(1, 1, "Pipe WS", "Pipe WN", "Pipe ES", "Pipe EN", "Vertical Pipe", "Horizontal Pipe")
+                        {
+                            Name = createName
+                        };
+
+                        AddAutotile(autotile, createCategory);
+                        ImGui.CloseCurrentPopup();
+                    }
+                }
+
+                else if (btnPressed == 1) // cancel
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+
+            // show any errors
+            if (createError != "" && !ImGui.IsPopupOpen("Error"))
+            {
+                ImGui.OpenPopup("Error");
+            }
+
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.Text(createError);
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                {
+                    createError = "";
+                    ImGui.CloseCurrentPopup();
+                }
+
+                ImGui.EndPopup();
+            }
+
+            ImGui.EndPopup();
+        }
     }
 }
