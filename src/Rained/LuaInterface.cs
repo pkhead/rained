@@ -319,6 +319,10 @@ static class LuaInterface
         luaState.DoString("import = nil");
 
         luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
+        if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
+        {
+            AutoRequire("autoload", true);
+        }
     }
 
     private static int RainedLoader(nint luaStatePtr)
@@ -483,7 +487,7 @@ static class LuaInterface
             subDirs.Sort();
             foreach (var dirName in subDirs)
             {
-                AutoRequire(path + "." + dirName, true);
+                AutoRequire(path + "." + Path.GetFileName(dirName), true);
             }
         }
     }
