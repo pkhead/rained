@@ -220,13 +220,16 @@ class FileBrowser
         bookmarks.Add(new BookmarkItem(name, path));
     }
 
-    public void AddFilter(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
+    public void AddFilterWithCallback(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
     {
         fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
 
         // default filter is the first filter added, else "Any"
         selectedFilter = fileFilters[1];
     }
+
+    public void AddFilter(string filterName, params string[] allowedExtensions)
+        => AddFilterWithCallback(filterName, null, allowedExtensions);
 
     private static Rectangle GetIconRect(int index)
         => new Rectangle(index * 13, 0, 13, 13);

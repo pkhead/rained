@@ -214,7 +214,7 @@ static class AssetManagerGUI
         if (ImGui.Button("Import Init.txt"))
         {
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportFile, RainEd.Instance.AssetDataPath);
-            fileBrowser.AddFilter("Init.txt File", isInitFile, ".txt");
+            fileBrowser.AddFilterWithCallback("Init.txt File", isInitFile, ".txt");
         }
 
         int deleteReq = 0;
@@ -234,7 +234,7 @@ static class AssetManagerGUI
         if (ImGui.Button("Import .zip"))
         {
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportZip, RainEd.Instance.AssetDataPath);
-            fileBrowser.AddFilter("ZIP File", null, ".zip");
+            fileBrowser.AddFilter("ZIP File", ".zip");
         }*/
 
         // process delete request

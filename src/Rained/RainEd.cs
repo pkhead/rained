@@ -472,7 +472,7 @@ sealed class RainEd
         }
 
         fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(currentFilePath));
-        fileBrowser.AddFilter("Level file", levelCheck, ".txt");
+        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
     }
 
     private void HandleShortcuts()

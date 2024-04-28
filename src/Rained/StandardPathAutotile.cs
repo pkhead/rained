@@ -134,7 +134,7 @@ class StandardPathAutotile : Autotile
         if (ImGui.Button("Convert to Plugin"))
         {
             fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, ConvertToPlugin, Path.Combine(Boot.AppDataPath, "scripts", "autoload", "autotiles"));
-            fileBrowser.AddFilter("Lua script", null, ".lua");
+            fileBrowser.AddFilter("Lua script", ".lua");
         }
 
         FileBrowser.Render(ref fileBrowser);
