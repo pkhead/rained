@@ -1,5 +1,6 @@
 namespace RainEd.Autotiles;
 using System.Numerics;
+using ImGuiNET;
 
 enum AutotileType
 {
@@ -16,31 +17,17 @@ struct PathSegment(int x, int y)
     public int Y = y;
 }
 
-record ConfigOption
-{
-    public readonly string ID;
-    public readonly string Name;
-    public bool Value;
-
-    public ConfigOption(string id, string name, bool defaultValue)
-    {
-        ID = id;
-        Name = name;
-        Value = defaultValue;
-    }
-}
-
 /// <summary>
 /// A table of segment directions associated with tile names.
 /// </summary>
-struct PathTileTable
+struct PathTileTable(string ld, string lu, string rd, string ru, string vert, string horiz)
 {
-    public Tiles.Tile LeftDown;
-    public Tiles.Tile LeftUp;
-    public Tiles.Tile RightDown;
-    public Tiles.Tile RightUp;
-    public Tiles.Tile Vertical;
-    public Tiles.Tile Horizontal;
+    public Tiles.Tile LeftDown = RainEd.Instance.TileDatabase.GetTileFromName(ld);
+    public Tiles.Tile LeftUp = RainEd.Instance.TileDatabase.GetTileFromName(lu);
+    public Tiles.Tile RightDown = RainEd.Instance.TileDatabase.GetTileFromName(rd);
+    public Tiles.Tile RightUp = RainEd.Instance.TileDatabase.GetTileFromName(ru);
+    public Tiles.Tile Vertical = RainEd.Instance.TileDatabase.GetTileFromName(vert);
+    public Tiles.Tile Horizontal = RainEd.Instance.TileDatabase.GetTileFromName(horiz);
 }
 
 abstract class Autotile
@@ -51,8 +38,6 @@ abstract class Autotile
     public int PathThickness;
     public int SegmentLength;
     public AutotileType Type;
-
-    public Dictionary<string, ConfigOption> Options = [];
 
     public Autotile()
     {
@@ -67,24 +52,6 @@ abstract class Autotile
         Name = name;
     }
 
-    public void AddOption(string id, string name, bool defaultValue)
-    {
-        Options.Add(id, new ConfigOption(id, name, defaultValue));
-    }
-
-    public bool TryGetOption(string id, out ConfigOption? data)
-    {
-        return Options.TryGetValue(id, out data);
-        /*if (Options.TryGetValue(id, out ConfigOption? data))
-        {
-            return data.Value;
-        }
-        else
-        {
-            throw new LuaException($"option '{id}' does not exist");
-        }*/
-    }
-
     /// <summary>
     /// Run the rectangle autotiler.
     /// </summary>
@@ -93,7 +60,7 @@ abstract class Autotile
     /// <param name="rectMax">The position of the bottom-right corner of the rectangle.</param>
     /// <param name="force">If the autotiler should force-place</param>
     /// <param name="geometry">If the autotiler should place geometry.</param>
-    public abstract void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry);
+    public virtual void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry) {}
 
     /// <summary>
     /// Run the path autotiler.
@@ -102,7 +69,9 @@ abstract class Autotile
     /// <param name="pathSegments">An array of path segments.</param>
     /// <param name="force">If the autotiler should force-place.</param>
     /// <param name="geometry">If the autotiler should place geometry.</param>
-    public abstract void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry);
+    public virtual void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry) {}
+
+    public virtual void ConfigGui() {}
 
     public abstract string[] MissingTiles { get; }
 
@@ -124,11 +93,9 @@ abstract class Autotile
         int layer,
         PathSegment[] pathSegments,
         TilePlacementMode modifier,
-        int startIndex = 0, int endIndex = -1
+        int startIndex, int endIndex
     )
     {
-        if (endIndex < 0) endIndex += pathSegments.Length;
-
         for (int i = startIndex; i < endIndex; i++)
         {
             var seg = pathSegments[i];
@@ -161,6 +128,71 @@ abstract class Autotile
                 RainEd.Instance.Level.SafePlaceTile(tileTable.Horizontal, layer, seg.X, seg.Y, modifier);
             }
         }
+    }
+
+    public static void StandardTilePath(
+        PathTileTable tileTable,
+        int layer,
+        PathSegment[] pathSegments,
+        TilePlacementMode modifier
+    ) => StandardTilePath(tileTable, layer, pathSegments, modifier, 0, pathSegments.Length);
+}
+
+class StandardPathAutotile : Autotile
+{
+    public PathTileTable TileTable;
+
+    public StandardPathAutotile()
+    {
+        Name = "My Autotile";
+        Type = AutotileType.Path;
+
+        TileTable.LeftDown = RainEd.Instance.TileDatabase.GetTileFromName("Pipe WS");
+        TileTable.LeftUp = RainEd.Instance.TileDatabase.GetTileFromName("Pipe WN");
+        TileTable.RightDown = RainEd.Instance.TileDatabase.GetTileFromName("Pipe ES");
+        TileTable.RightUp = RainEd.Instance.TileDatabase.GetTileFromName("Pipe EN");
+        TileTable.Vertical = RainEd.Instance.TileDatabase.GetTileFromName("Vertical Pipe");
+        TileTable.Horizontal = RainEd.Instance.TileDatabase.GetTileFromName("Horizontal Pipe");
+    }
+
+    public override void ConfigGui()
+    {
+        var btnSize = new Vector2(ImGui.GetTextLineHeight() * 10f, 0f);
+
+        ImGui.Button(TileTable.LeftDown.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Left-Down");
+        
+        ImGui.Button(TileTable.LeftUp.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Left-Up");
+
+        ImGui.Button(TileTable.RightDown.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Right-Down");
+        
+        ImGui.Button(TileTable.RightUp.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Right-Up");
+        
+        ImGui.Button(TileTable.Vertical.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Vertical");
+
+        ImGui.Button(TileTable.Horizontal.Name, btnSize);
+        ImGui.SameLine();
+        ImGui.Text("Horizontal");
+    }
+
+    public override string[] MissingTiles { get => []; }
+
+    public override void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry)
+    {
+        var modifier = TilePlacementMode.Normal;
+        if (geometry)   modifier = TilePlacementMode.Geometry;
+        else if (force) modifier = TilePlacementMode.Force;
+
+        StandardTilePath(TileTable, layer, pathSegments, modifier);
     }
 }
 

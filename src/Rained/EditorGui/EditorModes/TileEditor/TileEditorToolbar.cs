@@ -350,15 +350,10 @@ partial class TileEditor : IEditorMode
                                 }
                             }
                             
-                            if (disabled) ImGui.BeginDisabled();
-
-                            // options
-                            foreach (var opt in autotile.Options.Values)
+                            if (!disabled)
                             {
-                                ImGui.Checkbox(opt.Name, ref opt.Value);
+                                autotile.ConfigGui();
                             }
-
-                            if (disabled) ImGui.EndDisabled();
                         }
                         else
                         {

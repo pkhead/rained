@@ -12,7 +12,7 @@ using LuaNativeFunction = KeraLua.LuaFunction;
 static class LuaInterface
 {
     // this is the C# side for autotiles programmed in Lua
-    class LuaAutotile : Autotiles.Autotile
+    class LuaAutotile : Autotile
     {
         public LuaAutotile(LuaAutotileInterface wrapper) : base() {
             LuaWrapper = wrapper;
@@ -25,6 +25,32 @@ static class LuaInterface
         public LuaFunction? LuaFillPathProcedure = null;
         public LuaFunction? LuaFillRectProcedure = null;
         public LuaAutotileInterface LuaWrapper;
+
+        public record class ConfigOption
+        {
+            public readonly string ID;
+            public readonly string Name;
+            public bool Value;
+
+            public ConfigOption(string id, string name, bool defaultValue)
+            {
+                ID = id;
+                Name = name;
+                Value = defaultValue;
+            }
+        }
+
+        public Dictionary<string, ConfigOption> Options = [];
+
+        public void AddOption(string id, string name, bool defaultValue)
+        {
+            Options.Add(id, new ConfigOption(id, name, defaultValue));
+        }
+
+        public bool TryGetOption(string id, out ConfigOption? data)
+        {
+            return Options.TryGetValue(id, out data);
+        }
 
         private static void HandleException(LuaScriptException e)
         {
@@ -109,6 +135,14 @@ static class LuaInterface
             catch (LuaScriptException e)
             {
                 HandleException(e);
+            }
+        }
+
+        public override void ConfigGui()
+        {
+            foreach (var opt in Options.Values)
+            {
+                ImGui.Checkbox(opt.Name, ref opt.Value);
             }
         }
 
@@ -213,7 +247,7 @@ static class LuaInterface
         [LuaMember(Name = "getOption")]
         public bool GetOption(string id)
         {
-            if (autotile.TryGetOption(id, out ConfigOption? data))
+            if (autotile.TryGetOption(id, out LuaAutotile.ConfigOption? data))
             {
                 return data!.Value;
             }
