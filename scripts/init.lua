@@ -10,7 +10,3 @@
 --]]
 
 print("Rained Version " .. rained.getVersion())
-
-rained.registerCommand("Test Command", function()
-    print("Hello, world!")
-end)

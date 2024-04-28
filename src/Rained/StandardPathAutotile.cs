@@ -228,8 +228,19 @@ class StandardPathAutotile : Autotile
         // (also, cut off the .lua file extension at the end so that
         // it works properly)
         var L = LuaInterface.NLuaState.State;
+        var requirePath = "autoload." + relativePath[..^4].Replace(Path.DirectorySeparatorChar, '.');
+        
+        // first, unload the "package"
+        L.GetGlobal("package");
+        L.GetField(-1, "loaded");
+        L.PushString(requirePath);
+        L.PushNil();
+        L.SetTable(-3);
+        L.Pop(2); // pop package and package.loaded
+
+        // then, load it again.
         L.GetGlobal("require");
-        L.PushString("autoload." + relativePath[..^4].Replace(Path.DirectorySeparatorChar, '.'));
+        L.PushString(requirePath);
         L.Call(1, 0);
     }
 
