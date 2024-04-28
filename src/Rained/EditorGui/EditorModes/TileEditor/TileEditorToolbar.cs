@@ -285,6 +285,12 @@ partial class TileEditor : IEditorMode
                     var catalog = RainEd.Instance.Autotiles;
                     var autotileGroups = catalog.AutotileCategories;
 
+                    // deselect autotile if it was removed
+                    if (selectedAutotile is not null && !RainEd.Instance.Autotiles.HasAutotile(selectedAutotile))
+                    {
+                        selectedAutotile = null;
+                    }
+
                     var boxWidth = ImGui.GetTextLineHeight() * 16f;
 
                     // create autotile button

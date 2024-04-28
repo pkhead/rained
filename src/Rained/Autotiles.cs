@@ -245,8 +245,40 @@ class StandardPathAutotile : Autotile
         ImGui.PopItemWidth();
 
         ImGui.SeparatorText("Options");
-        ImGui.Button("Delete"); ImGui.SameLine();
-        ImGui.Button("Rename"); ImGui.SameLine();
+        if (ImGui.Button("Delete"))
+        {
+            ImGui.OpenPopup("Delete?");
+        }
+        ImGui.SameLine();
+
+        // show deletion confirmation prompt
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        if (ImGuiExt.BeginPopupModal("Delete?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            ImGui.TextUnformatted($"Are you sure you want to delete '{Name}'?");
+            
+            ImGui.Separator();
+            if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
+            {
+                if (btn == 0) // yes
+                {
+                    RainEd.Instance.Autotiles.DeleteStandard(this);
+                }
+
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+
+        if (ImGui.Button("Rename"))
+        {
+            RainEd.Instance.Autotiles.OpenRenamePopup(this);
+        }
+        ImGui.SameLine();
+
+        RainEd.Instance.Autotiles.RenderRenamePopup();
+
         ImGui.Button("Convert to Plugin");
     }
 
@@ -510,6 +542,58 @@ class StandardPathAutotile : Autotile
             lines[location+8] = "horizontal=" + TileTable.Horizontal;
         }
     }
+
+    public void Delete(List<string> lines)
+    {
+        var catName = RainEd.Instance.Autotiles.GetCategoryNameOf(this);
+        var header = $"[{Name}:{catName}]";
+
+        // find the location of the autotile in the line list    
+        var location = lines.IndexOf(header);
+
+        // a tile in the Misc category may have its category name omitted, so we search for that too.
+        if (location == -1 && catName == "Misc")
+        {
+            header = $"[{Name}]";
+            location = lines.IndexOf(header);
+        }
+    
+        // delete if found
+        if (location >= 0)
+        {
+            RainEd.Logger.Information("Delete autotile {Header}", header);
+
+            lines.RemoveRange(location, 9);
+
+            // remove newline before autotile definition
+            if (location > 0 && string.IsNullOrWhiteSpace(lines[location-1]))
+            {
+                lines.RemoveAt(location-1);
+            }
+        }
+    }
+
+    public void Rename(List<string> lines, string newName, string newCategory)
+    {
+        var catName = RainEd.Instance.Autotiles.GetCategoryNameOf(this);
+        var header = $"[{Name}:{catName}]";
+
+        // find the location of the autotile in the line list    
+        var location = lines.IndexOf(header);
+
+        // a tile in the Misc category may have its category name omitted, so we search for that too.
+        if (location == -1 && catName == "Misc")
+        {
+            header = $"[{Name}]";
+            location = lines.IndexOf(header);
+        }
+    
+        // delete if found
+        if (location >= 0)
+        {
+            lines[location] = newCategory == "Misc" ? $"[{newName}]" : $"[{newName}:{newCategory}]";
+        }
+    }
 }
 
 [Serializable]
@@ -525,6 +609,8 @@ class AutotileCatalog
     public readonly List<string> AutotileCategories = ["Misc"];
     private readonly List<List<Autotile>> Autotiles = [[]];
     private readonly Dictionary<Autotile, int> autotileCategoryMap = new();
+
+    private static readonly string ConfigPath = Path.Combine(Boot.AppDataPath, "config", "autotiles.txt");
 
     /// <summary>
     /// Adds the given autotile to the catalog.
@@ -550,6 +636,9 @@ class AutotileCatalog
 
     public List<Autotile> GetAutotilesInCategory(int index)
         => Autotiles[index];
+    
+    public bool HasAutotile(Autotile autotile)
+        => autotileCategoryMap.ContainsKey(autotile);
     
     public int GetCategoryIndexOf(Autotile autotile)
     {
@@ -648,7 +737,7 @@ class AutotileCatalog
             groupName = "Misc";
         }
 
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "config", "autotiles.txt")))
+        foreach (var line in File.ReadLines(ConfigPath))
         {
             lineNo++;
 
@@ -737,9 +826,62 @@ class AutotileCatalog
         SubmitAutotile();
     }
 
-    private static string createName = "My Autotile";
-    private static string createCategory = "Misc";
-    private static string createError = "";
+    private string createName = "My Autotile";
+    private string createCategory = "Misc";
+    private string createError = "";
+    private Autotile? renameTarget = null;
+
+    private void CheckCreateError()
+    {
+        // check that there are no characters in the names that would mess up saving
+        // (just newline characters and colons. closing brackets are actually fine.)
+        if (createName.Contains('\n') || createName.Contains('\r') || createName.Contains(':'))
+        {
+            createError = "Invalid character in name!";
+            return;
+        }
+
+        if (createCategory.Contains('\n') || createCategory.Contains('\r'))
+        {
+            createError = "Invalid character in name!";
+            return;
+        }
+
+        // check if autotile in the same category does not already exist
+        var catIndex = AutotileCategories.IndexOf(createCategory);
+        if (catIndex >= 0)
+        {
+            foreach (var t in Autotiles[catIndex])
+                if (t.Name == createName)
+                {
+                    createError = "An autotile with the same name and category already exists!";
+                    break;
+                }
+        }
+    }
+
+    private void ShowCreateError()
+    {
+        if (createError != "" && !ImGui.IsPopupOpen("Error"))
+        {
+            ImGui.OpenPopup("Error");
+        }
+
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            ImGui.Text(createError);
+
+            ImGui.Separator();
+            if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+            {
+                createError = "";
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+    }
 
     /// <summary>
     /// Open the Create Autotile popup.
@@ -749,6 +891,18 @@ class AutotileCatalog
         ImGui.OpenPopup("Create Autotile");
         createName = "My Autotile";
         createCategory = "Misc";
+    }
+
+    /// <summary>
+    /// Open the Rename Autotile popup.
+    /// </summary>
+    /// <param name="autotile">The autotile to rename</param>
+    public void OpenRenamePopup(Autotile autotile)
+    {
+        ImGui.OpenPopup("Rename Autotile");
+        createName = autotile.Name;
+        createCategory = GetCategoryNameOf(autotile);
+        renameTarget = autotile;
     }
 
     /// <summary>
@@ -770,17 +924,7 @@ class AutotileCatalog
             {
                 if (btnPressed == 0 && !string.IsNullOrWhiteSpace(createName) && !string.IsNullOrWhiteSpace(createCategory)) // OK
                 {
-                    // check if autotile in the same category does not already exist
-                    var catIndex = AutotileCategories.IndexOf(createCategory);
-                    if (catIndex >= 0)
-                    {
-                        foreach (var t in Autotiles[catIndex])
-                            if (t.Name == createName)
-                            {
-                                createError = "An autotile with the same name and category already exists!";
-                                break;
-                            }
-                    }
+                    CheckCreateError();
 
                     // if there was no error, create the autotile
                     if (createError == "")
@@ -802,28 +946,73 @@ class AutotileCatalog
             }
 
             // show any errors
-            if (createError != "" && !ImGui.IsPopupOpen("Error"))
-            {
-                ImGui.OpenPopup("Error");
-            }
-
-            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-            if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-            {
-                ImGui.Text(createError);
-
-                ImGui.Separator();
-                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
-                {
-                    createError = "";
-                    ImGui.CloseCurrentPopup();
-                }
-
-                ImGui.EndPopup();
-            }
+            ShowCreateError();
 
             ImGui.EndPopup();
         }
+    }
+
+    /// <summary>
+    /// Render the Rename Autotile popup.
+    /// </summary>
+    public void RenderRenamePopup()
+    {
+        bool p_open = true;
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        if (ImGui.BeginPopupModal("Rename Autotile", ref p_open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 12.0f);
+            ImGui.InputText("Name", ref createName, 128);
+            ImGui.InputText("Category", ref createCategory, 128);
+            ImGui.PopItemWidth();
+
+            ImGui.Separator();
+            if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btnPressed))
+            {
+                if (btnPressed == 0 && !string.IsNullOrWhiteSpace(createName) && !string.IsNullOrWhiteSpace(createCategory)) // OK
+                {
+                    CheckCreateError();
+
+                    // if there was no error, rename the autotile
+                    if (createError == "")
+                    {
+                        // record renaming to config file
+                        if (renameTarget is StandardPathAutotile std)
+                        {
+                            RenameStandard(std, createName, createCategory);
+                        }
+
+                        renameTarget!.Name = createName;
+
+                        // move categories if needed
+                        var oldCategory = GetCategoryNameOf(renameTarget);
+                        if (oldCategory != createCategory)
+                        {
+                            RemoveAutotile(renameTarget);
+                            AddAutotile(renameTarget, createCategory);
+                        }
+
+                        ImGui.CloseCurrentPopup();
+
+                        renameTarget = null;
+                    }
+                }
+
+                else if (btnPressed == 1) // cancel
+                {
+                    ImGui.CloseCurrentPopup();
+                    renameTarget = null;
+                }
+            }
+
+            // show any errors
+            ShowCreateError();
+
+            ImGui.EndPopup();
+        }
+
+        if (!p_open)
+            renameTarget = null;
     }
 
     /// <summary>
@@ -831,8 +1020,7 @@ class AutotileCatalog
     /// </summary>
     public void SaveConfig()
     {
-        var filePath = Path.Combine(Boot.AppDataPath, "config", "autotiles.txt");
-        var fileLines = new List<string>(File.ReadAllLines(filePath));
+        var fileLines = new List<string>(File.ReadAllLines(ConfigPath));
 
         foreach (var category in Autotiles)
         {
@@ -845,6 +1033,22 @@ class AutotileCatalog
             }
         }
 
-        File.WriteAllLines(filePath, fileLines);
+        File.WriteAllLines(ConfigPath, fileLines);
+    }
+
+    private void RenameStandard(StandardPathAutotile autotile, string newName, string newCategory)
+    {
+        var fileLines = new List<string>(File.ReadAllLines(ConfigPath));
+        autotile.Rename(fileLines, newName, newCategory);
+        File.WriteAllLines(ConfigPath, fileLines);
+    }
+
+    public void DeleteStandard(StandardPathAutotile autotile)
+    {
+        var fileLines = new List<string>(File.ReadAllLines(ConfigPath));
+        autotile.Delete(fileLines);
+        File.WriteAllLines(ConfigPath, fileLines);
+
+        RemoveAutotile(autotile);
     }
 }
