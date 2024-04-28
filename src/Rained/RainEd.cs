@@ -44,7 +44,7 @@ sealed class RainEd
     public readonly EffectsDatabase EffectsDatabase;
     public readonly Light.LightBrushDatabase LightBrushDatabase;
     public readonly Props.PropDatabase PropDatabase;
-    public readonly Autotiles.AutotileCatalog Autotiles;
+    public readonly AutotileCatalog Autotiles;
 
     private string currentFilePath = string.Empty;
 
@@ -70,6 +70,17 @@ sealed class RainEd
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
     public readonly RlManaged.Texture2D PlaceholderTexture;
+
+    struct Command(string name, Action<int> cb)
+    {
+        private static int nextID = 0;
+
+        public int ID = nextID++;
+        public string Name = name;
+        public Action<int> Callback = cb;
+    };
+
+    private readonly List<Command> customCommands = [];
     
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -544,6 +555,34 @@ sealed class RainEd
         }
     }
 
+    /// <summary>
+    /// Register a command invokable by the user.
+    /// </summary>
+    /// <param name="name">The display name of the command.</param>
+    /// <param name="cmd">The action to run on command.</param>
+    public int RegisterCommand(string name, Action<int> callback)
+    {
+        var cmd = new Command(name, callback);
+        customCommands.Add(cmd);
+        return cmd.ID;
+    }
+
+    /// <summary>
+    /// Unregister a command.
+    /// </summary>
+    /// <param name="cmd">The action of the command to unregister.</param>
+    public void UnregisterCommand(int id)
+    {
+        for (int i = 0; i < customCommands.Count; i++)
+        {
+            if (customCommands[i].ID == id)
+            {
+                customCommands.RemoveAt(i);
+                break;
+            }
+        }
+    }
+
     private void DrawMenuBar()
     {
         if (ImGui.BeginMainMenuBar())
@@ -626,6 +665,24 @@ sealed class RainEd
                 if (ImGui.MenuItem("Resize Level..."))
                 {
                     levelResizeWin = new LevelResizeWindow();
+                }
+
+                if (customCommands.Count > 0)
+                {
+                    ImGui.Separator();
+
+                    if (ImGui.BeginMenu("Commands"))
+                    {
+                        foreach (Command cmd in customCommands)
+                        {
+                            if (ImGui.MenuItem(cmd.Name))
+                            {
+                                cmd.Callback(cmd.ID);
+                            }
+                        }
+
+                        ImGui.EndMenu();
+                    }
                 }
 
                 ImGui.Separator();

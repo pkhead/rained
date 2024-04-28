@@ -12,9 +12,14 @@ rained = {}
 ---@return string version The version number as a string 
 function rained.getVersion() end
 
----Show a notification to the user
+---Show a notification to the user.
 ---@param msg string The message to show
 function rained.alert(msg) end
+
+---Register a command invokable by the user.
+---@param name string The display name of the command.
+---@param callback function The action to run on command.
+function rained.registerCommand(name, callback) end
 
 ---Create an autotile
 ---@param name string The name of the autotile.

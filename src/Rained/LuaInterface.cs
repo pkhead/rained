@@ -52,15 +52,6 @@ static class LuaInterface
             return Options.TryGetValue(id, out data);
         }
 
-        private static void HandleException(LuaScriptException e)
-        {
-            RainEd.Instance.ShowNotification("Error!");
-
-            Exception actualException = e.IsNetException ? e.InnerException! : e;
-            string? stackTrace = actualException.Data["Traceback"] as string;
-            LuaInterface.LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
-        }
-
         public override void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry)
         {
             string? modifierStr = null;
@@ -279,6 +270,9 @@ static class LuaInterface
     private static LuaNativeFunction loaderDelegate = new(RainedLoader);
     private static string scriptsPath = null!;
 
+    private static Dictionary<int, int> registeredCmds = [];
+    private const string CommandID = "RainedCommandID";
+
     public static void Initialize()
     {
         scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
@@ -310,6 +304,14 @@ static class LuaInterface
         // assign module to global variable
         luaState.DoString("rained = require(\"rained\")");
 
+        luaState.State.NewMetaTable(CommandID);
+        luaState.State.PushCFunction(static (nint luaPtr) =>
+        {
+            luaState.State.PushString("The metatable is locked!");
+            return 1;
+        });
+        luaState.State.SetField(-2, "__metatable");
+
         // disable NLua import function
         // damn... stupid nlua library
         // i can't disable the debug library even though
@@ -323,6 +325,15 @@ static class LuaInterface
         {
             AutoRequire("autoload", true);
         }
+    }
+
+    private static void HandleException(LuaScriptException e)
+    {
+        RainEd.Instance.ShowNotification("Error!");
+
+        Exception actualException = e.IsNetException ? e.InnerException! : e;
+        string? stackTrace = actualException.Data["Traceback"] as string;
+        LuaInterface.LogError(stackTrace is not null ? actualException.Message + '\n' + stackTrace : actualException.Message);
     }
 
     private static int RainedLoader(nint luaStatePtr)
@@ -379,7 +390,43 @@ static class LuaInterface
         });
         luaState.State.SetField(-2, "deleteTile");
 
+        // function registerCommand
+        luaState.State.PushCFunction(static (nint luaStatePtr) => {
+            string name = luaState.State.CheckString(1);
+            luaState.State.CheckType(2, KeraLua.LuaType.Function);
+
+            luaState.State.PushCopy(2);
+            int funcRef = luaState.State.Ref(KeraLua.LuaRegistry.Index);
+            int cmdId = RainEd.Instance.RegisterCommand(name, RunCommand);
+            registeredCmds[cmdId] = funcRef;
+
+            unsafe
+            {
+                var ud = (int*) luaState.State.NewUserData(sizeof(int));
+                luaState.State.SetMetaTable(CommandID);
+                *ud = cmdId;
+            }
+
+            return 1;
+        });
+        luaState.State.SetField(-2, "registerCommand");
+
         return 1;
+    }
+
+    private static void RunCommand(int id)
+    {
+        luaState.State.RawGetInteger(KeraLua.LuaRegistry.Index, registeredCmds[id]);
+        
+        try
+        {
+            var func = (LuaFunction) luaState.Pop();
+            func.Call();
+        }
+        catch (LuaScriptException e)
+        {
+            HandleException(e);
+        }
     }
 
     private static int LuaCreateAutotile(nint luaStatePtr)
