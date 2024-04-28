@@ -1,4 +1,6 @@
 namespace RainEd.Autotiles;
+
+using System.Globalization;
 using System.Numerics;
 using ImGuiNET;
 using rlImGui_cs;
@@ -23,17 +25,18 @@ struct PathSegment(int x, int y)
 /// </summary>
 struct PathTileTable(string ld, string lu, string rd, string ru, string vert, string horiz)
 {
-    public Tiles.Tile LeftDown = RainEd.Instance.TileDatabase.GetTileFromName(ld);
-    public Tiles.Tile LeftUp = RainEd.Instance.TileDatabase.GetTileFromName(lu);
-    public Tiles.Tile RightDown = RainEd.Instance.TileDatabase.GetTileFromName(rd);
-    public Tiles.Tile RightUp = RainEd.Instance.TileDatabase.GetTileFromName(ru);
-    public Tiles.Tile Vertical = RainEd.Instance.TileDatabase.GetTileFromName(vert);
-    public Tiles.Tile Horizontal = RainEd.Instance.TileDatabase.GetTileFromName(horiz);
+    public string LeftDown = ld;
+    public string LeftUp = lu;
+    public string RightDown = rd;
+    public string RightUp = ru;
+    public string Vertical = vert;
+    public string Horizontal = horiz;
 }
 
 abstract class Autotile
 {
     public bool IsReady = true;
+    public bool CanActivate = true;
 
     public string Name;
     public int PathThickness;
@@ -97,6 +100,19 @@ abstract class Autotile
         int startIndex, int endIndex
     )
     {
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftDown)) return;
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftUp)) return;
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightDown)) return;
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightUp)) return;
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Horizontal)) return;
+        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Vertical)) return;
+        var ld = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftDown);
+        var lu = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftUp);
+        var rd = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightDown);
+        var ru = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightUp);
+        var horiz = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Horizontal);
+        var vert = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Vertical);
+
         for (int i = startIndex; i < endIndex; i++)
         {
             var seg = pathSegments[i];
@@ -104,29 +120,29 @@ abstract class Autotile
             // turns
             if (seg.Left && seg.Down)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.LeftDown, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
             }
             else if (seg.Left && seg.Up)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.LeftUp, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
             }
             else if (seg.Right && seg.Down)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.RightDown, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
             }
             else if (seg.Right && seg.Up)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.RightUp, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
             }
 
             // straight
             else if (seg.Down || seg.Up)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.Vertical, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
             }
             else if (seg.Right || seg.Left)
             {
-                RainEd.Instance.Level.SafePlaceTile(tileTable.Horizontal, layer, seg.X, seg.Y, modifier);
+                RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
             }
         }
     }
@@ -142,20 +158,43 @@ abstract class Autotile
 class StandardPathAutotile : Autotile
 {
     public PathTileTable TileTable;
+    public override string[] MissingTiles { get => []; }
 
-    public StandardPathAutotile()
+    public StandardPathAutotile(int thickness, int length, string ld, string lu, string rd, string ru, string vert, string horiz)
     {
         Name = "My Autotile";
         Type = AutotileType.Path;
+        PathThickness = thickness;
+        SegmentLength = length;
 
-        TileTable.LeftDown = RainEd.Instance.TileDatabase.GetTileFromName("Pipe WS");
-        TileTable.LeftUp = RainEd.Instance.TileDatabase.GetTileFromName("Pipe WN");
-        TileTable.RightDown = RainEd.Instance.TileDatabase.GetTileFromName("Pipe ES");
-        TileTable.RightUp = RainEd.Instance.TileDatabase.GetTileFromName("Pipe EN");
-        TileTable.Vertical = RainEd.Instance.TileDatabase.GetTileFromName("Vertical Pipe");
-        TileTable.Horizontal = RainEd.Instance.TileDatabase.GetTileFromName("Horizontal Pipe");
+        TileTable.LeftDown = ld;
+        TileTable.LeftUp = lu;
+        TileTable.RightDown = rd;
+        TileTable.RightUp = ru;
+        TileTable.Vertical = vert;
+        TileTable.Horizontal = horiz;
 
+        CheckTiles();
         ProcessSearch();
+    }
+
+    private bool IsInvalid(string tileName, TileType tileType)
+    {
+        return
+            !RainEd.Instance.TileDatabase.HasTile(tileName) ||
+            !CheckDimensions(RainEd.Instance.TileDatabase.GetTileFromName(tileName), tileType);
+    }
+
+    private void CheckTiles()
+    {
+        CanActivate = !(
+            IsInvalid(TileTable.LeftDown, TileType.Turn) ||
+            IsInvalid(TileTable.LeftUp, TileType.Turn) ||
+            IsInvalid(TileTable.RightDown, TileType.Turn) ||
+            IsInvalid(TileTable.RightUp, TileType.Turn) ||
+            IsInvalid(TileTable.Vertical, TileType.Vertical) ||
+            IsInvalid(TileTable.Horizontal, TileType.Horizontal)
+        );
     }
 
     enum TileType
@@ -163,7 +202,16 @@ class StandardPathAutotile : Autotile
         Horizontal,
         Vertical,
         Turn
-    };
+    }
+
+    private bool CheckDimensions(Tiles.Tile tile, TileType tileType)
+        => tileType switch
+        {
+            TileType.Horizontal => tile.Width == SegmentLength && tile.Height == PathThickness,
+            TileType.Vertical => tile.Width == PathThickness && tile.Height == SegmentLength,
+            TileType.Turn => tile.Width == tile.Height && tile.Width == PathThickness,
+            _ => false
+        };
 
     public override void ConfigGui()
     {
@@ -177,48 +225,68 @@ class StandardPathAutotile : Autotile
         TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
 
         if (ImGui.InputInt("##Thickness", ref PathThickness))
+        {
             PathThickness = Math.Clamp(PathThickness, 1, 10);
+            CheckTiles();
+        }
+
         ImGui.SameLine(); // WHY DOESN'T THE TEXT ALIGN!!!
         ImGui.Text("Thickness");
 
         if (ImGui.InputInt("##Length", ref SegmentLength))
+        {
             SegmentLength = Math.Clamp(SegmentLength, 1, 10);
+            CheckTiles();
+        }
+
         ImGui.SameLine(); // WHY DOESN'T THE TEXT ALIGN!!!
         ImGui.Text("Segment Length");
 
         ImGui.PopItemWidth();
     }
 
-    private void TileButton(ref Tiles.Tile tile, string label, TileType tileType)
+    private void TileButton(ref string tile, string label, TileType tileType)
     {
+        bool invalid = IsInvalid(tile, tileType);
+
+        // if invalid, make button red
+        if (invalid)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.95f, 0.32f, 0.32f, 0.40f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.95f, 0.32f, 0.32f, 0.52f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.95f, 0.32f, 0.32f, 1.00f));
+        }
+
         ImGui.PushID(label);
-        if (ImGui.Button(tile.Name, new Vector2(ImGui.GetTextLineHeight() * 10f, 0f)))
+        if (ImGui.Button(tile, new Vector2(ImGui.GetTextLineHeight() * 10f, 0f)))
         {
             ImGui.OpenPopup("PopupTileSelector");
+        }
+
+        if (invalid)
+        {
+            ImGui.PopStyleColor(3);
         }
 
         ImGui.SameLine();
         ImGui.Text(label);
 
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         if (ImGui.BeginPopup("PopupTileSelector"))
         {
+            ImGui.TextUnformatted("Select Tile");
+            ImGui.Separator();
+
             TileSelectorGui();
 
             if (selectedTile != null)
             {
-                // determine that the tile dimensions are valid given
-                // the tile direction type
-                bool dimValid = tileType switch
+                if (CheckDimensions(selectedTile, tileType))
                 {
-                    TileType.Horizontal => selectedTile.Width == SegmentLength && selectedTile.Height == PathThickness,
-                    TileType.Vertical => selectedTile.Width == PathThickness && selectedTile.Height == SegmentLength,
-                    TileType.Turn => selectedTile.Width == selectedTile.Height && selectedTile.Width == PathThickness,
-                    _ => false
-                };
-                
-                if (dimValid)
-                {
-                    tile = selectedTile;
+                    tile = selectedTile.Name;
+
+                    CanActivate = true;
+                    CheckTiles();
                 }
                 else
                 {
@@ -239,8 +307,6 @@ class StandardPathAutotile : Autotile
 
         ImGui.PopID();
     }
-
-    public override string[] MissingTiles { get => []; }
 
     public override void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry)
     {
@@ -393,6 +459,14 @@ class StandardPathAutotile : Autotile
     }
 }
 
+[Serializable]
+public class AutotileParseException : Exception
+{
+    public AutotileParseException() { }
+    public AutotileParseException(string message) : base(message) { }
+    public AutotileParseException(string message, Exception inner) : base(message, inner) { }
+}
+
 class AutotileCatalog
 {
     public readonly List<string> AutotileCategories = ["Misc"];
@@ -431,5 +505,155 @@ class AutotileCatalog
                 tile.CheckMissingTiles();
             }
         }
+    }
+
+    public AutotileCatalog()
+    {
+        // read from config/autotiles.txt
+        var lineNo = 0;
+
+        string autotileName = "";
+        string groupName = "Misc";
+
+        int? thickness = null;
+        int? length = null;
+        string? ld = null;
+        string? lu = null;
+        string? rd = null;
+        string? ru = null;
+        string? vertical = null;
+        string? horizontal = null;
+
+        void SubmitAutotile()
+        {
+            if (autotileName == "") return;
+
+            if (
+                thickness is null ||
+                length is null ||
+                ld is null ||
+                lu is null ||
+                rd is null ||
+                ru is null ||
+                vertical is null ||
+                horizontal is null
+            )
+            {
+                RainEd.Logger.Error("Standard autotile {AutotileName} does not have a complete definition!");
+                return;
+            }
+
+            var autotile = new StandardPathAutotile(
+                thickness.Value, length.Value,
+                ld, lu, rd, ru,
+                vertical, horizontal
+            ) {
+                Name = autotileName
+            };
+
+            AddAutotile(autotile, groupName);
+
+            // reset values
+            thickness = null;
+            length = null;
+            ld = null;
+            lu = null;
+            rd = null;
+            ru = null;
+            vertical = null;
+            horizontal = null;
+            autotileName = "";
+            groupName = "Misc";
+        }
+
+        foreach (var rawLine in File.ReadLines(Path.Combine(Boot.AppDataPath, "config", "autotiles.txt")))
+        {
+            lineNo++;
+
+            // skip empty lines
+            if (string.IsNullOrWhiteSpace(rawLine)) continue;
+
+            var line = rawLine.Trim();
+
+            // ignore comments
+            if (line[0] == '#') continue;
+
+            // read header
+            if (line[0] == '[')
+            {
+                // header lines always end with a closing bracket
+                if (line[^1] != ']')
+                    throw new AutotileParseException($"Line {lineNo}: Expected ']', got newline.");
+                
+                SubmitAutotile();
+                
+                var sepIndex = line.IndexOf(':');
+                autotileName = "(unknown)";
+                groupName = "Misc";
+
+                // no colon separator was found
+                if (sepIndex == -1)
+                {
+                    autotileName = line[1..^1];
+                }
+                // colon separator was found
+                else
+                {
+                    autotileName = line[1..sepIndex];
+                    groupName = line[(sepIndex+1)..^1];
+                }
+            }
+
+            // normal line
+            else
+            {
+                var sepIndex = line.IndexOf('=');
+                if (sepIndex == -1) throw new AutotileParseException($"Line {lineNo}: Expected '=', got newline.");
+
+                var key = line[0..sepIndex];
+                var value = line[(sepIndex+1)..];
+
+                switch (key)
+                {
+                    case "thickness":
+                        thickness = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+
+                    case "length":
+                        length = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+
+                    case "ld":
+                        ld = value;
+                        break;
+
+                    case "lu":
+                        lu = value;
+                        break;
+
+                    case "rd":
+                        rd = value;
+                        break;
+
+                    case "ru":
+                        ru = value;
+                        break;
+
+                    case "vertical":
+                        vertical = value;
+                        break;
+
+                    case "horizontal":
+                        horizontal = value;
+                        break;
+                    
+                    // unknown key
+                    default:
+                        throw new AutotileParseException($"Line {lineNo}: Unknown key '{key}'");
+                }
+            }
+        }
+
+        SubmitAutotile();
     }
 }

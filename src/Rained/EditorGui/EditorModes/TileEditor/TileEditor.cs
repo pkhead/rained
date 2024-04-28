@@ -522,7 +522,12 @@ partial class TileEditor : IEditorMode
         {
             if (activePathBuilder is null)
             {
-                if (selectedAutotile is not null && selectedAutotile.MissingTiles.Length == 0 && selectedAutotile.IsReady)
+                if (
+                    selectedAutotile is not null &&
+                    selectedAutotile.MissingTiles.Length == 0 &&
+                    selectedAutotile.IsReady &&
+                    selectedAutotile.CanActivate
+                )
                 {
                     activePathBuilder = selectedAutotile.Type switch {
                         AutotileType.Path => new AutotilePathBuilder(selectedAutotile),
