@@ -10,6 +10,8 @@ class FileBrowser
 {
     private bool isOpen = false;
     private bool isDone = false;
+    private string callbackStr = string.Empty;
+
     private readonly Action<string> callback;
     private string cwd; // current directory of file browser
     private readonly List<string> pathList = new(); // path as a list
@@ -292,6 +294,10 @@ class FileBrowser
                 }
                 catch
                 {}
+            }
+            else if (Path.GetExtension(filePath) == ".lua")
+            {
+                icon = 9; // lua icon
             }
 
             entries.Add(new Entry(fileName, EntryType.File)
@@ -676,7 +682,7 @@ class FileBrowser
                             else
                             {
                                 isDone = true;
-                                callback(Path.Combine(cwd, name));
+                                callbackStr = Path.Combine(cwd, name);
                             }
                         }
                     }
@@ -689,7 +695,7 @@ class FileBrowser
                     else
                     {
                         isDone = true;
-                        callback(Path.Combine(cwd, ent.Name));
+                        callbackStr = Path.Combine(cwd, ent.Name);
                     }
                 }
                 else if (mode == OpenMode.Directory && selected >= 0)
@@ -709,13 +715,13 @@ class FileBrowser
                     if (ent.Type == EntryType.Directory)
                     {
                         isDone = true;
-                        callback(Path.Combine(cwd, ent.Name));
+                        callbackStr = Path.Combine(cwd, ent.Name);
                     }
                 }
                 else
                 {
                     isDone = true;
-                    callback(cwd);
+                    callbackStr = cwd;
                 }
             }
 
@@ -736,7 +742,7 @@ class FileBrowser
                     if (btn == 0) // yes
                     {
                         isDone = true;
-                        callback(overwriteFileName);
+                        callbackStr = overwriteFileName;
                     }
                     ImGui.CloseCurrentPopup();
                 }
@@ -747,7 +753,7 @@ class FileBrowser
             if (isDone)
             {
                 ImGui.CloseCurrentPopup();
-                callback(string.Empty);
+                callback(callbackStr);
             }
 
             // show error popup if necessary
