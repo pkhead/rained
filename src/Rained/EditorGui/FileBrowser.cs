@@ -272,7 +272,7 @@ class FileBrowser
         var firstFile = entries.Count;
 
         // add files
-        var charBuf = new char[4];
+        var charBuf = new byte[4];
 
         foreach (var filePath in Directory.EnumerateFiles(path))
         {
@@ -288,8 +288,8 @@ class FileBrowser
             {
                 try
                 {
-                    using var stream = File.OpenText(filePath);
-                    int n = stream.ReadBlock(charBuf, 0, 4);
+                    using var stream = File.OpenRead(filePath);
+                    int n = stream.Read(charBuf, 0, 4);
                     if (n == 4 && charBuf[0] == '[' && charBuf[1] == '[' && charBuf[2] == '[' && charBuf[3] == '[')
                     {
                         icon = 7; // slugcat icon
