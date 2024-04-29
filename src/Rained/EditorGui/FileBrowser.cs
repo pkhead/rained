@@ -499,7 +499,14 @@ class FileBrowser
                         if (ImGui.SmallButton(ent))
                         {
                             var old = cwd;
-                            if (SetPath(string.Join(Path.DirectorySeparatorChar, pathList.ToArray(), 0, i+1)))
+
+                            var newPath = Path.Combine([.. pathList[0..(i+1)]]);
+                            if (!OperatingSystem.IsWindows())
+                            {
+                                newPath = '/' + newPath;
+                            }
+
+                            if (SetPath(newPath))
                             {
                                 backStack.Push(old);
                                 forwardStack.Clear();
