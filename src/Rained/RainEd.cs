@@ -39,6 +39,7 @@ sealed class RainEd
     public UserPreferences Preferences;
 
     public string AssetDataPath;
+    public readonly AssetGraphicsProvider AssetGraphics;
     public readonly Tiles.MaterialDatabase MaterialDatabase;
     public readonly Tiles.TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
@@ -168,6 +169,8 @@ sealed class RainEd
         string initPhase = null!;
         try
         {
+            AssetGraphics = new AssetGraphicsProvider();
+            
             initPhase = "materials";
             Logger.Information("Initializing materials database...");
             MaterialDatabase = new Tiles.MaterialDatabase();

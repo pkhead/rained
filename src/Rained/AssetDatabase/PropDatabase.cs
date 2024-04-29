@@ -42,7 +42,6 @@ record PropInit
     public readonly string Name;
     public readonly PropCategory Category;
     public readonly PropType Type;
-    public readonly RlManaged.Texture2D? Texture;
     public readonly PropFlags PropFlags;
     public readonly int Depth;
     public readonly int VariationCount;
@@ -61,6 +60,7 @@ record PropInit
     public PropInit(PropCategory category, Lingo.List init)
     {
         object? tempObject; // used with TryGetValue on init list
+        var randVar = false; // if the prop will be placed with a random variation
 
         Category = category;
         Name = (string) init.fields["nm"];
@@ -79,29 +79,12 @@ record PropInit
             _ => throw new Exception("Invalid prop init")
         };
 
-        // find prop path
-        // for some reason, previews for drought props are in cast data instead of in the Props folder
-        // kind of annoying. so i just put those images in assets/internal
-        string texturePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", Name + ".png");
-        if (!File.Exists(texturePath) && DrizzleCastMap.TryGetValue(Name, out string? castPath))
-        {
-            texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
-        }
-        Texture = RlManaged.Texture2D.Load(texturePath);
+        var texture = RainEd.Instance.AssetGraphics.GetPropTexture(Name);
 
-        var randVar = false;
-
-        if (!Raylib.IsTextureReady(Texture))
+        if (texture is not null)
         {
-            RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
-            Texture.Dispose();
-            Texture = null;
-        }
-
-        if (Texture is not null)
-        {
-            pixelWidth = Texture.Width;
-            pixelHeight = Texture.Height;
+            pixelWidth = texture.Width;
+            pixelHeight = texture.Height;
         }
         else
         {
@@ -269,16 +252,8 @@ record PropInit
         Category = category;
         Name = srcTile.Name;
         Type = srcTile.VariationCount > 1 ? PropType.VariedStandard : PropType.Standard;
-        Texture = RlManaged.Texture2D.Load(srcTile.GraphicsPath);
         PropFlags = PropFlags.Tile;
         Notes = [];
-
-        if (!Raylib.IsTextureReady(Texture))
-        {
-            RainEd.Logger.Warning($"Image {srcTile.GraphicsPath} is invalid or missing!");
-            Texture.Dispose();
-            Texture = null;
-        }
 
         layerCount = srcTile.LayerCount;
         Depth = srcTile.LayerDepth;

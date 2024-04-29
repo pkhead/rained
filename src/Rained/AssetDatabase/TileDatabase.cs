@@ -32,7 +32,8 @@ class Tile
     public readonly int CenterX;
     public readonly int CenterY;
 
-    public readonly string GraphicsPath;
+    public readonly int ImageYOffset;
+    public readonly int ImageRowCount;
 
     public Tile(
         string name,
@@ -91,16 +92,16 @@ class Tile
             }
         }
 
-        // retrieve Y location of preview image
-        int rowCount = height + bfTiles * 2;
-        int imageOffset = 1;
+        // get parameters required for the retrieval of the Y location of preview image
+        ImageRowCount = height + bfTiles * 2;
+        ImageYOffset = 1;
         switch (type)
         {
             case TileType.VoxelStruct:
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
                 LayerCount = repeatL!.Count;
-                rowCount *= LayerCount;
+                ImageRowCount *= LayerCount;
                 CanBeProp = true;
 
                 break;
@@ -110,71 +111,9 @@ class Tile
                 break;
             
             case TileType.Box:
-                rowCount = height * width + height + bfTiles * 2;
-                imageOffset = 0;
+                ImageRowCount = height * width + height + bfTiles * 2;
+                ImageYOffset = 0;
                 break;
-        }
-        
-        // find path to image
-        // if it doesn't exist in Data/Graphics, check in assets/internal
-        GraphicsPath = Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", name + ".png");
-        if (!File.Exists(GraphicsPath) && DrizzleCastMap.TryGetValue(name, out string? castPath))
-        {
-            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
-        }
-
-        using var fullImage = RlManaged.Image.Load(GraphicsPath);
-        if (Raylib.IsImageReady(fullImage))
-        {
-            var previewRect = new Rectangle(
-                0,
-                rowCount * 20 + imageOffset,
-                width * 16,
-                height * 16
-            );
-
-            if (previewRect.X < 0 || previewRect.Y < 0 ||
-                previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
-                previewRect.X + previewRect.Width > fullImage.Width ||
-                previewRect.Y + previewRect.Height > fullImage.Height
-            )
-            {
-                RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
-            }
-
-            using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
-            previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
-
-            Raylib.ImageDraw(
-                ref previewImage.Ref(),
-                fullImage,
-                previewRect,
-                new Rectangle(0, 0, previewRect.Width, previewRect.Height),
-                Color.White
-            );
-
-            // convert black-and-white image to white-and-transparent, respectively
-            for (int x = 0; x < previewImage.Width; x++)
-            {
-                for (int y = 0; y < previewImage.Height; y++)
-                {
-                    if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
-                    {
-                        previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
-                    }
-                    else
-                    {
-                        previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
-                    }
-                }
-            }
-
-            PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
-        }
-        else
-        {
-            // tile graphics could not be loaded
-            PreviewTexture = null;
         }
 
         if (noPropTag)
