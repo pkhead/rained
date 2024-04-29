@@ -444,8 +444,9 @@ class StandardPathAutotile : Autotile
                 {
                     ImGui.BeginTooltip();
 
-                    if (tile.PreviewTexture is not null)
-                        rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
+                    var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
+                    if (previewTexture is not null)
+                        rlImGui.Image(previewTexture, tile.Category.Color);
                     else
                         rlImGui.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
 

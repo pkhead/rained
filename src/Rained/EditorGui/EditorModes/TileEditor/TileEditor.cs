@@ -460,7 +460,8 @@ partial class TileEditor : IEditorMode
             new Vector2(selectedTile.Width, selectedTile.Height) * Level.TileSize
         );
 
-        if (selectedTile.PreviewTexture is not null)
+        var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(selectedTile);
+        if (previewTexture is not null)
         {
             srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
         }
@@ -471,7 +472,7 @@ partial class TileEditor : IEditorMode
 
         // draw tile preview
         Raylib.DrawTexturePro(
-            selectedTile.PreviewTexture ?? RainEd.Instance.PlaceholderTexture,
+            previewTexture ?? RainEd.Instance.PlaceholderTexture,
             srcRect, dstRect,
             Vector2.Zero, 0f,
             validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)

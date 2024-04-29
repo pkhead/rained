@@ -774,14 +774,15 @@ class LevelEditRender
 
                 var tileLeft = tx - tile.CenterX;
                 var tileTop = ty - tile.CenterY;
-                var col = tile.PreviewTexture is null ? Color.White : tile.Category.Color;
+                var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
+                var col = previewTexture is null ? Color.White : tile.Category.Color;
 
-                var srcRect = tile.PreviewTexture is not null
+                var srcRect = previewTexture is not null
                     ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
                     : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
 
                 Raylib.DrawTexturePro(
-                    tile.PreviewTexture ?? RainEd.Instance.PlaceholderTexture,
+                    previewTexture ?? RainEd.Instance.PlaceholderTexture,
                     srcRect,
                     new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
                     Vector2.Zero,
@@ -856,11 +857,12 @@ class LevelEditRender
                 continue;
             
             var quad = prop.QuadPoints;
-            var texture = prop.PropInit.Texture ?? RainEd.Instance.PlaceholderTexture;
+            var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop.PropInit);
+            var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
 
             Rlgl.DisableBackfaceCulling();
             Raylib.BeginShaderMode(propPreviewShader);
-            Rlgl.SetTexture(texture.Id);
+            Rlgl.SetTexture(displayTexture.Id);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
@@ -874,7 +876,7 @@ class LevelEditRender
                 
                 float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
 
-                var srcRect = prop.PropInit.Texture is null
+                var srcRect = propTexture is null
                     ? new Rectangle(Vector2.Zero, 2.0f * Vector2.One)
                     : prop.PropInit.GetPreviewRectangle(variation, depth);
 
@@ -883,19 +885,19 @@ class LevelEditRender
                     Rlgl.Color4f(alpha / 255f, whiteFade, 0f, 0f);
 
                     // top-left
-                    Rlgl.TexCoord2f(srcRect.X / texture.Width, srcRect.Y / texture.Height);
+                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
                     Rlgl.Vertex2f(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
 
                     // bottom-left
-                    Rlgl.TexCoord2f(srcRect.X / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
+                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
                     Rlgl.Vertex2f(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
 
                     // bottom-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, (srcRect.Y + srcRect.Height) / texture.Height);
+                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
                     Rlgl.Vertex2f(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
 
                     // top-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / texture.Width, srcRect.Y / texture.Height);
+                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
                     Rlgl.Vertex2f(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
                 }
                 Rlgl.End();

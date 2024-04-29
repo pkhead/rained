@@ -23,7 +23,6 @@ class Tile
     public readonly sbyte[,] Requirements2;
     public readonly bool HasSecondLayer;
     public readonly int BfTiles = 0;
-    public readonly RlManaged.Texture2D? PreviewTexture;
     public readonly bool CanBeProp;
     public readonly int LayerCount;
     public readonly int LayerDepth;

@@ -270,7 +270,9 @@ partial class PropEditor : IEditorMode
                     float whiteFade = Math.Clamp(depth / 16f, 0f, 1f);
                     Rectangle srcRect, dstRec;
 
-                    if (prop.Texture is not null)
+                    var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop);
+
+                    if (propTexture is not null)
                     {
                         srcRect = prop.GetPreviewRectangle(0, depth);
                         dstRec = new Rectangle(Vector2.Zero, srcRect.Size);
@@ -282,7 +284,7 @@ partial class PropEditor : IEditorMode
                     }
 
                     Raylib.DrawTexturePro(
-                        prop.Texture ?? RainEd.Instance.PlaceholderTexture,
+                        propTexture ?? RainEd.Instance.PlaceholderTexture,
                         srcRect, dstRec,
                         Vector2.Zero, 0f,
                         new Color(255, (int)(whiteFade * 255f), 0, 0)

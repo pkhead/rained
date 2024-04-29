@@ -64,6 +64,20 @@ class AssetGraphicsProvider
     }
 
     /// <summary>
+    /// Obtain the texture of a prop init. Works for normal props and tiles as props.
+    /// May be cached
+    /// </summary>
+    /// <param name="propInit">The prop init whose data is used to obtain the texture.</param>
+    /// <returns>The prop/tile texture, or null if the graphics file was invalid or not found.</returns>
+    public RlManaged.Texture2D? GetPropTexture(Props.PropInit propInit)
+    {
+        if (propInit.PropFlags.HasFlag(Props.PropFlags.Tile))
+            return GetTileTexture(propInit.Name);
+        else
+            return GetPropTexture(propInit.Name);
+    }
+
+    /// <summary>
     /// Obtain the texture of a tile asset. May be cached.
     /// </summary>
     /// <param name="assetName">The name of the tile asset.</param>
