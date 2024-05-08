@@ -309,8 +309,6 @@ class DrizzleRender : IDisposable
             PreviewImages = new RenderPreviewImages();
         }
         
-        LevelSerialization.Save(filePath);
-
         threadState = new RenderThread(filePath, OnlyGeometry);
         threadState.StatusChanged += StatusChanged;
         Configuration.Default.PreferContiguousImageBuffers = true;
