@@ -18,6 +18,7 @@ class FileBrowser
 
     private readonly Stack<string> backStack = new();
     private readonly Stack<string> forwardStack = new();
+    private string folderName = "New Folder";
 
     // path display mode - breadcrumb trail or string input
     private bool enterPath;
@@ -399,6 +400,9 @@ class FileBrowser
         {
             var windowSize = ImGui.GetWindowSize();
 
+            // this makes the back, fwd, and up buttons closer together
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+
             // back button
             if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0), textColor))
             {
@@ -429,6 +433,10 @@ class FileBrowser
             } ImGui.SameLine();
             ImGui.SetItemTooltip("Forward");
 
+            // pop style var before creating the up button,
+            // because spacing is added after creating a button, not before.
+            ImGui.PopStyleVar();
+
             if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor))
             {
                 var oldDir = cwd;
@@ -439,9 +447,9 @@ class FileBrowser
                     forwardStack.Clear();
                 }
             }
-            ImGui.SameLine();
             ImGui.SetItemTooltip("Go To Parent Directory");
 
+            ImGui.SameLine();
             if (rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4), textColor))
             {
                 if (Directory.Exists(cwd))
@@ -450,6 +458,82 @@ class FileBrowser
                     SetPath(Path.GetFullPath(Path.DirectorySeparatorChar.ToString()));
             }
             ImGui.SetItemTooltip("Refresh");
+
+            ImGui.SameLine();
+            if (rlImGui.ImageButtonRect("NewFolder", icons, 13, 13, GetIconRect(5), textColor))
+            {
+                ImGui.OpenPopup("Create Folder");
+                folderName = "";
+            }
+            ImGui.SetItemTooltip("Create Folder");
+
+            // create folder popup
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            if (ImGuiExt.BeginPopupModal("Create Folder", ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 20.0f);
+                ImGui.InputTextWithHint("##Name", "Name", ref folderName, 128);
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btn))
+                {
+                    // if ok is pressed
+                    if (btn == 0)
+                    {
+                        // check that a directory with the same name
+                        // does not already exist
+                        if (Directory.Exists(Path.Combine(cwd, folderName)))
+                        {
+                            errorMsg = "Directory with the same name already exists!";
+                            ImGui.OpenPopup("Error");
+                        }
+                        else
+                        {
+                            try
+                            {
+                                Directory.CreateDirectory(Path.Combine(cwd, folderName));
+
+                                ImGui.CloseCurrentPopup();
+                                folderName = "";
+                            }
+                            catch (Exception e)
+                            {
+                                if (RainEd.Instance is not null)
+                                    RainEd.Logger.Error("Could not create directory!\n" + e);
+                                
+                                errorMsg = e.Message;
+                                ImGui.OpenPopup("Error");
+                            }
+
+                            SetPath(cwd); // refresh
+                        }
+                    }
+
+                    // if cancel was pressed
+                    else if (btn == 1)
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+                }
+
+                // show an error popup if necessary
+                bool errClose = true;
+                ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                if (ImGui.BeginPopupModal("Error", ref errClose, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                {
+                    ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 30.0f);
+                    ImGui.TextWrapped(errorMsg);
+                    ImGui.PopTextWrapPos();
+                    
+                    ImGui.Separator();
+                    if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                        ImGui.CloseCurrentPopup();
+                    
+                    ImGui.EndPopup();
+                }
+
+                ImGui.EndPopup();
+            }
 
             // current path
             ImGui.SameLine();
