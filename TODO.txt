@@ -4,7 +4,11 @@ Priority:
 - dissolve material/tile separation
 - fix trans flag prop loading
 - thin pipe join pipes not in path
-- graphical autotile creator
+- std path intersections
+- more autotiles
+  - ventbox
+  - wall wires
+  - 
 
 Bugs:
 - drizzle doesn't build correctly on mac?
