@@ -8,7 +8,9 @@ Priority:
 - more autotiles
   - ventbox
   - wall wires
-  - 
+  - crossbeams?
+  - fences
+  - crawl holes
 
 Bugs:
 - drizzle doesn't build correctly on mac?
