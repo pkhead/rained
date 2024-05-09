@@ -494,19 +494,44 @@ class AutotilePathBuilder : IAutotileInputBuilder
         // after the previous while loop, all that
         // will be left in autotilePathDict are
         // horizontal or vertical segments
+        // linear loop to create those segments
         var pOffset = autotile.PathThickness % 2 == 0 ? -0.5f : 0f;
-        foreach ((Vector2i pos, PathDirection dirs) in autotilePathDict)
+
+        for (int i = 0; i < autotilePath.Count; i += autotile.SegmentLength)
+        {
+            var nodePos = autotilePath[i];
+            if (!autotilePathDict.TryGetValue(nodePos, out PathDirection segmentDir)) continue;
+
+            var nextIndex = (i + 1) % autotilePath.Count;
+            int dx = autotilePath[nextIndex].X - nodePos.X;
+            int dy = autotilePath[nextIndex].Y - nodePos.Y;
+
+            if (Math.Abs(dx) + Math.Abs(dy) == 1)
+            {
+                Vector2 nodePosFloat = new Vector2(nodePos.X, nodePos.Y) + Vector2.One * gridOffset;
+
+                // create the segment
+                previewSegments.Add(new PreviewSegment()
+                {
+                    Center = nodePosFloat + new Vector2(dx, dy) * pOffset,
+                    Directions = segmentDir,
+                    Index = i
+                });
+            }
+
+        }
+        /*foreach ((Vector2i pos, PathDirection dirs) in autotilePathDict)
         {
             var nodePos = pos + new Vector2(gridOffset, gridOffset);
 
             // create the segment
             previewSegments.Add(new PreviewSegment()
             {
-                Center = nodePos/* + dir * pOffset*/,
+                Center = nodePos,
                 Directions = dirs,
                 Index = autotilePath.IndexOf(pos)
             });
-        }
+        }*/
     }
 
     /// <summary>

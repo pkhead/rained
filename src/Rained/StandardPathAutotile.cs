@@ -21,12 +21,7 @@ class StandardPathAutotile : Autotile
         PathThickness = thickness;
         SegmentLength = length;
 
-        TileTable.LeftDown = ld;
-        TileTable.LeftUp = lu;
-        TileTable.RightDown = rd;
-        TileTable.RightUp = ru;
-        TileTable.Vertical = vert;
-        TileTable.Horizontal = horiz;
+        TileTable = new PathTileTable(ld, lu, rd, ru, vert, horiz);
 
         CheckTiles();
         ProcessSearch();
