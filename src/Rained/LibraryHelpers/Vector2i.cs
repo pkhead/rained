@@ -5,6 +5,11 @@ struct Vector2i
     public int X = 0;
     public int Y = 0;
 
+    public static Vector2i UnitX { get => new(1, 0); } 
+    public static Vector2i UnitY { get => new(0, 1); }
+    public static Vector2i One { get => new(1, 1); }
+    public static Vector2i Zero { get => new(0, 0); }
+    
     public Vector2i()
     {}
 
