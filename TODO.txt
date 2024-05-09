@@ -14,18 +14,15 @@ Priority:
 
 Bugs:
 - drizzle doesn't build correctly on mac?
+- need to crop asset graphics to be accurate to og editor
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux
-- Init files assume a case-insensitive filesystem -- add a way in the asset manager
-  to correct the .png filenames on non-Windows systems
 - effects list change recorder doesn't work?
 - weird graphical issue on certain drivers when level is out of bounds
 
 Overall:
 - figure out github actions to make nightly builds
 - favorite tiles and props
-- file manager "New Folder" button
-- retrieve tile/prop textures on-demand instead of ahead of time
 - code cleanup (RainEd.cs is like 1000 lines long... maybe also use subscriber pattern for subwindow updating?)
   also use function/class summaries
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
@@ -41,9 +38,6 @@ Overall:
 - undo/redo for level resize
 - level resze drag
 - help pages/hints/tooltips/whatever
-- Edit/View menu buttons for specific editors
-  e.g. New Camera button in camera editor,
-  no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
 
@@ -62,7 +56,6 @@ NOTE: shortcut entrances always have an object of type 4. (dunno why, probably s
 Tile Editor:
 - make 2nd geo spec layer a lighter red 
 - optimize tile rendering
-- customizable autotiling (check out autotiling branch)
 - force geo on materials (hm... what if i combined geo/tile editor?)
 - G+right click is buggy with specs2 (really?)
 - tool to fix detached tile bodies
@@ -85,6 +78,7 @@ Prop Editor:
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
+- randomFlipX and randomFlipY tags
 
 Render:
 - select camera to render first
