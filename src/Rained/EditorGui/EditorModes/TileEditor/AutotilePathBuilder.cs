@@ -27,6 +27,9 @@ class AutotilePathBuilder : IAutotileInputBuilder
     private readonly List<Vector2i> autotilePath = [];
     private readonly List<PathDirection> autotilePathDirs = [];
     private readonly List<PreviewSegment> previewSegments = [];
+    private readonly Dictionary<Vector2i, PathDirection> autotilePathDict = [];
+
+    private bool needUpdate = true;
     private readonly float gridOffset;
 
     public AutotilePathBuilder(Autotile autotile) {
@@ -34,10 +37,9 @@ class AutotilePathBuilder : IAutotileInputBuilder
         gridOffset = autotile.PathThickness % 2 == 0 ? 0f : 0.5f;
     }
 
-    // get connected sides of the ith node, as a PathDirection
-
     /// <summary>
     /// Deduce which sides of the i th node are connected to another node.
+    /// Only works properly if AllowIntersections is false
     /// </summary>
     /// <param name="i">The index of the node.</param>
     /// <returns>A flag enum stating which sides are connected.</returns>
@@ -55,6 +57,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
 
     /// <summary>
     /// Deduce which sides of the i th node are connected to another node.
+    /// Only works properly if AllowIntersections is false
     /// </summary>
     /// <param name="i">The index of the node.</param>
     /// <param name="left">True if the node is connected on the left side, false if not.</param>
@@ -137,18 +140,22 @@ class AutotilePathBuilder : IAutotileInputBuilder
             // if the user backs their cursor up, erase the last segment
             autotilePath.RemoveAt(autotilePath.Count - 1);
             autotilePathDirs.RemoveAt(autotilePathDirs.Count - 1);
+            
+            needUpdate = true;
             return true;
         }
         else
         {
-            // only place node if there isn't already a node here
-            // and the CanAppendPath check returns true
-            if (autotile.AllowIntersections || !autotilePath.Contains(pos))
+            // place node if conditions allow it
+            int index = autotilePath.IndexOf(pos);
+            if (autotile.AllowIntersections || index == -1)
             {
                 if (CanAppendPath(autotile, pos))
                 {
                     autotilePath.Add(pos);
                     autotilePathDirs.Add(0);
+
+                    needUpdate = true;
                     return true;
                 }
             }
@@ -172,10 +179,13 @@ class AutotilePathBuilder : IAutotileInputBuilder
         );
         
         // first node to be placed
+        needUpdate = false;
+
         if (autotilePath.Count == 0)
         {
             autotilePath.Add(mousePos);
             autotilePathDirs.Add(0);
+            needUpdate = true;
         }
         else if (autotilePath[^1] != mousePos)
         {
@@ -245,119 +255,258 @@ class AutotilePathBuilder : IAutotileInputBuilder
             interpolateEnd:;
         }
 
+        // if the autotilePath list had changed,
+        // update the path segments
+        if (needUpdate)
+        {
+            needUpdate = false;
+
+            previewSegments.Clear();
+
+            if (autotilePath.Count > 1)
+            {
+                if (autotile.AllowIntersections)
+                {
+                    BuildComplexPath();
+                }
+                else
+                {
+                    BuildLinearPath();
+                }
+            }
+        }
+
+        DrawPreview();
+    }
+
+    /// <summary>
+    /// The linear algorithm used to build segment data
+    /// when AllowIntersections is false
+    /// </summary>
+    private void BuildLinearPath()
+    {
         // pre-calculate autotile path node directions
         for (int i = 0; i < autotilePath.Count; i++)
         {
             autotilePathDirs[i] = GetPathDirections(i);
         }
 
-        previewSegments.Clear();
-        
         int firstIndex = autotile.PathThickness % 2 == 0 ? 1 : 0;
         int lineStart = firstIndex;
+        var pOffset = autotile.PathThickness % 2 == 0 ? -0.5f : 0f;
         PathDirection lineDir = 0;
 
-        if (autotilePath.Count > 1)
+        // find the turns (or the end of the path)
+        for (int i = 0; i <= autotilePath.Count; i++)
         {
-            // find the turns (or the end of the path)
-            for (int i = 0; i <= autotilePath.Count; i++)
+            int lineEnd = -1;
+
+            if (i < autotilePath.Count)
             {
-                int lineEnd = -1;
+                var nodePos = autotilePath[i];
+                var directions = autotilePathDirs[i];
+                bool horiz = directions.HasFlag(PathDirection.Left) || directions.HasFlag(PathDirection.Right);
+                bool vert = directions.HasFlag(PathDirection.Up) || directions.HasFlag(PathDirection.Down);
 
-                if (i < autotilePath.Count)
+                // if this is a node where a turn occurs
+                if (horiz && vert)
                 {
-                    var nodePos = autotilePath[i];
-                    var directions = autotilePathDirs[i];
-                    bool horiz = directions.HasFlag(PathDirection.Left) || directions.HasFlag(PathDirection.Right);
-                    bool vert = directions.HasFlag(PathDirection.Up) || directions.HasFlag(PathDirection.Down);
-
-                    // if this is a node where a turn occurs
-                    if (horiz && vert)
+                    previewSegments.Add(new PreviewSegment()
                     {
-                        previewSegments.Add(new PreviewSegment()
-                        {
-                            Center = nodePos + new Vector2(gridOffset, gridOffset),
-                            Directions = directions,
-                            Index = i
-                        });
+                        Center = nodePos + new Vector2(gridOffset, gridOffset),
+                        Directions = directions,
+                        Index = i
+                    });
 
-                        // where the end of the line before the turn is
-                        lineEnd = i - autotile.PathThickness / 2;
-                        if (autotile.PathThickness % 2 == 0) lineEnd++;
+                    // where the end of the line before the turn is
+                    lineEnd = i - autotile.PathThickness / 2;
+                    if (autotile.PathThickness % 2 == 0) lineEnd++;
 
-                        // set the start of the next line
-                        i += autotile.PathThickness / 2;
-                    }
-                    else
-                    {
-                        lineDir = directions;
-                    }
+                    // set the start of the next line
+                    i += autotile.PathThickness / 2;
                 }
                 else
                 {
-                    // end of path reached
-                    lineEnd = autotilePath.Count;
-                }
-
-                // procedure to create the line of segments
-                // in between lineStart and lineEnd
-                if (lineEnd >= 0 && lineStart < autotilePath.Count)
-                {
-                    // calculate the direction of the line
-                    int dx, dy;
-                    if (lineStart == autotilePath.Count - 1)
-                    {
-                        dx = autotilePath[lineStart].X - autotilePath[lineStart-1].X;
-                        dy = autotilePath[lineStart].Y - autotilePath[lineStart-1].Y;
-                    }
-                    else
-                    {
-                        dx = autotilePath[lineStart+1].X - autotilePath[lineStart].X;
-                        dy = autotilePath[lineStart+1].Y - autotilePath[lineStart].Y;
-                    }
-
-                    if (MathF.Abs(dx) + MathF.Abs(dy) != 1)
-                        throw new Exception();
-                    
-                    var dir = new Vector2(dx, dy);
-                    var pOffset = autotile.PathThickness % 2 == 0 ? -0.5f : 0f;
-
-                    PathDirection dirFlags = 0;
-                    if (dx != 0) dirFlags |= PathDirection.Right | PathDirection.Left;
-                    if (dy != 0) dirFlags |= PathDirection.Down | PathDirection.Up;
-
-                    // loop to create the segments
-                    for (int j = lineStart; j < lineEnd; j += autotile.SegmentLength)
-                    {
-                        Vector2 nodePos = new(autotilePath[j].X, autotilePath[j].Y);
-                        nodePos += new Vector2(gridOffset, gridOffset);
-
-                        // if at the ends of the path, use the raw path direction of that node
-                        // this is so an edge is created at the caps
-                        PathDirection segmentDir;
-
-                        if (j == firstIndex)
-                            segmentDir = autotilePathDirs[0];
-                        else if (j + autotile.SegmentLength >= autotilePath.Count)
-                            segmentDir = autotilePathDirs[^1];
-                        else
-                            segmentDir = dirFlags;
-
-                        // create the segment
-                        previewSegments.Add(new PreviewSegment()
-                        {
-                            Center = nodePos + dir * pOffset,
-                            Directions = segmentDir,
-                            Index = j
-                        });
-                    }
-
-                    lineStart = i+1;
+                    lineDir = directions;
                 }
             }
+            else
+            {
+                // end of path reached
+                lineEnd = autotilePath.Count;
+            }
+
+            // procedure to create the line of segments
+            // in between lineStart and lineEnd
+            if (lineEnd >= 0 && lineStart < autotilePath.Count)
+            {
+                // calculate the direction of the line
+                int dx, dy;
+                if (lineStart == autotilePath.Count - 1)
+                {
+                    dx = autotilePath[lineStart].X - autotilePath[lineStart-1].X;
+                    dy = autotilePath[lineStart].Y - autotilePath[lineStart-1].Y;
+                }
+                else
+                {
+                    dx = autotilePath[lineStart+1].X - autotilePath[lineStart].X;
+                    dy = autotilePath[lineStart+1].Y - autotilePath[lineStart].Y;
+                }
+
+                dx = Math.Sign(dx);
+                dy = Math.Sign(dy);
+
+                if (MathF.Abs(dx) + MathF.Abs(dy) != 1)
+                    throw new Exception();
+                
+                var dir = new Vector2(dx, dy);
+
+                PathDirection dirFlags = 0;
+                if (dx != 0) dirFlags |= PathDirection.Right | PathDirection.Left;
+                if (dy != 0) dirFlags |= PathDirection.Down | PathDirection.Up;
+
+                // loop to create the segments
+                for (int j = lineStart; j < lineEnd; j += autotile.SegmentLength)
+                {
+                    Vector2 nodePos = new(autotilePath[j].X, autotilePath[j].Y);
+                    nodePos += new Vector2(gridOffset, gridOffset);
+
+                    // if at the ends of the path, use the raw path direction of that node
+                    // this is so an edge is created at the caps
+                    PathDirection segmentDir;
+
+                    if (j == firstIndex)
+                        segmentDir = autotilePathDirs[0];
+                    else if (j + autotile.SegmentLength >= autotilePath.Count)
+                        segmentDir = autotilePathDirs[^1];
+                    else
+                        segmentDir = dirFlags;
+
+                    // create the segment
+                    previewSegments.Add(new PreviewSegment()
+                    {
+                        Center = nodePos + dir * pOffset,
+                        Directions = segmentDir,
+                        Index = j
+                    });
+                }
+
+                lineStart = i+1;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The algorithm used to build segment data when
+    /// AllowIntersections is true
+    /// </summary>
+    private void BuildComplexPath()
+    {
+        // add keys to autotilePathDict
+        autotilePathDict.Clear();
+        for (int i = 0; i < autotilePath.Count; i++)
+        {
+            autotilePathDict[autotilePath[i]] = 0;
         }
 
-        DrawPreview();
+        // pre-calculate the direction for each node in autotilePathDict
+        foreach (Vector2i nodePos in autotilePathDict.Keys)
+        {
+            // complex algorithm
+            bool right = autotilePathDict.ContainsKey(nodePos + new Vector2i(1, 0));
+            bool up = autotilePathDict.ContainsKey(nodePos + new Vector2i(0, -1));
+            bool left = autotilePathDict.ContainsKey(nodePos + new Vector2i(-1, 0));
+            bool down = autotilePathDict.ContainsKey(nodePos + new Vector2i(0, 1));
+            
+            PathDirection dir = 0;
+            if (right) dir |= PathDirection.Right;
+            if (up) dir |= PathDirection.Up;
+            if (left) dir |= PathDirection.Left;
+            if (down) dir |= PathDirection.Down;
+
+            autotilePathDict[nodePos] = dir;
+        }
+
+        // find and create turn/intersection segments first
+        // as they will remove the path nodes that lie within the intersection
+        // segment
+        while (true)
+        {
+            bool found = false;
+
+            foreach ((Vector2i nodePos, PathDirection dirs) in autotilePathDict)
+            {
+                bool left = dirs.HasFlag(PathDirection.Left);
+                bool right = dirs.HasFlag(PathDirection.Right);
+                bool up = dirs.HasFlag(PathDirection.Up);
+                bool down = dirs.HasFlag(PathDirection.Down);
+                bool horiz = left || right;
+                bool vert = up || down;
+                bool isTurnOrInt = horiz && vert;
+
+                if (isTurnOrInt)
+                {
+                    found = true;
+
+                    int cnCount = 0;
+                    if (right) cnCount++;
+                    if (up) cnCount++;
+                    if (left) cnCount++;
+                    if (down) cnCount++;
+
+                    // remove the nodes inside of the intersection segment
+                    if (right)
+                        for (int i = 1; i < autotile.SegmentLength; i++)
+                            autotilePathDict.Remove(nodePos + Vector2i.UnitX * i);
+                    
+                    if (up)
+                        for (int i = 1; i < autotile.SegmentLength; i++)
+                            autotilePathDict.Remove(nodePos - Vector2i.UnitY * i);
+                    
+                    if (left)
+                        for (int i = 1; i < autotile.SegmentLength; i++)
+                            autotilePathDict.Remove(nodePos - Vector2i.UnitX * i);
+
+                    if (down)
+                        for (int i = 1; i < autotile.SegmentLength; i++)
+                            autotilePathDict.Remove(nodePos + Vector2i.UnitY * i);
+                    
+                    // add the segment
+                    previewSegments.Add(new PreviewSegment()
+                    {
+                        Center = nodePos + new Vector2(gridOffset, gridOffset),
+                        Directions = dirs,
+                        Index = autotilePath.IndexOf(nodePos)
+                    });
+
+                    autotilePathDict.Remove(nodePos);
+
+                    break;
+                }
+            }
+
+            // if a turn or intersection was not found,
+            // stop the loop. otherwise, find another
+            // turn/intersection to process
+            if (!found) break;
+        }
+
+        // after the previous while loop, all that
+        // will be left in autotilePathDict are
+        // horizontal or vertical segments
+        var pOffset = autotile.PathThickness % 2 == 0 ? -0.5f : 0f;
+        foreach ((Vector2i pos, PathDirection dirs) in autotilePathDict)
+        {
+            var nodePos = pos + new Vector2(gridOffset, gridOffset);
+
+            // create the segment
+            previewSegments.Add(new PreviewSegment()
+            {
+                Center = nodePos/* + dir * pOffset*/,
+                Directions = dirs,
+                Index = autotilePath.IndexOf(pos)
+            });
+        }
     }
 
     /// <summary>
