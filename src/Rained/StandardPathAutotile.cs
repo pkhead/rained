@@ -26,6 +26,13 @@ class StandardPathAutotile : Autotile
         TileTable.Vertical = vert;
         TileTable.Horizontal = horiz;
 
+        // placeholder values
+        TileTable.TRight = "Pipe TJunct E";
+        TileTable.TUp = "Pipe TJunct N";
+        TileTable.TLeft = "Pipe TJunct W";
+        TileTable.TDown = "Pipe TJunct S";
+        TileTable.XJunct = "Pipe XJunct";
+
         CheckTiles();
         ProcessSearch();
     }
@@ -75,6 +82,18 @@ class StandardPathAutotile : Autotile
         TileButton(ref TileTable.RightUp, "Right-Up", TileType.Turn);
         TileButton(ref TileTable.Vertical, "Vertical", TileType.Vertical);
         TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
+        ImGui.Checkbox("Intersections", ref TileTable.Intersections);
+        if (TileTable.Intersections)
+        {
+            TileButton(ref TileTable.TRight, "T-Junction Right", TileType.Turn);
+            TileButton(ref TileTable.TUp, "T-Junction Up", TileType.Turn);
+            TileButton(ref TileTable.TLeft, "T-Junction Left", TileType.Turn);
+            TileButton(ref TileTable.TDown, "T-Junction Down", TileType.Turn);
+            TileButton(ref TileTable.XJunct, "Four-way Junction", TileType.Turn);
+        }
+
+        // separator between TileButtons and number options
+        ImGui.Separator();
 
         if (ImGui.InputInt("##Thickness", ref PathThickness))
         {

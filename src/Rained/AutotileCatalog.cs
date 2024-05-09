@@ -30,6 +30,14 @@ struct PathTileTable(string ld, string lu, string rd, string ru, string vert, st
     public string RightUp = ru;
     public string Vertical = vert;
     public string Horizontal = horiz;
+
+    public string TRight = "";
+    public string TLeft = "";
+    public string TUp = "";
+    public string TDown = "";
+    public string XJunct = "";
+
+    public bool Intersections = false;
 }
 
 abstract class Autotile
@@ -99,12 +107,15 @@ abstract class Autotile
         int startIndex, int endIndex
     )
     {
+        // abort if at least one tile is invalid
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftDown)) return;
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftUp)) return;
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightDown)) return;
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightUp)) return;
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Horizontal)) return;
         if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Vertical)) return;
+        
+        // obtain tile inits from the names
         var ld = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftDown);
         var lu = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftUp);
         var rd = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightDown);
@@ -112,36 +123,118 @@ abstract class Autotile
         var horiz = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Horizontal);
         var vert = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Vertical);
 
-        for (int i = startIndex; i < endIndex; i++)
+        Tiles.Tile? tRight, tLeft, tUp, tDown, xInt;
+        if (tileTable.Intersections)
         {
-            var seg = pathSegments[i];
+            // abort if at least one tile is invalid
+            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TRight)) return;
+            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TLeft)) return;
+            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TUp)) return;
+            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TDown)) return;
+            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.XJunct)) return;
 
-            // turns
-            if (seg.Left && seg.Down)
-            {
-                RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
-            }
-            else if (seg.Left && seg.Up)
-            {
-                RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
-            }
-            else if (seg.Right && seg.Down)
-            {
-                RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
-            }
-            else if (seg.Right && seg.Up)
-            {
-                RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
-            }
+            // obtain tile inits from names
+            tRight = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TRight);
+            tLeft = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TLeft);
+            tUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TUp);
+            tDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TDown);
+            xInt = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.XJunct);
 
-            // straight
-            else if (seg.Down || seg.Up)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
+                var seg = pathSegments[i];
+
+                // obtain the number of connections
+                int count = 0;
+                if (seg.Left) count++;
+                if (seg.Right) count++;
+                if (seg.Up) count++;
+                if (seg.Down) count++;
+
+                // four connections = X intersection
+                if (count == 4)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(xInt, layer, seg.X, seg.Y, modifier);
+                }
+
+                // three connections = T intersection
+                else if (count == 3)
+                {
+                    if (seg.Left && seg.Right)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(seg.Up ? tDown : tUp, layer, seg.X, seg.Y, modifier);
+                    }
+                    else if (seg.Up && seg.Down)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(seg.Right ? tLeft : tRight, layer, seg.X, seg.Y, modifier);
+                    }
+                }
+
+                // two connections, normal
+                else
+                {
+                    if (seg.Left && seg.Down)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
+                    }
+                    else if (seg.Left && seg.Up)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
+                    }
+                    else if (seg.Right && seg.Down)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
+                    }
+                    else if (seg.Right && seg.Up)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
+                    }
+
+                    // straight
+                    else if (seg.Down || seg.Up)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
+                    }
+                    else if (seg.Right || seg.Left)
+                    {
+                        RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
+                    }
+                }
             }
-            else if (seg.Right || seg.Left)
+        }
+        else
+        {
+            for (int i = startIndex; i < endIndex; i++)
             {
-                RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
+                var seg = pathSegments[i];
+
+                // turns
+                if (seg.Left && seg.Down)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
+                }
+                else if (seg.Left && seg.Up)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
+                }
+                else if (seg.Right && seg.Down)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
+                }
+                else if (seg.Right && seg.Up)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
+                }
+
+                // straight
+                else if (seg.Down || seg.Up)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
+                }
+                else if (seg.Right || seg.Left)
+                {
+                    RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
+                }
             }
         }
     }
@@ -486,6 +579,11 @@ class AutotileCatalog
                         {
                             Name = createName
                         };
+                        autotile.TileTable.TRight = "Pipe TJunct E";
+                        autotile.TileTable.TUp = "Pipe TJunct N";
+                        autotile.TileTable.TLeft = "Pipe TJunct W";
+                        autotile.TileTable.TDown = "Pipe TJunct S";
+                        autotile.TileTable.XJunct = "Pipe XJunct";
 
                         AddAutotile(autotile, createCategory);
                         ImGui.CloseCurrentPopup();
