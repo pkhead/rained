@@ -8,7 +8,9 @@ using System.Text;
 class StandardPathAutotile : Autotile
 {
     public PathTileTable TileTable;
-    public override string[] MissingTiles { get => []; }
+    public override string[] MissingTiles { get => []; } // TODO: don't make MissingTiles a property of every autotile subclass
+
+    public override bool AllowIntersections { get => TileTable.Intersections; }
 
     private static FileBrowser? fileBrowser = null;
 
@@ -25,13 +27,6 @@ class StandardPathAutotile : Autotile
         TileTable.RightUp = ru;
         TileTable.Vertical = vert;
         TileTable.Horizontal = horiz;
-
-        // placeholder values
-        TileTable.TRight = "Pipe TJunct E";
-        TileTable.TUp = "Pipe TJunct N";
-        TileTable.TLeft = "Pipe TJunct W";
-        TileTable.TDown = "Pipe TJunct S";
-        TileTable.XJunct = "Pipe XJunct";
 
         CheckTiles();
         ProcessSearch();
@@ -507,6 +502,12 @@ class StandardPathAutotile : Autotile
             lines.Add("ru=" + TileTable.RightUp);
             lines.Add("vertical=" + TileTable.Vertical);
             lines.Add("horizontal=" + TileTable.Horizontal);
+            lines.Add("intersections=" + (TileTable.Intersections ? "true" : "false"));
+            lines.Add("tr=" + TileTable.TRight); 
+            lines.Add("tu=" + TileTable.TUp);
+            lines.Add("tl=" + TileTable.TLeft);
+            lines.Add("td=" + TileTable.TDown);
+            lines.Add("x="  + TileTable.XJunct);
         }
 
         // was found, overwrite lines
@@ -514,14 +515,20 @@ class StandardPathAutotile : Autotile
         {
             RainEd.Logger.Information("Overwrite autotile {Header}", header);
 
-            lines[location+1] = "thickness=" + PathThickness.ToString(CultureInfo.InvariantCulture);
-            lines[location+2] = "length=" + SegmentLength.ToString(CultureInfo.InvariantCulture);
-            lines[location+3] = "ld=" + TileTable.LeftDown;
-            lines[location+4] = "lu=" + TileTable.LeftUp;
-            lines[location+5] = "rd=" + TileTable.RightDown;
-            lines[location+6] = "ru=" + TileTable.RightUp;
-            lines[location+7] = "vertical=" + TileTable.Vertical;
-            lines[location+8] = "horizontal=" + TileTable.Horizontal;
+            lines[location+1]  = "thickness=" + PathThickness.ToString(CultureInfo.InvariantCulture);
+            lines[location+2]  = "length=" + SegmentLength.ToString(CultureInfo.InvariantCulture);
+            lines[location+3]  = "ld=" + TileTable.LeftDown;
+            lines[location+4]  = "lu=" + TileTable.LeftUp;
+            lines[location+5]  = "rd=" + TileTable.RightDown;
+            lines[location+6]  = "ru=" + TileTable.RightUp;
+            lines[location+7]  = "vertical=" + TileTable.Vertical;
+            lines[location+8]  = "horizontal=" + TileTable.Horizontal;
+            lines[location+9]  = "intersections=" + (TileTable.Intersections ? "true" : "false");
+            lines[location+10] = "tr=" + TileTable.TRight;  
+            lines[location+11] = "tu=" + TileTable.TUp;
+            lines[location+12] = "tl=" + TileTable.TLeft;
+            lines[location+13] = "td=" + TileTable.TDown;
+            lines[location+14] = "x="  + TileTable.XJunct;
         }
     }
 
@@ -545,7 +552,7 @@ class StandardPathAutotile : Autotile
         {
             RainEd.Logger.Information("Delete autotile {Header}", header);
 
-            lines.RemoveRange(location, 9);
+            lines.RemoveRange(location, 15);
 
             // remove newline before autotile definition
             if (location > 0 && string.IsNullOrWhiteSpace(lines[location-1]))

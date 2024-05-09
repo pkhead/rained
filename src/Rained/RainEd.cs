@@ -167,7 +167,10 @@ sealed class RainEd
         }
 
         string initPhase = null!;
+
+        #if !DEBUG
         try
+        #endif
         {
             AssetGraphics = new AssetGraphicsProvider();
             
@@ -218,16 +221,18 @@ sealed class RainEd
 
             Logger.Information("----- ASSET INIT DONE! -----\n\n\n");
         }
+        #if !DEBUG
         catch (Exception e)
         {
             _logger.Error(e.ToString());
-            
+
             if (e is RainEdStartupException)
                 throw;
             
             Boot.DisplayError("Could not start", $"There was an error while loading the {initPhase} Init.txt file:\n\n{e}\n\nThe application will now quit.");
             throw new RainEdStartupException();
         }
+        #endif
 
         Autotiles.CheckMissingTiles();
         level = Level.NewDefaultLevel();

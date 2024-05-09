@@ -85,6 +85,7 @@ abstract class Autotile
     public virtual void ConfigGui() {}
 
     public abstract string[] MissingTiles { get; }
+    public virtual bool AllowIntersections { get => false; }
 
     public void CheckMissingTiles()
     {
@@ -334,51 +335,61 @@ class AutotileCatalog
 
         int? thickness = null;
         int? length = null;
-        string? ld = null;
-        string? lu = null;
-        string? rd = null;
-        string? ru = null;
-        string? vertical = null;
-        string? horizontal = null;
+        Dictionary<string, string> tileDict = [];
 
         void SubmitAutotile()
         {
             if (autotileName == "") return;
-
+            
             if (
                 thickness is null ||
                 length is null ||
-                ld is null ||
-                lu is null ||
-                rd is null ||
-                ru is null ||
-                vertical is null ||
-                horizontal is null
+                !tileDict.TryGetValue("ld", out string? ld) ||
+                !tileDict.TryGetValue("lu", out string? lu) ||
+                !tileDict.TryGetValue("rd", out string? rd) ||
+                !tileDict.TryGetValue("ru", out string? ru) ||
+                !tileDict.TryGetValue("vertical", out string? vertical) ||
+                !tileDict.TryGetValue("horizontal", out string? horizontal) ||
+                !tileDict.TryGetValue("intersections", out string? intersections) ||
+                !tileDict.TryGetValue("tr", out string? tr) ||
+                !tileDict.TryGetValue("tu", out string? tu) ||
+                !tileDict.TryGetValue("tl", out string? tl) ||
+                !tileDict.TryGetValue("td", out string? td) ||
+                !tileDict.TryGetValue("x", out string? x)
             )
             {
-                RainEd.Logger.Error("Standard autotile {AutotileName} does not have a complete definition!");
-                return;
+                RainEd.Logger.Error("Standard autotile {AutotileName} does not have a complete definition!", autotileName);
             }
+            else
+            {
+                var autotile = new StandardPathAutotile(
+                    thickness.Value, length.Value,
+                    ld, lu, rd, ru,
+                    vertical, horizontal
+                ) {
+                    Name = autotileName
+                };
 
-            var autotile = new StandardPathAutotile(
-                thickness.Value, length.Value,
-                ld, lu, rd, ru,
-                vertical, horizontal
-            ) {
-                Name = autotileName
-            };
+                if (intersections == "true")
+                    autotile.TileTable.Intersections = true;
+                else if (intersections == "false")
+                    autotile.TileTable.Intersections = false;
+                else
+                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'intersections', got '{intersections}'.");
 
-            AddAutotile(autotile, groupName);
+                autotile.TileTable.TRight = tr;
+                autotile.TileTable.TUp = tu;
+                autotile.TileTable.TLeft = tl;
+                autotile.TileTable.TDown = td;
+                autotile.TileTable.XJunct = x;
+                                
+                AddAutotile(autotile, groupName);
+            }
 
             // reset values
             thickness = null;
             length = null;
-            ld = null;
-            lu = null;
-            rd = null;
-            ru = null;
-            vertical = null;
-            horizontal = null;
+            tileDict.Clear();
             autotileName = "";
             groupName = "Misc";
         }
@@ -437,34 +448,11 @@ class AutotileCatalog
                     case "length":
                         length = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
-
-                    case "ld":
-                        ld = value;
-                        break;
-
-                    case "lu":
-                        lu = value;
-                        break;
-
-                    case "rd":
-                        rd = value;
-                        break;
-
-                    case "ru":
-                        ru = value;
-                        break;
-
-                    case "vertical":
-                        vertical = value;
-                        break;
-
-                    case "horizontal":
-                        horizontal = value;
-                        break;
                     
-                    // unknown key
+                    // other key/value pair
                     default:
-                        throw new AutotileParseException($"Line {lineNo}: Unknown key '{key}'");
+                        tileDict.Add(key, value);
+                        break;
                 }
             }
         }
@@ -579,11 +567,6 @@ class AutotileCatalog
                         {
                             Name = createName
                         };
-                        autotile.TileTable.TRight = "Pipe TJunct E";
-                        autotile.TileTable.TUp = "Pipe TJunct N";
-                        autotile.TileTable.TLeft = "Pipe TJunct W";
-                        autotile.TileTable.TDown = "Pipe TJunct S";
-                        autotile.TileTable.XJunct = "Pipe XJunct";
 
                         AddAutotile(autotile, createCategory);
                         ImGui.CloseCurrentPopup();

@@ -22,14 +22,14 @@ class AutotilePathBuilder : IAutotileInputBuilder
         public int Index;
     }
 
-    private readonly Autotiles.Autotile autotile;
+    private readonly Autotile autotile;
 
     private readonly List<Vector2i> autotilePath = [];
     private readonly List<PathDirection> autotilePathDirs = [];
     private readonly List<PreviewSegment> previewSegments = [];
     private readonly float gridOffset;
 
-    public AutotilePathBuilder(Autotiles.Autotile autotile) {
+    public AutotilePathBuilder(Autotile autotile) {
         this.autotile = autotile;
         gridOffset = autotile.PathThickness % 2 == 0 ? 0f : 0.5f;
     }
@@ -79,7 +79,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
         down =  (curSeg.X == lastSeg.X && curSeg.Y + 1 == lastSeg.Y) || (curSeg.X == nextSeg.X && curSeg.Y + 1 == nextSeg.Y);
     }
 
-    private bool CanAppendPath(Autotiles.Autotile autotile, Vector2i newPos)
+    private bool CanAppendPath(Autotile autotile, Vector2i newPos)
     {
         var lastPos = autotilePath[^1];
         int dx = newPos.X - lastPos.X;
@@ -143,7 +143,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
         {
             // only place node if there isn't already a node here
             // and the CanAppendPath check returns true
-            if (!autotilePath.Contains(pos))
+            if (autotile.AllowIntersections || !autotilePath.Contains(pos))
             {
                 if (CanAppendPath(autotile, pos))
                 {
