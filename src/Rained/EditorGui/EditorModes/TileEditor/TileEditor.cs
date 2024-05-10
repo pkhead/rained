@@ -553,9 +553,3 @@ partial class TileEditor : IEditorMode
         }
     }
 }
-
-interface IAutotileInputBuilder
-{
-    void Update();
-    void Finish(int layer, bool force, bool geometry);
-}
