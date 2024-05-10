@@ -8,8 +8,6 @@ class StandardPathAutotile : Autotile
     public PathTileTable TileTable;
     public override bool AllowIntersections { get => TileTable.AllowJunctions; }
 
-    private static FileBrowser? fileBrowser = null;
-
     public StandardPathAutotile(int thickness, int length, string ld, string lu, string rd, string ru, string vert, string horiz)
     {
         Name = "My Autotile";
@@ -149,118 +147,8 @@ class StandardPathAutotile : Autotile
         ImGui.SameLine();
 
         RainEd.Instance.Autotiles.RenderRenamePopup();
-
-        if (ImGui.Button("Convert to Plugin"))
-        {
-            fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, ConvertToPlugin, Path.Combine(Boot.AppDataPath, "scripts", "autoload", "autotiles"));
-            fileBrowser.AddFilter("Lua script", ".lua");
-        }
-
-        FileBrowser.Render(ref fileBrowser);
     }
-
-    private static string StringLiteral(string str)
-    {
-        str = str.Replace("\"", "\\\"");
-        return "\"" + str + "\"";
-    }
-
-    private const string luaScriptTemplate =
-        """
-        local helpers = require("helpers") -- load the helpers.lua module
-
-        -- setup autotile data
-        local autotile = rained.createAutotile({0})
-        autotile.type = "{1}"
-
-        -- Rained will not allow the user to use this autotile
-        -- if any of the tiles in this table are not installed
-        autotile.requiredTiles = {{
-            {8},
-            {9},
-            {4},
-            {5},
-            {6},
-            {7}
-        }}
-
-        -- table of tiles to use for the standard autotiler function
-        -- which is helpers.autotilePath
-        local tileTable = {{
-            ld = {4},
-            lu = {5},
-            rd = {6},
-            ru = {7},
-            vertical = {8},
-            horizontal = {9}
-        }}
-
-        -- this is the callback function that Rained invokes when the user
-        -- wants to autotile a given path
-        ---@param layer integer The layer to run the autotiler on
-        ---@param segments PathSegment[] The list of path segments
-        ---@param forceModifier ForceModifier Force-placement mode, as a string. Can be nil, "force", or "geometry".
-        function autotile:tilePath(layer, segments, forceModifier)
-            helpers.autotilePath(tileTable, layer, segments, forceModifier)
-        end
-        """;
-
-    private void ConvertToPlugin(string? filePath)
-    {
-        if (string.IsNullOrEmpty(filePath)) return;
-        
-        // check if save location is in the autoload folder
-        var relativePath = Path.GetRelativePath(Path.Combine(Boot.AppDataPath, "scripts", "autoload"), filePath);
-        if (relativePath[0] == '.')
-        {
-            RainEd.Instance.ShowNotification("The save location should be in the autoload folder!");
-            return;
-        }
-
-        var catName = RainEd.Instance.Autotiles.GetCategoryNameOf(this);
-
-        var luaScript = string.Format(luaScriptTemplate,
-            // autotile name[, category]
-            catName == "Misc" ? StringLiteral(Name) : StringLiteral(Name) + ", " + StringLiteral(catName),
-
-            // autotile type
-            "path",
-
-            // path thickness & segment length
-            PathThickness, SegmentLength,
-
-            // tile table
-            StringLiteral(TileTable.LeftDown),
-            StringLiteral(TileTable.LeftUp),
-            StringLiteral(TileTable.RightDown),
-            StringLiteral(TileTable.RightUp),
-            StringLiteral(TileTable.Vertical),
-            StringLiteral(TileTable.Horizontal)
-        );
-
-        File.WriteAllText(filePath, luaScript);
-        RainEd.Instance.Autotiles.DeleteStandard(this);
-
-        // run the lua file using require
-        // (also, cut off the .lua file extension at the end so that
-        // it works properly)
-        var L = LuaInterface.NLuaState.State;
-        var requirePath = "autoload." + relativePath[..^4].Replace(Path.DirectorySeparatorChar, '.');
-        
-        // first, unload the "package"
-        L.GetGlobal("package");
-        L.GetField(-1, "loaded");
-        L.PushString(requirePath);
-        L.PushNil();
-        L.SetTable(-3);
-        L.Pop(2); // pop package and package.loaded
-
-        // then, load it again.
-        L.GetGlobal("require");
-        L.PushString(requirePath);
-        L.Call(1, 0);
-    }
-
+    
     private void TileButton(ref string tile, string label, TileType tileType)
     {
         bool invalid = IsInvalid(tile, tileType);
