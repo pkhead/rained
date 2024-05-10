@@ -410,6 +410,10 @@ static class LuaInterface
         });
         luaState.State.SetField(-2, "registerCommand");
 
+        // function autotilePath
+        luaState.State.PushCFunction(LuaStandardPathAutotile);
+        luaState.State.SetField(-2, "autotilePath");
+
         return 1;
     }
 
@@ -447,6 +451,119 @@ static class LuaInterface
         RainEd.Instance.Autotiles.AddAutotile(autotile.autotile, category);
         luaState.Push(autotile);
         return 1;
+    }
+
+    private static int LuaStandardPathAutotile(nint luaStatePtr)
+    {
+        var state = luaState.State;
+
+        state.CheckType(1, KeraLua.LuaType.Table); // tile table
+        int layer = (int) state.CheckInteger(2) - 1;
+        state.CheckType(3, KeraLua.LuaType.Table); // segment list
+        bool allowIntersections = state.ToBoolean(4);
+        
+        string modifierStr = "";
+        if (!state.IsNoneOrNil(5))
+            modifierStr = state.CheckString(5);
+
+        int startIndex = 0;
+        int endIndex = (int) state.Length(3);
+
+        // optional start index parameter
+        if (!state.IsNoneOrNil(6))
+            startIndex = (int) state.CheckInteger(6) - 1;
+        
+        // optional end index parameter
+        if (!state.IsNoneOrNil(7))
+            endIndex = (int) state.CheckInteger(7);
+        
+        // verify layer argument
+        if (layer < 0 || layer > 2) return 0;
+        
+        var tileTable = new PathTileTable()
+        {
+            Intersections = allowIntersections
+        };
+
+        // parse the tile table
+        if (state.GetField(1, "ld") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.LeftDown = state.ToString(-1);
+        if (state.GetField(1, "lu") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.LeftUp = state.ToString(-1);
+        if (state.GetField(1, "rd") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.RightDown = state.ToString(-1);
+        if (state.GetField(1, "ru") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.RightUp = state.ToString(-1);
+        if (state.GetField(1, "vertical") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.Vertical = state.ToString(-1);
+        if (state.GetField(1, "horizontal") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+        tileTable.Horizontal = state.ToString(-1);
+
+        state.Pop(6);
+
+        if (allowIntersections)
+        {
+            if (state.GetField(1, "tr") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.TRight = state.ToString(-1);
+            if (state.GetField(1, "tu") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.TUp = state.ToString(-1);
+            if (state.GetField(1, "tl") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.TLeft = state.ToString(-1);
+            if (state.GetField(1, "td") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.TDown = state.ToString(-1);
+            if (state.GetField(1, "x") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.XJunct = state.ToString(-1);
+
+            state.Pop(5);
+        }
+
+        // parse path segment table
+        var pathSegments = new List<PathSegment>();
+
+        state.PushCopy(3); // push segment table onto stack
+        
+        // begin looping through table
+        state.PushNil();
+        while (state.Next(-2))
+        {
+            // the value is at the top of the stack
+            if (!state.IsTable(-1)) return state.Error("invalid segment table");
+            int tableIndex = state.GetTop();
+            var segment = new PathSegment();
+
+            if (state.GetField(tableIndex, "right") != KeraLua.LuaType.Boolean) return state.Error("invalid segment table");
+            segment.Right = state.ToBoolean(-1);
+            if (state.GetField(tableIndex, "up") != KeraLua.LuaType.Boolean) return state.Error("invalid segment table");
+            segment.Up = state.ToBoolean(-1);
+            if (state.GetField(tableIndex, "left") != KeraLua.LuaType.Boolean) return state.Error("invalid segment table");
+            segment.Left = state.ToBoolean(-1);
+            if (state.GetField(tableIndex, "down") != KeraLua.LuaType.Boolean) return state.Error("invalid segment table");
+            segment.Down = state.ToBoolean(-1);
+            if (state.GetField(tableIndex, "x") != KeraLua.LuaType.Number) return state.Error("invalid segment table");
+            segment.X = (int) state.ToNumber(-1);
+            if (state.GetField(tableIndex, "y") != KeraLua.LuaType.Number) return state.Error("invalid segment table");
+            segment.Y = (int) state.ToNumber(-1);
+
+            pathSegments.Add(segment);
+
+            state.Pop(6); // pop retrieved values of table
+            state.Pop(1); // pop value
+        }
+
+        // pop the segment table
+        state.Pop(1);
+
+        var modifier = modifierStr switch
+        {
+            "geometry" => TilePlacementMode.Geometry,
+            "force" => TilePlacementMode.Force,
+            _ => TilePlacementMode.Normal
+        };
+
+        // finally, run the autotiler
+        Autotile.StandardTilePath(tileTable, layer, [..pathSegments], modifier, startIndex, endIndex);
+
+        return 0;
     }
 
     private static void ShowNotification(object? msg)

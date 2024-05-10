@@ -1,7 +1,7 @@
 local helpers = require("helpers")
 
 -- setup autotile data
-local autotile = rained.createAutotile("SH pattern box")
+local autotile = rained.createAutotile("SH pattern box", "Pattern Boxes")
 autotile.type = "rect"
 
 -- Rained will not allow the user to use this autotile

@@ -23,10 +23,33 @@ function rained.registerCommand(name, callback) end
 
 ---Create an autotile
 ---@param name string The name of the autotile.
----@param category string? The category to place the autotile in. Defaults to Misc
----@return Autotile autotile The new autotile
+---@param category string? The category to place the autotile in. Defaults to Misc.
+---@return Autotile autotile The new autotile.
 ---@overload fun(name: string)
 function rained.createAutotile(name, category) end
+
+---@class TileTable
+---@field ld string
+---@field lu string
+---@field rd string
+---@field ru string
+---@field vertical string
+---@field horizontal string
+---@field tr string?
+---@field tu string?
+---@field tl string?
+---@field td string?
+---@field x string?
+
+---Perform standard path autotiling
+---@param tileTable TileTable
+---@param layer integer The layer to run the autotiler on.
+---@param segments PathSegment[] The segments to autotile with.
+---@param intersect boolean True if path intersections should be handled.
+---@param startIndex integer? The index of the starting segment. Defaults to 1.
+---@param endIndex integer? The number of segments to place. Defaults to the length of the segment array.
+---@param forceModifier ForceModifier
+function rained.autotilePath(tileTable, layer, segments, intersect, forceModifier, startIndex, endIndex) end
 
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check
@@ -74,11 +97,9 @@ function rained.deleteTile(x, y, layer, removeGeo) end
 ---| "geometry"
 
 ---@class Autotile
----@field name string The name of the autotile
----@field type AutotileType The fill type of the autotile
----@field pathThickness integer The width/thickness of the path
----@field segmentLength integer The size of each path segment
----@field requiredTiles string[]? The list of all the tiles required by the autotile
+---@field name string The name of the autotile.
+---@field type AutotileType The fill type of the autotile.
+---@field requiredTiles string[]? The list of all the tiles required by the autotile.
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
 ---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
 local Autotile = {}

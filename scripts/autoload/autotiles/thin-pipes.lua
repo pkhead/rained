@@ -6,6 +6,7 @@ local autotile = rained.createAutotile("Thin Pipes", "Pipes")
 autotile.type = "path"
 autotile:addOption("cap", "Cap with inward pipes", true)
 autotile:addOption("plain", "Use plain pipes", false)
+autotile:addOption("junctions", "Allow Junctions", false)
 
 -- Rained will not allow the user to use this autotile
 -- if any of the tiles in this table are not installed
@@ -36,12 +37,17 @@ local tileTable = {
     lu = "Pipe WN",
     rd = "Pipe ES",
     ru = "Pipe EN",
+    tr = "Pipe TJunct E",
+    tu = "Pipe TJunct N",
+    tl = "Pipe TJunct W",
+    td = "Pipe TJunct S",
+    x = "Pipe XJunct",
 
     -- these values will be set in the autotile callback function
     -- to adjust according the "plain" option
     -- before calling the standard autotiler
     vertical = "Vertical Pipe",
-    horizontal = "Horizontal Pipe"
+    horizontal = "Horizontal Pipe",
 }
 
 ---Helper function to place an inward pipe at a tile cap
@@ -59,7 +65,7 @@ local function placePathCap(layer, segments, index, forceModifier)
     if seg.down then neighbors = neighbors + 1 end
 
     if neighbors > 1 then
-        helpers.autotilePath(tileTable, layer, segments, forceModifier, index, index)
+        rained.autotilePath(tileTable, layer, segments, autotile:getOption("junctions"), forceModifier, index, index)
     end
 
     if seg.left then
@@ -94,7 +100,7 @@ function autotile:tilePath(layer, segments, forceModifier)
     if self:getOption("cap") and #segments >= 2 then
         -- first, call the standard autotiler for the non-cap segments
         -- so, ignoring the first item and last item
-        helpers.autotilePath(tileTable, layer, segments, forceModifier, 2, #segments - 1)
+        rained.autotilePath(tileTable, layer, segments, autotile:getOption("junctions"), forceModifier, 2, #segments - 1)
 
         -- then, place the cap segments at the ends of the path
         placePathCap(layer, segments, 1, forceModifier)
@@ -103,6 +109,6 @@ function autotile:tilePath(layer, segments, forceModifier)
     -- the user does not want to place inward pipes on the caps
     else
         -- run the standard autotiler for the entire path
-        helpers.autotilePath(tileTable, layer, segments, forceModifier)
+        rained.autotilePath(tileTable, layer, segments, autotile:getOption("junctions"), forceModifier)
     end
 end
