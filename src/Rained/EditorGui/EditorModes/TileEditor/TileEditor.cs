@@ -22,10 +22,17 @@ partial class TileEditor : IEditorMode
     private int selectedMatGroup = 0;
 
     private bool forcePlace, modifyGeometry, disallowMatOverwrite;
+    private bool isMouseHeldInMode = false;
+
+    // true if attaching a chain on a chain holder
+    private bool chainHolderMode = false;
+    private int chainHolderX = -1;
+    private int chainHolderY = -1;
+    private int chainHolderL = -1;
 
     private int materialBrushSize = 1;
 
-    private Autotiles.Autotile? selectedAutotile = null;
+    private Autotile? selectedAutotile = null;
     private IAutotileInputBuilder? activePathBuilder = null;
 
     // this is used to fix force placement when
@@ -38,6 +45,11 @@ partial class TileEditor : IEditorMode
         this.window = window;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
         selectedMaterial = 1;
+
+        RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
+        {
+            chainHolderMode = false;
+        };
     }
 
     public void Load()
@@ -53,6 +65,7 @@ partial class TileEditor : IEditorMode
         lastPlaceX = -1;
         lastPlaceY = -1;
         lastPlaceL = -1;
+        chainHolderMode = false;
     }
 
     private static void DrawTile(int tileInt, int x, int y, float lineWidth, Color color)
@@ -204,114 +217,139 @@ partial class TileEditor : IEditorMode
         forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
         disallowMatOverwrite = KeyShortcuts.Active(KeyShortcut.TileIgnoreDifferent);
 
-        if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
+        if (chainHolderMode)
         {
-            if (modifyGeometry)
-                window.StatusText = "Force Geometry";
-            else if (forcePlace)
-                window.StatusText = "Force Placement";
+            window.StatusText = "Chain Attach";
         }
-        else if (selectionMode == SelectionMode.Materials)
+        else
         {
-            if (disallowMatOverwrite)
-                    window.StatusText = "Disallow Overwrite";
+            if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
+            {
+                if (modifyGeometry)
+                    window.StatusText = "Force Geometry";
+                else if (forcePlace)
+                    window.StatusText = "Force Placement";
+            }
+            else if (selectionMode == SelectionMode.Materials)
+            {
+                if (disallowMatOverwrite)
+                        window.StatusText = "Disallow Overwrite";
+            }
         }
 
         if (window.IsViewportHovered)
         {
             // begin change if left or right button is down
             // regardless of what it's doing
-            if (window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right))
+            if (window.IsMouseDown(ImGuiMouseButton.Left) || KeyShortcuts.Active(KeyShortcut.RightMouse))
             {
                 if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                 isToolActive = true;
             }
 
-            // render selected tile
-            switch (selectionMode)
+            if (chainHolderMode)
             {
-                case SelectionMode.Tiles:
-                    ProcessTiles();
-                    break;
-
-                case SelectionMode.Materials:
-                    ProcessMaterials();
-                    break;
-
-                case SelectionMode.Autotiles:
-                    ProcessAutotiles();
-                    break;
+                ProcessChainAttach();
+                isMouseHeldInMode = false;
             }
-
-            // material and tile eyedropper and removal
-            if (window.IsMouseInLevel())
+            else
             {
-                int tileLayer = window.WorkLayer;
-                int tileX = window.MouseCx;
-                int tileY = window.MouseCy;
-
-                ref var mouseCell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
-
-                // if this is a tile body, find referenced tile head
-                if (mouseCell.HasTile() && mouseCell.TileHead is null)
+                if (isToolActive && !wasToolActive)
                 {
-                    tileLayer = mouseCell.TileLayer;
-                    tileX = mouseCell.TileRootX;
-                    tileY = mouseCell.TileRootY;
-
-                    if (level.Layers[tileLayer, tileX, tileY].TileHead is null)
-                        ImGui.SetTooltip("Detached tile body");
+                    isMouseHeldInMode = true;
                 }
 
-
-                // eyedropper
-                if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
+                if (!isToolActive && wasToolActive)
                 {
-                    // tile eyedropper
-                    if (mouseCell.HasTile())
+                    isMouseHeldInMode = false;
+                }
+                
+                // render selected tile
+                switch (selectionMode)
+                {
+                    case SelectionMode.Tiles:
+                        ProcessTiles();
+                        break;
+
+                    case SelectionMode.Materials:
+                        ProcessMaterials();
+                        break;
+
+                    case SelectionMode.Autotiles:
+                        ProcessAutotiles();
+                        break;
+                }
+
+                // material and tile eyedropper and removal
+                if (window.IsMouseInLevel())
+                {
+                    int tileLayer = window.WorkLayer;
+                    int tileX = window.MouseCx;
+                    int tileY = window.MouseCy;
+
+                    ref var mouseCell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+
+                    // if this is a tile body, find referenced tile head
+                    if (mouseCell.HasTile() && mouseCell.TileHead is null)
                     {
-                        var tile = level.Layers[tileLayer, tileX, tileY].TileHead;
-                        
-                        if (tile is null)
-                        {
-                            RainEd.Logger.Error("Could not find tile head");
-                        }
-                        else
-                        {
-                            forceSelection = SelectionMode.Tiles;
-                            selectedTile = tile;
-                            selectedTileGroup = selectedTile.Category.Index;
-                        }
+                        tileLayer = mouseCell.TileLayer;
+                        tileX = mouseCell.TileRootX;
+                        tileY = mouseCell.TileRootY;
+
+                        if (level.Layers[tileLayer, tileX, tileY].TileHead is null)
+                            ImGui.SetTooltip("Detached tile body");
                     }
 
-                    // material eyedropper
-                    else
-                    {
-                        if (mouseCell.Material > 0)
-                        {
-                            selectedMaterial = mouseCell.Material;
-                            var matInfo = matDb.GetMaterial(selectedMaterial);
 
-                            // select tile group that contains this material
-                            var idx = matDb.Categories.IndexOf(matInfo.Category);
-                            if (idx == -1)
+                    // eyedropper
+                    if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
+                    {
+                        // tile eyedropper
+                        if (mouseCell.HasTile())
+                        {
+                            var tile = level.Layers[tileLayer, tileX, tileY].TileHead;
+                            
+                            if (tile is null)
                             {
-                                RainEd.Instance.ShowNotification("Error");
-                                RainEd.Logger.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
+                                RainEd.Logger.Error("Could not find tile head");
                             }
                             else
                             {
-                                selectedMatGroup = idx;
-                                forceSelection = SelectionMode.Materials;
+                                forceSelection = SelectionMode.Tiles;
+                                selectedTile = tile;
+                                selectedTileGroup = selectedTile.Category.Index;
+                            }
+                        }
+
+                        // material eyedropper
+                        else
+                        {
+                            if (mouseCell.Material > 0)
+                            {
+                                selectedMaterial = mouseCell.Material;
+                                var matInfo = matDb.GetMaterial(selectedMaterial);
+
+                                // select tile group that contains this material
+                                var idx = matDb.Categories.IndexOf(matInfo.Category);
+                                if (idx == -1)
+                                {
+                                    RainEd.Instance.ShowNotification("Error");
+                                    RainEd.Logger.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
+                                }
+                                else
+                                {
+                                    selectedMatGroup = idx;
+                                    forceSelection = SelectionMode.Materials;
+                                }
                             }
                         }
                     }
-                }
 
-                // remove tile on right click
-                if (selectionMode == SelectionMode.Tiles && window.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
-                {
-                    level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
+                    // remove tile on right click
+                    if (selectionMode == SelectionMode.Tiles && (isMouseHeldInMode && window.IsMouseDown(ImGuiMouseButton.Right)) && mouseCell.HasTile())
+                    {
+                        level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
+                    }
                 }
             }
         }
@@ -325,6 +363,29 @@ partial class TileEditor : IEditorMode
         }
         
         Raylib.EndScissorMode();
+    }
+
+    private void ProcessChainAttach()
+    {
+        var chainX = (int) Math.Floor(window.MouseCellFloat.X + 0.5f);
+        var chainY = (int) Math.Floor(window.MouseCellFloat.Y + 0.5f);
+
+        RainEd.Instance.Level.SetChainData(
+            chainHolderL, chainHolderX, chainHolderY,
+            chainX - 1, chainY - 1
+        );
+
+        // left-click to confirm
+        if (window.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            chainHolderMode = false;
+        }
+        // escape or right click to abort
+        else if (EditorWindow.IsKeyPressed(ImGuiKey.Escape) || KeyShortcuts.Activated(KeyShortcut.RightMouse))
+        {
+            chainHolderMode = false;
+            RainEd.Instance.Level.RemoveChainData(chainHolderL, chainHolderX, chainHolderY);
+        }
     }
 
     private void ProcessMaterials()
@@ -365,10 +426,13 @@ partial class TileEditor : IEditorMode
 
         // place material
         int placeMode = 0;
-        if (window.IsMouseDown(ImGuiMouseButton.Left))
-            placeMode = 1;
-        else if (window.IsMouseDown(ImGuiMouseButton.Right))
-            placeMode = 2;
+        if (isMouseHeldInMode)
+        {
+            if (window.IsMouseDown(ImGuiMouseButton.Left))
+                placeMode = 1;
+            else if (window.IsMouseDown(ImGuiMouseButton.Right))
+                placeMode = 2;
+        }
         
         if (placeMode != 0)
         {
@@ -479,7 +543,7 @@ partial class TileEditor : IEditorMode
         );
 
         // place tile on click
-        if (window.IsMouseDown(ImGuiMouseButton.Left))
+        if (isMouseHeldInMode && window.IsMouseDown(ImGuiMouseButton.Left))
         {
             if (validationStatus == TilePlacementStatus.Success)
             {
@@ -500,6 +564,14 @@ partial class TileEditor : IEditorMode
                     lastPlaceX = window.MouseCx;
                     lastPlaceY = window.MouseCy;
                     lastPlaceL = window.WorkLayer;
+
+                    if (selectedTile.Tags.Contains("Chain Holder"))
+                    {
+                        chainHolderMode = true;
+                        chainHolderX = lastPlaceX;
+                        chainHolderY = lastPlaceY;
+                        chainHolderL = lastPlaceL;
+                    }
                 }
             }
             else if (window.IsMouseClicked(ImGuiMouseButton.Left))

@@ -202,7 +202,7 @@ static class LevelSerialization
                                 ref var cell = ref level.Layers[z,x,y]; 
                                 cell.TileHead = tile;
 
-                                if (tile.Tags.Contains("Chain Holder"))
+                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2)
                                 {
                                     var chainPos = (Vector2) data.values[2];
                                     level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
