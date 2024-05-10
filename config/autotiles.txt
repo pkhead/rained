@@ -1,5 +1,21 @@
 # this is where standard path autotilers created from the GUI are saved/loaded
 
+[Std Thin Pipes]
+thickness=1
+length=1
+ld=Pipe WS
+lu=Pipe WN
+rd=Pipe ES
+ru=Pipe EN
+vertical=Vertical Pipe
+horizontal=Horizontal Pipe
+intersections=true
+tr=Pipe TJunct E
+tu=Pipe TJunct N
+tl=Pipe TJunct W
+td=Pipe TJunct S
+x=Pipe XJunct
+
 [Big Pipe:Pipes]
 thickness=6
 length=1
@@ -9,3 +25,19 @@ rd=Big Pipe RD
 ru=Big Pipe RU
 vertical=Big Pipe Vertical
 horizontal=Big Pipe Horizontal
+
+[Std Thick Pipes]
+thickness=2
+length=1
+ld=Thick Pipe WS
+lu=Thick Pipe WN
+rd=Thick Pipe ES
+ru=Thick Pipe EN
+vertical=Thick pipe vertical filler
+horizontal=Thick pipe horizontal filler
+intersections=true
+tr=Thick Pipe WS
+tu=Thick Pipe WN
+tl=Thick Pipe ES
+td=Thick Pipe EN
+x=Thick Pipe End Piece
