@@ -630,28 +630,17 @@ static class LuaInterface
                 if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
                 if (layer < 0 || layer > 2) return 0;
 
-                ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+                Tiles.Tile? tile = null;
 
-                if (tileName is null)
-                {
-                    cell.TileHead = null;
-                    if (cell.TileRootX == x && cell.TileRootY == y && cell.TileLayer == layer)
-                    {
-                        cell.TileRootX = -1;
-                        cell.TileRootY = -1;
-                        cell.TileLayer = -1;
-                    }
-                }
-                else
+                if (tileName is not null)
                 {
                     if (!RainEd.Instance.TileDatabase.HasTile(tileName))
                         throw new LuaHelpers.LuaErrorException($"tile '{tileName}' does not exist");
                     
-                    cell.TileHead = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
-                    cell.TileRootX = x;
-                    cell.TileRootY = y;
-                    cell.TileLayer = layer;
+                    tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
                 }
+
+                RainEd.Instance.Level.SetTileHead(layer, x, y, tile);
 
                 return 0;
             });
@@ -674,13 +663,7 @@ static class LuaInterface
                 if (!RainEd.Instance.Level.IsInBounds(tileRootX, tileRootY) || tileLayer < 0 || tileLayer > 2)
                     throw new LuaHelpers.LuaErrorException("target tile root is out of bounds");
 
-                ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
-                if (tileRootX != x || tileRootY != y || tileLayer != layer)
-                    cell.TileHead = null;
-                
-                cell.TileRootX = tileRootX;
-                cell.TileRootY = tileRootY;
-                cell.TileLayer = tileLayer;
+                RainEd.Instance.Level.SetTileRoot(layer, x, y, tileRootX, tileRootY, tileLayer);
 
                 return 0;
             });
@@ -696,10 +679,7 @@ static class LuaInterface
                 if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
                 if (layer < 0 || layer > 2) return 0;
 
-                ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
-                cell.TileRootX = -1;
-                cell.TileRootY = -1;
-                cell.TileLayer = -1;
+                RainEd.Instance.Level.ClearTileRoot(layer, x, y);
                 
                 return 0;
             });

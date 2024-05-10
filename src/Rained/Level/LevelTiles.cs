@@ -1,3 +1,4 @@
+using System.Numerics;
 using RainEd.Tiles;
 namespace RainEd;
 
@@ -18,6 +19,8 @@ enum TilePlacementMode : int
 
 partial class Level
 {
+    private readonly Dictionary<(int, int, int), Vector2i> chainData = [];
+
     public TilePlacementStatus ValidateTilePlacement(Tile tile, int tileLeft, int tileTop, int layer, bool force)
     {
         for (int x = 0; x < tile.Width; x++)
@@ -188,17 +191,19 @@ partial class Level
                 // tile first 
                 if (specInt >= 0)
                 {
-                    Layers[layer, gx, gy].TileRootX = tileRootX;
-                    Layers[layer, gx, gy].TileRootY = tileRootY;
-                    Layers[layer, gx, gy].TileLayer = layer;
+                    ref var cell = ref Layers[layer, gx, gy];
+                    cell.TileRootX = tileRootX;
+                    cell.TileRootY = tileRootY;
+                    cell.TileLayer = layer;
                 }
 
                 // tile second layer
                 if (spec2Int >= 0 && layer < 2)
                 {
-                    Layers[layer+1, gx, gy].TileRootX = tileRootX;
-                    Layers[layer+1, gx, gy].TileRootY = tileRootY;
-                    Layers[layer+1, gx, gy].TileLayer = layer;
+                    ref var cell = ref Layers[layer+1, gx, gy];
+                    cell.TileRootX = tileRootX;
+                    cell.TileRootY = tileRootY;
+                    cell.TileLayer = layer;
                 }
             }
         }
@@ -270,6 +275,9 @@ partial class Level
 
         // remove tile root
         Layers[layer, tileRootX, tileRootY].TileHead = null;
+
+        // remove chain data
+        RemoveChainData(layer, tileRootX, tileRootY);
     }
 
     /// <summary>
@@ -306,7 +314,114 @@ partial class Level
             cell.TileLayer = -1;
             cell.TileRootX = -1;
             cell.TileRootY = -1;
+            RemoveChainData(layer, x, y);
+            
             return true;
         }
+    }
+
+    private void RemoveChainData(int layer, int x, int y)
+    {
+        var chainKey = (layer, x, y);
+        chainData.Remove(chainKey);
+    }
+
+    /// <summary>
+    /// Set the chain data for a given chain holder tile head.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="chainEndX"></param>
+    /// <param name="chainEndY"></param>
+    /// <exception cref="Exception">Thrown if the given tile head is nonexistent or is not a chain holder.</exception>
+    public void SetChainData(int layer, int x, int y, int chainEndX, int chainEndY)
+    {
+        var tileHead = Layers[layer, x, y].TileHead;
+        if (tileHead is null || !tileHead.Tags.Contains("Chain Holder"))
+            throw new Exception("Attempt to set chain data for a tile that is either nonexistent or isn't a chain holder.");
+        
+        chainData[(layer, x, y)] = new Vector2i(chainEndX, chainEndY);
+    }
+
+    /// <summary>
+    /// Try to get the chain data for a given cell.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="chainEndPos"></param>
+    /// <returns>True if the given cell is a chain holder tile head, false if not.</returns>
+    public bool TryGetChainData(int layer, int x, int y, out Vector2i chainEndPos)
+    {
+        return chainData.TryGetValue((layer, x, y), out chainEndPos);
+    }
+
+    /// <summary>
+    /// Set the tile head data for a given cell.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="tile"></param>
+    public void SetTileHead(int layer, int x, int y, Tile? tile)
+    {
+        ref var cell = ref Layers[layer, x, y];
+
+        if (tile is null)
+        {
+            cell.TileHead = null;
+            if (cell.TileRootX == x && cell.TileRootY == y && cell.TileLayer == layer)
+            {
+                cell.TileRootX = -1;
+                cell.TileRootY = -1;
+                cell.TileLayer = -1;
+                RemoveChainData(layer, x, y);
+            }
+        }
+        else
+        {
+            cell.TileHead = tile;
+            cell.TileRootX = x;
+            cell.TileRootY = y;
+            cell.TileLayer = layer;
+        }
+    }
+
+    /// <summary>
+    /// Set tile root data for a given cell.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="rootX"></param>
+    /// <param name="rootY"></param>
+    /// <param name="rootL"></param>
+    public void SetTileRoot(int layer, int x, int y, int rootX, int rootY, int rootL)
+    {
+        ref var cell = ref Layers[layer, x, y];
+        if (rootX != x || rootY != y || rootL != layer)
+        {
+            cell.TileHead = null;
+            RemoveChainData(layer, x, y);
+        }
+        
+        cell.TileRootX = rootX;
+        cell.TileRootY = rootY;
+        cell.TileLayer = rootL;
+    }
+
+    /// <summary>
+    /// Clear tile root data for a given cell.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    public void ClearTileRoot(int layer, int x, int y)
+    {
+        ref var cell = ref Layers[layer, x, y];
+        cell.TileRootX = -1;
+        cell.TileRootY = -1;
+        cell.TileLayer = -1;
     }
 }

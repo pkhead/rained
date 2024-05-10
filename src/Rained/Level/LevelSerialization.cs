@@ -205,8 +205,7 @@ static class LevelSerialization
                                 if (tile.Tags.Contains("Chain Holder"))
                                 {
                                     var chainPos = (Vector2) data.values[2];
-                                    cell.ChainX = (int)chainPos.X - 1;
-                                    cell.ChainY = (int)chainPos.Y - 1;
+                                    level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
                                 }
                             }
 
@@ -669,12 +668,12 @@ static class LevelSerialization
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
 
-                        if (cell.ChainX != int.MinValue || cell.ChainY != int.MinValue)
+                        if (level.TryGetChainData(l, x, y, out var chainEndPos))
                         {
                             output.AppendFormat(
                                 "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", point({3}, {4})]]",
                                 group, sub, name,
-                                cell.ChainX + 1, cell.ChainY + 1
+                                chainEndPos.X + 1, chainEndPos.Y + 1
                             );
                         }
                         else

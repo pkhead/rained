@@ -63,11 +63,6 @@ struct LevelCell
     // As the tile root, reference to the tile, or null if no tile here
     public Tiles.Tile? TileHead = null;
 
-    // chain holder functionality
-    // this is a particularly strange thing
-    public int ChainX = int.MinValue;
-    public int ChainY = int.MinValue;
-
     public readonly bool HasTile() => TileRootX >= 0 || TileRootY >= 0 || TileHead is not null;
 
     public LevelCell() {}
