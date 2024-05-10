@@ -6,15 +6,6 @@ using Autotiles;
 
 class AutotilePathBuilder : IAutotileInputBuilder
 {
-    [Flags]
-    enum PathDirection
-    {
-        Left = 1,
-        Right = 2,
-        Up = 4,
-        Down = 8
-    };
-
     struct PreviewSegment
     {
         public Vector2 Center;

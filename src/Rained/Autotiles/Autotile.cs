@@ -17,6 +17,15 @@ struct PathSegment(int x, int y)
     public int Y = y;
 }
 
+[Flags]
+enum PathDirection
+{
+    Right = 1,
+    Up = 2,
+    Left = 4,
+    Down = 8
+};
+
 /// <summary>
 /// A table of segment directions associated with tile names.
 /// </summary>
@@ -87,15 +96,161 @@ abstract class Autotile
 
     public virtual bool AllowIntersections { get => false; }
 
-    enum Direction
+    enum Direction : int
     {
-        Right, Up, Left, Down
+        Right = 0,
+        Up = 1,
+        Left = 2,
+        Down = 3
     };
 
-    // C# version of lua autotilePath.
-    // I suppose I could just make it so you can call this function directly within Lua,
-    // but I don't feel like it. Also, the Lua version is probably a good
-    // example on how to use autotiling
+    readonly struct InstancedPathTileTable
+    {
+        public readonly Tiles.Tile? LeftDown;
+        public readonly Tiles.Tile? LeftUp;
+        public readonly Tiles.Tile? RightDown;
+        public readonly Tiles.Tile? RightUp;
+        public readonly Tiles.Tile? Vertical;
+        public readonly Tiles.Tile? Horizontal;
+
+        public readonly Tiles.Tile? TRight;
+        public readonly Tiles.Tile? TLeft;
+        public readonly Tiles.Tile? TUp;
+        public readonly Tiles.Tile? TDown;
+        public readonly Tiles.Tile? XJunct;
+
+        public readonly bool AllowJunctions = false;
+
+        public InstancedPathTileTable(PathTileTable tileTable)
+        {
+            AllowJunctions = tileTable.AllowJunctions;
+
+            LeftDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftDown);
+            LeftUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftUp);
+            RightDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightDown);
+            RightUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightUp);
+            Horizontal = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Horizontal);
+            Vertical = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Vertical);
+
+            if (AllowJunctions)
+            {
+                TRight = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TRight);
+                TLeft = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TLeft);
+                TUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TUp);
+                TDown  = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TDown);
+                XJunct = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.XJunct);
+            }
+        }
+    }
+
+    private static PathDirection GetDirectionsFromTile(InstancedPathTileTable tileTable, Tiles.Tile tile)
+    {
+        if (tile == tileTable.LeftDown)
+            return PathDirection.Left | PathDirection.Down;
+        if (tile == tileTable.LeftUp)
+            return PathDirection.Left | PathDirection.Up;
+        if (tile == tileTable.RightDown)
+            return PathDirection.Right | PathDirection.Down;
+        if (tile == tileTable.RightUp)
+            return PathDirection.Right | PathDirection.Up;
+        
+        if (tile == tileTable.Horizontal)
+            return PathDirection.Left | PathDirection.Right;
+        if (tile == tileTable.Vertical)
+            return PathDirection.Up | PathDirection.Down;
+        
+        if (tile == tileTable.TRight)
+            return PathDirection.Up | PathDirection.Left | PathDirection.Down;
+        if (tile == tileTable.TUp)
+            return PathDirection.Right | PathDirection.Left | PathDirection.Down;
+        if (tile == tileTable.TLeft)
+            return PathDirection.Right | PathDirection.Up | PathDirection.Down;
+        if (tile == tileTable.TDown)
+            return PathDirection.Right | PathDirection.Up | PathDirection.Left;
+        
+        if (tile == tileTable.XJunct)
+            return PathDirection.Right | PathDirection.Up | PathDirection.Left | PathDirection.Down;
+        
+        return 0;
+    }
+
+    private static Tiles.Tile? GetTileFromDirections(InstancedPathTileTable tiles, PathDirection dirs)
+    {
+        var right = dirs.HasFlag(PathDirection.Right);
+        var up = dirs.HasFlag(PathDirection.Up);
+        var left = dirs.HasFlag(PathDirection.Left);
+        var down = dirs.HasFlag(PathDirection.Down);
+
+        // obtain the number of connections
+        int count = 0;
+        if (left) count++;
+        if (right) count++;
+        if (up) count++;
+        if (down) count++;
+
+        // four connections = X intersection
+        if (count == 4)
+        {
+            return tiles.XJunct;
+        }
+
+        // three connections = T intersection
+        else if (count == 3)
+        {
+            if (left && right)
+            {
+                return up ? tiles.TDown : tiles.TUp;
+            }
+            else if (up && down)
+            {
+                return right ? tiles.TLeft : tiles.TRight;
+            }
+        }
+
+        // two connections, normal
+        else
+        {
+            if (left && down)
+            {
+                return tiles.LeftDown;
+            }
+            else if (left && up)
+            {
+                return tiles.LeftUp;
+            }
+            else if (right && down)
+            {
+                return tiles.RightDown;
+            }
+            else if (right && up)
+            {
+                return tiles.RightUp;
+            }
+
+            // straight
+            else if (down || up)
+            {
+                return tiles.Vertical;
+            }
+            else if (right || left)
+            {
+                return tiles.Horizontal;
+            }
+        }
+
+        return null;
+    }
+    
+    /// <summary>
+    /// Autotile from a segment list and a tile table. 
+    /// </summary>
+    /// <param name="tileTable"></param>
+    /// <param name="layer">The layer to autotile.</param>
+    /// <param name="pathSegments"></param>
+    /// <param name="modifier"></param>
+    /// <param name="startIndex"></param>
+    /// <param name="endIndex"></param>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static void StandardTilePath(
         PathTileTable tileTable,
         int layer,
@@ -104,22 +259,16 @@ abstract class Autotile
         int startIndex, int endIndex
     )
     {
-        // abort if at least one tile is invalid
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftDown)) return;
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.LeftUp)) return;
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightDown)) return;
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.RightUp)) return;
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Horizontal)) return;
-        if (!RainEd.Instance.TileDatabase.HasTile(tileTable.Vertical)) return;
-        
         // obtain tile inits from the names
-        var ld = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftDown);
-        var lu = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftUp);
-        var rd = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightDown);
-        var ru = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightUp);
-        var horiz = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Horizontal);
-        var vert = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Vertical);
-        Tiles.Tile? tRight, tLeft, tUp, tDown, xInt;
+        var tiles = new InstancedPathTileTable(tileTable);
+
+        // abort if at least one tile is invalid
+        if (tiles.LeftDown is null) return;
+        if (tiles.LeftUp is null) return;
+        if (tiles.RightDown is null) return;
+        if (tiles.RightUp is null) return;
+        if (tiles.Horizontal is null) return;
+        if (tiles.Vertical is null) return;
 
         bool JoinOutsideTile(Vector2i pos, int layer, Direction dir)
         {
@@ -140,99 +289,11 @@ abstract class Autotile
             ref var cell = ref RainEd.Instance.Level.Layers[layer, newPos.X, newPos.Y];
             if (cell.TileHead is null) return false;
 
-            // devilish if-else switch to switch it to the proper
-            // tile based on the tile it already is.
-            // it does follow a logic. however, i am too lazy
-            // to actually write it so the logic is more explicit
-            // (aka making better code.)
-            if (cell.TileHead == horiz)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Up => tUp,
-                    Direction.Down => tDown,
-                    _ => horiz
-                };
-            }
-            else if (cell.TileHead == vert)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Right => tRight,
-                    Direction.Left => tLeft,
-                    _ => vert
-                };
-            }
-            // turns
-            else if (cell.TileHead == ld)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Left => tUp,
-                    Direction.Down => tRight,
-                    _ => ld
-                };
-            }
-            else if (cell.TileHead == lu)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Left => tDown,
-                    Direction.Up => tRight,
-                    _ => lu
-                };
-            }
-            else if (cell.TileHead == rd)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Right => tUp,
-                    Direction.Down => tLeft,
-                    _ => rd
-                };
-            }
-            else if (cell.TileHead == ru)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Right => tDown,
-                    Direction.Up => tLeft,
-                    _ => ru
-                };
-            }
-            // t-junctions, which may convert to x junctions
-            else if (cell.TileHead == tRight)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Left => xInt,
-                    _ => tRight 
-                };
-            }
-            else if (cell.TileHead == tUp)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Down => xInt,
-                    _ => tUp 
-                };
-            }
-            else if (cell.TileHead == tLeft)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Right => xInt,
-                    _ => tLeft
-                };
-            }
-            else if (cell.TileHead == tDown)
-            {
-                cell.TileHead = dir switch
-                {
-                    Direction.Up => xInt,
-                    _ => tDown
-                };
-            }
+            var tileDirs = GetDirectionsFromTile(tiles, cell.TileHead);
+            if (tileDirs == 0) return false;
+
+            tileDirs |= (PathDirection)((4 << (int)dir) % 15);
+            cell.TileHead = GetTileFromDirections(tiles, tileDirs);
 
             return true;
         }
@@ -240,105 +301,48 @@ abstract class Autotile
         if (tileTable.AllowJunctions)
         {
             // abort if at least one tile is invalid
-            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TRight)) return;
-            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TLeft)) return;
-            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TUp)) return;
-            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TDown)) return;
-            if (!RainEd.Instance.TileDatabase.HasTile(tileTable.XJunct)) return;
-
-            // obtain tile inits from names
-            tRight = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TRight);
-            tLeft = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TLeft);
-            tUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TUp);
-            tDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TDown);
-            xInt = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.XJunct);
-
-            Tiles.Tile[]? tileTableList = null;
+            if (tiles.TRight is null) return;
+            if (tiles.TLeft is null) return;
+            if (tiles.TUp is null) return;
+            if (tiles.TDown is null) return;
+            if (tiles.XJunct is null) return;
 
             for (int i = startIndex; i < endIndex; i++)
             {
                 var seg = pathSegments[i];
                 var segPos = new Vector2i(seg.X, seg.Y);
+                PathDirection segDirs = 0;
+                if (seg.Right) segDirs |= PathDirection.Right;
+                if (seg.Up) segDirs |= PathDirection.Up;
+                if (seg.Left) segDirs |= PathDirection.Left;
+                if (seg.Down) segDirs |= PathDirection.Down;
+
                 if (!RainEd.Instance.Level.IsInBounds(seg.X, seg.Y)) continue;
 
                 // if there is already a tile here that is in the tile table,
-                // then instead of placing a tile, turn the current tile into
-                // an X junction
+                // replace that tile with the proper intersection
+                // instead of placing over it
                 {
                     ref var cellHere = ref RainEd.Instance.Level.Layers[layer, seg.X, seg.Y];
                     if (cellHere.TileHead is not null)
                     {
-                        tileTableList ??= [ld, lu, rd, ru, horiz, vert, tRight, tLeft, tUp, tDown, xInt];
-                        if (tileTableList.Contains(cellHere.TileHead))
+                        var tileDirs = GetDirectionsFromTile(tiles, cellHere.TileHead);
+                        if (tileDirs != 0)
                         {
-                            cellHere.TileHead = xInt;
+                            tileDirs |= segDirs;
+                            cellHere.TileHead = GetTileFromDirections(tiles, tileDirs);
                             continue;
                         }
                     }
                 }
 
                 // join outside tiles
-                if (!seg.Right && JoinOutsideTile(segPos, layer, Direction.Right)) seg.Right = true;
-                if (!seg.Up && JoinOutsideTile(segPos, layer, Direction.Up)) seg.Up = true;
-                if (!seg.Left && JoinOutsideTile(segPos, layer, Direction.Left)) seg.Left = true;
-                if (!seg.Down && JoinOutsideTile(segPos, layer, Direction.Down)) seg.Down = true;
+                if (!seg.Right && JoinOutsideTile(segPos, layer, Direction.Right)) segDirs |= PathDirection.Right;
+                if (!seg.Up && JoinOutsideTile(segPos, layer, Direction.Up)) segDirs |= PathDirection.Up;
+                if (!seg.Left && JoinOutsideTile(segPos, layer, Direction.Left)) segDirs |= PathDirection.Left;
+                if (!seg.Down && JoinOutsideTile(segPos, layer, Direction.Down)) segDirs |= PathDirection.Down;
 
-                // obtain the number of connections
-                int count = 0;
-                if (seg.Left) count++;
-                if (seg.Right) count++;
-                if (seg.Up) count++;
-                if (seg.Down) count++;
-
-                // four connections = X intersection
-                if (count == 4)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(xInt, layer, seg.X, seg.Y, modifier);
-                }
-
-                // three connections = T intersection
-                else if (count == 3)
-                {
-                    if (seg.Left && seg.Right)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(seg.Up ? tDown : tUp, layer, seg.X, seg.Y, modifier);
-                    }
-                    else if (seg.Up && seg.Down)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(seg.Right ? tLeft : tRight, layer, seg.X, seg.Y, modifier);
-                    }
-                }
-
-                // two connections, normal
-                else
-                {
-                    if (seg.Left && seg.Down)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
-                    }
-                    else if (seg.Left && seg.Up)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
-                    }
-                    else if (seg.Right && seg.Down)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
-                    }
-                    else if (seg.Right && seg.Up)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
-                    }
-
-                    // straight
-                    else if (seg.Down || seg.Up)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
-                    }
-                    else if (seg.Right || seg.Left)
-                    {
-                        RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
-                    }
-                }
+                RainEd.Instance.Level.SafePlaceTile(GetTileFromDirections(tiles, segDirs)!, layer, seg.X, seg.Y, modifier);
             }
         }
         else
@@ -347,33 +351,12 @@ abstract class Autotile
             {
                 var seg = pathSegments[i];
 
-                // turns
-                if (seg.Left && seg.Down)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(ld, layer, seg.X, seg.Y, modifier);
-                }
-                else if (seg.Left && seg.Up)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(lu, layer, seg.X, seg.Y, modifier);
-                }
-                else if (seg.Right && seg.Down)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(rd, layer, seg.X, seg.Y, modifier);
-                }
-                else if (seg.Right && seg.Up)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(ru, layer, seg.X, seg.Y, modifier);
-                }
-
-                // straight
-                else if (seg.Down || seg.Up)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(vert, layer, seg.X, seg.Y, modifier);
-                }
-                else if (seg.Right || seg.Left)
-                {
-                    RainEd.Instance.Level.SafePlaceTile(horiz, layer, seg.X, seg.Y, modifier);
-                }
+                PathDirection dirs = 0;
+                if (seg.Right) dirs |= PathDirection.Right;
+                if (seg.Up) dirs |= PathDirection.Up;
+                if (seg.Left) dirs |= PathDirection.Left;
+                if (seg.Down) dirs |= PathDirection.Down;
+                RainEd.Instance.Level.SafePlaceTile(GetTileFromDirections(tiles, dirs)!, layer, seg.X, seg.Y, modifier);
             }
         }
     }
