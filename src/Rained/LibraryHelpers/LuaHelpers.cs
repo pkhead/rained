@@ -3,21 +3,54 @@ using KeraLua;
 
 namespace RainEd;
 
+/// <summary>
+/// Class used to push C# functions to the Lua state.
+/// 
+/// NLua has a similar mechanism for this, however it is somewhat limited.
+/// Optional arguments and multi-return functions are not properly supported.
+/// Additionally, there is no try-catch for functions pushed to the stack with
+/// lua_pushcfunction, so if a C# function called from Lua throws an error,
+/// it won't be caught by the Lua error handler.
+/// </summary>
 static class LuaHelpers
 {
-    private const string MetatableName = "luahelpers_delegate";
+    [Serializable]
+    public class LuaErrorException : Exception
+    {
+        public LuaErrorException() { }
+        public LuaErrorException(string message) : base(message) { }
+        public LuaErrorException(string message, Exception inner) : base(message, inner) { }
+    }
+    
+    private const string FuncWrapperMetatable = "luahelpers_delegate";
+    private const string FuncMetatable = "luahelpers_function";
 
     private static int nextID = 1;
-    private static Dictionary<int, Delegate> allocatedObjects = new();
+    private static readonly Dictionary<int, object> allocatedObjects = [];
     
-    private static LuaFunction gcDelegate = new LuaFunction(GCDelegate);
-    private static LuaFunction callDelegate = new LuaFunction(CallDelegate);
-    private static LuaFunction mtDelegate = new LuaFunction(MetatableDelegate);
+    private static readonly LuaFunction gcDelegate = new LuaFunction(GCDelegate);
+    private static readonly LuaFunction callDelegate = new LuaFunction(CallDelegate);
+    private static readonly LuaFunction mtDelegate = new LuaFunction(MetatableDelegate);
+
+    private static readonly LuaFunction wrapperGcDelegate = new LuaFunction(WrapperGCDelegate);
+    private static readonly LuaFunction wrapperCallDelegate = new LuaFunction(WrapperCallDelegate);
+    private static readonly LuaFunction wrapperMtDelegate = new LuaFunction(MetatableDelegate);
 
     public static void Init(Lua lua)
     {
-        lua.NewMetaTable(MetatableName);
+        // create function metatable
+        lua.NewMetaTable(FuncMetatable);
         lua.PushCFunction(gcDelegate);
+        lua.SetField(-2, "__gc");
+
+        lua.PushCFunction(MetatableDelegate);
+        lua.SetField(-2, "__metatable");
+
+        lua.Pop(1);
+
+        // create wrapper metatable
+        lua.NewMetaTable(FuncWrapperMetatable);
+        lua.PushCFunction(wrapperGcDelegate);
         lua.SetField(-2, "__gc");
 
         lua.PushCFunction(MetatableDelegate);
@@ -36,8 +69,7 @@ static class LuaHelpers
     private static unsafe int GCDelegate(nint luaPtr)
     {
         Lua lua = Lua.FromIntPtr(luaPtr)!;
-        int id = *((int*)lua.CheckUserData(1, MetatableName));
-
+        int id = *((int*)lua.CheckUserData(1, FuncMetatable));
         allocatedObjects.Remove(id);
         return 0;
     }
@@ -45,11 +77,41 @@ static class LuaHelpers
     private static unsafe int CallDelegate(nint luaPtr)
     {
         Lua lua = Lua.FromIntPtr(luaPtr)!;
+        int id = *((int*)lua.CheckUserData(Lua.UpValueIndex(1), FuncMetatable));
+        var func = (LuaFunction) allocatedObjects[id];
+
+        try
+        {
+            return func(luaPtr);
+        }
+        catch (LuaErrorException e)
+        {
+            return lua.Error(e.Message);
+        }
+        catch (Exception e)
+        {
+            RainEd.Logger.Error("A C# exception occured in a Lua context!\n{Error}", e);
+            return lua.Error("C# exception: " + e.Message);
+        }
+    }
+
+    private static unsafe int WrapperGCDelegate(nint luaPtr)
+    {
+        Lua lua = Lua.FromIntPtr(luaPtr)!;
+        int id = *((int*)lua.CheckUserData(1, FuncWrapperMetatable));
+
+        allocatedObjects.Remove(id);
+        return 0;
+    }
+
+    private static unsafe int WrapperCallDelegate(nint luaPtr)
+    {
+        Lua lua = Lua.FromIntPtr(luaPtr)!;
         var luaNumArgs = lua.GetTop();
         
-        int* userData = (int*) lua.CheckUserData(Lua.UpValueIndex(1), MetatableName);
+        int* userData = (int*) lua.CheckUserData(Lua.UpValueIndex(1), FuncWrapperMetatable);
         int id = *userData;
-        var func = allocatedObjects[id];
+        var func = (Delegate) allocatedObjects[id];
 
         var paramInfo = func.Method.GetParameters();
         var parameters = new object?[paramInfo.Length];
@@ -112,7 +174,7 @@ static class LuaHelpers
         catch (TargetInvocationException e)
         {
             if (e.InnerException is not null)
-                return lua.Error(e.InnerException.Message);
+                return lua.Error("C# exception: " + e.InnerException.Message);
             else
                 throw;
         }
@@ -173,12 +235,36 @@ static class LuaHelpers
         }
     }
 
-    public static unsafe void PushDelegate(Lua lua, Delegate func)
+    /// <summary>
+    /// Push a C# delegate to the stack of a Lua state.
+    /// This actually creates a wrapper to properly fill out the arguments and return values.
+    /// </summary>
+    /// <param name="lua"></param>
+    /// <param name="func"></param>
+    public static unsafe void PushCsFunction(Lua lua, Delegate func)
     {
         int* userData = (int*) lua.NewUserData(sizeof(int));
         *userData = nextID;
         
-        lua.GetMetaTable(MetatableName);
+        lua.GetMetaTable(FuncWrapperMetatable);
+        lua.SetMetaTable(-2);
+        allocatedObjects[nextID++] = func;
+
+        lua.PushCClosure(wrapperCallDelegate, 1);
+    }
+
+    /// <summary>
+    /// Push a KeraLua.LuaFunction to the stack of a Lua state.
+    /// When called from Lua, C# exceptions will be caught correctly.
+    /// </summary>
+    /// <param name="lua">The Lua state.</param>
+    /// <param name="func">The `KeraLua.LuaFunction` to push.</param>
+    public static unsafe void PushLuaFunction(Lua lua, LuaFunction func)
+    {
+        int* userData = (int*) lua.NewUserData(sizeof(int));
+        *userData = nextID;
+
+        lua.GetMetaTable(FuncMetatable);
         lua.SetMetaTable(-2);
         allocatedObjects[nextID++] = func;
 

@@ -373,13 +373,13 @@ static class LuaInterface
         package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua");
 
         // global functions
-        LuaHelpers.PushDelegate(luaState.State, new Action<string, bool?>(AutoRequire));
+        LuaHelpers.PushCsFunction(luaState.State, new Action<string, bool?>(AutoRequire));
         luaState.State.SetGlobal("autorequire");
 
         // add rained module to require preloader
         // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
         luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
-        luaState.State.PushCFunction(loaderDelegate);
+        LuaHelpers.PushLuaFunction(luaState.State, loaderDelegate);
         luaState.State.SetField(-2, "rained");
         luaState.State.Pop(1); // pop preload table
 
@@ -387,7 +387,7 @@ static class LuaInterface
         luaState.DoString("rained = require(\"rained\")");
 
         luaState.State.NewMetaTable(CommandID);
-        luaState.State.PushCFunction(static (nint luaPtr) =>
+        LuaHelpers.PushLuaFunction(luaState.State, static (nint luaPtr) =>
         {
             luaState.State.PushString("The metatable is locked!");
             return 1;
@@ -423,7 +423,7 @@ static class LuaInterface
         luaState.State.NewTable();
 
         //luaState.Push(new Func<string, object?, Autotile>(CreateAutotile));
-        luaState.State.PushCFunction(LuaCreateAutotile);
+        LuaHelpers.PushLuaFunction(luaState.State, LuaCreateAutotile);
         luaState.State.SetField(-2, "createAutotile");
 
         luaState.Push(new Func<string>(GetVersion));
@@ -432,7 +432,7 @@ static class LuaInterface
         luaState.Push(new Action<string>(ShowNotification));
         luaState.State.SetField(-2, "alert");
 
-        LuaHelpers.PushDelegate(luaState.State, new PlaceTileDelegate(PlaceTile));
+        LuaHelpers.PushCsFunction(luaState.State, new PlaceTileDelegate(PlaceTile));
         luaState.State.SetField(-2, "placeTile");
 
         // function getTileAt
@@ -455,7 +455,7 @@ static class LuaInterface
         luaState.State.SetField(-2, "hasTileHead");
 
         // function deleteTile
-        luaState.State.PushCFunction(static (nint luaStatePtr) => {
+        LuaHelpers.PushLuaFunction(luaState.State, static (nint luaStatePtr) => {
             int x = (int) luaState.State.CheckInteger(1);
             int y = (int) luaState.State.CheckInteger(2);
             int layer = (int) luaState.State.CheckInteger(3);
@@ -473,7 +473,7 @@ static class LuaInterface
         luaState.State.SetField(-2, "deleteTile");
 
         // function registerCommand
-        luaState.State.PushCFunction(static (nint luaStatePtr) => {
+        LuaHelpers.PushLuaFunction(luaState.State, static (nint luaStatePtr) => {
             string name = luaState.State.CheckString(1);
             luaState.State.CheckType(2, KeraLua.LuaType.Function);
 
@@ -494,7 +494,7 @@ static class LuaInterface
         luaState.State.SetField(-2, "registerCommand");
 
         // function autotilePath
-        luaState.State.PushCFunction(LuaStandardPathAutotile);
+        LuaHelpers.PushLuaFunction(luaState.State, LuaStandardPathAutotile);
         luaState.State.SetField(-2, "autotilePath");
 
         return 1;

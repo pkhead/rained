@@ -385,7 +385,7 @@ abstract class Autotile
                 if (!seg.Left && JoinOutsideTile(segPos, layer, Direction.Left)) segDirs |= PathDirection.Left;
                 if (!seg.Down && JoinOutsideTile(segPos, layer, Direction.Down)) segDirs |= PathDirection.Down;
 
-                var tile = GetTileFromDirections(tiles, segDirs);
+                var tile = GetTileFromDirections(tiles, segDirs)!;
                 if (tile is not null)
                     RainEd.Instance.Level.SafePlaceTile(tile, layer, seg.X, seg.Y, modifier);
             }
@@ -402,7 +402,7 @@ abstract class Autotile
                 if (seg.Left) dirs |= PathDirection.Left;
                 if (seg.Down) dirs |= PathDirection.Down;
 
-                var tile = GetTileFromDirections(tiles, dirs);
+                var tile = GetTileFromDirections(tiles, dirs)!;
                 if (tile is not null)
                     RainEd.Instance.Level.SafePlaceTile(tile, layer, seg.X, seg.Y, modifier);
             }
