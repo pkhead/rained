@@ -3,11 +3,10 @@
 local autotile = rained.createAutotile("Fence")
 autotile.type = "rect"
 
-autotile:addToggleOption("altFence", "Use Ext. Fence", false)
-autotile:addToggleOption("altWire", "Use Ext. Barbed Wire", false)
-autotile:addToggleOption("poleMode", "Use Pole Count", true)
+autotile:addToggleOption("altWire", "Use Alt Barbed Wire", false)
+autotile:addToggleOption("poleMode", "Use Pole Count", false)
 autotile:addIntOption("poleSpacing", "Pole Spacing", 8, 1, math.huge)
-autotile:addIntOption("numPoles", "Pole Count", 8, 0, math.huge)
+autotile:addIntOption("numPoles", "Pole Count", 5, 0, math.huge)
 autotile:addIntOption("wireHeight", "Barbed Wire Height", 1, 0, math.huge)
 
 -- Rained will not allow the user to use this autotile
@@ -36,20 +35,23 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
     local wireHeight = autotile:getOption("wireHeight")
     local fenceTop = top + wireHeight
 
-    local fenceTile = autotile:getOption("altFence") and "fenceExtended" or "fence"
-    local wireTile = autotile:getOption("altWire") and "barbed wire 2" or "barbed wire"
-    local wirePoleTile = autotile:getOption("altWire") and "barbed wire pole 2" or "barbed wire pole"
-
+    local altWire = autotile:getOption("altWire")
+    
     for x = left, right do
         -- place barbed wire
         for y = top, fenceTop-1 do
+            local wireTile = "barbed wire"
+            if altWire and (y - top) % 2 == 0 then
+                wireTile = "barbed wire 2"
+            end
+
             rained.placeTile(wireTile, x, y, layer, forceModifier)
         end
 
         -- place fence
         rained.placeTile("fence top end", x, fenceTop, layer, forceModifier)
         for y = fenceTop, bottom do
-            rained.placeTile(fenceTile, x, y, layer, forceModifier)
+            rained.placeTile("fence", x, y, layer, forceModifier)
         end
     end
 
@@ -78,6 +80,11 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
             rained.deleteTile(x, y, layer)
 
             if y < fenceTop then
+                local wirePoleTile = "barbed wire pole"
+                if altWire and (y - top) % 2 == 0 then
+                    wirePoleTile = "barbed wire pole 2"
+                end
+
                 rained.placeTile(wirePoleTile, x, y, layer, forceModifier)
             elseif y == fenceTop then
                 rained.placeTile("fence with pole top end", x, y, layer, forceModifier)
