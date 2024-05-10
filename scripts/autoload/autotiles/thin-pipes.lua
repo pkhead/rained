@@ -1,9 +1,9 @@
 -- setup autotile data
 local autotile = rained.createAutotile("Thin Pipes", "Misc")
 autotile.type = "path"
-autotile:addOption("cap", "Cap with inward pipes", false)
-autotile:addOption("plain", "Use plain pipes", false)
-autotile:addOption("junctions", "Allow Junctions", false)
+autotile:addToggleOption("cap", "Cap with inward pipes", false)
+autotile:addToggleOption("plain", "Use plain pipes", false)
+autotile:addToggleOption("junctions", "Allow Junctions", false)
 
 -- change "allowIntersections" property when junctions is turned on/off
 function autotile:onOptionChanged(id)

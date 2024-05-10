@@ -106,11 +106,19 @@ function rained.deleteTile(x, y, layer, removeGeo) end
 ---@field onOptionChanged fun(self: Autotile, id: string)? The callback that is invoked when an option is changed.
 local Autotile = {}
 
----Add an on/off option to the autotile.
----@param id string The unique ID of the new option
----@param name string The display name of the option
----@param defaultValue boolean The initial value of the option
-function Autotile:addOption(id, name, defaultValue) end
+---Add a toggle option for the autotile.
+---@param id string The unique ID of the new option.
+---@param label string The display label of the option.
+---@param defaultValue boolean The initial value of the option.
+function Autotile:addToggleOption(id, label, defaultValue) end
+
+---Add an integer option for the autotile.
+---@param id string The unique ID of the new option.
+---@param label string The display label of the option.
+---@param defaultValue integer The initial value of the option.
+---@param min integer? The minimum value of the option. Defaults to `-math.huge`.
+---@param max integer? The maximum value of the option. Defaults to `math.huge`.
+function Autotile:addIntOption(id, label, defaultValue, min, max) end
 
 ---Get the value of an option
 ---@param id string The ID of the option to read

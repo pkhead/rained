@@ -31,17 +31,38 @@ static class LuaInterface
         public override bool AllowIntersections { get => LuaWrapper.AllowIntersections; }
         private List<string>? missingTiles = null;
         
-        public record class ConfigOption
+        public enum ConfigDataType
+        {
+            Boolean, Integer
+        };
+
+        public class ConfigOption
         {
             public readonly string ID;
             public readonly string Name;
-            public bool Value;
+            public readonly ConfigDataType DataType;
+
+            public bool BoolValue = false;
+            public int IntValue = 0;
+            public readonly int IntMin = int.MinValue;
+            public readonly int IntMax = int.MaxValue;
 
             public ConfigOption(string id, string name, bool defaultValue)
             {
                 ID = id;
                 Name = name;
-                Value = defaultValue;
+                DataType = ConfigDataType.Boolean;
+                BoolValue = defaultValue;
+            }
+
+            public ConfigOption(string id, string name, int defaultValue, int min = int.MinValue, int max = int.MaxValue)
+            {
+                ID = id;
+                Name = name;
+                DataType = ConfigDataType.Integer;
+                IntValue = Math.Clamp(defaultValue, min, max);
+                IntMin = min;
+                IntMax = max;
             }
         }
 
@@ -59,9 +80,9 @@ static class LuaInterface
             }
         }
 
-        public void AddOption(string id, string name, bool defaultValue)
+        public void AddOption(ConfigOption option)
         {
-            Options.Add(id, new ConfigOption(id, name, defaultValue));
+            Options.Add(option.ID, option);
         }
 
         public bool TryGetOption(string id, out ConfigOption? data)
@@ -162,11 +183,30 @@ static class LuaInterface
             }
             else
             {
+                ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
+
                 foreach (var opt in Options.Values)
                 {
-                    if (ImGui.Checkbox(opt.Name, ref opt.Value))
-                        RunOptionChangeCallback(opt.ID);
+                    ImGui.PushID(opt.ID);
+
+                    if (opt.DataType == ConfigDataType.Boolean)
+                    {
+                        if (ImGui.Checkbox(opt.Name, ref opt.BoolValue))
+                            RunOptionChangeCallback(opt.ID);
+                    }
+                    else if (opt.DataType == ConfigDataType.Integer)
+                    {
+                        if (ImGui.InputInt(opt.Name, ref opt.IntValue))
+                            opt.IntValue = Math.Clamp(opt.IntValue, opt.IntMin, opt.IntMax);
+                        
+                        if (ImGui.IsItemDeactivatedAfterEdit())
+                            RunOptionChangeCallback(opt.ID);
+                    }
+
+                    ImGui.PopID();
                 }
+
+                ImGui.PopItemWidth();
             }
         }
 
@@ -251,15 +291,29 @@ static class LuaInterface
             autotile = new LuaAutotile(this);
         }
 
-        [LuaMember(Name = "addOption")]
-        public void AddOption(string id, string name, bool defaultValue) => autotile.AddOption(id, name, defaultValue);
+        [LuaMember(Name = "addToggleOption")]
+        public void AddToggleOption(string id, string name, bool defaultValue)
+            => autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue));
+        
+        [LuaMember(Name = "addIntOption")]
+        public void AddIntOption(string id, string name, int defaultValue)
+            => autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue));
+        
+        [LuaMember(Name = "addIntOption")]
+        public void AddIntOption(string id, string name, int defaultValue, int min, int max)
+            => autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue, min, max));
 
         [LuaMember(Name = "getOption")]
-        public bool GetOption(string id)
+        public object? GetOption(string id)
         {
             if (autotile.TryGetOption(id, out LuaAutotile.ConfigOption? data))
             {
-                return data!.Value;
+                if (data!.DataType == LuaAutotile.ConfigDataType.Boolean)
+                    return data.BoolValue;
+                else if (data!.DataType == LuaAutotile.ConfigDataType.Integer)
+                    return data.IntValue;
+
+                return null;
             }
 
             throw new LuaException($"option '{id}' does not exist");
