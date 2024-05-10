@@ -1,3 +1,11 @@
+--[[
+    This file is not in the autoload folder, nor is it loaded by init.lua.
+
+    I've placed this file here as a reference for how to create path autotilers.
+    This is functionally identical to the "Thin Pipes" and "Thin Plain Pipes"
+    autotiles that come with Rained.
+--]]
+
 -- setup autotile data
 local autotile = rained.createAutotile("Thin Pipes", "Misc")
 autotile.type = "path"
