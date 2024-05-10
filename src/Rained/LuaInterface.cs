@@ -24,9 +24,13 @@ static class LuaInterface
 
         public LuaFunction? LuaFillPathProcedure = null;
         public LuaFunction? LuaFillRectProcedure = null;
-        public LuaAutotileInterface LuaWrapper;
-        private List<string>? missingTiles = null;
+        public LuaFunction? OnOptionChanged = null;
 
+        public LuaAutotileInterface LuaWrapper;
+
+        public override bool AllowIntersections { get => LuaWrapper.AllowIntersections; }
+        private List<string>? missingTiles = null;
+        
         public record class ConfigOption
         {
             public readonly string ID;
@@ -42,6 +46,18 @@ static class LuaInterface
         }
 
         public Dictionary<string, ConfigOption> Options = [];
+
+        public void RunOptionChangeCallback(string id)
+        {
+            try
+            {
+                OnOptionChanged?.Call(LuaWrapper, id);
+            }
+            catch (LuaScriptException e)
+            {
+                HandleException(e);
+            }
+        }
 
         public void AddOption(string id, string name, bool defaultValue)
         {
@@ -148,7 +164,8 @@ static class LuaInterface
             {
                 foreach (var opt in Options.Values)
                 {
-                    ImGui.Checkbox(opt.Name, ref opt.Value);
+                    if (ImGui.Checkbox(opt.Name, ref opt.Value))
+                        RunOptionChangeCallback(opt.ID);
                 }
             }
         }
@@ -217,6 +234,9 @@ static class LuaInterface
             };
         }
 
+        [LuaMember(Name = "allowIntersections")]
+        public bool AllowIntersections = false;
+
         [LuaMember(Name = "tilePath")]
         public LuaFunction? TilePath { get => autotile.LuaFillPathProcedure; set => autotile.LuaFillPathProcedure = value; }
         
@@ -244,6 +264,9 @@ static class LuaInterface
 
             throw new LuaException($"option '{id}' does not exist");
         }
+
+        [LuaMember(Name = "onOptionChanged")]
+        public LuaFunction? OnOptionChanged { get => autotile.OnOptionChanged; set => autotile.OnOptionChanged = value; }
     }
 
     static private Lua luaState = null!;

@@ -99,9 +99,11 @@ function rained.deleteTile(x, y, layer, removeGeo) end
 ---@class Autotile
 ---@field name string The name of the autotile.
 ---@field type AutotileType The fill type of the autotile.
+---@field allowIntersections boolean True if intersections are allowed.
 ---@field requiredTiles string[]? The list of all the tiles required by the autotile.
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
 ---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
+---@field onOptionChanged fun(self: Autotile, id: string)? The callback that is invoked when an option is changed.
 local Autotile = {}
 
 ---Add an on/off option to the autotile.

@@ -1,12 +1,16 @@
-
-local helpers = require("helpers") -- load the helpers.lua module
-
 -- setup autotile data
-local autotile = rained.createAutotile("Thin Pipes", "Pipes")
+local autotile = rained.createAutotile("Thin Pipes", "Misc")
 autotile.type = "path"
-autotile:addOption("cap", "Cap with inward pipes", true)
+autotile:addOption("cap", "Cap with inward pipes", false)
 autotile:addOption("plain", "Use plain pipes", false)
 autotile:addOption("junctions", "Allow Junctions", false)
+
+-- change "allowIntersections" property when junctions is turned on/off
+function autotile:onOptionChanged(id)
+    if id == "junctions" then
+        autotile.allowIntersections = autotile:getOption(id)
+    end
+end
 
 -- Rained will not allow the user to use this autotile
 -- if any of the tiles in this table are not installed
@@ -100,7 +104,7 @@ function autotile:tilePath(layer, segments, forceModifier)
     if self:getOption("cap") and #segments >= 2 then
         -- first, call the standard autotiler for the non-cap segments
         -- so, ignoring the first item and last item
-        rained.autotilePath(tileTable, layer, segments, autotile:getOption("junctions"), forceModifier, 2, #segments - 1)
+        rained.autotilePath(tileTable, layer, segments, self:getOption("junctions"), forceModifier, 2, #segments - 1)
 
         -- then, place the cap segments at the ends of the path
         placePathCap(layer, segments, 1, forceModifier)
@@ -109,6 +113,6 @@ function autotile:tilePath(layer, segments, forceModifier)
     -- the user does not want to place inward pipes on the caps
     else
         -- run the standard autotiler for the entire path
-        rained.autotilePath(tileTable, layer, segments, autotile:getOption("junctions"), forceModifier)
+        rained.autotilePath(tileTable, layer, segments, self:getOption("junctions"), forceModifier)
     end
 end
