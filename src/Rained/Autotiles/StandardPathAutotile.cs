@@ -70,13 +70,25 @@ class StandardPathAutotile : Autotile
         TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
         
         ImGui.Checkbox("Allow Junctions", ref TileTable.AllowJunctions);
+        ImGui.Checkbox("Place Caps", ref TileTable.PlaceCaps);
+
         if (TileTable.AllowJunctions)
         {
+            ImGui.Separator();
             TileButton(ref TileTable.TRight, "T-Junction Right", TileType.Turn);
             TileButton(ref TileTable.TUp, "T-Junction Up", TileType.Turn);
             TileButton(ref TileTable.TLeft, "T-Junction Left", TileType.Turn);
             TileButton(ref TileTable.TDown, "T-Junction Down", TileType.Turn);
             TileButton(ref TileTable.XJunct, "Four-way Junction", TileType.Turn);
+        }
+
+        if (TileTable.PlaceCaps)
+        {
+            ImGui.Separator();
+            TileButton(ref TileTable.CapRight, "Cap Right", TileType.Turn);
+            TileButton(ref TileTable.CapUp, "Cap Up", TileType.Turn);
+            TileButton(ref TileTable.CapLeft, "Cap Left", TileType.Turn);
+            TileButton(ref TileTable.CapDown, "Cap Down", TileType.Turn);
         }
 
         /*
@@ -499,6 +511,11 @@ class StandardPathAutotile : Autotile
             lines.Add("tl=" + TileTable.TLeft);
             lines.Add("td=" + TileTable.TDown);
             lines.Add("x="  + TileTable.XJunct);
+            lines.Add("placeCaps=" + (TileTable.PlaceCaps ? "true" : "false"));
+            lines.Add("capRight=" + TileTable.TRight); 
+            lines.Add("capUp=" + TileTable.TUp);
+            lines.Add("capLeft=" + TileTable.TLeft);
+            lines.Add("capDown=" + TileTable.TDown);
         }
 
         // was found, overwrite lines
@@ -520,6 +537,11 @@ class StandardPathAutotile : Autotile
             lines[location+10] = "tl=" + TileTable.TLeft;
             lines[location+11] = "td=" + TileTable.TDown;
             lines[location+12] = "x="  + TileTable.XJunct;
+            lines[location+13] = "placeCaps=" + (TileTable.PlaceCaps ? "true" : "false");
+            lines[location+14] = "capRight=" + TileTable.CapRight;
+            lines[location+15] = "capUp=" + TileTable.CapUp;
+            lines[location+16] = "capLeft=" + TileTable.CapLeft;
+            lines[location+17] = "capDown=" + TileTable.CapDown;
         }
     }
 
@@ -543,7 +565,7 @@ class StandardPathAutotile : Autotile
         {
             RainEd.Logger.Information("Delete autotile {Header}", header);
 
-            lines.RemoveRange(location, 13);
+            lines.RemoveRange(location, 18);
 
             // remove newline before autotile definition
             if (location > 0 && string.IsNullOrWhiteSpace(lines[location-1]))

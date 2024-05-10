@@ -99,7 +99,12 @@ class AutotileCatalog
                 !tileDict.TryGetValue("tu", out string? tu) ||
                 !tileDict.TryGetValue("tl", out string? tl) ||
                 !tileDict.TryGetValue("td", out string? td) ||
-                !tileDict.TryGetValue("x", out string? x)
+                !tileDict.TryGetValue("x", out string? x) ||
+                !tileDict.TryGetValue("placeCaps", out string? placeCaps) ||
+                !tileDict.TryGetValue("capRight", out string? capRight) ||
+                !tileDict.TryGetValue("capUp", out string? capUp) ||
+                !tileDict.TryGetValue("capLeft", out string? capLeft) ||
+                !tileDict.TryGetValue("capDown", out string? capDown)
             )
             {
                 RainEd.Logger.Error("Standard autotile {AutotileName} does not have a complete definition!", autotileName);
@@ -119,13 +124,24 @@ class AutotileCatalog
                 else if (allowJunctions == "false")
                     autotile.TileTable.AllowJunctions = false;
                 else
-                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'intersections', got '{allowJunctions}'.");
+                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'allowJunctions', got '{allowJunctions}'.");
 
+                if (placeCaps == "true")
+                    autotile.TileTable.PlaceCaps = true;
+                else if (placeCaps == "false")
+                    autotile.TileTable.PlaceCaps = false;
+                else
+                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'placeCaps', got '{placeCaps}'");
+                
                 autotile.TileTable.TRight = tr;
                 autotile.TileTable.TUp = tu;
                 autotile.TileTable.TLeft = tl;
                 autotile.TileTable.TDown = td;
                 autotile.TileTable.XJunct = x;
+                autotile.TileTable.CapRight = capRight;
+                autotile.TileTable.CapUp = capUp;
+                autotile.TileTable.CapLeft = capLeft;
+                autotile.TileTable.CapDown = capDown;
                                 
                 AddAutotile(autotile, groupName);
             }
