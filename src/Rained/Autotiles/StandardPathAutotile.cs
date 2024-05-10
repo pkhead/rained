@@ -38,6 +38,27 @@ class StandardPathAutotile : Autotile
             IsInvalid(TileTable.Vertical, TileType.Vertical) ||
             IsInvalid(TileTable.Horizontal, TileType.Horizontal)
         );
+
+        if (TileTable.AllowJunctions)
+        {
+            if (
+                IsInvalid(TileTable.TRight, TileType.Turn) ||
+                IsInvalid(TileTable.TUp, TileType.Turn) ||
+                IsInvalid(TileTable.TLeft, TileType.Turn) ||
+                IsInvalid(TileTable.TDown, TileType.Turn) ||
+                IsInvalid(TileTable.XJunct, TileType.Turn)
+            ) CanActivate = false;
+        }
+
+        if (TileTable.PlaceCaps)
+        {
+            if (
+                IsInvalid(TileTable.CapRight, TileType.Horizontal) ||
+                IsInvalid(TileTable.CapUp, TileType.Vertical) ||
+                IsInvalid(TileTable.CapLeft, TileType.Horizontal) ||
+                IsInvalid(TileTable.CapDown, TileType.Vertical)
+            ) CanActivate = false;
+        }
     }
 
     enum TileType
@@ -67,8 +88,11 @@ class StandardPathAutotile : Autotile
         TileButton(ref TileTable.Vertical, "Vertical", TileType.Vertical);
         TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
         
-        ImGui.Checkbox("Allow Junctions", ref TileTable.AllowJunctions);
-        ImGui.Checkbox("Place Caps", ref TileTable.PlaceCaps);
+        if (ImGui.Checkbox("Allow Junctions", ref TileTable.AllowJunctions))
+            CheckTiles();
+        
+        if (ImGui.Checkbox("Place Caps", ref TileTable.PlaceCaps))
+            CheckTiles();
 
         if (TileTable.AllowJunctions)
         {

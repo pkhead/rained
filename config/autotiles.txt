@@ -1,6 +1,6 @@
 # this is where standard path autotilers created from the GUI are saved/loaded
 
-[Thin Pipes]
+[Thin Pipes:Pipes]
 ld=Pipe WS
 lu=Pipe WN
 rd=Pipe ES
@@ -19,7 +19,7 @@ capUp=Pipe Inwards S
 capLeft=Pipe Inwards W
 capDown=Pipe Inwards N
 
-[Thin Plain Pipes]
+[Thin Plain Pipes:Pipes]
 ld=Pipe WS
 lu=Pipe WN
 rd=Pipe ES
@@ -37,3 +37,22 @@ capRight=Pipe TJunct E
 capUp=Pipe TJunct N
 capLeft=Pipe TJunct W
 capDown=Pipe TJunct S
+
+[Inside Thin Pipes:Pipes]
+ld=insidePipeLD
+lu=insidePipeLU
+rd=insidePipeRD
+ru=insidePipeRU
+vertical=insidePipeVertical
+horizontal=insidePipeHorizontal
+allowJunctions=false
+tr=
+tu=
+tl=
+td=
+x=
+placeCaps=false
+capRight=
+capUp=
+capLeft=
+capDown=
