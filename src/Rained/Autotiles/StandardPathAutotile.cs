@@ -2,8 +2,6 @@ namespace RainEd.Autotiles;
 using System.Numerics;
 using ImGuiNET;
 using rlImGui_cs;
-using System.Globalization;
-using System.Text;
 
 class StandardPathAutotile : Autotile
 {
