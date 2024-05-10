@@ -8,8 +8,6 @@ using System.Text;
 class StandardPathAutotile : Autotile
 {
     public PathTileTable TileTable;
-    public override string[] MissingTiles { get => []; } // TODO: don't make MissingTiles a property of every autotile subclass
-
     public override bool AllowIntersections { get => TileTable.Intersections; }
 
     private static FileBrowser? fileBrowser = null;

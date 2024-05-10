@@ -233,8 +233,7 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
         #endif
-
-        Autotiles.CheckMissingTiles();
+        
         level = Level.NewDefaultLevel();
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));

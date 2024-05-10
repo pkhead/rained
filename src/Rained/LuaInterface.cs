@@ -25,6 +25,7 @@ static class LuaInterface
         public LuaFunction? LuaFillPathProcedure = null;
         public LuaFunction? LuaFillRectProcedure = null;
         public LuaAutotileInterface LuaWrapper;
+        private List<string>? missingTiles = null;
 
         public record class ConfigOption
         {
@@ -54,6 +55,8 @@ static class LuaInterface
 
         public override void TileRect(int layer, Vector2i rectMin, Vector2i rectMax, bool force, bool geometry)
         {
+            if (CheckMissingTiles().Count > 0) return;
+
             string? modifierStr = null;
             if (geometry)
                 modifierStr = "geometry";
@@ -77,6 +80,8 @@ static class LuaInterface
 
         public override void TilePath(int layer, PathSegment[] pathSegments, bool force, bool geometry)
         {
+            if (CheckMissingTiles().Count > 0) return;
+
             var luaState = LuaInterface.NLuaState;
 
             // push a new table on the stack with data
@@ -131,57 +136,57 @@ static class LuaInterface
 
         public override void ConfigGui()
         {
-            foreach (var opt in Options.Values)
+            if (CheckMissingTiles().Count > 0)
             {
-                ImGui.Checkbox(opt.Name, ref opt.Value);
+                ImGui.Text("Missing required tiles:");
+                foreach (var tileName in missingTiles!)
+                {
+                    ImGui.BulletText(tileName);
+                }
+            }
+            else
+            {
+                foreach (var opt in Options.Values)
+                {
+                    ImGui.Checkbox(opt.Name, ref opt.Value);
+                }
             }
         }
 
-        private string[]? missingCache = null;
+        public List<string> CheckMissingTiles()
+        {
+            if (missingTiles is not null) return missingTiles;
+            missingTiles = [];
 
-        public override string[] MissingTiles {
-            get {
-                if (missingCache is not null) return missingCache;
-                var luaState = LuaInterface.NLuaState;
+            var luaState = NLuaState;
 
-                var table = LuaWrapper.RequiredTiles;
-                if (table is null)
+            var table = LuaWrapper.RequiredTiles;
+            if (table is null) return missingTiles;
+
+            for (int i = 1; table[i] is not null; i++)
+            {
+                if (table[i] is string tileName)
                 {
-                    missingCache = [];
-                    return missingCache;
-                }
-
-                List<string> missingTiles = [];
-
-                for (int i = 1; table[i] is not null; i++)
-                {
-                    if (table[i] is string tileName)
+                    if (!RainEd.Instance.TileDatabase.HasTile(tileName))
                     {
-                        if (!RainEd.Instance.TileDatabase.HasTile(tileName))
-                        {
-                            missingTiles.Add(tileName);
-                        }
+                        missingTiles.Add(tileName);
                     }
-                    else
-                    {
-                        luaState.Push(table[i]);
-                        LuaInterface.LogError($"invalid requiredTiles table for autotile '{Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                        IsReady = false;
-                        break;
-                    }
-                }
-
-                if (missingTiles.Count > 0)
-                {
-                    missingCache = missingTiles.ToArray();
                 }
                 else
                 {
-                    missingCache = [];
+                    luaState.Push(table[i]);
+                    LuaInterface.LogError($"invalid requiredTiles table for autotile '{Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
+                    IsReady = false;
+                    break;
                 }
-
-                return missingCache;
             }
+
+            if (missingTiles.Count > 0)
+            {
+                CanActivate = false;
+            }
+
+            return missingTiles;
         }
     }
 

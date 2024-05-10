@@ -525,7 +525,6 @@ partial class TileEditor : IEditorMode
             {
                 if (
                     selectedAutotile is not null &&
-                    selectedAutotile.MissingTiles.Length == 0 &&
                     selectedAutotile.IsReady &&
                     selectedAutotile.CanActivate
                 )

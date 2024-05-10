@@ -353,24 +353,11 @@ partial class TileEditor : IEditorMode
 
                             ImGui.Separator();
 
-                            bool disabled = false;
-
                             if (!autotile.IsReady)
                             {
-                                disabled = true;
                                 ImGui.TextWrapped("There was a problem loading this autotile.");
                             }
-                            else if (autotile.MissingTiles.Length > 0)
-                            {
-                                disabled = true;
-                                ImGui.Text("Missing required tiles:");
-                                foreach (var tileName in autotile.MissingTiles)
-                                {
-                                    ImGui.BulletText(tileName);
-                                }
-                            }
-                            
-                            if (!disabled)
+                            else
                             {
                                 autotile.ConfigGui();
                             }

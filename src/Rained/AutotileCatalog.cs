@@ -84,17 +84,7 @@ abstract class Autotile
 
     public virtual void ConfigGui() {}
 
-    public abstract string[] MissingTiles { get; }
     public virtual bool AllowIntersections { get => false; }
-
-    public void CheckMissingTiles()
-    {
-        var tiles = MissingTiles;
-        if (tiles.Length > 0)
-        {
-            LuaInterface.LogWarning($"missing required tiles for autotile '{Name}': {string.Join(", ", tiles)}");
-        }
-    }
 
     enum Direction
     {
@@ -458,17 +448,6 @@ class AutotileCatalog
         {
             Autotiles.RemoveAt(catIndex);
             AutotileCategories.RemoveAt(catIndex);
-        }
-    }
-    
-    public void CheckMissingTiles()
-    {
-        foreach (var group in Autotiles)
-        {
-            foreach (var tile in group)
-            {
-                tile.CheckMissingTiles();
-            }
         }
     }
 
