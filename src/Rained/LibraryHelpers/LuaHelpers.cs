@@ -14,6 +14,8 @@ namespace RainEd;
 /// </summary>
 static class LuaHelpers
 {
+    public delegate int LuaFunction(Lua lua);
+    
     [Serializable]
     public class LuaErrorException : Exception
     {
@@ -28,13 +30,13 @@ static class LuaHelpers
     private static int nextID = 1;
     private static readonly Dictionary<int, object> allocatedObjects = [];
     
-    private static readonly LuaFunction gcDelegate = new LuaFunction(GCDelegate);
-    private static readonly LuaFunction callDelegate = new LuaFunction(CallDelegate);
-    private static readonly LuaFunction mtDelegate = new LuaFunction(MetatableDelegate);
+    private static readonly KeraLua.LuaFunction gcDelegate = new KeraLua.LuaFunction(GCDelegate);
+    private static readonly KeraLua.LuaFunction callDelegate = new KeraLua.LuaFunction(CallDelegate);
+    private static readonly KeraLua.LuaFunction mtDelegate = new KeraLua.LuaFunction(MetatableDelegate);
 
-    private static readonly LuaFunction wrapperGcDelegate = new LuaFunction(WrapperGCDelegate);
-    private static readonly LuaFunction wrapperCallDelegate = new LuaFunction(WrapperCallDelegate);
-    private static readonly LuaFunction wrapperMtDelegate = new LuaFunction(MetatableDelegate);
+    private static readonly KeraLua.LuaFunction wrapperGcDelegate = new KeraLua.LuaFunction(WrapperGCDelegate);
+    private static readonly KeraLua.LuaFunction wrapperCallDelegate = new KeraLua.LuaFunction(WrapperCallDelegate);
+    private static readonly KeraLua.LuaFunction wrapperMtDelegate = new KeraLua.LuaFunction(MetatableDelegate);
 
     public static void Init(Lua lua)
     {
@@ -82,7 +84,7 @@ static class LuaHelpers
 
         try
         {
-            return func(luaPtr);
+            return func(Lua.FromIntPtr(luaPtr));
         }
         catch (LuaErrorException e)
         {

@@ -1,5 +1,5 @@
 -- setup autotile data
-local autotile = rained.createAutotile("Wall Wires", "Misc")
+local autotile = rained.tiles.createAutotile("Wall Wires", "Misc")
 autotile.type = "path"
 autotile:addToggleOption("cap", "Use End Tiles", false)
 autotile:addToggleOption("junctions", "Allow Junctions", true)
@@ -94,5 +94,5 @@ function autotile:tilePath(layer, segments, forceModifier)
     tileTable.placeCaps = self:getOption("cap")
 
     -- run the standard autotiler
-    rained.autotilePath(tileTable, layer, segments, forceModifier)
+    rained.tiles.autotilePath(tileTable, layer, segments, forceModifier)
 end

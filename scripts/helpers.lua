@@ -39,20 +39,20 @@ local patterns = {
 ---@param forceModifier ForceModifier
 function module.patternBox(prefix, layer, left, top, right, bottom, forceModifier)
     -- place corner tiles
-    rained.placeTile("Block Corner NW", left, top, layer, forceModifier)
-    rained.placeTile("Block Corner NE", right, top, layer, forceModifier)
-    rained.placeTile("Block Corner SE", right, bottom, layer, forceModifier)
-    rained.placeTile("Block Corner SW", left, bottom, layer, forceModifier)
+    rained.tiles.placeTile("Block Corner NW", left, top, layer, forceModifier)
+    rained.tiles.placeTile("Block Corner NE", right, top, layer, forceModifier)
+    rained.tiles.placeTile("Block Corner SE", right, bottom, layer, forceModifier)
+    rained.tiles.placeTile("Block Corner SW", left, bottom, layer, forceModifier)
 
     -- fill sides
     for x = left + 1, right - 1 do
-        rained.placeTile("Block Edge N", x, top, layer, forceModifier)
-        rained.placeTile("Block Edge S", x, bottom, layer, forceModifier)
+        rained.tiles.placeTile("Block Edge N", x, top, layer, forceModifier)
+        rained.tiles.placeTile("Block Edge S", x, bottom, layer, forceModifier)
     end
 
     for y = top + 1, bottom - 1 do
-        rained.placeTile("Block Edge W", left, y, layer, forceModifier)
-        rained.placeTile("Block Edge E", right, y, layer, forceModifier)
+        rained.tiles.placeTile("Block Edge W", left, y, layer, forceModifier)
+        rained.tiles.placeTile("Block Edge E", right, y, layer, forceModifier)
     end
 
     -- the following code is translated straight from the lingo code
@@ -79,7 +79,7 @@ function module.patternBox(prefix, layer, left, top, right, bottom, forceModifie
                 tl = 1
             end
 
-            rained.placeTile(prefix .. currentPattern.tiles[tl], px, py, layer, forceModifier)
+            rained.tiles.placeTile(prefix .. currentPattern.tiles[tl], px, py, layer, forceModifier)
         end
 
         py = py + currentPattern.tall

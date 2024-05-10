@@ -7,6 +7,39 @@
 function autorequire(path, recurse) end
 
 rained = {}
+rained.cells = {}
+rained.tiles = {}
+
+GEO_TYPE = {
+    AIR = 0,
+    SOLID = 1,
+    SLOPE_RIGHT_UP = 2,
+    SLOPE_LEFT_UP = 3,
+    SLOPE_RIGHT_DOWN = 4,
+    SLOPE_LEFT_DOWN = 5,
+    FLOOR = 6,
+    SHORTCUT_ENTRANCE = 7,
+    GLASS = 9
+}
+
+OBJECT_TYPE = {
+    NONE = 0,
+    HORIZONTAL_BEAM = 1,
+    VERTICAL_BEAM = 2,
+    HIVE = 3,
+    SHORTCUT = 5,
+    ENTRANCE = 6,
+    CREATURE_DEN = 7,
+    ROCK = 9,
+    SPEAR = 10,
+    CRACK = 11,
+    FORBID_FLY_CHAIN = 12,
+    GARBAGE_WORM = 13,
+    WATERFALL = 18,
+    WHACK_A_MOLE_HOLE = 19,
+    WORM_GRASS = 20,
+    SCAVENGER_HOLE = 21
+}
 
 ---Get the current version number.
 ---@return string version The version number as a string 
@@ -21,12 +54,77 @@ function rained.alert(msg) end
 ---@param callback function The action to run on command.
 function rained.registerCommand(name, callback) end
 
+---Get the width of the level.
+---@return integer
+function rained.getLevelWidth() end
+
+---Get the height of the level.
+---@return integer
+function rained.getLevelHeight() end
+
+---Check if a given coordinate is in the bounds of the level.
+---@param x integer
+---@param y integer
+---@return boolean
+function rained.isInBounds(x, y) end
+
+---Get the geometry type of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@return integer
+function rained.cells.getGeo(x, y, layer) end
+
+---Set the geometry type of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@param geo integer The geometry type of a cell.
+function rained.cells.setGeo(x, y, layer, geo) end
+
+---Get the geometry objects of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer
+---@return integer[]
+function rained.cells.getObjects(x, y, layer) end
+
+---Set the geometry objects of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer
+---@param objects integer[] The list of objects.
+function rained.cells.setObjects(x, y, layer, objects) end
+
+---Get the tile data of a cell
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@return string? tileName, integer? tileRootX, integer? tileRootY, integer? tileRootL
+function rained.cells.getTileData(x, y, layer) end
+
+---Set the tile name of the given cell.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@param tileName string The name of the tile.
+function rained.cells.setTileHead(x, y, layer, tileName) end
+
+---Set the tile head pointer of a given cell.
+---@param x integer The X position of the cell to modify.
+---@param y integer The Y position of the cell to modify.
+---@param layer integer The layer of the cell to modify.
+---@param rootX integer The X position of the pointed tile head.
+---@param rootY integer The Y position of the pointed tile head.
+---@param rootL integer The layer of the pointed tile head.
+function rained.cells.setTileRoot(x, y, layer, rootX, rootY, rootL) end
+
 ---Create an autotile
 ---@param name string The name of the autotile.
 ---@param category string? The category to place the autotile in. Defaults to Misc.
 ---@return Autotile autotile The new autotile.
 ---@overload fun(name: string)
-function rained.createAutotile(name, category) end
+function rained.tiles.createAutotile(name, category) end
 
 ---@class TileTable
 ---@field ld string
@@ -54,12 +152,12 @@ function rained.createAutotile(name, category) end
 ---@param startIndex integer? The index of the starting segment. Defaults to 1.
 ---@param endIndex integer? The number of segments to place. Defaults to the length of the segment array.
 ---@param forceModifier ForceModifier
-function rained.autotilePath(tileTable, layer, segments, forceModifier, startIndex, endIndex) end
+function rained.tiles.autotilePath(tileTable, layer, segments, forceModifier, startIndex, endIndex) end
 
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check
 ---@return boolean
-function rained.hasTile(tileName) end
+function rained.tiles.hasTile(tileName) end
 
 ---Place a tile in the level.
 ---@param tileName string The name of the tile to place
@@ -67,21 +165,21 @@ function rained.hasTile(tileName) end
 ---@param y integer The Y coordinate of the tile root
 ---@param layer integer The layer to place the tile, in the range [1, 3]
 ---@param forceModifier ForceModifier? The force-placement mode to use, or nil if placing normally
-function rained.placeTile(tileName, x, y, layer, forceModifier) end
+function rained.tiles.placeTile(tileName, x, y, layer, forceModifier) end
 
 ---Get the name of the tile at the given position.
 ---@param x integer
 ---@param y integer
 ---@param layer integer The given layer, in the range [1, 3]
 ---@return string? tileName The name of the tile, or nil if there is no tile at the given location.
-function rained.getTileAt(x, y, layer) end
+function rained.tiles.getTileAt(x, y, layer) end
 
 ---Check if the tile at the given position is a tile head.
 ---@param x integer
 ---@param y integer
 ---@param layer integer The given layer, in the range [1, 3]
 ---@return boolean hasTileHead True if the cell has a tile head, false if not.
-function rained.hasTileHead(x, y, layer) end
+function rained.tiles.hasTileHead(x, y, layer) end
 
 ---Delete the tile at the given position
 ---@param x integer
@@ -89,7 +187,7 @@ function rained.hasTileHead(x, y, layer) end
 ---@param layer integer The given layer, in the range [1, 3]
 ---@param removeGeo boolean? If the action should also remove the geometry.
 ---@overload fun(x: integer, y: integer, layer: integer)
-function rained.deleteTile(x, y, layer, removeGeo) end
+function rained.tiles.deleteTile(x, y, layer, removeGeo) end
 
 ---@alias AutotileType
 ---| "path"

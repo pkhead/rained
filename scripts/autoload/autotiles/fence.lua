@@ -1,6 +1,6 @@
 -- setup autotile data
 -- setup autotile data
-local autotile = rained.createAutotile("Fence")
+local autotile = rained.tiles.createAutotile("Fence")
 autotile.type = "rect"
 
 autotile:addToggleOption("altWire", "Use Alt Barbed Wire", false)
@@ -45,13 +45,13 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
                 wireTile = "barbed wire 2"
             end
 
-            rained.placeTile(wireTile, x, y, layer, forceModifier)
+            rained.tiles.placeTile(wireTile, x, y, layer, forceModifier)
         end
 
         -- place fence
-        rained.placeTile("fence top end", x, fenceTop, layer, forceModifier)
+        rained.tiles.placeTile("fence top end", x, fenceTop, layer, forceModifier)
         for y = fenceTop, bottom do
-            rained.placeTile("fence", x, y, layer, forceModifier)
+            rained.tiles.placeTile("fence", x, y, layer, forceModifier)
         end
     end
 
@@ -77,7 +77,7 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
     -- place poles
     for x = left + math.max(0, poleOffset), right, poleSpacing do
         for y = top, bottom do
-            rained.deleteTile(x, y, layer)
+            rained.tiles.deleteTile(x, y, layer)
 
             if y < fenceTop then
                 local wirePoleTile = "barbed wire pole"
@@ -85,11 +85,11 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
                     wirePoleTile = "barbed wire pole 2"
                 end
 
-                rained.placeTile(wirePoleTile, x, y, layer, forceModifier)
+                rained.tiles.placeTile(wirePoleTile, x, y, layer, forceModifier)
             elseif y == fenceTop then
-                rained.placeTile("fence with pole top end", x, y, layer, forceModifier)
+                rained.tiles.placeTile("fence with pole top end", x, y, layer, forceModifier)
             else
-                rained.placeTile("fence with pole", x, y, layer, forceModifier)
+                rained.tiles.placeTile("fence with pole", x, y, layer, forceModifier)
             end
         end
     end

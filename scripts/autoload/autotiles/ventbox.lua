@@ -1,5 +1,5 @@
 -- setup autotile data
-local autotile = rained.createAutotile("Ventbox")
+local autotile = rained.tiles.createAutotile("Ventbox")
 autotile.type = "rect"
 
 -- Rained will not allow the user to use this autotile
@@ -28,26 +28,26 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
     end
 
     -- place ventbox corners
-    rained.placeTile("Ventbox NW", left, top, layer, forceModifier)
-    rained.placeTile("Ventbox NE", right-1, top, layer, forceModifier)
-    rained.placeTile("Ventbox SW", left, bottom-1, layer, forceModifier)
-    rained.placeTile("Ventbox SE", right-1, bottom-1, layer, forceModifier)
+    rained.tiles.placeTile("Ventbox NW", left, top, layer, forceModifier)
+    rained.tiles.placeTile("Ventbox NE", right-1, top, layer, forceModifier)
+    rained.tiles.placeTile("Ventbox SW", left, bottom-1, layer, forceModifier)
+    rained.tiles.placeTile("Ventbox SE", right-1, bottom-1, layer, forceModifier)
 
     -- place ventbox sides
     for x=left+2, right-2 do
-        rained.placeTile("Ventbox N", x, top, layer, forceModifier)
-        rained.placeTile("Ventbox S", x, bottom-1, layer, forceModifier)
+        rained.tiles.placeTile("Ventbox N", x, top, layer, forceModifier)
+        rained.tiles.placeTile("Ventbox S", x, bottom-1, layer, forceModifier)
     end
 
     for y=top+2, bottom-2 do
-        rained.placeTile("Ventbox W", left, y, layer, forceModifier)
-        rained.placeTile("Ventbox E", right-1, y, layer, forceModifier)
+        rained.tiles.placeTile("Ventbox W", left, y, layer, forceModifier)
+        rained.tiles.placeTile("Ventbox E", right-1, y, layer, forceModifier)
     end
 
     -- place ventbox interiors
     for x=left+2, right-2 do
         for y=top+2, bottom-2 do
-            rained.placeTile("Ventbox", x, y, layer, forceModifier)
+            rained.tiles.placeTile("Ventbox", x, y, layer, forceModifier)
         end
     end
 end
