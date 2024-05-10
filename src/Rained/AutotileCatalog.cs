@@ -342,8 +342,8 @@ class AutotileCatalog
             if (autotileName == "") return;
             
             if (
-                thickness is null ||
-                length is null ||
+                //thickness is null ||
+                //length is null ||
                 !tileDict.TryGetValue("ld", out string? ld) ||
                 !tileDict.TryGetValue("lu", out string? lu) ||
                 !tileDict.TryGetValue("rd", out string? rd) ||
@@ -363,7 +363,7 @@ class AutotileCatalog
             else
             {
                 var autotile = new StandardPathAutotile(
-                    thickness.Value, length.Value,
+                    1, 1,
                     ld, lu, rd, ru,
                     vertical, horizontal
                 ) {

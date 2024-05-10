@@ -194,12 +194,6 @@ static class LuaInterface
         [LuaMember(Name = "name")]
         public string Name { get => autotile.Name; set => autotile.Name = value; }
 
-        [LuaMember(Name = "pathThickness")]
-        public int PathThickness { get => autotile.PathThickness; set => autotile.PathThickness = value; }
-        
-        [LuaMember(Name = "segmentLength")]
-        public int SegmentLength { get => autotile.SegmentLength; set => autotile.SegmentLength = value; }
-
         [LuaMember(Name = "type")]
         public string Type
         {
@@ -323,7 +317,7 @@ static class LuaInterface
         luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
         if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
         {
-            AutoRequire("autoload", true);
+            luaState.DoString("autorequire('autoload', true)");
         }
     }
 

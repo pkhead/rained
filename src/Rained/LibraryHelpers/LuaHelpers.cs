@@ -68,6 +68,8 @@ static class LuaHelpers
             }
             else
             {
+                if (isNullable) type = Nullable.GetUnderlyingType(type);
+                
                 if (type == typeof(int))
                 {
                     parameters[i] = (int)lua.CheckInteger(luaParamIndex);

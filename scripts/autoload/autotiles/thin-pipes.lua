@@ -4,8 +4,6 @@ local helpers = require("helpers") -- load the helpers.lua module
 -- setup autotile data
 local autotile = rained.createAutotile("Thin Pipes", "Pipes")
 autotile.type = "path"
-autotile.pathThickness = 1
-autotile.segmentLength = 1
 autotile:addOption("cap", "Cap with inward pipes", true)
 autotile:addOption("plain", "Use plain pipes", false)
 
