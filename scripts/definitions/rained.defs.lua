@@ -103,11 +103,11 @@ function rained.cells.setObjects(x, y, layer, objects) end
 ---@return string? tileName, integer? tileRootX, integer? tileRootY, integer? tileRootL
 function rained.cells.getTileData(x, y, layer) end
 
----Set the tile name of the given cell.
+---Set the tile head of the given cell.
 ---@param x integer
 ---@param y integer
 ---@param layer integer The given layer, in the range [1, 3].
----@param tileName string The name of the tile, or nil.
+---@param tileName string? The name of the tile, or nil.
 function rained.cells.setTileHead(x, y, layer, tileName) end
 
 ---Set the tile head pointer of a given cell.
@@ -137,8 +137,8 @@ function rained.tiles.createAutotile(name, category) end
 ---@field category string
 ---@field width integer
 ---@field height integer
----@field specs integer[][]
----@field specs2 integer[][]
+---@field specs integer[]
+---@field specs2 integer[]
 ---@field bfTiles integer
 ---@field centerX integer
 ---@field centerY integer

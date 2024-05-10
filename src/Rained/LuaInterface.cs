@@ -524,6 +524,7 @@ static class LuaInterface
                 if (layer < 0 || layer > 2) return;
                 if (geoType < 0 || geoType == 8 || geoType > 9) throw new Exception("invalid geo type " + geoType);
                 RainEd.Instance.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
+                RainEd.Instance.Window.LevelRenderer.MarkNeedsRedraw(x, y, layer);
             });
             lua.SetField(-2, "setGeo");
 
@@ -573,6 +574,8 @@ static class LuaInterface
                 }
 
                 RainEd.Instance.Level.Layers[layer, x, y].Objects = objects;
+                RainEd.Instance.Window.LevelRenderer.MarkNeedsRedraw(x, y, layer);
+
                 return 0;
             });
             lua.SetField(-2, "setObjects");
@@ -823,6 +826,8 @@ static class LuaInterface
     private static void RunCommand(int id)
     {
         luaState.State.RawGetInteger(KeraLua.LuaRegistry.Index, registeredCmds[id]);
+
+        RainEd.Instance.Window.CellChangeRecorder.BeginChange();
         
         try
         {
@@ -833,6 +838,8 @@ static class LuaInterface
         {
             HandleException(e);
         }
+
+        RainEd.Instance.Window.CellChangeRecorder.PushChange();
     }
 
     private static int LuaCreateAutotile(KeraLua.Lua lua)
