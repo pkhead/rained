@@ -107,7 +107,7 @@ function rained.cells.getTileData(x, y, layer) end
 ---@param x integer
 ---@param y integer
 ---@param layer integer The given layer, in the range [1, 3].
----@param tileName string The name of the tile.
+---@param tileName string The name of the tile, or nil.
 function rained.cells.setTileHead(x, y, layer, tileName) end
 
 ---Set the tile head pointer of a given cell.
@@ -119,12 +119,34 @@ function rained.cells.setTileHead(x, y, layer, tileName) end
 ---@param rootL integer The layer of the pointed tile head.
 function rained.cells.setTileRoot(x, y, layer, rootX, rootY, rootL) end
 
+---Clear the tile head pointer of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer
+function rained.cells.clearTileRoot(x, y, layer) end
+
 ---Create an autotile
 ---@param name string The name of the autotile.
 ---@param category string? The category to place the autotile in. Defaults to Misc.
 ---@return Autotile autotile The new autotile.
 ---@overload fun(name: string)
 function rained.tiles.createAutotile(name, category) end
+
+---@class TileData
+---@field name string
+---@field category string
+---@field width integer
+---@field height integer
+---@field specs integer[][]
+---@field specs2 integer[][]
+---@field bfTiles integer
+---@field centerX integer
+---@field centerY integer
+
+---Get the init data of a tile.
+---@param name string The name of the tile
+---@return TileData? tileData The table containing the data for the tile, or null if the tile does not exist.
+function rained.tiles.getTileInfo(name) end
 
 ---@class TileTable
 ---@field ld string

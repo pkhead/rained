@@ -7,8 +7,6 @@ using NLua;
 using NLua.Exceptions;
 using Autotiles;
 
-using LuaNativeFunction = KeraLua.LuaFunction;
-
 static class LuaInterface
 {
     // this is the C# side for autotiles programmed in Lua
@@ -383,8 +381,42 @@ static class LuaInterface
         luaState.State.SetField(-2, "rained");
         luaState.State.Pop(1); // pop preload table
 
-        // assign module to global variable
-        luaState.DoString("rained = require(\"rained\")");
+        // initialize global variables
+        string globalsInit = """
+        rained = require("rained")
+
+        GEO_TYPE = {
+            AIR = 0,
+            SOLID = 1,
+            SLOPE_RIGHT_UP = 2,
+            SLOPE_LEFT_UP = 3,
+            SLOPE_RIGHT_DOWN = 4,
+            SLOPE_LEFT_DOWN = 5,
+            FLOOR = 6,
+            SHORTCUT_ENTRANCE = 7,
+            GLASS = 9
+        }
+
+        OBJECT_TYPE = {
+            NONE = 0,
+            HORIZONTAL_BEAM = 1,
+            VERTICAL_BEAM = 2,
+            HIVE = 3,
+            SHORTCUT = 5,
+            ENTRANCE = 6,
+            CREATURE_DEN = 7,
+            ROCK = 9,
+            SPEAR = 10,
+            CRACK = 11,
+            FORBID_FLY_CHAIN = 12,
+            GARBAGE_WORM = 13,
+            WATERFALL = 18,
+            WHACK_A_MOLE_HOLE = 19,
+            WORM_GRASS = 20,
+            SCAVENGER_HOLE = 21
+        }
+        """;
+        luaState.DoString(globalsInit);
 
         luaState.State.NewMetaTable(CommandID);
         LuaHelpers.PushLuaFunction(luaState.State, static (KeraLua.Lua lua) =>
@@ -493,7 +525,7 @@ static class LuaInterface
                 if (geoType < 0 || geoType == 8 || geoType > 9) throw new Exception("invalid geo type " + geoType);
                 RainEd.Instance.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
             });
-            lua.SetField(-2, "getGeo");
+            lua.SetField(-2, "setGeo");
 
             // function getObjects
             LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
@@ -587,19 +619,36 @@ static class LuaInterface
                 int x = (int) lua.CheckNumber(1);
                 int y = (int) lua.CheckNumber(2);
                 int layer = (int) lua.CheckInteger(3) - 1;
-                string tileName = lua.CheckString(4);
+                string? tileName = null;
+
+                if (!lua.IsNoneOrNil(4))
+                    tileName = lua.CheckString(4);
 
                 if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
                 if (layer < 0 || layer > 2) return 0;
 
-                if (!RainEd.Instance.TileDatabase.HasTile(tileName))
-                    throw new LuaHelpers.LuaErrorException($"tile '{tileName}' does not exist");
-                
                 ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
-                cell.TileHead = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
-                cell.TileRootX = x;
-                cell.TileRootY = y;
-                cell.TileLayer = layer;
+
+                if (tileName is null)
+                {
+                    cell.TileHead = null;
+                    if (cell.TileRootX == x && cell.TileRootY == y && cell.TileLayer == layer)
+                    {
+                        cell.TileRootX = -1;
+                        cell.TileRootY = -1;
+                        cell.TileLayer = -1;
+                    }
+                }
+                else
+                {
+                    if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                        throw new LuaHelpers.LuaErrorException($"tile '{tileName}' does not exist");
+                    
+                    cell.TileHead = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+                    cell.TileRootX = x;
+                    cell.TileRootY = y;
+                    cell.TileLayer = layer;
+                }
 
                 return 0;
             });
@@ -633,6 +682,25 @@ static class LuaInterface
                 return 0;
             });
             lua.SetField(-2, "setTileRoot");
+
+            // function clearTileRoot
+            LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+            {
+                int x = (int) lua.CheckNumber(1);
+                int y = (int) lua.CheckNumber(2);
+                int layer = (int) lua.CheckInteger(3) - 1;
+
+                if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+                if (layer < 0 || layer > 2) return 0;
+
+                ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+                cell.TileRootX = -1;
+                cell.TileRootY = -1;
+                cell.TileLayer = -1;
+                
+                return 0;
+            });
+            lua.SetField(-2, "clearTileRoot");
 
             lua.SetField(-2, "cells");
         }
@@ -688,6 +756,63 @@ static class LuaInterface
             // function autotilePath
             LuaHelpers.PushLuaFunction(lua, LuaStandardPathAutotile);
             lua.SetField(-2, "autotilePath");
+
+            // function getTileInfo
+            LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+            {
+                var tileName = lua.CheckString(1);
+                if (!RainEd.Instance.TileDatabase.HasTile(tileName)) return 0;
+                var tileData = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+
+                lua.NewTable();
+                lua.PushString(tileData.Name); // name
+                lua.SetField(-2, "name");
+                lua.PushString(tileData.Category.Name); // category
+                lua.SetField(-2, "category");
+                lua.PushInteger(tileData.Width); // width
+                lua.SetField(-2, "width");
+                lua.PushInteger(tileData.Height); // height
+                lua.SetField(-2, "height");
+                lua.PushInteger(tileData.BfTiles); // bfTiles
+                lua.SetField(-2, "bfTiles");
+                lua.PushInteger(tileData.CenterX); // cx
+                lua.SetField(-2, "centerX");
+                lua.PushInteger(tileData.CenterY); // cy
+                lua.SetField(-2, "centerY");
+
+                // create specs table
+                lua.CreateTable(tileData.Width * tileData.Height, 0);
+                int i = 1;
+                for (int x = 0; x < tileData.Width; x++)
+                {
+                    for (int y = 0; y < tileData.Height; y++)
+                    {
+                        lua.PushInteger(tileData.Requirements[x,y]);
+                        lua.RawSetInteger(-2, i++);
+                    }
+                }
+                lua.SetField(-2, "specs");
+
+                // create specs2 table
+                if (tileData.HasSecondLayer)
+                {
+                    lua.CreateTable(tileData.Width * tileData.Height, 0);
+                    i = 1;
+                    for (int x = 0; x < tileData.Width; x++)
+                    {
+                        for (int y = 0; y < tileData.Height; y++)
+                        {
+                            lua.PushInteger(tileData.Requirements2[x,y]);
+                            lua.RawSetInteger(-2, i++);
+                        }
+                    }
+
+                    lua.SetField(-2, "specs2");
+                }
+
+                return 1;
+            });
+            lua.SetField(-2, "getTileInfo");
 
             lua.SetField(-2, "tiles");
         }
