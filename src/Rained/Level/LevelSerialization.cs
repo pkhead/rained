@@ -199,7 +199,15 @@ static class LevelSerialization
                             else
                             {
                                 var tile = RainEd.Instance.TileDatabase.GetTileFromName(name);
-                                level.Layers[z,x,y].TileHead = tile;
+                                ref var cell = ref level.Layers[z,x,y]; 
+                                cell.TileHead = tile;
+
+                                if (tile.Tags.Contains("Chain Holder"))
+                                {
+                                    var chainPos = (Vector2) data.values[2];
+                                    cell.ChainX = (int)chainPos.X - 1;
+                                    cell.ChainY = (int)chainPos.Y - 1;
+                                }
                             }
 
                             break;
@@ -660,7 +668,19 @@ static class LevelSerialization
                         int group = cell.TileHead.Category.Index + 2 + RainEd.Instance.MaterialDatabase.Categories.Count;
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
-                        output.AppendFormat("[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
+
+                        if (cell.ChainX != int.MinValue || cell.ChainY != int.MinValue)
+                        {
+                            output.AppendFormat(
+                                "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", point({3}, {4})]]",
+                                group, sub, name,
+                                cell.ChainX + 1, cell.ChainY + 1
+                            );
+                        }
+                        else
+                        {
+                            output.AppendFormat("[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\"]]", group, sub, name);
+                        }
                     }
                     // tile body
                     else if (cell.HasTile())

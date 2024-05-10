@@ -34,6 +34,8 @@ class Tile
     public readonly int ImageYOffset;
     public readonly int ImageRowCount;
 
+    public readonly string[] Tags;
+
     public Tile(
         string name,
         TileCategory category,
@@ -43,7 +45,7 @@ class Tile
         List<int>? repeatL,
         List<int> specs, List<int>? specs2,
         int rnd,
-        bool noPropTag
+        string[] tags
     )
     {
         Name = name;
@@ -54,6 +56,7 @@ class Tile
         CanBeProp = false;
         LayerCount = 1;
         VariationCount = rnd;
+        Tags = tags;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
@@ -115,7 +118,7 @@ class Tile
                 break;
         }
 
-        if (noPropTag)
+        if (Tags.Contains("notProp"))
             CanBeProp = false;
     }
 }
@@ -226,7 +229,7 @@ class TileDatabase
                         specs: specs,
                         specs2: specs2,
                         rnd: rnd,
-                        noPropTag: tags.Contains("notProp")
+                        tags: [..tags]
                     );
 
                     curGroup.Tiles.Add(tileData);

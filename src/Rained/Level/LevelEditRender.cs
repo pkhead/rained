@@ -128,6 +128,8 @@ class LevelEditRender
     private readonly List<Vector3> verticesBuf = new();
     private readonly List<Color> colorsBuf = new();
 
+    private readonly RlManaged.Texture2D bigChainSegment;
+
     public LevelEditRender()
     {
         editor = RainEd.Instance;
@@ -139,6 +141,27 @@ class LevelEditRender
         ReloadLevel();
         
         propPreviewShader = RlManaged.Shader.LoadFromMemory(null, RWTransparencyShaderSrc);
+
+        using var chainSegmentImg = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_144_bigChainSegment.png"));
+        
+        for (int x = 0; x < chainSegmentImg.Width; x++)
+        {
+            for (int y = 0; y < chainSegmentImg.Height; y++)
+            {
+                var col = Raylib.GetImageColor(chainSegmentImg, x, y);
+
+                if (col.Equals(new Color(0, 0, 0, 255)))
+                {
+                    chainSegmentImg.DrawPixel(x, y, Color.White);
+                }
+                else
+                {
+                    chainSegmentImg.DrawPixel(x, y, new Color(255, 255, 255, 0));
+                }
+            }
+        }
+
+        bigChainSegment = RlManaged.Texture2D.LoadFromImage(chainSegmentImg);
     }
 
     public void ReloadLevel()
