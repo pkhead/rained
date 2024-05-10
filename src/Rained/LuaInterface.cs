@@ -540,33 +540,48 @@ static class LuaInterface
     {
         var state = luaState.State;
 
-        state.CheckType(1, KeraLua.LuaType.Table); // tile table
+        // arg 1: tile table
+        state.CheckType(1, KeraLua.LuaType.Table);
+        // arg 2: layer
         int layer = (int) state.CheckInteger(2) - 1;
-        state.CheckType(3, KeraLua.LuaType.Table); // segment list
-        bool allowIntersections = state.ToBoolean(4);
+        // arg 3: segment list
+        state.CheckType(3, KeraLua.LuaType.Table);
         
+        // arg 4: modifier string
         string modifierStr = "";
-        if (!state.IsNoneOrNil(5))
-            modifierStr = state.CheckString(5);
+        if (!state.IsNoneOrNil(4))
+            modifierStr = state.CheckString(4);
 
         int startIndex = 0;
         int endIndex = (int) state.Length(3);
 
-        // optional start index parameter
-        if (!state.IsNoneOrNil(6))
-            startIndex = (int) state.CheckInteger(6) - 1;
+        // arg 5: optional start index
+        if (!state.IsNoneOrNil(5))
+            startIndex = (int) state.CheckInteger(5) - 1;
         
-        // optional end index parameter
-        if (!state.IsNoneOrNil(7))
-            endIndex = (int) state.CheckInteger(7);
+        // arg 6: optional end index
+        if (!state.IsNoneOrNil(6))
+            endIndex = (int) state.CheckInteger(6);
         
         // verify layer argument
         if (layer < 0 || layer > 2) return 0;
         
-        var tileTable = new PathTileTable()
+        var tileTable = new PathTileTable();
+
+        // parse tiling options
+        if (state.GetField(1, "placeJunctions") != KeraLua.LuaType.Nil)
         {
-            AllowJunctions = allowIntersections
-        };
+            if (!state.IsBoolean(-1)) return state.Error("invalid tile table");
+            tileTable.AllowJunctions = state.ToBoolean(-1);
+        }
+
+        if (state.GetField(1, "placeCaps") != KeraLua.LuaType.Nil)
+        {
+            if (!state.IsBoolean(-1)) return state.Error("invaild tile table");
+            tileTable.PlaceCaps = state.ToBoolean(-1);
+        }
+
+        state.Pop(2);
 
         // parse the tile table
         if (state.GetField(1, "ld") != KeraLua.LuaType.String) return state.Error("invalid tile table");
@@ -584,7 +599,7 @@ static class LuaInterface
 
         state.Pop(6);
 
-        if (allowIntersections)
+        if (tileTable.AllowJunctions)
         {
             if (state.GetField(1, "tr") != KeraLua.LuaType.String) return state.Error("invalid tile table");
             tileTable.TRight = state.ToString(-1);
@@ -598,6 +613,20 @@ static class LuaInterface
             tileTable.XJunct = state.ToString(-1);
 
             state.Pop(5);
+        }
+
+        if (tileTable.PlaceCaps)
+        {
+            if (state.GetField(1, "capRight") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.CapRight = state.ToString(-1);
+            if (state.GetField(1, "capUp") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.CapUp = state.ToString(-1);
+            if (state.GetField(1, "capLeft") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.CapLeft = state.ToString(-1);
+            if (state.GetField(1, "capDown") != KeraLua.LuaType.String) return state.Error("invalid tile table");
+            tileTable.CapDown = state.ToString(-1);
+
+            state.Pop(4);
         }
 
         // parse path segment table

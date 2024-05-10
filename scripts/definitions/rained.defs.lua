@@ -40,16 +40,21 @@ function rained.createAutotile(name, category) end
 ---@field tl string?
 ---@field td string?
 ---@field x string?
+---@field capRight string?
+---@field capUp string?
+---@field capLeft string?
+---@field capDown string?
+---@field placeJunctions boolean?
+---@field placeCaps boolean?
 
 ---Perform standard path autotiling
----@param tileTable TileTable
+---@param tileTable TileTable The autotile parameter table.
 ---@param layer integer The layer to run the autotiler on.
 ---@param segments PathSegment[] The segments to autotile with.
----@param intersect boolean True if path intersections should be handled.
 ---@param startIndex integer? The index of the starting segment. Defaults to 1.
 ---@param endIndex integer? The number of segments to place. Defaults to the length of the segment array.
 ---@param forceModifier ForceModifier
-function rained.autotilePath(tileTable, layer, segments, intersect, forceModifier, startIndex, endIndex) end
+function rained.autotilePath(tileTable, layer, segments, forceModifier, startIndex, endIndex) end
 
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check
@@ -99,7 +104,7 @@ function rained.deleteTile(x, y, layer, removeGeo) end
 ---@class Autotile
 ---@field name string The name of the autotile.
 ---@field type AutotileType The fill type of the autotile.
----@field allowIntersections boolean True if intersections are allowed.
+---@field allowIntersections boolean True if self-intersections are allowed.
 ---@field requiredTiles string[]? The list of all the tiles required by the autotile.
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
 ---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback

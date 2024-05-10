@@ -44,7 +44,13 @@ struct PathTileTable(string ld, string lu, string rd, string ru, string vert, st
     public string TDown = "";
     public string XJunct = "";
 
+    public string CapRight = "";
+    public string CapUp = "";
+    public string CapLeft = "";
+    public string CapDown = "";
+
     public bool AllowJunctions = false;
+    public bool PlaceCaps = false;
 }
 
 /// <summary>
@@ -119,11 +125,18 @@ abstract class Autotile
         public readonly Tiles.Tile? TDown;
         public readonly Tiles.Tile? XJunct;
 
+        public readonly Tiles.Tile? CapRight;
+        public readonly Tiles.Tile? CapUp;
+        public readonly Tiles.Tile? CapLeft;
+        public readonly Tiles.Tile? CapDown;
+
         public readonly bool AllowJunctions = false;
+        public readonly bool PlaceCaps = false;
 
         public InstancedPathTileTable(PathTileTable tileTable)
         {
             AllowJunctions = tileTable.AllowJunctions;
+            PlaceCaps = tileTable.PlaceCaps;
 
             LeftDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftDown);
             LeftUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.LeftUp);
@@ -139,6 +152,14 @@ abstract class Autotile
                 TUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TUp);
                 TDown  = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TDown);
                 XJunct = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.XJunct);
+            }
+
+            if (PlaceCaps)
+            {
+                CapRight = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.CapRight);
+                CapUp = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.CapUp);
+                CapLeft = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.CapLeft);
+                CapDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.CapDown);
             }
         }
     }
@@ -170,6 +191,15 @@ abstract class Autotile
         
         if (tile == tileTable.XJunct)
             return PathDirection.Right | PathDirection.Up | PathDirection.Left | PathDirection.Down;
+        
+        if (tile == tileTable.CapRight)
+            return PathDirection.Left;
+        if (tile == tileTable.CapUp)
+            return PathDirection.Down;
+        if (tile == tileTable.CapLeft)
+            return PathDirection.Right;
+        if (tile == tileTable.CapDown)
+            return PathDirection.Up;
         
         return 0;
     }
@@ -227,14 +257,27 @@ abstract class Autotile
                 return tiles.RightUp;
             }
 
-            // straight
-            else if (down || up)
+            // cap segments
+            else if (tiles.PlaceCaps && count == 1)
             {
-                return tiles.Vertical;
+                if (right)  return tiles.CapLeft;
+                if (up)     return tiles.CapDown;
+                if (left)   return tiles.CapRight;
+                if (down)   return tiles.CapUp; 
             }
-            else if (right || left)
+
+            // straight segments
+            else
             {
-                return tiles.Horizontal;
+                if (down || up)
+                {
+                    return tiles.Vertical;
+                }
+                else if (right || left)
+                {
+                    return tiles.Horizontal;
+                }
+
             }
         }
 
@@ -342,7 +385,9 @@ abstract class Autotile
                 if (!seg.Left && JoinOutsideTile(segPos, layer, Direction.Left)) segDirs |= PathDirection.Left;
                 if (!seg.Down && JoinOutsideTile(segPos, layer, Direction.Down)) segDirs |= PathDirection.Down;
 
-                RainEd.Instance.Level.SafePlaceTile(GetTileFromDirections(tiles, segDirs)!, layer, seg.X, seg.Y, modifier);
+                var tile = GetTileFromDirections(tiles, segDirs);
+                if (tile is not null)
+                    RainEd.Instance.Level.SafePlaceTile(tile, layer, seg.X, seg.Y, modifier);
             }
         }
         else
@@ -356,7 +401,10 @@ abstract class Autotile
                 if (seg.Up) dirs |= PathDirection.Up;
                 if (seg.Left) dirs |= PathDirection.Left;
                 if (seg.Down) dirs |= PathDirection.Down;
-                RainEd.Instance.Level.SafePlaceTile(GetTileFromDirections(tiles, dirs)!, layer, seg.X, seg.Y, modifier);
+
+                var tile = GetTileFromDirections(tiles, dirs);
+                if (tile is not null)
+                    RainEd.Instance.Level.SafePlaceTile(tile, layer, seg.X, seg.Y, modifier);
             }
         }
     }
