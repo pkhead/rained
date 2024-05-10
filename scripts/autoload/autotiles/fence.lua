@@ -54,14 +54,26 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
     end
 
     -- calculate pole spacing
-    local poleSpacing = autotile:getOption("poleSpacing")
+    local poleSpacing
+    local poleOffset = 0
+    local boxWidth = right - left + 1
 
-    if autotile:getOption("poleMode") and autotile:getOption("numPoles") > 0 then
-        poleSpacing = math.ceil((right - left + 1) / (autotile:getOption("numPoles") + 1))
+    if autotile:getOption("poleMode") then
+        poleSpacing = math.ceil(boxWidth / autotile:getOption("numPoles"))
+
+        -- this will attempt to center the poles
+        local fit = (autotile:getOption("numPoles") - 1) * poleSpacing + 1
+        poleOffset = math.floor((boxWidth - fit) / 2)
+    else
+        poleSpacing = autotile:getOption("poleSpacing")
+
+        -- this will attempt to center the poles
+        local fit = (math.ceil(boxWidth / poleSpacing) - 1) * poleSpacing + 1
+        poleOffset = math.floor((boxWidth - fit) / 2)
     end
 
     -- place poles
-    for x = left + poleSpacing - 1, right, poleSpacing do
+    for x = left + math.max(0, poleOffset), right, poleSpacing do
         for y = top, bottom do
             rained.deleteTile(x, y, layer)
 
