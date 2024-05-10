@@ -6,7 +6,6 @@ Priority:
 - thin pipe join pipes not in path
 - std path intersections
 - more autotiles
-  - ventbox
   - wall wires
   - crossbeams?
   - fences
