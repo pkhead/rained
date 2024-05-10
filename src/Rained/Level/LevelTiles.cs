@@ -19,7 +19,7 @@ enum TilePlacementMode : int
 
 partial class Level
 {
-    private readonly Dictionary<(int, int, int), Vector2i> chainData = [];
+    public readonly Dictionary<(int, int, int), Vector2i> ChainData = [];
 
     public TilePlacementStatus ValidateTilePlacement(Tile tile, int tileLeft, int tileTop, int layer, bool force)
     {
@@ -320,10 +320,16 @@ partial class Level
         }
     }
 
-    private void RemoveChainData(int layer, int x, int y)
+    /// <summary>
+    /// Remove the chain data for a given chain holder tile head.
+    /// </summary>
+    /// <param name="layer"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    public void RemoveChainData(int layer, int x, int y)
     {
         var chainKey = (layer, x, y);
-        chainData.Remove(chainKey);
+        ChainData.Remove(chainKey);
     }
 
     /// <summary>
@@ -341,7 +347,7 @@ partial class Level
         if (tileHead is null || !tileHead.Tags.Contains("Chain Holder"))
             throw new Exception("Attempt to set chain data for a tile that is either nonexistent or isn't a chain holder.");
         
-        chainData[(layer, x, y)] = new Vector2i(chainEndX, chainEndY);
+        ChainData[(layer, x, y)] = new Vector2i(chainEndX, chainEndY);
     }
 
     /// <summary>
@@ -354,7 +360,7 @@ partial class Level
     /// <returns>True if the given cell is a chain holder tile head, false if not.</returns>
     public bool TryGetChainData(int layer, int x, int y, out Vector2i chainEndPos)
     {
-        return chainData.TryGetValue((layer, x, y), out chainEndPos);
+        return ChainData.TryGetValue((layer, x, y), out chainEndPos);
     }
 
     /// <summary>
