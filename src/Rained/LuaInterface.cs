@@ -299,9 +299,15 @@ static class LuaInterface
         public void AddIntOption(string id, string name, int defaultValue)
             => autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue));
         
+        // min and max have to be doubles, as i want the user to be able to pass
+        // math.huge into them
         [LuaMember(Name = "addIntOption")]
-        public void AddIntOption(string id, string name, int defaultValue, int min, int max)
-            => autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue, min, max));
+        public void AddIntOption(string id, string name, int defaultValue, double min, double max)
+        {
+            int intMin = double.IsPositiveInfinity(min) ? int.MinValue : (int) min;
+            int intMax = double.IsPositiveInfinity(max) ? int.MaxValue : (int) max;
+            autotile.AddOption(new LuaAutotile.ConfigOption(id, name, defaultValue, intMin, intMax));
+        }
 
         [LuaMember(Name = "getOption")]
         public object? GetOption(string id)
@@ -461,7 +467,7 @@ static class LuaInterface
             var level = RainEd.Instance.Level;
             if (layer < 1 || layer > 3) return 0;
             if (!level.IsInBounds(x, y)) return 0;
-            level.RemoveTileCell(layer, x, y, removeGeo);
+            level.RemoveTileCell(layer - 1, x, y, removeGeo);
             return 0;
         });
         luaState.State.SetField(-2, "deleteTile");

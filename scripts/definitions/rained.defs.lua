@@ -122,7 +122,7 @@ function Autotile:addIntOption(id, label, defaultValue, min, max) end
 
 ---Get the value of an option
 ---@param id string The ID of the option to read
----@return boolean value The value of the given option
+---@return boolean|integer value The value of the given option
 function Autotile:getOption(id) end
 
 ---@class PathSegment
