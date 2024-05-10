@@ -854,9 +854,23 @@ class LevelEditRender
                 }
             }
         }
-    }
 
-    
+        // draw chains from chain holders
+        foreach (var (k, v) in RainEd.Instance.Level.ChainData)
+        {
+            if (k.Item1 != layer) break;
+            var cellPos = new Vector2(k.Item2, k.Item3);
+            var chainEnd = new Vector2(v.X, v.Y);
+
+            var tile = Level.Layers[layer, k.Item2, k.Item3].TileHead!;
+            Raylib.DrawLineEx(
+                (cellPos + Vector2.One) * Level.TileSize,
+                (chainEnd + Vector2.One) * Level.TileSize,
+                4f / ViewZoom,
+                tile.Category.Color
+            );
+        }
+    }
 
     public void RenderProps(int srcLayer, int alpha)
     {
