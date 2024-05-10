@@ -96,6 +96,11 @@ abstract class Autotile
         }
     }
 
+    enum Direction
+    {
+        Right, Up, Left, Down
+    };
+
     // C# version of lua autotilePath.
     // I suppose I could just make it so you can call this function directly within Lua,
     // but I don't feel like it. Also, the Lua version is probably a good
@@ -123,8 +128,124 @@ abstract class Autotile
         var ru = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.RightUp);
         var horiz = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Horizontal);
         var vert = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.Vertical);
-
         Tiles.Tile? tRight, tLeft, tUp, tDown, xInt;
+
+        bool JoinOutsideTile(Vector2i pos, int layer, Direction dir)
+        {
+            Vector2i newPos = pos + dir switch
+            {
+                Direction.Right => Vector2i.UnitX,
+                Direction.Up => -Vector2i.UnitY,
+                Direction.Left => -Vector2i.UnitX,
+                Direction.Down => Vector2i.UnitY,
+                _ => throw new ArgumentOutOfRangeException(nameof(dir))
+            };
+
+            if (!RainEd.Instance.Level.IsInBounds(newPos.X, newPos.Y)) return false;
+
+            // check if the cell has a tile that is in the tile table
+            // if so, modify that tile to join with the this tile
+            // and return true. (assuming that the tile size is 1x1)
+            ref var cell = ref RainEd.Instance.Level.Layers[layer, newPos.X, newPos.Y];
+            if (cell.TileHead is null) return false;
+
+            // devilish if-else switch to switch it to the proper
+            // tile based on the tile it already is.
+            // it does follow a logic. however, i am too lazy
+            // to actually write it so the logic is more explicit
+            // (aka making better code.)
+            if (cell.TileHead == horiz)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Up => tUp,
+                    Direction.Down => tDown,
+                    _ => horiz
+                };
+            }
+            else if (cell.TileHead == vert)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Right => tRight,
+                    Direction.Left => tLeft,
+                    _ => vert
+                };
+            }
+            // turns
+            else if (cell.TileHead == ld)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Left => tUp,
+                    Direction.Down => tRight,
+                    _ => ld
+                };
+            }
+            else if (cell.TileHead == lu)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Left => tDown,
+                    Direction.Up => tRight,
+                    _ => lu
+                };
+            }
+            else if (cell.TileHead == rd)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Right => tUp,
+                    Direction.Down => tLeft,
+                    _ => rd
+                };
+            }
+            else if (cell.TileHead == ru)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Right => tDown,
+                    Direction.Up => tLeft,
+                    _ => ru
+                };
+            }
+            // t-junctions, which may convert to x junctions
+            else if (cell.TileHead == tRight)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Left => xInt,
+                    _ => tRight 
+                };
+            }
+            else if (cell.TileHead == tUp)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Down => xInt,
+                    _ => tUp 
+                };
+            }
+            else if (cell.TileHead == tLeft)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Right => xInt,
+                    _ => tLeft
+                };
+            }
+            else if (cell.TileHead == tDown)
+            {
+                cell.TileHead = dir switch
+                {
+                    Direction.Up => xInt,
+                    _ => tDown
+                };
+            }
+
+            return true;
+        }
+
         if (tileTable.Intersections)
         {
             // abort if at least one tile is invalid
@@ -141,9 +262,35 @@ abstract class Autotile
             tDown = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.TDown);
             xInt = RainEd.Instance.TileDatabase.GetTileFromName(tileTable.XJunct);
 
+            Tiles.Tile[]? tileTableList = null;
+
             for (int i = startIndex; i < endIndex; i++)
             {
                 var seg = pathSegments[i];
+                var segPos = new Vector2i(seg.X, seg.Y);
+                if (!RainEd.Instance.Level.IsInBounds(seg.X, seg.Y)) continue;
+
+                // if there is already a tile here that is in the tile table,
+                // then instead of placing a tile, turn the current tile into
+                // an X junction
+                {
+                    ref var cellHere = ref RainEd.Instance.Level.Layers[layer, seg.X, seg.Y];
+                    if (cellHere.TileHead is not null)
+                    {
+                        tileTableList ??= [ld, lu, rd, ru, horiz, vert, tRight, tLeft, tUp, tDown, xInt];
+                        if (tileTableList.Contains(cellHere.TileHead))
+                        {
+                            cellHere.TileHead = xInt;
+                            continue;
+                        }
+                    }
+                }
+
+                // join outside tiles
+                if (!seg.Right && JoinOutsideTile(segPos, layer, Direction.Right)) seg.Right = true;
+                if (!seg.Up && JoinOutsideTile(segPos, layer, Direction.Up)) seg.Up = true;
+                if (!seg.Left && JoinOutsideTile(segPos, layer, Direction.Left)) seg.Left = true;
+                if (!seg.Down && JoinOutsideTile(segPos, layer, Direction.Down)) seg.Down = true;
 
                 // obtain the number of connections
                 int count = 0;

@@ -448,13 +448,8 @@ class AutotilePathBuilder : IAutotileInputBuilder
                 {
                     found = true;
 
-                    int cnCount = 0;
-                    if (right) cnCount++;
-                    if (up) cnCount++;
-                    if (left) cnCount++;
-                    if (down) cnCount++;
-
                     // remove the nodes inside of the intersection segment
+                    /*
                     if (right)
                         for (int i = 1; i < autotile.PathThickness; i++)
                             autotilePathDict.Remove(nodePos + Vector2i.UnitX * i);
@@ -470,6 +465,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
                     if (down)
                         for (int i = 1; i < autotile.PathThickness; i++)
                             autotilePathDict.Remove(nodePos + Vector2i.UnitY * i);
+                    */
                     
                     // add the segment
                     previewSegments.Add(new PreviewSegment()
@@ -500,7 +496,10 @@ class AutotilePathBuilder : IAutotileInputBuilder
         
         if (autotilePath.Count > 1)
         {
-            for (int i = 1; i < autotilePath.Count; i += autotile.SegmentLength)
+            // this is unused for now, used for handling
+            // autotile paths with differng pathThickness or segmentLength
+            // values
+            /*for (int i = 1; i < autotilePath.Count; i += autotile.SegmentLength)
             {
                 var nodePos = autotilePath[i];
                 bool willTurn = !autotilePathDict.TryGetValue(nodePos, out PathDirection segmentDir);
@@ -519,17 +518,6 @@ class AutotilePathBuilder : IAutotileInputBuilder
                         continue;
                     }
                 }
-
-                /*if (!autotilePathDict.TryGetValue(nodePos, out PathDirection segmentDir))
-                {
-                    if (!continuePath) continue;
-                    continuePath = false;
-                    segmentDir = GetPathDirections(i);
-                }
-                else
-                {
-                    continuePath = true;
-                }*/
 
                 // the pathDir of the last segment will follow the
                 // pathDir of the previous segment
@@ -556,9 +544,11 @@ class AutotilePathBuilder : IAutotileInputBuilder
                 {
                     i += autotile.PathThickness;
                 }
-            }
+            }*/
         }
-        /*foreach ((Vector2i pos, PathDirection dirs) in autotilePathDict)
+
+        // create straight segments
+        foreach ((Vector2i pos, PathDirection dirs) in autotilePathDict)
         {
             var nodePos = pos + new Vector2(gridOffset, gridOffset);
 
@@ -569,7 +559,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
                 Directions = dirs,
                 Index = autotilePath.IndexOf(pos)
             });
-        }*/
+        }
     }
 
     /// <summary>
