@@ -35,7 +35,7 @@ struct PathTileTable(string ld, string lu, string rd, string ru, string vert, st
     public string TDown = "";
     public string XJunct = "";
 
-    public bool Intersections = false;
+    public bool AllowJunctions = false;
 }
 
 /// <summary>
@@ -237,7 +237,7 @@ abstract class Autotile
             return true;
         }
 
-        if (tileTable.Intersections)
+        if (tileTable.AllowJunctions)
         {
             // abort if at least one tile is invalid
             if (!RainEd.Instance.TileDatabase.HasTile(tileTable.TRight)) return;

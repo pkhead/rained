@@ -482,7 +482,7 @@ static class LuaInterface
         
         var tileTable = new PathTileTable()
         {
-            Intersections = allowIntersections
+            AllowJunctions = allowIntersections
         };
 
         // parse the tile table

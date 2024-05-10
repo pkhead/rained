@@ -6,7 +6,7 @@ using rlImGui_cs;
 class StandardPathAutotile : Autotile
 {
     public PathTileTable TileTable;
-    public override bool AllowIntersections { get => TileTable.Intersections; }
+    public override bool AllowIntersections { get => TileTable.AllowJunctions; }
 
     private static FileBrowser? fileBrowser = null;
 
@@ -69,8 +69,8 @@ class StandardPathAutotile : Autotile
         TileButton(ref TileTable.Vertical, "Vertical", TileType.Vertical);
         TileButton(ref TileTable.Horizontal, "Horizontal", TileType.Horizontal);
         
-        ImGui.Checkbox("Intersections", ref TileTable.Intersections);
-        if (TileTable.Intersections)
+        ImGui.Checkbox("Allow Junctions", ref TileTable.AllowJunctions);
+        if (TileTable.AllowJunctions)
         {
             TileButton(ref TileTable.TRight, "T-Junction Right", TileType.Turn);
             TileButton(ref TileTable.TUp, "T-Junction Up", TileType.Turn);
@@ -493,7 +493,7 @@ class StandardPathAutotile : Autotile
             lines.Add("ru=" + TileTable.RightUp);
             lines.Add("vertical=" + TileTable.Vertical);
             lines.Add("horizontal=" + TileTable.Horizontal);
-            lines.Add("intersections=" + (TileTable.Intersections ? "true" : "false"));
+            lines.Add("allowJunctions=" + (TileTable.AllowJunctions ? "true" : "false"));
             lines.Add("tr=" + TileTable.TRight); 
             lines.Add("tu=" + TileTable.TUp);
             lines.Add("tl=" + TileTable.TLeft);
@@ -514,7 +514,7 @@ class StandardPathAutotile : Autotile
             lines[location+4]  = "ru=" + TileTable.RightUp;
             lines[location+5]  = "vertical=" + TileTable.Vertical;
             lines[location+6]  = "horizontal=" + TileTable.Horizontal;
-            lines[location+7]  = "intersections=" + (TileTable.Intersections ? "true" : "false");
+            lines[location+7]  = "allowJunctions=" + (TileTable.AllowJunctions ? "true" : "false");
             lines[location+8] = "tr=" + TileTable.TRight;  
             lines[location+9] = "tu=" + TileTable.TUp;
             lines[location+10] = "tl=" + TileTable.TLeft;

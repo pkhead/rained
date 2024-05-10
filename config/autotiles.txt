@@ -1,15 +1,1 @@
 # this is where standard path autotilers created from the GUI are saved/loaded
-
-[Std Thin Pipes]
-ld=Pipe WS
-lu=Pipe WN
-rd=Pipe ES
-ru=Pipe EN
-vertical=Vertical Pipe
-horizontal=Horizontal Pipe
-intersections=true
-tr=Pipe TJunct E
-tu=Pipe TJunct N
-tl=Pipe TJunct W
-td=Pipe TJunct S
-x=Pipe XJunct

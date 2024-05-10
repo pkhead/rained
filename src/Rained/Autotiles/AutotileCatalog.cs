@@ -94,7 +94,7 @@ class AutotileCatalog
                 !tileDict.TryGetValue("ru", out string? ru) ||
                 !tileDict.TryGetValue("vertical", out string? vertical) ||
                 !tileDict.TryGetValue("horizontal", out string? horizontal) ||
-                !tileDict.TryGetValue("intersections", out string? intersections) ||
+                !tileDict.TryGetValue("allowJunctions", out string? allowJunctions) ||
                 !tileDict.TryGetValue("tr", out string? tr) ||
                 !tileDict.TryGetValue("tu", out string? tu) ||
                 !tileDict.TryGetValue("tl", out string? tl) ||
@@ -114,12 +114,12 @@ class AutotileCatalog
                     Name = autotileName
                 };
 
-                if (intersections == "true")
-                    autotile.TileTable.Intersections = true;
-                else if (intersections == "false")
-                    autotile.TileTable.Intersections = false;
+                if (allowJunctions == "true")
+                    autotile.TileTable.AllowJunctions = true;
+                else if (allowJunctions == "false")
+                    autotile.TileTable.AllowJunctions = false;
                 else
-                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'intersections', got '{intersections}'.");
+                    throw new AutotileParseException($"Line {lineNo}: Expected true or false for the value of the key 'intersections', got '{allowJunctions}'.");
 
                 autotile.TileTable.TRight = tr;
                 autotile.TileTable.TUp = tu;
