@@ -6,7 +6,6 @@ Priority:
 
 Bugs:
 - drizzle doesn't build correctly on mac?
-- need to crop asset graphics to be accurate to og editor
 - change history doesn't work well with level resize
 - crashes when calling UnloadMesh on Debian Linux
 - effects list change recorder doesn't work?
@@ -50,8 +49,6 @@ Tile Editor:
 - make 2nd geo spec layer a lighter red 
 - optimize tile rendering
 - force geo on materials (hm... what if i combined geo/tile editor?)
-- G+right click is buggy with specs2 (really?)
-- tool to fix detached tile bodies
 
 Camera Editor:
 - render order

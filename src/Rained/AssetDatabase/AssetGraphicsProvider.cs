@@ -50,13 +50,17 @@ class AssetGraphicsProvider
             texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
         }
 
-        texture = RlManaged.Texture2D.Load(texturePath);
+        texture = null;
 
-        if (!Raylib.IsTextureReady(texture))
+        using var srcImage = RlManaged.Image.Load(texturePath);
+        if (Raylib.IsImageReady(srcImage))
+        {
+            CropImage(srcImage);
+            texture = RlManaged.Texture2D.LoadFromImage(srcImage);
+        }
+        else
         {
             RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
-            texture.Dispose();
-            texture = null;
         }
 
         propTexCache.Add(assetName, texture);
@@ -96,13 +100,16 @@ class AssetGraphicsProvider
             texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
         }
 
-        texture = RlManaged.Texture2D.Load(texturePath);
+        using var srcImage = RlManaged.Image.Load(texturePath);
 
-        if (!Raylib.IsTextureReady(texture))
+        if (Raylib.IsImageReady(srcImage))
+        {
+            CropImage(srcImage);
+            texture = RlManaged.Texture2D.LoadFromImage(srcImage);
+        }
+        else
         {
             RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
-            texture.Dispose();
-            texture = null;
         }
 
         tileTexCache.Add(assetName, texture);
@@ -132,6 +139,8 @@ class AssetGraphicsProvider
         using var fullImage = RlManaged.Image.Load(graphicsPath);
         if (Raylib.IsImageReady(fullImage))
         {
+            CropImage(fullImage);
+
             var previewRect = new Rectangle(
                 0,
                 tile.ImageRowCount * 20 + tile.ImageYOffset,
@@ -139,14 +148,14 @@ class AssetGraphicsProvider
                 tile.Height * 16
             );
 
-            if (previewRect.X < 0 || previewRect.Y < 0 ||
+            /*if (previewRect.X < 0 || previewRect.Y < 0 ||
                 previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
                 previewRect.X + previewRect.Width > fullImage.Width ||
                 previewRect.Y + previewRect.Height > fullImage.Height
             )
             {
                 RainEd.Logger.Warning($"Tile '{tile.Name}' preview image is out of bounds");
-            }
+            }*/
 
             using var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
