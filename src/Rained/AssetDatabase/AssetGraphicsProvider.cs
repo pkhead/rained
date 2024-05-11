@@ -148,14 +148,13 @@ class AssetGraphicsProvider
                 tile.Height * 16
             );
 
-            /*if (previewRect.X < 0 || previewRect.Y < 0 ||
-                previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
-                previewRect.X + previewRect.Width > fullImage.Width ||
-                previewRect.Y + previewRect.Height > fullImage.Height
-            )
-            {
-                RainEd.Logger.Warning($"Tile '{tile.Name}' preview image is out of bounds");
-            }*/
+            // clamp preview rect so that it won't be out of
+            // bounds (raylib will stretch it if this is the case)
+            if (previewRect.Width > fullImage.Width)
+                previewRect.Width = fullImage.Width;
+            
+            if (previewRect.Y + previewRect.Height > fullImage.Height)
+                previewRect.Height = fullImage.Height - previewRect.Y;
 
             using var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
