@@ -1,14 +1,19 @@
 /**
 * just a script to automate the publish process (cus i also need to copy assets and data and stuff)
 */
+#addin nuget:?package=SharpZipLib
+#addin nuget:?package=Cake.Compression
 
 var target = Argument("Target", "Package");
+var os = Argument("OS", "win-x64");
+
+var buildDir = "build_" + os;
 
 Task("DotNetPublish")
     .Does(() =>
 {
-    EnsureDirectoryExists("build");
-    CleanDirectory("build");
+    EnsureDirectoryExists(buildDir);
+    CleanDirectory(buildDir);
 
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
     buildSettings.Properties.Add("AppDataPath", ["Assembly"]);
@@ -16,34 +21,27 @@ Task("DotNetPublish")
     DotNetPublish("rained.sln", new DotNetPublishSettings
     {
         SelfContained = true,
-        OutputDirectory = "build",
+        OutputDirectory = buildDir,
+        Runtime = os,
         MSBuildSettings = buildSettings
     });
 
-    CreateDirectory("build/assets");
-    CopyDirectory("assets", "build/assets");
-    CopyDirectory("scripts", "build/scripts");
-    CopyDirectory("config", "build/config");
-    DeleteFile("build/config/preferences.json");
-    CopyFile("LICENSE.md", "build/LICENSE.md");
+    CreateDirectory(buildDir + "/assets");
+    CopyDirectory("assets", buildDir + "/assets");
+    CopyDirectory("scripts", buildDir + "/scripts");
+    CopyDirectory("config", buildDir + "/config");
+    DeleteFile(buildDir + "/config/preferences.json");
+    CopyFile("LICENSE.md", buildDir + "/LICENSE.md");
 
-    CopyDirectory("dist", "build");
-
-    /*
-    if (!DirectoryExists("build/Data"))
-    {
-        CreateDirectory("build/Data");
-        CopyDirectory("Data", "build/Data");
-    }
-    */
+    CopyDirectory("dist", buildDir);
 });
 
 Task("ConsoleWrapper")
     .Does(() =>
 {
-    if (!IsRunningOnWindows()) return;
+    if (os != "win-x64") return;
 
-    EnsureDirectoryExists("build");
+    EnsureDirectoryExists(buildDir);
 
     bool clangExists = false;
     string cxxCompiler = EnvironmentVariable<string>("CXX_COMPILER", "c++");
@@ -61,7 +59,7 @@ Task("ConsoleWrapper")
     }
     else
     {
-        StartProcess(cxxCompiler, "-static -Os src/Rained.Console/console-launch.cpp -o build/Rained.Console.exe");
+        StartProcess(cxxCompiler, $"-static -Os src/Rained.Console/console-launch.cpp -o {buildDir}/Rained.Console.exe");
     }
 });
 
@@ -70,7 +68,10 @@ Task("Package")
     .IsDependentOn("ConsoleWrapper")
     .Does(() =>
 {
-    Zip("build", "rained_X.X.X-win-x64.zip");
+    if (os == "linux-x64")
+        GZipCompress(buildDir, $"rained_X.X.X_{os}.tar.gz");
+    else
+        Zip(buildDir, $"rained_X.X.X_{os}.zip");
 });
 
 RunTarget(target);

@@ -5,10 +5,15 @@
 # MSBuild output
 **/bin
 **/obj
-/build
-/rained_X.X.X-win-x64.zip
+/build_win-x64
+/build_linux-x64
+/rained_X.X.X_*.zip
+/rained_X.X.X_*.tar.gz
 
-# Visual Studio Code fieles
+# Cake Tool files
+/tools
+
+# Visual Studio Code files
 /.vscode
 
 # drizzle translated
