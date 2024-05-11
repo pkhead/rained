@@ -187,4 +187,92 @@ class AssetGraphicsProvider
         previewTexCache.Add(tile.Name, outTexture);
         return outTexture;
     }
+
+    /// <summary>
+    /// Crop out an image's bordering white pixels.
+    /// Adobe Director auto-crops images when loading, which
+    /// is why this is necessary.
+    /// </summary>
+    /// <param name="sourceImage">The image to crop.</param>
+    /// <returns>True if the image was cropped, false if not.</returns>
+    public static bool CropImage(RlManaged.Image sourceImage)
+    {
+        int imgMinX = -1;
+        int imgMinY = -1;
+        int imgMaxX = -1;
+        int imgMaxY = -1;
+
+        // find imgMinY
+        for (int y = 0; y < sourceImage.Height; y++)
+        {
+            for (int x = 0; x < sourceImage.Width; x++)
+            {
+                var color = Raylib.GetImageColor(sourceImage, x, y);
+                if (color.R != 255 || color.G != 255 || color.B != 255)
+                {
+                    imgMinY = y;
+                    goto exitTopSearch;
+                }
+            }
+        }
+        exitTopSearch:;
+
+        // find imgMinX
+        for (int x = 0; x < sourceImage.Width; x++)
+        {
+            for (int y = 0; y < sourceImage.Height; y++)
+            {
+                var color = Raylib.GetImageColor(sourceImage, x, y);
+                if (color.R != 255 || color.G != 255 || color.B != 255)
+                {
+                    imgMinX = x;
+                    goto exitLeftSearch;
+                }
+            }
+        }
+        exitLeftSearch:;
+
+        // find imgMaxY
+        for (int y = sourceImage.Height - 1; y >= 0; y--)
+        {
+            for (int x = sourceImage.Width - 1; x >= 0; x--)
+            {
+                var color = Raylib.GetImageColor(sourceImage, x, y);
+                if (color.R != 255 || color.G != 255 || color.B != 255)
+                {
+                    imgMaxY = y;
+                    goto exitBottomSearch;
+                }
+            }
+        }
+        exitBottomSearch:;
+
+        // find imgMaxX
+        for (int x = sourceImage.Width - 1; x >= 0; x--)
+        {
+            for (int y = sourceImage.Height - 1; y >= 0; y--)
+            {
+                var color = Raylib.GetImageColor(sourceImage, x, y);
+                if (color.R != 255 || color.G != 255 || color.B != 255)
+                {
+                    imgMaxX = x;
+                    goto exitRightSearch;
+                }
+            }
+        }
+        exitRightSearch:;
+
+        int width = imgMaxX - imgMinX + 1;
+        int height = imgMaxY - imgMinY + 1;
+
+        if (width == sourceImage.Width && height == sourceImage.Height)
+        {
+            return false;
+        }
+        else
+        {
+            Raylib.ImageCrop(ref sourceImage.Ref(), new Rectangle(imgMinX, imgMinY, width, height));
+            return true;
+        }
+    }
 }

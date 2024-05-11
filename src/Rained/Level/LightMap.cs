@@ -93,95 +93,26 @@ class LightMap : IDisposable
         width = levelWidth * 20 + 300;
         height = levelHeight * 20 + 300;
 
-        // emulate director auto-cropping
-        // This Sucks
-        int imgMinX = -1;
-        int imgMinY = -1;
-        int imgMaxX = -1;
-        int imgMaxY = -1;
+        using var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
+        AssetGraphicsProvider.CropImage(croppedLightMap);
 
-        // find imgMinY
-        for (int y = 0; y < lightMapImage.Height; y++)
+        using RlManaged.Image finalImage = RlManaged.Image.GenColor(width, height, Color.White);
+
+        if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
-            for (int x = 0; x < lightMapImage.Width; x++)
-            {
-                var color = Raylib.GetImageColor(lightMapImage, x, y);
-                if (color.R != 255 || color.G != 255 || color.B != 255)
-                {
-                    imgMinY = y;
-                    goto exitTopSearch;
-                }
-            }
+            RainEd.Logger.Information("Adapted light rect. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
+            RainEd.Instance.ShowNotification("Adapted light rect");
         }
-        exitTopSearch:;
 
-        // find imgMinX
-        for (int x = 0; x < lightMapImage.Width; x++)
-        {
-            for (int y = 0; y < lightMapImage.Height; y++)
-            {
-                var color = Raylib.GetImageColor(lightMapImage, x, y);
-                if (color.R != 255 || color.G != 255 || color.B != 255)
-                {
-                    imgMinX = x;
-                    goto exitLeftSearch;
-                }
-            }
-        }
-        exitLeftSearch:;
-
-        // find imgMaxY
-        for (int y = lightMapImage.Height - 1; y >= 0; y--)
-        {
-            for (int x = lightMapImage.Width - 1; x >= 0; x--)
-            {
-                var color = Raylib.GetImageColor(lightMapImage, x, y);
-                if (color.R != 255 || color.G != 255 || color.B != 255)
-                {
-                    imgMaxY = y;
-                    goto exitBottomSearch;
-                }
-            }
-        }
-        exitBottomSearch:;
-
-        // find imgMaxX
-        for (int x = lightMapImage.Width - 1; x >= 0; x--)
-        {
-            for (int y = lightMapImage.Height - 1; y >= 0; y--)
-            {
-                var color = Raylib.GetImageColor(lightMapImage, x, y);
-                if (color.R != 255 || color.G != 255 || color.B != 255)
-                {
-                    imgMaxX = x;
-                    goto exitRightSearch;
-                }
-            }
-        }
-        exitRightSearch:;
-
-        // center cropped image
-        using var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
-        if (imgMinX >= 0)
-        {
-            // show notification if image has been cropped
-            if (imgMinX > 0 || imgMinY > 0 || imgMaxX < lightMapImage.Width - 1 || imgMaxY < lightMapImage.Height - 1)
-            {
-                RainEd.Logger.Information("Adapted light rect. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
-                RainEd.Instance.ShowNotification("Adapted light rect");
-            }
-
-            int subWidth = imgMaxX - imgMinX + 1;
-            int subHeight = imgMaxY - imgMinY + 1;
-
-            Raylib.ImageDraw(
-                dst: ref finalImage.Ref(),
-                src: lightMapImage,
-                srcRec: new Rectangle(imgMinX, imgMinY, subWidth, subHeight),
-                dstRec: new Rectangle((width - subWidth) / 2f, (height - subHeight) / 2f, subWidth, subHeight),
-                tint: Color.White
-            );
-        }
+        var subWidth = croppedLightMap.Width;
+        var subHeight = croppedLightMap.Height;
+        Raylib.ImageDraw(
+            dst: ref finalImage.Ref(),
+            src: croppedLightMap,
+            srcRec: new Rectangle(0, 0, subWidth, subHeight),
+            dstRec: new Rectangle((width - subWidth) / 2f, (height - subHeight) / 2f, subWidth, subHeight),
+            tint: Color.White
+        );
 
         // get light map as a texture
         using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);

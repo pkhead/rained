@@ -227,6 +227,9 @@ namespace RlManaged
         
         public static Image FromImage(Raylib_cs.Image image, Rectangle rec)
             => new(Raylib.ImageFromImage(image, rec));
+        
+        public static Image Copy(Raylib_cs.Image image)
+            => new(Raylib.ImageCopy(image));
 
         public unsafe void DrawPixel(int x, int y, Color color)
         {
