@@ -1,5 +1,4 @@
-# RAINED LEVEL EDITOR!!!
-
+# Rained Level Editor
 Read LICENSE.md for software licenses
 
 Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs. Hope you like it!
@@ -38,7 +37,6 @@ Here are some tips on using the GUI elements:
   click and drag left/right in the box.
 - Experiment with activating inputs with a modifier key down (ctrl, shift, alt).
 
-## Custom Autotiles
-Rained has a system to create custom autotilers with Lua scripts. Lua is a pretty simple language, so if you have any experience with coding it hopefully shouldn't be too hard to learn. Just remember that tables start at 1 instead of 0.
-
-Look at the `scripts/init.lua` file as well as the code for the pre-packaged autotilers to get a feeling on how to make custom autotilers.
+## Scripting
+Rained has a Lua scripting API. For "documentation", check `scripts/init.lua`, `scripts/definition/rained.defs.lua`, and
+look at the built-in scripts as examples.
