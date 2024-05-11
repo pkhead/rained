@@ -564,23 +564,24 @@ class AssetManager
         public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect)
         {
             var pngName = init.Name + ".png";
+            var pngPath = AssetGraphicsProvider.GetFilePath(srcDir, pngName);
 
             // if expectImageExistence is false, only copy the image if it exists.
             // it is set to false when overwriting an item, in case the new
             // Init.txt just wants to change the item data and not its graphics.
-            if (expect || File.Exists(Path.Combine(srcDir, pngName)))
+            if (expect || File.Exists(pngPath))
             {
                 // copy graphics
                 RainEd.Logger.Information("Copy {ImageName}", pngName);
                 
-                var graphicsData = File.ReadAllBytes(Path.Combine(srcDir, pngName));
+                var graphicsData = File.ReadAllBytes(pngPath);
                 File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
             }
         }
 
         public void DeleteGraphics(InitData init, string dir)
         {
-            var filePath = Path.Combine(dir, init.Name + ".png");
+            var filePath = AssetGraphicsProvider.GetFilePath(dir, init.Name + ".png");
 
             if (File.Exists(filePath))
             {
@@ -605,13 +606,14 @@ class AssetManager
             foreach (var ext in PossibleExtensions)
             {
                 var pngName = init.Name + ext;
+                var pngPath = AssetGraphicsProvider.GetFilePath(srcDir, pngName);
 
-                if (File.Exists(Path.Combine(srcDir, pngName)))
+                if (File.Exists(pngPath))
                 {
                     // copy graphics
                     RainEd.Logger.Information("Copy {ImageName}", pngName);
                     
-                    var graphicsData = File.ReadAllBytes(Path.Combine(srcDir, pngName));
+                    var graphicsData = File.ReadAllBytes(pngPath);
                     File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
                 }
             }
@@ -621,7 +623,8 @@ class AssetManager
         {
             foreach (var ext in PossibleExtensions)
             {
-                var filePath = Path.Combine(dir, init.Name + ext);
+                var filePath = AssetGraphicsProvider.GetFilePath(dir, init.Name + ext);
+                
                 if (File.Exists(filePath))
                 {
                     RainEd.Logger.Information("Delete {FilePath}", filePath);

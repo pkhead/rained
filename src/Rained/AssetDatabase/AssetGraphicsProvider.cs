@@ -12,7 +12,7 @@ class AssetGraphicsProvider
     // Does Path.Combine(directory, query)
     // On Linux, it does extra processing to account for the fact that
     // it uses a case-sensitive filesystem.
-    private static string GetFilePath(string directory, string fileName)
+    public static string GetFilePath(string directory, string fileName)
     {
         var combined = Path.Combine(directory, fileName);
 
