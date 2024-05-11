@@ -1,10 +1,11 @@
 -- setup autotile data
 local autotile = rained.tiles.createAutotile("Wall Wires", "Misc")
 autotile.type = "path"
+autotile.allowIntersections = true
 autotile:addToggleOption("cap", "Use End Tiles", false)
 autotile:addToggleOption("junctions", "Allow Junctions", true)
-autotile:addToggleOption("alt", "Use Alternate", false)
 autotile:addToggleOption("square", "Use Square Turns", false)
+autotile:addIntOption("altChance", "Alt Chance", 4, 1, 20)
 
 -- change "allowIntersections" property when junctions is turned on/off
 function autotile:onOptionChanged(id)
@@ -45,6 +46,8 @@ local tileTable = {
     lu = "WallWires NW",
     rd = "WallWires SE",
     ru = "WallWires NE",
+    vertical = "WallWires Vertical A",
+    horizontal = "WallWires Horizontal A",
     tr = "WallWires T Section E",
     tu = "WallWires T Section N",
     tl = "WallWires T Section W",
@@ -54,12 +57,6 @@ local tileTable = {
     capUp = "WallWires End N",
     capLeft = "WallWires End W",
     capDown = "WallWires End S",
-
-    -- these values will be set in the autotile callback function
-    -- to adjust according the "plain" option
-    -- before calling the standard autotiler
-    vertical = "WallWires Vertical A",
-    horizontal = "WallWires Horizontal A",
 
     placeJunctions = false,
     placeCaps = false
@@ -71,10 +68,6 @@ local tileTable = {
 ---@param segments PathSegment[] The list of path segments
 ---@param forceModifier ForceModifier Force-placement mode, as a string. Can be nil, "force", or "geometry".
 function autotile:tilePath(layer, segments, forceModifier)
-    -- if the "alt" option is checked, use wall wires B instead of wall wires A
-    tileTable.vertical = self:getOption("alt") and "WallWires Vertical B" or "WallWires Vertical A"
-    tileTable.horizontal = self:getOption("alt") and "WallWires Horizontal B" or "WallWires Horizontal A"
-
     -- if the "square" option is checked, use square turns
     if self:getOption("square") then
         tileTable.ld = "WallWires Square SW"
@@ -95,4 +88,21 @@ function autotile:tilePath(layer, segments, forceModifier)
 
     -- run the standard autotiler
     rained.tiles.autotilePath(tileTable, layer, segments, forceModifier)
+
+    -- replace random horizontal and vertical wall wires along
+    -- the path with their alternate form
+    local altChance = autotile:getOption("altChance")
+    for i, seg in ipairs(segments) do
+        local tileName = rained.tiles.getTileAt(seg.x, seg.y, layer)
+
+        if (tileName == "WallWires Horizontal A" or tileName == "WallWires Vertical A") and math.random(altChance) == 1 then
+            rained.tiles.deleteTile(seg.x, seg.y, layer)
+
+            if tileName == "WallWires Horizontal A" then
+                rained.tiles.placeTile("WallWires Horizontal B", seg.x, seg.y, layer, forceModifier)
+            elseif tileName == "WallWires Vertical A" then
+                rained.tiles.placeTile("WallWires Vertical B", seg.x, seg.y, layer, forceModifier)
+            end
+        end
+    end
 end
