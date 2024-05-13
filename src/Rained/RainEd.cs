@@ -371,7 +371,7 @@ sealed class RainEd
 
                 // i think it may be useful to add it to the list
                 // even if the level failed to load due to unrecognized assets
-                AddToRecentFiles();
+                AddToRecentFiles(path);
             }
             catch (Exception e)
             {
@@ -402,7 +402,7 @@ sealed class RainEd
                 changeHistory.MarkUpToDate();
                 Logger.Information("Done!");
                 ShowNotification("Saved!");
-                AddToRecentFiles();
+                AddToRecentFiles(currentFilePath);
             }
             catch (Exception e)
             {
@@ -419,11 +419,11 @@ sealed class RainEd
         promptCallback = null;
     }
 
-    private void AddToRecentFiles()
+    private void AddToRecentFiles(string filePath)
     {
         var list = Preferences.RecentFiles;
-        list.Remove(currentFilePath);
-        list.Add(currentFilePath);
+        list.Remove(filePath);
+        list.Add(filePath);
 
         while (list.Count > 10)
         {
