@@ -104,8 +104,8 @@ class EffectsEditor : IEditorMode
     
     public void ShowEditMenu()
     {
-        KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
-        KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Increase Brush Size");
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
 
         if (ImGui.MenuItem("Delete Effect", selectedEffect >= 0))
             doDeleteCurrent = true;
