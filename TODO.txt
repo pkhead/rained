@@ -7,8 +7,7 @@ Priority:
 Bugs:
 - drizzle doesn't build correctly on mac?
 - change history doesn't work well with level resize
-- crashes when calling UnloadMesh on Debian Linux
-- effects list change recorder doesn't work?
+- effects list change recorder doesn't work? (it does why did i add this)
 - weird graphical issue on certain drivers when level is out of bounds
 
 Overall:
