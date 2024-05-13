@@ -285,7 +285,7 @@ class EffectsEditor : IEditorMode
                 ImGui.SameLine();
                 if ((ImGui.Button("Move Up") || doMoveCurrentUp) && selectedEffect > 0)
                 {
-                    doMoveCurrentUp = true;
+                    doMoveCurrentUp = false;
 
                     // swap this effect with up
                     changeRecorder.BeginListChange();
@@ -298,7 +298,7 @@ class EffectsEditor : IEditorMode
                 ImGui.SameLine();
                 if ((ImGui.Button("Move Down") || doMoveCurrentDown) && selectedEffect < level.Effects.Count - 1)
                 {
-                    doMoveCurrentDown = true;
+                    doMoveCurrentDown = false;
 
                     // swap this effect with down
                     changeRecorder.BeginListChange();
