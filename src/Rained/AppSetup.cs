@@ -24,6 +24,16 @@ class AppSetup
     private float callbackWait = 1f;
     private FileBrowser? fileBrowser = null;
     private Task? downloadTask = null;
+
+    private const string StartupText = """
+    Welcome to the Rained setup screen! Please configure the location of the Rain World level editor data folder.
+
+    If you have installed a Rain World level editor before, you may click the "Choose Data folder" button to point Rained's data folder to your previous installation.
+
+    If you have installed the official editor, or a mod of it like the Community Editor, you would thus select the folder where the executable is contained. Otherwise, you should find and select the Drizzle data folder for your previous editor. 
+
+    If you are unsure what to do, select "Download Data".
+    """;
     
     public bool Start(out string? assetDataPath)
     {
@@ -71,7 +81,9 @@ class AppSetup
                 }
                 else
                 {
-                    ImGui.Text("Please configure the location of the Rain World level editor data folder.\nIf you are unsure what to do, select \"Download Data\".");
+                    ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 50.0f);
+                    ImGui.TextWrapped(StartupText);
+                    ImGui.PopTextWrapPos();
 
                     ImGui.Separator();
 
