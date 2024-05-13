@@ -101,6 +101,7 @@ class UserPreferences
 
     public bool StaticDrizzleLingoRuntime { get; set; }
     public bool ShowRenderPreview { get; set; }
+    public bool CheckForUpdates { get; set; }
 
     public enum AutotileMouseModeOptions
     {
@@ -179,6 +180,7 @@ class UserPreferences
 
         StaticDrizzleLingoRuntime = false;
         ShowRenderPreview = true;
+        CheckForUpdates = true;
         AutotileMouseMode = AutotileMouseModeOptions.Hold;
 
         Theme = "Dark";

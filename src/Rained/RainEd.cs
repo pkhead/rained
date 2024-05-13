@@ -288,13 +288,21 @@ sealed class RainEd
         
         if (versionCheckTask.IsCompletedSuccessfully)
         {
-            Logger.Information("Version check successful!");
             LatestVersionInfo = versionCheckTask.Result;
-            Logger.Information(LatestVersionInfo.VersionName);
 
-            if (LatestVersionInfo.VersionName != Version)
+            if (LatestVersionInfo is not null)
             {
-                ShowNotification("New version available! Check the About window for more info.");
+                Logger.Information("Version check successful!");
+                Logger.Information(LatestVersionInfo.VersionName);
+
+                if (LatestVersionInfo.VersionName != Version)
+                {
+                    ShowNotification("New version available! Check the About window for more info.");
+                }
+            }
+            else
+            {
+                Logger.Information("Version check was disabled");
             }
         }
         else if (versionCheckTask.IsFaulted)

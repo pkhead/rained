@@ -259,6 +259,10 @@ static class PreferencesWindow
             //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
             //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
             //    prefs.ShowDeprecatedEffects = showHiddenEffects;
+
+            bool versionCheck = prefs.CheckForUpdates;
+            if (ImGui.Checkbox("Check for updates", ref versionCheck))
+                prefs.CheckForUpdates = versionCheck;
             
             bool hideScreenSize = prefs.HideScreenSize;
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))

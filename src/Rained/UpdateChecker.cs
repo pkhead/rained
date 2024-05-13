@@ -40,8 +40,10 @@ static class UpdateChecker
     /// of the latest release of Rained
     /// </summary>
     /// <returns>The version string of the latest release of Rained</returns>
-    public static async Task<RainedVersionInfo> FetchLatestVersion()
+    public static async Task<RainedVersionInfo?> FetchLatestVersion()
     {
+        if (!RainEd.Instance.Preferences.CheckForUpdates) return null;
+        
         var client = new HttpClient()
         {
             BaseAddress = new Uri("https://api.github.com/"),
