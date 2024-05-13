@@ -466,7 +466,7 @@ class GeometryEditor : IEditorMode
                 if (!isToolActive && isMouseDown)
                 {
                     isClicked = true;
-                    isErasing = window.IsMouseDown(ImGuiMouseButton.Right);
+                    isErasing = KeyShortcuts.Active(KeyShortcut.RightMouse);
                     isToolActive = true;
                     window.CellChangeRecorder.BeginChange();
                 }
@@ -477,13 +477,19 @@ class GeometryEditor : IEditorMode
                     {
                         if (isErasing)
                         {
-                            ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
-                            cell.Objects = 0;
-
-                            if (cell.Geo == GeoType.ShortcutEntrance)
+                            for (int l = 0; l < 3; l++)
                             {
-                                cell.Geo = GeoType.Air;
-                                window.LevelRenderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, window.WorkLayer);
+                                if (!layerMask[l]) continue;
+
+                                ref var cell = ref level.Layers[l, window.MouseCx, window.MouseCy];
+                                cell.Objects = 0;
+
+                                if (cell.Geo == GeoType.ShortcutEntrance)
+                                {
+                                    cell.Geo = GeoType.Air;
+                                }
+
+                                window.LevelRenderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, l);
                             }
                         }
                         else
