@@ -443,7 +443,7 @@ static class LuaInterface
 
     private static void HandleException(LuaScriptException e)
     {
-        RainEd.Instance.ShowNotification("Error!");
+        EditorWindow.ShowNotification("Error!");
 
         Exception actualException = e.IsNetException ? e.InnerException! : e;
         string? stackTrace = actualException.Data["Traceback"] as string;
@@ -524,7 +524,7 @@ static class LuaInterface
                 if (layer < 0 || layer > 2) return;
                 if (geoType < 0 || geoType == 8 || geoType > 9) throw new Exception("invalid geo type " + geoType);
                 RainEd.Instance.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
-                RainEd.Instance.LevelWindow.LevelRenderer.MarkNeedsRedraw(x, y, layer);
+                RainEd.Instance.LevelView.Renderer.MarkNeedsRedraw(x, y, layer);
             });
             lua.SetField(-2, "setGeo");
 
@@ -574,7 +574,7 @@ static class LuaInterface
                 }
 
                 RainEd.Instance.Level.Layers[layer, x, y].Objects = objects;
-                RainEd.Instance.LevelWindow.LevelRenderer.MarkNeedsRedraw(x, y, layer);
+                RainEd.Instance.LevelView.Renderer.MarkNeedsRedraw(x, y, layer);
 
                 return 0;
             });
@@ -807,7 +807,7 @@ static class LuaInterface
     {
         luaState.State.RawGetInteger(KeraLua.LuaRegistry.Index, registeredCmds[id]);
 
-        RainEd.Instance.LevelWindow.CellChangeRecorder.BeginChange();
+        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
         
         try
         {
@@ -819,7 +819,7 @@ static class LuaInterface
             HandleException(e);
         }
 
-        RainEd.Instance.LevelWindow.CellChangeRecorder.PushChange();
+        RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
     }
 
     private static int LuaCreateAutotile(KeraLua.Lua lua)
@@ -988,7 +988,7 @@ static class LuaInterface
     private static void ShowNotification(object? msg)
     {
         if (msg is null) return;
-        RainEd.Instance.ShowNotification(msg.ToString()!);
+        EditorWindow.ShowNotification(msg.ToString()!);
     }
 
     delegate bool PlaceTileDelegate(out string? result, string tileName, int x, int y, int layer, string? modifier);
@@ -1189,7 +1189,7 @@ static class LuaInterface
                     {
                         luaState.Push(table[i]);
                         LogError($"invalid requiredTiles table for autotile '{autotile.Name}': expected string for item {i}, got {luaState.State.TypeName(-1)}");
-                        RainEd.Instance.ShowNotification($"Error loading autotile {autotile.Name}");
+                        EditorWindow.ShowNotification($"Error loading autotile {autotile.Name}");
                         break;
                     }
                 }

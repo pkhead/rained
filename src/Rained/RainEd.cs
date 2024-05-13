@@ -31,7 +31,7 @@ sealed class RainEd
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
-    private readonly LevelView levelWindow;
+    private readonly LevelView levelView;
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private bool ShowDemoWindow = false;
 
@@ -51,20 +51,9 @@ sealed class RainEd
 
     public string CurrentFilePath { get => currentFilePath; }
     public Level Level { get => level; }
-    public LevelView LevelWindow { get => levelWindow; }
-
-    private string notification = "";
-    private float notificationTime = 0f;
-    private float notifFlash = 0f;
-    private int timerDelay = 2;
+    public LevelView LevelView { get => levelView; }
     
     public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
-
-    private DrizzleRenderWindow? drizzleRenderWindow = null;
-    private LevelResizeWindow? levelResizeWin = null;
-    private FileBrowser? fileBrowser = null;
-
-    public LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
 
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
@@ -78,16 +67,17 @@ sealed class RainEd
     /// </summary>
     public readonly RainedVersionInfo? LatestVersionInfo = null;
 
-    struct Command(string name, Action<int> cb)
+    public struct Command(string name, Action<int> cb)
     {
         private static int nextID = 0;
 
-        public int ID = nextID++;
-        public string Name = name;
-        public Action<int> Callback = cb;
+        public readonly int ID = nextID++;
+        public readonly string Name = name;
+        public readonly Action<int> Callback = cb;
     };
 
     private readonly List<Command> customCommands = [];
+    public List<Command> CustomCommands { get => customCommands; }
     
     public RainEd(string? assetData, string levelPath = "") {
         if (Instance != null)
@@ -130,7 +120,7 @@ sealed class RainEd
             {
                 Logger.Error("Failed to load user preferences!\n{ErrorMessage}", e);
                 Preferences = new UserPreferences();
-                ShowNotification("Failed to load preferences");
+                EditorWindow.ShowNotification("Failed to load preferences");
             }
         }
         else
@@ -251,7 +241,7 @@ sealed class RainEd
         changeHistory = new ChangeHistory.ChangeHistory();
 
         Logger.Information("Creating level view...");
-        levelWindow = new LevelView();
+        levelView = new LevelView();
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
@@ -297,7 +287,7 @@ sealed class RainEd
 
                 if (LatestVersionInfo.VersionName != Version)
                 {
-                    ShowNotification("New version available! Check the About window for more info.");
+                    EditorWindow.ShowNotification("New version available! Check the About window for more info.");
                 }
             }
             else
@@ -321,7 +311,7 @@ sealed class RainEd
         Autotiles.SaveConfig();
 
         // save user preferences
-        levelWindow.SavePreferences(Preferences);
+        levelView.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
 
         Preferences.WindowWidth = Raylib.GetScreenWidth();
@@ -330,21 +320,6 @@ sealed class RainEd
         Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
-    }
-    
-    public void ShowNotification(string msg)
-    {
-        if (notification == "" || notificationTime != 3f)
-        {
-            notification = msg;
-        }
-        else
-        {
-            notification += "\n" + msg;
-        }
-        
-        notificationTime = 3f;
-        notifFlash = 0f;
     }
 
     public void ShowPathInSystemBrowser(string path, bool reveal)
@@ -377,17 +352,29 @@ sealed class RainEd
         catch (Exception e)
         {
             Logger.Error("Could not show path '{Path}':\n{Error}", e);
-            ShowNotification("Could not open the system file browser");
+            EditorWindow.ShowNotification("Could not open the system file browser");
         }
     }
 
-    private void LoadLevel(string path)
+    public void LoadDefaultLevel()
+    {
+        levelView.UnloadView();
+        level.LightMap.Dispose();
+        level = Level.NewDefaultLevel();
+        ReloadLevel();
+        levelView.LoadView();
+
+        currentFilePath = string.Empty;
+        UpdateTitle();
+    }
+
+    public void LoadLevel(string path)
     {
         if (!string.IsNullOrEmpty(path))
         {
             Logger.Information("Loading level {Path}...", path);
 
-            levelWindow.UnloadView();
+            levelView.UnloadView();
 
             try
             {
@@ -417,47 +404,46 @@ sealed class RainEd
             catch (Exception e)
             {
                 Logger.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
-                ShowNotification("Error while loading level");
+                EditorWindow.ShowNotification("Error while loading level");
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            levelWindow.ReloadLevel();
-            levelWindow.LoadView();
+            levelView.ReloadLevel();
+            levelView.LoadView();
         }
     }
 
-    private void SaveLevel(string path)
+    /// <summary>
+    /// Save the level to the given path.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>True if the save was successful, false if not.</returns>
+    public bool SaveLevel(string path)
     {
-        if (!string.IsNullOrEmpty(path))
+        Logger.Information("Saving level to {Path}...", path);
+
+        levelView.FlushDirty();
+
+        try
         {
-            Logger.Information("Saving level to {Path}...", path);
+            LevelSerialization.Save(path);
+            currentFilePath = path;
+            UpdateTitle();
+            changeHistory.MarkUpToDate();
+            Logger.Information("Done!");
+            EditorWindow.ShowNotification("Saved!");
+            AddToRecentFiles(currentFilePath);
 
-            levelWindow.FlushDirty();
-
-            try
-            {
-                LevelSerialization.Save(path);
-                currentFilePath = path;
-                UpdateTitle();
-                changeHistory.MarkUpToDate();
-                Logger.Information("Done!");
-                ShowNotification("Saved!");
-                AddToRecentFiles(currentFilePath);
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Could not write level file:\n{ErrorMessage}", e);
-                ShowNotification("Could not write level file");
-            }
-            
-            if (promptCallback is not null)
-            {
-                promptCallback();
-            }
+            return true;
+        }
+        catch (Exception e)
+        {
+            Logger.Error("Could not write level file:\n{ErrorMessage}", e);
+            EditorWindow.ShowNotification("Could not write level file");
         }
 
-        promptCallback = null;
+        return false;
     }
 
     private void AddToRecentFiles(string filePath)
@@ -477,41 +463,22 @@ sealed class RainEd
         if (newWidth == level.Width && newHeight == level.Height) return;
         Logger.Information("Resizing level...");
 
-        levelWindow.FlushDirty();
+        levelView.FlushDirty();
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
-        levelWindow.ReloadLevel();
+        levelView.ReloadLevel();
         changeHistory.Clear();
-        levelWindow.LevelRenderer.ReloadLevel();
-        levelWindow.ViewOffset += dstOrigin * Level.TileSize;
+        levelView.Renderer.ReloadLevel();
+        levelView.ViewOffset += dstOrigin * Level.TileSize;
 
         Logger.Information("Done!");
     }
 
     private void ReloadLevel()
     {
-        levelWindow.ReloadLevel();
+        levelView.ReloadLevel();
         changeHistory.Clear();
         changeHistory.MarkUpToDate();
-        levelWindow.LevelRenderer.ReloadLevel();
-    }
-
-    private Action? promptCallback;
-    private bool promptUnsavedChanges;
-    private bool promptUnsavedChangesCancelable;
-
-    private void PromptUnsavedChanges(Action callback, bool canCancel = true)
-    {
-        promptUnsavedChangesCancelable = canCancel;
-
-        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(currentFilePath)))
-        {
-            promptUnsavedChanges = true;
-            promptCallback = callback;
-        }
-        else
-        {
-            callback();
-        }
+        levelView.Renderer.ReloadLevel();
     }
 
     private void UpdateTitle()
@@ -521,86 +488,6 @@ sealed class RainEd
             Path.GetFileNameWithoutExtension(currentFilePath);
         
         Raylib.SetWindowTitle($"Rained - {levelName}");
-    }
-
-    private void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
-    {
-        static bool levelCheck(string path, bool isRw)
-        {
-            return isRw;
-        }
-
-        fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(currentFilePath));
-        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
-    }
-
-    private void HandleShortcuts()
-    {
-        if (KeyShortcuts.Activated(KeyShortcut.New))
-        {
-            PromptUnsavedChanges(() =>
-            {
-                Logger.Information("Load default level...");
-
-                levelWindow.UnloadView();
-                level.LightMap.Dispose();
-                level = Level.NewDefaultLevel();
-                ReloadLevel();
-                levelWindow.LoadView();
-
-                currentFilePath = string.Empty;
-                UpdateTitle();
-
-                Logger.Information("Done!");
-            });
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Open))
-        {
-            PromptUnsavedChanges(() =>
-            {
-                OpenLevelBrowser(FileBrowser.OpenMode.Read, LoadLevel);
-            });
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Save))
-        {
-            if (string.IsNullOrEmpty(currentFilePath))
-                OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
-            else
-                SaveLevel(currentFilePath);
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.SaveAs))
-        {
-            OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Undo))
-        {
-            changeHistory.Undo();
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Redo))
-        {
-            changeHistory.Redo();
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Render))
-        {
-            PromptUnsavedChanges(() =>
-            {
-                drizzleRenderWindow = new DrizzleRenderWindow(false);
-            }, false);
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.ExportGeometry))
-        {
-            PromptUnsavedChanges(() =>
-            {
-                drizzleRenderWindow = new DrizzleRenderWindow(true);
-            }, false);
-        }
     }
 
     /// <summary>
@@ -630,189 +517,11 @@ sealed class RainEd
             }
         }
     }
-
-    private void DrawMenuBar()
-    {
-        if (ImGui.BeginMainMenuBar())
-        {
-            if (ImGui.BeginMenu("File"))
-            {
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
-
-                var recentFiles = Preferences.RecentFiles;
-                if (ImGui.BeginMenu("Open Recent"))
-                {
-                    if (recentFiles.Count == 0)
-                    {
-                        ImGui.MenuItem("(no recent files)", false);
-                    }
-                    else
-                    {
-                        // traverse backwards
-                        for (int i = recentFiles.Count - 1; i >= 0; i--)
-                        {
-                            var filePath = recentFiles[i];
-
-                            if (ImGui.MenuItem(Path.GetFileName(filePath)))
-                            {
-                                if (File.Exists(filePath))
-                                {
-                                    PromptUnsavedChanges(() =>
-                                    {
-                                        LoadLevel(filePath);
-                                    });
-                                }
-                                else
-                                {
-                                    ShowNotification("File could not be accessed");
-                                    recentFiles.RemoveAt(i);
-                                }
-                            }
-
-                        }
-                    }
-
-                    ImGui.EndMenu();
-                }
-
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Save, "Save");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.SaveAs, "Save As...");
-
-                ImGui.Separator();
-
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...");
-                ImGui.MenuItem("Mass Render", false);
-
-                ImGui.Separator();
-                if (ImGui.MenuItem("Preferences"))
-                {
-                    PreferencesWindow.OpenWindow();
-                }
-
-                ImGui.Separator();
-                if (ImGui.MenuItem("Quit", "Alt+F4"))
-                {
-                    PromptUnsavedChanges(() => Running = false);
-                }
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Edit"))
-            {
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Undo, "Undo");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Redo, "Redo");
-                //ImGui.Separator();
-                //ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
-                //ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
-                //ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
-                ImGui.Separator();
-
-                if (ImGui.MenuItem("Resize Level..."))
-                {
-                    levelResizeWin = new LevelResizeWindow();
-                }
-
-                if (customCommands.Count > 0)
-                {
-                    ImGui.Separator();
-
-                    if (ImGui.BeginMenu("Commands"))
-                    {
-                        foreach (Command cmd in customCommands)
-                        {
-                            if (ImGui.MenuItem(cmd.Name))
-                            {
-                                cmd.Callback(cmd.ID);
-                            }
-                        }
-
-                        ImGui.EndMenu();
-                    }
-                }
-
-                ImGui.Separator();
-                levelWindow.ShowEditMenu();
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("View"))
-            {
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
-                if (ImGui.MenuItem("Reset View"))
-                {
-                    levelWindow.ResetView();
-                }
-
-                ImGui.Separator();
-
-                var renderer = levelWindow.LevelRenderer;
-
-                if (ImGui.MenuItem("Grid", null, renderer.ViewGrid))
-                {
-                    renderer.ViewGrid = !renderer.ViewGrid;
-                }
-
-                if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
-                {
-                    renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
-                }
-
-                if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
-                {
-                    renderer.ViewTileHeads = !renderer.ViewTileHeads;
-                }
-
-                if (ImGui.MenuItem("Camera Borders", null, renderer.ViewCameras))
-                {
-                    renderer.ViewCameras = !renderer.ViewCameras;
-                }
-
-                ImGui.Separator();
-
-                if (ImGui.MenuItem("Keyboard Shortcuts", null, ShortcutsWindow.IsWindowOpen))
-                {
-                    ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
-                }
-
-                if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
-                {
-                    LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
-                }
-
-                ImGui.Separator();
-                
-                if (ImGui.MenuItem("Show Data Folder..."))
-                    ShowPathInSystemBrowser(AssetDataPath, false);
-                
-                if (ImGui.MenuItem("Show Render Folder..."))
-                    ShowPathInSystemBrowser(Path.Combine(AssetDataPath, "Levels"), false);
-                
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Help"))
-            {
-                if (ImGui.MenuItem("About..."))
-                {
-                    AboutWindow.IsWindowOpen = true;
-                }
-                
-                ImGui.EndMenu();
-            }
-
-            ImGui.EndMainMenuBar();
-        }
-    }
     
     public void Draw(float dt)
     {
         if (Raylib.WindowShouldClose())
-            PromptUnsavedChanges(() => Running = false);
+            EditorWindow.PromptUnsavedChanges(() => Running = false);
         
         EditorWindow.UpdateMouseState();
         
@@ -822,12 +531,8 @@ sealed class RainEd
         KeyShortcuts.Update();
         ImGui.DockSpaceOverViewport();
 
-        // main menu bar
-        DrawMenuBar();
-        HandleShortcuts();
-
         UpdateRopeSimulation();
-        levelWindow.Render(dt);
+        EditorWindow.Render();
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             ShowDemoWindow = !ShowDemoWindow;
@@ -841,144 +546,7 @@ sealed class RainEd
             ImGui.ShowDemoWindow(ref ShowDemoWindow);
         }
 
-        // render level browser
-        FileBrowser.Render(ref fileBrowser);
-        
-        // render drizzle render, if in progress
-        if (drizzleRenderWindow is not null)
-        {
-            // if this returns true, the render window had closed
-            if (drizzleRenderWindow.DrawWindow())
-            {
-                drizzleRenderWindow.Dispose();
-                drizzleRenderWindow = null;
-
-                // the whole render process allocates ~1 gb of memory
-                // so, try to free all that
-                GC.Collect(2, GCCollectionMode.Aggressive, true, true);
-                GC.WaitForFullGCComplete();
-            }
-        }
-
-        // render level resize window
-        if (levelResizeWin is not null)
-        {
-            levelResizeWin.DrawWindow();
-            if (!levelResizeWin.IsWindowOpen) levelResizeWin = null;
-        }
-        
-        // notification window
-        if (notificationTime > 0f) {
-            ImGuiWindowFlags windowFlags =
-                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
-            
-            ImGuiViewportPtr viewport = ImGui.GetMainViewport();
-            const float pad = 10f;
-
-            Vector2 windowPos = new(
-                viewport.WorkPos.X + pad,
-                viewport.WorkPos.Y + viewport.WorkSize.Y - pad
-            );
-            Vector2 windowPosPivot = new(0f, 1f);
-            ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always, windowPosPivot);
-
-            var flashValue = (float) (Math.Sin(Math.Min(notifFlash, 0.25f) * 16 * Math.PI) + 1f) / 2f;
-            var windowBg = ImGui.GetStyle().Colors[(int) ImGuiCol.WindowBg];
-
-            if (flashValue > 0.5f)
-                ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(flashValue, flashValue, flashValue, windowBg.W));
-            else
-                ImGui.PushStyleColor(ImGuiCol.WindowBg, windowBg);
-            
-            if (ImGui.Begin("Notification", windowFlags))
-                ImGui.TextUnformatted(notification);
-            ImGui.End();
-
-            ImGui.PopStyleColor();
-
-            if (timerDelay == 0)
-            {
-                notificationTime -= dt;
-                notifFlash += dt;
-            }
-        }
-
-        // show miscellaneous windows
-        ShortcutsWindow.ShowWindow();
-        AboutWindow.ShowWindow();
-        LevelLoadFailedWindow.ShowWindow();
-        PreferencesWindow.ShowWindow();
-        LuaInterface.ShowLogs();
-
-        // prompt unsaved changes
-        if (promptUnsavedChanges)
-        {
-            promptUnsavedChanges = false;
-            ImGui.OpenPopup("Unsaved Changes");
-
-            // center popup 
-            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-        }
-
-        bool unused = true;
-        if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-        {
-            if (promptUnsavedChangesCancelable)
-            {
-                ImGui.Text("Do you want to save your changes before proceeding?");
-            }
-            else
-            {
-                ImGui.Text("You must save before proceeding.\nDo you want to save now?");
-            }
-
-            ImGui.Separator();
-
-            if (ImGui.Button("Yes", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.Space))
-            {
-                ImGui.CloseCurrentPopup();
-
-                // unsaved change callback is run in SaveLevel
-                if (string.IsNullOrEmpty(currentFilePath))
-                    OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevel);
-                else
-                    SaveLevel(currentFilePath);
-            }
-
-            ImGui.SameLine();
-            if (ImGui.Button("No", StandardPopupButtons.ButtonSize) || (!promptUnsavedChangesCancelable && ImGui.IsKeyPressed(ImGuiKey.Escape)))
-            {
-                ImGui.CloseCurrentPopup();
-
-                if (promptUnsavedChangesCancelable)
-                {
-                    if (promptCallback is not null)
-                    {
-                        promptCallback();
-                    }
-                }
-                
-                promptCallback = null;
-            }
-
-            if (promptUnsavedChangesCancelable)
-            {
-                ImGui.SameLine();
-                if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Escape))
-                {
-                    ImGui.CloseCurrentPopup();
-                    promptCallback = null;
-                }
-            }
-
-            ImGui.EndPopup();
-        }
-
         rlImGui.End();
-
-        if (timerDelay > 0)
-            timerDelay--;
     }
 
     public void UpdateRopeSimulation()

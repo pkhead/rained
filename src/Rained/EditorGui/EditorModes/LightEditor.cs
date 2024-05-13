@@ -324,7 +324,7 @@ class LightEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
 
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;

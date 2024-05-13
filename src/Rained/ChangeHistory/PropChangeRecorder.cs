@@ -71,7 +71,7 @@ class PropTransformChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Prop;
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Prop;
 
         for (int i = 0; i < targetProps.Length; i++)
         {

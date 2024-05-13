@@ -306,7 +306,7 @@ class GeometryEditor : IEditorMode
         window.BeginLevelScissorMode();
 
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
@@ -489,7 +489,7 @@ class GeometryEditor : IEditorMode
                                     cell.Geo = GeoType.Air;
                                 }
 
-                                window.LevelRenderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, l);
+                                window.Renderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, l);
                             }
                         }
                         else
@@ -657,7 +657,7 @@ class GeometryEditor : IEditorMode
                         ref var dstCell = ref level.Layers[dstLayer, tx, ty];
                         dstCell.Geo = cell.Geo;
                         dstCell.Objects = cell.Objects;
-                        window.LevelRenderer.MarkNeedsRedraw(tx, ty, dstLayer);
+                        window.Renderer.MarkNeedsRedraw(tx, ty, dstLayer);
                     }
 
                     break;
@@ -809,7 +809,7 @@ class GeometryEditor : IEditorMode
             }
 
             level.Layers[layer, tx, ty] = cell;
-            window.LevelRenderer.MarkNeedsRedraw(tx, ty, layer);
+            window.Renderer.MarkNeedsRedraw(tx, ty, layer);
         }
     }
 

@@ -123,7 +123,7 @@ static partial class ShortcutsWindow
 
     public static void ShowWindow()
     {
-        var editMode = RainEd.Instance.LevelWindow.EditMode;
+        var editMode = RainEd.Instance.LevelView.EditMode;
 
         if (lastEditMode == -1)
         {

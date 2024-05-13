@@ -93,7 +93,7 @@ class CameraEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
@@ -300,7 +300,7 @@ class CameraEditor : IEditorMode
                     }
                     else
                     {
-                        RainEd.Instance.ShowNotification("Cannot delete only camera");
+                        EditorWindow.ShowNotification("Cannot delete only camera");
                     }
                 }
             }

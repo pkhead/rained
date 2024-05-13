@@ -284,7 +284,7 @@ partial class PropEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
 
         level.SortPropsByDepth();
 

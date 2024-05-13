@@ -101,7 +101,7 @@ class LightMap : IDisposable
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
             RainEd.Logger.Information("Adapted light rect. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
-            RainEd.Instance.ShowNotification("Adapted light rect");
+            EditorWindow.ShowNotification("Adapted light rect");
         }
 
         var subWidth = croppedLightMap.Width;

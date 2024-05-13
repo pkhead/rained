@@ -172,7 +172,7 @@ partial class TileEditor : IEditorMode
         isToolActive = false;
 
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
         var tileDb = RainEd.Instance.TileDatabase;
         var matDb = RainEd.Instance.MaterialDatabase;
 
@@ -333,7 +333,7 @@ partial class TileEditor : IEditorMode
                                 var idx = matDb.Categories.IndexOf(matInfo.Category);
                                 if (idx == -1)
                                 {
-                                    RainEd.Instance.ShowNotification("Error");
+                                    EditorWindow.ShowNotification("Error");
                                     RainEd.Logger.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
                                 }
                                 else
@@ -583,7 +583,7 @@ partial class TileEditor : IEditorMode
                     _ => "Unknown tile placement error"
                 };
 
-                RainEd.Instance.ShowNotification(errStr);
+                EditorWindow.ShowNotification(errStr);
             }
         }
     }

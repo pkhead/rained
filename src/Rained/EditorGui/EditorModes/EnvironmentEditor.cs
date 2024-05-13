@@ -90,7 +90,7 @@ class EnvironmentEditor : IEditorMode
         isDragging = false;
 
         var level = RainEd.Instance.Level;
-        var levelRender = window.LevelRenderer;
+        var levelRender = window.Renderer;
 
         // set water level
         if (window.IsViewportHovered && level.HasWater)

@@ -265,7 +265,7 @@ class UserPreferences
         catch (Exception e)
         {
             RainEd.Logger.Error("Could not apply theme!\n{Error}", e);
-            RainEd.Instance.ShowNotification("Could not apply theme");
+            EditorWindow.ShowNotification("Could not apply theme");
         }
     }
 }

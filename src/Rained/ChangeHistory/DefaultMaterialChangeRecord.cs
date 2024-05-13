@@ -17,7 +17,7 @@ class DefaultMaterialChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Tile;
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Tile;
         RainEd.Instance.Level.DefaultMaterial = useNew ? newMat : oldMat;
     }
 }

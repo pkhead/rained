@@ -46,7 +46,7 @@ class CameraChangeRecord : IChangeRecord
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
-        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Camera;
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Camera;
 
         var data = useNew ? NewData : OldData;
         if (level.Cameras.Count > data.Length) level.Cameras.RemoveRange(data.Length-1, level.Cameras.Count - data.Length);

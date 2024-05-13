@@ -158,7 +158,7 @@ partial class Level
         int tileLeft = tileRootX - tile.CenterX;
         int tileTop = tileRootY - tile.CenterY;
 
-        var levelRenderer = RainEd.Instance.LevelWindow.LevelRenderer;
+        var levelRenderer = RainEd.Instance.LevelView.Renderer;
 
         for (int x = 0; x < tile.Width; x++)
         {
@@ -222,7 +222,7 @@ partial class Level
     /// <exception cref="Exception">Thrown if the tile at the given position is not a tile head</exception>
     public void RemoveTile(int layer, int tileRootX, int tileRootY, bool removeGeometry)
     {
-        var levelRenderer = RainEd.Instance.LevelWindow.LevelRenderer;
+        var levelRenderer = RainEd.Instance.LevelView.Renderer;
 
         var tile = Layers[layer, tileRootX, tileRootY].TileHead
             ?? throw new Exception("Attempt to remove unknown tile");

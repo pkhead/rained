@@ -218,7 +218,7 @@ class StandardPathAutotile : Autotile
                 }
                 else
                 {
-                    RainEd.Instance.ShowNotification("Tile dimensions do not match autotile dimensions");
+                    EditorWindow.ShowNotification("Tile dimensions do not match autotile dimensions");
                 }
 
                 selectedTile = null;

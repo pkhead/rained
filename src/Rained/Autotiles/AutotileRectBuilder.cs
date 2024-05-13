@@ -11,7 +11,7 @@ class AutotileRectBuilder(Autotiles.Autotile autotile, Vector2i startPos) : IAut
 
     public void Update()
     {
-        var window = RainEd.Instance.LevelWindow;
+        var window = RainEd.Instance.LevelView;
         endPos = new Vector2i(window.MouseCx, window.MouseCy);
 
         var minX = Math.Min(startPos.X, endPos.X);

@@ -263,7 +263,7 @@ partial class PropEditor : IEditorMode
             
             Raylib.BeginTextureMode(previewTexture);
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            Raylib.BeginShaderMode(window.LevelRenderer.PropPreviewShader);
+            Raylib.BeginShaderMode(window.Renderer.PropPreviewShader);
             {
                 for (int depth = prop.LayerCount - 1; depth >= 0; depth--)
                 {
@@ -329,16 +329,16 @@ partial class PropEditor : IEditorMode
         }
 
         if (isWarpMode)
-            RainEd.Instance.LevelWindow.StatusText = "Vertex Mode";
+            RainEd.Instance.LevelView.StatusText = "Vertex Mode";
         
         // transform mode hints
         if (transformMode is ScaleTransformMode)
         {
-            RainEd.Instance.LevelWindow.StatusText = "Shift - Constrain proportion    Ctrl - Scale by center";
+            RainEd.Instance.LevelView.StatusText = "Shift - Constrain proportion    Ctrl - Scale by center";
         }
         else if (transformMode is RotateTransformMode)
         {
-            RainEd.Instance.LevelWindow.StatusText = "Shift - Snap rotation";
+            RainEd.Instance.LevelView.StatusText = "Shift - Snap rotation";
         }
 
         // push rope transform if simulation had just ended

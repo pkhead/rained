@@ -598,7 +598,7 @@ static class LevelSerialization
         // Wtf this sucks why does lingo expect \r newlines that's bs \r newlines were deprecated on mac software like 20 years ago
         // Why is there no compatibilty for \r\n newlines wtf is this bs
         var newLine = "\r";
-        var workLayer = RainEd.Instance.LevelWindow.WorkLayer + 1;
+        var workLayer = RainEd.Instance.LevelView.WorkLayer + 1;
 
         // geometry data
         output.Append('[');

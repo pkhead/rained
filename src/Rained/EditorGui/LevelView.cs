@@ -40,8 +40,8 @@ class LevelView
     }
 
     // render texture given to each editor mode class
-    private RlManaged.RenderTexture2D[] layerRenderTextures;
-    public readonly LevelEditRender LevelRenderer;
+    private readonly RlManaged.RenderTexture2D[] layerRenderTextures;
+    public readonly LevelEditRender Renderer;
 
     private ChangeHistory.CellChangeRecorder cellChangeRecorder;
     public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
@@ -101,7 +101,7 @@ class LevelView
             layerRenderTextures[i] = RlManaged.RenderTexture2D.Load(1, 1);
         }
         
-        LevelRenderer = new LevelEditRender();
+        Renderer = new LevelEditRender();
         cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
@@ -117,18 +117,18 @@ class LevelView
         editorModes.Add(new PropEditor(this));
 
         // load user preferences
-        LevelRenderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
-        LevelRenderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
-        LevelRenderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
-        LevelRenderer.ViewCameras = RainEd.Instance.Preferences.ViewCameras;
+        Renderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
+        Renderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
+        Renderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
+        Renderer.ViewCameras = RainEd.Instance.Preferences.ViewCameras;
     }
 
     public void SavePreferences(UserPreferences prefs)
     {
-        prefs.ViewGrid = LevelRenderer.ViewGrid;
-        prefs.ViewObscuredBeams = LevelRenderer.ViewObscuredBeams;
-        prefs.ViewTileHeads = LevelRenderer.ViewTileHeads;
-        prefs.ViewCameras = LevelRenderer.ViewCameras;
+        prefs.ViewGrid = Renderer.ViewGrid;
+        prefs.ViewObscuredBeams = Renderer.ViewObscuredBeams;
+        prefs.ViewTileHeads = Renderer.ViewTileHeads;
+        prefs.ViewCameras = Renderer.ViewCameras;
         
         foreach (var mode in editorModes)
         {
@@ -171,9 +171,9 @@ class LevelView
         mode.ShowEditMenu();
     }
 
-    public void Render(float dt)
+    public void Render()
     {
-        var window = RainEd.Instance.LevelWindow;
+        var dt = Raylib.GetFrameTime();
 
         if (queuedEditMode >= 0)
         {
@@ -315,11 +315,11 @@ class LevelView
         // send view info to the level renderer
         var viewportW = canvasWidget.RenderTexture.Texture.Width;
         var viewportH = canvasWidget.RenderTexture.Texture.Height;
-        LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
-        LevelRenderer.ViewBottomRight =
+        Renderer.ViewTopLeft = viewOffset / Level.TileSize;
+        Renderer.ViewBottomRight =
             (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
             / Level.TileSize;
-        LevelRenderer.ViewZoom = viewZoom;
+        Renderer.ViewZoom = viewZoom;
 
         // obtain mouse coordinates
         mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
@@ -339,7 +339,7 @@ class LevelView
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
 
         // drwa resize preview
-        if (RainEd.Instance.LevelResizeWindow is LevelResizeWindow resizeData)
+        if (EditorWindow.LevelResizeWindow is LevelResizeWindow resizeData)
         {
             var level = RainEd.Instance.Level;
 
