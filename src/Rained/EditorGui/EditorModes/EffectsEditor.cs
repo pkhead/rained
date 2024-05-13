@@ -7,7 +7,7 @@ namespace RainEd;
 class EffectsEditor : IEditorMode
 {
     public string Name { get => "Effects"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private int selectedGroup = 0;
     private int selectedEffect = -1;
@@ -43,7 +43,7 @@ class EffectsEditor : IEditorMode
 
     private ChangeHistory.EffectsChangeRecorder changeRecorder;
 
-    public EffectsEditor(EditorWindow window)
+    public EffectsEditor(LevelView window)
     {
         this.window = window;
 
@@ -51,7 +51,7 @@ class EffectsEditor : IEditorMode
         matrixTexShader = RlManaged.Shader.LoadFromMemory(null, MatrixTextureShaderSource);
 
         // create matrix texture
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         matrixImage = RlManaged.Image.GenColor(level.Width, level.Height, Color.Black);
         matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
 
@@ -73,7 +73,7 @@ class EffectsEditor : IEditorMode
     {
         selectedEffect = -1;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         matrixImage.Dispose();
         matrixTexture.Dispose();
         
@@ -121,8 +121,8 @@ class EffectsEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        var level = window.Editor.Level;
-        var fxDatabase = window.Editor.EffectsDatabase;
+        var level = RainEd.Instance.Level;
+        var fxDatabase = RainEd.Instance.EffectsDatabase;
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -467,11 +467,11 @@ class EffectsEditor : IEditorMode
         bool wasToolActive = isToolActive;
         isToolActive = false;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw layers, including tiles
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -483,7 +483,7 @@ class EffectsEditor : IEditorMode
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
-                levelRender.RenderGeometry(l, EditorWindow.GeoColor(30f / 255f, 255));
+                levelRender.RenderGeometry(l, LevelView.GeoColor(30f / 255f, 255));
                 levelRender.RenderTiles(l, 100);
             Rlgl.PopMatrix();
         }
@@ -542,13 +542,13 @@ class EffectsEditor : IEditorMode
                     brushSize = Math.Clamp(brushSize, 1, 10);
                 }
 
-                if (window.IsMouseClicked(ImGuiMouseButton.Left) || window.IsMouseClicked(ImGuiMouseButton.Right))
+                if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
                     lastBrushPos = new(-9999, -9999);
                 
                 // paint when user's mouse is down and moving
-                if (window.IsMouseDown(ImGuiMouseButton.Left))
+                if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
                     brushFac = 1.0f;
-                else if (window.IsMouseDown(ImGuiMouseButton.Right))
+                else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
                     brushFac = -1.0f;
                 
                 if (brushFac != 0.0f)
@@ -659,7 +659,7 @@ class EffectsEditor : IEditorMode
     private void AddEffect(EffectInit init)
     {
         changeRecorder.BeginListChange();
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         selectedEffect = level.Effects.Count;
         level.Effects.Add(new Effect(level, init));
         changeRecorder.PushListChange();

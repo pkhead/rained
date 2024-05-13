@@ -53,7 +53,7 @@ class LightParametersChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Light;
+        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Light;
         var level = RainEd.Instance.Level;
 
         if (useNew)
@@ -141,7 +141,7 @@ class LightChangeRecorder : IDisposable
 
     public void Retrace()
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Light;
+        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Light;
         var lightMap = RainEd.Instance.Level.LightMap;
 
         lightMap.RaylibBeginTextureMode();

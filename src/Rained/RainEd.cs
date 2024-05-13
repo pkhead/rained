@@ -31,7 +31,7 @@ sealed class RainEd
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
-    private readonly EditorWindow editorWindow;
+    private readonly LevelView levelWindow;
     private readonly ChangeHistory.ChangeHistory changeHistory;
     private bool ShowDemoWindow = false;
 
@@ -51,7 +51,7 @@ sealed class RainEd
 
     public string CurrentFilePath { get => currentFilePath; }
     public Level Level { get => level; }
-    public EditorWindow Window { get => editorWindow; }
+    public LevelView LevelWindow { get => levelWindow; }
 
     private string notification = "";
     private float notificationTime = 0f;
@@ -250,8 +250,8 @@ sealed class RainEd
         Logger.Information("Initializing change history...");
         changeHistory = new ChangeHistory.ChangeHistory();
 
-        Logger.Information("Creating editor window...");
-        editorWindow = new EditorWindow();
+        Logger.Information("Creating level view...");
+        levelWindow = new LevelView();
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
@@ -321,7 +321,7 @@ sealed class RainEd
         Autotiles.SaveConfig();
 
         // save user preferences
-        editorWindow.SavePreferences(Preferences);
+        levelWindow.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
 
         Preferences.WindowWidth = Raylib.GetScreenWidth();
@@ -387,7 +387,7 @@ sealed class RainEd
         {
             Logger.Information("Loading level {Path}...", path);
 
-            editorWindow.UnloadView();
+            levelWindow.UnloadView();
 
             try
             {
@@ -422,8 +422,8 @@ sealed class RainEd
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            editorWindow.ReloadLevel();
-            editorWindow.LoadView();
+            levelWindow.ReloadLevel();
+            levelWindow.LoadView();
         }
     }
 
@@ -433,7 +433,7 @@ sealed class RainEd
         {
             Logger.Information("Saving level to {Path}...", path);
 
-            editorWindow.FlushDirty();
+            levelWindow.FlushDirty();
 
             try
             {
@@ -477,22 +477,22 @@ sealed class RainEd
         if (newWidth == level.Width && newHeight == level.Height) return;
         Logger.Information("Resizing level...");
 
-        Window.FlushDirty();
+        levelWindow.FlushDirty();
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
-        Window.ReloadLevel();
+        levelWindow.ReloadLevel();
         changeHistory.Clear();
-        Window.LevelRenderer.ReloadLevel();
-        editorWindow.ViewOffset += dstOrigin * Level.TileSize;
+        levelWindow.LevelRenderer.ReloadLevel();
+        levelWindow.ViewOffset += dstOrigin * Level.TileSize;
 
         Logger.Information("Done!");
     }
 
     private void ReloadLevel()
     {
-        editorWindow.ReloadLevel();
+        levelWindow.ReloadLevel();
         changeHistory.Clear();
         changeHistory.MarkUpToDate();
-        Window.LevelRenderer.ReloadLevel();
+        levelWindow.LevelRenderer.ReloadLevel();
     }
 
     private Action? promptCallback;
@@ -542,11 +542,11 @@ sealed class RainEd
             {
                 Logger.Information("Load default level...");
 
-                editorWindow.UnloadView();
+                levelWindow.UnloadView();
                 level.LightMap.Dispose();
                 level = Level.NewDefaultLevel();
                 ReloadLevel();
-                editorWindow.LoadView();
+                levelWindow.LoadView();
 
                 currentFilePath = string.Empty;
                 UpdateTitle();
@@ -734,7 +734,7 @@ sealed class RainEd
                 }
 
                 ImGui.Separator();
-                editorWindow.ShowEditMenu();
+                levelWindow.ShowEditMenu();
 
                 ImGui.EndMenu();
             }
@@ -745,29 +745,31 @@ sealed class RainEd
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
                 if (ImGui.MenuItem("Reset View"))
                 {
-                    editorWindow.ResetView();
+                    levelWindow.ResetView();
                 }
 
                 ImGui.Separator();
 
-                if (ImGui.MenuItem("Grid", null, editorWindow.LevelRenderer.ViewGrid))
+                var renderer = levelWindow.LevelRenderer;
+
+                if (ImGui.MenuItem("Grid", null, renderer.ViewGrid))
                 {
-                    editorWindow.LevelRenderer.ViewGrid = !editorWindow.LevelRenderer.ViewGrid;
+                    renderer.ViewGrid = !renderer.ViewGrid;
                 }
 
-                if (ImGui.MenuItem("Obscured Beams", null, editorWindow.LevelRenderer.ViewObscuredBeams))
+                if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
-                    editorWindow.LevelRenderer.ViewObscuredBeams = !editorWindow.LevelRenderer.ViewObscuredBeams;
+                    renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
                 }
 
-                if (ImGui.MenuItem("Tile Heads", null, editorWindow.LevelRenderer.ViewTileHeads))
+                if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
                 {
-                    editorWindow.LevelRenderer.ViewTileHeads = !editorWindow.LevelRenderer.ViewTileHeads;
+                    renderer.ViewTileHeads = !renderer.ViewTileHeads;
                 }
 
-                if (ImGui.MenuItem("Camera Borders", null, editorWindow.LevelRenderer.ViewCameras))
+                if (ImGui.MenuItem("Camera Borders", null, renderer.ViewCameras))
                 {
-                    editorWindow.LevelRenderer.ViewCameras = !editorWindow.LevelRenderer.ViewCameras;
+                    renderer.ViewCameras = !renderer.ViewCameras;
                 }
 
                 ImGui.Separator();
@@ -812,6 +814,8 @@ sealed class RainEd
         if (Raylib.WindowShouldClose())
             PromptUnsavedChanges(() => Running = false);
         
+        EditorWindow.UpdateMouseState();
+        
         Raylib.ClearBackground(Color.DarkGray);
         
         rlImGui.Begin();
@@ -823,7 +827,7 @@ sealed class RainEd
         HandleShortcuts();
 
         UpdateRopeSimulation();
-        editorWindow.Render(dt);
+        levelWindow.Render(dt);
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             ShowDemoWindow = !ShowDemoWindow;

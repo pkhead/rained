@@ -18,8 +18,8 @@ partial class TileEditor : IEditorMode
     
     private void ProcessSearch()
     {
-        var tileDb = window.Editor.TileDatabase;
-        var matDb = window.Editor.MaterialDatabase;
+        var tileDb = RainEd.Instance.TileDatabase;
+        var matDb = RainEd.Instance.MaterialDatabase;
 
         tileSearchResults.Clear();
         matSearchResults.Clear();
@@ -84,8 +84,8 @@ partial class TileEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        var tileDb = window.Editor.TileDatabase;
-        var matDb = window.Editor.MaterialDatabase;
+        var tileDb = RainEd.Instance.TileDatabase;
+        var matDb = RainEd.Instance.MaterialDatabase;
 
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -98,7 +98,7 @@ partial class TileEditor : IEditorMode
             }
 
             // default material button (or press E)
-            int defaultMat = window.Editor.Level.DefaultMaterial;
+            int defaultMat = RainEd.Instance.Level.DefaultMaterial;
             ImGui.TextUnformatted($"Default Material: {matDb.GetMaterial(defaultMat).Name}");
 
             if (selectionMode != SelectionMode.Materials)
@@ -106,9 +106,9 @@ partial class TileEditor : IEditorMode
             
             if ((ImGui.Button("Set Selected Material as Default") || KeyShortcuts.Activated(KeyShortcut.SetMaterial)) && selectionMode == SelectionMode.Materials)
             {
-                var oldMat = window.Editor.Level.DefaultMaterial;
+                var oldMat = RainEd.Instance.Level.DefaultMaterial;
                 var newMat = selectedMaterial;
-                window.Editor.Level.DefaultMaterial = newMat;
+                RainEd.Instance.Level.DefaultMaterial = newMat;
 
                 if (oldMat != newMat)
                     RainEd.Instance.ChangeHistory.Push(new ChangeHistory.DefaultMaterialChangeRecord(oldMat, newMat));

@@ -6,12 +6,12 @@ namespace RainEd;
 class EnvironmentEditor : IEditorMode
 {
     public string Name { get => "Environment"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private ChangeHistory.EnvironmentChangeRecorder changeRecorder;
     private bool isDragging = false;
 
-    public EnvironmentEditor(EditorWindow window)
+    public EnvironmentEditor(LevelView window)
     {
         this.window = window;
         changeRecorder = new();
@@ -44,7 +44,7 @@ class EnvironmentEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
 
         if (ImGui.Begin("Environment", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -72,7 +72,8 @@ class EnvironmentEditor : IEditorMode
 
     private void DrawWater()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
+
         float waterHeight = level.WaterLevel + level.BufferTilesBot + 0.5f;
         Raylib.DrawRectangle(
             0,
@@ -88,13 +89,13 @@ class EnvironmentEditor : IEditorMode
         bool wasDragging = isDragging;
         isDragging = false;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
 
         // set water level
         if (window.IsViewportHovered && level.HasWater)
         {
-            if (window.IsMouseDown(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
             {
                 isDragging = true;
 
@@ -104,13 +105,13 @@ class EnvironmentEditor : IEditorMode
         }
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = EditorWindow.GeoColor(alpha);
+            var color = LevelView.GeoColor(alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();

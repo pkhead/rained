@@ -165,8 +165,8 @@ class AutotilePathBuilder : IAutotileInputBuilder
         // only add the position if it is adjacent to the last
         // placed position
         var mousePos = new Vector2i(
-            (int)(RainEd.Instance.Window.MouseCellFloat.X + gridOffsetInverse),
-            (int)(RainEd.Instance.Window.MouseCellFloat.Y + gridOffsetInverse)
+            (int)(RainEd.Instance.LevelWindow.MouseCellFloat.X + gridOffsetInverse),
+            (int)(RainEd.Instance.LevelWindow.MouseCellFloat.Y + gridOffsetInverse)
         );
         
         // first node to be placed

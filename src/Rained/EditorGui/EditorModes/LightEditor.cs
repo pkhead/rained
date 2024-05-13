@@ -8,7 +8,7 @@ namespace RainEd;
 class LightEditor : IEditorMode
 {
     public string Name { get => "Light"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
@@ -22,7 +22,7 @@ class LightEditor : IEditorMode
 
     private ChangeHistory.LightChangeRecorder changeRecorder = null!;
 
-    public LightEditor(EditorWindow window)
+    public LightEditor(LevelView window)
     {
         this.window = window;
         ReloadLevel();
@@ -78,7 +78,7 @@ class LightEditor : IEditorMode
         bool wasParamChanging = isChangingParameters;
         isChangingParameters = false;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -308,7 +308,7 @@ class LightEditor : IEditorMode
 
     private void DrawOcclusionPlane()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         
         // render light plane
         var levelBoundsW = level.Width * 20;
@@ -323,7 +323,7 @@ class LightEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
 
         var levelBoundsW = level.Width * 20;
@@ -349,13 +349,13 @@ class LightEditor : IEditorMode
         );
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = EditorWindow.GeoColor(30f / 255f, alpha);
+            var color = LevelView.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
@@ -394,8 +394,8 @@ class LightEditor : IEditorMode
 
             // render brush preview
             // if drawing, draw on light texture instead of screen
-            var lmb = window.IsMouseDown(ImGuiMouseButton.Left);
-            var rmb = window.IsMouseDown(ImGuiMouseButton.Right);
+            var lmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
+            var rmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
             if (lmb || rmb)
             {
                 isDrawing = true;

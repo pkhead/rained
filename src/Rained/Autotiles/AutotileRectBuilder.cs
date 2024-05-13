@@ -5,13 +5,13 @@ using Autotiles;
 
 class AutotileRectBuilder(Autotiles.Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
 {
-    private readonly Autotiles.Autotile autotile = autotile;
+    private readonly Autotile autotile = autotile;
     private readonly Vector2i startPos = startPos;
     private Vector2i endPos = startPos;
 
     public void Update()
     {
-        var window = RainEd.Instance.Window;
+        var window = RainEd.Instance.LevelWindow;
         endPos = new Vector2i(window.MouseCx, window.MouseCy);
 
         var minX = Math.Min(startPos.X, endPos.X);
@@ -26,7 +26,7 @@ class AutotileRectBuilder(Autotiles.Autotile autotile, Vector2i startPos) : IAut
                 width: (maxX - minX + 1) * Level.TileSize,
                 height: (maxY - minY + 1) * Level.TileSize
             ),
-            1f / RainEd.Instance.Window.ViewZoom,
+            1f / window.ViewZoom,
             Color.White
         );
     }

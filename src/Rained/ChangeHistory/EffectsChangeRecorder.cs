@@ -54,8 +54,8 @@ class EffectMatrixChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Effect;
-        RainEd.Instance.Window.GetEditor<EffectsEditor>().SelectedEffect = RainEd.Instance.Level.Effects.IndexOf(effect);
+        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Effect;
+        RainEd.Instance.LevelWindow.GetEditor<EffectsEditor>().SelectedEffect = RainEd.Instance.Level.Effects.IndexOf(effect);
 
         var matrixToApply = useNew ? newMatrix : oldMatrix;
 
@@ -86,7 +86,7 @@ class EffectsListChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Effect;
+        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Effect;
 
         var apply = useNew ? newList : oldList;
         var fxList = RainEd.Instance.Level.Effects;
@@ -98,7 +98,7 @@ class EffectsListChangeRecord : IChangeRecord
         }
 
         // change selected effect
-        EffectsEditor fxEditor = RainEd.Instance.Window.GetEditor<EffectsEditor>();
+        EffectsEditor fxEditor = RainEd.Instance.LevelWindow.GetEditor<EffectsEditor>();
         fxEditor.SelectedEffect = useNew ? newSelected : oldSelected;
     }
 }
@@ -119,8 +119,8 @@ class EffectConfigChangeRecord : IChangeRecord
     public void Apply(bool useNew)
     {
         var fxList = RainEd.Instance.Level.Effects;
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Effect;
-        RainEd.Instance.Window.GetEditor<EffectsEditor>().SelectedEffect = fxList.IndexOf(effect);
+        RainEd.Instance.LevelWindow.EditMode = (int) EditModeEnum.Effect;
+        RainEd.Instance.LevelWindow.GetEditor<EffectsEditor>().SelectedEffect = fxList.IndexOf(effect);
 
         var target = useNew ? newConfig : oldConfig;
         target.Apply(effect);
@@ -185,7 +185,7 @@ class EffectsChangeRecorder
         if (oldFxList != null)
             throw new Exception("EffectsChangeRecorder.BeginListChange() called twice");
 
-        EffectsEditor fxEditor = RainEd.Instance.Window.GetEditor<EffectsEditor>();
+        EffectsEditor fxEditor = RainEd.Instance.LevelWindow.GetEditor<EffectsEditor>();
         
         oldFxList = RainEd.Instance.Level.Effects.ToArray();
         selectedEffect = fxEditor.SelectedEffect;
@@ -196,7 +196,7 @@ class EffectsChangeRecorder
         if (oldFxList == null)
             throw new Exception("EffectsChangeRecorder.PushListChange() called, but recorder is not active");
         
-        EffectsEditor fxEditor = RainEd.Instance.Window.GetEditor<EffectsEditor>();
+        EffectsEditor fxEditor = RainEd.Instance.LevelWindow.GetEditor<EffectsEditor>();
 
         var newFxList = RainEd.Instance.Level.Effects;
         var newSelectedEffect = fxEditor.SelectedEffect;

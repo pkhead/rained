@@ -29,12 +29,12 @@ class CellChangeRecord : IChangeRecord
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
-        RainEd.Instance.Window.EditMode = EditMode;
+        RainEd.Instance.LevelWindow.EditMode = EditMode;
 
         foreach (CellChange change in CellChanges)
         {
             level.Layers[change.Layer, change.X, change.Y] = useNew ? change.NewState : change.OldState;
-            RainEd.Instance.Window.LevelRenderer.MarkNeedsRedraw(change.X, change.Y, change.Layer);
+            RainEd.Instance.LevelWindow.LevelRenderer.MarkNeedsRedraw(change.X, change.Y, change.Layer);
         }
 
         foreach (var change in ChainHolderChanges)
@@ -78,7 +78,7 @@ class CellChangeRecorder
         
         var changes = new CellChangeRecord()
         {
-            EditMode = RainEd.Instance.Window.EditMode
+            EditMode = RainEd.Instance.LevelWindow.EditMode
         };
 
         var level = RainEd.Instance.Level;

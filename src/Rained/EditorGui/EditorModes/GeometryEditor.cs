@@ -9,7 +9,7 @@ class GeometryEditor : IEditorMode
 {
     public string Name { get => "Geometry"; }
 
-    private readonly EditorWindow window;
+    private readonly LevelView window;
     
     public enum Tool : int
     {
@@ -115,12 +115,12 @@ class GeometryEditor : IEditorMode
     // work layer
     private bool[] layerMask;
 
-    public GeometryEditor(EditorWindow editorWindow)
+    public GeometryEditor(LevelView levelView)
     {
         layerMask = new bool[3];
         layerMask[0] = true;
 
-        window = editorWindow;
+        window = levelView;
         toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
 
         switch (RainEd.Instance.Preferences.GeometryViewMode)
@@ -305,11 +305,11 @@ class GeometryEditor : IEditorMode
     {
         window.BeginLevelScissorMode();
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // update layer colors
         {
@@ -417,7 +417,7 @@ class GeometryEditor : IEditorMode
             selectedTool = (Tool) Math.Clamp(toolRow*4 + toolCol, 0, toolCount-1);
         }
 
-        bool isMouseDown = window.IsMouseDown(ImGuiMouseButton.Left) || window.IsMouseDown(ImGuiMouseButton.Right);
+        bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
         
         if (window.IsViewportHovered)
         {
@@ -441,7 +441,7 @@ class GeometryEditor : IEditorMode
                     Color.White
                 );
 
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
+                if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     ApplyToolRect();
                 }
@@ -495,7 +495,7 @@ class GeometryEditor : IEditorMode
                         else
                         {
                             if (!isToolRectActive)
-                                ActivateTool(window.MouseCx, window.MouseCy, window.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                                ActivateTool(window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
                         }
                     }
                 }
@@ -518,7 +518,7 @@ class GeometryEditor : IEditorMode
 
     private void ActivateTool(int tx, int ty, bool pressed, bool shift)
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
 
         isToolRectActive = false;
 
@@ -818,8 +818,8 @@ class GeometryEditor : IEditorMode
         // apply the rect to the tool by
         // applying the tool at every cell
         // in the rectangle.
-        var mx = Math.Clamp(window.MouseCx, 0, window.Editor.Level.Width - 1);
-        var my = Math.Clamp(window.MouseCy, 0, window.Editor.Level.Height - 1);
+        var mx = Math.Clamp(window.MouseCx, 0, RainEd.Instance.Level.Width - 1);
+        var my = Math.Clamp(window.MouseCy, 0, RainEd.Instance.Level.Height - 1);
         var rectMinX = Math.Min(mx, toolRectX);
         var rectMinY = Math.Min(my, toolRectY);
         var rectMaxX = Math.Max(mx, toolRectX);

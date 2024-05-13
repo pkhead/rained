@@ -7,7 +7,7 @@ namespace RainEd;
 class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private Camera? selectedCamera = null;
     private int selectedCorner = -1;
@@ -19,7 +19,7 @@ class CameraEditor : IEditorMode
 
     private ChangeHistory.CameraChangeRecorder changeRecorder;
 
-    public CameraEditor(EditorWindow window) {
+    public CameraEditor(LevelView window) {
         this.window = window;
         changeRecorder = new ChangeHistory.CameraChangeRecorder();
 
@@ -92,17 +92,17 @@ class CameraEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = EditorWindow.GeoColor(30f / 255f, alpha);
+            var color = LevelView.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
@@ -133,11 +133,11 @@ class CameraEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            doubleClick = window.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+            doubleClick = EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left);
 
             var mpos = window.MouseCellFloat;
 
-            if (window.IsMouseClicked(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragBegin = mpos;
             }
@@ -161,7 +161,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // drag begin
-                if (window.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && window.IsMouseDown(ImGuiMouseButton.Left)))
+                if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && EditorWindow.IsMouseDown(ImGuiMouseButton.Left)))
                 {
                     if (selectedCorner == -1)
                     {
@@ -177,7 +177,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // right-click to reset corner
-                if (selectedCorner >= 0 && selectedCamera is not null && window.IsMouseClicked(ImGuiMouseButton.Right))
+                if (selectedCorner >= 0 && selectedCamera is not null && EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
                 {
                     changeRecorder.BeginChange();
                     selectedCamera.CornerAngles[selectedCorner] = 0f;
@@ -186,7 +186,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // mouse-pick select when lmb pressed
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
+                if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     PickCameraAt(dragBegin);
                 }
@@ -196,7 +196,7 @@ class CameraEditor : IEditorMode
         // camera drag mode
         if (isDraggingCamera)
         {
-            if (window.IsMouseReleased(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
             {
                 // stop dragging camera
                 isDraggingCamera = false;

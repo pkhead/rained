@@ -10,7 +10,7 @@ partial class TileEditor : IEditorMode
 {
     public string Name { get => "Tiles"; }
 
-    private readonly EditorWindow window;
+    private readonly LevelView window;
     private Tile selectedTile;
     private int selectedMaterial = 1;
     private bool isToolActive = false;
@@ -41,7 +41,7 @@ partial class TileEditor : IEditorMode
     private int lastPlaceY = -1;
     private int lastPlaceL = -1;
     
-    public TileEditor(EditorWindow window) {
+    public TileEditor(LevelView window) {
         this.window = window;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
         selectedMaterial = 1;
@@ -171,13 +171,13 @@ partial class TileEditor : IEditorMode
         wasToolActive = isToolActive;
         isToolActive = false;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var levelRender = window.LevelRenderer;
         var tileDb = RainEd.Instance.TileDatabase;
         var matDb = RainEd.Instance.MaterialDatabase;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, EditorWindow.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw layers
         for (int l = Level.LayerCount-1; l >= 0; l--)
@@ -187,7 +187,7 @@ partial class TileEditor : IEditorMode
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             Rlgl.PushMatrix();
-                levelRender.RenderGeometry(l, EditorWindow.GeoColor(255));
+                levelRender.RenderGeometry(l, LevelView.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
             Rlgl.PopMatrix();
         }
@@ -241,7 +241,7 @@ partial class TileEditor : IEditorMode
         {
             // begin change if left or right button is down
             // regardless of what it's doing
-            if (window.IsMouseDown(ImGuiMouseButton.Left) || KeyShortcuts.Active(KeyShortcut.RightMouse))
+            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || KeyShortcuts.Active(KeyShortcut.RightMouse))
             {
                 if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                 isToolActive = true;
@@ -346,7 +346,7 @@ partial class TileEditor : IEditorMode
                     }
 
                     // remove tile on right click
-                    if (selectionMode == SelectionMode.Tiles && (isMouseHeldInMode && window.IsMouseDown(ImGuiMouseButton.Right)) && mouseCell.HasTile())
+                    if (selectionMode == SelectionMode.Tiles && (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right)) && mouseCell.HasTile())
                     {
                         level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
                     }
@@ -376,7 +376,7 @@ partial class TileEditor : IEditorMode
         );
 
         // left-click to confirm
-        if (window.IsMouseClicked(ImGuiMouseButton.Left))
+        if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
         {
             chainHolderMode = false;
         }
@@ -428,9 +428,9 @@ partial class TileEditor : IEditorMode
         int placeMode = 0;
         if (isMouseHeldInMode)
         {
-            if (window.IsMouseDown(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
                 placeMode = 1;
-            else if (window.IsMouseDown(ImGuiMouseButton.Right))
+            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
                 placeMode = 2;
         }
         
@@ -543,7 +543,7 @@ partial class TileEditor : IEditorMode
         );
 
         // place tile on click
-        if (isMouseHeldInMode && window.IsMouseDown(ImGuiMouseButton.Left))
+        if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
         {
             if (validationStatus == TilePlacementStatus.Success)
             {
@@ -574,7 +574,7 @@ partial class TileEditor : IEditorMode
                     }
                 }
             }
-            else if (window.IsMouseClicked(ImGuiMouseButton.Left))
+            else if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 string errStr = validationStatus switch {
                     TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
@@ -583,7 +583,7 @@ partial class TileEditor : IEditorMode
                     _ => "Unknown tile placement error"
                 };
 
-                window.Editor.ShowNotification(errStr);
+                RainEd.Instance.ShowNotification(errStr);
             }
         }
     }
