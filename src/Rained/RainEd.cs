@@ -72,6 +72,12 @@ sealed class RainEd
 
     public readonly RlManaged.Texture2D PlaceholderTexture;
 
+    /// <summary>
+    /// Information for the latest Rained release fetched
+    /// from the GitHub API.
+    /// </summary>
+    public readonly RainedVersionInfo? LatestVersionInfo = null;
+
     struct Command(string name, Action<int> cb)
     {
         private static int nextID = 0;
@@ -165,6 +171,9 @@ sealed class RainEd
             img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
         }
+
+        // run the update checker
+        var versionCheckTask = UpdateChecker.FetchLatestVersion();
 
         string initPhase = null!;
 
@@ -267,8 +276,32 @@ sealed class RainEd
             LoadLevel(levelPath);
         }
 
+        // force gc. i just added this to try to collect
+        // the now-garbage asset image data, as they have
+        // been converted into GPU textures. 
         GC.Collect(2, GCCollectionMode.Aggressive, true, true);
         GC.WaitForPendingFinalizers();
+
+        // check on the update checker
+        if (!versionCheckTask.IsCompleted)
+            versionCheckTask.Wait();
+        
+        if (versionCheckTask.IsCompletedSuccessfully)
+        {
+            Logger.Information("Version check successful!");
+            LatestVersionInfo = versionCheckTask.Result;
+            Logger.Information(LatestVersionInfo.VersionName);
+
+            if (LatestVersionInfo.VersionName != Version)
+            {
+                ShowNotification("New version available! Check the About window for more info.");
+            }
+        }
+        else if (versionCheckTask.IsFaulted)
+        {
+            Logger.Error("Version check faulted...");
+            Logger.Error(versionCheckTask.Exception.ToString());
+        }
 
         Logger.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
@@ -290,7 +323,7 @@ sealed class RainEd
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
     }
-
+    
     public void ShowNotification(string msg)
     {
         if (notification == "" || notificationTime != 3f)
