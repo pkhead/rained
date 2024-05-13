@@ -161,6 +161,16 @@ class LevelEditRender
         geoRenderer.MarkNeedsRedraw(x, y, layer);
     }
 
+    public void ReloadLevel()
+    {
+        geoRenderer.ReloadLevel();
+    }
+
+    public void RenderGeometry(int layer, Color color)
+    {
+        geoRenderer.Render(layer, color);
+    }
+
     public void RenderObjects(Color color)
     {
         int viewL = (int) Math.Floor(ViewTopLeft.X);
