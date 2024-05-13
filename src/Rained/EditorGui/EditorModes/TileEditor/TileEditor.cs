@@ -588,10 +588,23 @@ partial class TileEditor : IEditorMode
         }
     }
 
+    // this field keeps track of when lmb was pressed to start
+    // autotiling in order to keep track of how long the mouse
+    // was held.
+    private float autotileStartTime = 0;
+
+    // click to start = click to end autotile
+    // holding lmb = let go to end autotile
+    // depends on the first currentTime - autotileStartTime
+    private bool autotileEndOnClick = false;
+
     private void ProcessAutotiles()
     {
-        // activate tool
-        if (wasToolActive && !isToolActive)
+        var time = (float) Raylib.GetTime();
+        bool deactivate = false;
+
+        // if mouse was pressed
+        if (isToolActive && !wasToolActive)
         {
             if (activePathBuilder is null)
             {
@@ -601,6 +614,8 @@ partial class TileEditor : IEditorMode
                     selectedAutotile.CanActivate
                 )
                 {
+                    autotileStartTime = time;
+                    autotileEndOnClick = false;
                     activePathBuilder = selectedAutotile.Type switch {
                         AutotileType.Path => new AutotilePathBuilder(selectedAutotile),
                         AutotileType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
@@ -608,12 +623,26 @@ partial class TileEditor : IEditorMode
                     };
                 }
             }
-            else
+            else if (autotileEndOnClick)
             {
-                activePathBuilder.Finish(window.WorkLayer, forcePlace, modifyGeometry);
-                activePathBuilder = null;
+                deactivate = true;
             }
         }
+
+        // if mouse was released
+        if (!isToolActive && wasToolActive)
+        {
+            // if user clicked and immediately let go of the mouse
+            if (time - autotileStartTime < 0.5f)
+            {
+                autotileEndOnClick = true;
+            }
+            else if (!autotileEndOnClick)
+            {
+                deactivate = true;
+            }
+        }
+
 
         if (activePathBuilder is not null)
         {
@@ -621,7 +650,14 @@ partial class TileEditor : IEditorMode
 
             // press escape to cancel path building
             if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
                 activePathBuilder = null;
+            }
+            else if (deactivate)
+            {
+                activePathBuilder.Finish(window.WorkLayer, forcePlace, modifyGeometry);
+                activePathBuilder = null;
+            }
         }
     }
 }
