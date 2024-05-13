@@ -16,7 +16,6 @@ You *can* do so by editing the Init.txt files manually and copying over the grap
 ## Quick Start
 If you've used a Rain World level editor before, how to use Rained hopefully shouldn't be too obtuse. But here are some notes on new stuff I added:
 - Check out the menus (on the top) and the shortcuts!
-  (In the future I may make keyboard actions in each editor accessible through a menu)
 - In the effects editor, you can drag effect slots up and down in the active effects list.
 - You can also delete effect slots by right-clicking on them.
 - In the prop editor, double-click (or press C) in the level to add a prop.
@@ -28,7 +27,7 @@ If you've used a Rain World level editor before, how to use Rained hopefully sho
 - If you scale multiple props, it will force proportional scaling.
 - You can use your mouse to manipulate the light circle in the light editor.
 
-If you do not like the keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
+If you do not like the default keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
 accessible by going to the "File" clicking on "Preferences".
 
 Here are some tips on using the GUI elements:
