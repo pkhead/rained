@@ -522,11 +522,11 @@ class GeometryEditor : IEditorMode
 
         isToolRectActive = false;
 
-        for (int workLayer = 0; workLayer < 3; workLayer++)
+        for (int layer = 0; layer < 3; layer++)
         {
-            if (!layerMask[workLayer]) continue;
+            if (!layerMask[layer]) continue;
 
-            var cell = level.Layers[workLayer, tx, ty];
+            var cell = level.Layers[layer, tx, ty];
             LevelObject levelObject = LevelObject.None;
 
             switch (selectedTool)
@@ -593,7 +593,8 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.ShortcutEntrance:
-                    if (pressed) cell.Geo = cell.Geo == GeoType.ShortcutEntrance ? GeoType.Air : GeoType.ShortcutEntrance;
+                    if (layer == 0 && pressed)
+                        cell.Geo = cell.Geo == GeoType.ShortcutEntrance ? GeoType.Air : GeoType.ShortcutEntrance;
                     break;
                 
                 case Tool.Slope:
@@ -610,25 +611,25 @@ class GeometryEditor : IEditorMode
                     int possibleConfigs = 0;
 
                     // figure out how to orient the slope using solid neighbors
-                    if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty+1))
+                    if (isSolid(level, layer, tx-1, ty) && isSolid(level, layer, tx, ty+1))
                     {
                         newType = GeoType.SlopeRightUp;
                         possibleConfigs++;
                     }
                     
-                    if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty+1))
+                    if (isSolid(level, layer, tx+1, ty) && isSolid(level, layer, tx, ty+1))
                     {
                         newType = GeoType.SlopeLeftUp;
                         possibleConfigs++;
                     }
                     
-                    if (isSolid(level, workLayer, tx-1, ty) && isSolid(level, workLayer, tx, ty-1))
+                    if (isSolid(level, layer, tx-1, ty) && isSolid(level, layer, tx, ty-1))
                     {
                         newType = GeoType.SlopeRightDown;
                         possibleConfigs++;
                     }
                     
-                    if (isSolid(level, workLayer, tx+1, ty) && isSolid(level, workLayer, tx, ty-1))
+                    if (isSolid(level, layer, tx+1, ty) && isSolid(level, layer, tx, ty-1))
                     {
                         newType = GeoType.SlopeLeftDown;
                         possibleConfigs++;
@@ -651,7 +652,7 @@ class GeometryEditor : IEditorMode
                     }
                     else
                     {
-                        int dstLayer = (workLayer + 1) % 3;
+                        int dstLayer = (layer + 1) % 3;
 
                         ref var dstCell = ref level.Layers[dstLayer, tx, ty];
                         dstCell.Geo = cell.Geo;
@@ -797,7 +798,7 @@ class GeometryEditor : IEditorMode
             if (levelObject != LevelObject.None)
             {
                 // player can only place objects on work layer 1 (except if it's a beam or crack)
-                if (workLayer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack)
+                if (layer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack)
                 {
                     if (pressed) toolPlaceMode = cell.Has(levelObject);
                     if (toolPlaceMode)
@@ -807,8 +808,8 @@ class GeometryEditor : IEditorMode
                 }
             }
 
-            level.Layers[workLayer, tx, ty] = cell;
-            window.LevelRenderer.MarkNeedsRedraw(tx, ty, workLayer);
+            level.Layers[layer, tx, ty] = cell;
+            window.LevelRenderer.MarkNeedsRedraw(tx, ty, layer);
         }
     }
 
