@@ -102,6 +102,42 @@ class UserPreferences
     public bool StaticDrizzleLingoRuntime { get; set; }
     public bool ShowRenderPreview { get; set; }
 
+    public enum AutotileMouseModeOptions
+    {
+        Click, Hold
+    }
+    public AutotileMouseModeOptions AutotileMouseMode;
+
+    [JsonPropertyName("autotileMouseMode")]
+    public string AutotileMouseModeString {
+        get => AutotileMouseMode switch
+            {
+                AutotileMouseModeOptions.Click => "click",
+                AutotileMouseModeOptions.Hold => "hold",
+                _ => throw new Exception("Invalid AutotileMouseMode option")
+            };
+        set
+        {
+            switch (value)
+            {
+                case "click":
+                    AutotileMouseMode = AutotileMouseModeOptions.Click;
+                    break;
+                
+                case "hold":
+                    AutotileMouseMode = AutotileMouseModeOptions.Hold;
+                    break;
+                
+                default:
+                    if (RainEd.Instance is not null)
+                        RainEd.Logger.Error("Invalid CameraBorderMode '{value}'", value);
+                    
+                    AutotileMouseMode = AutotileMouseModeOptions.Hold;
+                    break;
+            }
+        }
+    }
+
     public HexColor LayerColor1;
     public HexColor LayerColor2;
     public HexColor LayerColor3;
@@ -143,6 +179,7 @@ class UserPreferences
 
         StaticDrizzleLingoRuntime = false;
         ShowRenderPreview = true;
+        AutotileMouseMode = AutotileMouseModeOptions.Hold;
 
         Theme = "Dark";
         LayerColor1 = new HexColor("#000000");

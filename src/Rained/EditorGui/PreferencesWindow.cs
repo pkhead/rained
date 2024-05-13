@@ -264,10 +264,19 @@ static class PreferencesWindow
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
                 prefs.HideScreenSize = hideScreenSize;
 
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 10f);
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+            
+            // camera border view mode
             var camBorderMode = (int) prefs.CameraBorderMode;
             if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
                 prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
+            
+            // autotile mouse mode
+            var autotileMouseMode = (int) prefs.AutotileMouseMode;
+            if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
+                prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions) autotileMouseMode;
+            
+            ImGui.PopItemWidth();
         }
     }
 

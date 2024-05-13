@@ -588,20 +588,11 @@ partial class TileEditor : IEditorMode
         }
     }
 
-    // this field keeps track of when lmb was pressed to start
-    // autotiling in order to keep track of how long the mouse
-    // was held.
-    private float autotileStartTime = 0;
-
-    // click to start = click to end autotile
-    // holding lmb = let go to end autotile
-    // depends on the first currentTime - autotileStartTime
-    private bool autotileEndOnClick = false;
-
     private void ProcessAutotiles()
     {
         var time = (float) Raylib.GetTime();
         bool deactivate = false;
+        bool endOnClick = RainEd.Instance.Preferences.AutotileMouseMode == UserPreferences.AutotileMouseModeOptions.Click;
 
         // if mouse was pressed
         if (isToolActive && !wasToolActive)
@@ -614,8 +605,6 @@ partial class TileEditor : IEditorMode
                     selectedAutotile.CanActivate
                 )
                 {
-                    autotileStartTime = time;
-                    autotileEndOnClick = false;
                     activePathBuilder = selectedAutotile.Type switch {
                         AutotileType.Path => new AutotilePathBuilder(selectedAutotile),
                         AutotileType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
@@ -623,7 +612,7 @@ partial class TileEditor : IEditorMode
                     };
                 }
             }
-            else if (autotileEndOnClick)
+            else if (endOnClick)
             {
                 deactivate = true;
             }
@@ -632,17 +621,11 @@ partial class TileEditor : IEditorMode
         // if mouse was released
         if (!isToolActive && wasToolActive)
         {
-            // if user clicked and immediately let go of the mouse
-            if (time - autotileStartTime < 0.5f)
-            {
-                autotileEndOnClick = true;
-            }
-            else if (!autotileEndOnClick)
+            if (!endOnClick)
             {
                 deactivate = true;
             }
         }
-
 
         if (activePathBuilder is not null)
         {
