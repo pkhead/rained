@@ -2,7 +2,7 @@ using System.Numerics;
 using System.Text;
 namespace RainEd.Lingo;
 
-class LingoParser
+public class LingoParser
 {
     private readonly Queue<Token> tokens = new();
 
@@ -122,9 +122,9 @@ class LingoParser
             case TokenType.Void:
                 return null;
 
-            case TokenType.String:
-            case TokenType.Float:
-            case TokenType.Integer:
+            case TokenType.String: case TokenType.StringConstant:
+            case TokenType.Float: case TokenType.FloatConstant:
+            case TokenType.Integer: case TokenType.IntConstant:
                 return tok.Value;
             
             case TokenType.Hyphen:
@@ -132,11 +132,11 @@ class LingoParser
                 var number = PopToken();
                 if (number.Type == TokenType.Float || number.Type == TokenType.FloatConstant)
                 {
-                    return -(float)tok.Value!;
+                    return -(float)number.Value!;
                 }
                 else if (number.Type == TokenType.Integer || number.Type == TokenType.IntConstant)
                 {
-                    return -(int)tok.Value!;
+                    return -(int)number.Value!;
                 }
                 else
                 {
