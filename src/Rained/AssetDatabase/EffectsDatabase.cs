@@ -214,7 +214,8 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Erode", EffectType.StandardErosion)
             {
                 repeats = 80,
-                affectOpenAreas = 0.5f
+                affectOpenAreas = 0.5f,
+                useLayers = true
             });
 
             CreateEffect(new EffectInit("Super Erode", EffectType.StandardErosion)
