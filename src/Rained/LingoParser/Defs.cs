@@ -1,13 +1,13 @@
 namespace RainEd.Lingo;
 
-class ParseException : Exception
+public class ParseException : Exception
 {
     public ParseException() {}
     public ParseException(string message) : base(message) {}
     public ParseException(string message, Exception inner) : base(message, inner) {}
 }
 
-static class LingoNumber
+public static class LingoNumber
 {
     public static float AsFloat(object obj)
     {
@@ -22,7 +22,7 @@ static class LingoNumber
     }
 }
 
-struct Color(int r, int g, int b)
+public struct Color(int r, int g, int b)
 {
     public int R = r, G = g, B = b;
 
@@ -55,7 +55,7 @@ struct Color(int r, int g, int b)
     }
 }
 
-struct Rectangle
+public struct Rectangle
 {
     public float X, Y, Width, Height;
 
@@ -68,22 +68,10 @@ struct Rectangle
     }
 }
 
-class List
+public class List
 {
     public List<object> values = new();
     public Dictionary<string, object> fields = new(); 
-}
-
-class Table
-{
-    public object Header;
-    public List<Lingo.List> Items;
-
-    public Table(object header)
-    {
-        Header = header;
-        Items = new();
-    }
 }
 
 enum TokenType

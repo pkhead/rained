@@ -1,5 +1,5 @@
 namespace Rained.Tests;
-using RainEd.Lingo;
+using LingoParser = RainEd.Lingo.LingoParser;
 
 public class LingoParserUnitTests
 {
@@ -65,5 +65,40 @@ public class LingoParserUnitTests
         var lingoParser = new LingoParser();
         var res = lingoParser.Read("QUOTE") as string;
         Assert.True(res == "\"");
+    }
+
+    [Fact]
+    public void StringConcatenationTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("\"Hello, \" & \"world!\" & RETURN") as string;
+        Assert.True(res == "Hello, world!\r");
+    }
+
+    [Fact]
+    public void ListTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("[1, 2, 3]") as RainEd.Lingo.List;
+        
+        // check value list
+        Assert.True(res is not null);
+
+        var valueList = res.values.Cast<int>().ToArray();
+        Assert.True(valueList.Length == 3);
+        Assert.True(valueList[0] == 1 && valueList[1] == 2 && valueList[2] == 3);
+    }
+
+    [Fact]
+    public void SymbolListTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("[#foo: \"a\" & \"b\", #bar: \"cd\"]") as RainEd.Lingo.List;
+
+        // check fields
+        Assert.True(res is not null);
+
+        Assert.True(res.fields.ContainsKey("foo") && res.fields["foo"] as string == "ab");
+        Assert.True(res.fields.ContainsKey("bar") && res.fields["bar"] as string == "cd");
     }
 }
