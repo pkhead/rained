@@ -18,7 +18,7 @@ Task("DotNetPublish")
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
     buildSettings.Properties.Add("AppDataPath", ["Assembly"]);
 
-    DotNetPublish("rained.sln", new DotNetPublishSettings
+    DotNetPublish("src/Rained/Rained.csproj", new DotNetPublishSettings
     {
         SelfContained = true,
         OutputDirectory = buildDir,
