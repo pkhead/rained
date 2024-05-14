@@ -94,6 +94,8 @@ enum TokenType
     OpenParen,
     Comma,
     Colon,
+    Hyphen,
+    Ampersand,
     
     Void,
     String,
@@ -102,7 +104,11 @@ enum TokenType
     Symbol,
     KeywordColor,
     KeywordPoint,
-    KeywordRect
+    KeywordRect,
+
+    StringConstant,
+    IntConstant,
+    FloatConstant,
 }
 
 struct Token

@@ -51,6 +51,17 @@ class LingoParser
 
     private float ExpectNumber()
     {
+        int sign = 1;
+
+        // check if there is a hyphen before the number
+        // meaning that the number will be negative
+        var signTok = PeekToken();
+        if (signTok.Type == TokenType.Hyphen)
+        {
+            PopToken();
+            sign = -1;
+        }
+
         var tok = PopToken();
         if (tok.Type != TokenType.Integer && tok.Type != TokenType.Float)
         {
@@ -59,9 +70,9 @@ class LingoParser
 
         var v = tok.Value!;
         if (tok.Type == TokenType.Integer)
-            return (float) (int) v;
+            return (float)(int)v * sign;
         else
-            return (float) v;
+            return (float)v * sign;
     }
 
     // this assumes the open bracket was already popped off
@@ -115,6 +126,23 @@ class LingoParser
             case TokenType.Float:
             case TokenType.Integer:
                 return tok.Value;
+            
+            case TokenType.Hyphen:
+            {
+                var number = PopToken();
+                if (number.Type == TokenType.Float || number.Type == TokenType.FloatConstant)
+                {
+                    return -(float)tok.Value!;
+                }
+                else if (number.Type == TokenType.Integer || number.Type == TokenType.IntConstant)
+                {
+                    return -(int)tok.Value!;
+                }
+                else
+                {
+                    throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
+                }
+            }
             
             case TokenType.OpenBracket:
                 return ReadList();
