@@ -15,6 +15,8 @@ at the time of a certain release, use the Git tags system.
 Read [this document](dist/README.md) for more information on how to use Rained.
 
 ## Building
+**NOTE**: Due to the Raylib-cs library, on Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+
 ### .NET CLI
 Clone with Git:
 ```bash
