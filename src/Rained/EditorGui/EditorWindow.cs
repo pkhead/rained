@@ -249,25 +249,10 @@ static class EditorWindow
 
                 var renderer = RainEd.Instance.LevelView.Renderer;
 
-                if (ImGui.MenuItem("Grid", null, renderer.ViewGrid))
-                {
-                    renderer.ViewGrid = !renderer.ViewGrid;
-                }
-
-                if (ImGui.MenuItem("Tiles", null, prefs.ViewTiles))
-                {
-                    prefs.ViewTiles = !prefs.ViewTiles;
-                }
-
-                if (ImGui.MenuItem("Props", null, prefs.ViewProps))
-                {
-                    prefs.ViewProps = !prefs.ViewProps;
-                }
-
-                if (ImGui.MenuItem("Camera Borders", null, renderer.ViewCameras))
-                {
-                    renderer.ViewCameras = !renderer.ViewCameras;
-                }
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", renderer.ViewGrid);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
 
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
@@ -319,6 +304,8 @@ static class EditorWindow
     private static void HandleShortcuts()
     {
         var changeHistory = RainEd.Instance.ChangeHistory;
+        var prefs = RainEd.Instance.Preferences;
+        var renderer = RainEd.Instance.LevelView.Renderer;
 
         if (KeyShortcuts.Activated(KeyShortcut.New))
         {
@@ -375,6 +362,26 @@ static class EditorWindow
             {
                 drizzleRenderWindow = new DrizzleRenderWindow(true);
             }, false);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGrid))
+        {
+            renderer.ViewGrid = !renderer.ViewGrid;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewTiles))
+        {
+            prefs.ViewTiles = !prefs.ViewTiles;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewProps))
+        {
+            prefs.ViewProps = !prefs.ViewProps;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewCameras))
+        {
+            renderer.ViewCameras = !renderer.ViewCameras;
         }
     }
 

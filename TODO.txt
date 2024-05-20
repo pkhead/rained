@@ -2,7 +2,6 @@ Priority:
 - configurable tile spec colors
 - "General" and "Current" shortcut split
 - dissolve material/tile separation
-- toggle for viewing tiles in geo and light editor
 - editorConfig.txt
 - rect/material tile place
 

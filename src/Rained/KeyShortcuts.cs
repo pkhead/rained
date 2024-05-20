@@ -40,6 +40,10 @@ enum KeyShortcut : int
     // Props
     ToggleVertexMode,
 
+    // View settings shortcuts
+    ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
+    ToggleViewCameras,
+
     /// <summary>
     /// Do not bind - this is just the number of shortcut IDs
     /// </summary>
@@ -256,10 +260,10 @@ static class KeyShortcuts
     public static bool Deactivated(KeyShortcut id)
         => keyShortcuts[id].IsDeactivated;
 
-    public static void ImGuiMenuItem(KeyShortcut id, string name)
+    public static void ImGuiMenuItem(KeyShortcut id, string name, bool selected = false)
     {
         var shortcutData = keyShortcuts[id];
-        if (ImGui.MenuItem(name, shortcutData.ShortcutString))
+        if (ImGui.MenuItem(name, shortcutData.ShortcutString, selected))
             shortcutData.IsActivated = true;
     }
 
@@ -355,5 +359,11 @@ static class KeyShortcuts
 
         // Prop Editor
         Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);
+
+        // View options
+        Register("View Grid", KeyShortcut.ToggleViewGrid, ImGuiKey.G, ImGuiModFlags.Ctrl);
+        Register("View Tiles", KeyShortcut.ToggleViewTiles, ImGuiKey.T, ImGuiModFlags.Ctrl);
+        Register("View Props", KeyShortcut.ToggleViewProps, ImGuiKey.P, ImGuiModFlags.Ctrl);
+        Register("View Camera Borders", KeyShortcut.ToggleViewCameras, ImGuiKey.M, ImGuiModFlags.Ctrl);
     }
 }

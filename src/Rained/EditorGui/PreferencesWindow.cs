@@ -323,6 +323,11 @@ static class PreferencesWindow
         ImGui.Separator();
         ShortcutButton(KeyShortcut.IncreaseBrushSize);
         ShortcutButton(KeyShortcut.DecreaseBrushSize);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.ToggleViewGrid);
+        ShortcutButton(KeyShortcut.ToggleViewTiles);
+        ShortcutButton(KeyShortcut.ToggleViewProps);
+        ShortcutButton(KeyShortcut.ToggleViewCameras);
 
         ImGui.SeparatorText("Geometry");
         ShortcutButton(KeyShortcut.ToggleLayer1);
