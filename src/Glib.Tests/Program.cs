@@ -50,6 +50,8 @@ namespace GlibTests
             // test rect
             if (mode == 0)
             {
+                renderContext.DrawColor = Color.Blue;
+                renderContext.DrawTriangle(0f, 0f, 0, 10f, 10f, 10f);
                 renderContext.DrawColor = Color.FromRGBA(255, 127, 51, 255);
                 renderContext.DrawRectangle(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
 
@@ -58,10 +60,24 @@ namespace GlibTests
             }
             
             // test line
-            if (mode == 1)
+            else if (mode == 1)
             {
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255);
                 renderContext.DrawLine(window.Width / 2.0f, window.Height / 2.0f, sqX, sqY);
+            }
+
+            // test circle
+            else if (mode == 2)
+            {
+                renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 100);
+                renderContext.DrawCircle(window.MouseX, window.MouseY, sqH);
+            }
+
+            // test circle outline
+            else if (mode == 3)
+            {
+                renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 100);
+                renderContext.DrawRing(window.MouseX, window.MouseY, sqH);
             }
         }
 
@@ -77,9 +93,16 @@ namespace GlibTests
 
             if (window.IsKeyPressed(Key.Number1))
                 mode = 0;
-
             if (window.IsKeyPressed(Key.Number2))
                 mode = 1;
+            if (window.IsKeyPressed(Key.Number3))
+                mode = 2;
+            if (window.IsKeyPressed(Key.Number4))
+                mode = 3;
+            if (window.IsKeyPressed(Key.Number5))
+                mode = 4;
+            if (window.IsKeyPressed(Key.Number6))
+                mode = 5;
 
             if (window.IsKeyPressed(Key.Q))
             {

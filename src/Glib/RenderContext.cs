@@ -39,7 +39,9 @@ public class RenderContext : IDisposable
     internal unsafe RenderContext(IWindow window)
     {
         gl = GL.GetApi(window);
-        gl.Disable(EnableCap.CullFace);
+        //gl.Disable(EnableCap.CullFace);
+        gl.Enable(EnableCap.Blend);
+        gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         // create default shader
         defaultShader = new Shader(gl);
@@ -203,9 +205,110 @@ public class RenderContext : IDisposable
 
     public void DrawRectangleLines(float x, float y, float w, float h)
     {
-        DrawRectangle(x, y, w, LineWidth);
-        DrawRectangle(x, y, LineWidth, h);
-        DrawRectangle(x, y+h-LineWidth, w, LineWidth);
-        DrawRectangle(x+w-LineWidth, y, LineWidth, h);
+        DrawRectangle(x, y, w-LineWidth, LineWidth); // top side
+        DrawRectangle(x, y+LineWidth, LineWidth, h-LineWidth); // left side
+        DrawRectangle(x, y+h-LineWidth, w-LineWidth, LineWidth); // bottom side
+        DrawRectangle(x+w-LineWidth, y+LineWidth, LineWidth, h-LineWidth); // right side
     }
+
+    private const float SmoothCircleErrorRate = 0.5f;
+
+    public void DrawCircleSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
+    {
+        // copied from raylib code
+        if (radius <= 0f) radius = 0.1f; // Avoid div by zero
+
+        // expects (endAngle > startAngle)
+        // if not, swap
+        if (endAngle < startAngle)
+        {
+            (endAngle, startAngle) = (startAngle, endAngle);
+        }
+
+        int minSegments = (int)MathF.Ceiling((endAngle - startAngle) / (MathF.PI / 2f));
+        if (segments < minSegments)
+        {
+            // calc the max angle between segments based on the error rate (usually 0.5f)
+            float th = MathF.Acos(2f * MathF.Pow(1f - SmoothCircleErrorRate/radius, 2f) - 1f);
+            segments = (int)((endAngle - startAngle) * MathF.Ceiling(2f * MathF.PI / th) / (2f * MathF.PI));
+            if (segments <= 0) segments = minSegments;
+        }
+
+        float stepLength = (float)(endAngle - startAngle) / segments;
+        float angle = startAngle;
+
+        for (int i = 0; i < segments; i++)
+        {
+            CheckCapacity(3);
+            PushVertex(x0, y0);
+            PushVertex(x0 + MathF.Cos(angle + stepLength) * radius, y0 + MathF.Sin(angle + stepLength) * radius);
+            PushVertex(x0 + MathF.Cos(angle) * radius, y0  + MathF.Sin(angle) * radius);
+            angle += stepLength;
+        }
+    }
+
+    public void DrawRingSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
+    {
+        // copied from raylib code
+        if (radius <= 0f) radius = 0.1f; // Avoid div by zero
+
+        // expects (endAngle > startAngle)
+        // if not, swap
+        if (endAngle < startAngle)
+        {
+            (endAngle, startAngle) = (startAngle, endAngle);
+        }
+
+        int minSegments = (int)MathF.Ceiling((endAngle - startAngle) / (MathF.PI / 2f));
+        if (segments < minSegments)
+        {
+            // calc the max angle between segments based on the error rate (usually 0.5f)
+            float th = MathF.Acos(2f * MathF.Pow(1f - SmoothCircleErrorRate/radius, 2f) - 1f);
+            segments = (int)((endAngle - startAngle) * MathF.Ceiling(2f * MathF.PI / th) / (2f * MathF.PI));
+            if (segments <= 0) segments = minSegments;
+        }
+
+        float stepLength = (float)(endAngle - startAngle) / segments;
+        float angle = startAngle;
+
+        // cap line
+        /*DrawLine(
+            x0, y0,
+            x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius
+        );*/
+
+        for (int i = 0; i < segments; i++)
+        {
+            DrawLine(
+                x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius,
+                x0 + MathF.Cos(angle+stepLength) * radius, y0 + MathF.Sin(angle+stepLength) * radius
+            );
+
+            angle += stepLength;
+        }
+
+        // cap line
+        /*DrawLine(
+            x0, y0,
+            x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius
+        );*/
+    }
+
+    public void DrawCircleSector(Vector2 center, float radius, float startAngle, float endAngle, int segments)
+        => DrawCircleSector(center.X, center.Y, radius, startAngle, endAngle, segments);
+    
+    public void DrawCircle(float x, float y, float radius, int segments = 36)
+        => DrawCircleSector(x, y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public void DrawCircle(Vector2 center, float radius, int segments = 36)
+        => DrawCircleSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
+
+    public void DrawRingSector(Vector2 center, float radius, float startAngle, float endAngle, int segments)
+        => DrawRingSector(center.X, center.Y, radius, startAngle, endAngle, segments);
+    
+    public void DrawRing(float x, float y, float radius, int segments = 36)
+        => DrawRingSector(x, y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public void DrawRing(Vector2 center, float radius, int segments = 36)
+        => DrawRingSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
 }
