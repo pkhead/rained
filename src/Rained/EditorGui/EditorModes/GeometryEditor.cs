@@ -155,6 +155,23 @@ class GeometryEditor : IEditorMode
         isToolActive = false;
         isToolRectActive = false;
         window.CellChangeRecorder.TryPushChange();
+
+        // if there is only a single geo layer active,
+        // update the global work layer variable to the
+        // layer of the active geo layer.
+        int activeLayer = -1;
+
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            if (layerMask[i])
+            {
+                if (activeLayer >= 0) return;
+                activeLayer = i;
+            }
+            
+        }
+
+        window.WorkLayer = activeLayer;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -324,6 +341,8 @@ class GeometryEditor : IEditorMode
         
         // draw the layers
         int foregroundAlpha = 255; // this is stored for drawing objects later
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
 
         switch (layerViewMode)
         {
@@ -333,22 +352,58 @@ class GeometryEditor : IEditorMode
                 {
                     var color = LayerColors[l];
                     levelRender.RenderGeometry(l, color);
+
+                    if (drawTiles)
+                    {
+                        levelRender.RenderTiles(l, color.A);
+                    }
+
+                    if (drawProps)
+                    {
+                        levelRender.RenderProps(l, color.A);
+                    }
                 }
 
                 break;
             
             // stack: view each layer individually, each other layer is transparent
             case LayerViewMode.Stack:
+                // the only layer that is shown completely opaque
+                // is the first active layer
+                int shownLayer = -1;
+
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    if (layerMask[l]) 
+                    {
+                        shownLayer = l;
+                        break;
+                    }
+                }
+
                 for (int l = Level.LayerCount-1; l >= 0; l--)
                 {
-                    var alpha = layerMask[l] ? 255 : 50;
+                    var alpha = (l == shownLayer) ? 255 : 50;
                     if (l == 0) foregroundAlpha = alpha;
-                    var color = new Color(LayerColors[l].R, LayerColors[l].G, LayerColors[l].B, alpha);
-                    int offset = l * 2;
+                    var color = new Color(LayerColors[0].R, LayerColors[0].G, LayerColors[0].B, alpha);
+                    int offset = (l - shownLayer) * 2;
 
                     Rlgl.PushMatrix();
                     Rlgl.Translatef(offset, offset, 0f);
                     levelRender.RenderGeometry(l, color);
+
+                    if (drawTiles)
+                    {
+                        // if alpha is 255, the product wil be 100 (like in every other edit mode)
+                        // and a smaller geo alpha will thus have a smaller tile alpha value
+                        levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+                    }
+
+                    if (drawProps)
+                    {
+                        levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+                    }
+
                     Rlgl.PopMatrix();
                 }
 

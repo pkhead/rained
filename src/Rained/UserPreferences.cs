@@ -44,6 +44,8 @@ class UserPreferences
     public bool ViewKeyboardShortcuts { get; set; }
     public bool ViewTileHeads { get; set; }
     public bool ViewCameras { get; set; }
+    public bool ViewTiles { get; set; }
+    public bool ViewProps { get; set; }
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
@@ -168,6 +170,8 @@ class UserPreferences
         ViewKeyboardShortcuts = true;
         ViewTileHeads = false;
         ViewCameras = false;
+        ViewTiles = false;
+        ViewProps = false;
 
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";

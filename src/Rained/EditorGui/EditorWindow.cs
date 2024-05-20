@@ -236,6 +236,8 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("View"))
             {
+                var prefs = RainEd.Instance.Preferences;
+
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In");
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
                 if (ImGui.MenuItem("Reset View"))
@@ -252,6 +254,21 @@ static class EditorWindow
                     renderer.ViewGrid = !renderer.ViewGrid;
                 }
 
+                if (ImGui.MenuItem("Tiles", null, prefs.ViewTiles))
+                {
+                    prefs.ViewTiles = !prefs.ViewTiles;
+                }
+
+                if (ImGui.MenuItem("Props", null, prefs.ViewProps))
+                {
+                    prefs.ViewProps = !prefs.ViewProps;
+                }
+
+                if (ImGui.MenuItem("Camera Borders", null, renderer.ViewCameras))
+                {
+                    renderer.ViewCameras = !renderer.ViewCameras;
+                }
+
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
                     renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
@@ -260,11 +277,6 @@ static class EditorWindow
                 if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
                 {
                     renderer.ViewTileHeads = !renderer.ViewTileHeads;
-                }
-
-                if (ImGui.MenuItem("Camera Borders", null, renderer.ViewCameras))
-                {
-                    renderer.ViewCameras = !renderer.ViewCameras;
                 }
 
                 ImGui.Separator();
