@@ -2,8 +2,6 @@ namespace Glib;
 
 using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
-
-using System.Drawing;
 using System.Numerics;
 
 public class RenderContext : IDisposable
@@ -26,7 +24,8 @@ public class RenderContext : IDisposable
     public Matrix4x4 TransformMatrix;
     public Color BackgroundColor = Color.Black;
     public Color DrawColor = Color.White;
-    public Vector2 UV = Vector2.Zero;
+    public float LineWidth = 1.0f;
+    private Vector2 UV = Vector2.Zero;
     public Shader? Shader {
         get => shaderValue;
         set
@@ -98,15 +97,11 @@ public class RenderContext : IDisposable
 
     public void ClearBackground(Color color)
     {
-        gl.ClearColor(color);
+        gl.ClearColor(color.R, color.G, color.B, color.A);
         gl.Clear(ClearBufferMask.ColorBufferBit);
     }
 
-    public void ClearBackground()
-    {
-        gl.ClearColor(BackgroundColor);
-        gl.Clear(ClearBufferMask.ColorBufferBit);
-    }
+    public void Clear() => ClearBackground(BackgroundColor);
 
     public Shader CreateShader(string? vsSource = null, string? fsSource = null)
     {
@@ -151,15 +146,25 @@ public class RenderContext : IDisposable
         batchData[i++] = 0f;
         batchData[i++] = UV.X;
         batchData[i++] = UV.Y;
-        batchData[i++] = DrawColor.R / 255f;
-        batchData[i++] = DrawColor.G / 255f;
-        batchData[i++] = DrawColor.B / 255f;
-        batchData[i++] = DrawColor.A / 255f;
+        batchData[i++] = DrawColor.R;
+        batchData[i++] = DrawColor.G;
+        batchData[i++] = DrawColor.B;
+        batchData[i++] = DrawColor.A;
 
         numVertices++;
     }
 
-    public void FillRect(float x, float y, float w, float h)
+    public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
+    {
+        CheckCapacity(3);
+        PushVertex(x0, y0);
+        PushVertex(x1, y1);
+        PushVertex(x2, y2);
+    }
+
+    public void DrawTriangle(Vector2 a, Vector2 b, Vector2 c) => DrawTriangle(a.X, a.Y, b.X, b.Y, c.X, c.Y);
+
+    public void DrawRectangle(float x, float y, float w, float h)
     {
         CheckCapacity(6);
         PushVertex(x, y);
@@ -169,5 +174,38 @@ public class RenderContext : IDisposable
         PushVertex(x+w, y);
         PushVertex(x, y+h);
         PushVertex(x+w, y+h);
+    }
+
+    public void DrawRectangle(Vector2 origin, Vector2 size) => DrawRectangle(origin.X, origin.Y, size.X, size.Y);
+    public void DrawRectangle(Rectangle rectangle) => DrawRectangle(rectangle.Left, rectangle.Top, rectangle.Width, rectangle.Height);
+
+    public void DrawLine(float x0, float y0, float x1, float y1)
+    {
+        var dx = x1 - x0;
+        var dy = y1 - y0;
+        if (dx == 0f && dy == 0f) return;
+
+        var dist = MathF.Sqrt(dx*dx + dy*dy);
+
+        var perpX = dy / dist * LineWidth / 2f;
+        var perpY = -dx / dist * LineWidth / 2f;
+
+        CheckCapacity(6);
+        PushVertex(x0 + perpX, y0 + perpY);
+        PushVertex(x0 - perpX, y0 - perpY);
+        PushVertex(x1 - perpX, y1 - perpY);
+        PushVertex(x1 + perpX, y1 + perpY);
+        PushVertex(x0 + perpX, y0 + perpY);
+        PushVertex(x1 - perpX, y1 - perpY);
+    }
+
+    public void DrawLine(Vector2 a, Vector2 b) => DrawLine(a.X, a.Y, b.X, b.Y);
+
+    public void DrawRectangleLines(float x, float y, float w, float h)
+    {
+        DrawRectangle(x, y, w, LineWidth);
+        DrawRectangle(x, y, LineWidth, h);
+        DrawRectangle(x, y+h-LineWidth, w, LineWidth);
+        DrawRectangle(x+w-LineWidth, y, LineWidth, h);
     }
 }

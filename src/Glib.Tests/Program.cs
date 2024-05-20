@@ -1,11 +1,12 @@
-﻿using System.Drawing;
-using Glib;
+﻿using Glib;
 
 namespace GlibTests
 {
     class Program
     {
         private static Window window = null!;
+
+        private static int mode = 0;
         private static float sqX = 0f;
         private static float sqY = 0f;
         private static float sqW = 100.0f;
@@ -44,8 +45,24 @@ namespace GlibTests
 
         private static void OnRender(float dt, RenderContext renderContext)
         {
-            renderContext.DrawColor = Color.FromArgb(255, 127, 51, 255);
-            renderContext.FillRect(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+            renderContext.LineWidth = 4f;
+
+            // test rect
+            if (mode == 0)
+            {
+                renderContext.DrawColor = Color.FromRGBA(255, 127, 51, 255);
+                renderContext.DrawRectangle(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+
+                renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 50);
+                renderContext.DrawRectangleLines(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+            }
+            
+            // test line
+            if (mode == 1)
+            {
+                renderContext.DrawColor = Color.FromRGBA(255, 255, 255);
+                renderContext.DrawLine(window.Width / 2.0f, window.Height / 2.0f, sqX, sqY);
+            }
         }
 
         private static void OnUpdate(float dt)
@@ -57,6 +74,12 @@ namespace GlibTests
             {
                 window.Close();
             }
+
+            if (window.IsKeyPressed(Key.Number1))
+                mode = 0;
+
+            if (window.IsKeyPressed(Key.Number2))
+                mode = 1;
 
             if (window.IsKeyPressed(Key.Q))
             {

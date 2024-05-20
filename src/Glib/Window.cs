@@ -9,6 +9,9 @@ public class Window : IDisposable
 {
     private readonly IWindow window;
 
+    public int Width { get => window.Size.X; }
+    public int Height { get => window.Size.Y; }
+
     public event Action? Load;
     public event Action<float>? Update;
     public event Action<float, RenderContext>? Draw;
@@ -161,7 +164,7 @@ public class Window : IDisposable
             Matrix4x4.CreateScale(new Vector3(1f / winSize.X * 2f, -1f / winSize.Y * 2f, 1f)) *
             Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
 
-        _renderContext!.ClearBackground();
+        _renderContext!.Clear();
         
         Draw?.Invoke((float)dt, _renderContext!);
         _renderContext!.DrawBatch();
