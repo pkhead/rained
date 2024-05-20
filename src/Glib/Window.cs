@@ -148,6 +148,7 @@ public class Window : IDisposable
 
     private void OnUpdate(double dt)
     {
+        GLResource.UnloadGCQueue();
         Update?.Invoke((float)dt);
     }
 
@@ -177,6 +178,7 @@ public class Window : IDisposable
     private void OnClose()
     {
         Closing?.Invoke();
+        GLResource.UnloadGCQueue();
         _renderContext!.Dispose();
     }
 
@@ -189,5 +191,6 @@ public class Window : IDisposable
     {
         _renderContext?.Dispose();
         window.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -79,9 +79,10 @@ public class RenderContext : IDisposable
     {
         if (!_disposed)
         {
-            /*if (disposing)
+            if (disposing)
             {
-            }*/
+                defaultShader.Dispose();
+            }
 
             gl.DeleteBuffer(batchBuffer);
             gl.DeleteVertexArray(batchVertexArray);

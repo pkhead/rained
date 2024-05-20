@@ -11,7 +11,7 @@ public class ShaderCompilationException : Exception
     public ShaderCompilationException(string message, System.Exception inner) : base(message, inner) { }
 }
 
-public class Shader
+public class Shader : GLResource
 {
     private const string DefaultVertexSource = @"
     #version 330 core
@@ -95,8 +95,26 @@ public class Shader
         gl.DeleteShader(fShader);
     }
 
+    override protected void ExplicitDispose() {}
+    override protected Action<uint> FreeMethod { get => gl.DeleteProgram; }
+    override protected uint Handle { get => shaderProgram; }
+
     internal void Use(GL gl) {
         gl.UseProgram(shaderProgram);
+    }
+
+    public void SetUniform(string uName, float value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform1(loc, value);
+    }
+
+    public void SetUniform(string uName, int value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform1(loc, value);
     }
 
     public void SetUniform(string uName, Matrix4x4 matrix)
