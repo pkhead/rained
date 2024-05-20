@@ -292,6 +292,7 @@ partial class PropEditor : IEditorMode
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw geometry/tile layers
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
@@ -299,7 +300,8 @@ partial class PropEditor : IEditorMode
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
             levelRender.RenderGeometry(l, LevelView.GeoColor(255));
-            levelRender.RenderTiles(l, 100);
+            if (drawTiles)
+                levelRender.RenderTiles(l, 100);
         }
 
         // draw alpha-blended result into main frame

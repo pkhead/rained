@@ -474,6 +474,8 @@ class EffectsEditor : IEditorMode
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw layers, including tiles
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
@@ -484,7 +486,12 @@ class EffectsEditor : IEditorMode
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
                 levelRender.RenderGeometry(l, LevelView.GeoColor(30f / 255f, 255));
-                levelRender.RenderTiles(l, 100);
+
+                if (drawTiles)
+                    levelRender.RenderTiles(l, 100);
+
+                if (drawProps)
+                    levelRender.RenderProps(l, 100);
             Rlgl.PopMatrix();
         }
 

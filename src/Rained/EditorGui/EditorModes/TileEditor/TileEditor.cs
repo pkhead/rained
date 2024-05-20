@@ -180,6 +180,7 @@ partial class TileEditor : IEditorMode
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw layers
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
@@ -189,6 +190,8 @@ partial class TileEditor : IEditorMode
             Rlgl.PushMatrix();
                 levelRender.RenderGeometry(l, LevelView.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
+                if (drawProps)
+                    levelRender.RenderProps(l, 100);
             Rlgl.PopMatrix();
         }
 
