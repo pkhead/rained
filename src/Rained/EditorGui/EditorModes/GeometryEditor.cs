@@ -150,6 +150,28 @@ class GeometryEditor : IEditorMode
         "Overlay", "Stack"
     };
 
+    public void Load()
+    {
+        // if there is only a single geo layer active,
+        // update the active geo layer to match the
+        // global work layer.
+        int activeLayer = -1;
+
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            if (layerMask[i])
+            {
+                if (activeLayer >= 0) return;
+                activeLayer = i;
+            }
+        }
+
+        layerMask[0] = false;
+        layerMask[1] = false;
+        layerMask[2] = false;
+        layerMask[window.WorkLayer] = true;
+    }
+
     public void Unload()
     {
         isToolActive = false;
