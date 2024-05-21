@@ -95,9 +95,10 @@ public class Shader : GLResource
         gl.DeleteShader(fShader);
     }
 
-    override protected void ExplicitDispose() {}
-    override protected Action<uint> FreeMethod { get => gl.DeleteProgram; }
-    override protected uint Handle { get => shaderProgram; }
+    protected override void FreeResources(bool disposing)
+    {
+        QueueFreeHandle(gl.DeleteProgram, shaderProgram);
+    }
 
     internal void Use(GL gl) {
         gl.UseProgram(shaderProgram);

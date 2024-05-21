@@ -23,19 +23,31 @@ public abstract class GLResource : IDisposable
     }
 
     /// <summary>
-    /// Called when Dispose is explicitly called.
+    /// Called when the class instance is being disposed/garbage-collected.
+    /// <param name="disposing">True if the Dispose function was manually called, false if the object is being finalized.</param>
     /// </summary>
-    protected abstract void ExplicitDispose();
+    protected abstract void FreeResources(bool disposing);
 
     /// <summary>
-    /// The handle to the GL object.
+    /// <p>Queue a handle to be freed.</p>
+    /// 
+    /// In FreeResources, this must be called instead of the method directly, because
+    /// object finalization is done on a separate thread, conflicting with the fact that
+    /// GL functions must be called on the main thread.
+    /// 
+    /// Following this, the given method will be queued to be called at some point
+    /// in the main thread.
     /// </summary>
-    protected abstract uint Handle { get; }
-
-    /// <summary>
-    /// The GL function used to free the GL object.
-    /// </summary>
-    protected abstract Action<uint> FreeMethod { get; }
+    /// <param name="method">The method that will be called to free the handle.</param>
+    /// <param name="handle">The handle to free.</param>
+    protected static void QueueFreeHandle(Action<uint> method, uint handle)
+    {
+        freeQueue.Enqueue(new QueueEntry()
+        {
+            Method = method,
+            Handle = handle
+        });
+    }
 
     private void Dispose(bool disposing)
     {
@@ -43,17 +55,12 @@ public abstract class GLResource : IDisposable
         {
             if (disposing)
             {
-                ExplicitDispose();
-                FreeMethod(Handle);
+                FreeResources(true);
             }
             else
             {
                 freeQueueMut.WaitOne();
-                freeQueue.Enqueue(new QueueEntry()
-                {
-                    Method = FreeMethod,
-                    Handle = Handle
-                });
+                FreeResources(false);
                 freeQueueMut.ReleaseMutex();
             }
 
