@@ -27,6 +27,8 @@ public class RenderContext : IDisposable
     private Shader? shaderValue;
 
     private readonly Stack<Matrix4x4> transformStack = [];
+    private readonly Stack<Framebuffer> framebufferStack = [];
+
     internal Matrix4x4 BaseTransform = Matrix4x4.Identity;
     public Matrix4x4 TransformMatrix;
     public Color BackgroundColor = Color.Black;
@@ -260,6 +262,31 @@ public class RenderContext : IDisposable
     /// <returns></returns>
     public Texture CreateTexture(Image image, bool mipmaps = false)
         => new(gl, image, mipmaps);
+    
+    public Framebuffer CreateFramebuffer(FramebufferConfiguration config)
+        => new(gl, config);
+    
+    public void PushFramebuffer(Framebuffer buffer)
+    {
+        DrawBatch();
+        framebufferStack.Push(buffer);
+        gl.BindFramebuffer(GLEnum.Framebuffer, buffer.Handle);
+    }
+
+    public void PopFramebuffer()
+    {
+        DrawBatch();
+        framebufferStack.Pop();
+
+        if (framebufferStack.TryPeek(out Framebuffer? newBuffer))
+        {
+            gl.BindFramebuffer(FramebufferTarget.Framebuffer, newBuffer.Handle);
+        }
+        else
+        {
+            gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+    }
 
     /// <summary>
     /// Load a texture from a file path.
@@ -280,7 +307,7 @@ public class RenderContext : IDisposable
 
         var shader = shaderValue ?? defaultShader;
         shader.Use(gl);
-        
+
         if (shader.HasUniform("uTransformMatrix"))
             shader.SetUniform("uTransformMatrix", TransformMatrix);
 

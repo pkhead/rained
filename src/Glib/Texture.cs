@@ -51,6 +51,41 @@ public class Texture : GLResource
             TextureFilterMode.LinearMipmapLinear => GLEnum.LinearMipmapLinear,
             _ => throw new ArgumentOutOfRangeException(nameof(v))
         };
+    
+    internal Texture(GL gl, int width, int height, GLEnum format, bool mipmaps = false)
+    {
+        this.gl = gl;
+
+        Width = width;
+        Height = height;
+
+        texture = gl.GenTexture();
+        gl.BindTexture(GLEnum.Texture2D, texture);
+
+        unsafe
+        {
+            gl.TexImage2D(
+                target: GLEnum.Texture2D,
+                level: 0,
+                internalformat: (int)format,
+                width: (uint)width,
+                height: (uint)height,
+                border: 0,
+                format: format,
+                type: GLEnum.UnsignedByte,
+                pixels: null
+            );
+        }
+
+        if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
+
+        int defaultFilter = (int)GLEnum.Linear;
+        int defaultWrapMode = (int)GLEnum.ClampToEdge;
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
+    }
 
     internal Texture(GL gl, Image image, bool mipmaps = false)
     {
@@ -90,7 +125,14 @@ public class Texture : GLResource
             }
         }
 
-        gl.GenerateMipmap(GLEnum.Texture2D);
+        if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
+
+        int defaultFilter = (int)GLEnum.Linear;
+        int defaultWrapMode = (int)GLEnum.ClampToEdge;
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
     }
 
     protected override void FreeResources(bool disposing)
