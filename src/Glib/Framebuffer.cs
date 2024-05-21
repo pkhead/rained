@@ -34,17 +34,50 @@ public struct FramebufferConfiguration
 {
     public int Width;
     public int Height;
-    public List<AttachmentConfig> Attachments = [];
+    public List<AttachmentConfig> Attachments;
+
+    public FramebufferConfiguration()
+    {
+        Width = 800;
+        Height = 600;
+        Attachments = [];
+    }
 
     public FramebufferConfiguration(int width, int height)
     {
+        Attachments = [];
         Width = width;
         Height = height;
     }
 
-    public void AddAttachment(AttachmentConfig config)
+    public readonly void AddAttachment(AttachmentConfig config)
     {
         Attachments.Add(config);
+    }
+
+    public static FramebufferConfiguration Standard(int width, int height)
+    {
+        return new FramebufferConfiguration()
+        {
+            Width = width,
+            Height = height,
+            Attachments = [
+                // color texture
+                new()
+                {
+                    Attachment = AttachmentPoint.Color,
+                    CanRead = true,
+                    Index = 0
+                },
+
+                // depth renderbuffer
+                new()
+                {
+                    Attachment = AttachmentPoint.Depth,
+                    CanRead = false,
+                }
+            ]
+        };
     }
 }
 
@@ -60,9 +93,14 @@ public class Framebuffer : GLResource
 
     internal uint Handle => fbo;
 
+    public readonly int Width, Height;
+
     internal unsafe Framebuffer(GL gl, FramebufferConfiguration config)
     {
         this.gl = gl;
+
+        Width = config.Width;
+        Height = config.Height;
 
         fbo = gl.GenFramebuffer();
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
@@ -130,7 +168,8 @@ public class Framebuffer : GLResource
 
             if (attachConfig.CanRead)
             {
-                var tex = new Texture(gl, config.Width, config.Height, format);
+                var tex = new Texture(gl, Width, Height, format);
+                gl.BindTexture(GLEnum.Texture2D, 0);
                 gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachEnum, GLEnum.Texture2D, tex.TextureHandle, 0);
                 textures[textureIndex++] = tex;
             }
@@ -138,7 +177,8 @@ public class Framebuffer : GLResource
             {
                 var rbo = gl.GenRenderbuffer();
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, rbo);
-                gl.RenderbufferStorage(GLEnum.Renderbuffer, format, (uint)config.Width, (uint)config.Height);
+                gl.RenderbufferStorage(GLEnum.Renderbuffer, format, (uint)Width, (uint)Height);
+                gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachEnum, GLEnum.Renderbuffer, rbo);
                 renderBuffers[rbIndex++] = rbo;
             }

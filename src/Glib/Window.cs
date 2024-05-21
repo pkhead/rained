@@ -175,10 +175,7 @@ public class Window : IDisposable
         // pixel space
         var winSize = window.Size;
         
-        _renderContext!.Begin(
-            Matrix4x4.CreateScale(new Vector3(1f / winSize.X * 2f, -1f / winSize.Y * 2f, 1f)) *
-            Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f))
-        );
+        _renderContext!.Begin(Width, Height);
         Draw?.Invoke((float)dt, _renderContext!);
         _renderContext!.End();
     }

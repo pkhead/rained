@@ -4,6 +4,12 @@ using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
 using System.Numerics;
 
+[Flags]
+public enum ClearFlags
+{
+    Color, Depth, Stencil
+}
+
 public class RenderContext : IDisposable
 {
     internal readonly GL gl;
@@ -18,6 +24,9 @@ public class RenderContext : IDisposable
     private readonly uint batchBuffer;
     private readonly uint batchVertexArray;
 
+    private int ScreenWidth = 0;
+    private int ScreenHeight = 0;
+
     private readonly Texture whiteTexture;
 
     private Texture curTexture;
@@ -28,6 +37,7 @@ public class RenderContext : IDisposable
 
     private readonly Stack<Matrix4x4> transformStack = [];
     private readonly Stack<Framebuffer> framebufferStack = [];
+    private Framebuffer? curFramebuffer = null;
 
     internal Matrix4x4 BaseTransform = Matrix4x4.Identity;
     public Matrix4x4 TransformMatrix;
@@ -113,21 +123,43 @@ public class RenderContext : IDisposable
         gl.Viewport(0, 0, w, h);
     }
 
-    public void ClearBackground(Color color)
+    public void Clear(Color color)
     {
         gl.ClearColor(color.R, color.G, color.B, color.A);
-        gl.Clear(ClearBufferMask.ColorBufferBit);
+        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
     }
 
-    public void Clear() => ClearBackground(BackgroundColor);
+    public void Clear() => Clear(BackgroundColor);
 
-    internal void Begin(Matrix4x4 initTransform)
+    public void Clear(ClearFlags flags)
+        => Clear(BackgroundColor, flags);
+
+    public void Clear(Color bgColor, ClearFlags flags)
     {
-        BaseTransform = initTransform;
+        gl.ClearColor(bgColor.R, bgColor.G, bgColor.B, bgColor.A);
+        ClearBufferMask glFlags = 0;
+        if (flags.HasFlag(ClearFlags.Color)) glFlags |= ClearBufferMask.ColorBufferBit;
+        if (flags.HasFlag(ClearFlags.Depth)) glFlags |= ClearBufferMask.DepthBufferBit;
+        if (flags.HasFlag(ClearFlags.Stencil)) glFlags |= ClearBufferMask.StencilBufferBit;
+
+        if (glFlags != 0)
+            gl.Clear(glFlags);
+    }
+
+    internal void Begin(int width, int height)
+    {
+        ScreenWidth = width;
+        ScreenHeight = height;
+        SetViewport();
+        
         Clear();
         ClearTransformationStack();
         ResetTransform();
+
         shaderValue = null;
+        gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        framebufferStack.Clear();
+        curFramebuffer = null;
 
         defaultShader.SetUniform("uTexture", whiteTexture);
         defaultShader.SetUniform("uColor", Color.White);
@@ -206,7 +238,7 @@ public class RenderContext : IDisposable
         => TransformMatrix = Matrix4x4.CreateScale(scale) * TransformMatrix;
     
     public void ResetTransform()
-        => TransformMatrix = BaseTransform;
+        => TransformMatrix = Matrix4x4.Identity;
 
     public void ClearTransformationStack()
         => transformStack.Clear();
@@ -264,28 +296,71 @@ public class RenderContext : IDisposable
         => new(gl, image, mipmaps);
     
     public Framebuffer CreateFramebuffer(FramebufferConfiguration config)
-        => new(gl, config);
+    {
+        var buffer = new Framebuffer(gl, config);
+
+        // reset framebuffer to the framebuffer it was in before
+        // as creating a new framebuffer requires binding it
+        gl.BindFramebuffer(FramebufferTarget.Framebuffer, curFramebuffer?.Handle ?? 0);
+
+        return buffer;
+    }
+
+    public void SetViewport(int width, int height)
+    {
+        gl.Viewport(0, 0, (uint)width, (uint)height);
+        BaseTransform =
+            Matrix4x4.CreateScale(new Vector3(1f / width * 2f, 1f / height * 2f, 1f)) *
+            Matrix4x4.CreateTranslation(new Vector3(-1f, -1f, 0f));
+    }
+
+    public void SetViewport()
+    {
+        gl.Viewport(0, 0, (uint)ScreenWidth, (uint)ScreenHeight);
+        BaseTransform =
+            Matrix4x4.CreateScale(new Vector3(1f / ScreenWidth * 2f, -1f / ScreenHeight * 2f, 1f)) *
+            Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
+    }
     
+    /// <summary>
+    /// Push the framebuffer to the stack and set it
+    /// as the current framebuffer.
+    /// </summary>
+    /// <param name="buffer"></param>
     public void PushFramebuffer(Framebuffer buffer)
     {
         DrawBatch();
         framebufferStack.Push(buffer);
         gl.BindFramebuffer(GLEnum.Framebuffer, buffer.Handle);
+        curFramebuffer = buffer;
+
+        gl.Viewport(0, 0, (uint)buffer.Width, (uint)buffer.Height);
+        SetViewport(buffer.Width, buffer.Height);
     }
 
-    public void PopFramebuffer()
+    /// <summary>
+    /// Pops a framebuffer from the stack.
+    /// <returns>The previously bound framebuffer.</returns>
+    /// </summary>
+    public Framebuffer PopFramebuffer()
     {
         DrawBatch();
-        framebufferStack.Pop();
+        var ret = framebufferStack.Pop();
 
         if (framebufferStack.TryPeek(out Framebuffer? newBuffer))
         {
             gl.BindFramebuffer(FramebufferTarget.Framebuffer, newBuffer.Handle);
+            SetViewport(newBuffer.Width, newBuffer.Height);
+            curFramebuffer = newBuffer;
         }
         else
         {
             gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            SetViewport();
+            curFramebuffer = null;
         }
+
+        return ret;
     }
 
     /// <summary>
@@ -309,7 +384,7 @@ public class RenderContext : IDisposable
         shader.Use(gl);
 
         if (shader.HasUniform("uTransformMatrix"))
-            shader.SetUniform("uTransformMatrix", TransformMatrix);
+            shader.SetUniform("uTransformMatrix", TransformMatrix * BaseTransform);
 
         if (shader == defaultShader)
         {
@@ -429,7 +504,7 @@ public class RenderContext : IDisposable
         shader.Use(gl);
         
         if (shader.HasUniform("uTransformMatrix"))
-            shader.SetUniform("uTransformMatrix", Matrix4x4.Identity); // vertices are already transformed
+            shader.SetUniform("uTransformMatrix", BaseTransform); // vertices are already transformed
 
         if (shader == defaultShader)
         {

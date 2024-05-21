@@ -2,6 +2,8 @@
 using Glib;
 using ImGuiNET;
 
+// NEED ADD SCISSCOR!!
+
 namespace GlibTests
 {
     class Program
@@ -12,6 +14,8 @@ namespace GlibTests
         private static Texture texture = null!;
         private static Texture rainedLogo = null!;
         private static Shader testShader = null!;
+        private static Shader invertColorShader = null!;
+        private static Framebuffer framebuffer = null!;
 
         private static int mode = 0;
         private static float sqX = 0f;
@@ -57,6 +61,23 @@ namespace GlibTests
             texture = ctx.LoadTexture("assets/icon48.png");
             rainedLogo = ctx.LoadTexture("assets/rained-logo.png");
             testShader = ctx.CreateShader();
+            invertColorShader = ctx.CreateShader(
+                vsSource: null,
+                fsSource: @"
+                #version 330 core
+
+                in vec4 VertexColor;
+                in vec2 TexCoord;
+                out vec4 FragColor;
+
+                uniform sampler2D uTexture; 
+                
+                void main() {
+                    vec4 col = VertexColor * texture(uTexture, TexCoord);
+                    FragColor = vec4(vec3(1.0 - col.rgb), col.a);
+                }
+                "
+            );
 
             mesh = ctx.CreateMesh(true);
 
@@ -87,6 +108,10 @@ namespace GlibTests
             ]);
 
             mesh.Upload();
+
+            // setup framebuffer
+            var bufferConfig = FramebufferConfiguration.Standard(300, 300);
+            framebuffer = ctx.CreateFramebuffer(bufferConfig);
         }
 
         private static void OnRender(float dt, RenderContext renderContext)
@@ -187,6 +212,25 @@ namespace GlibTests
                 renderContext.Draw(dynamicMesh);
                 renderContext.PopTransform();
             }
+
+            // framebuffer test
+            if (all || mode == 5)
+            {
+                renderContext.DrawColor = Color.White;
+                renderContext.PushFramebuffer(framebuffer);
+                renderContext.Clear(Color.Transparent);
+                renderContext.Draw(rainedLogo);
+                renderContext.DrawRectangle(window.MouseX, window.MouseY, 40f, 40f);
+                renderContext.PopFramebuffer();
+
+                renderContext.Shader = invertColorShader;
+                var tex = framebuffer.GetTexture(0);
+                invertColorShader.SetUniform("uColor", Color.White);
+                invertColorShader.SetUniform("uTexture", tex);
+                renderContext.Draw(tex, 0f, 0f, window.Width, window.Height);
+                renderContext.Shader = null;
+            }
+
 
             ImGui.ShowDemoWindow();
 
