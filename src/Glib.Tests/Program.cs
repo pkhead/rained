@@ -1,10 +1,12 @@
-﻿using Glib;
+﻿using System.Numerics;
+using Glib;
 
 namespace GlibTests
 {
     class Program
     {
         private static Window window = null!;
+        private static StandardMesh mesh = null!;
 
         private static int mode = 0;
         private static float sqX = 0f;
@@ -41,6 +43,37 @@ namespace GlibTests
         private static void OnLoad()
         {
             Console.WriteLine("Load!");
+            var ctx = window.RenderContext!;
+
+            mesh = ctx.CreateMesh(true);
+
+            mesh.SetVertices([
+                new(0f, 0f, 0f),
+                new(0, 50f, 0f),
+                new(50f, 50f, 0f),
+                new(50f, 0f, 0f)
+            ]);
+
+            mesh.SetColors([
+                Color.Red,
+                Color.Green,
+                Color.Blue,
+                Color.White
+            ]);
+
+            mesh.SetTexCoords([
+                new(0f, 1f),
+                new(0f, 0f),
+                new(1f, 0f),
+                new(1f, 1f)
+            ]);
+
+            mesh.SetIndexBufferData([
+                0, 1, 2,
+                3, 0, 2
+            ]);
+
+            mesh.Upload();
         }
 
         private static void OnRender(float dt, RenderContext renderContext)
@@ -54,6 +87,12 @@ namespace GlibTests
                 renderContext.DrawTriangle(0f, 0f, 0, 10f, 10f, 10f);
                 renderContext.DrawColor = Color.FromRGBA(255, 127, 51, 255);
                 renderContext.DrawRectangle(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+
+                renderContext.PushTransform();
+                renderContext.Translate(sqX - 0, sqY - 0, 0f);
+                renderContext.Rotate((float)window.Time);
+                renderContext.Draw(mesh);
+                renderContext.PopTransform();
 
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 50);
                 renderContext.DrawRectangleLines(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);

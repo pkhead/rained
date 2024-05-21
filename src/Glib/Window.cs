@@ -11,6 +11,7 @@ public class Window : IDisposable
 
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
+    public double Time { get => window.Time; }
 
     public event Action? Load;
     public event Action<float>? Update;
@@ -160,11 +161,13 @@ public class Window : IDisposable
         // set transform matrix to have coordinates drawn in
         // pixel space
         var winSize = window.Size;
-        _renderContext!.TransformMatrix =
+        _renderContext!.BaseTransform =
             Matrix4x4.CreateScale(new Vector3(1f / winSize.X * 2f, -1f / winSize.Y * 2f, 1f)) *
             Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
 
         _renderContext!.Clear();
+        _renderContext!.ClearTransformationStack();
+        _renderContext!.ResetTransform();
         
         Draw?.Invoke((float)dt, _renderContext!);
         _renderContext!.DrawBatch();

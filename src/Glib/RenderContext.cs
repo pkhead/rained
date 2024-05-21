@@ -21,6 +21,8 @@ public class RenderContext : IDisposable
     private readonly Shader defaultShader;
     private Shader? shaderValue;
 
+    private readonly Stack<Matrix4x4> transformStack = [];
+    internal Matrix4x4 BaseTransform = Matrix4x4.Identity;
     public Matrix4x4 TransformMatrix;
     public Color BackgroundColor = Color.Black;
     public Color DrawColor = Color.White;
@@ -106,6 +108,94 @@ public class RenderContext : IDisposable
     public void Clear() => ClearBackground(BackgroundColor);
 
     /// <summary>
+    /// Translate the transformation matrix
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    public void Translate(float x, float y, float z)
+    {
+        TransformMatrix = Matrix4x4.CreateTranslation(x, y, z) * TransformMatrix;
+    }
+
+    /// <summary>
+    /// Translate the transformation matrix
+    /// </summary>
+    /// <param name="vec"></param>
+    public void Translate(Vector3 vec)
+    {
+        TransformMatrix = Matrix4x4.CreateTranslation(vec) * TransformMatrix;
+    }
+
+    /// <summary>
+    /// Rotate the transformation matrix
+    /// </summary>
+    /// <param name="angle"></param>
+    public void RotateX(float angle)
+        => TransformMatrix = Matrix4x4.CreateRotationX(angle) * TransformMatrix;
+
+    /// <summary>
+    /// Rotate the transformation matrix
+    /// </summary>
+    /// <param name="angle"></param>
+    public void RotateY(float angle)
+        => TransformMatrix = Matrix4x4.CreateRotationY(angle) * TransformMatrix;
+
+    /// <summary>
+    /// Rotate the transformation matrix
+    /// </summary>
+    /// <param name="angle"></param>
+    public void RotateZ(float angle)
+        => TransformMatrix = Matrix4x4.CreateRotationZ(angle) * TransformMatrix;
+
+    /// <summary>
+    /// Rotate the transformation matrix in 2D
+    /// </summary>
+    /// <param name="angle"></param>
+    public void Rotate(float angle)
+        => TransformMatrix = Matrix4x4.CreateRotationZ(angle) * TransformMatrix;
+
+    /// <summary>
+    /// Scale the transformation matrix
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    public void Scale(float x, float y, float z)
+        => TransformMatrix = Matrix4x4.CreateScale(x, y, z) * TransformMatrix;
+
+    /// <summary>
+    /// Scale the transformation matrix
+    /// </summary>
+    /// <param name="scale"></param>
+    public void Scale(Vector3 scale)
+        => TransformMatrix = Matrix4x4.CreateScale(scale) * TransformMatrix;
+    
+    public void ResetTransform()
+        => TransformMatrix = BaseTransform;
+
+    public void ClearTransformationStack()
+        => transformStack.Clear();
+
+    /// <summary>
+    /// Push the current transformation matrix to the
+    /// transform stack.
+    /// </summary>
+    public void PushTransform()
+    {
+        transformStack.Push(TransformMatrix);
+    }
+
+    /// <summary>
+    /// Pop a matrix from the transformation stack, and set it to
+    /// the current transformation matrix.
+    /// </summary>
+    public void PopTransform()
+    {
+        TransformMatrix = transformStack.Pop();
+    }
+
+    /// <summary>
     /// Create a shader.
     /// </summary>
     /// <param name="vsSource">The vertex shader source. If null, will use the default vertex shader.</param>
@@ -129,6 +219,21 @@ public class RenderContext : IDisposable
     /// <returns></returns>
     public StandardMesh CreateMesh(bool indexed = false)
         => new(gl, indexed);
+    
+    /// <summary>
+    /// Draw a mesh.
+    /// </summary>
+    /// <param name="mesh">The mesh to draw.</param>
+    public void Draw(Mesh mesh)
+    {
+        DrawBatch();
+
+        var shader = shaderValue ?? defaultShader;
+        if (shader.HasUniform("uTransformMatrix"))
+            shader.SetUniform("uTransformMatrix", TransformMatrix);
+        
+        mesh.Draw();
+    }
 
     public unsafe void DrawBatch()
     {
@@ -144,7 +249,10 @@ public class RenderContext : IDisposable
 
         var shader = shaderValue ?? defaultShader;
         shader.Use(gl);
-        shader.SetUniform("uTransformMatrix", TransformMatrix);
+        
+        if (shader.HasUniform("uTransformMatrix"))
+            shader.SetUniform("uTransformMatrix", Matrix4x4.Identity);
+        
         gl.DrawArrays(GLEnum.Triangles, 0, numVertices);
         numVertices = 0;
     }
@@ -162,10 +270,12 @@ public class RenderContext : IDisposable
     {
         CheckCapacity(1);
 
+        var vec = Vector4.Transform(new Vector4(x, y, 0f, 1f), TransformMatrix);
+
         uint i = numVertices * VertexDataSize;
-        batchData[i++] = x;
-        batchData[i++] = y;
-        batchData[i++] = 0f;
+        batchData[i++] = vec.X / vec.W;
+        batchData[i++] = vec.Y / vec.W;
+        batchData[i++] = vec.Z / vec.W;
         batchData[i++] = UV.X;
         batchData[i++] = UV.Y;
         batchData[i++] = DrawColor.R;

@@ -107,10 +107,6 @@ public class Mesh : GLResource
         int floatBufCount = 0;
         bufferIndices = new int[types.Length];
 
-        vao = gl.GenVertexArray();
-        vbo = new uint[intBufCount + floatBufCount];
-        if (indexed) ebo = gl.GenBuffer();
-
         for (int i = 0; i < types.Length; i++)
         {
             if (types[i] is null)
@@ -122,17 +118,26 @@ public class Mesh : GLResource
             if (config.Types[i] == MeshBufferType.Int)
             {
                 bufferIndices[i] = intBufCount++;
-                vbo[i] = gl.GenBuffer();
             }
             else
             {
                 bufferIndices[i] = floatBufCount++;
-                vbo[i] = gl.GenBuffer();
             }
         }
 
         intBuffers = new int[intBufCount][];
         floatBuffers = new float[floatBufCount][];
+
+        // create gl resources
+        vao = gl.GenVertexArray();
+        vbo = new uint[intBufCount + floatBufCount];
+        if (indexed) ebo = gl.GenBuffer();
+
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (types[i] is null) continue;
+            vbo[i] = gl.GenBuffer();
+        }
     }
 
     public void SetIndexBufferData(ReadOnlySpan<int> data)
@@ -233,6 +238,10 @@ public class Mesh : GLResource
         }
     }
 
+    /// <summary>
+    /// Upload mesh data to the GPU so that it can be drawn.
+    /// </summary>
+    /// <exception cref="Exception">Thrown if the buffer element counts are not the same.</exception>
     public unsafe void Upload()
     {
         // check that each buffer has the same amount of elements
@@ -319,10 +328,13 @@ public class Mesh : GLResource
 
         if (indexed)
         {
+            if (indexBuffer == null)
+                throw new NullReferenceException("Index data was not set");
+            
             gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo);
             fixed (int* data = indexBuffer)
             {
-                gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indexBuffer!.Length * sizeof(int)), data, usage);
+                gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(indexBuffer.Length * sizeof(int)), data, usage);
             }
         }
 
@@ -383,8 +395,8 @@ public class StandardMesh : Mesh
         => SetBufferData(0, vertices);
 
     public void SetTexCoords(ReadOnlySpan<Vector2> uvs)
-        => SetBufferData(0, uvs);
+        => SetBufferData(1, uvs);
     
     public void SetColors(ReadOnlySpan<Color> colors)
-        => SetBufferData(0, colors);
+        => SetBufferData(2, colors);
 }

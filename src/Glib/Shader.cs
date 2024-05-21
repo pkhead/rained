@@ -104,6 +104,12 @@ public class Shader : GLResource
         gl.UseProgram(shaderProgram);
     }
 
+    public bool HasUniform(string uName)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        return loc >= 0;
+    }
+
     public void SetUniform(string uName, float value)
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
