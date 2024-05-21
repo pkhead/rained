@@ -1,5 +1,5 @@
-﻿using System.Numerics;
-using Glib;
+﻿using Glib;
+using ImGuiNET;
 
 namespace GlibTests
 {
@@ -120,14 +120,16 @@ namespace GlibTests
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 100);
                 renderContext.DrawRing(window.MouseX, window.MouseY, sqH);
             }
+
+            ImGui.ShowDemoWindow();
+
+            renderContext.DrawBatch();
+            window.ImGuiController!.Render();
         }
 
         private static void OnUpdate(float dt)
         {
-            if (dt > 0.2f)
-            {
-                throw new Exception("Wut da sigma!?!");
-            }
+            window.ImGuiController!.Update(dt);
 
             sqX = window.MouseX;
             sqY = window.MouseY;

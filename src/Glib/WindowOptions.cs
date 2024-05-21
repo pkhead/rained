@@ -68,8 +68,8 @@ public struct WindowOptions
     internal readonly Silk.NET.Windowing.IWindow CreateSilkWindow()
     {
         var opts = Silk.NET.Windowing.WindowOptions.Default;
-        var posX = X ?? -1;
-        var posY = Y ?? -1;
+        var posX = X ?? 50;
+        var posY = Y ?? 50;
 
         opts.UpdatesPerSecond = RefreshRate;
         opts.FramesPerSecond =  RefreshRate;
@@ -89,10 +89,10 @@ public struct WindowOptions
         };
 
         var win = Silk.NET.Windowing.Window.Create(opts);
-        if (X is null || Y is null)
-        {
-            Silk.NET.Windowing.WindowExtensions.Center(win);
-        }
+        //if (X is null || Y is null)
+        //{
+        //    Silk.NET.Windowing.WindowExtensions.Center(win);
+        //}
 
         return win;
     }

@@ -3,6 +3,7 @@
 using System.Numerics;
 using Silk.NET.Input;
 using Silk.NET.Maths;
+using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
 
 public class Window : IDisposable
@@ -36,6 +37,9 @@ public class Window : IDisposable
 
     private RenderContext? _renderContext = null;
     public RenderContext? RenderContext { get => _renderContext; }
+
+    private ImGuiController? imGuiController = null;
+    public ImGuiController? ImGuiController => imGuiController;
 
     public Window(WindowOptions options)
     {
@@ -72,6 +76,13 @@ public class Window : IDisposable
         }
 
         _renderContext = new RenderContext(window);
+
+        imGuiController = new ImGuiController(
+            gl: _renderContext.gl,
+            view: window,
+            input: input
+        );
+
         Load?.Invoke();
     }
 

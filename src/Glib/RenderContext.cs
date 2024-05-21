@@ -6,7 +6,7 @@ using System.Numerics;
 
 public class RenderContext : IDisposable
 {
-    private readonly GL gl;
+    internal readonly GL gl;
     private bool _disposed = false;
 
     // batch variables
