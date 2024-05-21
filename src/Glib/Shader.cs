@@ -46,6 +46,8 @@ public class Shader : GLResource
 
     private readonly uint shaderProgram;
     private readonly GL gl;
+    
+    private List<uint> textureLocs = [];
 
     internal Shader(GL gl, string? vsSource = null, string? fsSource = null)
     {
@@ -93,6 +95,27 @@ public class Shader : GLResource
         gl.DetachShader(shaderProgram, fShader);
         gl.DeleteShader(vShader);
         gl.DeleteShader(fShader);
+
+        // get uniform data
+        unsafe
+        {
+            int uniformCount = 0;
+            gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms, &uniformCount);
+
+            for (uint i = 0; i < uniformCount; i++)
+            {
+                gl.GetActiveUniform(shaderProgram, i, out int size, out UniformType type);
+
+                switch (type)
+                {
+                    case UniformType.Sampler1D:
+                    case UniformType.Sampler2D:
+                    case UniformType.Sampler3D:
+                        textureLocs.Add(i);
+                        break;
+                }
+            }
+        }
     }
 
     protected override void FreeResources(bool disposing)
@@ -150,5 +173,17 @@ public class Shader : GLResource
         ];
         
         gl.UniformMatrix4(loc, false, flat);
+    }
+
+    public void SetUniform(string uName, Texture texture)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+
+        int texUnit = textureLocs.IndexOf((uint)loc);
+        if (texUnit < 0) throw new Exception("The uniform type is not a sampler");
+
+        texture.Activate((uint)texUnit);
+        gl.Uniform1(loc, texUnit);
     }
 }
