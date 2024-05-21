@@ -39,7 +39,7 @@ public class Window : IDisposable
 
     public Window(WindowOptions options)
     {
-        window = Silk.NET.Windowing.Window.Create(options.ToSilk());
+        window = options.CreateSilkWindow();
 
         window.Load += OnLoad;
         window.Update += OnUpdate;

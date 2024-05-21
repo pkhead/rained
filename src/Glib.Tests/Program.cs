@@ -22,6 +22,8 @@ namespace GlibTests
                 Width = 800,
                 Height = 600,
                 Title = "Silk.NET test",
+                IsEventDriven = false,
+                VSync = true
             };
             
             window = new Window(options);
@@ -122,6 +124,11 @@ namespace GlibTests
 
         private static void OnUpdate(float dt)
         {
+            if (dt > 0.2f)
+            {
+                throw new Exception("Wut da sigma!?!");
+            }
+
             sqX = window.MouseX;
             sqY = window.MouseY;
 
