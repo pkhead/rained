@@ -105,10 +105,30 @@ public class RenderContext : IDisposable
 
     public void Clear() => ClearBackground(BackgroundColor);
 
+    /// <summary>
+    /// Create a shader.
+    /// </summary>
+    /// <param name="vsSource">The vertex shader source. If null, will use the default vertex shader.</param>
+    /// <param name="fsSource">The fragment shader source. If null, will use the default fragment shader.</param>
+    /// <returns></returns>
     public Shader CreateShader(string? vsSource = null, string? fsSource = null)
-    {
-        return new Shader(gl, vsSource, fsSource);
-    }
+        => new(gl, vsSource, fsSource);
+    
+    /// <summary>
+    /// Create a mesh with a custom buffer setup.
+    /// </summary>
+    /// <param name="config"></param>
+    /// <returns></returns>
+    public Mesh CreateMesh(MeshConfiguration config)
+        => new(gl, config);
+    
+    /// <summary>
+    /// Create a mesh with a standard buffer setup.
+    /// </summary>
+    /// <param name="indexed"></param>
+    /// <returns></returns>
+    public StandardMesh CreateMesh(bool indexed = false)
+        => new(gl, indexed);
 
     public unsafe void DrawBatch()
     {
