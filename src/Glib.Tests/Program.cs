@@ -107,8 +107,9 @@ namespace GlibTests
                 renderContext.PushTransform();
                 renderContext.Translate(sqX - 0, sqY - 0, 0f);
                 renderContext.Rotate((float)window.Time);
-                renderContext.DrawColor = Color.Red;
+                renderContext.DrawColor = Color.White;
                 renderContext.Draw(mesh);
+                renderContext.DrawColor = Color.Red;
                 renderContext.Draw(texture);
                 renderContext.DrawColor = Color.Green;
                 //renderContext.Draw(mesh);

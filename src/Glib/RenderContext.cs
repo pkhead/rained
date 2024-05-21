@@ -126,8 +126,11 @@ public class RenderContext : IDisposable
         ClearTransformationStack();
         ResetTransform();
         shaderValue = null;
+
+        defaultShader.SetUniform("uTexture", whiteTexture);
+        defaultShader.SetUniform("uColor", Color.White);
         curTexture = whiteTexture;
-        lastTexture = curTexture;
+        lastTexture = whiteTexture;
     }
 
     internal void End()
@@ -276,11 +279,16 @@ public class RenderContext : IDisposable
         DrawBatch();
 
         var shader = shaderValue ?? defaultShader;
+        shader.Use(gl);
+        
         if (shader.HasUniform("uTransformMatrix"))
             shader.SetUniform("uTransformMatrix", TransformMatrix);
 
         if (shader == defaultShader)
+        {
             shader.SetUniform("uTexture", whiteTexture);
+            shader.SetUniform("uColor", DrawColor);
+        }
         
         mesh.Draw();
     }
@@ -394,10 +402,13 @@ public class RenderContext : IDisposable
         shader.Use(gl);
         
         if (shader.HasUniform("uTransformMatrix"))
-            shader.SetUniform("uTransformMatrix", Matrix4x4.Identity);
+            shader.SetUniform("uTransformMatrix", Matrix4x4.Identity); // vertices are already transformed
 
         if (shader == defaultShader)
+        {
             shader.SetUniform("uTexture", lastTexture);
+            shader.SetUniform("uColor", Color.White); // color is in mesh data
+        }
         
         gl.DrawArrays(GLEnum.Triangles, 0, numVertices);
         numVertices = 0;

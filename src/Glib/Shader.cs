@@ -22,12 +22,13 @@ public class Shader : GLResource
     out vec2 TexCoord;
     out vec4 VertexColor;
 
+    uniform vec4 uColor;
     uniform mat4 uTransformMatrix;
     
     void main() {
         gl_Position = uTransformMatrix * vec4(aPos.xyz, 1.0);
         TexCoord = aTexCoord;
-        VertexColor = aColor;
+        VertexColor = aColor * uColor;
     }
     ";
 

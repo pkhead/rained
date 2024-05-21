@@ -74,9 +74,9 @@ public class Mesh : GLResource
     public bool IsReady => ready;
 
     private readonly GL gl;
-    private static uint vao = 0;
-    private static uint[] vbo = null!;
-    private static uint ebo = 0;
+    private readonly uint vao = 0;
+    private readonly uint[] vbo = null!;
+    private readonly uint ebo = 0;
 
     internal Mesh(GL gl, MeshConfiguration config)
     {
