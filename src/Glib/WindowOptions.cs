@@ -1,3 +1,5 @@
+using Silk.NET.Windowing;
+
 namespace Glib;
 
 public enum WindowBorder
@@ -66,11 +68,20 @@ public struct WindowOptions
 
     public WindowOptions() {}
 
-    internal readonly Silk.NET.Windowing.IWindow CreateSilkWindow()
+    internal readonly IWindow CreateSilkWindow()
     {
         var opts = Silk.NET.Windowing.WindowOptions.Default;
         var posX = X ?? 50;
         var posY = Y ?? 50;
+        
+        // for some reason, Silk.NET does not allow the user to
+        // use the platform backend default position
+        // even though the comments for the Position property say
+        // that setting it to (-1, -1) will do that (it doesn't).
+        // so, i make it so that if X or Y is null, then it will
+        // force-hide the window initially, center the window once it
+        // is created, and then show the window.
+        bool centerOnCreation = X is null || Y is null;
 
         opts.UpdatesPerSecond = RefreshRate;
         opts.FramesPerSecond =  RefreshRate;
@@ -78,9 +89,8 @@ public struct WindowOptions
         opts.Size = new(Width, Height);
         opts.VSync = VSync;
         opts.Title = Title;
-        opts.IsVisible = Visible;
+        opts.IsVisible = Visible && !centerOnCreation;
         opts.IsEventDriven = IsEventDriven;
-        opts.IsVisible = Visible;
         opts.WindowBorder = Border switch
         {
             WindowBorder.Resizable => Silk.NET.Windowing.WindowBorder.Resizable,
@@ -90,10 +100,16 @@ public struct WindowOptions
         };
 
         var win = Silk.NET.Windowing.Window.Create(opts);
-        //if (X is null || Y is null)
-        //{
-        //    Silk.NET.Windowing.WindowExtensions.Center(win);
-        //}
+
+        if (centerOnCreation)
+        {
+            bool vis = Visible;
+            win.Load += () =>
+            {
+                win.Center();
+                if (vis) win.IsVisible = true;
+            };
+        }
 
         return win;
     }

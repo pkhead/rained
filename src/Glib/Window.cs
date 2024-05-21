@@ -13,6 +13,7 @@ public class Window : IDisposable
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
     public double Time { get => window.Time; }
+    public bool Visible { get => window.IsVisible; set => window.IsVisible = value; }
 
     public event Action? Load;
     public event Action<float>? Update;
@@ -41,11 +42,8 @@ public class Window : IDisposable
     private ImGuiController? imGuiController = null;
     public ImGuiController? ImGuiController => imGuiController;
 
-    public bool centerOnCreate;
-
     public Window(WindowOptions options)
     {
-        centerOnCreate = options.X is null || options.Y is null;
         window = options.CreateSilkWindow();
 
         window.Load += OnLoad;
@@ -61,12 +59,7 @@ public class Window : IDisposable
     }
 
     private void OnLoad()
-    {
-        if (centerOnCreate)
-        {
-            window.Center();
-        }
-        
+    {   
         IInputContext input = window.CreateInput();
         for (int i = 0; i < input.Keyboards.Count; i++)
         {
