@@ -59,7 +59,8 @@ public struct WindowOptions
     /// <summary>
     /// The amount of times per second that Update and Render
     /// will be called, if IsEventDriven is set to false. If
-    /// set to 0, the window will instead use a default value.
+    /// set to 0, the window will instead run as fast as
+    /// the backend can support it.
     /// </summary>
     public int RefreshRate = 0;
 

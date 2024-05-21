@@ -22,8 +22,9 @@ namespace GlibTests
                 Width = 800,
                 Height = 600,
                 Title = "Silk.NET test",
+                RefreshRate = 60,
                 IsEventDriven = false,
-                VSync = true
+                VSync = false
             };
             
             window = new Window(options);
@@ -38,7 +39,8 @@ namespace GlibTests
             // run the window
             window.Run();
 
-            // dispose window after run is done
+            // dispose resources after run is done
+            mesh.Dispose();
             window.Dispose();
         }
 
