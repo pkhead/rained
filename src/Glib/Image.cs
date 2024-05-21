@@ -66,10 +66,24 @@ public class Image
         BytesPerPixel = GetBytesPerPixel(PixelFormat);
     }
 
-    private Image(byte[] pixels, PixelFormat format)
+    public Image(byte[] imageData, PixelFormat format)
     {
         PixelFormat = format;
-        stbImage = ImageResult.FromMemory(pixels, StbPixelFormat(format));
+        stbImage = ImageResult.FromMemory(imageData, StbPixelFormat(format));
+        BytesPerPixel = GetBytesPerPixel(PixelFormat);
+    }
+
+    public Image(byte[] rawPixels, int width, int height, PixelFormat format)
+    {
+        PixelFormat = format;
+        stbImage = new ImageResult()
+        {
+            Comp = StbPixelFormat(format),
+            Width = width,
+            Height = height,
+            SourceComp = StbPixelFormat(format),
+            Data = rawPixels
+        };
         BytesPerPixel = GetBytesPerPixel(PixelFormat);
     }
 
@@ -77,11 +91,6 @@ public class Image
     {
         using var stream = File.OpenRead(filePath);
         return new Image(stream, format);
-    }
-
-    public static Image FromMemory(byte[] pixels, PixelFormat format = PixelFormat.RGBA)
-    {
-        return new Image(pixels, format);
     }
 
     public Image ConvertToFormat(PixelFormat newFormat)

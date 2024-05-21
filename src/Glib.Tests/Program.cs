@@ -1,4 +1,5 @@
-﻿using Glib;
+﻿using System.Numerics;
+using Glib;
 using ImGuiNET;
 
 namespace GlibTests
@@ -7,6 +8,10 @@ namespace GlibTests
     {
         private static Window window = null!;
         private static StandardMesh mesh = null!;
+        private static StandardMesh dynamicMesh = null!;
+        private static Texture texture = null!;
+        private static Texture rainedLogo = null!;
+        private static Shader testShader = null!;
 
         private static int mode = 0;
         private static float sqX = 0f;
@@ -49,6 +54,10 @@ namespace GlibTests
             Console.WriteLine("Load!");
             var ctx = window.RenderContext!;
 
+            texture = ctx.LoadTexture("assets/icon48.png");
+            rainedLogo = ctx.LoadTexture("assets/rained-logo.png");
+            testShader = ctx.CreateShader();
+
             mesh = ctx.CreateMesh(true);
 
             mesh.SetVertices([
@@ -84,43 +93,98 @@ namespace GlibTests
         {
             renderContext.LineWidth = 4f;
 
+            renderContext.DrawColor = Color.White;
+            renderContext.Draw(texture, new Rectangle(0f, 0f, 200f, 100f));
+
+            bool all = mode == 9;
+
             // test rect
-            if (mode == 0)
+            if (all || mode == 0)
             {
-                renderContext.DrawColor = Color.Blue;
-                renderContext.DrawTriangle(0f, 0f, 0, 10f, 10f, 10f);
                 renderContext.DrawColor = Color.FromRGBA(255, 127, 51, 255);
                 renderContext.DrawRectangle(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
 
                 renderContext.PushTransform();
                 renderContext.Translate(sqX - 0, sqY - 0, 0f);
                 renderContext.Rotate((float)window.Time);
+                renderContext.DrawColor = Color.Red;
                 renderContext.Draw(mesh);
+                renderContext.Draw(texture);
+                renderContext.DrawColor = Color.Green;
+                //renderContext.Draw(mesh);
+                renderContext.Draw(texture, texture.Width, 0f);
                 renderContext.PopTransform();
 
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 50);
                 renderContext.DrawRectangleLines(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+
+                renderContext.DrawColor = Color.Blue;
+                renderContext.DrawTriangle(0f, 0f, 0, 10f, 10f, 10f);
             }
             
             // test line
-            else if (mode == 1)
+            if (all || mode == 1)
             {
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255);
                 renderContext.DrawLine(window.Width / 2.0f, window.Height / 2.0f, sqX, sqY);
             }
 
             // test circle
-            else if (mode == 2)
+            if (all || mode == 2)
             {
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 100);
                 renderContext.DrawCircle(window.MouseX, window.MouseY, sqH);
             }
 
             // test circle outline
-            else if (mode == 3)
+            if (all || mode == 3)
             {
                 renderContext.DrawColor = Color.FromRGBA(255, 255, 255, 100);
                 renderContext.DrawRing(window.MouseX, window.MouseY, sqH);
+            }
+
+            // dynamic, non-indexed, textured mesh
+            if (all || mode == 4)
+            {
+                renderContext.DrawColor = Color.White;
+
+                dynamicMesh ??= renderContext.CreateMesh(false);
+
+                var a = (float) window.Time;
+                dynamicMesh.SetVertices([
+                    new Vector3(MathF.Cos(a) * 20f, MathF.Sin(a) * 20f, 0),
+                    new Vector3(0f, 100f, 0f),
+                    new Vector3(MathF.Cos(a) * 5f, MathF.Sin(a) * 5f, 0f) + new Vector3(100f, 140f, 0f),
+
+                    new Vector3(MathF.Cos(a) * 5f, MathF.Sin(a) * 5f, 0f) + new Vector3(100f, 100f, 0f),
+                    new Vector3(MathF.Cos(a) * 20f, MathF.Sin(a) * 20f, 0),
+                    new Vector3(120f, 0, 0f),
+                ]);
+
+                dynamicMesh.SetColors([
+                    Color.White, Color.White, Color.White,
+                    Color.White, Color.White, Color.White,
+                ]);
+
+                dynamicMesh.SetTexCoords([
+                    new(0, 0),
+                    new(0, 1),
+                    new(1, 1),
+
+                    new(1, 1),
+                    new(0, 0),
+                    new(1, 0),
+                ]);
+
+                dynamicMesh.Upload();
+
+                renderContext.Shader = testShader;
+                testShader.SetUniform("uTexture", rainedLogo);
+
+                renderContext.PushTransform();
+                renderContext.Translate(window.MouseX, window.MouseY, 0f);
+                renderContext.Draw(dynamicMesh);
+                renderContext.PopTransform();
             }
 
             ImGui.ShowDemoWindow();
@@ -153,6 +217,14 @@ namespace GlibTests
                 mode = 4;
             if (window.IsKeyPressed(Key.Number6))
                 mode = 5;
+            if (window.IsKeyPressed(Key.Number7))
+                mode = 6;
+            if (window.IsKeyPressed(Key.Number8))
+                mode = 7;
+            if (window.IsKeyPressed(Key.Number9))
+                mode = 8;
+            if (window.IsKeyPressed(Key.Number0))
+                mode = 9;
 
             if (window.IsKeyPressed(Key.Q))
             {

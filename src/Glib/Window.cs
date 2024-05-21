@@ -166,6 +166,7 @@ public class Window : IDisposable
     {
         GLResource.UnloadGCQueue();
         Update?.Invoke((float)dt);
+        pressList.Clear();
     }
 
     private void OnRender(double dt)
@@ -173,18 +174,13 @@ public class Window : IDisposable
         // set transform matrix to have coordinates drawn in
         // pixel space
         var winSize = window.Size;
-        _renderContext!.BaseTransform =
-            Matrix4x4.CreateScale(new Vector3(1f / winSize.X * 2f, -1f / winSize.Y * 2f, 1f)) *
-            Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
-
-        _renderContext!.Clear();
-        _renderContext!.ClearTransformationStack();
-        _renderContext!.ResetTransform();
         
+        _renderContext!.Begin(
+            Matrix4x4.CreateScale(new Vector3(1f / winSize.X * 2f, -1f / winSize.Y * 2f, 1f)) *
+            Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f))
+        );
         Draw?.Invoke((float)dt, _renderContext!);
-        _renderContext!.DrawBatch();
-
-        pressList.Clear();
+        _renderContext!.End();
     }
 
     private void OnFramebufferResize(Vector2D<int> newSize)

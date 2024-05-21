@@ -36,11 +36,12 @@ public class Shader : GLResource
 
     in vec4 VertexColor;
     in vec2 TexCoord;
-
     out vec4 FragColor;
+
+    uniform sampler2D uTexture; 
     
     void main() {
-        FragColor = VertexColor;
+        FragColor = VertexColor * texture(uTexture, TexCoord);
     }
     ";
 
@@ -145,6 +146,34 @@ public class Shader : GLResource
         var loc = gl.GetUniformLocation(shaderProgram, uName);
         if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
         gl.Uniform1(loc, value);
+    }
+
+    public void SetUniform(string uName, Vector2 value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform2(loc, value);
+    }
+
+    public void SetUniform(string uName, Vector3 value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform3(loc, value);
+    }
+
+    public void SetUniform(string uName, Vector4 value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform4(loc, value);
+    }
+
+    public void SetUniform(string uName, Color value)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        gl.Uniform4(loc, value.R, value.G, value.G, value.A);
     }
 
     public void SetUniform(string uName, Matrix4x4 matrix)

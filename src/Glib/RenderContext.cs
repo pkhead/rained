@@ -18,6 +18,11 @@ public class RenderContext : IDisposable
     private readonly uint batchBuffer;
     private readonly uint batchVertexArray;
 
+    private readonly Texture whiteTexture;
+
+    private Texture curTexture;
+    private Texture lastTexture;
+
     private readonly Shader defaultShader;
     private Shader? shaderValue;
 
@@ -47,6 +52,13 @@ public class RenderContext : IDisposable
 
         // create default shader
         defaultShader = new Shader(gl);
+
+        // create default texture
+        var img = new Image([255, 255, 255, 255], 1, 1, PixelFormat.RGBA);
+        whiteTexture = CreateTexture(img);
+        defaultShader.SetUniform("uTexture", whiteTexture);
+        curTexture = whiteTexture;
+        lastTexture = whiteTexture;
 
         batchData = new float[MaxVertices * VertexDataSize];
 
@@ -106,6 +118,23 @@ public class RenderContext : IDisposable
     }
 
     public void Clear() => ClearBackground(BackgroundColor);
+
+    internal void Begin(Matrix4x4 initTransform)
+    {
+        BaseTransform = initTransform;
+        Clear();
+        ClearTransformationStack();
+        ResetTransform();
+        shaderValue = null;
+        curTexture = whiteTexture;
+        lastTexture = curTexture;
+    }
+
+    internal void End()
+    {
+        DrawBatch();
+        SetTexture(null);
+    }
 
     /// <summary>
     /// Translate the transformation matrix
@@ -221,6 +250,24 @@ public class RenderContext : IDisposable
         => new(gl, indexed);
     
     /// <summary>
+    /// Create a texture from an Image.
+    /// </summary>
+    /// <param name="image"></param>
+    /// <param name="mipmaps"></param>
+    /// <returns></returns>
+    public Texture CreateTexture(Image image, bool mipmaps = false)
+        => new(gl, image, mipmaps);
+
+    /// <summary>
+    /// Load a texture from a file path.
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <param name="mipmaps"></param>
+    /// <returns></returns>
+    public Texture LoadTexture(string filePath, bool mipmaps = false)
+        => new(gl, Image.FromFile(filePath), mipmaps);
+    
+    /// <summary>
     /// Draw a mesh.
     /// </summary>
     /// <param name="mesh">The mesh to draw.</param>
@@ -231,8 +278,104 @@ public class RenderContext : IDisposable
         var shader = shaderValue ?? defaultShader;
         if (shader.HasUniform("uTransformMatrix"))
             shader.SetUniform("uTransformMatrix", TransformMatrix);
+
+        if (shader == defaultShader)
+            shader.SetUniform("uTexture", whiteTexture);
         
         mesh.Draw();
+    }
+
+    /// <summary>
+    /// Draw a textured rectangle. Note that for the src coordinates,
+    /// (0, 0) is the bottom-left of the texture, while for the dst
+    /// coordinates, (0, 0) is the top-left of the render buffer.
+    /// </summary>
+    /// <param name="tex">The texture to draw</param>
+    /// <param name="srcX"></param>
+    /// <param name="srcY"></param>
+    /// <param name="srcW"></param>
+    /// <param name="srcH"></param>
+    /// <param name="dstX"></param>
+    /// <param name="dstY"></param>
+    /// <param name="dstW"></param>
+    /// <param name="dstH"></param>
+    public void Draw(
+        Texture tex,
+        float srcX, float srcY, float srcW, float srcH,
+        float dstX, float dstY, float dstW, float dstH
+    )
+    {
+        SetTexture(tex);
+
+        var uvLeft = srcX / tex.Width;
+        var uvRight = (srcX + srcW) / tex.Width;
+        var uvBottom = (srcY + srcH) / tex.Height;
+        var uvTop = srcY / tex.Height;
+        
+        BeginBatchDraw(6);
+
+        // first triangle
+        UV.X = uvLeft;
+        UV.Y = uvTop;
+        PushVertex(dstX, dstY);
+
+        UV.X = uvLeft;
+        UV.Y = uvBottom;
+        PushVertex(dstX, dstY + dstH);
+
+        UV.X = uvRight;
+        UV.Y = uvBottom;
+        PushVertex(dstX + dstW, dstH);
+
+        // second triangle
+        // uv is the same as the last vertex
+        PushVertex(dstX + dstW, dstH);
+
+        UV.X = uvLeft;
+        UV.Y = uvTop;
+        PushVertex(dstX, dstY);
+
+        UV.X = uvRight;
+        UV.Y = uvTop;
+        PushVertex(dstX + dstW, dstY);
+    }
+
+    public void Draw(Texture tex, Rectangle src, Rectangle dst)
+        => Draw(tex, src.X, src.Y, src.Width, src.Height, dst.X, dst.Y, dst.Width, dst.Height);
+
+    public void Draw(Texture tex, float x, float y)
+        => Draw(tex, 0, 0, tex.Width, tex.Height, x, y, tex.Width, tex.Height);
+
+    public void Draw(Texture tex, float x, float y, float w, float h)
+        => Draw(tex, 0, 0, tex.Width, tex.Height, x, y, w, h);
+
+    public void Draw(Texture tex, Vector2 pos)
+        => Draw(tex, pos.X, pos.Y);
+
+    public void Draw(Texture tex, Vector2 pos, Vector2 scale)
+        => Draw(tex, 0, 0, tex.Width, tex.Height, pos.X, pos.Y, tex.Width * scale.X, tex.Height * scale.Y);
+    
+    public void Draw(Texture tex, Rectangle rect)
+        => Draw(tex, rect.X, rect.Y, rect.Width, rect.Height);
+    
+    public void Draw(Texture tex)
+        => Draw(tex, 0f, 0f);
+
+    private void SetTexture(Texture? newTex)
+    {
+        curTexture = newTex ?? whiteTexture;
+    }
+
+    private void BeginBatchDraw(uint requiredCapacity)
+    {
+        CheckCapacity(requiredCapacity);
+
+        // flush batch on texture change
+        if (curTexture != lastTexture)
+        {
+            DrawBatch();
+            lastTexture = curTexture;
+        }
     }
 
     public unsafe void DrawBatch()
@@ -252,6 +395,9 @@ public class RenderContext : IDisposable
         
         if (shader.HasUniform("uTransformMatrix"))
             shader.SetUniform("uTransformMatrix", Matrix4x4.Identity);
+
+        if (shader == defaultShader)
+            shader.SetUniform("uTexture", lastTexture);
         
         gl.DrawArrays(GLEnum.Triangles, 0, numVertices);
         numVertices = 0;
@@ -268,8 +414,6 @@ public class RenderContext : IDisposable
 
     private void PushVertex(float x, float y)
     {
-        CheckCapacity(1);
-
         var vec = Vector4.Transform(new Vector4(x, y, 0f, 1f), TransformMatrix);
 
         uint i = numVertices * VertexDataSize;
@@ -288,7 +432,9 @@ public class RenderContext : IDisposable
 
     public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
     {
-        CheckCapacity(3);
+        SetTexture(null);
+
+        BeginBatchDraw(3);
         PushVertex(x0, y0);
         PushVertex(x1, y1);
         PushVertex(x2, y2);
@@ -298,7 +444,9 @@ public class RenderContext : IDisposable
 
     public void DrawRectangle(float x, float y, float w, float h)
     {
-        CheckCapacity(6);
+        SetTexture(null);
+
+        BeginBatchDraw(6);
         PushVertex(x, y);
         PushVertex(x, y+h);
         PushVertex(x+w, y);
@@ -313,6 +461,8 @@ public class RenderContext : IDisposable
 
     public void DrawLine(float x0, float y0, float x1, float y1)
     {
+        SetTexture(null);
+
         var dx = x1 - x0;
         var dy = y1 - y0;
         if (dx == 0f && dy == 0f) return;
@@ -322,7 +472,7 @@ public class RenderContext : IDisposable
         var perpX = dy / dist * LineWidth / 2f;
         var perpY = -dx / dist * LineWidth / 2f;
 
-        CheckCapacity(6);
+        BeginBatchDraw(6);
         PushVertex(x0 + perpX, y0 + perpY);
         PushVertex(x0 - perpX, y0 - perpY);
         PushVertex(x1 - perpX, y1 - perpY);
@@ -345,6 +495,8 @@ public class RenderContext : IDisposable
 
     public void DrawCircleSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
     {
+        SetTexture(null);
+
         // copied from raylib code
         if (radius <= 0f) radius = 0.1f; // Avoid div by zero
 
@@ -369,7 +521,7 @@ public class RenderContext : IDisposable
 
         for (int i = 0; i < segments; i++)
         {
-            CheckCapacity(3);
+            BeginBatchDraw(3);
             PushVertex(x0, y0);
             PushVertex(x0 + MathF.Cos(angle + stepLength) * radius, y0 + MathF.Sin(angle + stepLength) * radius);
             PushVertex(x0 + MathF.Cos(angle) * radius, y0  + MathF.Sin(angle) * radius);
@@ -379,6 +531,8 @@ public class RenderContext : IDisposable
 
     public void DrawRingSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
     {
+        SetTexture(null);
+
         // copied from raylib code
         if (radius <= 0f) radius = 0.1f; // Avoid div by zero
 

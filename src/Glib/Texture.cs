@@ -25,6 +25,9 @@ public class Texture : GLResource
     private uint texture;
     private readonly GL gl;
 
+    public readonly int Width;
+    public readonly int Height;
+
     internal uint TextureHandle { get => texture; }
 
     private static GLEnum GLWrapMode(TextureWrapMode v)
@@ -52,6 +55,9 @@ public class Texture : GLResource
     internal Texture(GL gl, Image image, bool mipmaps = false)
     {
         this.gl = gl;
+
+        Width = image.Width;
+        Height = image.Height;
 
         var fmt = image.PixelFormat switch
         {
@@ -84,7 +90,7 @@ public class Texture : GLResource
             }
         }
 
-        if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
+        gl.GenerateMipmap(GLEnum.Texture2D);
     }
 
     protected override void FreeResources(bool disposing)
