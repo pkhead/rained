@@ -41,8 +41,11 @@ public class Window : IDisposable
     private ImGuiController? imGuiController = null;
     public ImGuiController? ImGuiController => imGuiController;
 
+    public bool centerOnCreate;
+
     public Window(WindowOptions options)
     {
+        centerOnCreate = options.X is null || options.Y is null;
         window = options.CreateSilkWindow();
 
         window.Load += OnLoad;
@@ -59,6 +62,11 @@ public class Window : IDisposable
 
     private void OnLoad()
     {
+        if (centerOnCreate)
+        {
+            window.Center();
+        }
+        
         IInputContext input = window.CreateInput();
         for (int i = 0; i < input.Keyboards.Count; i++)
         {
