@@ -10,6 +10,26 @@ public enum ClearFlags
     Color, Depth, Stencil
 }
 
+public enum BlendMode
+{
+    Normal,
+    Add
+}
+
+public enum CullMode {
+    Front,
+    Back,
+    FrontAndBack
+}
+
+public enum Feature
+{
+    Blend,
+    ScissorTest,
+    DepthTest,
+    CullFace
+}
+
 public class RenderContext : IDisposable
 {
     internal readonly GL gl;
@@ -58,7 +78,7 @@ public class RenderContext : IDisposable
     internal unsafe RenderContext(IWindow window)
     {
         gl = GL.GetApi(window);
-        //gl.Disable(EnableCap.CullFace);
+        //gl.Enable(EnableCap.CullFace);
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
@@ -155,6 +175,7 @@ public class RenderContext : IDisposable
         Clear();
         ClearTransformationStack();
         ResetTransform();
+        ResetScissorBounds();
 
         shaderValue = null;
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -172,6 +193,87 @@ public class RenderContext : IDisposable
         DrawBatch();
         SetTexture(null);
     }
+
+    public void SetScissorBounds(int x, int y, int w, int h)
+    {
+        gl.Scissor(x, y, (uint)w, (uint)h);
+    }
+
+    /// <summary>
+    /// Resets the scissor bounds to the window size
+    /// </summary>
+    public void ResetScissorBounds()
+    {
+        gl.Scissor(0, 0, (uint)ScreenWidth, (uint)ScreenHeight);
+    }
+
+    /// <summary>
+    /// Enable/disable a certain feature
+    /// </summary>
+    /// <param name="feature"></param>
+    public void SetEnabled(Feature feature, bool enabled)
+    {
+        switch (feature)
+        {
+            case Feature.Blend:
+                if (enabled)
+                    gl.Enable(EnableCap.Blend);
+                else
+                    gl.Disable(EnableCap.Blend);
+                break;
+
+            case Feature.ScissorTest:
+                if (enabled)
+                    gl.Enable(EnableCap.ScissorTest);
+                else
+                    gl.Disable(EnableCap.ScissorTest);
+                break;
+
+            case Feature.DepthTest:
+                if (enabled)
+                    gl.Enable(EnableCap.DepthTest);
+                else
+                    gl.Disable(EnableCap.DepthTest);
+                break;
+
+            case Feature.CullFace:
+                if (enabled)
+                    gl.Enable(EnableCap.CullFace);
+                else
+                    gl.Disable(EnableCap.CullFace);
+                break;
+        }
+    }
+
+    public void SetCullMode(CullMode mode)
+    {
+        gl.CullFace(mode switch
+        {
+            CullMode.Front => GLEnum.Front,
+            CullMode.Back => GLEnum.Back,
+            CullMode.FrontAndBack => GLEnum.FrontAndBack,
+            _ => throw new ArgumentOutOfRangeException(nameof(mode)) 
+        });
+    }
+
+    public void SetBlendMode(BlendMode mode)
+    {
+        switch (mode)
+        {
+            case BlendMode.Normal:
+                gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                break;
+
+            case BlendMode.Add:
+                gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                break;
+        }
+    }
+
+    /*public void SetBlendFactorsSeparate()
+    {
+        gl.BlendEquationSeparate()    
+    }*/
 
     /// <summary>
     /// Translate the transformation matrix
@@ -598,7 +700,7 @@ public class RenderContext : IDisposable
 
     public void DrawRectangleLines(float x, float y, float w, float h)
     {
-        DrawRectangle(x, y, w-LineWidth, LineWidth); // top side
+        DrawRectangle(x, y, w, LineWidth); // top side
         DrawRectangle(x, y+LineWidth, LineWidth, h-LineWidth); // left side
         DrawRectangle(x, y+h-LineWidth, w-LineWidth, LineWidth); // bottom side
         DrawRectangle(x+w-LineWidth, y+LineWidth, LineWidth, h-LineWidth); // right side
