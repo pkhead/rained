@@ -1,6 +1,7 @@
 ﻿namespace Glib;
 
 using System.Numerics;
+using ImGuiNET;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL.Extensions.ImGui;
@@ -16,6 +17,7 @@ public class Window : IDisposable
     public bool Visible { get => window.IsVisible; set => window.IsVisible = value; }
 
     public event Action? Load;
+    public event Action? ImGuiConfigure;
     public event Action<float>? Update;
     public event Action<float, RenderContext>? Draw;
     public event Action<int, int>? Resize;
@@ -81,10 +83,16 @@ public class Window : IDisposable
         imGuiController = new ImGuiController(
             gl: _renderContext.gl,
             view: window,
-            input: input
+            input: input,
+            onConfigureIO: OnConfigureImGuiIO
         );
 
         Load?.Invoke();
+    }
+
+    private void OnConfigureImGuiIO()
+    {
+        ImGuiConfigure?.Invoke();
     }
 
     private void OnKeyChar(IKeyboard keyboard, char @char)

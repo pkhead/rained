@@ -211,6 +211,8 @@ namespace GlibTests
                 renderContext.Translate(window.MouseX, window.MouseY, 0f);
                 renderContext.Draw(dynamicMesh);
                 renderContext.PopTransform();
+
+                renderContext.Shader = null;
             }
 
             // framebuffer test
@@ -230,7 +232,6 @@ namespace GlibTests
                 renderContext.Draw(tex, 0f, 0f, window.Width, window.Height);
                 renderContext.Shader = null;
             }
-
 
             ImGui.ShowDemoWindow();
 
