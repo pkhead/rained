@@ -26,6 +26,9 @@ class TileRenderer
 
     public void ReloadLevel()
     {
+        dirtyHeads.Clear();
+        tileRenders.Clear();
+
         for (int x = 0; x < RainEd.Instance.Level.Width; x++)
         {
             for (int y = 0; y < RainEd.Instance.Level.Height; y++)
@@ -199,6 +202,8 @@ class TileRenderer
             }
         }
 
+        // TODO: sort tile renders by draw index
+
         dirtyHeads.Clear();
 
         // draw the tile renders
@@ -242,11 +247,28 @@ class TileRenderer
                 }
                 else
                 {
-                    // draw the tile sublayers from back to front
-                    for (int l = init.LayerCount-1; l >= 0; l--)
+                    // draw front face of box tile
+                    if (init.Type == TileType.Box)
                     {
-                        var srcRec = GetGraphicSublayer(init, l, 0);
+                        var height = init.Height * 20;
+                        var srcRec = new Rectangle(
+                            0f,
+                            init.ImageYOffset + height * init.Width,
+                            (init.Width + init.BfTiles * 2) * 20, (init.Height + init.BfTiles * 2) * 20
+                        );
+
                         Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, drawColor);
+                    }
+
+                    // draw the tile sublayers from back to front
+                    else
+                    {
+                        for (int l = init.LayerCount-1; l >= 0; l--)
+                        {
+                            var srcRec = GetGraphicSublayer(init, l, 0);
+                            Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, drawColor);
+                        }
+
                     }
                 }
             }

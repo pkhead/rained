@@ -3,20 +3,21 @@ using Raylib_cs;
 
 namespace RainEd.Tiles;
 
-public enum TileType
+public enum TileType : byte
 {
-    VoxelStruct,
-    VoxelStructRockType,
-    VoxelStructRandomDisplaceVertical,
-    VoxelStructRandomDisplaceHorizontal,
-    Box,
-    VoxelStructSandType,
+    VoxelStruct = 0,
+    VoxelStructRockType = 1,
+    VoxelStructRandomDisplaceVertical = 2,
+    VoxelStructRandomDisplaceHorizontal = 3,
+    Box = 4,
+    VoxelStructSandType = 5,
 }
 
 class Tile
 {
     public readonly string Name;
     public readonly TileCategory Category;
+    public readonly TileType Type;
     public readonly int Width;
     public readonly int Height;
     public readonly sbyte[,] Requirements;
@@ -49,6 +50,7 @@ class Tile
     )
     {
         Name = name;
+        Type = type;
         Width = width;
         Height = height;
         BfTiles = bfTiles;
