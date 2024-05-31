@@ -17,6 +17,7 @@ partial class TileEditor : IEditorMode
     private bool wasToolActive = false;
 
     private SelectionMode selectionMode = SelectionMode.Materials;
+    private SelectionMode lastSelectionMode;
     private SelectionMode? forceSelection = null;
     private int selectedTileGroup = 0;
     private int selectedMatGroup = 0;
@@ -40,9 +41,16 @@ partial class TileEditor : IEditorMode
     private int lastPlaceX = -1;
     private int lastPlaceY = -1;
     private int lastPlaceL = -1;
+
+    // rect fill start
+    private CellPosition rectStart;
+
+    enum RectMode { Inactive, Place, Remove };
+    private RectMode rectMode = 0;
     
     public TileEditor(LevelView window) {
         this.window = window;
+        lastSelectionMode = selectionMode;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
         selectedMaterial = 1;
 
@@ -65,6 +73,7 @@ partial class TileEditor : IEditorMode
         lastPlaceX = -1;
         lastPlaceY = -1;
         lastPlaceL = -1;
+        rectMode = RectMode.Inactive;
         chainHolderMode = false;
     }
 
@@ -173,7 +182,6 @@ partial class TileEditor : IEditorMode
 
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
-        var tileDb = RainEd.Instance.TileDatabase;
         var matDb = RainEd.Instance.MaterialDatabase;
 
         // draw level background (solid white)
@@ -243,6 +251,12 @@ partial class TileEditor : IEditorMode
             }
         }
 
+        if (selectionMode != lastSelectionMode)
+        {
+            lastSelectionMode = selectionMode;
+            rectMode = RectMode.Inactive;
+        }
+
         if (window.IsViewportHovered)
         {
             // begin change if left or right button is down
@@ -287,7 +301,7 @@ partial class TileEditor : IEditorMode
                 }
 
                 // material and tile eyedropper and removal
-                if (window.IsMouseInLevel())
+                if (window.IsMouseInLevel() && rectMode == RectMode.Inactive)
                 {
                     int tileLayer = window.WorkLayer;
                     int tileX = window.MouseCx;
@@ -363,6 +377,23 @@ partial class TileEditor : IEditorMode
 
         if (wasToolActive && !isToolActive)
         {
+            // process once again in case it does something
+            // when user lets go of mouse
+            switch (selectionMode)
+            {
+                case SelectionMode.Tiles:
+                    ProcessTiles();
+                    break;
+
+                case SelectionMode.Materials:
+                    ProcessMaterials();
+                    break;
+
+                case SelectionMode.Autotiles:
+                    ProcessAutotiles();
+                    break;
+            }
+
             window.CellChangeRecorder.PushChange();
             lastPlaceX = -1;
             lastPlaceY = -1;
@@ -480,127 +511,230 @@ partial class TileEditor : IEditorMode
         var tileOriginX = window.MouseCx - selectedTile.CenterX;
         int tileOriginY = window.MouseCy - selectedTile.CenterY;
 
-        // draw tile requirements
-        // second layer
-        if (selectedTile.HasSecondLayer)
+        // rect place mode
+        if (rectMode != RectMode.Inactive)
         {
+            var tileWidth = selectedTile.Width;
+            var tileHeight = selectedTile.Height;
+
+            if (rectMode == RectMode.Remove)
+            {
+                tileWidth = 1;
+                tileHeight = 1;
+            }
+
+            var gridW = (float)(window.MouseCellFloat.X - rectStart.X) / tileWidth;
+            var gridH = (float)(window.MouseCellFloat.Y - rectStart.Y) / tileHeight;
+            var rectW = (int) (gridW > 0f ? MathF.Ceiling(gridW) : (MathF.Floor(gridW) - 1)) * tileWidth;
+            var rectH = (int) (gridH > 0f ? MathF.Ceiling(gridH) : (MathF.Floor(gridH) - 1)) * tileHeight;
+
+            // update minX and minY to fit new rect size
+            float minX, minY;
+
+            if (gridW > 0f)
+                minX = rectStart.X;
+            else
+                minX = rectStart.X + rectW + tileWidth;
+            
+            if (gridH > 0f)
+                minY = rectStart.Y;
+            else
+                minY = rectStart.Y + rectH + tileHeight;
+
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(minX * Level.TileSize, minY * Level.TileSize, Math.Abs(rectW) * Level.TileSize, Math.Abs(rectH) * Level.TileSize),
+                1f / window.ViewZoom,
+                Color.White
+            );
+
+            if (!isToolActive)
+            {
+                // place tiles
+                if (rectMode == RectMode.Place)
+                {
+                    for (int x = 0; x < Math.Abs(rectW); x += tileWidth)
+                    {
+                        for (int y = 0; y < Math.Abs(rectH); y += tileHeight)
+                        {
+                            var tileRootX = (int)minX + x + selectedTile.CenterX;
+                            var tileRootY = (int)minY + y + selectedTile.CenterY;
+                            if (!level.IsInBounds(tileRootX, tileRootY)) continue;
+
+                            var status = level.ValidateTilePlacement(
+                                selectedTile,
+                                tileRootX - selectedTile.CenterX, tileRootY - selectedTile.CenterY, window.WorkLayer,
+                                modifyGeometry || forcePlace
+                            );
+
+                            if (status == TilePlacementStatus.Success)
+                            {
+                                level.PlaceTile(selectedTile, window.WorkLayer, tileRootX, tileRootY, modifyGeometry);
+                            }
+                        }
+                    }
+                }
+
+                // remove tiles
+                else
+                {
+                    for (int x = 0; x < Math.Abs(rectW); x++)
+                    {
+                        for (int y = 0; y < Math.Abs(rectH); y++)
+                        {
+                            var gx = (int)minX + x;
+                            var gy = (int)minY + y;
+
+                            if (level.Layers[window.WorkLayer, gx, gy].HasTile())
+                                level.RemoveTileCell(window.WorkLayer, gx, gy, modifyGeometry);
+                        }
+                    }
+                }
+
+                rectMode = RectMode.Inactive;
+            }
+        }
+
+        // check if rect place mode will start
+        else if (isMouseHeldInMode && isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        {
+            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            {
+                rectMode = RectMode.Place;
+            }
+            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            {
+                rectMode = RectMode.Remove;
+            }
+
+            if (rectMode != RectMode.Inactive)
+                rectStart = new CellPosition(window.MouseCx - selectedTile.CenterX, window.MouseCy - selectedTile.CenterY, window.WorkLayer);
+        }
+
+        // single-tile place mode
+        else
+        {
+            // draw tile requirements
+            // second layer
+            if (selectedTile.HasSecondLayer)
+            {
+                for (int x = 0; x < selectedTile.Width; x++)
+                {
+                    for (int y = 0; y < selectedTile.Height; y++)
+                    {
+                        Rlgl.PushMatrix();
+                        Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
+
+                        sbyte tileInt = selectedTile.Requirements2[x,y];
+                        DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                        Rlgl.PopMatrix();
+                    }
+                }
+            }
+
+            // first layer
             for (int x = 0; x < selectedTile.Width; x++)
             {
                 for (int y = 0; y < selectedTile.Height; y++)
                 {
                     Rlgl.PushMatrix();
-                    Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
+                    Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
 
-                    sbyte tileInt = selectedTile.Requirements2[x,y];
-                    DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                    sbyte tileInt = selectedTile.Requirements[x,y];
+                    DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
                     Rlgl.PopMatrix();
                 }
             }
-        }
 
-        // first layer
-        for (int x = 0; x < selectedTile.Width; x++)
-        {
-            for (int y = 0; y < selectedTile.Height; y++)
-            {
-                Rlgl.PushMatrix();
-                Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
+            // check if requirements are satisfied
+            TilePlacementStatus validationStatus;
 
-                sbyte tileInt = selectedTile.Requirements[x,y];
-                DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
-                Rlgl.PopMatrix();
-            }
-        }
-
-        // check if requirements are satisfied
-        TilePlacementStatus validationStatus;
-
-        if (level.IsInBounds(window.MouseCx, window.MouseCy))
-            validationStatus = level.ValidateTilePlacement(
-                selectedTile,
-                tileOriginX, tileOriginY, window.WorkLayer,
-                modifyGeometry || forcePlace
-            );
-        else
-            validationStatus = TilePlacementStatus.OutOfBounds;
-        
-        // draw tile preview
-        Rectangle srcRect, dstRect;
-        dstRect = new Rectangle(
-            new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
-            new Vector2(selectedTile.Width, selectedTile.Height) * Level.TileSize
-        );
-
-        var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(selectedTile);
-        if (previewTexture is not null)
-        {
-            srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
-        }
-        else
-        {
-            srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 2, selectedTile.Height * 2));
-        }
-
-        // draw tile preview
-        Raylib.DrawTexturePro(
-            previewTexture ?? RainEd.Instance.PlaceholderTexture,
-            srcRect, dstRect,
-            Vector2.Zero, 0f,
-            validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
-        );
-
-        // place tile on click
-        if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
-        {
-            if (validationStatus == TilePlacementStatus.Success)
-            {
-                // extra if statement to prevent overwriting the already placed tile
-                // when holding down LMB
-                if (lastPlaceX == -1 || !(modifyGeometry || forcePlace) || !level.IsIntersectingTile(
+            if (level.IsInBounds(window.MouseCx, window.MouseCy))
+                validationStatus = level.ValidateTilePlacement(
                     selectedTile,
                     tileOriginX, tileOriginY, window.WorkLayer,
-                    lastPlaceX, lastPlaceY, lastPlaceL
-                ))
+                    modifyGeometry || forcePlace
+                );
+            else
+                validationStatus = TilePlacementStatus.OutOfBounds;
+            
+            // draw tile preview
+            Rectangle srcRect, dstRect;
+            dstRect = new Rectangle(
+                new Vector2(tileOriginX, tileOriginY) * Level.TileSize - new Vector2(2, 2),
+                new Vector2(selectedTile.Width, selectedTile.Height) * Level.TileSize
+            );
+
+            var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(selectedTile);
+            if (previewTexture is not null)
+            {
+                srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
+            }
+            else
+            {
+                srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 2, selectedTile.Height * 2));
+            }
+
+            // draw tile preview
+            Raylib.DrawTexturePro(
+                previewTexture ?? RainEd.Instance.PlaceholderTexture,
+                srcRect, dstRect,
+                Vector2.Zero, 0f,
+                validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
+            );
+
+            // place tile on click
+            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            {
+                if (validationStatus == TilePlacementStatus.Success)
                 {
-                    level.PlaceTile(
+                    // extra if statement to prevent overwriting the already placed tile
+                    // when holding down LMB
+                    if (lastPlaceX == -1 || !(modifyGeometry || forcePlace) || !level.IsIntersectingTile(
                         selectedTile,
-                        window.WorkLayer, window.MouseCx, window.MouseCy,
-                        modifyGeometry
-                    );
-
-                    lastPlaceX = window.MouseCx;
-                    lastPlaceY = window.MouseCy;
-                    lastPlaceL = window.WorkLayer;
-
-                    if (selectedTile.Tags.Contains("Chain Holder"))
+                        tileOriginX, tileOriginY, window.WorkLayer,
+                        lastPlaceX, lastPlaceY, lastPlaceL
+                    ))
                     {
-                        chainHolderMode = true;
-                        chainHolderX = lastPlaceX;
-                        chainHolderY = lastPlaceY;
-                        chainHolderL = lastPlaceL;
+                        level.PlaceTile(
+                            selectedTile,
+                            window.WorkLayer, window.MouseCx, window.MouseCy,
+                            modifyGeometry
+                        );
+
+                        lastPlaceX = window.MouseCx;
+                        lastPlaceY = window.MouseCy;
+                        lastPlaceL = window.WorkLayer;
+
+                        if (selectedTile.Tags.Contains("Chain Holder"))
+                        {
+                            chainHolderMode = true;
+                            chainHolderX = lastPlaceX;
+                            chainHolderY = lastPlaceY;
+                            chainHolderL = lastPlaceL;
+                        }
                     }
                 }
-            }
-            else if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
-            {
-                string errStr = validationStatus switch {
-                    TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
-                    TilePlacementStatus.Overlap => "Tile is overlapping another",
-                    TilePlacementStatus.Geometry => "Tile geometry requirements not met",
-                    _ => "Unknown tile placement error"
-                };
+                else if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    string errStr = validationStatus switch {
+                        TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
+                        TilePlacementStatus.Overlap => "Tile is overlapping another",
+                        TilePlacementStatus.Geometry => "Tile geometry requirements not met",
+                        _ => "Unknown tile placement error"
+                    };
 
-                EditorWindow.ShowNotification(errStr);
+                    EditorWindow.ShowNotification(errStr);
+                }
             }
-        }
 
-        // remove material under mouse cursor
-        if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
-        {
-            ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
-            if (!cell.HasTile() && !disallowMatOverwrite)
+            // remove material under mouse cursor
+            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
             {
-                cell.Material = 0;
+                ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+                if (!cell.HasTile() && !disallowMatOverwrite)
+                {
+                    cell.Material = 0;
+                }
             }
         }
     }
