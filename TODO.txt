@@ -4,6 +4,8 @@ Priority:
 - dissolve material/tile separation
 - editorConfig.txt
 - rect/material tile place
+- optimize material rendering
+- tile rendering spatial partioning
 
 Bugs:
 - drizzle doesn't build correctly on mac?
@@ -17,7 +19,6 @@ Overall:
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
-- port newmakelevel (geometry exporter) to C#
 - Move Level
 - level preview in file browser
 - undo/redo for level resize
