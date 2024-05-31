@@ -14,7 +14,7 @@ class TileRenderer
     }
 
     private readonly LevelEditRender renderInfo;
-    private readonly List<CellPosition> dirtyHeads = [];
+    private readonly HashSet<CellPosition> dirtyHeads = [];
     private readonly HashSet<int> wasRendered = [];
     private readonly List<TileRender> tileRenders = [];
 
@@ -43,8 +43,7 @@ class TileRenderer
     public void Invalidate(int x, int y, int layer)
     {
         var pos = new CellPosition(x, y, layer);
-        if (!dirtyHeads.Contains(pos))
-            dirtyHeads.Add(pos);
+        dirtyHeads.Add(pos);
     }
 
     private int GetTileRender(int x, int y, int layer)
