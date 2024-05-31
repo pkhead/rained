@@ -461,6 +461,22 @@ class DrizzleRender : IDisposable
                     progress = 1f;
                     DisplayString = "";
                     thread.Join();
+
+                    // test that newmakelevel = GeometryExporter
+                    if (OnlyGeometry)
+                    {
+                        var lvlName = Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath);
+                        var fileContents = File.ReadAllText(Path.Combine(RainEd.Instance.AssetDataPath, "Levels", lvlName + ".txt"));
+
+                        var exportContents = GeometryExporter.Export(RainEd.Instance.Level, lvlName);
+                        if (fileContents != exportContents)
+                        {
+                            File.WriteAllText("TEST.txt", exportContents);
+                            RainEd.Logger.Error("EXPORT FAILED!");
+                            //throw new Exception("Export failed!");
+                        }
+                    }
+                    
                     break;
 
                 case MessageLevelLoading:
