@@ -209,7 +209,6 @@ class TileRenderer
         // draw the tile renders
         Raylib.BeginShaderMode(renderInfo.TilePreviewShader);
         var gfxProvider = RainEd.Instance.AssetGraphics;
-        var drawColor = new Color(255, 255, 255, alpha);
 
         int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X);
         int viewT = (int) Math.Floor(renderInfo.ViewTopLeft.Y);
@@ -235,6 +234,9 @@ class TileRenderer
             {
                 var tex = gfxProvider.GetTileTexture(init.Name);
                 var dstRec = new Rectangle(rectPos * Level.TileSize, rectSize * Level.TileSize);
+
+                var catCol = init.Category.Color;
+                var drawColor = new Color(catCol.R, catCol.G, catCol.B, alpha);
 
                 // if the tile texture was not found, draw a
                 // placeholder graphic
