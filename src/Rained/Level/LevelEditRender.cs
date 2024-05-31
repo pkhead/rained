@@ -184,19 +184,25 @@ class LevelEditRender
     }
 
     // mark entire layer as dirty
-    public void MarkNeedsRedraw(int layer)
+    public void InvalidateGeo(int layer)
     {
         geoRenderer.MarkNeedsRedraw(layer);
     }
 
-    public void MarkNeedsRedraw(int x, int y, int layer)
+    public void InvalidateGeo(int x, int y, int layer)
     {
         geoRenderer.MarkNeedsRedraw(x, y, layer);
+    }
+
+    public void InvalidateTileHead(int x, int y, int layer)
+    {
+        tileRenderer.Invalidate(x, y, layer);
     }
 
     public void ReloadLevel()
     {
         geoRenderer.ReloadLevel();
+        tileRenderer.ReloadLevel();
     }
 
     public void RenderGeometry(int layer, Color color)
@@ -430,82 +436,7 @@ class LevelEditRender
         }
         else
         {
-            // draw tile previews
-            for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
-            {
-                for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
-                {
-                    ref var cell = ref Level.Layers[layer, x, y];
-                    if (!cell.HasTile()) continue;
-
-                    Tiles.Tile? tile;
-                    int tx;
-                    int ty;
-
-                    if (cell.TileHead is not null)
-                    {
-                        tile = cell.TileHead;
-                        tx = x;
-                        ty = y;
-                    }
-                    else
-                    {
-                        tile = Level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
-                        tx = cell.TileRootX;
-                        ty = cell.TileRootY;
-                    }
-
-                    // detached tile body
-                    // probably caused from comms move level tool,
-                    // which does not correct tile pointers
-                    if (tile == null)
-                    {
-                        Raylib.DrawRectangleV(new Vector2(x, y) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
-                        Raylib.DrawRectangleV(new Vector2(x + 0.5f, y) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                        Raylib.DrawRectangleV(new Vector2(x, y + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                        continue;
-                    }
-
-                    var tileLeft = tx - tile.CenterX;
-                    var tileTop = ty - tile.CenterY;
-                    var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
-                    var col = previewTexture is null ? Color.White : tile.Category.Color;
-
-                    var srcRect = previewTexture is not null
-                        ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
-                        : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
-
-                    Raylib.DrawTexturePro(
-                        previewTexture ?? RainEd.Instance.PlaceholderTexture,
-                        srcRect,
-                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                        Vector2.Zero,
-                        0f,
-                        new Color(col.R, col.G, col.B, alpha)
-                    );
-
-                    // highlight tile head
-                    if (cell.TileHead is not null && ViewTileHeads)
-                    {
-                        Raylib.DrawRectangle(
-                            x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                            new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
-                        );
-
-                        Raylib.DrawLineV(
-                            new Vector2(x, y) * Level.TileSize,
-                            new Vector2(x+1, y+1) * Level.TileSize,
-                            col
-                        );
-
-                        Raylib.DrawLineV(
-                            new Vector2(x+1, y) * Level.TileSize,
-                            new Vector2(x, y+1) * Level.TileSize,
-                            col
-                        );
-                    }
-                }
-            }
+            tileRenderer.PreviewRender(layer, alpha);
         }
 
         // draw material color squares

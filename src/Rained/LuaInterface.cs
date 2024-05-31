@@ -524,7 +524,7 @@ static class LuaInterface
                 if (layer < 0 || layer > 2) return;
                 if (geoType < 0 || geoType == 8 || geoType > 9) throw new Exception("invalid geo type " + geoType);
                 RainEd.Instance.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
-                RainEd.Instance.LevelView.Renderer.MarkNeedsRedraw(x, y, layer);
+                RainEd.Instance.LevelView.Renderer.InvalidateGeo(x, y, layer);
             });
             lua.SetField(-2, "setGeo");
 
@@ -574,7 +574,7 @@ static class LuaInterface
                 }
 
                 RainEd.Instance.Level.Layers[layer, x, y].Objects = objects;
-                RainEd.Instance.LevelView.Renderer.MarkNeedsRedraw(x, y, layer);
+                RainEd.Instance.LevelView.Renderer.InvalidateGeo(x, y, layer);
 
                 return 0;
             });

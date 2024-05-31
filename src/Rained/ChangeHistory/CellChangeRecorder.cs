@@ -34,7 +34,8 @@ class CellChangeRecord : IChangeRecord
         foreach (CellChange change in CellChanges)
         {
             level.Layers[change.Layer, change.X, change.Y] = useNew ? change.NewState : change.OldState;
-            RainEd.Instance.LevelView.Renderer.MarkNeedsRedraw(change.X, change.Y, change.Layer);
+            RainEd.Instance.LevelView.Renderer.InvalidateGeo(change.X, change.Y, change.Layer);
+            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(change.X, change.Y, change.Layer);
         }
 
         foreach (var change in ChainHolderChanges)

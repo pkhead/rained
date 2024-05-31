@@ -566,7 +566,7 @@ class GeometryEditor : IEditorMode
                                     cell.Geo = GeoType.Air;
                                 }
 
-                                window.Renderer.MarkNeedsRedraw(window.MouseCx, window.MouseCy, l);
+                                window.Renderer.InvalidateGeo(window.MouseCx, window.MouseCy, l);
                             }
                         }
                         else
@@ -734,7 +734,7 @@ class GeometryEditor : IEditorMode
                         ref var dstCell = ref level.Layers[dstLayer, tx, ty];
                         dstCell.Geo = cell.Geo;
                         dstCell.Objects = cell.Objects;
-                        window.Renderer.MarkNeedsRedraw(tx, ty, dstLayer);
+                        window.Renderer.InvalidateGeo(tx, ty, dstLayer);
                     }
 
                     break;
@@ -886,7 +886,7 @@ class GeometryEditor : IEditorMode
             }
 
             level.Layers[layer, tx, ty] = cell;
-            window.Renderer.MarkNeedsRedraw(tx, ty, layer);
+            window.Renderer.InvalidateGeo(tx, ty, layer);
         }
     }
 
