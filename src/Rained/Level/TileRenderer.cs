@@ -342,7 +342,57 @@ class TileRenderer
         UpdateRenderList();
 
         // draw the tile renders
-        Raylib.BeginShaderMode(renderInfo.TilePreviewShader);
+        RlManaged.Shader shader;
+
+        // palette rendering mode
+        bool renderPalette;
+
+        if (renderInfo.CurrentPalette >= 0)
+        {
+            renderPalette = true;
+            shader = renderInfo.PaletteShader;
+            Raylib.BeginShaderMode(shader);
+
+            var palette = renderInfo.Palettes[renderInfo.CurrentPalette];
+
+            // send palette color information to the shader
+            Span<float> litColorData = stackalloc float[30 * 3];
+            Span<float> neutralColorData = stackalloc float[30 * 3];
+            Span<float> shadedColorData = stackalloc float[30 * 3];
+
+            for (int i = 0; i < 30; i++)
+            {
+                var litColor = palette.SunPalette[i].Lit;
+                var neutralColor = palette.SunPalette[i].Neutral;
+                var shadedColor = palette.SunPalette[i].Shaded;
+
+                litColorData[i*3+0] = litColor.R / 255f;
+                litColorData[i*3+1] = litColor.G / 255f;
+                litColorData[i*3+2] = litColor.B / 255f;
+
+                neutralColorData[i*3+0] = neutralColor.R / 255f;
+                neutralColorData[i*3+1] = neutralColor.G / 255f;
+                neutralColorData[i*3+2] = neutralColor.B / 255f;
+
+                shadedColorData[i*3+0] = shadedColor.R / 255f;
+                shadedColorData[i*3+1] = shadedColor.G / 255f;
+                shadedColorData[i*3+2] = shadedColor.B / 255f;
+
+            }
+
+            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "litColor"), litColorData, ShaderUniformDataType.Vec3, 30);
+            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "neutralColor"), neutralColorData, ShaderUniformDataType.Vec3, 30);
+            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "shadedColor"), shadedColorData, ShaderUniformDataType.Vec3, 30);
+        }
+
+        // normal rendering mode
+        else
+        {
+            renderPalette = false;
+            shader = renderInfo.TilePreviewShader;
+            Raylib.BeginShaderMode(shader);
+        }
+
         var gfxProvider = RainEd.Instance.AssetGraphics;
 
         int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X);
@@ -380,7 +430,7 @@ class TileRenderer
                     Raylib.EndShaderMode();
                     var srcRec = new Rectangle(0f, 0f, 2f, 2f);
                     Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
-                    Raylib.BeginShaderMode(renderInfo.PropPreviewShader);
+                    Raylib.BeginShaderMode(shader);
                 }
                 else
                 {
@@ -394,7 +444,11 @@ class TileRenderer
                             (init.Width + init.BfTiles * 2) * 20, (init.Height + init.BfTiles * 2) * 20
                         );
 
-                        Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, drawColor);
+                        // if rendering palette, R channel represents sublayer
+                        // A channel is alpha, as usual
+                        var col = renderPalette ? new Color(0, 0, 0, (int)drawColor.A) : drawColor;
+
+                        Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, renderPalette ? Color.Black : drawColor);
                     }
 
                     // draw the tile sublayers from back to front
@@ -403,7 +457,16 @@ class TileRenderer
                         for (int l = init.LayerCount-1; l >= 0; l--)
                         {
                             var srcRec = GetGraphicSublayer(init, l, 0);
-                            Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, drawColor);
+
+                            // if rendering palette, R channel represents sublayer
+                            // A channel is alpha, as usual
+                            Color col = drawColor;
+                            if (renderPalette)
+                            {
+                                var lf = (float)l / init.LayerCount * (init.HasSecondLayer ? 2f : 1f) / 3f;
+                                col = new Color((int)MathF.Round(Math.Clamp(lf, 0f, 1f) * 255f), 0, 0, drawColor.A);
+                            }
+                            Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, col);
                         }
 
                     }

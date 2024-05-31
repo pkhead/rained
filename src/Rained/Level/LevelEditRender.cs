@@ -97,6 +97,40 @@ class LevelEditRender
         }
     ";
 
+    private readonly static string PaletteShaderSrc = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        uniform vec3[30] litColor;
+        uniform vec3[30] neutralColor;
+        uniform vec3[30] shadedColor; 
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+
+            vec4 texelColor = texture(texture0, fragTexCoord);
+
+            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
+            bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
+            bool isShade = length(texelColor.rgb - vec3(1.0, 0.0, 0.0)) < 0.3;
+            bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
+            bool isShaded = isLight || isShade || isNormal;
+
+            int colIndex = int(fragColor.r * 29.0);
+            vec3 shadedCol = float(isLight) * litColor[colIndex] + float(isShade) * shadedColor[colIndex] + float(isNormal) * neutralColor[colIndex];
+
+            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * fragColor.a) * colDiffuse;
+        }
+    ";
+
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -115,16 +149,32 @@ class LevelEditRender
 
     public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
     public readonly RlManaged.Shader TilePreviewShader;
+    public readonly RlManaged.Shader PaletteShader;
 
     private readonly RlManaged.Texture2D bigChainSegment;
+
+    public int CurrentPalette = 0;
+    public readonly Palette[] Palettes;
 
     public LevelEditRender()
     {
         editor = RainEd.Instance;
         //ReloadGridTexture();
+
+        // load palettes
+        var palettes = new List<Palette>();
+        for (int i = 0;; i++)
+        {
+            var filePath = Path.Combine(Boot.AppDataPath, "assets", "palettes", "palette" + i + ".png");
+            if (!File.Exists(filePath)) break;
+            palettes.Add(new Palette(filePath));
+        }
+        Palettes = [..palettes];
         
+        // load graphic shaders
         propPreviewShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TilePreviewShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
+        PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
 
         geoRenderer = new EditorGeometryRenderer(this);
         tileRenderer = new TileRenderer(this);
