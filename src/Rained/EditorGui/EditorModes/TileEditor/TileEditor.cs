@@ -237,9 +237,9 @@ partial class TileEditor : IEditorMode
             if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
             {
                 if (modifyGeometry)
-                    window.StatusText = "Force Geometry    ";
+                    window.StatusText = "Force Geometry  ";
                 else if (forcePlace)
-                    window.StatusText = "Force Placement    ";
+                    window.StatusText = "Force Placement  ";
                 
                 if (disallowMatOverwrite)
                     window.StatusText += "Ignore Materials";
@@ -247,7 +247,10 @@ partial class TileEditor : IEditorMode
             else if (selectionMode == SelectionMode.Materials)
             {
                 if (disallowMatOverwrite)
-                        window.StatusText = "Disallow Overwrite";
+                    window.StatusText = "Disallow Overwrite  ";
+
+                if (modifyGeometry)
+                    window.StatusText += "Force Geometry";
             }
         }
 
@@ -432,67 +435,169 @@ partial class TileEditor : IEditorMode
 
         var level = RainEd.Instance.Level;
 
-        bool brushSizeKey =
-            KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
-
-        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift) || brushSizeKey)
+        // rect place mode
+        if (rectMode != RectMode.Inactive)
         {
-            window.OverrideMouseWheel = true;
+            var rMinX = Math.Min(rectStart.X, window.MouseCx);
+            var rMaxX = Math.Max(rectStart.X, window.MouseCx);
+            var rMinY = Math.Min(rectStart.Y, window.MouseCy);
+            var rMaxY = Math.Max(rectStart.Y, window.MouseCy);
+            var rWidth = rMaxX - rMinX + 1;
+            var rHeight = rMaxY - rMinY + 1;
 
-            if (Raylib.GetMouseWheelMove() > 0.0f || KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize))
-                materialBrushSize += 2;
-            else if (Raylib.GetMouseWheelMove() < 0.0f || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize))
-                materialBrushSize -= 2;
-            
-            materialBrushSize = Math.Clamp(materialBrushSize, 1, 21);
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(rMinX * Level.TileSize, rMinY * Level.TileSize, rWidth * Level.TileSize, rHeight * Level.TileSize),
+                2f / window.ViewZoom,
+                RainEd.Instance.MaterialDatabase.GetMaterial(selectedMaterial).Color
+            );
+
+            if (!isToolActive)
+            {
+                if (rectMode == RectMode.Place)
+                {
+                    for (int x = rMinX; x < rMaxX; x++)
+                    {
+                        for (int y = rMinY; y < rMaxY; y++)
+                        {
+                            if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == 0)
+                            {
+                                if (modifyGeometry)
+                                {
+                                    level.Layers[window.WorkLayer, x, y].Geo = GeoType.Solid;
+                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                }
+
+                                level.Layers[window.WorkLayer, x, y].Material = selectedMaterial;
+                            }
+                        }
+                    }
+                }
+                else if (rectMode == RectMode.Remove)
+                {
+                    for (int x = rMinX; x < rMaxX; x++)
+                    {
+                        for (int y = rMinY; y < rMaxY; y++)
+                        {
+                            if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == selectedMaterial)
+                            {
+                                level.Layers[window.WorkLayer, x, y].Material = 0;
+
+                                if (modifyGeometry)
+                                {
+                                    level.Layers[window.WorkLayer, x, y].Geo = GeoType.Air;
+                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                }
+                            }
+
+                            if (!disallowMatOverwrite && level.Layers[window.WorkLayer, x, y].HasTile())
+                            {
+                                level.RemoveTileCell(window.WorkLayer, x, y, modifyGeometry);
+                            }
+                        }
+                    }
+                }
+
+                rectMode = RectMode.Inactive;
+            }
         }
 
-        // draw grid cursor
-        int cursorLeft = window.MouseCx - materialBrushSize / 2;
-        int cursorTop = window.MouseCy - materialBrushSize / 2;
-
-        Raylib.DrawRectangleLinesEx(
-            new Rectangle(
-                cursorLeft * Level.TileSize,
-                cursorTop * Level.TileSize,
-                Level.TileSize * materialBrushSize,
-                Level.TileSize * materialBrushSize
-            ),
-            2f / window.ViewZoom,
-            RainEd.Instance.MaterialDatabase.GetMaterial(selectedMaterial).Color
-        );
-
-        // place material
-        int placeMode = 0;
-        if (isMouseHeldInMode)
+        // check if rect place mode will start
+        else if (isMouseHeldInMode && isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
             if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
-                placeMode = 1;
-            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
-                placeMode = 2;
-        }
-        
-        if (placeMode != 0)
-        {
-            // place or remove materials inside cursor
-            for (int x = cursorLeft; x <= window.MouseCx + materialBrushSize / 2; x++)
             {
-                for (int y = cursorTop; y <= window.MouseCy + materialBrushSize / 2; y++)
+                rectMode = RectMode.Place;
+            }
+            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            {
+                rectMode = RectMode.Remove;
+            }
+
+            if (rectMode != RectMode.Inactive)
+                rectStart = new CellPosition(window.MouseCx, window.MouseCy, window.WorkLayer);
+        }
+
+        // normal material mode
+        else
+        {
+            bool brushSizeKey =
+                KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
+
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModShift) || brushSizeKey)
+            {
+                window.OverrideMouseWheel = true;
+
+                if (Raylib.GetMouseWheelMove() > 0.0f || KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize))
+                    materialBrushSize += 2;
+                else if (Raylib.GetMouseWheelMove() < 0.0f || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize))
+                    materialBrushSize -= 2;
+                
+                materialBrushSize = Math.Clamp(materialBrushSize, 1, 21);
+            }
+
+            // draw grid cursor
+            int cursorLeft = window.MouseCx - materialBrushSize / 2;
+            int cursorTop = window.MouseCy - materialBrushSize / 2;
+
+            Raylib.DrawRectangleLinesEx(
+                new Rectangle(
+                    cursorLeft * Level.TileSize,
+                    cursorTop * Level.TileSize,
+                    Level.TileSize * materialBrushSize,
+                    Level.TileSize * materialBrushSize
+                ),
+                2f / window.ViewZoom,
+                RainEd.Instance.MaterialDatabase.GetMaterial(selectedMaterial).Color
+            );
+
+            // place material
+            int placeMode = 0;
+            if (isMouseHeldInMode)
+            {
+                if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+                    placeMode = 1;
+                else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+                    placeMode = 2;
+            }
+            
+            if (placeMode != 0)
+            {
+                // place or remove materials inside cursor
+                for (int x = cursorLeft; x <= window.MouseCx + materialBrushSize / 2; x++)
                 {
-                    if (!level.IsInBounds(x, y)) continue;
-                    ref var cell = ref level.Layers[window.WorkLayer, x, y];
-
-                    if (cell.HasTile()) continue;
-
-                    if (placeMode == 1)
+                    for (int y = cursorTop; y <= window.MouseCy + materialBrushSize / 2; y++)
                     {
-                        if (!disallowMatOverwrite || cell.Material == 0)
-                            cell.Material = selectedMaterial;
-                    }
-                    else
-                    {
-                        if (!disallowMatOverwrite || cell.Material == selectedMaterial)
-                            cell.Material = 0;
+                        if (!level.IsInBounds(x, y)) continue;
+                        ref var cell = ref level.Layers[window.WorkLayer, x, y];
+
+                        if (cell.HasTile()) continue;
+
+                        if (placeMode == 1)
+                        {
+                            if (!disallowMatOverwrite || cell.Material == 0)
+                            {
+                                if (modifyGeometry)
+                                {
+                                    level.Layers[window.WorkLayer, x, y].Geo = GeoType.Solid;
+                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                }
+
+                                cell.Material = selectedMaterial;
+                            }
+                        }
+                        else
+                        {
+                            if (!disallowMatOverwrite || cell.Material == selectedMaterial)
+                            {
+                                if (modifyGeometry)
+                                {
+                                    level.Layers[window.WorkLayer, x, y].Geo = GeoType.Air;
+                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                }
+
+                                cell.Material = 0;
+                            }
+                        }
                     }
                 }
             }
@@ -586,6 +691,9 @@ partial class TileEditor : IEditorMode
 
                             if (level.Layers[window.WorkLayer, gx, gy].HasTile())
                                 level.RemoveTileCell(window.WorkLayer, gx, gy, modifyGeometry);
+                            
+                            if (!disallowMatOverwrite)
+                                level.Layers[window.WorkLayer, gx, gy].Material = 0;
                         }
                     }
                 }
