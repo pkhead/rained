@@ -229,9 +229,12 @@ partial class TileEditor : IEditorMode
             if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
             {
                 if (modifyGeometry)
-                    window.StatusText = "Force Geometry";
+                    window.StatusText = "Force Geometry    ";
                 else if (forcePlace)
-                    window.StatusText = "Force Placement";
+                    window.StatusText = "Force Placement    ";
+                
+                if (disallowMatOverwrite)
+                    window.StatusText += "Ignore Materials";
             }
             else if (selectionMode == SelectionMode.Materials)
             {
@@ -349,9 +352,10 @@ partial class TileEditor : IEditorMode
                     }
 
                     // remove tile on right click
-                    if (selectionMode == SelectionMode.Tiles && (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right)) && mouseCell.HasTile())
+                    if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                     {
-                        level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
+                        if (selectionMode == SelectionMode.Tiles || (selectionMode == SelectionMode.Materials && !disallowMatOverwrite))
+                            level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
                     }
                 }
             }
@@ -587,6 +591,16 @@ partial class TileEditor : IEditorMode
                 };
 
                 EditorWindow.ShowNotification(errStr);
+            }
+        }
+
+        // remove material under mouse cursor
+        if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+        {
+            ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+            if (!cell.HasTile() && !disallowMatOverwrite)
+            {
+                cell.Material = 0;
             }
         }
     }
