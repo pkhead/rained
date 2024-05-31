@@ -46,6 +46,7 @@ class UserPreferences
     public bool ViewCameras { get; set; }
     public bool ViewTiles { get; set; }
     public bool ViewProps { get; set; }
+    public bool ViewPreviews { get; set; }
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
@@ -172,6 +173,7 @@ class UserPreferences
         ViewCameras = false;
         ViewTiles = false;
         ViewProps = false;
+        ViewPreviews = false;
 
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";

@@ -39,8 +39,10 @@ class LevelEditRender
         LevelObject.WhackAMoleHole, LevelObject.ScavengerHole
     };
 
-    // it seems transparent pixels can be interpreted as pure white or no alpha
-    private readonly static string RWTransparencyShaderSrc = @"
+    // the shader used for prop rendering in the editor.
+    // white pixels are transparent
+    // the R color component controls transparency and the G color component controls white blend 
+    private readonly static string PropShaderSrc = @"
         #version 330
 
         in vec2 fragTexCoord;
@@ -63,6 +65,31 @@ class LevelEditRender
         }
     ";
 
+    // the shader used for tile rendering in the editor.
+    // while pixels are transparent.
+    private readonly static string TileShaderSrc = @"
+        #version 330
+
+        in vec2 fragTexCoord;
+        in vec4 fragColor;
+
+        uniform sampler2D texture0;
+        uniform vec4 colDiffuse;
+
+        out vec4 finalColor;
+
+        void main()
+        {
+            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+
+            vec4 texelColor = texture(texture0, fragTexCoord);
+            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
+            vec3 color = texelColor.rgb;
+
+            finalColor = vec4(color, 1.0 - float(isTransparent)) * fragColor * colDiffuse;
+        }
+    ";
+
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -76,8 +103,11 @@ class LevelEditRender
     public float ViewZoom = 1f;
     
     private readonly EditorGeometryRenderer geoRenderer;
+    private readonly TileRenderer tileRenderer;
     private readonly RlManaged.Shader propPreviewShader;
+
     public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
+    public readonly RlManaged.Shader TilePreviewShader;
 
     private readonly RlManaged.Texture2D bigChainSegment;
 
@@ -86,8 +116,11 @@ class LevelEditRender
         editor = RainEd.Instance;
         //ReloadGridTexture();
         
-        propPreviewShader = RlManaged.Shader.LoadFromMemory(null, RWTransparencyShaderSrc);
+        propPreviewShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
+        TilePreviewShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
+
         geoRenderer = new EditorGeometryRenderer(this);
+        tileRenderer = new TileRenderer(this);
 
         // TODO: this is actually unused for now
         using var chainSegmentImg = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_144_bigChainSegment.png"));
@@ -391,79 +424,86 @@ class LevelEditRender
         int viewR = (int) Math.Ceiling(ViewBottomRight.X);
         int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
 
-        // draw tile previews
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
+        if (RainEd.Instance.Preferences.ViewPreviews)
         {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
+            tileRenderer.Render(layer, alpha);
+        }
+        else
+        {
+            // draw tile previews
+            for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
             {
-                ref var cell = ref Level.Layers[layer, x, y];
-                if (!cell.HasTile()) continue;
-
-                Tiles.Tile? tile;
-                int tx;
-                int ty;
-
-                if (cell.TileHead is not null)
+                for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
                 {
-                    tile = cell.TileHead;
-                    tx = x;
-                    ty = y;
-                }
-                else
-                {
-                    tile = Level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
-                    tx = cell.TileRootX;
-                    ty = cell.TileRootY;
-                }
+                    ref var cell = ref Level.Layers[layer, x, y];
+                    if (!cell.HasTile()) continue;
 
-                // detached tile body
-                // probably caused from comms move level tool,
-                // which does not correct tile pointers
-                if (tile == null)
-                {
-                    Raylib.DrawRectangleV(new Vector2(x, y) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
-                    Raylib.DrawRectangleV(new Vector2(x + 0.5f, y) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                    Raylib.DrawRectangleV(new Vector2(x, y + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                    continue;
-                }
+                    Tiles.Tile? tile;
+                    int tx;
+                    int ty;
 
-                var tileLeft = tx - tile.CenterX;
-                var tileTop = ty - tile.CenterY;
-                var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
-                var col = previewTexture is null ? Color.White : tile.Category.Color;
+                    if (cell.TileHead is not null)
+                    {
+                        tile = cell.TileHead;
+                        tx = x;
+                        ty = y;
+                    }
+                    else
+                    {
+                        tile = Level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
+                        tx = cell.TileRootX;
+                        ty = cell.TileRootY;
+                    }
 
-                var srcRect = previewTexture is not null
-                    ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
-                    : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
+                    // detached tile body
+                    // probably caused from comms move level tool,
+                    // which does not correct tile pointers
+                    if (tile == null)
+                    {
+                        Raylib.DrawRectangleV(new Vector2(x, y) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
+                        Raylib.DrawRectangleV(new Vector2(x + 0.5f, y) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                        Raylib.DrawRectangleV(new Vector2(x, y + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                        continue;
+                    }
 
-                Raylib.DrawTexturePro(
-                    previewTexture ?? RainEd.Instance.PlaceholderTexture,
-                    srcRect,
-                    new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                    Vector2.Zero,
-                    0f,
-                    new Color(col.R, col.G, col.B, alpha)
-                );
+                    var tileLeft = tx - tile.CenterX;
+                    var tileTop = ty - tile.CenterY;
+                    var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
+                    var col = previewTexture is null ? Color.White : tile.Category.Color;
 
-                // highlight tile head
-                if (cell.TileHead is not null && ViewTileHeads)
-                {
-                    Raylib.DrawRectangle(
-                        x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                        new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
+                    var srcRect = previewTexture is not null
+                        ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
+                        : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
+
+                    Raylib.DrawTexturePro(
+                        previewTexture ?? RainEd.Instance.PlaceholderTexture,
+                        srcRect,
+                        new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
+                        Vector2.Zero,
+                        0f,
+                        new Color(col.R, col.G, col.B, alpha)
                     );
 
-                    Raylib.DrawLineV(
-                        new Vector2(x, y) * Level.TileSize,
-                        new Vector2(x+1, y+1) * Level.TileSize,
-                        col
-                    );
+                    // highlight tile head
+                    if (cell.TileHead is not null && ViewTileHeads)
+                    {
+                        Raylib.DrawRectangle(
+                            x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
+                            new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
+                        );
 
-                    Raylib.DrawLineV(
-                        new Vector2(x+1, y) * Level.TileSize,
-                        new Vector2(x, y+1) * Level.TileSize,
-                        col
-                    );
+                        Raylib.DrawLineV(
+                            new Vector2(x, y) * Level.TileSize,
+                            new Vector2(x+1, y+1) * Level.TileSize,
+                            col
+                        );
+
+                        Raylib.DrawLineV(
+                            new Vector2(x+1, y) * Level.TileSize,
+                            new Vector2(x, y+1) * Level.TileSize,
+                            col
+                        );
+                    }
                 }
             }
         }

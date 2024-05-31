@@ -253,6 +253,11 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
+                
+                if (ImGui.MenuItem("Previews", null, prefs.ViewPreviews))
+                {
+                    prefs.ViewPreviews = !prefs.ViewPreviews;
+                }
 
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
