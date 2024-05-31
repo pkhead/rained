@@ -2,6 +2,16 @@ using Raylib_cs;
 
 namespace RainEd;
 
+enum PaletteLightLevel
+{
+    Lit, Neutral, Shaded
+};
+
+enum PaletteColor
+{
+    Sky, Fog, Black, ShortcutSymbol
+}
+
 struct PaletteShadeColors
 {
     public Color Lit;

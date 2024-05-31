@@ -281,6 +281,11 @@ static class EditorWindow
                     LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
                 }
 
+                if (ImGui.MenuItem("Palettes", null, PaletteWindow.IsWindowOpen))
+                {
+                    PaletteWindow.IsWindowOpen = !PaletteWindow.IsWindowOpen;
+                }
+
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
@@ -403,6 +408,16 @@ static class EditorWindow
         promptCallback = null;
     }
 
+    static void ShowMiscWindows()
+    {
+        ShortcutsWindow.ShowWindow();
+        AboutWindow.ShowWindow();
+        LevelLoadFailedWindow.ShowWindow();
+        PreferencesWindow.ShowWindow();
+        PaletteWindow.ShowWindow();
+        LuaInterface.ShowLogs();
+    }
+
     public static void Render()
     {
         DrawMenuBar();
@@ -474,12 +489,7 @@ static class EditorWindow
             }
         }
 
-        // show miscellaneous windows
-        ShortcutsWindow.ShowWindow();
-        AboutWindow.ShowWindow();
-        LevelLoadFailedWindow.ShowWindow();
-        PreferencesWindow.ShowWindow();
-        LuaInterface.ShowLogs();
+        ShowMiscWindows();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)

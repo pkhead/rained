@@ -67,22 +67,49 @@ class LevelView
     {
         get
         {
-            var col = RainEd.Instance.Preferences.BackgroundColor;
-            return new Color(col.R, col.G, col.B, (byte)255);        
+            var renderer = RainEd.Instance.LevelView.Renderer;
+            if (renderer.Palette >= 0)
+            {
+                return renderer.GetPaletteColor(PaletteColor.Sky);
+            }
+            else
+            {
+                var col = RainEd.Instance.Preferences.BackgroundColor;
+                return new Color(col.R, col.G, col.B, (byte)255);
+            }
         }
     }
 
     public static Color GeoColor(int alpha)
     {
-        var col = RainEd.Instance.Preferences.LayerColor1;
-        return new Color(col.R, col.G, col.B, (byte)alpha);  
+        var renderer = RainEd.Instance.LevelView.Renderer;
+        if (renderer.Palette >= 0)
+        {
+            var col = renderer.GetPaletteColor(PaletteColor.Black);
+            return new Color(col.R, col.G, col.B, (byte)alpha);
+        }
+        else
+        {
+            var col = RainEd.Instance.Preferences.LayerColor1;
+            return new Color(col.R, col.G, col.B, (byte)alpha);  
+        }
     }
 
     public static Color GeoColor(float fade, int alpha)
     {
         fade = Math.Clamp(fade, 0f, 1f);
 
-        var col = RainEd.Instance.Preferences.LayerColor1;
+        var renderer = RainEd.Instance.LevelView.Renderer;
+        Color col;
+        if (renderer.Palette >= 0)
+        {
+            col = renderer.GetPaletteColor(PaletteColor.Black);
+        }
+        else
+        {
+            col = RainEd.Instance.Preferences.LayerColor1.ToRGBA(255);
+        }
+
         return new Color(
             (byte)(col.R * (1f - fade) + 255f * fade),
             (byte)(col.G * (1f - fade) + 255f * fade),
@@ -121,6 +148,9 @@ class LevelView
         Renderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
         Renderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
         Renderer.ViewCameras = RainEd.Instance.Preferences.ViewCameras;
+        Renderer.Palette = RainEd.Instance.Preferences.UsePalette ? RainEd.Instance.Preferences.PaletteIndex : -1;
+        Renderer.FadePalette = RainEd.Instance.Preferences.PaletteFadeIndex;
+        Renderer.PaletteMix = RainEd.Instance.Preferences.PaletteFade;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -129,6 +159,12 @@ class LevelView
         prefs.ViewObscuredBeams = Renderer.ViewObscuredBeams;
         prefs.ViewTileHeads = Renderer.ViewTileHeads;
         prefs.ViewCameras = Renderer.ViewCameras;
+
+        // i suppose this is redundant, as the PaletteWindow automatically
+        // updates the values in the prefs json
+        prefs.UsePalette = Renderer.Palette != -1;
+        prefs.PaletteFadeIndex = Renderer.FadePalette;
+        prefs.PaletteFade = Renderer.PaletteMix;
         
         foreach (var mode in editorModes)
         {

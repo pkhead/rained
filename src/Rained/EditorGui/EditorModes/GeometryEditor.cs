@@ -407,7 +407,7 @@ class GeometryEditor : IEditorMode
                 {
                     var alpha = (l == shownLayer) ? 255 : 50;
                     if (l == 0) foregroundAlpha = alpha;
-                    var color = new Color(LayerColors[0].R, LayerColors[0].G, LayerColors[0].B, alpha);
+                    var color = LevelView.GeoColor(alpha);
                     int offset = (l - shownLayer) * 2;
 
                     Rlgl.PushMatrix();

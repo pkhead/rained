@@ -258,6 +258,7 @@ sealed class RainEd
             Raylib.SetWindowState(ConfigFlags.MaximizedWindow);
         }
         ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
+        PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
 
         // level boot load
         if (levelPath.Length > 0)
@@ -313,6 +314,7 @@ sealed class RainEd
         // save user preferences
         levelView.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
+        Preferences.ShowPaletteWindow = PaletteWindow.IsWindowOpen;
 
         Preferences.WindowWidth = Raylib.GetScreenWidth();
         Preferences.WindowHeight = Raylib.GetScreenHeight();

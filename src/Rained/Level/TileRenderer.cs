@@ -347,13 +347,11 @@ class TileRenderer
         // palette rendering mode
         bool renderPalette;
 
-        if (renderInfo.CurrentPalette >= 0)
+        if (renderInfo.Palette >= 0)
         {
             renderPalette = true;
             shader = renderInfo.PaletteShader;
             Raylib.BeginShaderMode(shader);
-
-            var palette = renderInfo.Palettes[renderInfo.CurrentPalette];
 
             // send palette color information to the shader
             Span<float> litColorData = stackalloc float[30 * 3];
@@ -362,9 +360,9 @@ class TileRenderer
 
             for (int i = 0; i < 30; i++)
             {
-                var litColor = palette.SunPalette[i].Lit;
-                var neutralColor = palette.SunPalette[i].Neutral;
-                var shadedColor = palette.SunPalette[i].Shaded;
+                var litColor = renderInfo.GetSunColor(PaletteLightLevel.Lit, i);
+                var neutralColor = renderInfo.GetSunColor(PaletteLightLevel.Neutral, i);
+                var shadedColor = renderInfo.GetSunColor(PaletteLightLevel.Shaded, i);
 
                 litColorData[i*3+0] = litColor.R / 255f;
                 litColorData[i*3+1] = litColor.G / 255f;
@@ -377,7 +375,6 @@ class TileRenderer
                 shadedColorData[i*3+0] = shadedColor.R / 255f;
                 shadedColorData[i*3+1] = shadedColor.G / 255f;
                 shadedColorData[i*3+2] = shadedColor.B / 255f;
-
             }
 
             Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "litColor"), litColorData, ShaderUniformDataType.Vec3, 30);

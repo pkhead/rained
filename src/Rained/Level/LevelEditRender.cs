@@ -153,7 +153,9 @@ class LevelEditRender
 
     private readonly RlManaged.Texture2D bigChainSegment;
 
-    public int CurrentPalette = 0;
+    public int Palette = 0;
+    public int FadePalette = -1;
+    public float PaletteMix = 0f;
     public readonly Palette[] Palettes;
 
     public LevelEditRender()
@@ -261,6 +263,76 @@ class LevelEditRender
         geoRenderer.ReloadLevel();
         tileRenderer.ReloadLevel();
     }
+
+    #region Palettes
+    private static float Lerp(float x, float y, float a)
+    {
+        return (y - x) * a + x;
+    }
+
+    public Color GetSunColor(PaletteLightLevel lightLevel, int sublayer, int index)
+    {
+        var p = Palettes[index].SunPalette;
+        return lightLevel switch
+        {
+            PaletteLightLevel.Lit => p[sublayer].Lit,
+            PaletteLightLevel.Neutral => p[sublayer].Neutral,
+            PaletteLightLevel.Shaded => p[sublayer].Shaded,
+            _ => new Color(0, 0, 0, 0)
+        };
+    }
+
+    public Color GetPaletteColor(PaletteColor colorName, int index)
+    {
+        var p = Palettes[index];
+        return colorName switch
+        {
+            PaletteColor.Sky => p.SkyColor,
+            PaletteColor.Fog => p.FogColor,
+            PaletteColor.Black => p.BlackColor,
+            PaletteColor.ShortcutSymbol => p.ShortcutSymbolColor,
+            _ => throw new ArgumentOutOfRangeException(nameof(colorName))
+        };
+    }
+
+    public Color GetSunColorMix(PaletteLightLevel lightLevel, int sublayer, int index1, int index2, float mix)
+    {
+        var c1 = GetSunColor(lightLevel, sublayer, index1);
+        var c2 = GetSunColor(lightLevel, sublayer, index2);
+
+        return new Color(
+            (byte) Lerp(c1.R, c2.R, mix),
+            (byte) Lerp(c1.G, c2.G, mix),
+            (byte) Lerp(c1.B, c2.B, mix),
+            (byte) Lerp(c1.A, c2.A, mix)
+        );
+    }
+
+    public Color GetPaletteColorMix(PaletteColor colorName, int index1, int index2, float mix)
+    {
+        var c1 = GetPaletteColor(colorName, index1);
+        var c2 = GetPaletteColor(colorName, index2);
+
+        return new Color(
+            (byte) Lerp(c1.R, c2.R, mix),
+            (byte) Lerp(c1.G, c2.G, mix),
+            (byte) Lerp(c1.B, c2.B, mix),
+            (byte) Lerp(c1.A, c2.A, mix)
+        );
+    }
+
+    public Color GetSunColor(PaletteLightLevel lightLevel, int sublayer)
+    {
+        if (Palette == -1) return new Color(0, 0, 0, 0);
+        return GetSunColorMix(lightLevel, sublayer, Palette, FadePalette, PaletteMix);
+    }
+
+    public Color GetPaletteColor(PaletteColor colorName)
+    {
+        if (Palette == -1) return new Color(0, 0, 0, 0);
+        return GetPaletteColorMix(colorName, Palette, FadePalette, PaletteMix);
+    }
+    #endregion
 
     public void RenderGeometry(int layer, Color color)
     {

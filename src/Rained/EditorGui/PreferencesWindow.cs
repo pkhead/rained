@@ -193,6 +193,8 @@ static class PreferencesWindow
         
         ImGui.SeparatorText("Level Colors");
         {
+            ImGui.Separator();
+
             Vector3 layerColor1 = HexColorToVec3(prefs.LayerColor1);
             Vector3 layerColor2 = HexColorToVec3(prefs.LayerColor2);
             Vector3 layerColor3 = HexColorToVec3(prefs.LayerColor3);

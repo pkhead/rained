@@ -143,6 +143,12 @@ class UserPreferences
         }
     }
 
+    public bool ShowPaletteWindow { get; set; }
+    public bool UsePalette { get; set; }
+    public int PaletteIndex { get; set; }
+    public int PaletteFadeIndex { get; set; } = 0;
+    public float PaletteFade { get; set; } = 0f;
+
     public HexColor LayerColor1;
     public HexColor LayerColor2;
     public HexColor LayerColor3;
@@ -192,6 +198,10 @@ class UserPreferences
         OptimizedTilePreviews = true;
 
         Theme = "Dark";
+
+        ShowPaletteWindow = false;
+        UsePalette = false;
+        PaletteIndex = 0;
         LayerColor1 = new HexColor("#000000");
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
