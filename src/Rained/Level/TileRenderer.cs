@@ -47,16 +47,6 @@ class TileRenderer
             dirtyHeads.Add(pos);
     }
 
-    private static int Pair2(int a, int b)
-    {
-        return a >= b ? (a * a) + a + b : (b * b) + a;
-    }
-
-    private static int Pair3(int a, int b, int c)
-    {
-        return Pair2(Pair2(a, b), c);
-    }
-
     private int GetTileRender(int x, int y, int layer)
     {
         for (int i = 0; i < tileRenders.Count; i++)
@@ -107,7 +97,14 @@ class TileRenderer
             }
         }
 
-        // TODO: sort tile renders by draw index
+        // sort tile renders by draw index
+        if (dirtyHeads.Count > 0)
+        {
+            tileRenders.Sort(static (TileRender a, TileRender b) => {
+                var w = RainEd.Instance.Level.Height;
+                return (a.X * w + a.Y) - (b.X * w + b.Y);
+            });
+        }
 
         dirtyHeads.Clear();
     }
