@@ -641,6 +641,7 @@ static class LuaInterface
                 }
 
                 RainEd.Instance.Level.SetTileHead(layer, x, y, tile);
+                RainEd.Instance.LevelView.Renderer.InvalidateTileHead(x, y, layer);
 
                 return 0;
             });
@@ -662,8 +663,16 @@ static class LuaInterface
 
                 if (!RainEd.Instance.Level.IsInBounds(tileRootX, tileRootY) || tileLayer < 0 || tileLayer > 2)
                     throw new LuaHelpers.LuaErrorException("target tile root is out of bounds");
+                
+                // invalidate old tile head
+                var cell = RainEd.Instance.Level.Layers[layer, x, y];
+                if (cell.TileRootX != -1)
+                {
+                    RainEd.Instance.LevelView.Renderer.InvalidateTileHead(cell.TileRootX, cell.TileRootY, cell.TileLayer);    
+                }
 
                 RainEd.Instance.Level.SetTileRoot(layer, x, y, tileRootX, tileRootY, tileLayer);
+                RainEd.Instance.LevelView.Renderer.InvalidateTileHead(tileRootX, tileRootY, tileLayer);
 
                 return 0;
             });
@@ -680,6 +689,7 @@ static class LuaInterface
                 if (layer < 0 || layer > 2) return 0;
 
                 RainEd.Instance.Level.ClearTileRoot(layer, x, y);
+                RainEd.Instance.LevelView.Renderer.InvalidateTileHead(x, y, layer);
                 
                 return 0;
             });

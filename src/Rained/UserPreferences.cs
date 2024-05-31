@@ -105,6 +105,7 @@ class UserPreferences
     public bool StaticDrizzleLingoRuntime { get; set; }
     public bool ShowRenderPreview { get; set; }
     public bool CheckForUpdates { get; set; }
+    public bool OptimizedTilePreviews { get; set; }
 
     public enum AutotileMouseModeOptions
     {
@@ -188,6 +189,7 @@ class UserPreferences
         ShowRenderPreview = true;
         CheckForUpdates = true;
         AutotileMouseMode = AutotileMouseModeOptions.Hold;
+        OptimizedTilePreviews = true;
 
         Theme = "Dark";
         LayerColor1 = new HexColor("#000000");

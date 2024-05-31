@@ -71,19 +71,193 @@ class TileRenderer
         return -1;
     }
 
+    private void UpdateRenderList()
+    {
+        var level = RainEd.Instance.Level;
+
+        foreach (var cellPos in dirtyHeads)
+        {
+            var i = GetTileRender(cellPos.X, cellPos.Y, cellPos.Layer);
+
+            // if tile render already exists
+            if (i >= 0)
+            {
+                var newHead = level.Layers[cellPos.Layer, cellPos.X, cellPos.Y].TileHead;
+                
+                // if the tile was removed
+                if (newHead is null)
+                {
+                    tileRenders.RemoveAt(i);
+                }
+
+                else
+                {
+                    tileRenders[i] = new TileRender(cellPos.X, cellPos.Y, cellPos.Layer, newHead);
+                }
+            }
+
+            // if tile render did not already exist
+            else
+            {
+                var tileInit = level.Layers[cellPos.Layer, cellPos.X, cellPos.Y].TileHead;
+                if (tileInit != null)
+                {
+                    tileRenders.Add(new TileRender(cellPos.X, cellPos.Y, cellPos.Layer, tileInit));
+                }
+            }
+        }
+
+        // TODO: sort tile renders by draw index
+
+        dirtyHeads.Clear();
+    }
+
     /// <summary>
     /// Render tiles using their preview graphics
     /// </summary>
     public void PreviewRender(int layer, int alpha)
     {
         var level = RainEd.Instance.Level;
+        var drawTileHeads = renderInfo.ViewTileHeads;
         int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X);
         int viewT = (int) Math.Floor(renderInfo.ViewTopLeft.Y);
         int viewR = (int) Math.Ceiling(renderInfo.ViewBottomRight.X);
         int viewB = (int) Math.Ceiling(renderInfo.ViewBottomRight.Y);
-        var drawTileHeads = renderInfo.ViewTileHeads;
 
-        for (int x = Math.Max(0, viewL); x < Math.Min(level.Width, viewR); x++)
+        // optimized method - assumes all tile bodies are within the bounds
+        // of the tile head. this is the expected condition, but if the
+        // user wishes, they can use the slower rendering method, which is
+        // covered in the else branch.
+        if (RainEd.Instance.Preferences.OptimizedTilePreviews)
+        {
+            UpdateRenderList();
+
+            // draw the tile renders
+            var gfxProvider = RainEd.Instance.AssetGraphics;
+
+            foreach (var tileRender in tileRenders)
+            {
+                var init = tileRender.TileInit;
+                if (tileRender.Layer != layer && init.HasSecondLayer && tileRender.Layer+1 != layer) continue;
+
+                var rectPos = new Vector2(tileRender.X - init.CenterX - init.BfTiles, tileRender.Y - init.CenterY - init.BfTiles);
+                var rectSize = new Vector2(init.Width + init.BfTiles * 2, init.Height + init.BfTiles * 2);
+
+                // if levelRec is within screen bounds?
+                if (
+                    rectPos.X < viewR &&
+                    rectPos.Y < viewB &&
+                    rectPos.X + rectSize.X > viewL &&
+                    rectPos.Y + rectSize.Y > viewT
+                )
+                {
+                    var previewTexture = gfxProvider.GetTilePreviewTexture(init);
+                    var col = previewTexture is null ? Color.White : init.Category.Color;
+                    var drawColor = new Color(col.R, col.G, col.B, alpha);
+
+                    // could not find the texture for the given tile
+                    if (previewTexture is null)
+                    {
+                        var srcRec = new Rectangle(0f, 0f, init.Width * 2f, init.Height * 2f);
+                        var dstRec = new Rectangle(
+                            (tileRender.X - init.CenterX) * Level.TileSize,
+                            (tileRender.Y - init.CenterY) * Level.TileSize,
+                            init.Width * Level.TileSize,
+                            init.Height * Level.TileSize
+                        );
+                        Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
+                        continue;
+                    }
+                    
+                    // render a part of the texture for each tile within the
+                    // tile bounds
+                    for (int x = 0; x < init.Width; x++)
+                    {
+                        int gx = tileRender.X - init.CenterX + x;
+                        for (int y = 0; y < init.Height; y++)
+                        {
+                            int gy = tileRender.Y - init.CenterY + y;
+                            if (!level.IsInBounds(gx, gy)) continue;
+
+                            for (int l = Math.Min(2, tileRender.Layer + (init.HasSecondLayer?1:0)); l >= tileRender.Layer; l--)
+                            {
+                                if (l != layer) continue;
+                                
+                                var rqArr = l == tileRender.Layer ? init.Requirements : init.Requirements2;
+                                if (rqArr[x,y] == -1) continue;
+                                
+                                var cell = level.Layers[l, gx, gy];
+                                bool isTileRoot = gx == tileRender.X && gy == tileRender.Y && l == tileRender.Layer;
+
+                                // handle detached tile bodies.
+                                // probably caused from comms move level tool,
+                                // which does not correct tile pointers.
+                                // draws a red checkerboard
+                                if (!isTileRoot && cell.HasTile() && (!level.IsInBounds(cell.TileRootX, cell.TileRootY) ||
+                                    level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead is null))
+                                {
+                                    Raylib.DrawRectangleV(new Vector2(gx, gy) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
+                                    Raylib.DrawRectangleV(new Vector2(gx + 0.5f, gy) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                                    Raylib.DrawRectangleV(new Vector2(gx, gy + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
+                                    continue;
+                                }
+                                
+                                // render the tile if the tile body belongs to the tile head
+                                if (
+                                    isTileRoot ||
+                                    (cell.TileRootX == tileRender.X && cell.TileRootY == tileRender.Y && cell.TileLayer == tileRender.Layer)
+                                )
+                                {
+                                    Raylib.DrawTexturePro(
+                                        previewTexture,
+                                        new Rectangle(x * 16f, y * 16f, 16f, 16f),
+                                        new Rectangle(gx * Level.TileSize, gy * Level.TileSize, Level.TileSize, Level.TileSize),
+                                        Vector2.Zero,
+                                        0f,
+                                        drawColor
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // highlight tile heads
+            if (renderInfo.ViewTileHeads)
+            {
+                foreach (var tileRender in tileRenders)
+                {
+                    if (tileRender.Layer != layer) continue;
+                    var x = tileRender.X;
+                    var y = tileRender.Y;
+                    var col = tileRender.TileInit.Category.Color;
+
+                    Raylib.DrawRectangle(
+                        x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
+                        new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
+                    );
+
+                    Raylib.DrawLineV(
+                        new Vector2(x, y) * Level.TileSize,
+                        new Vector2(x+1, y+1) * Level.TileSize,
+                        col
+                    );
+
+                    Raylib.DrawLineV(
+                        new Vector2(x+1, y) * Level.TileSize,
+                        new Vector2(x, y+1) * Level.TileSize,
+                        col
+                    );
+                }
+
+            }
+        }
+
+        // thorough tile preview rendering method
+        else
+        {
+            for (int x = Math.Max(0, viewL); x < Math.Min(level.Width, viewR); x++)
             {
                 for (int y = Math.Max(0, viewT); y < Math.Min(level.Height, viewB); y++)
                 {
@@ -158,6 +332,7 @@ class TileRenderer
                     }
                 }
             }
+        }
     }
 
     /// <summary>
@@ -167,44 +342,7 @@ class TileRenderer
     {
         var level = RainEd.Instance.Level;
 
-        // first, update the tile render list
-        foreach (var cellPos in dirtyHeads)
-        {
-            var i = GetTileRender(cellPos.X, cellPos.Y, cellPos.Layer);
-
-            // if tile render already exists
-            if (i >= 0)
-            {
-                var newHead = level.Layers[cellPos.Layer, cellPos.X, cellPos.Y].TileHead;
-                
-                // if the tile was removed
-                if (newHead is null)
-                {
-                    tileRenders.RemoveAt(i);
-                    RainEd.Logger.Information("Remove tile render");
-                }
-
-                else
-                {
-                    tileRenders[i] = new TileRender(cellPos.X, cellPos.Y, cellPos.Layer, newHead);
-                }
-            }
-
-            // if tile render did not already exist
-            else
-            {
-                var tileInit = level.Layers[cellPos.Layer, cellPos.X, cellPos.Y].TileHead;
-                if (tileInit != null)
-                {
-                    tileRenders.Add(new TileRender(cellPos.X, cellPos.Y, cellPos.Layer, tileInit));
-                    RainEd.Logger.Information("Add tile render");
-                }
-            }
-        }
-
-        // TODO: sort tile renders by draw index
-
-        dirtyHeads.Clear();
+        UpdateRenderList();
 
         // draw the tile renders
         Raylib.BeginShaderMode(renderInfo.TilePreviewShader);
@@ -276,6 +414,8 @@ class TileRenderer
             }
         }
 
+        Raylib.EndShaderMode();
+
         // highlight tile heads
         if (renderInfo.ViewTileHeads)
         {
@@ -305,142 +445,6 @@ class TileRenderer
             }
 
         }
-
-        /*int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X);
-        int viewT = (int) Math.Floor(renderInfo.ViewTopLeft.Y);
-        int viewR = (int) Math.Ceiling(renderInfo.ViewBottomRight.X);
-        int viewB = (int) Math.Ceiling(renderInfo.ViewBottomRight.Y);
-
-        int minX = Math.Max(0, viewL);
-        int maxX = Math.Min(level.Width, viewR);
-        int minY = Math.Max(0, viewT);
-        int maxY = Math.Min(level.Height, viewB);
-        
-        int viewW = maxX - minX;
-        int viewH = maxY - minY;
-
-        // the wasRendererd hashset keeps track of which tile heads were already
-        // rendered
-        wasRendered.Clear();
-
-        for (int x = minX; x < maxX; x++)
-        {
-            for (int y = minY; y < maxY; y++)
-            {
-                // get location of tile head
-                ref var cell = ref level.Layers[layer, x, y];
-                if (!cell.HasTile()) continue;
-                var tileOrigin = level.GetTileHead(layer, x, y);
-
-                // check that the location is valid and that
-                // the location was not already rendered. if both pass,
-                // the location will be added to the wasRenderered
-                // hashset.
-                int pair;
-                if (tileOrigin.Layer == -1 || !wasRendered.Add(pair = Pair3(tileOrigin.X, tileOrigin.Y, tileOrigin.Layer))) continue;
-                
-                // get the tile head data
-                var tile = level.Layers[tileOrigin.Layer, tileOrigin.X, tileOrigin.Y].TileHead;
-                if (tile is null) continue;
-
-                var tex = gfxProvider.GetTileTexture(tile.Name);
-                var dstRec = new Rectangle(
-                    new Vector2(tileOrigin.X - tile.CenterX - tile.BfTiles, tileOrigin.Y - tile.CenterY - tile.BfTiles) * Level.TileSize,
-                    new Vector2(tile.Width + tile.BfTiles * 2, tile.Height + tile.BfTiles * 2) * Level.TileSize
-                );
-
-                // if the tile texture was not found, draw a
-                // placeholder graphic
-                if (tex is null)
-                {
-                    Raylib.EndShaderMode();
-                    var srcRec = new Rectangle(0f, 0f, 2f, 2f);
-                    Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
-                    Raylib.BeginShaderMode(renderInfo.PropPreviewShader);
-                }
-                else
-                {
-                    // draw the tile sublayers from back to front
-                    for (int l = tile.LayerCount-1; l >= 0; l--)
-                    {
-                        var srcRec = GetGraphicSublayer(tile, l, 0);
-                        Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, drawColor);
-                    }
-                }
-
-
-
-
-                /*Tiles.Tile? tile;
-                int tx;
-                int ty;
-
-                if (cell.TileHead is not null)
-                {
-                    tile = cell.TileHead;
-                    tx = x;
-                    ty = y;
-                }
-                else
-                {
-                    tile = Level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
-                    tx = cell.TileRootX;
-                    ty = cell.TileRootY;
-                }
-
-                // detached tile body
-                // probably caused from comms move level tool,
-                // which does not correct tile pointers
-                if (tile == null)
-                {
-                    Raylib.DrawRectangleV(new Vector2(x, y) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);
-                    Raylib.DrawRectangleV(new Vector2(x + 0.5f, y) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                    Raylib.DrawRectangleV(new Vector2(x, y + 0.5f) * Level.TileSize, Vector2.One * Level.TileSize / 2f, Color.Black);
-                    continue;
-                }
-
-                var tileLeft = tx - tile.CenterX;
-                var tileTop = ty - tile.CenterY;
-                var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
-                var col = previewTexture is null ? Color.White : tile.Category.Color;
-
-                var srcRect = previewTexture is not null
-                    ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
-                    : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
-
-                Raylib.DrawTexturePro(
-                    previewTexture ?? RainEd.Instance.PlaceholderTexture,
-                    srcRect,
-                    new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                    Vector2.Zero,
-                    0f,
-                    new Color(col.R, col.G, col.B, alpha)
-                );
-
-                // highlight tile head
-                if (cell.TileHead is not null && ViewTileHeads)
-                {
-                    Raylib.DrawRectangle(
-                        x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                        new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
-                    );
-
-                    Raylib.DrawLineV(
-                        new Vector2(x, y) * Level.TileSize,
-                        new Vector2(x+1, y+1) * Level.TileSize,
-                        col
-                    );
-
-                    Raylib.DrawLineV(
-                        new Vector2(x+1, y) * Level.TileSize,
-                        new Vector2(x, y+1) * Level.TileSize,
-                        col
-                    );
-                }
-            }
-        }*/
-
-        Raylib.EndShaderMode();
     }
 
     private static Rectangle GetGraphicSublayer(Tile tile, int sublayer, int variation)

@@ -109,7 +109,7 @@ namespace RainEd
                 Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
-                Raylib.SetTargetFPS(240);
+                //Raylib.SetTargetFPS(240);
                 Raylib.SetExitKey(KeyboardKey.Null);
 
                 // set window icons

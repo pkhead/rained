@@ -254,7 +254,7 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
                 
-                if (ImGui.MenuItem("Previews", null, prefs.ViewPreviews))
+                if (ImGui.MenuItem("Tile Graphics", null, prefs.ViewPreviews))
                 {
                     prefs.ViewPreviews = !prefs.ViewPreviews;
                 }
