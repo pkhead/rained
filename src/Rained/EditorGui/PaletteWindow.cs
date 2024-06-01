@@ -59,6 +59,6 @@ static class PaletteWindow
             ImGui.TextDisabled("Note: These settings are not\nsaved in the project.");
 
             ImGui.PopItemWidth();
-        }
+        } ImGui.End();
     }
 }

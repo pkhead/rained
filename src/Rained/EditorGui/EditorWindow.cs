@@ -416,6 +416,7 @@ static class EditorWindow
         PreferencesWindow.ShowWindow();
         PaletteWindow.ShowWindow();
         LuaInterface.ShowLogs();
+        RendererWindow.ShowWindow();
     }
 
     public static void Render()

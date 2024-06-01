@@ -372,7 +372,7 @@ namespace RlManaged
             Marshal.Copy(vertices, 0, (IntPtr) raw.Vertices, vertices.Length);
         }*/
 
-        public unsafe void SetVertices(Vector3[] vertices)
+        public unsafe void SetVertices(ReadOnlySpan<Vector3> vertices)
         {
             if (raw.Vertices != null)
                 Raylib.MemFree(raw.Vertices);
@@ -395,7 +395,7 @@ namespace RlManaged
             Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Vertices, raw.Vertices, raw.VertexCount * 3 * sizeof(float), 0);
         }
 
-        public unsafe void SetIndices(ushort[] indices)
+        public unsafe void SetIndices(ReadOnlySpan<ushort> indices)
         {
             if (indices.Length % 3 != 0)
                 throw new Exception("Indices array is not a multiple of 3");
@@ -430,7 +430,7 @@ namespace RlManaged
             Marshal.Copy(colors, 0, (nint) raw.Colors, colors.Length);
         }*/
 
-        public unsafe void SetColors(Color[] colors)
+        public unsafe void SetColors(ReadOnlySpan<Color> colors)
         {
             if (raw.Colors != null)
                 Raylib.MemFree(raw.Colors);
@@ -452,6 +452,23 @@ namespace RlManaged
         public unsafe void UpdateColors()
         {
             Raylib.UpdateMeshBuffer(raw, (int) MeshIndex.Colors, raw.Colors, raw.VertexCount * 4 * sizeof(byte), 0);
+        }
+
+        public unsafe void SetTexCoords(ReadOnlySpan<Vector2> uvs)
+        {
+            if (raw.TexCoords != null)
+                Raylib.MemFree(raw.TexCoords);
+            
+            AddMemoryPressure(raw.VertexCount * 2 * sizeof(float));
+
+            raw.AllocTexCoords();
+            
+            int k = 0;
+            for (int i = 0; i < uvs.Length; i++)
+            {
+                raw.TexCoords[k++] = uvs[i].X;
+                raw.TexCoords[k++] = uvs[i].Y;
+            }
         }
 
         public void UploadMesh(bool dynamic)
