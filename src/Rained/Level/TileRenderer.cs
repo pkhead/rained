@@ -457,11 +457,23 @@ class TileRenderer
                             // if rendering palette, R channel represents sublayer
                             // A channel is alpha, as usual
                             Color col = drawColor;
+                            float lf = (float)l / init.LayerCount;
+
                             if (renderPalette)
                             {
-                                var lf = (float)l / init.LayerCount * (init.HasSecondLayer ? 2f : 1f) / 3f;
-                                col = new Color((int)MathF.Round(Math.Clamp(lf, 0f, 1f) * 255f), 0, 0, drawColor.A);
+                                var paletteIndex = lf * (init.HasSecondLayer ? 2f : 1f) / 3f;
+                                col = new Color((int)MathF.Round(Math.Clamp(paletteIndex, 0f, 1f) * 255f), 0, 0, drawColor.A);
                             }
+                            else
+                            {
+                                // fade to white as the layer is further away
+                                // from the front
+                                float a = lf;
+                                col.R = (byte)(col.R * (1f - a) + (col.R * 0.5) * a);
+                                col.G = (byte)(col.G * (1f - a) + (col.G * 0.5) * a);
+                                col.B = (byte)(col.B * (1f - a) + (col.B * 0.5) * a);
+                            }
+
                             Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, col);
                         }
 
