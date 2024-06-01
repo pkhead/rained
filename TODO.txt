@@ -2,10 +2,8 @@ Priority:
 - configurable tile spec colors
 - dissolve material/tile separation
 - editorConfig.txt
-- rect/material tile place
 
 Bugs:
-- drizzle doesn't build correctly on mac?
 - change history doesn't work well with level resize
 - fix weird bug where keyboard release doesn't get registered
 - weird graphical issue on certain drivers when level is out of bounds
