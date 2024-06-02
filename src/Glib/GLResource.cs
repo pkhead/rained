@@ -68,7 +68,7 @@ public abstract class GLResource : IDisposable
         }
     }
 
-    internal static void UnloadGCQueue()
+    public static void UnloadGCQueue()
     {
         freeQueueMut.WaitOne();
         foreach (var entry in freeQueue)

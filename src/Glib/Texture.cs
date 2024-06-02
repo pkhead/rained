@@ -169,6 +169,53 @@ public class Texture : GLResource
         gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, &_mag);
     }
 
+    public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)
+    {
+        var format = pixelFormat switch
+        {
+            PixelFormat.Grayscale => GLEnum.Red,
+            PixelFormat.GrayscaleAlpha => GLEnum.RG,
+            PixelFormat.RGB => GLEnum.Rgb,
+            PixelFormat.RGBA => GLEnum.Rgba,
+            _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat))
+        };
+
+        byte[] pixels = new byte[Width * Height * Image.GetBytesPerPixel(pixelFormat)];
+
+        gl.BindTexture(GLEnum.Texture2D, texture);
+
+        fixed (byte* ptr = pixels)
+        {
+            gl.GetTexImage(GLEnum.Texture2D, 0, format, GLEnum.UnsignedByte, ptr);
+        }
+
+        return new Image(pixels, pixelFormat);
+    }
+
+    public unsafe void UpdateFromImage(Image image)
+    {
+        if (image.Width != Width || image.Height != Height)
+        {
+            throw new Exception("Image dimensions must match texture dimensions");
+        }
+
+        var fmt = image.PixelFormat switch
+        {
+            PixelFormat.Grayscale => GLEnum.Red,
+            PixelFormat.GrayscaleAlpha => GLEnum.RG,
+            PixelFormat.RGB => GLEnum.Rgb,
+            PixelFormat.RGBA => GLEnum.Rgba,
+            _ => throw new ArgumentOutOfRangeException(nameof(image))
+        };
+
+        gl.BindTexture(GLEnum.Texture2D, texture);
+
+        fixed (byte* ptr = image.Pixels)
+        {
+            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, ptr);
+        }
+    }
+
     internal void Activate(uint unit)
     {
         if (unit >= 16)
