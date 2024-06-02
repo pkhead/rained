@@ -75,14 +75,15 @@ namespace GlibTests
                 fsSource: @"
                 #version 330 core
 
-                in vec4 VertexColor;
-                in vec2 TexCoord;
+                in vec4 glib_color;
+                in vec2 glib_texCoord;
                 out vec4 FragColor;
 
                 uniform sampler2D uTexture; 
-                
+                uniform vec4 glib_uColor;
+
                 void main() {
-                    vec4 col = VertexColor * texture(uTexture, TexCoord);
+                    vec4 col = glib_color * glib_uColor * texture(uTexture, glib_texCoord);
                     FragColor = vec4(vec3(1.0 - col.rgb), col.a);
                 }
                 "
@@ -214,11 +215,9 @@ namespace GlibTests
                 dynamicMesh.Upload();
 
                 renderContext.Shader = testShader;
-                testShader.SetUniform("uTexture", rainedLogo);
-
                 renderContext.PushTransform();
                 renderContext.Translate(window.MouseX, window.MouseY, 0f);
-                renderContext.Draw(dynamicMesh);
+                renderContext.Draw(dynamicMesh, rainedLogo);
                 renderContext.PopTransform();
 
                 renderContext.Shader = null;
@@ -236,9 +235,13 @@ namespace GlibTests
 
                 renderContext.Shader = invertColorShader;
                 var tex = framebuffer.GetTexture(0);
-                invertColorShader.SetUniform("uColor", Color.White);
+                //invertColorShader.SetUniform("uColor", Color.White);
                 invertColorShader.SetUniform("uTexture", tex);
-                renderContext.Draw(tex, 0f, 0f, window.Width, window.Height);
+                renderContext.Draw(
+                    tex,
+                    new Rectangle(0f, tex.Height, tex.Width, -tex.Height),
+                    new Rectangle(0f, 0f, window.Width, window.Height)
+                );
                 renderContext.Shader = null;
             }
 

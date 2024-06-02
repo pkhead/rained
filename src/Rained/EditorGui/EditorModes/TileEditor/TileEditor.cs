@@ -167,7 +167,6 @@ partial class TileEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
-
         wasToolActive = isToolActive;
         isToolActive = false;
 
@@ -186,7 +185,10 @@ partial class TileEditor : IEditorMode
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
 
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.EndScissorMode();
+            Raylib.ClearBackground(Color.Blank);
+            window.BeginLevelScissorMode();
+
             Rlgl.PushMatrix();
                 levelRender.RenderGeometry(l, LevelView.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
@@ -203,12 +205,7 @@ partial class TileEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
-            Raylib.DrawTextureRec(
-                layerFrames[l].Texture,
-                new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),
-                Vector2.Zero,
-                new Color(255, 255, 255, alpha)
-            );
+            Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 

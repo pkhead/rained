@@ -4,6 +4,11 @@ using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
 using System.Numerics;
 
+public enum BatchDrawMode
+{
+    Triangles, Quads, Lines
+}
+
 [Flags]
 public enum ClearFlags
 {
@@ -49,6 +54,12 @@ public class RenderContext : IDisposable
 
     private readonly Texture whiteTexture;
 
+    /// <summary>
+    /// A 1x1 texture consisting of a single white pixel.
+    /// Useful for placeholder texture slots.
+    /// </summary>
+    public Texture WhiteTexture => whiteTexture;
+
     private Texture curTexture;
     private Texture lastTexture;
 
@@ -65,6 +76,8 @@ public class RenderContext : IDisposable
     public Color DrawColor = Color.White;
     public float LineWidth = 1.0f;
     private Vector2 UV = Vector2.Zero;
+    public TextureFilterMode DefaultTextureMagFilter = TextureFilterMode.Linear;
+    public TextureFilterMode DefaultTextureMinFilter = TextureFilterMode.Linear;
     public Shader? Shader {
         get => shaderValue;
         set
@@ -88,7 +101,7 @@ public class RenderContext : IDisposable
         // create default texture
         var img = new Image([255, 255, 255, 255], 1, 1, PixelFormat.RGBA);
         whiteTexture = CreateTexture(img);
-        defaultShader.SetUniform("uTexture", whiteTexture);
+        defaultShader.SetUniform(Shader.TextureUniform, whiteTexture);
         curTexture = whiteTexture;
         lastTexture = whiteTexture;
 
@@ -170,7 +183,7 @@ public class RenderContext : IDisposable
     {
         ScreenWidth = width;
         ScreenHeight = height;
-        SetViewport();
+        SetViewport(width, height);
         
         Clear();
         ClearTransformationStack();
@@ -182,8 +195,8 @@ public class RenderContext : IDisposable
         framebufferStack.Clear();
         curFramebuffer = null;
 
-        defaultShader.SetUniform("uTexture", whiteTexture);
-        defaultShader.SetUniform("uColor", Color.White);
+        defaultShader.SetUniform(Shader.TextureUniform, whiteTexture);
+        defaultShader.SetUniform(Shader.ColorUniform, Color.White);
         curTexture = whiteTexture;
         lastTexture = whiteTexture;
     }
@@ -191,12 +204,22 @@ public class RenderContext : IDisposable
     internal void End()
     {
         DrawBatch();
-        SetTexture(null);
+        InternalSetTexture(null);
     }
 
     public void SetScissorBounds(int x, int y, int w, int h)
     {
-        gl.Scissor(x, y, (uint)w, (uint)h);
+        DrawBatch();
+
+        if (curFramebuffer is not null)
+        {
+            gl.Scissor(x, curFramebuffer.Height - (y + h), (uint)w, (uint)h);
+        }
+        else
+        {
+            gl.Scissor(x, y, (uint)w, (uint)h);
+        }
+        // TODO: what if high-dpi on framebuffer?
     }
 
     /// <summary>
@@ -204,6 +227,7 @@ public class RenderContext : IDisposable
     /// </summary>
     public void ResetScissorBounds()
     {
+        DrawBatch();
         gl.Scissor(0, 0, (uint)ScreenWidth, (uint)ScreenHeight);
     }
 
@@ -213,6 +237,8 @@ public class RenderContext : IDisposable
     /// <param name="feature"></param>
     public void SetEnabled(Feature feature, bool enabled)
     {
+        DrawBatch();
+
         switch (feature)
         {
             case Feature.Blend:
@@ -247,6 +273,8 @@ public class RenderContext : IDisposable
 
     public void SetCullMode(CullMode mode)
     {
+        DrawBatch();
+
         gl.CullFace(mode switch
         {
             CullMode.Front => GLEnum.Front,
@@ -258,6 +286,8 @@ public class RenderContext : IDisposable
 
     public void SetBlendMode(BlendMode mode)
     {
+        DrawBatch();
+
         switch (mode)
         {
             case BlendMode.Normal:
@@ -276,6 +306,7 @@ public class RenderContext : IDisposable
     /// </summary>
     public void SetBlendFactorsSeparate(int glSrcRGB, int glDstRGB, int glSrcAlpha, int glDstAlpha, int glEqRGB, int glEqAlpha)
     {
+        DrawBatch();
         gl.BlendFuncSeparate((GLEnum)glSrcRGB, (GLEnum)glDstRGB, (GLEnum)glSrcAlpha, (GLEnum)glDstAlpha);
         gl.BlendEquationSeparate((GLEnum)glEqRGB, (GLEnum)glEqAlpha);
     }
@@ -405,7 +436,11 @@ public class RenderContext : IDisposable
     /// <param name="mipmaps"></param>
     /// <returns></returns>
     public Texture CreateTexture(Image image, bool mipmaps = false)
-        => new(gl, image, mipmaps);
+    {
+        var tex = new Texture(gl, image, mipmaps);
+        tex.SetFilterMode(DefaultTextureMinFilter, DefaultTextureMagFilter);
+        return tex;
+    }
     
     public Framebuffer CreateFramebuffer(FramebufferConfiguration config)
     {
@@ -422,15 +457,7 @@ public class RenderContext : IDisposable
     {
         gl.Viewport(0, 0, (uint)width, (uint)height);
         BaseTransform =
-            Matrix4x4.CreateScale(new Vector3(1f / width * 2f, 1f / height * 2f, 1f)) *
-            Matrix4x4.CreateTranslation(new Vector3(-1f, -1f, 0f));
-    }
-
-    public void SetViewport()
-    {
-        gl.Viewport(0, 0, (uint)ScreenWidth, (uint)ScreenHeight);
-        BaseTransform =
-            Matrix4x4.CreateScale(new Vector3(1f / ScreenWidth * 2f, -1f / ScreenHeight * 2f, 1f)) *
+            Matrix4x4.CreateScale(new Vector3(1f / width * 2f, -1f / height * 2f, 1f)) *
             Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
     }
     
@@ -469,7 +496,7 @@ public class RenderContext : IDisposable
         else
         {
             gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            SetViewport();
+            SetViewport(ScreenWidth, ScreenHeight);
             curFramebuffer = null;
         }
 
@@ -483,30 +510,38 @@ public class RenderContext : IDisposable
     /// <param name="mipmaps"></param>
     /// <returns></returns>
     public Texture LoadTexture(string filePath, bool mipmaps = false)
-        => new(gl, Image.FromFile(filePath), mipmaps);
-    
+        => CreateTexture(Image.FromFile(filePath), mipmaps);
+
     /// <summary>
-    /// Draw a mesh.
+    /// Draw a mesh with a texture.
     /// </summary>
     /// <param name="mesh">The mesh to draw.</param>
-    public void Draw(Mesh mesh)
+    /// <param name="texture">The texture to draw on the mesh.</param>
+    public void Draw(Mesh mesh, Texture texture)
     {
         DrawBatch();
 
         var shader = shaderValue ?? defaultShader;
         shader.Use(gl);
 
-        if (shader.HasUniform("uTransformMatrix"))
-            shader.SetUniform("uTransformMatrix", TransformMatrix * BaseTransform);
+        if (shader.HasUniform(Shader.MatrixUniform))
+            shader.SetUniform(Shader.MatrixUniform, TransformMatrix * BaseTransform);
 
-        if (shader == defaultShader)
-        {
-            shader.SetUniform("uTexture", whiteTexture);
-            shader.SetUniform("uColor", DrawColor);
-        }
+        if (shader.HasUniform(Shader.TextureUniform))
+            shader.SetUniform(Shader.TextureUniform, texture);
+        
+        if (shader.HasUniform(Shader.ColorUniform))
+            shader.SetUniform(Shader.ColorUniform, DrawColor);
         
         mesh.Draw();
     }
+    
+    /// <summary>
+    /// Draw a mesh.
+    /// </summary>
+    /// <param name="mesh">The mesh to draw.</param>
+    public void Draw(Mesh mesh)
+        => Draw(mesh, whiteTexture);
 
     /// <summary>
     /// Draw a textured rectangle. Note that for the src coordinates,
@@ -528,39 +563,39 @@ public class RenderContext : IDisposable
         float dstX, float dstY, float dstW, float dstH
     )
     {
-        SetTexture(tex);
+        InternalSetTexture(tex);
 
         var uvLeft = srcX / tex.Width;
+        var uvTop = srcY / tex.Height;
         var uvRight = (srcX + srcW) / tex.Width;
         var uvBottom = (srcY + srcH) / tex.Height;
-        var uvTop = srcY / tex.Height;
         
         BeginBatchDraw(6);
 
         // first triangle
-        UV.X = uvLeft;
         UV.Y = uvTop;
+        UV.X = uvLeft;
         PushVertex(dstX, dstY);
 
-        UV.X = uvLeft;
         UV.Y = uvBottom;
+        UV.X = uvLeft;
         PushVertex(dstX, dstY + dstH);
 
-        UV.X = uvRight;
         UV.Y = uvBottom;
-        PushVertex(dstX + dstW, dstH);
+        UV.X = uvRight;
+        PushVertex(dstX + dstW, dstY + dstH);
 
         // second triangle
         // uv is the same as the last vertex
-        PushVertex(dstX + dstW, dstH);
+        PushVertex(dstX + dstW, dstY + dstH);
 
-        UV.X = uvLeft;
         UV.Y = uvTop;
-        PushVertex(dstX, dstY);
-
         UV.X = uvRight;
-        UV.Y = uvTop;
         PushVertex(dstX + dstW, dstY);
+
+        UV.Y = uvTop;
+        UV.X = uvLeft;
+        PushVertex(dstX, dstY);
     }
 
     public void Draw(Texture tex, Rectangle src, Rectangle dst)
@@ -584,7 +619,7 @@ public class RenderContext : IDisposable
     public void Draw(Texture tex)
         => Draw(tex, 0f, 0f);
 
-    private void SetTexture(Texture? newTex)
+    private void InternalSetTexture(Texture? newTex)
     {
         curTexture = newTex ?? whiteTexture;
     }
@@ -616,14 +651,14 @@ public class RenderContext : IDisposable
         var shader = shaderValue ?? defaultShader;
         shader.Use(gl);
         
-        if (shader.HasUniform("uTransformMatrix"))
-            shader.SetUniform("uTransformMatrix", BaseTransform); // vertices are already transformed
+        if (shader.HasUniform(Shader.MatrixUniform))
+            shader.SetUniform(Shader.MatrixUniform, BaseTransform); // vertices are already transformed
+        
+        if (shader.HasUniform(Shader.TextureUniform))
+            shader.SetUniform(Shader.TextureUniform, lastTexture);
 
-        if (shader == defaultShader)
-        {
-            shader.SetUniform("uTexture", lastTexture);
-            shader.SetUniform("uColor", Color.White); // color is in mesh data
-        }
+        if (shader.HasUniform(Shader.ColorUniform))
+            shader.SetUniform(Shader.ColorUniform, Color.White); // color is in mesh data
         
         gl.DrawArrays(GLEnum.Triangles, 0, numVertices);
         numVertices = 0;
@@ -669,7 +704,7 @@ public class RenderContext : IDisposable
 
     public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
     {
-        SetTexture(null);
+        InternalSetTexture(null);
 
         BeginBatchDraw(3);
         PushVertex(x0, y0);
@@ -681,7 +716,7 @@ public class RenderContext : IDisposable
 
     public void DrawRectangle(float x, float y, float w, float h)
     {
-        SetTexture(null);
+        InternalSetTexture(null);
 
         BeginBatchDraw(6);
         PushVertex(x, y);
@@ -698,7 +733,7 @@ public class RenderContext : IDisposable
 
     public void DrawLine(float x0, float y0, float x1, float y1)
     {
-        SetTexture(null);
+        InternalSetTexture(null);
 
         var dx = x1 - x0;
         var dy = y1 - y0;
@@ -732,7 +767,7 @@ public class RenderContext : IDisposable
 
     public void DrawCircleSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
     {
-        SetTexture(null);
+        InternalSetTexture(null);
 
         // copied from raylib code
         if (radius <= 0f) radius = 0.1f; // Avoid div by zero
@@ -768,7 +803,7 @@ public class RenderContext : IDisposable
 
     public void DrawRingSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
     {
-        SetTexture(null);
+        InternalSetTexture(null);
 
         // copied from raylib code
         if (radius <= 0f) radius = 0.1f; // Avoid div by zero
@@ -832,4 +867,133 @@ public class RenderContext : IDisposable
     
     public void DrawRing(Vector2 center, float radius, int segments = 36)
         => DrawRingSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public struct BatchDrawHandle : IDisposable
+    {
+        private static Vector2[] verts = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero];
+        private static Vector2[] uvs = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero,];
+        private static Color[] colors = [Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent];
+
+        private readonly RenderContext ctx;
+        private int vertIndex = 0;
+        private BatchDrawMode mode;
+        private Vector2 uv;
+        private Color color;
+
+        internal BatchDrawHandle(BatchDrawMode mode, RenderContext ctx)
+        {
+            this.mode = mode;
+            this.ctx = ctx;
+
+            uv = Vector2.Zero;
+            color = ctx.DrawColor;
+        }
+
+        private readonly bool IsFull()
+        {
+            return mode switch
+            {
+                BatchDrawMode.Triangles => vertIndex >= 3,
+                BatchDrawMode.Quads => vertIndex >= 4,
+                BatchDrawMode.Lines => vertIndex >= 2,
+                _ => false,
+            };
+        }
+
+        public void Flush()
+        {
+            switch (mode)
+            {
+                case BatchDrawMode.Triangles:
+                {
+                    ctx.BeginBatchDraw(3);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        ctx.DrawColor = colors[i];
+                        ctx.UV = uvs[i];
+                        ctx.PushVertex(verts[i].X, verts[i].Y);
+                    }
+                    break;
+                }
+
+                case BatchDrawMode.Quads:
+                {
+                    ctx.BeginBatchDraw(6);
+
+                    // first triangle
+                    ctx.DrawColor = colors[0];
+                    ctx.UV = uvs[0];
+                    ctx.PushVertex(verts[0].X, verts[0].Y);
+
+                    ctx.DrawColor = colors[1];
+                    ctx.UV = uvs[1];
+                    ctx.PushVertex(verts[1].X, verts[1].Y);
+
+                    ctx.DrawColor = colors[2];
+                    ctx.UV = uvs[2];
+                    ctx.PushVertex(verts[2].X, verts[2].Y);
+
+                    // second triangle
+                    ctx.PushVertex(verts[2].X, verts[2].Y);
+
+                    ctx.DrawColor = colors[3];
+                    ctx.UV = uvs[3];
+                    ctx.PushVertex(verts[3].X, verts[3].Y);
+
+                    ctx.DrawColor = colors[0];
+                    ctx.UV = uvs[0];
+                    ctx.PushVertex(verts[0].X, verts[0].Y);
+                    break;
+                }
+
+                case BatchDrawMode.Lines:
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            vertIndex = 0;
+        }
+
+        public void Vertex(Vector2 v)
+            => Vertex(v.X, v.Y);
+
+        public void Vertex(float x, float y)
+        {
+            if (IsFull()) Flush();
+            uvs[vertIndex] = uv;
+            colors[vertIndex] = color;
+            verts[vertIndex] = new Vector2(x, y);
+            vertIndex++;
+        }
+
+        public void TexCoord(float u, float v)
+        {
+            uv = new Vector2(u, v);
+        }
+
+        public void TexCoord(Vector2 uv)
+        {
+            this.uv = uv;
+        }
+
+        public void Color(Color color)
+        {
+            this.color = color;
+        }
+
+        public void End()
+        {
+            if (IsFull()) Flush();
+        }
+
+        public void Dispose() => End();
+    }
+
+    public BatchDrawHandle BeginBatchDraw(BatchDrawMode mode, Texture? tex = null)
+    {
+        tex ??= whiteTexture;
+        InternalSetTexture(tex);
+        return new BatchDrawHandle(mode, this);
+    }
 }

@@ -200,17 +200,18 @@ static class ImGuiExt
     public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
     {
         var tex = framebuffer.GetTexture(slot);
-        ImGui.Image((nint)tex.TextureHandle, new Vector2(tex.Width, tex.Height)); 
+        ImGui.Image((nint)tex.TextureHandle, new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f)); 
     }
 
     public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
     {
+        var texSize = new Vector2(tex.Width, tex.Height);
         return ImGui.ImageButton(
             str_id: id,
             user_texture_id: (nint)tex.TextureHandle,
             image_size: new Vector2(width, height),
-            uv0: Vector2.Zero,
-            uv1: Vector2.One,
+            uv0: srcRec.Position / texSize,
+            uv1: (srcRec.Position + srcRec.Size) / texSize,
             bg_col: (Vector4)Glib.Color.Transparent, 
             tint_col: (Vector4)color
         );

@@ -165,8 +165,8 @@ public class Texture : GLResource
         int _min = (int)GLFilterMode(minFilter);
         int _mag = (int)GLFilterMode(magFilter);
 
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, &_min);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, &_mag);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, &_min);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, &_mag);
     }
 
     public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)

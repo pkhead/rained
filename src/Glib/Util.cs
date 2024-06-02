@@ -2,12 +2,20 @@ using System.Numerics;
 
 namespace Glib;
 
-public struct Color(float r, float g, float b, float a = 1f)
+public struct Color
 {
-    public float R = r;
-    public float G = g;
-    public float B = b;
-    public float A = a;
+    public float R;
+    public float G;
+    public float B;
+    public float A;
+
+    public Color(float r, float g, float b, float a = 1f)
+    {
+        R = r;
+        G = g;
+        B = b;
+        A = a;
+    }
 
     public static Color FromRGBA(int r, int g, int b, int a = 255)
     => new(
@@ -62,7 +70,7 @@ public struct Rectangle
     public float Left { readonly get => Position.X; set => Position.X = value; }
     public float X { readonly get => Position.X; set => Position.X = value; }
     public float Top { readonly get => Position.Y; set => Position.Y = value; }
-    public float Y { readonly get => Position.X; set => Position.X = value; }
+    public float Y { readonly get => Position.Y; set => Position.Y = value; }
     public float Width { readonly get => Size.X; set => Size.X = value; }
     public float Height { readonly get => Size.Y; set => Size.Y = value; }
     public readonly float Right => Position.X + Size.X;

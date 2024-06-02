@@ -188,15 +188,15 @@ public class Image
 
             case PixelFormat.RGB:
                 stbImage.Data[idx] = (byte)Math.Clamp(color.R * 255f, 0f, 255f);
-                stbImage.Data[idx] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
-                stbImage.Data[idx] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
+                stbImage.Data[idx+1] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
+                stbImage.Data[idx+2] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
                 break;
 
             case PixelFormat.RGBA:
                 stbImage.Data[idx] = (byte)Math.Clamp(color.R * 255f, 0f, 255f);
-                stbImage.Data[idx] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
-                stbImage.Data[idx] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
-                stbImage.Data[idx] = (byte)Math.Clamp(color.A * 255f, 0f, 255f);
+                stbImage.Data[idx+1] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
+                stbImage.Data[idx+2] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
+                stbImage.Data[idx+3] = (byte)Math.Clamp(color.A * 255f, 0f, 255f);
                 break;
         }   
     }

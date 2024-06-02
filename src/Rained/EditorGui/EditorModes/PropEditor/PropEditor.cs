@@ -312,15 +312,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -329,7 +321,7 @@ partial class PropEditor : IEditorMode
         {
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.ClearBackground(Color.Blank);
             levelRender.RenderProps(l, 255);
         }
 
@@ -341,15 +333,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
         

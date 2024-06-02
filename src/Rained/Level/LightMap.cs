@@ -19,20 +19,20 @@ struct BrushAtom
 class LightBrushDatabase
 {
     private readonly static string levelLightShaderSrc = @"
-        #version 330
+        #version 330 core
+        
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
-
-        uniform sampler2D uTexture;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(uTexture, fragTexCoord);
-            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
+            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * glib_color * glib_uColor;
         }
     ";
 
@@ -75,6 +75,7 @@ class LightMap : IDisposable
     public int Width { get => width; }
     public int Height { get => height; }
     public Texture2D Texture { get => lightmapRt.Texture; }
+    public RenderTexture2D RenderTexture { get => lightmapRt; }
 
     public LightMap(int levelWidth, int levelHeight)
     {

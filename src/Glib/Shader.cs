@@ -15,36 +15,51 @@ public class Shader : GLResource
 {
     private const string DefaultVertexSource = @"
     #version 330 core
-    layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec2 aTexCoord;
-    layout (location = 2) in vec4 aColor;
+    layout (location = 0) in vec3 glib_aPos;
+    layout (location = 1) in vec2 glib_aTexCoord;
+    layout (location = 2) in vec4 glib_aColor;
 
-    out vec2 TexCoord;
-    out vec4 VertexColor;
+    out vec2 glib_texCoord;
+    out vec4 glib_color;
 
-    uniform vec4 uColor;
-    uniform mat4 uTransformMatrix;
+    uniform mat4 glib_uMatrix;
     
     void main() {
-        gl_Position = uTransformMatrix * vec4(aPos.xyz, 1.0);
-        TexCoord = aTexCoord;
-        VertexColor = aColor * uColor;
+        gl_Position = glib_uMatrix * vec4(glib_aPos.xyz, 1.0);
+        glib_texCoord = glib_aTexCoord;
+        glib_color = glib_aColor;
     }
     ";
 
     private const string DefaultFragmentSource = @"
     #version 330 core
 
-    in vec4 VertexColor;
-    in vec2 TexCoord;
-    out vec4 FragColor;
+    in vec2 glib_texCoord;
+    in vec4 glib_color;
+    out vec4 glib_fragColor;
 
-    uniform sampler2D uTexture; 
+    uniform sampler2D glib_uTexture; 
+    uniform vec4 glib_uColor;
     
     void main() {
-        FragColor = VertexColor * texture(uTexture, TexCoord);
+        glib_fragColor = texture(glib_uTexture, glib_texCoord) * glib_color * glib_uColor;
     }
     ";
+
+    /// <summary>
+    /// The name of the texture uniform set by Glib.
+    /// </summary>
+    public const string TextureUniform = "glib_uTexture";
+
+    /// <summary>
+    /// The name of the color uniform set by Glib.
+    /// </summary>
+    public const string ColorUniform = "glib_uColor";
+
+    /// <summary>
+    /// The name of the matrix uniform set by Glib.
+    /// </summary>
+    public const string MatrixUniform = "glib_uMatrix";
 
     private readonly uint shaderProgram;
     private readonly GL gl;
@@ -174,7 +189,7 @@ public class Shader : GLResource
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
         if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform4(loc, value.R, value.G, value.G, value.A);
+        gl.Uniform4(loc, value.R, value.G, value.B, value.A);
     }
 
     public void SetUniform(string uName, Matrix4x4 matrix)

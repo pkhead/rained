@@ -21,18 +21,18 @@ class EffectsEditor : IEditorMode
     private readonly static string MatrixTextureShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D uTexture;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(uTexture, fragTexCoord);
-            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * fragColor * colDiffuse;
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
+            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * glib_color * glib_uColor;
         }
     ";
     private readonly RlManaged.Shader matrixTexShader;
@@ -482,7 +482,10 @@ class EffectsEditor : IEditorMode
             int offset = l * 2;
             Raylib.BeginTextureMode(layerFrames[l]);
 
+            Raylib.EndScissorMode();
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            window.BeginLevelScissorMode();
+
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
                 levelRender.RenderGeometry(l, LevelView.GeoColor(30f / 255f, 255));
@@ -503,12 +506,7 @@ class EffectsEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
-            Raylib.DrawTextureRec(
-                layerFrames[l].Texture,
-                new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),
-                Vector2.Zero,
-                new Color(255, 255, 255, alpha)
-            );
+            Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 

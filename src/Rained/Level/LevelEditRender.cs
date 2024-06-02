@@ -43,23 +43,23 @@ class LevelEditRender
     private readonly static string RWTransparencyShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D uTexture;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(uTexture, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
-            vec3 color = mix(texelColor.rgb, vec3(1.0), fragColor.y);
+            vec3 color = mix(texelColor.rgb, vec3(1.0), glib_color.y);
 
-            finalColor = vec4(color, (1.0 - float(isTransparent)) * fragColor.x) * colDiffuse;
+            finalColor = vec4(color, (1.0 - float(isTransparent)) * glib_color.x) * glib_uColor;
         }
     ";
 
@@ -533,7 +533,6 @@ class LevelEditRender
 
             rctx.SetEnabled(Glib.Feature.CullFace, false);
             Raylib.BeginShaderMode(propPreviewShader);
-            propPreviewShader.GlibShader.SetUniform("uTexture", displayTexture.GlibTexture);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
@@ -553,34 +552,24 @@ class LevelEditRender
 
                 rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
 
-                var topLeftPos = new Vector2(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
-                var topLeftUv = new Vector2(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                {
+                    using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
+                        
+                    // top-left
+                    batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                    batch.Vertex(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
 
-                var btRightPos = new Vector2(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
-                var btRightUv = new Vector2((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                
-                // top-left
-                rctx.PushVertex(topLeftPos, topLeftUv);
+                    // bottom-left
+                    batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                    batch.Vertex(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
 
-                // bottom-left
-                rctx.PushVertex(
-                    new Vector2(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize),
-                    new Vector2(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height)
-                );
+                    // bottom-right
+                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                    batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
 
-                // bottom-right
-                rctx.PushVertex(btRightPos, btRightUv);
-
-                // SECOND TRIANGLE
-                rctx.PushVertex(btRightPos, btRightUv);
-
-                // top-right
-                rctx.PushVertex(
-                    new Vector2(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize),
-                    new Vector2((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height)
-                );
-
-                rctx.PushVertex(topLeftPos, topLeftUv);
+                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                    batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
+                }
             }
 
             Raylib.EndShaderMode();
