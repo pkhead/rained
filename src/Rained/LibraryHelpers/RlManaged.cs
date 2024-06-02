@@ -471,6 +471,23 @@ namespace RlManaged
             }
         }
 
+        public unsafe void SetNormals(ReadOnlySpan<Vector3> normals)
+        {
+            if (raw.Normals != null)
+                Raylib.MemFree(raw.Normals);
+
+            AddMemoryPressure(raw.VertexCount * 3 * sizeof(float));
+            raw.AllocNormals();
+
+            int k = 0;
+            for (int i = 0; i < normals.Length; i++)
+            {
+                raw.Normals[k++] = normals[i].X;
+                raw.Normals[k++] = normals[i].Y;
+                raw.Normals[k++] = normals[i].Z;
+            }
+        }
+
         public void UploadMesh(bool dynamic)
         {
             Raylib.UploadMesh(ref raw, dynamic);
