@@ -24,14 +24,14 @@ class LightBrushDatabase
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
-        uniform sampler2D texture0;
+        uniform sampler2D uTexture;
         uniform vec4 colDiffuse;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(uTexture, fragTexCoord);
             finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
         }
     ";
@@ -93,10 +93,10 @@ class LightMap : IDisposable
         width = levelWidth * 20 + 300;
         height = levelHeight * 20 + 300;
 
-        using var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
+        var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
         AssetGraphicsProvider.CropImage(croppedLightMap);
 
-        using RlManaged.Image finalImage = RlManaged.Image.GenColor(width, height, Color.White);
+        RlManaged.Image finalImage = RlManaged.Image.GenColor(width, height, Color.White);
 
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
@@ -107,7 +107,7 @@ class LightMap : IDisposable
         var subWidth = croppedLightMap.Width;
         var subHeight = croppedLightMap.Height;
         Raylib.ImageDraw(
-            dst: ref finalImage.Ref(),
+            dst: finalImage,
             src: croppedLightMap,
             srcRec: new Rectangle(0, 0, subWidth, subHeight),
             dstRec: new Rectangle((width - subWidth) / 2f, (height - subHeight) / 2f, subWidth, subHeight),
@@ -115,7 +115,7 @@ class LightMap : IDisposable
         );
 
         // get light map as a texture
-        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
+        var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
 
         // put into a render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
@@ -140,16 +140,16 @@ class LightMap : IDisposable
         dstOriginY *= 20;
 
         // resize light map image
-        using var lightMapImage = GetImage();
+        var lightMapImage = GetImage();
         Raylib.ImageResizeCanvas(
-            ref lightMapImage.Ref(),
+            lightMapImage,
             newWidth, newHeight,
             dstOriginX, dstOriginY,
             Color.White
         );
 
         // get light map as a texture
-        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
+        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
 
         // put into a render texture
         lightmapRt.Dispose();
@@ -184,8 +184,8 @@ class LightMap : IDisposable
     public RlManaged.Image GetImage()
     {
         var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
-        Raylib.ImageFlipVertical(ref img.Ref());
-        Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+        Raylib.ImageFlipVertical(img);
+        Raylib.ImageFormat(img, PixelFormat.UncompressedGrayscale);
 
         return img;
     }

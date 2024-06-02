@@ -1,5 +1,4 @@
 using Glib;
-using RlManaged;
 using System.Numerics;
 namespace Raylib_cs;
 
@@ -152,6 +151,11 @@ struct Color(byte r, byte g, byte b, byte a)
 struct RenderTexture2D
 {
     public Glib.Framebuffer? ID;
+
+    public Texture2D Texture => new()
+    {
+        ID = ID!.GetTexture(0)
+    };
 }
 
 struct Shader
@@ -166,28 +170,44 @@ enum MouseButton
     Middle = 2
 }
 
-struct Rectangle(float x, float y, float w, float h)
+struct Rectangle(float x, float y, float width, float height)
 {
     public float X = x;
     public float Y = y;
-    public float Width = w;
-    public float Height = h;
+    public float Width = width;
+    public float Height = height;
 
     public Rectangle(Vector2 origin, Vector2 size) : this(origin.X, origin.Y, size.X, size.Y)
     {}
 
     public Rectangle(Vector2 origin, float width, float height) : this(origin.X, origin.Y, width, height)
     {}
+
+    public readonly Vector2 Position => new(X, Y);
+    public readonly Vector2 Size => new(Width, Height);
 }
 
 struct Image
 {
     public Glib.Image? image;
+
+    public readonly int Width => image!.Width;
+    public readonly int Height => image!.Height;
+    public readonly PixelFormat Format => image!.PixelFormat switch
+    {
+        Glib.PixelFormat.Grayscale => PixelFormat.UncompressedGrayscale,
+        Glib.PixelFormat.RGBA => PixelFormat.UncompressedR8G8B8A8,
+        _ => throw new NotImplementedException(image!.PixelFormat.ToString())
+    };
+    public readonly byte[] Data => image!.Pixels;
 }
 
 struct Texture2D
 {
     public Glib.Texture? ID;
+
+    public readonly int Width => ID!.Width;
+    public readonly int Height => ID!.Height;
 }
 
 enum PixelFormat
@@ -537,6 +557,11 @@ static class Raylib
         return mouseDelta;
     }
 
+    public static float GetMouseWheelMove()
+    {
+        return window.MouseWheel;
+    }
+
     public static void ShowCursor()
     {
         window.SilkInputContext.Mice[0].Cursor.CursorMode = Silk.NET.Input.CursorMode.Normal;
@@ -641,6 +666,11 @@ static class Raylib
     {
         window.RenderContext!.PopFramebuffer();
         window.RenderContext!.PushFramebuffer(rtex.ID!);
+    }
+
+    public static void EndTextureMode()
+    {
+        window.RenderContext!.PopFramebuffer();
     }
 
     public static void BeginShaderMode(Shader shader)
@@ -748,6 +778,16 @@ static class Raylib
         window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.DrawTriangle(v1, v2, v3);
     }
+
+    public static void DrawTriangleLines(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
+    {
+        window.RenderContext!.LineWidth = 1f;
+        window.RenderContext!.DrawColor = ToGlibColor(color);
+
+        window.RenderContext!.DrawLine(v1, v2);
+        window.RenderContext!.DrawLine(v2, v3);
+        window.RenderContext!.DrawLine(v3, v1);
+    }
     #endregion
 
     #region rtextures
@@ -838,6 +878,117 @@ static class Raylib
             PixelFormat.UncompressedR8G8B8A8 => Glib.PixelFormat.RGBA,
             _ => throw new ArgumentOutOfRangeException(nameof(newFormat))   
         });
+    }
+
+    public static void ImageDraw(Image dst, Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
+    {
+        var tintCol = ToGlibColor(tint);
+
+        var srcStartX = (int)srcRec.X;
+        var srcStartY = (int)srcRec.Y;
+        var srcW = (int)srcRec.Width;
+        var srcH = (int)srcRec.Height;
+        
+        var dstStartX = (int)dstRec.X;
+        var dstStartY = (int)dstRec.Y;
+        var dstW = (int)dstRec.Width;
+        var dstH = (int)dstRec.Height;
+        
+        var srcImage = src.image!;
+        var dstImage = dst.image!;
+
+        float du = 1f / dstW;
+        float dv = 1f / dstH;
+
+        float u = 0f;
+        for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
+        {
+            if (dstX < 0 || dstX >= dstImage.Width) continue;
+            int srcX = (int)(u * srcW + srcStartX);
+
+            float v = 0f;
+            for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
+            {
+                if (dstY < 0 || dstY >= dstImage.Height) continue;
+                int srcY = (int)(v * srcH + srcStartY);
+
+                var col = (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height) ? srcImage.GetPixel(srcX, srcY) : Glib.Color.Transparent;
+                dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
+
+                v += dv;
+            }
+
+            u += du;
+        }
+    }
+
+    public static void ImageCrop(Image image, Rectangle crop)
+    {
+        var srcImage = image.image!;
+
+        var startX = (int)crop.X;
+        var startY = (int)crop.Y;
+        var endX = (int)(crop.X + crop.Width);
+        var endY = (int)(crop.Y + crop.Height);
+
+        var newImage = Glib.Image.FromColor(endX - startX, endY - startY, Glib.Color.Black, srcImage.PixelFormat);
+
+        // copy slices of each row that are within the crop rectangle
+        // using the pixels array directly
+        int bpp = (int)Glib.Image.GetBytesPerPixel(srcImage.PixelFormat);
+        int rowLen = (endX - startX) * bpp;
+        int rowOffset = startX * bpp;
+        int rowSize = srcImage.Width * bpp;
+        int dstRowSize = newImage.Width * bpp;
+
+        for (int y = startY; y < endY; y++)
+        {
+            Buffer.BlockCopy(srcImage.Pixels, y * rowSize + rowOffset, newImage.Pixels, y * dstRowSize, rowLen);
+        }
+
+        image.image = newImage;
+    }
+
+    public static void ImageFlipVertical(Image image)
+    {
+        var oldImage = image.image!;
+        var newImage = Glib.Image.FromColor(oldImage.Width, oldImage.Height, Glib.Color.Transparent, oldImage.PixelFormat);
+
+        int bpp = (int)Glib.Image.GetBytesPerPixel(oldImage.PixelFormat);
+        int rowSize = oldImage.Width * bpp;
+        for (int y = 0; y < oldImage.Height; y++)
+        {
+            Buffer.BlockCopy(oldImage.Pixels, y * rowSize, newImage.Pixels, (oldImage.Height - y - 1) * rowSize, rowSize);
+        }
+    }
+
+    public static void ImageResizeCanvas(Image image, int newWidth, int newHeight, int offsetX, int offsetY, Color fill)
+    {
+        var srcImage = image.image!;
+        var newImage = Glib.Image.FromColor(newWidth, newHeight, ToGlibColor(fill), srcImage.PixelFormat);
+
+        int bpp = (int)Glib.Image.GetBytesPerPixel(srcImage.PixelFormat);
+        int srcRowSize = srcImage.Width * bpp;
+        int srcRowOffset = -Math.Min(0, offsetX) * bpp; // if offsetX < 0, columns start within bounds of dest image
+        int srcRowLen = (Math.Min(newImage.Width, srcImage.Width + offsetX) - Math.Max(0, offsetX)) * bpp;
+
+        int dstRowSize = newImage.Width * bpp;
+        int dstRowOffset = offsetX * bpp;
+        
+        // offsetX >= newImage.Width
+        if (srcRowLen == 0) return;
+
+        // offsetX + srcImage.Width < 0
+        if (srcRowOffset >= srcRowSize) return;
+        if (dstRowOffset >= dstRowSize) return;
+
+        for (int y = 0; y < srcImage.Height; y++)
+        {
+            if (y + offsetY < 0 || y + offsetY >= newHeight) continue;
+            Buffer.BlockCopy(srcImage.Pixels, y * srcRowSize + srcRowOffset, newImage.Pixels, (y + offsetY) * dstRowSize + dstRowOffset, srcRowLen);
+        }
+
+        image.image = newImage;
     }
 
     public static Color GetImageColor(Image image, int x, int y)
@@ -960,4 +1111,32 @@ static class Raylib
         throw new NotImplementedException();
     }
     #endregion
+}
+
+static class Rlgl
+{
+    public static void PushMatrix()
+    {
+        Raylib.GlibWindow.RenderContext!.PushTransform();
+    }
+
+    public static void PopMatrix()
+    {
+        Raylib.GlibWindow.RenderContext!.PopTransform();
+    }
+
+    public static void LoadIdentity()
+    {
+        Raylib.GlibWindow.RenderContext!.ResetTransform();
+    }
+
+    public static void Scalef(float x, float y, float z)
+    {
+        Raylib.GlibWindow.RenderContext!.Scale(x, y, z);
+    }
+
+    public static void Translatef(float x, float y, float z)
+    {
+        Raylib.GlibWindow.RenderContext!.Translate(x, y, z);
+    }
 }

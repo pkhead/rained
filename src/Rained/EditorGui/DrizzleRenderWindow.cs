@@ -21,14 +21,14 @@ class DrizzleRenderWindow : IDisposable
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
-        uniform sampler2D texture0;
+        uniform sampler2D uTexture;
         uniform vec4 colDiffuse;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(uTexture, fragTexCoord);
             bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
             vec3 correctColor = texelColor.bgr;
             
@@ -45,14 +45,14 @@ class DrizzleRenderWindow : IDisposable
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
-        uniform sampler2D texture0;
+        uniform sampler2D uTexture;
         uniform vec4 colDiffuse;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(uTexture, fragTexCoord);
             bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
             vec3 correctColor = texelColor.bgr;
             

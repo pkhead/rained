@@ -58,6 +58,7 @@ namespace RlManaged
 
         public int Width { get => raw.image!.Width; }
         public int Height { get => raw.image!.Height; }
+        public byte[] Data { get => raw.image!.Pixels; }
         public Raylib_cs.PixelFormat PixelFormat => raw.image!.PixelFormat switch
         {
             Glib.PixelFormat.Grayscale => Raylib_cs.PixelFormat.UncompressedGrayscale,
@@ -129,6 +130,11 @@ namespace RlManaged
             Raylib.ImageFormat(raw, newFormat);
         }
 
+        // this function does nothing as the new Glib.Image
+        // does not store unmanaged memory
+        public void Dispose()
+        {}
+
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
 
         public ref Raylib_cs.Image Ref() => ref raw;
@@ -137,6 +143,7 @@ namespace RlManaged
     class Texture2D : RlObject
     {
         private Raylib_cs.Texture2D raw;
+        public Glib.Texture GlibTexture => raw.ID!;
         protected override Glib.GLResource? GetGLResource() => raw.ID;
         
         public int Width { get => raw.ID!.Width; }
@@ -159,6 +166,7 @@ namespace RlManaged
     class Shader : RlObject
     {
         private Raylib_cs.Shader raw;
+        public Glib.Shader GlibShader => raw.ID!;
         protected override Glib.GLResource? GetGLResource() => raw.ID;
         
         private Shader(Raylib_cs.Shader src)

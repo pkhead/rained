@@ -577,7 +577,7 @@ class DrizzleRender : IDisposable
 
             // convert 1 bit per pixel bitmap to
             // 8 bits per pixel grayscale image
-            byte* dstData = (byte*) dstImg.Data;
+            byte[] dstData = dstImg.Data;
             
             int k = 0;
             for (int i = 0; i < (dstImg.Width * dstImg.Height) / 8; i++)
@@ -599,7 +599,8 @@ class DrizzleRender : IDisposable
                 throw new Exception("Mismatched image formats");
             
             // note: BGR format - is converted to RGB in the shader
-            Marshal.Copy(srcImg.ImageBuffer, 0, (nint)dstImg.Data, dstImg.Width * dstImg.Height * 4);
+            //Marshal.Copy(srcImg.ImageBuffer, 0, (nint)dstImg.Data, dstImg.Width * dstImg.Height * 4);
+            Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.image!.Pixels, 0, dstImg.Width * dstImg.Height * (int)dstImg.image!.BytesPerPixel);
         }
         else
         {

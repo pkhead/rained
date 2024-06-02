@@ -46,7 +46,7 @@ class LevelEditRender
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
-        uniform sampler2D texture0;
+        uniform sampler2D uTexture;
         uniform vec4 colDiffuse;
 
         out vec4 finalColor;
@@ -55,7 +55,7 @@ class LevelEditRender
         {
             bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(uTexture, fragTexCoord);
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             vec3 color = mix(texelColor.rgb, vec3(1.0), fragColor.y);
 
@@ -90,7 +90,7 @@ class LevelEditRender
         geoRenderer = new EditorGeometryRenderer(this);
 
         // TODO: this is actually unused for now
-        using var chainSegmentImg = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_144_bigChainSegment.png"));
+        var chainSegmentImg = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_144_bigChainSegment.png"));
         
         for (int x = 0; x < chainSegmentImg.Width; x++)
         {
@@ -508,6 +508,8 @@ class LevelEditRender
     {
         int srcDepth = srcLayer * 10;
 
+        var rctx = RainEd.RenderContext;
+
         foreach (var prop in Level.Props)
         {
             // cull prop if it is outside of the view bounds
@@ -529,9 +531,9 @@ class LevelEditRender
             var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop.PropInit);
             var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
 
-            Rlgl.DisableBackfaceCulling();
+            rctx.SetEnabled(Glib.Feature.CullFace, false);
             Raylib.BeginShaderMode(propPreviewShader);
-            Rlgl.SetTexture(displayTexture.Id);
+            propPreviewShader.GlibShader.SetUniform("uTexture", displayTexture.GlibTexture);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
@@ -549,32 +551,40 @@ class LevelEditRender
                     ? new Rectangle(Vector2.Zero, 2.0f * Vector2.One)
                     : prop.PropInit.GetPreviewRectangle(variation, depth);
 
-                Rlgl.Begin(DrawMode.Quads);
-                {
-                    Rlgl.Color4f(alpha / 255f, whiteFade, 0f, 0f);
+                rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
 
-                    // top-left
-                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+                var topLeftPos = new Vector2(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+                var topLeftUv = new Vector2(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
 
-                    // bottom-left
-                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
+                var btRightPos = new Vector2(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+                var btRightUv = new Vector2((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                
+                // top-left
+                rctx.PushVertex(topLeftPos, topLeftUv);
 
-                    // bottom-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+                // bottom-left
+                rctx.PushVertex(
+                    new Vector2(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize),
+                    new Vector2(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height)
+                );
 
-                    // top-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
-                }
-                Rlgl.End();
+                // bottom-right
+                rctx.PushVertex(btRightPos, btRightUv);
+
+                // SECOND TRIANGLE
+                rctx.PushVertex(btRightPos, btRightUv);
+
+                // top-right
+                rctx.PushVertex(
+                    new Vector2(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize),
+                    new Vector2((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height)
+                );
+
+                rctx.PushVertex(topLeftPos, topLeftUv);
             }
 
-            Rlgl.SetTexture(0);
             Raylib.EndShaderMode();
-            Rlgl.EnableBackfaceCulling();
+            rctx.SetEnabled(Glib.Feature.CullFace, true);
 
             // render segments of rope-type props
             if (prop.Rope is not null)

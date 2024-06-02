@@ -145,9 +145,56 @@ static class ImGuiExt
         ImGui.Image((nint) texture.TextureHandle, new Vector2(texture.Width, texture.Height), Vector2.Zero, Vector2.One, (Vector4) color);
     }
 
+    public static void Image(Texture texture)
+    {
+        Image(texture, Glib.Color.White);
+    }
+
+    public static void Image(Texture2D texture, Raylib_cs.Color color)
+    {
+        Image(texture.ID!, Raylib.ToGlibColor(color));
+    }
+
+    public static void Image(Texture2D texture)
+    {
+        Image(texture.ID!);
+    }
+
     public static void ImageSize(Texture texture, float width, float height)
     {
         ImGui.Image((nint) texture.TextureHandle, new Vector2(width, height), Vector2.Zero, Vector2.One);
+    }
+
+    public static void ImageRect(Texture texture, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
+    {
+        var texSize = new Vector2(texture.Width, texture.Height);
+        ImGui.Image(
+            (nint) texture.TextureHandle,
+            new Vector2(width, height),
+            srcRec.Position / texSize,
+            (srcRec.Position + srcRec.Size) / texSize,
+            (Vector4) color
+        );
+    }
+
+    public static void ImageRect(Texture texture, float width, float height, Glib.Rectangle srcRec)
+    {
+        ImageRect(texture, width, height, srcRec, Glib.Color.White);
+    }
+
+    public static void ImageRect(Texture2D texture, float width, float height, Raylib_cs.Rectangle srcRec)
+    {
+        ImageRect(texture.ID!, width, height, new Glib.Rectangle(srcRec.Position, srcRec.Size));
+    }
+
+    public static void ImageRect(Texture2D texture, float width, float height, Raylib_cs.Rectangle srcRec, Raylib_cs.Color color)
+    {
+        ImageRect(texture.ID!, width, height, new Glib.Rectangle(srcRec.Position, srcRec.Size), Raylib.ToGlibColor(color));
+    }
+
+    public static void ImageRect(Texture2D texture, float width, float height, Raylib_cs.Rectangle srcRec, Vector4 color)
+    {
+        ImageRect(texture.ID!, width, height, new Glib.Rectangle(srcRec.Position, srcRec.Size), new Glib.Color(color.X, color.Y, color.Z, color.W));
     }
 
     public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
@@ -156,12 +203,12 @@ static class ImGuiExt
         ImGui.Image((nint)tex.TextureHandle, new Vector2(tex.Width, tex.Height)); 
     }
 
-    public static void ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
+    public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
     {
-        ImGui.ImageButton(
+        return ImGui.ImageButton(
             str_id: id,
             user_texture_id: (nint)tex.TextureHandle,
-            size: new Vector2(width, height),
+            image_size: new Vector2(width, height),
             uv0: Vector2.Zero,
             uv1: Vector2.One,
             bg_col: (Vector4)Glib.Color.Transparent, 
@@ -169,9 +216,9 @@ static class ImGuiExt
         );
     }
 
-    public static void Image(Texture2D texture, Raylib_cs.Color color)
+    public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec)
     {
-        Image(texture.ID!, Raylib.ToGlibColor(color));
+        return ImageButtonRect(id, tex, width, height, srcRec, Glib.Color.White);
     }
 
     public static void ImageSize(Texture2D texture, float width, float height)
@@ -184,15 +231,32 @@ static class ImGuiExt
         ImageRenderTexture(framebuffer.ID!);
     }
 
-    public static void ImageButtonRect(string id, Texture2D tex, float width, float height, Raylib_cs.Rectangle srcRec, Raylib_cs.Color color)
+    public static bool ImageButtonRect(string id, Texture2D tex, float width, float height, Raylib_cs.Rectangle srcRec, Raylib_cs.Color color)
     {
-        ImageButtonRect(
+        return ImageButtonRect(
             id: id,
             tex: tex.ID!,
             width: width,
             height: height,
             srcRec: new Glib.Rectangle(srcRec.X, srcRec.Y, srcRec.Width, srcRec.Height),
             color: Raylib.ToGlibColor(color)
+        );
+    }
+
+    public static bool ImageButtonRect(string id, Texture2D tex, float width, float height, Raylib_cs.Rectangle srcRec)
+    {
+        return ImageButtonRect(id, tex, width, height, srcRec, Raylib_cs.Color.White);
+    }
+
+    public static bool ImageButtonRect(string id, Texture2D tex, float width, float height, Raylib_cs.Rectangle srcRec, Vector4 color)
+    {
+        return ImageButtonRect(
+            id: id,
+            tex: tex.ID!,
+            width: width,
+            height: height,
+            srcRec: new Glib.Rectangle(srcRec.X, srcRec.Y, srcRec.Width, srcRec.Height),
+            color: new Glib.Color(color.X, color.Y, color.Z, color.W)
         );
     }
 }

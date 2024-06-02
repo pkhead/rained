@@ -24,14 +24,14 @@ class EffectsEditor : IEditorMode
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
-        uniform sampler2D texture0;
+        uniform sampler2D uTexture;
         uniform vec4 colDiffuse;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(uTexture, fragTexCoord);
             finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * fragColor * colDiffuse;
         }
     ";
@@ -592,7 +592,7 @@ class EffectsEditor : IEditorMode
                 for (int y = 0; y < level.Height; y++)
                 {
                     int v = (int)(effect.Matrix[x,y] / 100f * 255f);
-                    Raylib.ImageDrawPixel(ref matrixImage.Ref(), x, y, new Color(v, v, v, 255));
+                    Raylib.ImageDrawPixel(matrixImage, x, y, new Color(v, v, v, 255));
                 }
             }
             matrixImage.UpdateTexture(matrixTexture);

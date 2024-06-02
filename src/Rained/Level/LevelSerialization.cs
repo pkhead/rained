@@ -422,12 +422,11 @@ static class LevelSerialization
             // wtf??
             if (img.Width == 0 && img.Height == 0)
             {
-                img.Dispose();
                 RainEd.Logger.Warning("Invalid lightmap image, loaded fallback");
             }
             else
             {
-                Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+                Raylib.ImageFormat(img, PixelFormat.UncompressedGrayscale);
                 level.LoadLightMap(img);
             }
         }
@@ -1051,7 +1050,7 @@ static class LevelSerialization
 
         // write light image
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        using var lightMapImg = level.LightMap.GetImage();
+        var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
         lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
         Raylib.ExportImage(lightMapImg, lightPath);
