@@ -489,13 +489,16 @@ static class Raylib
     public static void DrawLineEx(Vector2 startPos, Vector2 endPos, float thick, Color color)
     {
         window.RenderContext!.LineWidth = thick;
+        window.RenderContext!.UseGlLines = false;
         window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.DrawLine(startPos, endPos);
     }
 
     public static void DrawLineV(Vector2 startPos, Vector2 endPos, Color color)
     {
-        DrawLineEx(startPos, endPos, 1f, color);
+        window.RenderContext!.UseGlLines = true;
+        window.RenderContext!.DrawColor = ToGlibColor(color);
+        window.RenderContext!.DrawLine(startPos, endPos);
     }
 
     public static void DrawLine(int startPosX, int startPosY, int endPosX, int endPosY, Color color)
@@ -518,6 +521,7 @@ static class Raylib
     {
         window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.LineWidth = 1f;
+        window.RenderContext!.UseGlLines = true;
         window.RenderContext!.DrawRing(center, radius);
     }
 
@@ -555,13 +559,16 @@ static class Raylib
     public static void DrawRectangleLinesEx(Rectangle rec, float lineThick, Color color)
     {
         window.RenderContext!.LineWidth = lineThick;
+        window.RenderContext!.UseGlLines = false;
         window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.DrawRectangleLines(rec.X, rec.Y, rec.Width, rec.Height);
     }
 
     public static void DrawRectangleLines(int posX, int posY, int width, int height, Color color)
     {
-        DrawRectangleLinesEx(new Rectangle(posX, posY, width, height), 1f, color);
+        window.RenderContext!.UseGlLines = true;
+        window.RenderContext!.DrawColor = ToGlibColor(color);
+        window.RenderContext!.DrawRectangleLines(posX, posY, width, height);
     }
 
     public static void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
@@ -572,9 +579,9 @@ static class Raylib
 
     public static void DrawTriangleLines(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
     {
-        window.RenderContext!.LineWidth = 1f;
-        window.RenderContext!.DrawColor = ToGlibColor(color);
+        window.RenderContext!.UseGlLines = true;
 
+        window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.DrawLine(v1, v2);
         window.RenderContext!.DrawLine(v2, v3);
         window.RenderContext!.DrawLine(v3, v1);

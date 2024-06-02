@@ -42,7 +42,7 @@ public class RenderContext : IDisposable
 
     // batch variables
     private const uint VertexDataSize = 9;
-    private const uint MaxVertices = 3000;
+    private const uint MaxVertices = 4096;
 
     private readonly float[] batchData;
     private uint numVertices = 0;
@@ -75,9 +75,18 @@ public class RenderContext : IDisposable
     public Color BackgroundColor = Color.Black;
     public Color DrawColor = Color.White;
     public float LineWidth = 1.0f;
+
+    /// <summary>
+    /// If Glib should use GL_LINES primitives for drawing lines.
+    /// When enabled, the LineWidth field will not be respected, and all
+    /// lines will be drawn with a width of 1
+    /// </summary>
+    public bool UseGlLines = false;
+
     private Vector2 UV = Vector2.Zero;
     public TextureFilterMode DefaultTextureMagFilter = TextureFilterMode.Linear;
     public TextureFilterMode DefaultTextureMinFilter = TextureFilterMode.Linear;
+    private PrimitiveType drawMode;
     public Shader? Shader {
         get => shaderValue;
         set
@@ -94,6 +103,7 @@ public class RenderContext : IDisposable
         //gl.Enable(EnableCap.CullFace);
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        drawMode = PrimitiveType.Triangles;
 
         // create default shader
         defaultShader = new Shader(gl);
@@ -624,15 +634,16 @@ public class RenderContext : IDisposable
         curTexture = newTex ?? whiteTexture;
     }
 
-    private void BeginBatchDraw(uint requiredCapacity)
+    private void BeginBatchDraw(uint requiredCapacity, PrimitiveType newDrawMode = PrimitiveType.Triangles)
     {
         CheckCapacity(requiredCapacity);
 
-        // flush batch on texture change
-        if (curTexture != lastTexture)
+        // flush batch on texture/draw mode change
+        if (curTexture != lastTexture || drawMode != newDrawMode)
         {
             DrawBatch();
             lastTexture = curTexture;
+            drawMode = newDrawMode;
         }
     }
 
@@ -660,7 +671,7 @@ public class RenderContext : IDisposable
         if (shader.HasUniform(Shader.ColorUniform))
             shader.SetUniform(Shader.ColorUniform, Color.White); // color is in mesh data
         
-        gl.DrawArrays(GLEnum.Triangles, 0, numVertices);
+        gl.DrawArrays(drawMode, 0, numVertices);
         numVertices = 0;
     }
 
@@ -735,22 +746,31 @@ public class RenderContext : IDisposable
     {
         InternalSetTexture(null);
 
-        var dx = x1 - x0;
-        var dy = y1 - y0;
-        if (dx == 0f && dy == 0f) return;
+        if (UseGlLines)
+        {
+            BeginBatchDraw(2, PrimitiveType.Lines);
+            PushVertex(x0, y0);
+            PushVertex(x1, y1);
+        }
+        else
+        {
+            var dx = x1 - x0;
+            var dy = y1 - y0;
+            if (dx == 0f && dy == 0f) return;
 
-        var dist = MathF.Sqrt(dx*dx + dy*dy);
+            var dist = MathF.Sqrt(dx*dx + dy*dy);
 
-        var perpX = dy / dist * LineWidth / 2f;
-        var perpY = -dx / dist * LineWidth / 2f;
+            var perpX = dy / dist * LineWidth / 2f;
+            var perpY = -dx / dist * LineWidth / 2f;
 
-        BeginBatchDraw(6);
-        PushVertex(x0 + perpX, y0 + perpY);
-        PushVertex(x0 - perpX, y0 - perpY);
-        PushVertex(x1 - perpX, y1 - perpY);
-        PushVertex(x1 + perpX, y1 + perpY);
-        PushVertex(x0 + perpX, y0 + perpY);
-        PushVertex(x1 - perpX, y1 - perpY);
+            BeginBatchDraw(6);
+            PushVertex(x0 + perpX, y0 + perpY);
+            PushVertex(x0 - perpX, y0 - perpY);
+            PushVertex(x1 - perpX, y1 - perpY);
+            PushVertex(x1 + perpX, y1 + perpY);
+            PushVertex(x0 + perpX, y0 + perpY);
+            PushVertex(x1 - perpX, y1 - perpY);
+        }
     }
 
     public void DrawLine(Vector2 a, Vector2 b) => DrawLine(a.X, a.Y, b.X, b.Y);
@@ -893,9 +913,9 @@ public class RenderContext : IDisposable
         {
             return mode switch
             {
+                BatchDrawMode.Lines => vertIndex >= 2,
                 BatchDrawMode.Triangles => vertIndex >= 3,
                 BatchDrawMode.Quads => vertIndex >= 4,
-                BatchDrawMode.Lines => vertIndex >= 2,
                 _ => false,
             };
         }
@@ -906,7 +926,7 @@ public class RenderContext : IDisposable
             {
                 case BatchDrawMode.Triangles:
                 {
-                    ctx.BeginBatchDraw(3);
+                    ctx.BeginBatchDraw(3, PrimitiveType.Triangles);
                     for (int i = 0; i < 3; i++)
                     {
                         ctx.DrawColor = colors[i];
@@ -918,7 +938,7 @@ public class RenderContext : IDisposable
 
                 case BatchDrawMode.Quads:
                 {
-                    ctx.BeginBatchDraw(6);
+                    ctx.BeginBatchDraw(6, PrimitiveType.Triangles);
 
                     // first triangle
                     ctx.DrawColor = colors[0];
@@ -948,7 +968,16 @@ public class RenderContext : IDisposable
 
                 case BatchDrawMode.Lines:
                 {
-                    throw new NotImplementedException();
+                    ctx.BeginBatchDraw(2, PrimitiveType.Lines);
+
+                    ctx.DrawColor = colors[0];
+                    ctx.UV = uvs[0];
+                    ctx.PushVertex(verts[0].X, verts[0].Y);
+
+                    ctx.DrawColor = colors[1];
+                    ctx.UV = uvs[1];
+                    ctx.PushVertex(verts[1].X, verts[1].Y);
+                    break;
                 }
             }
 
