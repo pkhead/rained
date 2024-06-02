@@ -28,7 +28,7 @@ public class Texture : GLResource
     public readonly int Width;
     public readonly int Height;
 
-    internal uint TextureHandle { get => texture; }
+    public uint TextureHandle { get => texture; }
 
     private static GLEnum GLWrapMode(TextureWrapMode v)
         => v switch

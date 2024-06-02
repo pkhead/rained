@@ -1,4 +1,4 @@
-﻿namespace Glib;
+﻿﻿namespace Glib;
 
 using System.Numerics;
 using ImGuiNET;
@@ -6,6 +6,13 @@ using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
+
+public enum MouseButton
+{
+    Left = 0,
+    Right = 1,
+    Middle = 2
+}
 
 public class Window : IDisposable
 {
@@ -15,6 +22,9 @@ public class Window : IDisposable
     public int Height { get => window.Size.Y; }
     public double Time { get => window.Time; }
     public bool Visible { get => window.IsVisible; set => window.IsVisible = value; }
+    public bool IsClosing { get => window.IsClosing; set => window.IsClosing = value; }
+    public string Title { get => window.Title; set => window.Title = value; }
+    public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
 
     public event Action? Load;
     public event Action? ImGuiConfigure;
@@ -28,8 +38,8 @@ public class Window : IDisposable
     public event Action<char>? KeyChar;
 
     public event Action<float, float>? MouseMove;
-    public event Action<int>? MouseDown;
-    public event Action<int>? MouseUp;
+    public event Action<MouseButton>? MouseDown;
+    public event Action<MouseButton>? MouseUp;
 
     private Vector2 _mousePos = Vector2.Zero;
     private readonly List<Key> keyList = []; // The list of currently pressed keys
@@ -146,28 +156,28 @@ public class Window : IDisposable
     /// <returns>True if the key was pressed on this frame.</returns>
     public bool IsKeyPressed(Key key) => pressList.Contains(key);
 
-    private static int GetMouseButtonIndex(MouseButton button){
+    private static MouseButton? GetMouseButtonIndex(Silk.NET.Input.MouseButton button){
         return button switch
         {
-            MouseButton.Left => 0,
-            MouseButton.Right => 1,
-            MouseButton.Middle => 2,
-            _ => -1
+            Silk.NET.Input.MouseButton.Left => MouseButton.Left,
+            Silk.NET.Input.MouseButton.Right => MouseButton.Right,
+            Silk.NET.Input.MouseButton.Middle => MouseButton.Middle,
+            _ => null
         };
     }
 
-    private void OnMouseDown(IMouse mouse, MouseButton button)
+    private void OnMouseDown(IMouse mouse, Silk.NET.Input.MouseButton button)
     {
-        int intBtn = GetMouseButtonIndex(button);
-        if (intBtn == -1) return;
-        MouseDown?.Invoke(intBtn);
+        MouseButton? intBtn = GetMouseButtonIndex(button);
+        if (intBtn is null) return;
+        MouseDown?.Invoke(intBtn.Value);
     }
 
-    private void OnMouseUp(IMouse mouse, MouseButton button)
+    private void OnMouseUp(IMouse mouse, Silk.NET.Input.MouseButton button)
     {
-        int intBtn = GetMouseButtonIndex(button);
-        if (intBtn == -1) return;
-        MouseUp?.Invoke(intBtn);
+        MouseButton? intBtn = GetMouseButtonIndex(button);
+        if (intBtn is null) return;
+        MouseUp?.Invoke(intBtn.Value);
     }
 
     private void OnUpdate(double dt)
@@ -201,13 +211,29 @@ public class Window : IDisposable
         _renderContext!.Dispose();
     }
 
+    public void SetSize(int width, int height)
+    {
+        window.Size = new Vector2D<int>(width, height);
+    }
+
     public void Run()
     {
         window.Run();
     }
 
+    public void Initialize()
+    {
+        window.Initialize();
+    }
+
+    public void DoEvents()
+    {
+        window.DoEvents();
+    }
+
     public void Dispose()
     {
+        imGuiController?.Dispose();
         _renderContext?.Dispose();
         window.Dispose();
         GC.SuppressFinalize(this);

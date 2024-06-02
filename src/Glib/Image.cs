@@ -93,6 +93,59 @@ public class Image
         return new Image(stream, format);
     }
 
+    public static Image FromColor(int width, int height, Color color, PixelFormat format = PixelFormat.RGBA)
+    {
+        var bpp = GetBytesPerPixel(format);
+        var dataSize = width * height * bpp;
+        byte[] rawPixels = new byte[dataSize];
+
+        var value = (byte)Math.Clamp((color.R + color.G + color.A) / 3f * 255f, 0f, 255f);
+
+        var r = (byte)Math.Clamp(color.R * 255f, 0f, 255f);
+        var g = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
+        var b = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
+        var a = (byte)Math.Clamp(color.A * 255f, 0f, 255f);
+
+        switch (format)
+        {
+            case PixelFormat.Grayscale:
+                for (uint i = 0; i < dataSize; i += bpp)
+                    rawPixels[i] = value;
+                
+                break;
+
+            case PixelFormat.GrayscaleAlpha:
+                for (uint i = 0; i < dataSize; i += bpp)
+                {
+                    rawPixels[i] = value;
+                    rawPixels[i+1] = a;
+                }
+
+                break;
+
+            case PixelFormat.RGB:
+                for (uint i = 0; i < dataSize; i += bpp)
+                {
+                    rawPixels[i] = r;
+                    rawPixels[i+1] = g;
+                    rawPixels[i+2] = b;
+                }
+                break;
+
+            case PixelFormat.RGBA:
+                for (uint i = 0; i < dataSize; i += bpp)
+                {
+                    rawPixels[i] = r;
+                    rawPixels[i+1] = g;
+                    rawPixels[i+2] = b;
+                    rawPixels[i+3] = a;
+                }
+                break;
+        }
+
+        return new Image(rawPixels, width, height, format);
+    }
+
     public Image ConvertToFormat(PixelFormat newFormat)
     {
         var newData = new byte[stbImage.Width * stbImage.Height * GetBytesPerPixel(newFormat)];
