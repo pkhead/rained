@@ -52,6 +52,7 @@ public class Window : IDisposable
 
     public float MouseX { get => _mousePos.X; }
     public float MouseY { get => _mousePos.Y; }
+    public float MouseWheel { get => inputContext.Mice[0].ScrollWheels[0].Y; }
 
     private RenderContext? _renderContext = null;
     public RenderContext? RenderContext { get => _renderContext; }

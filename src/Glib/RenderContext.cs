@@ -37,7 +37,7 @@ public class RenderContext : IDisposable
 
     // batch variables
     private const uint VertexDataSize = 9;
-    private const uint MaxVertices = 1024;
+    private const uint MaxVertices = 3000;
 
     private readonly float[] batchData;
     private uint numVertices = 0;
@@ -268,6 +268,16 @@ public class RenderContext : IDisposable
                 gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                 break;
         }
+    }
+
+    /// <summary>
+    /// I am too lazy to actually add the enum values for this so just
+    /// ues the ints or whatever.
+    /// </summary>
+    public void SetBlendFactorsSeparate(int glSrcRGB, int glDstRGB, int glSrcAlpha, int glDstAlpha, int glEqRGB, int glEqAlpha)
+    {
+        gl.BlendFuncSeparate((GLEnum)glSrcRGB, (GLEnum)glDstRGB, (GLEnum)glSrcAlpha, (GLEnum)glDstAlpha);
+        gl.BlendEquationSeparate((GLEnum)glEqRGB, (GLEnum)glEqAlpha);
     }
 
     /*public void SetBlendFactorsSeparate()
@@ -644,6 +654,17 @@ public class RenderContext : IDisposable
         batchData[i++] = DrawColor.A;
 
         numVertices++;
+    }
+
+    /// <summary>
+    /// Push a vertex to the draw batch with the specified position and texture coordinates.
+    /// </summary> 
+    public void PushVertex(Vector2 pos, Vector2 uv)
+    {
+        BeginBatchDraw(1);
+        
+        UV = uv;
+        PushVertex(pos.X, pos.Y);
     }
 
     public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
