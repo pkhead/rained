@@ -641,7 +641,7 @@ static class Raylib
             mouseButtonsReleased[i] = false;
         }
 
-        window.DoEvents();
+        window.PollEvents();
 
         if (lastMousePos is null)
         {

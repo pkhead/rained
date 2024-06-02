@@ -31,22 +31,31 @@ namespace GlibTests
                 Width = 800,
                 Height = 600,
                 Title = "Silk.NET test",
-                RefreshRate = 60,
+                RefreshRate = 10,
                 IsEventDriven = false,
-                VSync = false
+                VSync = true
             };
             
             window = new Window(options);
 
             // assign events
             window.Load += OnLoad;
-            window.Update += OnUpdate;
-            window.Draw += OnRender;
             //window.Resize += OnResize;
             //window.Closing += OnClose;
 
             // run the window
-            window.Run();
+            window.Initialize();
+            while (!window.IsClosing)
+            {
+                window.PollEvents();
+                window.BeginRender();
+
+                OnUpdate((float)window.DeltaTime);
+                OnRender((float)window.DeltaTime, window.RenderContext!);
+
+                window.EndRender();
+                window.SwapBuffers();
+            }
 
             // dispose resources after run is done
             mesh.Dispose();

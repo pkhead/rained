@@ -22,6 +22,9 @@ public class Window : IDisposable
     public IWindow SilkWindow => window;
     public IInputContext SilkInputContext => inputContext;
 
+    private double deltaTime = 0.0;
+    public double DeltaTime => deltaTime;
+
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
     public double Time { get => window.Time; }
@@ -59,6 +62,8 @@ public class Window : IDisposable
 
     private ImGuiController? imGuiController = null;
     public ImGuiController? ImGuiController => imGuiController;
+
+    private double lastTime = 0.0;
 
     public Window(WindowOptions options)
     {
@@ -106,6 +111,8 @@ public class Window : IDisposable
         );
 
         Load?.Invoke();
+
+        lastTime = window.Time;
     }
 
     private void OnConfigureImGuiIO()
@@ -193,8 +200,6 @@ public class Window : IDisposable
     {
         GLResource.UnloadGCQueue();
         Update?.Invoke((float)dt);
-        pressList.Clear();
-        releaseList.Clear();
     }
 
     private void OnRender(double dt)
@@ -217,8 +222,6 @@ public class Window : IDisposable
     private void OnClose()
     {
         Closing?.Invoke();
-        GLResource.UnloadGCQueue();
-        _renderContext!.Dispose();
     }
 
     public void SetSize(int width, int height)
@@ -226,21 +229,45 @@ public class Window : IDisposable
         window.Size = new Vector2D<int>(width, height);
     }
 
-    public void Run()
-    {
-        window.Run();
-    }
-
     public void Initialize()
     {
         window.Initialize();
     }
 
-    public void DoEvents()
+    public void MakeCurrent()
+    {
+        window.MakeCurrent();
+    }
+
+    public void PollEvents()
     {
         pressList.Clear();
         releaseList.Clear();
+
+        deltaTime = window.Time - lastTime;
+        lastTime = window.Time;
         window.DoEvents();
+    }
+
+    public void SwapBuffers()
+    {
+        if (window.GLContext is not null)
+        {
+            window.GLContext.SwapInterval(window.VSync?1:0);
+            window.GLContext.SwapBuffers();
+        }
+    }
+
+    public void DoUpdate()
+    {
+        window.DoUpdate();
+    }
+
+    public void DoRender()
+    {
+        _renderContext!.Begin(Width, Height);
+        window.DoRender();
+        _renderContext!.End();
     }
 
     public void BeginRender()
@@ -255,8 +282,10 @@ public class Window : IDisposable
 
     public void Dispose()
     {
+        Closing?.Invoke();
+        GLResource.UnloadGCQueue();
         imGuiController?.Dispose();
-        _renderContext?.Dispose();
+        _renderContext!.Dispose();
         window.Dispose();
         GC.SuppressFinalize(this);
     }
