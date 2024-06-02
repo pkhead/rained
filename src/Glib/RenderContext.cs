@@ -444,9 +444,10 @@ public class RenderContext : IDisposable
     /// Pops a framebuffer from the stack.
     /// <returns>The previously bound framebuffer.</returns>
     /// </summary>
-    public Framebuffer PopFramebuffer()
+    public Framebuffer? PopFramebuffer()
     {
         DrawBatch();
+        if (framebufferStack.Count == 0) return null;
         var ret = framebufferStack.Pop();
 
         if (framebufferStack.TryPeek(out Framebuffer? newBuffer))

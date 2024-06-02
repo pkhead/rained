@@ -17,6 +17,7 @@ public enum MouseButton
 public class Window : IDisposable
 {
     private readonly IWindow window;
+    //public IWindow SilkWindow => window;
 
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
@@ -229,6 +230,17 @@ public class Window : IDisposable
     public void DoEvents()
     {
         window.DoEvents();
+        pressList.Clear();
+    }
+
+    public void BeginRender()
+    {
+        _renderContext!.Begin(Width, Height);
+    }
+
+    public void EndRender()
+    {
+        _renderContext!.End();
     }
 
     public void Dispose()
