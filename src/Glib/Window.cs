@@ -17,7 +17,10 @@ public enum MouseButton
 public class Window : IDisposable
 {
     private readonly IWindow window;
-    //public IWindow SilkWindow => window;
+    private IInputContext inputContext = null!;
+
+    public IWindow SilkWindow => window;
+    public IInputContext SilkInputContext => inputContext;
 
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
@@ -45,6 +48,7 @@ public class Window : IDisposable
     private Vector2 _mousePos = Vector2.Zero;
     private readonly List<Key> keyList = []; // The list of currently pressed keys
     private readonly List<Key> pressList = []; // The list of keys that was pressed on this frame
+    private readonly List<Key> releaseList = []; // The list of keys that was released on this frame
 
     public float MouseX { get => _mousePos.X; }
     public float MouseY { get => _mousePos.Y; }
@@ -74,6 +78,8 @@ public class Window : IDisposable
     private void OnLoad()
     {   
         IInputContext input = window.CreateInput();
+        inputContext = input;
+
         for (int i = 0; i < input.Keyboards.Count; i++)
         {
             input.Keyboards[i].KeyDown += OnKeyDown;
@@ -126,6 +132,7 @@ public class Window : IDisposable
     {
         var k = (Key)(int)key;
         keyList.Remove(k);
+        releaseList.Add(k);
 
         KeyUp?.Invoke((Key)(int)key, keyCode);
     }
@@ -144,11 +151,11 @@ public class Window : IDisposable
     public bool IsKeyDown(Key key) => keyList.Contains(key);
 
     /// <summary>
-    /// Check if a given key is not held down.
+    /// Check if a given key was released on this frame
     /// </summary>
     /// <param name="key"></param>
-    /// <returns>True if the key is up, false if not.</returns>
-    public bool IsKeyUp(Key key) => !keyList.Contains(key);
+    /// <returns>True if the key was released, false if not.</returns>
+    public bool IsKeyReleased(Key key) => !releaseList.Contains(key);
 
     /// <summary>
     /// Check if a given key was pressed on this frame.
@@ -186,6 +193,7 @@ public class Window : IDisposable
         GLResource.UnloadGCQueue();
         Update?.Invoke((float)dt);
         pressList.Clear();
+        releaseList.Clear();
     }
 
     private void OnRender(double dt)
@@ -229,8 +237,9 @@ public class Window : IDisposable
 
     public void DoEvents()
     {
-        window.DoEvents();
         pressList.Clear();
+        releaseList.Clear();
+        window.DoEvents();
     }
 
     public void BeginRender()

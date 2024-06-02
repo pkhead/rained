@@ -37,6 +37,9 @@ public struct Color(float r, float g, float b, float a = 1f)
             (int)(Math.Clamp(color.G, 0f, 1f) * 255),
             (int)(Math.Clamp(color.B, 0f, 1f) * 255)
         );
+    
+    public static explicit operator Vector4(Color color) =>
+        new(color.R, color.G, color.B, color.A);
 }
 
 public struct Rectangle
