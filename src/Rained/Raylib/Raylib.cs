@@ -342,7 +342,7 @@ static class Raylib
         {KeyboardKey.KpAdd, Key.KeypadAdd},
         {KeyboardKey.KpEnter, Key.KeypadEnter},
         {KeyboardKey.KpEqual, Key.KeypadEqual},
-        {KeyboardKey.Menu, Key.Menu}
+        //{KeyboardKey.Menu, Key.Menu}
     };
 
     #region Windowing
@@ -660,6 +660,7 @@ static class Raylib
     public static void EndDrawing()
     {
         window.EndRender();
+        window.SwapBuffers();
     }
 
     public static void BeginTextureMode(RenderTexture2D rtex)
@@ -824,7 +825,7 @@ static class Raylib
         var srcPixels = src.image!.Pixels;
         var newPixels = new byte[srcPixels.Length];
         srcPixels.CopyTo(newPixels, 0);
-        var newImage = new Glib.Image(newPixels, src.image!.PixelFormat);
+        var newImage = new Glib.Image(newPixels, src.Width, src.Height, src.image!.PixelFormat);
 
         return new Image()
         {

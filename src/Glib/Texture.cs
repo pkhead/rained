@@ -189,7 +189,7 @@ public class Texture : GLResource
             gl.GetTexImage(GLEnum.Texture2D, 0, format, GLEnum.UnsignedByte, ptr);
         }
 
-        return new Image(pixels, pixelFormat);
+        return new Image(pixels, Width, Height, pixelFormat);
     }
 
     public unsafe void UpdateFromImage(Image image)

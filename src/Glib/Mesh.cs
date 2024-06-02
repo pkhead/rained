@@ -248,6 +248,10 @@ public class Mesh : GLResource
         elemCount = uint.MaxValue;
         for (int i = 0; i < types.Length; i++)
         {
+            // if this buffer is null, don't process it
+            if (types[i] == MeshBufferType.Int && intBuffers[bufferIndices[i]] is null || floatBuffers[bufferIndices[i]] is null)
+                continue;
+            
             uint count = types[i] switch
             {
                 MeshBufferType.Int => (uint)intBuffers[bufferIndices[i]].Length,
@@ -273,6 +277,8 @@ public class Mesh : GLResource
             if (type == MeshBufferType.Int)
             {
                 var buf = intBuffers[i];
+                if (buf is null) continue;
+
                 fixed (int* data = buf)
                 {
                     gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(buf.Length * sizeof(int)), data, usage);
@@ -281,6 +287,8 @@ public class Mesh : GLResource
             else
             {
                 var buf = floatBuffers[i];
+                if (buf is null) continue;
+                
                 fixed (float* data = buf)
                 {
                     gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(buf.Length * sizeof(float)), data, usage);
@@ -288,42 +296,42 @@ public class Mesh : GLResource
             }
 
             int size = 1;
-                GLEnum glType;
+            GLEnum glType;
 
-                switch (type)
-                {
-                    case MeshBufferType.Int:
-                        size = 1;
-                        glType = GLEnum.Int;
-                        break;
-                    
-                    case MeshBufferType.Float:
-                        size = 1;
-                        glType = GLEnum.Float;
-                        break;
-                    
-                    case MeshBufferType.Vector2:
-                        size = 2;
-                        glType = GLEnum.Float;
-                        break;
-                    
-                    case MeshBufferType.Vector3:
-                        size = 3;
-                        glType = GLEnum.Float;
-                        break;
-                    
-                    case MeshBufferType.Vector4:
-                    case MeshBufferType.Color:
-                        size = 4;
-                        glType = GLEnum.Float;
-                        break;
+            switch (type)
+            {
+                case MeshBufferType.Int:
+                    size = 1;
+                    glType = GLEnum.Int;
+                    break;
+                
+                case MeshBufferType.Float:
+                    size = 1;
+                    glType = GLEnum.Float;
+                    break;
+                
+                case MeshBufferType.Vector2:
+                    size = 2;
+                    glType = GLEnum.Float;
+                    break;
+                
+                case MeshBufferType.Vector3:
+                    size = 3;
+                    glType = GLEnum.Float;
+                    break;
+                
+                case MeshBufferType.Vector4:
+                case MeshBufferType.Color:
+                    size = 4;
+                    glType = GLEnum.Float;
+                    break;
 
-                    default:
-                        throw new Exception("Invalid MeshBufferType enum");
-                }
+                default:
+                    throw new Exception("Invalid MeshBufferType enum");
+            }
 
-                gl.VertexAttribPointer(i, size, glType, false, 0, 0);
-                gl.EnableVertexAttribArray(i);
+            gl.VertexAttribPointer(i, size, glType, false, 0, 0);
+            gl.EnableVertexAttribArray(i);
         }
 
         if (indexed)

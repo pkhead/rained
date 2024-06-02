@@ -190,7 +190,8 @@ namespace RainEd
                 }
 #endif
 
-                Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                //Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                Window.Visible = true;
                 
                 // for some reason, closing the window bugs
                 // out raylib, so i just set it invisible
