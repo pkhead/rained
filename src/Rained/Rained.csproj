@@ -19,9 +19,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
     <PackageReference Include="NLua" Version="1.7.2" />
-    <PackageReference Include="Raylib-cs" Version="6.0.0" />
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="Serilog.Sinks.FIle" Version="5.0.0" />
@@ -29,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Glib/Glib.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Ported/Drizzle.Ported.csproj" />

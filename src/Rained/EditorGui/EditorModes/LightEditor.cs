@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-using rlImGui_cs;
+
 
 namespace RainEd;
 
@@ -174,7 +174,7 @@ class LightEditor : IEditorMode
                     }
 
                     ImGui.PushID(i);
-                    if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                    if (ImGuiExt.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
                     {
                         selectedBrush = i;
                     }

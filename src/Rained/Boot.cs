@@ -1,10 +1,10 @@
 using Raylib_cs;
-using rlImGui_cs;
 using SFML.Window;
 using SFML.Graphics;
 using ImGuiNET;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using Glib;
 
 namespace RainEd
 {
@@ -27,6 +27,9 @@ namespace RainEd
         public const int DefaultWindowHeight = 800;
         private static bool isAppReady = false;
         private static RenderWindow? splashScreenWindow = null;
+
+        private static Glib.Window window = null!;
+        public static Glib.Window Window => window;
 
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
@@ -97,7 +100,7 @@ namespace RainEd
             if (!bootOptions.NoSplashScreen)
             {
                 splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                SFML.Graphics.Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
                 var sprite = new Sprite(texture);
 
                 splashScreenWindow.Clear();
@@ -106,14 +109,40 @@ namespace RainEd
             }
 
             {
-                Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
-                Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
-                Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
-                Raylib.SetTargetFPS(240);
-                Raylib.SetExitKey(KeyboardKey.Null);
+                var windowOptions = new WindowOptions()
+                {
+                    Width = DefaultWindowWidth,
+                    Height = DefaultWindowHeight,
+                    Border = WindowBorder.Resizable,
+                    Title = "Rained",
+                    Visible = false,
+                    VSync = true
+                };
+
+                window = new Glib.Window(windowOptions);
+
+                window.ImGuiConfigure += () =>
+                {
+                    ImGuiExt.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
+                    ImGui.StyleColorsDark();
+
+                    var io = ImGui.GetIO();
+                    io.KeyRepeatDelay = 0.5f;
+                    io.KeyRepeatRate = 0.03f;
+                    io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+                };
+
+                window.Initialize();
+                Raylib.InitWindow(window);
+                
+                //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
+                //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+                //Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
+                //Raylib.SetTargetFPS(240);
+                //Raylib.SetExitKey(KeyboardKey.Null);
 
                 // set window icons
-                var windowIcons = new Raylib_cs.Image[6];
+                /*var windowIcons = new Raylib_cs.Image[6];
                 windowIcons[0] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon16.png"));
                 windowIcons[1] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon24.png"));
                 windowIcons[2] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon32.png"));
@@ -125,13 +154,7 @@ namespace RainEd
                 {
                     fixed (Raylib_cs.Image* iconArr = windowIcons)
                         Raylib.SetWindowIcons(iconArr, windowIcons.Length);
-                }
-
-                // setup imgui
-                rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
-                ImGui.GetIO().KeyRepeatDelay = 0.5f;
-                ImGui.GetIO().KeyRepeatRate = 0.03f;
+                }*/
 
                 string? assetDataPath = null;
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
@@ -142,8 +165,7 @@ namespace RainEd
                     var appSetup = new AppSetup();
                     if (!appSetup.Start(out assetDataPath))
                     {
-                        rlImGui.Shutdown();
-                        Raylib.CloseWindow();
+                        window.Dispose();
                         splashScreenWindow?.Close();
                         return;
                     }
@@ -183,11 +205,12 @@ namespace RainEd
                     while (app.Running)
                     {
                         Raylib.BeginDrawing();
+                        window.ImGuiController!.Update(Raylib.GetFrameTime());
                         app.Draw(Raylib.GetFrameTime());
-                        
+                        window.ImGuiController!.Render();
                         Raylib.EndDrawing();
 
-                        RlManaged.RlObject.UnloadGCQueue();
+                        GLResource.UnloadGCQueue();
                     }
 
                     RainEd.Logger.Information("Shutting down Rained...");
@@ -199,18 +222,18 @@ namespace RainEd
                     NotifyError(e);
                 }
 #endif
+                window.Dispose();
+                //rlImGui.Shutdown();
 
-                rlImGui.Shutdown();
-
-                foreach (var img in windowIcons)
-                    Raylib.UnloadImage(img);
+                //foreach (var img in windowIcons)
+                //    Raylib.UnloadImage(img);
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            RlManaged.RlObject.UnloadGCQueue();
+            //RlManaged.RlObject.UnloadGCQueue();
             
-            Raylib.CloseWindow();
+            //Raylib.CloseWindow();
             splashScreenWindow?.Close();
         }
 

@@ -1,5 +1,5 @@
 using ImGuiNET;
-using rlImGui_cs;
+
 using System.Diagnostics;
 using System.Numerics;
 namespace RainEd;
@@ -26,7 +26,7 @@ static class AboutWindow
             rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
             // TODO: version number, build date, os/runtime information, library licenses
-            rlImGui.Image(rainedLogo);
+            ImGuiExt.Image(rainedLogo);
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");

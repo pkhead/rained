@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-using rlImGui_cs;
+
 using RenderState = RainEd.DrizzleRender.RenderState;
 namespace RainEd;
 
@@ -280,7 +280,7 @@ class DrizzleRenderWindow : IDisposable
 
                 int cWidth = previewComposite.Texture.Width;
                 int cHeight = previewComposite.Texture.Height;
-                rlImGui.ImageRect(
+                ImGuiExt.ImageRect(
                     previewComposite.Texture,
                     (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
                     new Rectangle(0, cHeight, cWidth, -cHeight)

@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-using rlImGui_cs;
+
 using RainEd.Props;
 using Raylib_cs;
 
@@ -443,7 +443,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }
@@ -523,7 +523,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }

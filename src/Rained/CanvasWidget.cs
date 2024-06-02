@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-using rlImGui_cs;
+
 namespace RainEd;
 
 class UICanvasWidget
@@ -70,7 +70,7 @@ class UICanvasWidget
         var windowOrigin = ImGui.GetCursorPos();
         var screenOrigin = ImGui.GetCursorScreenPos();
 
-        rlImGui.ImageRenderTexture(renderTexture);
+        ImGuiExt.ImageRenderTexture(renderTexture);
         ImGui.SetCursorPos(windowOrigin);
         ImGui.InvisibleButton(ID, new Vector2(curWidth, curHeight));
 

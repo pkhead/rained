@@ -1,7 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
-using rlImGui_cs;
+
 using System.Text;
 
 namespace RainEd;
@@ -404,7 +404,7 @@ class FileBrowser
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
             // back button
-            if (rlImGui.ImageButtonRect("<", icons, 13, 13, GetIconRect(0), textColor))
+            if (ImGuiExt.ImageButtonRect("<", icons, 13, 13, GetIconRect(0), textColor))
             {
                 if (backStack.TryPop(out string? newPath))
                 {
@@ -419,7 +419,7 @@ class FileBrowser
             ImGui.SetItemTooltip("Back");
 
             // forward button
-            if (rlImGui.ImageButtonRect(">", icons, 13, 13, GetIconRect(1), textColor))
+            if (ImGuiExt.ImageButtonRect(">", icons, 13, 13, GetIconRect(1), textColor))
             {
                 if (forwardStack.TryPop(out string? newPath))
                 {
@@ -437,7 +437,7 @@ class FileBrowser
             // because spacing is added after creating a button, not before.
             ImGui.PopStyleVar();
 
-            if (rlImGui.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor))
+            if (ImGuiExt.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor))
             {
                 var oldDir = cwd;
                 if (SetPath(Path.Combine(cwd, "..")))
@@ -450,7 +450,7 @@ class FileBrowser
             ImGui.SetItemTooltip("Go To Parent Directory");
 
             ImGui.SameLine();
-            if (rlImGui.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4), textColor))
+            if (ImGuiExt.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4), textColor))
             {
                 if (Directory.Exists(cwd))
                     SetPath(cwd);
@@ -460,7 +460,7 @@ class FileBrowser
             ImGui.SetItemTooltip("Refresh");
 
             ImGui.SameLine();
-            if (rlImGui.ImageButtonRect("NewFolder", icons, 13, 13, GetIconRect(5), textColor))
+            if (ImGuiExt.ImageButtonRect("NewFolder", icons, 13, 13, GetIconRect(5), textColor))
             {
                 ImGui.OpenPopup("Create Folder");
                 folderName = "";
@@ -539,7 +539,7 @@ class FileBrowser
             ImGui.SameLine();
             if (enterPath || showPathInput)
             {
-                bool closeTextInput = rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3), textColor);
+                bool closeTextInput = ImGuiExt.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3), textColor);
                 ImGui.SameLine();
                 ImGui.SetItemTooltip("Close Text Input");
 
@@ -557,7 +557,7 @@ class FileBrowser
             }
             else
             {
-                if (rlImGui.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8), textColor))
+                if (ImGuiExt.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8), textColor))
                     showPathInput = true;
                 ImGui.SetItemTooltip("Open Text Input");
                 
@@ -653,7 +653,7 @@ class FileBrowser
                     // this is the offset into the file icon texture
                     int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
 
-                    rlImGui.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex), textColor);
+                    ImGuiExt.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex), textColor);
                     ImGui.SameLine();
                     
                     var entryName = entry.Name;
@@ -910,7 +910,7 @@ class FileBrowser
         LoadIcons();
 
         var textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
-        if (rlImGui.ImageButtonRect(id, icons, 13, 13, GetIconRect(5), textColor))
+        if (ImGuiExt.ImageButtonRect(id, icons, 13, 13, GetIconRect(5), textColor))
         {
             activeFileBrowserButton = ImGui.GetItemID();
             fileBrowserReturn = false;

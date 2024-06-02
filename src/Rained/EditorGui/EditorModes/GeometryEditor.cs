@@ -1,6 +1,6 @@
 using Raylib_cs;
 using ImGuiNET;
-using rlImGui_cs;
+
 using System.Numerics;
 
 namespace RainEd;
@@ -272,7 +272,7 @@ class GeometryEditor : IEditorMode
                 ImGui.PushID(i);
                 
                 // create tool button, select if clicked
-                if (rlImGui.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
+                if (ImGuiExt.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
                 {
                     selectedTool = toolEnum;
                 }

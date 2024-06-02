@@ -1,4 +1,3 @@
-using Raylib_cs;
 using System.Numerics;
 namespace RainEd;
 
@@ -51,19 +50,17 @@ class EditorGeometryRenderer
         }
     }
 
-    private RlManaged.Material geoMaterial;
-    private RlManaged.Mesh?[,,] chunkLayers;
+    private Glib.StandardMesh?[,,] chunkLayers;
     private int chunkRowCount; // Y
     private int chunkColCount; // X
     private List<ChunkPos> dirtyChunks;
     
     private readonly List<Vector3> verticesBuf = [];
-    private readonly List<Color> colorsBuf = [];
+    private readonly List<Glib.Color> colorsBuf = [];
 
     public EditorGeometryRenderer(LevelEditRender renderer)
     {
         this.renderInfo = renderer;
-        geoMaterial = RlManaged.Material.LoadMaterialDefault();
         chunkLayers = null!;
         dirtyChunks = null!;
         ReloadLevel();
@@ -74,7 +71,7 @@ class EditorGeometryRenderer
         // TODO: dispose old chunk layers
         chunkColCount = (RainEd.Instance.Level.Width-1) / ChunkWidth + 1;
         chunkRowCount = (RainEd.Instance.Level.Height-1) / ChunkHeight + 1;
-        chunkLayers = new RlManaged.Mesh?[chunkColCount, chunkRowCount, 3];
+        chunkLayers = new Glib.StandardMesh?[chunkColCount, chunkRowCount, 3];
         dirtyChunks = new List<ChunkPos>();
 
         for (int x = 0; x < chunkColCount; x++)
@@ -93,14 +90,14 @@ class EditorGeometryRenderer
     }
 
     // build the mesh for the sub-rectangle of a layer
-    private void MeshGeometry(RlManaged.Mesh geoMesh, int layer, int subL, int subT, int subR, int subB)
+    private void MeshGeometry(Glib.StandardMesh geoMesh, int layer, int subL, int subT, int subR, int subB)
     {
         var vertices = verticesBuf;
         var colors = colorsBuf;
         vertices.Clear();
         colors.Clear();
 
-        void drawRect(float x, float y, float w, float h, Color color)
+        void drawRect(float x, float y, float w, float h, Glib.Color color)
         {
             vertices.Add(new Vector3(x, y, 0));
             vertices.Add(new Vector3(x, y+h, 0));
@@ -119,7 +116,7 @@ class EditorGeometryRenderer
             colors.Add(color);
         }
 
-        void drawRectLines(float x, float y, float w, float h, Color color)
+        void drawRectLines(float x, float y, float w, float h, Glib.Color color)
         {
             drawRect(x, y, 1, h, color);
             drawRect(x, y+h, w, 1, color);
@@ -127,7 +124,7 @@ class EditorGeometryRenderer
             drawRect(x, y, w, 1, color);
         }
 
-        void drawTri(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
+        void drawTri(Vector2 v1, Vector2 v2, Vector2 v3, Glib.Color color)
         {
             vertices.Add(new Vector3(v1.X, v1.Y, 0));
             vertices.Add(new Vector3(v2.X, v2.Y, 0));
@@ -176,20 +173,20 @@ class EditorGeometryRenderer
                         {
                             if (crackH && crackV)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, 4, Color.White);
-                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, 4, Color.White);
-                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, 4, 4, Color.White);
-                                drawRect(x * Level.TileSize + 16, y * Level.TileSize + 16, 4, 4, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, 4, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, 4, Glib.Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, 4, 4, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize + 16, 4, 4, Glib.Color.White);
                             }
                             else if (crackH)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 4, Color.White);
-                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, Level.TileSize, 4, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 4, Glib.Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 16, Level.TileSize, 4, Glib.Color.White);
                             }
                             else if (crackV)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, Level.TileSize, Color.White);
-                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 4, Level.TileSize, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 16, y * Level.TileSize, 4, Level.TileSize, Glib.Color.White);
                             }
                             else
                             {
@@ -198,13 +195,13 @@ class EditorGeometryRenderer
                                     new Vector2(x, y) * Level.TileSize,
                                     new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
                                     new Vector2((x+1) * Level.TileSize - 2f, y * Level.TileSize),
-                                    Color.White
+                                    Glib.Color.White
                                 );
                                 drawTri(
                                     new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
                                     new Vector2(x * Level.TileSize + 2f, (y+1) * Level.TileSize),
                                     new Vector2(x+1, y+1) * Level.TileSize,
-                                    Color.White
+                                    Glib.Color.White
                                 );
                             }
                         }
@@ -215,47 +212,47 @@ class EditorGeometryRenderer
                             // this is done by not drawing on the space where there is a beam
                             if (hasHBeam && hasVBeam)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, 8, Color.White);
-                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, Color.White);
-                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, Color.White);
-                                drawRect(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, 8, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, 8, Glib.Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, 8, 8, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize + 12, 8, 8, Glib.Color.White);
                             }
                             else if (hasHBeam)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, Color.White);
-                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 8, Glib.Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize + 12, Level.TileSize, 8, Glib.Color.White);
                             }
                             else if (hasVBeam)
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, Color.White);
-                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, 8, Level.TileSize, Glib.Color.White);
+                                drawRect(x * Level.TileSize + 12, y * Level.TileSize, 8, Level.TileSize, Glib.Color.White);
                             }
                             else
                             {
-                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                                drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Glib.Color.White);
                             }
                         }
                         else
                         {
                             // view obscured beams is off, draw as normal
-                            drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                            drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Glib.Color.White);
                         }
 
                         break;
                         
                     case GeoType.Platform:
-                        drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, Color.White);
+                        drawRect(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10, Glib.Color.White);
                         break;
                     
                     case GeoType.Glass:
-                        drawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Color.White);
+                        drawRectLines(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize, Glib.Color.White);
                         break;
 
                     case GeoType.ShortcutEntrance:
                         // draw a lighter square
                         drawRect(
                             x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                            new Color(255, 255, 255, 127)
+                            Glib.Color.FromRGBA(255, 255, 255, 127)
                         );
                         break;
 
@@ -264,7 +261,7 @@ class EditorGeometryRenderer
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
-                            Color.White
+                            Glib.Color.White
                         );
                         break;
 
@@ -273,7 +270,7 @@ class EditorGeometryRenderer
                             new Vector2(x, y+1) * Level.TileSize,
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x+1, y) * Level.TileSize,
-                            Color.White
+                            Glib.Color.White
                         );
                         break;
 
@@ -282,7 +279,7 @@ class EditorGeometryRenderer
                             new Vector2(x+1, y) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            Color.White
+                            Glib.Color.White
                         );
                         break;
 
@@ -291,7 +288,7 @@ class EditorGeometryRenderer
                             new Vector2(x+1, y+1) * Level.TileSize,
                             new Vector2(x, y) * Level.TileSize,
                             new Vector2(x, y+1) * Level.TileSize,
-                            Color.White
+                            Glib.Color.White
                         );
                         break;
                 }
@@ -301,13 +298,13 @@ class EditorGeometryRenderer
                     // draw horizontal beam
                     if (hasHBeam)
                     {
-                        drawRect(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, Color.White);
+                        drawRect(x * Level.TileSize, y * Level.TileSize + 8, Level.TileSize, 4, Glib.Color.White);
                     }
 
                     // draw vertical beam
                     if (hasVBeam)
                     {
-                        drawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, Color.White);
+                        drawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, Glib.Color.White);
                     }
                 }
             }
@@ -315,7 +312,7 @@ class EditorGeometryRenderer
 
         geoMesh.SetVertices(vertices.ToArray());
         geoMesh.SetColors(colors.ToArray());
-        geoMesh.UploadMesh(true);
+        geoMesh.Upload();
     }
 
     public void ReloadGeometryMesh()
@@ -325,10 +322,10 @@ class EditorGeometryRenderer
 
         foreach (var chunkPos in dirtyChunks)
         {
-            ref RlManaged.Mesh? chunk = ref chunkLayers[chunkPos.X, chunkPos.Y, chunkPos.Layer];
+            ref Glib.StandardMesh? chunk = ref chunkLayers[chunkPos.X, chunkPos.Y, chunkPos.Layer];
 
             chunk?.Dispose();
-            chunk = new RlManaged.Mesh();
+            chunk = RainEd.RenderContext.CreateMesh();
 
             MeshGeometry(
                 geoMesh: chunk,
@@ -342,20 +339,10 @@ class EditorGeometryRenderer
         dirtyChunks.Clear();
     }
 
-    public void Render(int layer, Color color)
+    public void Render(int layer, Raylib_cs.Color color)
     {
         ReloadGeometryMesh();
-
-        unsafe
-        {
-            geoMaterial.Maps[(int) MaterialMapIndex.Diffuse].Color = color;
-        }
-
-        var mat = Matrix4x4.Identity;
-
-        // should raylib not do this automatically??
-        // i suppose raylib isn't designed for raw meshes to drawn in Drawing/2D mode
-        Rlgl.DrawRenderBatchActive();
+        RainEd.RenderContext.DrawColor = Raylib_cs.Raylib.ToGlibColor(color);
 
         int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X / ChunkWidth);
         int viewT = (int) Math.Floor(renderInfo.ViewTopLeft.Y / ChunkHeight);
@@ -368,7 +355,9 @@ class EditorGeometryRenderer
             {
                 var mesh = chunkLayers[x,y,layer];
                 if (mesh is not null)
-                    Raylib.DrawMesh(mesh, geoMaterial, mat);
+                {
+                    RainEd.RenderContext.Draw(mesh);
+                }
             }
         }
     }

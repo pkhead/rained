@@ -1,5 +1,5 @@
 using Raylib_cs;
-using rlImGui_cs;
+
 using System.Numerics;
 using ImGuiNET;
 using Serilog;
@@ -28,6 +28,9 @@ sealed class RainEd
     public bool Running = true; // if false, Boot.cs will close the window
     private readonly Logger _logger;
     public static Logger Logger { get => Instance._logger; }
+
+    public static Glib.Window Window => Boot.Window;
+    public static Glib.RenderContext RenderContext => Boot.Window.RenderContext!;
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
@@ -156,7 +159,7 @@ sealed class RainEd
 
         // create placeholder for missing texture
         {
-            using var img = RlManaged.Image.GenColor(2, 2, Color.Black);
+            var img = RlManaged.Image.GenColor(2, 2, Color.Black);
             img.DrawPixel(0, 0, new Color(255, 0, 255, 255));
             img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
@@ -252,10 +255,10 @@ sealed class RainEd
         UpdateTitle();
 
         // apply window preferences
-        Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
+        Window.SetSize(Preferences.WindowWidth, Preferences.WindowHeight);
         if (Preferences.WindowMaximized)
         {
-            Raylib.SetWindowState(ConfigFlags.MaximizedWindow);
+            Window.WindowState = Silk.NET.Windowing.WindowState.Maximized;
         }
         ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
 
@@ -526,8 +529,6 @@ sealed class RainEd
         EditorWindow.UpdateMouseState();
         
         Raylib.ClearBackground(Color.DarkGray);
-        
-        rlImGui.Begin();
         KeyShortcuts.Update();
         ImGui.DockSpaceOverViewport();
 
@@ -545,8 +546,6 @@ sealed class RainEd
         {
             ImGui.ShowDemoWindow(ref ShowDemoWindow);
         }
-
-        rlImGui.End();
     }
 
     public void UpdateRopeSimulation()
