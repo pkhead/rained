@@ -1,6 +1,7 @@
 FIX CROP IMAGE!!
-FIX TILE LOADING!! (IT STRETCHES!! (WTF!!))
+OVERRIDE TAB!
 GET RID OF SFML!
+CHECK THAT RENDERING WORKS STILL!
 
 Priority:
 - configurable tile spec colors

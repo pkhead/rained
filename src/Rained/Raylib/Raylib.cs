@@ -701,28 +701,111 @@ static class Raylib
         var srcImage = src.image!;
         var dstImage = dst.image!;
 
-        float du = 1f / dstW;
-        float dv = 1f / dstH;
+        // if the src rect is outside the bounds of the source image,
+        // all pixels will be discarded. therefore, there is no need
+        // to do anything processing if this is the case
+        if (srcStartX >= srcImage.Width || srcStartY >= srcImage.Height || srcStartX + srcW < 1 || srcStartY + srcH < 1)
+            return;
 
-        float u = 0f;
-        for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
+        // similarly, if the dst rect is outside the bounds of the dest image,
+        // there is no need to do any processing
+        if (dstStartX >= dstImage.Width || dstStartY >= dstImage.Height || dstStartX + dstW < 1 || dstStartY + dstH < 1)
+            return;
+
+        // no scaling needs to be performed, so the draw operation
+        // can be optimized
+        if (srcW == dstW && srcH == dstH)
         {
-            if (dstX < 0 || dstX >= dstImage.Width) continue;
-            int srcX = (int)(u * srcW + srcStartX);
-
-            float v = 0f;
-            for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
+            // if the two pixel formats are the same,
+            // each section of the image row can just be blitted to the destination image
+            if (srcImage.PixelFormat == dstImage.PixelFormat)
             {
-                if (dstY < 0 || dstY >= dstImage.Height) continue;
-                int srcY = (int)(v * srcH + srcStartY);
+                int bpp = (int)srcImage.BytesPerPixel;
+                int srcRowOffset = Math.Max(srcStartX, 0) * bpp;
+                int dstRowOffset = (dstStartX - Math.Min(srcStartX, 0)) * bpp;
+                int rowLen = Math.Min(
+                    Math.Min(dstStartX + dstW, dstImage.Width) - dstStartX,
+                    Math.Min(srcStartX + srcW, srcImage.Width) - srcStartX
+                ) * bpp;
 
-                var col = (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height) ? srcImage.GetPixel(srcX, srcY) : Glib.Color.Transparent;
-                dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
+                int srcRowLen = srcImage.Width * bpp;
+                int dstRowLen = dstImage.Width * bpp;
 
-                v += dv;
+                int srcColOffset = Math.Max(srcStartY, 0);
+                int dstColOffset = dstStartY - Math.Min(srcStartY, 0);
+                int colLen = Math.Min(
+                    Math.Min(dstStartY + dstH, dstImage.Height) - dstStartY,
+                    Math.Min(srcStartY + srcH, srcImage.Height) - srcStartY
+                );
+
+                var srcPixels = srcImage.Pixels;
+                var dstPixels = dstImage.Pixels;
+
+                int dstY = dstColOffset;
+                int srcY = srcColOffset;
+                for (int i = 0; i < colLen; i++)
+                {
+                    Buffer.BlockCopy(srcPixels, srcY * srcRowLen + srcRowOffset, dstPixels, dstY * dstRowLen + dstRowOffset, rowLen);
+                    srcY++; dstY++;
+                }
             }
 
-            u += du;
+            // but if they are not the same, looping through each individual pixel is required
+            // since format conversions need to be done
+            else
+            {
+                int srcX = srcStartX;
+
+                for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
+                {
+                    if (dstX < 0 || dstX >= dstImage.Width) continue;
+                    
+                    int srcY = srcStartY;
+                    for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
+                    {
+                        if (dstY < 0 || dstY >= dstImage.Height) continue;
+
+                        // discard pixel if reading from outside source bounds
+                        if (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height)
+                        {
+                            var col = srcImage.GetPixel(srcX, srcY);
+                            dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
+                        }
+
+                        srcY++;
+                    }
+
+                    srcX++;
+                }
+            }
+        }
+
+        // here nearest-filtering scaling needs to be
+        // performed
+        else
+        {
+            float u;
+            for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
+            {
+                if (dstX < 0 || dstX >= dstImage.Width) continue;
+                u = (float)(dstX - dstStartX) / dstW;
+                int srcX = (int)(u * srcW + srcStartX);
+
+                float v;
+                for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
+                {
+                    if (dstY < 0 || dstY >= dstImage.Height) continue;
+                    v = (float)(dstY - dstStartY) / dstH;
+                    int srcY = (int)(v * srcH + srcStartY);
+
+                    // discard pixel if reading from outside source bounds
+                    if (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height)
+                    {
+                        var col = srcImage.GetPixel(srcX, srcY);
+                        dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
+                    }
+                }
+            }
         }
     }
 
