@@ -169,6 +169,9 @@ public class Texture : GLResource
         gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, &_mag);
     }
 
+    public void SetFilterMode(TextureFilterMode filter)
+        => SetFilterMode(filter, filter);
+
     public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)
     {
         var format = pixelFormat switch

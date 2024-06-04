@@ -656,7 +656,7 @@ static class Raylib
         return image.image != null;
     }
 
-    public static void UnloadImage(Image image)
+    public static void UnloadImage(ref Image image)
     {
         image.image = null;
     }
@@ -674,7 +674,7 @@ static class Raylib
         };
     }
 
-    public static void ImageFormat(Image image, PixelFormat newFormat)
+    public static void ImageFormat(ref Image image, PixelFormat newFormat)
     {
         image.image = image.image!.ConvertToFormat(newFormat switch
         {
@@ -684,10 +684,8 @@ static class Raylib
         });
     }
 
-    public static void ImageDraw(Image dst, Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
+    private static void ImageDraw(Glib.Image dstImage, Glib.Image srcImage, Glib.Rectangle srcRec, Glib.Rectangle dstRec, Glib.Color tintCol)
     {
-        var tintCol = ToGlibColor(tint);
-
         var srcStartX = (int)srcRec.X;
         var srcStartY = (int)srcRec.Y;
         var srcW = (int)srcRec.Width;
@@ -697,9 +695,6 @@ static class Raylib
         var dstStartY = (int)dstRec.Y;
         var dstW = (int)dstRec.Width;
         var dstH = (int)dstRec.Height;
-        
-        var srcImage = src.image!;
-        var dstImage = dst.image!;
 
         // if the src rect is outside the bounds of the source image,
         // all pixels will be discarded. therefore, there is no need
@@ -716,9 +711,10 @@ static class Raylib
         // can be optimized
         if (srcW == dstW && srcH == dstH)
         {
-            // if the two pixel formats are the same,
+            // if the two pixel formats are the same, and tint is white
             // each section of the image row can just be blitted to the destination image
-            if (srcImage.PixelFormat == dstImage.PixelFormat)
+            bool isTintWhite = tintCol.R == 1.0 && tintCol.G == 1.0 && tintCol.B == 1.0 && tintCol.A == 1.0;
+            if (srcImage.PixelFormat == dstImage.PixelFormat && isTintWhite)
             {
                 int bpp = (int)srcImage.BytesPerPixel;
                 int srcRowOffset = Math.Max(srcStartX, 0) * bpp;
@@ -809,7 +805,14 @@ static class Raylib
         }
     }
 
-    public static void ImageCrop(Image image, Rectangle crop)
+    public static void ImageDraw(Image dst, Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
+    {
+        var glibSrcRec = new Glib.Rectangle(srcRec.Position, srcRec.Size);
+        var glibDstRec = new Glib.Rectangle(dstRec.Position, dstRec.Size);
+        ImageDraw(dst.image!, src.image!, glibSrcRec, glibDstRec, ToGlibColor(tint));
+    }
+
+    public static void ImageCrop(ref Image image, Rectangle crop)
     {
         var srcImage = image.image!;
 
@@ -820,9 +823,10 @@ static class Raylib
 
         var newImage = Glib.Image.FromColor(endX - startX, endY - startY, Glib.Color.Transparent, srcImage.PixelFormat);
 
+        ImageDraw(newImage, srcImage, new Glib.Rectangle(crop.Position, crop.Size), new Glib.Rectangle(Vector2.Zero, crop.Size), Glib.Color.White);
         // copy slices of each row that are within the crop rectangle
         // using the pixels array directly
-        int bpp = (int)srcImage.BytesPerPixel;
+        /*int bpp = (int)srcImage.BytesPerPixel;
         int rowLen = (endX - startX) * bpp;
         int rowOffset = startX * bpp;
         int rowSize = srcImage.Width * bpp;
@@ -831,7 +835,7 @@ static class Raylib
         for (int y = startY; y < endY; y++)
         {
             Buffer.BlockCopy(srcImage.Pixels, y * rowSize + rowOffset, newImage.Pixels, (y - startY) * dstRowSize, rowLen);
-        }
+        }*/
 
         image.image = newImage;
     }
@@ -849,12 +853,20 @@ static class Raylib
         }
     }
 
-    public static void ImageResizeCanvas(Image image, int newWidth, int newHeight, int offsetX, int offsetY, Color fill)
+    public static void ImageResizeCanvas(ref Image image, int newWidth, int newHeight, int offsetX, int offsetY, Color fill)
     {
         var srcImage = image.image!;
         var newImage = Glib.Image.FromColor(newWidth, newHeight, ToGlibColor(fill), srcImage.PixelFormat);
 
-        int bpp = (int)Glib.Image.GetBytesPerPixel(srcImage.PixelFormat);
+        ImageDraw(
+            dstImage: newImage,
+            srcImage: srcImage,
+            srcRec: new Glib.Rectangle(0f, 0f, newWidth, newHeight),
+            dstRec: new Glib.Rectangle(offsetX, offsetY, newWidth, newHeight),
+            tintCol: Glib.Color.White
+        );
+
+        /*int bpp = (int)Glib.Image.GetBytesPerPixel(srcImage.PixelFormat);
         int srcRowSize = srcImage.Width * bpp;
         int srcRowOffset = -Math.Min(0, offsetX) * bpp; // if offsetX < 0, columns start within bounds of dest image
         int srcRowLen = (Math.Min(newImage.Width, srcImage.Width + offsetX) - Math.Max(0, offsetX)) * bpp;
@@ -873,7 +885,7 @@ static class Raylib
         {
             if (y + offsetY < 0 || y + offsetY >= newHeight) continue;
             Buffer.BlockCopy(srcImage.Pixels, y * srcRowSize + srcRowOffset, newImage.Pixels, (y + offsetY) * dstRowSize + dstRowOffset, srcRowLen);
-        }
+        }*/
 
         image.image = newImage;
     }

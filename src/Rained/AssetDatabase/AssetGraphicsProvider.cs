@@ -279,7 +279,7 @@ class AssetGraphicsProvider
         }
         else
         {
-            Raylib.ImageCrop(sourceImage, new Rectangle(imgMinX, imgMinY, width, height));
+            Raylib.ImageCrop(ref sourceImage.Ref(), new Rectangle(imgMinX, imgMinY, width, height));
             return true;
         }
     }

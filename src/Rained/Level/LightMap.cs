@@ -84,7 +84,7 @@ class LightMap : IDisposable
 
         // create light map render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
-        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest, Glib.TextureFilterMode.Nearest);
+        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.White);
         Raylib.EndTextureMode();
@@ -125,6 +125,8 @@ class LightMap : IDisposable
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
         Raylib.EndTextureMode();
+
+        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest);
     }
 
     public void Dispose()
@@ -144,7 +146,7 @@ class LightMap : IDisposable
         // resize light map image
         var lightMapImage = GetImage();
         Raylib.ImageResizeCanvas(
-            lightMapImage,
+            ref lightMapImage.Ref(),
             newWidth, newHeight,
             dstOriginX, dstOriginY,
             Color.White
@@ -187,7 +189,7 @@ class LightMap : IDisposable
     {
         var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
         Raylib.ImageFlipVertical(img);
-        Raylib.ImageFormat(img, PixelFormat.UncompressedGrayscale);
+        Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
 
         return img;
     }

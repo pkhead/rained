@@ -426,7 +426,7 @@ static class LevelSerialization
             }
             else
             {
-                Raylib.ImageFormat(img, PixelFormat.UncompressedGrayscale);
+                Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
                 level.LoadLightMap(img);
             }
         }

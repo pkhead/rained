@@ -127,7 +127,7 @@ namespace RlManaged
         
         public void Format(PixelFormat newFormat)
         {
-            Raylib.ImageFormat(raw, newFormat);
+            Raylib.ImageFormat(ref raw, newFormat);
         }
 
         // this function does nothing as the new Glib.Image
