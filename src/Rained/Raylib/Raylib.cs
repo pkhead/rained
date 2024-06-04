@@ -8,6 +8,9 @@ static class Raylib
     static Window window = null!;
     public static Window GlibWindow => window;
 
+    // what the hell was ray on when he decided to make his apis take angles in degrees
+    private const float DEG2RAD = 1.0f / 180.0f * MathF.PI;
+
     static readonly bool[] mouseButtonsDown = [false, false, false];
     static readonly bool[] mouseButtonsPressed = [false, false, false];
     static readonly bool[] mouseButtonsReleased = [false, false, false];
@@ -350,19 +353,22 @@ static class Raylib
         return window.MouseWheel;
     }
 
-    public static void ShowCursor()
-    {
-        window.SilkInputContext.Mice[0].Cursor.CursorMode = Silk.NET.Input.CursorMode.Normal;
-    }
-
     public static void HideCursor()
     {
-        window.SilkInputContext.Mice[0].Cursor.CursorMode = Silk.NET.Input.CursorMode.Hidden;
+        var cursor = window.SilkInputContext.Mice[0].Cursor;
+        cursor.CursorMode = Silk.NET.Input.CursorMode.Hidden;
+    }
+
+    public static void ShowCursor()
+    {
+        var cursor = window.SilkInputContext.Mice[0].Cursor;
+        cursor.CursorMode = Silk.NET.Input.CursorMode.Normal;
     }
 
     public static void SetMousePosition(int x, int y)
     {
-        window.SilkInputContext.Mice[0].Position = new Vector2(x, y);
+        window.MousePosition = new Vector2(x, y);
+        lastMousePos = new Vector2(x, y);
     }
 
     public static int GetRandomValue(int min, int max)
@@ -535,7 +541,7 @@ static class Raylib
         window.RenderContext!.DrawColor = ToGlibColor(color);
         window.RenderContext!.PushTransform();
         window.RenderContext!.Translate(rec.X, rec.Y, 0f);
-        window.RenderContext!.Rotate(rotation);
+        window.RenderContext!.Rotate(rotation * DEG2RAD);
         window.RenderContext!.DrawRectangle(-origin.X, -origin.Y, rec.Width, rec.Height);
         window.RenderContext!.PopTransform();
     }
@@ -868,7 +874,7 @@ static class Raylib
         );*/
         window.RenderContext!.PushTransform();
         window.RenderContext!.Translate(dest.X, dest.Y, 0f);
-        window.RenderContext!.Rotate(rotation);
+        window.RenderContext!.Rotate(rotation * DEG2RAD);
         window.RenderContext!.Draw(
             tex: texture.ID!,
             src: new Glib.Rectangle(source.X, source.Y, source.Width, source.Height),

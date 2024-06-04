@@ -84,6 +84,7 @@ class LightMap : IDisposable
 
         // create light map render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
+        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest, Glib.TextureFilterMode.Nearest);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.White);
         Raylib.EndTextureMode();

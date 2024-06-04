@@ -195,6 +195,8 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             _windowHeight = size.Y;
         }
 
+        private ImGuiMouseCursor lastCursorMode = ImGuiMouseCursor.Arrow;
+
         /// <summary>
         /// Renders the ImGui draw list data.
         /// This method requires a <see cref="GraphicsDevice"/> because it may create new DeviceBuffers if the size of vertex
@@ -222,33 +224,44 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
                     var cursor = _input.Mice[0].Cursor;
                     var imguiCursor = ImGuiNET.ImGui.GetMouseCursor();
 
-                    if (io.MouseDrawCursor || imguiCursor == ImGuiMouseCursor.None)
+                    if (imguiCursor != lastCursorMode)
                     {
-                        cursor.CursorMode = CursorMode.Hidden;  
-                    }
-                    else
-                    {
-                        cursor.CursorMode = CursorMode.Normal;
-                        cursor.Type = CursorType.Standard;
-                        var newCursor = imguiCursor switch
+                        lastCursorMode = imguiCursor;
+                        
+                        if (io.MouseDrawCursor || imguiCursor == ImGuiMouseCursor.None)
                         {
-                            ImGuiMouseCursor.Arrow => StandardCursor.Arrow,
-                            ImGuiMouseCursor.TextInput => StandardCursor.IBeam,
-                            ImGuiMouseCursor.ResizeAll => StandardCursor.ResizeAll,
-                            ImGuiMouseCursor.ResizeNS => StandardCursor.VResize,
-                            ImGuiMouseCursor.ResizeEW => StandardCursor.HResize,
-                            ImGuiMouseCursor.ResizeNESW => StandardCursor.NeswResize,
-                            ImGuiMouseCursor.ResizeNWSE => StandardCursor.NwseResize,
-                            ImGuiMouseCursor.Hand => StandardCursor.Hand,
-                            ImGuiMouseCursor.NotAllowed => StandardCursor.NotAllowed,
-                            _ => StandardCursor.Arrow
-                        };
+                            cursor.CursorMode = CursorMode.Hidden;  
+                        }
+                        else
+                        {
+                            cursor.CursorMode = CursorMode.Normal;
+                            cursor.Type = CursorType.Standard;
+                            var newCursor = imguiCursor switch
+                            {
+                                ImGuiMouseCursor.Arrow => StandardCursor.Arrow,
+                                ImGuiMouseCursor.TextInput => StandardCursor.IBeam,
+                                ImGuiMouseCursor.ResizeAll => StandardCursor.ResizeAll,
+                                ImGuiMouseCursor.ResizeNS => StandardCursor.VResize,
+                                ImGuiMouseCursor.ResizeEW => StandardCursor.HResize,
+                                ImGuiMouseCursor.ResizeNESW => StandardCursor.NeswResize,
+                                ImGuiMouseCursor.ResizeNWSE => StandardCursor.NwseResize,
+                                ImGuiMouseCursor.Hand => StandardCursor.Hand,
+                                ImGuiMouseCursor.NotAllowed => StandardCursor.NotAllowed,
+                                _ => StandardCursor.Arrow
+                            };
 
-                        if (newCursor != cursor.StandardCursor)
-                        {
-                            // some sort of silk.NET bug...
-                            cursor.StandardCursor = newCursor;
-                            cursor.StandardCursor = StandardCursor.Default;
+                            if (newCursor != cursor.StandardCursor)
+                            {
+                                //cursor.StandardCursor = newCursor;
+
+                                // some sort of silk.NET bug...
+                                var cursorType = cursor.GetType();
+                                var stdCursorFld = cursorType.GetField("_standardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+                                var updateStdCursorMethod = cursorType.GetMethod("UpdateStandardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+
+                                stdCursorFld.SetValue(cursor, newCursor);
+                                updateStdCursorMethod.Invoke(cursor, null);
+                            }
                         }
                     }
                 }

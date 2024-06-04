@@ -1,3 +1,7 @@
+FIX CROP IMAGE!!
+FIX TILE LOADING!! (IT STRETCHES!! (WTF!!))
+GET RID OF SFML!
+
 Priority:
 - configurable tile spec colors
 - "General" and "Current" shortcut split
