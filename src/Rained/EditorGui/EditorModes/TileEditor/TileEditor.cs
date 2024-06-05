@@ -455,10 +455,12 @@ partial class TileEditor : IEditorMode
             {
                 if (rectMode == RectMode.Place)
                 {
-                    for (int x = rMinX; x < rMaxX; x++)
+                    for (int x = rMinX; x <= rMaxX; x++)
                     {
-                        for (int y = rMinY; y < rMaxY; y++)
+                        for (int y = rMinY; y <= rMaxY; y++)
                         {
+                            if (!level.IsInBounds(x, y)) continue;
+
                             if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == 0)
                             {
                                 if (modifyGeometry)
@@ -474,10 +476,12 @@ partial class TileEditor : IEditorMode
                 }
                 else if (rectMode == RectMode.Remove)
                 {
-                    for (int x = rMinX; x < rMaxX; x++)
+                    for (int x = rMinX; x <= rMaxX; x++)
                     {
-                        for (int y = rMinY; y < rMaxY; y++)
+                        for (int y = rMinY; y <= rMaxY; y++)
                         {
+                            if (!level.IsInBounds(x, y)) continue;
+
                             if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == selectedMaterial)
                             {
                                 level.Layers[window.WorkLayer, x, y].Material = 0;
@@ -568,8 +572,8 @@ partial class TileEditor : IEditorMode
                     for (int y = cursorTop; y <= window.MouseCy + materialBrushSize / 2; y++)
                     {
                         if (!level.IsInBounds(x, y)) continue;
-                        ref var cell = ref level.Layers[window.WorkLayer, x, y];
 
+                        ref var cell = ref level.Layers[window.WorkLayer, x, y];
                         if (cell.HasTile()) continue;
 
                         if (placeMode == 1)
@@ -688,6 +692,7 @@ partial class TileEditor : IEditorMode
                         {
                             var gx = (int)minX + x;
                             var gy = (int)minY + y;
+                            if (!level.IsInBounds(gx, gy)) continue;
 
                             if (level.Layers[window.WorkLayer, gx, gy].HasTile())
                                 level.RemoveTileCell(window.WorkLayer, gx, gy, modifyGeometry);
@@ -836,7 +841,7 @@ partial class TileEditor : IEditorMode
             }
 
             // remove material under mouse cursor
-            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && level.IsInBounds(window.MouseCx, window.MouseCy))
             {
                 ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
                 if (!cell.HasTile() && !disallowMatOverwrite)
