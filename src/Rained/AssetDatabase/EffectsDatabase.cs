@@ -293,6 +293,7 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Cacti", EffectType.NN)
             {
                 useLayers = true,
+                usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Rain Moss", EffectType.NN)
