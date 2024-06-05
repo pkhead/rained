@@ -84,7 +84,6 @@ class LightMap : IDisposable
 
         // create light map render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
-        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.White);
         Raylib.EndTextureMode();
@@ -125,8 +124,6 @@ class LightMap : IDisposable
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
         Raylib.EndTextureMode();
-
-        lightmapRt.Texture.ID!.SetFilterMode(Glib.TextureFilterMode.Nearest);
     }
 
     public void Dispose()
@@ -143,8 +140,12 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        // resize light map image
         var lightMapImage = GetImage();
+        
+        // vertical flip dest rect (idk why i need to do this it worked before)
+        dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
+
+        // resize light map image
         Raylib.ImageResizeCanvas(
             ref lightMapImage.Ref(),
             newWidth, newHeight,
@@ -160,7 +161,16 @@ class LightMap : IDisposable
         lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
+
+        // texture is loaded upside down...
+        Raylib.DrawTexturePro(
+            lightmapTex,
+            new Rectangle(0f, lightmapTex.Height, lightmapTex.Width, -lightmapTex.Height),
+            new Rectangle(0f, 0f, lightmapTex.Width, lightmapTex.Height),
+            Vector2.Zero, 0f,
+            Color.White
+        );
+
         Raylib.EndTextureMode();
 
         width = newWidth;
@@ -189,8 +199,7 @@ class LightMap : IDisposable
     {
         var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
         Raylib.ImageFlipVertical(img);
-        Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
-
+        
         return img;
     }
 }

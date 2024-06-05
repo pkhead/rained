@@ -1,5 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
+using RainEd.Light;
 using Raylib_cs;
 
 
@@ -437,15 +438,7 @@ class LightEditor : IEditorMode
                 };
 
                 changeRecorder.RecordAtom(atom);
-
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    screenSize / 2f,
-                    atom.rotation,
-                    lmb ? Color.Black : Color.White
-                );
+                LightMap.DrawAtom(atom);
                 
                 Raylib.BeginTextureMode(mainFrame);
             }

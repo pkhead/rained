@@ -455,6 +455,13 @@ public class RenderContext : IDisposable
     public Framebuffer CreateFramebuffer(FramebufferConfiguration config)
     {
         var buffer = new Framebuffer(gl, config);
+        
+        // set texture filters to default
+        for (int i = 0; i < config.Attachments.Count; i++)
+        {
+            if (config.Attachments[i].CanRead)
+                buffer.GetTexture(i).SetFilterMode(DefaultTextureMinFilter, DefaultTextureMagFilter);
+        }
 
         // reset framebuffer to the framebuffer it was in before
         // as creating a new framebuffer requires binding it

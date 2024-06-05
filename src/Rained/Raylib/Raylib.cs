@@ -716,21 +716,24 @@ static class Raylib
             bool isTintWhite = tintCol.R == 1.0 && tintCol.G == 1.0 && tintCol.B == 1.0 && tintCol.A == 1.0;
             if (srcImage.PixelFormat == dstImage.PixelFormat && isTintWhite)
             {
+                int pDstStartX = Math.Max(0, dstStartX - Math.Min(srcStartX, 0));
+                int pDstStartY = Math.Max(0, dstStartY - Math.Min(srcStartY, 0));
+
                 int bpp = (int)srcImage.BytesPerPixel;
-                int srcRowOffset = Math.Max(srcStartX, 0) * bpp;
-                int dstRowOffset = (dstStartX - Math.Min(srcStartX, 0)) * bpp;
+                int srcRowOffset = Math.Max(srcStartX - Math.Min(dstStartX, 0), 0) * bpp;
+                int dstRowOffset = pDstStartX * bpp;
                 int rowLen = Math.Min(
-                    Math.Min(dstStartX + dstW, dstImage.Width) - dstStartX,
+                    Math.Min(pDstStartX + dstW, dstImage.Width) - pDstStartX,
                     Math.Min(srcStartX + srcW, srcImage.Width) - srcStartX
                 ) * bpp;
 
                 int srcRowLen = srcImage.Width * bpp;
                 int dstRowLen = dstImage.Width * bpp;
 
-                int srcColOffset = Math.Max(srcStartY, 0);
-                int dstColOffset = dstStartY - Math.Min(srcStartY, 0);
+                int srcColOffset = Math.Max(srcStartY - Math.Min(dstStartY, 0), 0);
+                int dstColOffset = pDstStartY;
                 int colLen = Math.Min(
-                    Math.Min(dstStartY + dstH, dstImage.Height) - dstStartY,
+                    Math.Min(pDstStartY + dstH, dstImage.Height) - dstStartY,
                     Math.Min(srcStartY + srcH, srcImage.Height) - srcStartY
                 );
 
@@ -855,8 +858,59 @@ static class Raylib
 
     public static void ImageResizeCanvas(ref Image image, int newWidth, int newHeight, int offsetX, int offsetY, Color fill)
     {
+        // i forgot what offsetX and offsetY meant so i'm just copying
+        // the raylib code verbatim
+        /*var srcImage = image.image!;
+
+        if (newWidth == image.Width && newHeight == image.Height) return;
+
+        var srcRec = new Glib.Rectangle(0f, 0f, image.Width, image.Height);
+        var dstPos = new Vector2(offsetX, offsetY);
+
+        if (offsetX < 0)
+        {
+            srcRec.X = -offsetX;
+            srcRec.Width += offsetX;
+            dstPos.X = 0;
+        }
+        else if ((offsetX + image.Width) > newWidth)
+        {
+            srcRec.Width = newWidth - offsetX;
+        }
+
+        if (offsetY < 0)
+        {
+            srcRec.Y = -offsetY;
+            srcRec.Height += offsetY;
+            dstPos.Y = 0;
+        }
+        else if ((offsetY + image.Height) > newHeight)
+        {
+            srcRec.Height = newHeight - offsetY;
+        }
+
+        if (newWidth < srcRec.Width) srcRec.Width = newWidth;
+        if (newHeight < srcRec.Height) srcRec.Height = newHeight;
+
+        int bytesPerPixel = (int)srcImage.BytesPerPixel;
+        var resizedImage = Glib.Image.FromColor(newWidth, newHeight, ToGlibColor(fill), srcImage.PixelFormat);
+        var resizedData = resizedImage.Pixels;
+
+        // copy old image to resized canvas
+        var srcPixels = srcImage.Pixels;
+        int dstOffsetSize = ((int)dstPos.Y * newWidth + (int)dstPos.X) * bytesPerPixel;
+
+        for (int y = 0; y < (int)srcRec.Height; y++)
+        {
+            Buffer.BlockCopy(srcPixels, ((y + (int)srcRec.Y) * image.Width + (int)srcRec.X) * bytesPerPixel, resizedData, dstOffsetSize, (int)srcRec.Width * bytesPerPixel);
+            dstOffsetSize += newWidth * bytesPerPixel;
+        }
+
+        image.image = resizedImage;*/
         var srcImage = image.image!;
         var newImage = Glib.Image.FromColor(newWidth, newHeight, ToGlibColor(fill), srcImage.PixelFormat);
+
+        var dstRec = new Glib.Rectangle(offsetX, offsetY, newWidth, newHeight);
 
         ImageDraw(
             dstImage: newImage,
@@ -865,27 +919,6 @@ static class Raylib
             dstRec: new Glib.Rectangle(offsetX, offsetY, newWidth, newHeight),
             tintCol: Glib.Color.White
         );
-
-        /*int bpp = (int)Glib.Image.GetBytesPerPixel(srcImage.PixelFormat);
-        int srcRowSize = srcImage.Width * bpp;
-        int srcRowOffset = -Math.Min(0, offsetX) * bpp; // if offsetX < 0, columns start within bounds of dest image
-        int srcRowLen = (Math.Min(newImage.Width, srcImage.Width + offsetX) - Math.Max(0, offsetX)) * bpp;
-
-        int dstRowSize = newImage.Width * bpp;
-        int dstRowOffset = Math.Max(0, offsetX) * bpp;
-        
-        // offsetX >= newImage.Width
-        if (srcRowLen == 0) return;
-
-        // offsetX + srcImage.Width < 0
-        if (srcRowOffset >= srcRowSize) return;
-        if (dstRowOffset >= dstRowSize) return;
-
-        for (int y = 0; y < srcImage.Height; y++)
-        {
-            if (y + offsetY < 0 || y + offsetY >= newHeight) continue;
-            Buffer.BlockCopy(srcImage.Pixels, y * srcRowSize + srcRowOffset, newImage.Pixels, (y + offsetY) * dstRowSize + dstRowOffset, srcRowLen);
-        }*/
 
         image.image = newImage;
     }
