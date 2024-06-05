@@ -710,9 +710,14 @@ partial class TileEditor : IEditorMode
         // check if rect place mode will start
         else if (isMouseHeldInMode && isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
+            int rectOffsetX = 0;
+            int rectOffsetY = 0;
+
             if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
             {
                 rectMode = RectMode.Place;
+                rectOffsetX = -selectedTile.CenterX;
+                rectOffsetY = -selectedTile.CenterY;
             }
             else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
             {
@@ -720,7 +725,7 @@ partial class TileEditor : IEditorMode
             }
 
             if (rectMode != RectMode.Inactive)
-                rectStart = new CellPosition(window.MouseCx - selectedTile.CenterX, window.MouseCy - selectedTile.CenterY, window.WorkLayer);
+                rectStart = new CellPosition(window.MouseCx + rectOffsetX, window.MouseCy + rectOffsetY, window.WorkLayer);
         }
 
         // single-tile place mode
