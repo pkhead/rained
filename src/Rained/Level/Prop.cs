@@ -265,16 +265,7 @@ class Prop
 
         Seed = (int)(DateTime.Now.Ticks % 1000);
         CustomDepth = init.Depth;
-
-        if (init.PropFlags.HasFlag(PropFlags.RandomVariation))
-        {
-            var rand = new Random(Seed);
-            Variation = rand.Next(0, init.VariationCount);
-        }
-        else
-        {
-            Variation = 0;
-        }
+        Variation = 0;
 
         if (init.Type == PropType.Rope)
         {
@@ -286,7 +277,7 @@ class Prop
     {
         transform.rect.Center = center;
         transform.rect.Size = size;
-        transform.rect.Rotation = 0f;   
+        transform.rect.Rotation = 0f;
     }
 
     public Prop(PropInit init, Vector2[] points) : this(init)
@@ -297,6 +288,29 @@ class Prop
         {
             transform.quad[i] = points[i];
         }
+    }
+
+    /// <summary>
+    /// Apply random modifications to prop as specified by its RandomVariation,
+    /// RandomFlipX, RandomFlipY, and RandomRotation flags, or the absence of them.
+    /// </summary>
+    public void Randomize()
+    {
+        var rand = new Random(Seed);
+
+        if (PropInit.PropFlags.HasFlag(PropFlags.RandomVariation))
+        {
+            Variation = rand.Next(0, PropInit.VariationCount);
+        }
+
+        if (PropInit.PropFlags.HasFlag(PropFlags.RandomFlipX))
+            if (rand.NextSingle() > 0.5) FlipX();
+
+        if (PropInit.PropFlags.HasFlag(PropFlags.RandomFlipY))
+            if (rand.NextSingle() > 0.5) FlipY();
+
+        if (PropInit.PropFlags.HasFlag(PropFlags.RandomRotation))
+            transform.rect.Rotation = rand.NextSingle() * MathF.PI * 2f;
     }
 
     private void UpdateQuadPointsFromAffine()

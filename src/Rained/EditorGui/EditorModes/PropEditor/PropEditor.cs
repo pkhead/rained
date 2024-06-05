@@ -796,6 +796,7 @@ partial class PropEditor : IEditorMode
                 {
                     DepthOffset = window.WorkLayer * 10
                 };
+                prop.Randomize();
 
                 RainEd.Instance.Level.Props.Add(prop);
                 selectedProps.Clear();
