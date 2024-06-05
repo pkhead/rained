@@ -30,8 +30,7 @@ Geometry Editor:
 - keyboard shortcut for shortcut & shortcut dots
 
 Tile Editor:
-- make 2nd geo spec layer a lighter red 
-- optimize tile rendering
+- make 2nd geo spec layer a lighter red
 - force geo on materials (hm... what if i combined geo/tile editor?)
 
 Camera Editor:
@@ -52,7 +51,6 @@ Prop Editor:
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
-- randomFlipX and randomFlipY tags
 
 Render:
 - select camera to render first
