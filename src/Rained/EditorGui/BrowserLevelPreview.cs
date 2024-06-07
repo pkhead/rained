@@ -6,7 +6,7 @@ namespace RainEd;
 
 class BrowserLevelPreview : FileBrowserPreview
 {
-    record MeshData(Vector3[] Vertices, Color[] Colors);
+    record MeshData(int Width, int Height, Vector3[] Vertices, Color[] Colors);
     record ThreadData(string Path, CancellationToken CancelToken); 
 
     public override bool IsReady => isReady;
@@ -14,10 +14,16 @@ class BrowserLevelPreview : FileBrowserPreview
     private Task<MeshData?>? geoLoadTask;
 
     private bool isReady = false;
+    private int levelWidth = -1;
+    private int levelHeight = -1;
     private RlManaged.Mesh? geoMesh;
     private RlManaged.Material? geoMaterial;
     private RlManaged.RenderTexture2D? renderTexture;
     private CancellationTokenSource cancelTokenSrc;
+
+    int lastWidth = -1;
+    float viewScale = 1f;
+    Vector2 viewPan = Vector2.Zero;
 
     public BrowserLevelPreview(string path) : base(path)
     {
@@ -47,10 +53,16 @@ class BrowserLevelPreview : FileBrowserPreview
         List<Vector3> vertices = [];
         List<Color> colors = []; 
 
-        for (int x = 0; x < geoList.values.Count; x++)
+        int levelWidth = 0;
+        int levelHeight = 0;
+
+        levelWidth = geoList.values.Count;
+        for (int x = 0; x < levelWidth; x++)
         {
             var listX = (Lingo.List) geoList.values[x];
-            for (int y = 0; y < listX.values.Count; y++)
+            levelHeight = listX.values.Count;
+
+            for (int y = 0; y < levelHeight; y++)
             {
                 var listY = (Lingo.List) listX.values[y];
 
@@ -80,7 +92,7 @@ class BrowserLevelPreview : FileBrowserPreview
             }
         }
 
-        return new MeshData([..vertices], [..colors]);
+        return new MeshData(levelWidth, levelHeight, [..vertices], [..colors]);
     }
 
     private static void BuildShape(int x, int y, GeoType v, LevelObject objects, Color color, List<Vector3> vertices, List<Color> colors)
@@ -126,7 +138,7 @@ class BrowserLevelPreview : FileBrowserPreview
             
             case GeoType.SlopeLeftDown:
                 vertices.Add(new Vector3(x, y, 0));
-                vertices.Add(new Vector3(x+1f, y+1f, 0));
+                vertices.Add(new Vector3(x, y+1f, 0));
                 vertices.Add(new Vector3(x+1f, y, 0));
 
                 colors.Add(color);
@@ -147,7 +159,7 @@ class BrowserLevelPreview : FileBrowserPreview
             case GeoType.SlopeRightDown:
                 vertices.Add(new Vector3(x+1, y, 0));
                 vertices.Add(new Vector3(x, y, 0));
-                vertices.Add(new Vector3(x+1, y+1, 0));
+                vertices.Add(new Vector3(x, y+1, 0));
 
                 colors.Add(color);
                 colors.Add(color);
@@ -168,13 +180,13 @@ class BrowserLevelPreview : FileBrowserPreview
         // create horizontal poles
         if (objects.HasFlag(LevelObject.HorizontalBeam))
         {
-            vertices.Add(new Vector3(x, y+0.3f, 0));
-            vertices.Add(new Vector3(x, y+0.7f, 0));
-            vertices.Add(new Vector3(x+1, y+0.7f, 0));
+            vertices.Add(new Vector3(x, y+0.4f, 0));
+            vertices.Add(new Vector3(x, y+0.6f, 0));
+            vertices.Add(new Vector3(x+1, y+0.6f, 0));
 
-            vertices.Add(new Vector3(x+1, y+0.7f, 0));
-            vertices.Add(new Vector3(x+1, y+0.3f, 0));
-            vertices.Add(new Vector3(x, y+0.3f, 0));
+            vertices.Add(new Vector3(x+1, y+0.6f, 0));
+            vertices.Add(new Vector3(x+1, y+0.4f, 0));
+            vertices.Add(new Vector3(x, y+0.4f, 0));
 
             colors.Add(color);
             colors.Add(color);
@@ -188,12 +200,12 @@ class BrowserLevelPreview : FileBrowserPreview
         // create vertical poles
         if (objects.HasFlag(LevelObject.VerticalBeam))
         {
-            vertices.Add(new Vector3(x+0.3f, y, 0));
-            vertices.Add(new Vector3(x+0.3f, y+1, 0));
-            vertices.Add(new Vector3(x+0.7f, y+1, 0));
+            vertices.Add(new Vector3(x+0.4f, y, 0));
+            vertices.Add(new Vector3(x+0.4f, y+1, 0));
+            vertices.Add(new Vector3(x+0.6f, y+1, 0));
 
-            vertices.Add(new Vector3(x+0.7f, y+1, 0));
-            vertices.Add(new Vector3(x+0.7f, y, 0));
+            vertices.Add(new Vector3(x+0.6f, y+1, 0));
+            vertices.Add(new Vector3(x+0.6f, y, 0));
             vertices.Add(new Vector3(x, y, 0));
 
             colors.Add(color);
@@ -208,16 +220,19 @@ class BrowserLevelPreview : FileBrowserPreview
 
     public override void Render()
     {
+        var viewWidth = (int)ImGui.GetContentRegionAvail().X;
+
         if (!isReady)
         {
             if (geoLoadTask is not null && geoLoadTask.IsCompleted)
             {
                 if (geoLoadTask.IsCompletedSuccessfully && geoLoadTask.Result is MeshData meshData)
                 {
-                    var width = ImGui.GetContentRegionAvail().X;
-
-                    renderTexture = RlManaged.RenderTexture2D.Load((int)width, (int)(width / (4.0f / 3.0f)));
+                    viewScale = viewWidth * 0.05f;
                     
+                    levelWidth = meshData.Width;
+                    levelHeight = meshData.Height;
+
                     geoMesh = new RlManaged.Mesh();
                     geoMesh.SetVertices(meshData.Vertices);
                     geoMesh.SetColors(meshData.Colors);
@@ -238,7 +253,7 @@ class BrowserLevelPreview : FileBrowserPreview
 
         if (isReady)
         {
-            if (geoMesh is null || geoMaterial is null || renderTexture is null)
+            if (geoMesh is null || geoMaterial is null)
             {
                 var text = "Could not display preview";
                 ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(text).X) / 2f);
@@ -246,22 +261,66 @@ class BrowserLevelPreview : FileBrowserPreview
             }
             else
             {
+                if (renderTexture is null || lastWidth != viewWidth)
+                {
+                    lastWidth = viewWidth;
+
+                    renderTexture?.Dispose();
+                    renderTexture = RlManaged.RenderTexture2D.Load(viewWidth, (int)(viewWidth / (4.0f / 3.0f)));
+                }
+
                 Raylib.BeginTextureMode(renderTexture);
-                Raylib.ClearBackground(new Color(127, 127, 127, 255));
-                Raylib.DrawMesh(geoMesh, geoMaterial, Matrix4x4.Identity);
+                {
+                    var mat = Matrix4x4.CreateTranslation(-viewPan.X, -viewPan.Y, 0f) * Matrix4x4.CreateScale(viewScale);
+                    Raylib.ClearBackground(Color.Blank);
+
+                    Rlgl.DrawRenderBatchActive();
+
+                    Rlgl.PushMatrix();
+                    Rlgl.MultMatrixf(Matrix4x4.Transpose(mat));
+
+                    Raylib.DrawRectangle(0, 0, levelWidth, levelHeight, new Color(127, 127, 127, 255));
+                    Rlgl.DrawRenderBatchActive();
+                    Raylib.DrawMesh(geoMesh, geoMaterial, Matrix4x4.Identity);
+                    
+                    Rlgl.PopMatrix();
+                }
                 Raylib.EndTextureMode();
+
+                var cursorPos = ImGui.GetCursorPos();
                 rlImGui_cs.rlImGui.ImageRenderTexture(renderTexture);
+                ImGui.SetCursorPos(cursorPos);
+
+                ImGui.InvisibleButton("##interactArea", new Vector2(renderTexture.Texture.Width, renderTexture.Texture.Height));
+
+                if (ImGui.IsItemActive())
+                {
+                    viewPan -= Raylib.GetMouseDelta() / viewScale;
+                }
+
+                var mouseMove = Raylib.GetMouseWheelMove();
+                if (ImGui.IsItemHovered() && mouseMove != 0f)
+                {
+                    if (mouseMove > 0)
+                    {
+                        viewScale /= mouseMove * 0.5f;
+                    }
+                    else
+                    {
+                        viewScale *= -mouseMove * 0.5f;
+                    }
+                }
             }
         }
     }
 
     public override void Dispose()
     {
+        RainEd.Logger.Information("Unload preview");
+
         if (geoLoadTask is not null && !geoLoadTask.IsCompleted)
         {
             cancelTokenSrc.Cancel();
-            geoLoadTask.Wait();
-            geoLoadTask.Dispose();
         }
 
         geoMesh?.Dispose();

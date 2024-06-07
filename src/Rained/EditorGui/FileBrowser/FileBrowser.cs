@@ -362,7 +362,7 @@ partial class FileBrowser
             ImGui.OpenPopup(winName + "###File Browser");
 
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Once);
         }
 
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
@@ -642,7 +642,7 @@ partial class FileBrowser
             float listingWidth = ImGui.GetContentRegionAvail().X;
             if (curPreview is not null)
             {
-                listingWidth -= ImGui.GetTextLineHeight() * 16f;
+                listingWidth *= 0.6f;
             }
 
             ImGui.BeginChild("Listing", new Vector2(listingWidth, listingHeight));
@@ -671,7 +671,7 @@ partial class FileBrowser
                         selected = i;
                     }
 
-                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    if (ImGui.IsItemClicked() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         ok = true;
 
                     if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
@@ -694,6 +694,8 @@ partial class FileBrowser
                     ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(fileName).X) / 2f);
                     ImGui.Text(fileName);
 
+                    curPreview.Render();
+
                     // if preview is not ready yet, show text that says
                     // "Loading preview..."
                     if (!curPreview.IsReady)
@@ -702,8 +704,6 @@ partial class FileBrowser
                         ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(text).X) / 2f);
                         ImGui.Text(text);
                     }
-
-                    curPreview.Render();
                 }
                 ImGui.EndChild();
             }
