@@ -5,6 +5,7 @@ using SFML.Graphics;
 using ImGuiNET;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace RainEd
 {
@@ -216,11 +217,33 @@ namespace RainEd
 
         public static void DisplayError(string windowTitle, string windowContents)
         {
+            bool success = false;
+
             if (OperatingSystem.IsWindows())
             {
+                success = true;
                 MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
             }
-            else
+            else if (OperatingSystem.IsLinux())
+            {
+                // try using zenity
+                try
+                {
+                    var procStartInfo = new ProcessStartInfo("zenity", ["--error", "--text", windowContents, "--title", windowTitle])
+                    {
+                        UseShellExecute = false,
+                    };
+
+                    Process.Start(procStartInfo)!.WaitForExit();
+                    success = true;
+                }
+                catch (Exception)
+                {}
+            }
+            
+            // user does not have a supported system of showing a dialog error box
+            // so just show in raylib. looks kind of ugly, but it's better than nothing
+            if (!success)
             {
                 if (isAppReady)
                 {
