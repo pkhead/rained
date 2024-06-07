@@ -34,7 +34,7 @@ static class ThemeEditor
     public static void SaveStyle()
     {
         fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, SaveCallback, Path.Combine(Boot.AppDataPath, "config", "themes"));
-        fileBrowser.AddFilter("JSON", [".json"]);
+        fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
         static void SaveCallback(string? path)
         {
@@ -50,7 +50,7 @@ static class ThemeEditor
     public static void LoadStyle()
     {
         fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, Callback, Path.Combine(Boot.AppDataPath, "config", "themes"));
-        fileBrowser.AddFilter("JSON", [".json"]);
+        fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
         static void Callback(string? path)
         {

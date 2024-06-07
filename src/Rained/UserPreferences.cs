@@ -276,7 +276,10 @@ class UserPreferences
     {
         try
         {
-            var filePath = Path.Combine(Boot.AppDataPath, "config", "themes", Theme + ".json");
+            var dir = Path.Combine(Boot.AppDataPath, "config", "themes");
+            var filePath = Path.Combine(dir, Theme + ".jsonc");
+            if (!File.Exists(filePath)) filePath = Path.Combine(dir, Theme + ".json");
+
             var style = SerializableStyle.FromFile(filePath);
             style!.Apply(ImGui.GetStyle());
         }

@@ -390,7 +390,8 @@ static class PreferencesWindow
         availableThemes.Clear();
         foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "config", "themes")))
         {
-            if (Path.GetExtension(fileName) != ".json") continue;
+            var ext = Path.GetExtension(fileName);
+            if (ext != ".json" && ext != ".jsonc") continue;
             availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
         }
         availableThemes.Sort();
