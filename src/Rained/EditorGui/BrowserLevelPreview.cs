@@ -21,7 +21,7 @@ class BrowserLevelPreview : FileBrowserPreview
     private RlManaged.RenderTexture2D? renderTexture;
     private CancellationTokenSource cancelTokenSrc;
 
-    int lastWidth = -1;
+    Vector2 lastViewSize = Vector2.Zero;
     float viewScale = 1f;
     Vector2 viewPan = Vector2.Zero;
 
@@ -80,8 +80,8 @@ class BrowserLevelPreview : FileBrowserPreview
                     var color = l switch
                     {
                         0 => Color.Black,
-                        1 => new Color(100, 100, 100, 255),
-                        2 => new Color(200, 200, 200, 255),
+                        1 => new Color(50, 50, 50, 255),
+                        2 => new Color(100, 100, 100, 255),
                         _ => Color.Blank // should be impossible
                     };
 
@@ -138,7 +138,7 @@ class BrowserLevelPreview : FileBrowserPreview
             
             case GeoType.SlopeLeftDown:
                 vertices.Add(new Vector3(x, y, 0));
-                vertices.Add(new Vector3(x, y+1f, 0));
+                vertices.Add(new Vector3(x+1f, y+1f, 0));
                 vertices.Add(new Vector3(x+1f, y, 0));
 
                 colors.Add(color);
@@ -206,7 +206,7 @@ class BrowserLevelPreview : FileBrowserPreview
 
             vertices.Add(new Vector3(x+0.6f, y+1, 0));
             vertices.Add(new Vector3(x+0.6f, y, 0));
-            vertices.Add(new Vector3(x, y, 0));
+            vertices.Add(new Vector3(x+0.4f, y, 0));
 
             colors.Add(color);
             colors.Add(color);
@@ -220,7 +220,8 @@ class BrowserLevelPreview : FileBrowserPreview
 
     public override void Render()
     {
-        var viewWidth = (int)ImGui.GetContentRegionAvail().X;
+        var viewSize = ImGui.GetContentRegionAvail();
+        float zoomSpeed = 0.8f;    
 
         if (!isReady)
         {
@@ -228,7 +229,11 @@ class BrowserLevelPreview : FileBrowserPreview
             {
                 if (geoLoadTask.IsCompletedSuccessfully && geoLoadTask.Result is MeshData meshData)
                 {
-                    viewScale = viewWidth * 0.05f;
+                    viewScale = viewSize.X / meshData.Width;
+
+                    viewPan.X = (viewSize.X - meshData.Width * viewScale) / 2f;
+                    viewPan.Y = 0f;
+                    //viewPan = (viewSize - new Vector2(meshData.Width * viewScale, meshData.Height)) / 2f;
                     
                     levelWidth = meshData.Width;
                     levelHeight = meshData.Height;
@@ -261,28 +266,28 @@ class BrowserLevelPreview : FileBrowserPreview
             }
             else
             {
-                if (renderTexture is null || lastWidth != viewWidth)
+                if (renderTexture is null || viewSize != lastViewSize)
                 {
-                    lastWidth = viewWidth;
+                    lastViewSize = viewSize;
 
                     renderTexture?.Dispose();
-                    renderTexture = RlManaged.RenderTexture2D.Load(viewWidth, (int)(viewWidth / (4.0f / 3.0f)));
+                    renderTexture = RlManaged.RenderTexture2D.Load((int)viewSize.X, (int)viewSize.Y);
                 }
 
                 Raylib.BeginTextureMode(renderTexture);
                 {
-                    var mat = Matrix4x4.CreateTranslation(-viewPan.X, -viewPan.Y, 0f) * Matrix4x4.CreateScale(viewScale);
                     Raylib.ClearBackground(Color.Blank);
 
                     Rlgl.DrawRenderBatchActive();
 
                     Rlgl.PushMatrix();
-                    Rlgl.MultMatrixf(Matrix4x4.Transpose(mat));
+                    Rlgl.Scalef(viewScale, viewScale, 1f);
+                    Rlgl.Translatef(-viewPan.X, -viewPan.Y, 0f);
 
                     Raylib.DrawRectangle(0, 0, levelWidth, levelHeight, new Color(127, 127, 127, 255));
                     Rlgl.DrawRenderBatchActive();
                     Raylib.DrawMesh(geoMesh, geoMaterial, Matrix4x4.Identity);
-                    
+
                     Rlgl.PopMatrix();
                 }
                 Raylib.EndTextureMode();
@@ -303,11 +308,11 @@ class BrowserLevelPreview : FileBrowserPreview
                 {
                     if (mouseMove > 0)
                     {
-                        viewScale /= mouseMove * 0.5f;
+                        viewScale /= Math.Sign(mouseMove) * zoomSpeed;
                     }
                     else
                     {
-                        viewScale *= -mouseMove * 0.5f;
+                        viewScale *= -Math.Sign(mouseMove) * zoomSpeed;
                     }
                 }
             }
