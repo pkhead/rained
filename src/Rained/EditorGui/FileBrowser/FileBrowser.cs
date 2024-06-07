@@ -632,9 +632,8 @@ partial class FileBrowser
             {
                 selectedFilePath = curFileName;
 
-                LogInfo("select new file");
-
                 curPreview?.Dispose();
+                curPreview = null;
 
                 if (curFileName != "")
                     curPreview = PreviewCallback?.Invoke(selectedFilePath, entries[selected].IconIndex == 7);
@@ -878,6 +877,8 @@ partial class FileBrowser
             if (isDone)
             {
                 ImGui.CloseCurrentPopup();
+                curPreview?.Dispose();
+                curPreview = null;
                 callback(callbackStr);
             }
 
