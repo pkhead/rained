@@ -2,11 +2,13 @@ Priority:
 - configurable tile spec colors
 - dissolve material/tile separation
 - editorConfig.txt
+- some effects default to layer 1 instead of all
 
 Bugs:
 - change history doesn't work well with level resize
 - fix weird bug where keyboard release doesn't get registered
 - weird graphical issue on certain drivers when level is out of bounds
+  - already figured this out, fix is on the glib branch (though doesn't actually require glib)
 
 Overall:
 - figure out github actions to make nightly builds
@@ -16,7 +18,6 @@ Overall:
   - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - port newmakelevel (geometry exporter) to C#
 - Move Level
-- level preview in file browser
 - undo/redo for level resize
 - level resze drag
 - help pages/hints/tooltips/whatever
