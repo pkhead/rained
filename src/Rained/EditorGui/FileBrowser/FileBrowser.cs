@@ -2,7 +2,6 @@ using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
 using rlImGui_cs;
-using System.Text;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -13,6 +12,9 @@ partial class FileBrowser
     private bool isOpen = false;
     private bool isDone = false;
     private string callbackStr = string.Empty;
+    
+    public Func<string, bool, FileBrowserPreview?>? PreviewCallback;
+    private FileBrowserPreview? curPreview;
 
     private readonly Action<string> callback;
     private string cwd; // current directory of file browser
@@ -30,6 +32,7 @@ partial class FileBrowser
     private string nameBuf;
     
     private int selected = -1;
+    private string selectedFilePath = "";
     private bool scrollToSelected = false;
     private readonly List<Entry> entries = new();
     private readonly List<(int, Entry)> filteredEntries = new();
@@ -78,71 +81,6 @@ partial class FileBrowser
         {
             Name = name;
             Path = path;
-        }
-    }
-
-    private record FileFilter
-    {
-        public string FilterName;
-        public string FullText;
-        public string[] AllowedExtensions;
-        public Func<string, bool, bool>? FilterCallback;
-
-        public FileFilter(string name, string[] extensions, Func<string, bool, bool>? filterCallback = null)
-        {
-            FilterName = name;
-            AllowedExtensions = extensions;
-            FilterCallback = filterCallback;
-
-            var strBuilder = new StringBuilder();
-            strBuilder.Append(name);
-            strBuilder.Append(" (");
-            
-            for (int i = 0; i < extensions.Length; i++)
-            {
-                var ext = extensions[i];
-                if (i > 0) strBuilder.Append(", ");
-                strBuilder.Append('*');
-                strBuilder.Append(ext);
-            }
-
-            strBuilder.Append(')');
-            FullText = strBuilder.ToString();
-        }
-
-        // the isRw parameter -- if teh SetPath function had identified it as a
-        // Rain World level file
-        public bool Match(string fileName, bool isRw)
-        {
-            foreach (var ext in AllowedExtensions)
-            {
-                if (ext == ".*") return true;
-            }
-
-            var pathExt = Path.GetExtension(fileName);
-            if (string.IsNullOrEmpty(pathExt)) return false;
-            
-            foreach (var ext in AllowedExtensions)
-            {
-                if (pathExt == ext)
-                {
-                    if (FilterCallback is null) return true;
-                    else if (FilterCallback(fileName, isRw))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        public string Enforce(string fileName)
-        {
-            if (AllowedExtensions[0] != ".*" && Path.GetExtension(fileName) != AllowedExtensions[0])
-                return fileName + AllowedExtensions[0];
-
-            return fileName;
         }
     }
 
@@ -284,10 +222,7 @@ partial class FileBrowser
         }
         catch (Exception e)
         {
-            if (RainEd.Instance is not null)
-            {
-                RainEd.Logger.Error("Could not get drive info:\n{Exception}", e.ToString());
-            }
+            LogError("Could not get drive info:\n{Exception}", e.ToString());
         }
     }
 
@@ -297,17 +232,6 @@ partial class FileBrowser
         if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
         bookmarks.Add(new BookmarkItem(name, path));
     }
-
-    public void AddFilterWithCallback(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
-    {
-        fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
-
-        // default filter is the first filter added, else "Any"
-        selectedFilter = fileFilters[1];
-    }
-
-    public void AddFilter(string filterName, params string[] allowedExtensions)
-        => AddFilterWithCallback(filterName, null, allowedExtensions);
 
     private static Rectangle GetIconRect(int index)
         => new Rectangle(index * 13, 0, 13, 13);
@@ -319,7 +243,7 @@ partial class FileBrowser
         {
             openErrorPopup = true;
             errorMsg = "Directory does not exist";
-            if (RainEd.Instance is not null) RainEd.Logger.Error("Directory {Path} does not exist", path);
+            LogError("Directory {Path} does not exist", path);
 
             return false;
         }
@@ -399,38 +323,6 @@ partial class FileBrowser
         needFilterRefresh = true;
         
         return true;
-    }
-
-    private void RefreshFilter()
-    {
-        filteredEntries.Clear();
-
-        if (mode == OpenMode.Directory)
-        {
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var entry = entries[i];
-
-                if (entry.Name[0] == '.') continue; // hidden files/folders
-                if (entry.Type == EntryType.Directory)
-                {
-                    filteredEntries.Add((i, entry));
-                }
-            }    
-        }
-        else
-        {
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var entry = entries[i];
-
-                if (entry.Name[0] == '.') continue; // hidden files/folders
-                if (entry.Type == EntryType.Directory || selectedFilter.Match(Path.Combine(cwd, entry.Name), entry.IconIndex == 7))
-                {
-                    filteredEntries.Add((i, entry));
-                }
-            }
-        }
     }
 
     /// <summary>
@@ -575,8 +467,7 @@ partial class FileBrowser
                             }
                             catch (Exception e)
                             {
-                                if (RainEd.Instance is not null)
-                                    RainEd.Logger.Error("Could not create directory!\n" + e);
+                                LogError("Could not create directory!\n" + e);
                                 
                                 errorMsg = e.Message;
                                 ImGui.OpenPopup("Error");
@@ -729,14 +620,34 @@ partial class FileBrowser
             var dirSelect = false;
 
             // list files in cwd
-            ImGui.BeginChild("Listing", new Vector2(-0.0001f, listingHeight));
+            if (needFilterRefresh)
             {
-                if (needFilterRefresh)
-                {
-                    RefreshFilter();
-                    needFilterRefresh = false;
-                }
+                RefreshFilter();
+                needFilterRefresh = false;
+            }
 
+            // update currently selected file for the preview
+            var curFileName = (selected < 0 || selected >= entries.Count) ? "" : Path.Combine(cwd, entries[selected].Name);
+            if (curFileName != selectedFilePath)
+            {
+                selectedFilePath = curFileName;
+
+                LogInfo("select new file");
+
+                curPreview?.Dispose();
+
+                if (curFileName != "")
+                    curPreview = PreviewCallback?.Invoke(selectedFilePath, entries[selected].IconIndex == 7);
+            }
+
+            float listingWidth = ImGui.GetContentRegionAvail().X;
+            if (curPreview is not null)
+            {
+                listingWidth -= ImGui.GetTextLineHeight() * 16f;
+            }
+
+            ImGui.BeginChild("Listing", new Vector2(listingWidth, listingHeight));
+            {
                 foreach ((var i, var entry) in filteredEntries)
                 {
                     if (selected == i && scrollToSelected)
@@ -771,6 +682,32 @@ partial class FileBrowser
                 }
             }
             ImGui.EndChild();
+
+            // show preview
+            if (curPreview is not null)
+            {
+                ImGui.SameLine();
+                float childWidth = ImGui.GetContentRegionAvail().X;
+                ImGui.BeginChild("Preview", new Vector2(childWidth, listingHeight));
+                {
+                    // show file name, centered
+                    var fileName = Path.GetFileName(curPreview.Path);
+                    ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(fileName).X) / 2f);
+                    ImGui.Text(fileName);
+
+                    // if preview is not ready yet, show text that says
+                    // "Loading preview..."
+                    if (!curPreview.IsReady)
+                    {
+                        string text = "Loading preview...";
+                        ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(text).X) / 2f);
+                        ImGui.Text(text);
+                    }
+
+                    curPreview.Render();
+                }
+                ImGui.EndChild();
+            }
 
             scrollToSelected = false;
 
@@ -983,6 +920,22 @@ partial class FileBrowser
                 forwardStack.Clear();
                 selected = -1;
             }
+        }
+    }
+
+    private void LogInfo(string s, params string[] args)
+    {
+        if (RainEd.Instance is not null)
+        {
+            RainEd.Logger.Information(s, args);
+        }
+    }
+
+    private void LogError(string s, params string[] args)
+    {
+        if (RainEd.Instance is not null)
+        {
+            RainEd.Logger.Error(s, args);
         }
     }
 

@@ -123,6 +123,11 @@ static class EditorWindow
 
         fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+        {
+            if (isRw) return new BrowserLevelPreview(path);
+            return null;
+        };
     }
 
     private static void DrawMenuBar()
