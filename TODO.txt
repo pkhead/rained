@@ -24,6 +24,7 @@ Overall:
 - option to use "legacy" shortcut icons
 
 Geometry Editor:
+- mirror tool
 - select and copy/paste
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
@@ -31,14 +32,17 @@ Geometry Editor:
 
 Tile Editor:
 - make 2nd geo spec layer a lighter red
-- force geo on materials (hm... what if i combined geo/tile editor?)
 
 Camera Editor:
 - render order
+  - cameras show a number on the top left corner of their bounds (this is the render order)
+  - you can change the render order in the Edit menu with the "Set First" button
 
 Light Editor:
 - save intermediate textures for change history
   (i guess once per every 1000 stroke atoms or something)
+   - this is to save cpu time when undo-ing if someone potentially had
+   - a very large change history for the light editor. (is this even possible)
 - toggle view shadow plane and occlusion plane
 - prop/tile as brush
 
@@ -53,5 +57,4 @@ Prop Editor:
   freeform props should flip about the center of the AABB
 
 Render:
-- select camera to render first
 - show time elapsed
