@@ -3,10 +3,12 @@ using System.Numerics;
 using ImGuiNET;
 using rlImGui_cs;
 using System.Text;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace RainEd;
 
-class FileBrowser
+partial class FileBrowser
 {
     private bool isOpen = false;
     private bool isDone = false;
@@ -218,15 +220,74 @@ class FileBrowser
         }
 
         // list drives
-        foreach (var driveInfo in DriveInfo.GetDrives())
+        try
         {
-            if (!driveInfo.IsReady) continue;
-
-            drives.Add(new BookmarkItem()
+            if (OperatingSystem.IsWindows())
             {
-                Name = driveInfo.Name,
-                Path = driveInfo.RootDirectory.FullName
-            });
+                foreach (var driveInfo in DriveInfo.GetDrives())
+                {
+                    if (!driveInfo.IsReady) continue;
+                    var driveType = driveInfo.DriveType;
+
+                    if (driveType == DriveType.NoRootDirectory) continue;
+
+                    drives.Add(new BookmarkItem()
+                    {
+                        Name = driveInfo.Name,
+                        Path = driveInfo.RootDirectory.FullName
+                    });
+                }
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // DriveInfo.GetDrives() lists a bunch of system stuff
+                // that the user probably doesn't want to save their
+                // rain world data in. I'm not sure how to properly
+                // filter that stuff out. Instead, I will use
+                // lsblk since it doesn't list that stuff.
+                var proc = Process.Start(new ProcessStartInfo("lsblk")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    Arguments = "-P -o NAME,MOUNTPOINT"
+                });
+
+                if (proc is null)
+                {
+                    drives.Add(new BookmarkItem("/", "/"));
+                }
+                else
+                {
+                    var stdout = proc.StandardOutput;
+                    while (!stdout.EndOfStream)
+                    {
+                        var line = stdout.ReadLine();
+                        if (string.IsNullOrEmpty(line)) break;
+
+                        var match = MyRegex().Match(line);
+                        string mountPoint = match.Groups[2].Value;
+                        if (mountPoint.Length == 0 || mountPoint[0] != '/') continue; // mountpoint may be empty or [SWAP]
+                        if (mountPoint.Length >= 5 && mountPoint[0..5] == "/boot") continue; // ignore efi boot stuff
+
+                        var name = mountPoint == "/" ? mountPoint : Path.GetFileNameWithoutExtension(mountPoint);
+                        drives.Add(new BookmarkItem(name, mountPoint));
+                    }
+                }
+            }
+            else if (OperatingSystem.IsFreeBSD())
+            {
+                // what the hell is free bsd
+                drives.Add(new BookmarkItem("/", "/"));
+            }
+            
+            // mac os doesn't get a drive listing i suppose
+        }
+        catch (Exception e)
+        {
+            if (RainEd.Instance is not null)
+            {
+                RainEd.Logger.Error("Could not get drive info:\n{Exception}", e.ToString());
+            }
         }
     }
 
@@ -642,16 +703,21 @@ class FileBrowser
 
             ImGui.BeginChild("Locations", new Vector2(ImGui.GetTextLineHeight() * 10f, listingHeight));
             {
+                // list user locations
                 foreach (var location in bookmarks)
                 {
                     ListBookmark(location);
                 }
 
-                ImGui.Separator();
-
-                foreach (var drive in drives)
+                // list drives, if available
+                if (drives.Count > 0)
                 {
-                    ListBookmark(drive);
+                    ImGui.Separator();
+
+                    foreach (var drive in drives)
+                    {
+                        ListBookmark(drive);
+                    }
                 }
             }
             ImGui.EndChild();
@@ -969,4 +1035,8 @@ class FileBrowser
 
         return false;
     }
+
+    // used for getting drive list from lsblk
+    [GeneratedRegex("NAME=\"(.*?)\" MOUNTPOINT=\"(.*?)\"")]
+    private static partial Regex MyRegex();
 }
