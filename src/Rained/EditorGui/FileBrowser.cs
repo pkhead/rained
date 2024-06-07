@@ -35,6 +35,7 @@ class FileBrowser
     private FileFilter selectedFilter;
     private bool needFilterRefresh = false;
     private readonly List<BookmarkItem> bookmarks = new();
+    private readonly List<BookmarkItem> drives = new();
 
     private bool openErrorPopup = false;
     private bool openOverwritePopup = false;
@@ -208,9 +209,24 @@ class FileBrowser
         AddBookmark("Pictures", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
         AddBookmark("Videos", Environment.GetFolderPath(Environment.SpecialFolder.MyVideos));
 
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        // idk why Environment.SpecialFolder doesn't have a MyDownloads enum;
+        // xdg_user_dirs standardizes a download location, and mac has one as well.
+        var downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        if (Directory.Exists(downloadsFolder))
         {
-            AddBookmark("Downloads", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
+            AddBookmark("Downloads", downloadsFolder);
+        }
+
+        // list drives
+        foreach (var driveInfo in DriveInfo.GetDrives())
+        {
+            if (!driveInfo.IsReady) continue;
+
+            drives.Add(new BookmarkItem()
+            {
+                Name = driveInfo.Name,
+                Path = driveInfo.RootDirectory.FullName
+            });
         }
     }
 
@@ -607,23 +623,35 @@ class FileBrowser
                 style.ItemSpacing.Y - style.WindowPadding.Y * 2f;
             
             // list bookmarks/locations
+            void ListBookmark(BookmarkItem location)
+            {
+                if (ImGui.Selectable(location.Name, cwd == location.Path))
+                {
+                    if (cwd != location.Path)
+                    {
+                        var old = cwd;
+                        if (SetPath(location.Path))
+                        {
+                            backStack.Push(old);
+                            forwardStack.Clear();
+                            selected = -1;
+                        }
+                    }
+                }
+            }
+
             ImGui.BeginChild("Locations", new Vector2(ImGui.GetTextLineHeight() * 10f, listingHeight));
             {
                 foreach (var location in bookmarks)
                 {
-                    if (ImGui.Selectable(location.Name, cwd == location.Path))
-                    {
-                        if (cwd != location.Path)
-                        {
-                            var old = cwd;
-                            if (SetPath(location.Path))
-                            {
-                                backStack.Push(old);
-                                forwardStack.Clear();
-                                selected = -1;
-                            }
-                        }
-                    }
+                    ListBookmark(location);
+                }
+
+                ImGui.Separator();
+
+                foreach (var drive in drives)
+                {
+                    ListBookmark(drive);
                 }
             }
             ImGui.EndChild();
