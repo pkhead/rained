@@ -293,6 +293,7 @@ class BrowserLevelPreview : FileBrowserPreview
                 Raylib.EndTextureMode();
 
                 var cursorPos = ImGui.GetCursorPos();
+                var cursorScreenPos = ImGui.GetCursorScreenPos();
                 rlImGui_cs.rlImGui.ImageRenderTexture(renderTexture);
                 ImGui.SetCursorPos(cursorPos);
 
@@ -303,17 +304,14 @@ class BrowserLevelPreview : FileBrowserPreview
                     viewPan -= Raylib.GetMouseDelta() / viewScale;
                 }
 
-                var mouseMove = Raylib.GetMouseWheelMove();
-                if (ImGui.IsItemHovered() && mouseMove != 0f)
+                var wheelMove = Raylib.GetMouseWheelMove();
+                if (ImGui.IsItemHovered() && wheelMove != 0f)
                 {
-                    if (mouseMove > 0)
-                    {
-                        viewScale /= Math.Sign(mouseMove) * zoomSpeed;
-                    }
-                    else
-                    {
-                        viewScale *= -Math.Sign(mouseMove) * zoomSpeed;
-                    }
+                    var mpos = (ImGui.GetMousePos() - cursorScreenPos) / viewScale + viewPan;
+                    var factor = MathF.Pow(zoomSpeed, -Math.Sign(wheelMove));
+
+                    viewScale *= factor;
+                    viewPan = -(mpos - viewPan) / factor + mpos;
                 }
             }
         }
