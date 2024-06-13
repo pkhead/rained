@@ -180,6 +180,9 @@ class Effect
 
         if (init.useDecalAffect)
             AffectGradientsAndDecals = init.decalAffectDefault;
+        
+        if (init.useLayers)
+            Layer = init.defaultLayer;
 
         CustomValues = new int[init.customConfigs.Count];
 
