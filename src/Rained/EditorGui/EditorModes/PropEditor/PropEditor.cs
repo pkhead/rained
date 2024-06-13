@@ -794,7 +794,7 @@ partial class PropEditor : IEditorMode
 
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
-                    DepthOffset = window.WorkLayer * 10
+                    DepthOffset = window.WorkLayer * 10 + initSublayer
                 };
                 prop.Randomize();
 
