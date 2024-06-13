@@ -2,7 +2,6 @@ Priority:
 - configurable tile spec colors
 - dissolve material/tile separation
 - editorConfig.txt
-- some effects default to layer 1 instead of all
 
 Bugs:
 - change history doesn't work well with level resize
