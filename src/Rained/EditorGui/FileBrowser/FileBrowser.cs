@@ -362,7 +362,7 @@ partial class FileBrowser
             ImGui.OpenPopup(winName + "###File Browser");
 
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 80f, ImGui.GetTextLineHeight() * 40f), ImGuiCond.FirstUseEver);
         }
 
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
