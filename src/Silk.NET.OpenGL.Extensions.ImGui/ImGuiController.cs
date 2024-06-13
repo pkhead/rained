@@ -324,13 +324,16 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
         private void AddKeyEvent(ImGuiIOPtr io, Key k, bool down)
         {
-            var keyboardState = _input.Keyboards[0];
-            io.AddKeyEvent(ImGuiKey.ModCtrl, keyboardState.IsKeyPressed(Key.ControlLeft) || keyboardState.IsKeyPressed(Key.ControlRight));
-            io.AddKeyEvent(ImGuiKey.ModAlt, keyboardState.IsKeyPressed(Key.AltLeft) || keyboardState.IsKeyPressed(Key.AltRight));
-            io.AddKeyEvent(ImGuiKey.ModShift, keyboardState.IsKeyPressed(Key.ShiftLeft) || keyboardState.IsKeyPressed(Key.ShiftRight));
-            io.AddKeyEvent(ImGuiKey.ModSuper, keyboardState.IsKeyPressed(Key.SuperLeft) || keyboardState.IsKeyPressed(Key.SuperRight));
+            if (keyMap.TryGetValue(k, out ImGuiKey imKey))
+            {
+                var keyboardState = _input.Keyboards[0];
+                io.AddKeyEvent(ImGuiKey.ModCtrl, keyboardState.IsKeyPressed(Key.ControlLeft) || keyboardState.IsKeyPressed(Key.ControlRight));
+                io.AddKeyEvent(ImGuiKey.ModAlt, keyboardState.IsKeyPressed(Key.AltLeft) || keyboardState.IsKeyPressed(Key.AltRight));
+                io.AddKeyEvent(ImGuiKey.ModShift, keyboardState.IsKeyPressed(Key.ShiftLeft) || keyboardState.IsKeyPressed(Key.ShiftRight));
+                io.AddKeyEvent(ImGuiKey.ModSuper, keyboardState.IsKeyPressed(Key.SuperLeft) || keyboardState.IsKeyPressed(Key.SuperRight));
 
-            io.AddKeyEvent(keyMap[k], down);
+                io.AddKeyEvent(imKey, down);
+            }
         }
 
         private static Key[] keyEnumArr = (Key[]) Enum.GetValues(typeof(Key));

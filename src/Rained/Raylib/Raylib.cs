@@ -2,6 +2,28 @@ using Glib;
 using System.Numerics;
 namespace Raylib_cs;
 
+/**
+* A lot of this codebase is based off of Raylib, but at some point I decided to switch
+* to a custom-made graphics/windowing library for more customizability (Glib).
+*
+* Instead of replacing every Raylib call with an equivalent Glib call (which would be very
+* time-consuming and boring), I decided to just reimplement relevant Raylib functions
+* over Glib. It also allows compatibility with older versions of code without having to
+* re-write it for Glib.
+*
+* Meshes and models aren't reimplemented, in part because I didn't really like the system
+* (I wasn't doing 3D with them), and in part because I only used meshes once in the code for
+* geometry rendering (at that point).
+*
+* Another thing that I didn't bother matching up -- shader variable names. Here is a mapping from
+* Raylib names to Glib names
+*
+*   in vec2 fragTexCoord => in vec2 glib_texCoord
+*   in vec4 fragColor => in vec4 glib_color
+*   uniform sampler2D uTexture => uniform sampler2D glib_uTexture
+*   uniform vec4 colDiffuse => uniform vec4 glib_uColor
+*/
+
 static class Raylib
 {
     static ConfigFlags configFlags = 0;
