@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
+using System.Diagnostics;
 
 using RenderState = RainEd.DrizzleRender.RenderState;
 namespace RainEd;
@@ -18,48 +19,48 @@ class DrizzleRenderWindow : IDisposable
     private const string LayerPreviewShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D uTexture;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
-        out vec4 finalColor;
+        out vec4 glib_fragColor;
 
         void main()
         {
-            vec4 texelColor = texture(uTexture, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
             bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
             vec3 correctColor = texelColor.bgr;
             
-            finalColor = vec4(
-                mix(correctColor, vec3(1.0), fragColor.r * 0.8),
+            glib_fragColor = vec4(
+                mix(correctColor, vec3(1.0), glib_color.r * 0.8),
                 1.0 - float(isWhite)
-            ) * colDiffuse;
+            ) * glib_uColor;
         }    
     ";
 
     private const string LayerPreviewLightShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D uTexture;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
-        out vec4 finalColor;
+        out vec4 glib_fragColor;
 
         void main()
         {
-            vec4 texelColor = texture(uTexture, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
             bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
             vec3 correctColor = texelColor.bgr;
             
-            finalColor = vec4(
+            glib_fragColor = vec4(
                 vec3(1.0, 0.0, 0.0),
                 1.0 - float(isWhite)
-            ) * colDiffuse;
+            ) * glib_uColor;
         }    
     ";
 
@@ -263,6 +264,10 @@ class DrizzleRenderWindow : IDisposable
                     if (previewLayers is null)
                         throw new NullReferenceException("previewLayers is null");
 
+                    RainEd.Logger.Information("update preview");
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+
                     needUpdateTextures = false;
 
                     drizzleRenderer.UpdatePreviewImages();
@@ -276,6 +281,9 @@ class DrizzleRenderWindow : IDisposable
                     UpdateTexture(previewImages.BlackOut1, ref previewBlackout1);
                     UpdateTexture(previewImages.BlackOut2, ref previewBlackout2);
                     UpdateComposite();
+
+                    stopwatch.Stop();
+                    RainEd.Logger.Information("Update preview in {Time} ms", stopwatch.Elapsed.Milliseconds);
                 }
 
                 int cWidth = previewComposite.Texture.Width;
