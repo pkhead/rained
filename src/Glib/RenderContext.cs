@@ -205,6 +205,7 @@ public class RenderContext : IDisposable
         framebufferStack.Clear();
         curFramebuffer = null;
 
+        defaultShader.Use(gl);
         defaultShader.SetUniform(Shader.TextureUniform, whiteTexture);
         defaultShader.SetUniform(Shader.ColorUniform, Color.White);
         curTexture = whiteTexture;
@@ -1041,5 +1042,27 @@ public class RenderContext : IDisposable
         tex ??= whiteTexture;
         InternalSetTexture(tex);
         return new BatchDrawHandle(mode, this);
+    }
+
+    private Action<string>? glErrorCallback = null;
+
+    private unsafe void ErrorCallbackHandler(
+        GLEnum source,
+        GLEnum type,
+        int id,
+        GLEnum severity,
+        int length,
+        nint message,
+        nint userParam)
+    {
+        var errorStr = System.Text.Encoding.UTF8.GetString((byte*) message, length);
+        glErrorCallback!(errorStr);
+    }
+
+    public unsafe void SetupErrorCallback(Action<string> proc)
+    {
+        glErrorCallback = proc;
+        gl.Enable(EnableCap.DebugOutput);
+        gl.DebugMessageCallback(ErrorCallbackHandler, null);
     }
 }

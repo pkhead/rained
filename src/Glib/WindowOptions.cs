@@ -72,6 +72,8 @@ public struct WindowOptions
     /// </summary>
     public bool SetupImGui = false;
 
+    public GraphicsAPI API = GraphicsAPI.Default;
+
     public WindowOptions() {}
 
     internal readonly IWindow CreateSilkWindow()
@@ -89,6 +91,7 @@ public struct WindowOptions
         // is created, and then show the window.
         bool centerOnCreation = X is null || Y is null;
 
+        opts.API = API;
         opts.UpdatesPerSecond = RefreshRate;
         opts.FramesPerSecond =  RefreshRate;
         opts.Position = new(posX, posY);

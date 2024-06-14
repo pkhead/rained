@@ -2,7 +2,6 @@ using Raylib_cs;
 using ImGuiNET;
 using System.Runtime.InteropServices;
 using System.Globalization;
-using Glib;
 
 namespace RainEd
 {
@@ -92,11 +91,11 @@ namespace RainEd
             // create splash screen window to display while editor is loading
             if (!bootOptions.NoSplashScreen)
             {
-                var winOptions = new WindowOptions()
+                var winOptions = new Glib.WindowOptions()
                 {
                     Width = 523,
                     Height = 307,
-                    Border = WindowBorder.Hidden,
+                    Border = Glib.WindowBorder.Hidden,
                     Title = "Loading Rained...",
                     VSync = false
                 };
@@ -117,16 +116,23 @@ namespace RainEd
             }
 
             {
-                var windowOptions = new WindowOptions()
+                var windowOptions = new Glib.WindowOptions()
                 {
                     Width = DefaultWindowWidth,
                     Height = DefaultWindowHeight,
-                    Border = WindowBorder.Resizable,
+                    Border = Glib.WindowBorder.Resizable,
                     Title = "Rained",
                     Visible = false,
                     VSync = true,
                     SetupImGui = true
                 };
+
+                windowOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
+                windowOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
+
+#if DEBUG
+                windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+#endif
 
                 window = new Glib.Window(windowOptions);
 
@@ -143,7 +149,15 @@ namespace RainEd
 
                 window.Initialize();
                 Raylib.InitWindow(window);
-                
+
+#if DEBUG
+                window.RenderContext!.SetupErrorCallback((string msg) =>
+                {
+                    if (RainEd.Instance is not null)
+                        RainEd.Logger.Error("GL error: {Error}", msg);
+                });
+#endif
+
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 //Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
@@ -168,7 +182,7 @@ namespace RainEd
                 string? assetDataPath = null;
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
-                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                    window.Visible = true;
                     if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
                     
                     var appSetup = new AppSetup();
@@ -213,7 +227,7 @@ namespace RainEd
                         window.ImGuiController!.Render();
                         Raylib.EndDrawing();
 
-                        GLResource.UnloadGCQueue();
+                        Glib.GLResource.UnloadGCQueue();
                     }
 
                     RainEd.Logger.Information("Shutting down Rained...");

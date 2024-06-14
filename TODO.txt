@@ -1,7 +1,4 @@
-OVERRIDE TAB!
 DRAWTEXT!
-GET RID OF SFML!
-FIGURE OUT WHY OPENGL ERRORS PRINT OUT!!
 
 Priority:
 - configurable tile spec colors
