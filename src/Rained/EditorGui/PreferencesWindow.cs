@@ -193,6 +193,8 @@ static class PreferencesWindow
         
         ImGui.SeparatorText("Level Colors");
         {
+            ImGui.Separator();
+
             Vector3 layerColor1 = HexColorToVec3(prefs.LayerColor1);
             Vector3 layerColor2 = HexColorToVec3(prefs.LayerColor2);
             Vector3 layerColor3 = HexColorToVec3(prefs.LayerColor3);
@@ -267,6 +269,27 @@ static class PreferencesWindow
             bool hideScreenSize = prefs.HideScreenSize;
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
                 prefs.HideScreenSize = hideScreenSize;
+            
+            bool optimizedTile = prefs.OptimizedTilePreviews;
+            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
+                prefs.OptimizedTilePreviews = optimizedTile;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will optimize tile preview rendering such
+                that only tile cells located in the bounds of
+                its tile head will be rendered. If this option
+                is turned off, all tile bodies will be
+                processed regardless or not if it is within the
+                bounds of its tile head.
+
+                Turning this off may be useful if you have very
+                erroneous tiles in a level and want to see them,
+                but otherwise there is no reason to do so.
+                """
+            );
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             
@@ -367,7 +390,8 @@ static class PreferencesWindow
         availableThemes.Clear();
         foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "config", "themes")))
         {
-            if (Path.GetExtension(fileName) != ".json") continue;
+            var ext = Path.GetExtension(fileName);
+            if (ext != ".json" && ext != ".jsonc") continue;
             availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
         }
         availableThemes.Sort();

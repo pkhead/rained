@@ -46,6 +46,7 @@ class UserPreferences
     public bool ViewCameras { get; set; }
     public bool ViewTiles { get; set; }
     public bool ViewProps { get; set; }
+    public bool ViewPreviews { get; set; }
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
@@ -104,6 +105,7 @@ class UserPreferences
     public bool StaticDrizzleLingoRuntime { get; set; }
     public bool ShowRenderPreview { get; set; }
     public bool CheckForUpdates { get; set; }
+    public bool OptimizedTilePreviews { get; set; }
 
     public enum AutotileMouseModeOptions
     {
@@ -141,6 +143,12 @@ class UserPreferences
         }
     }
 
+    public bool ShowPaletteWindow { get; set; }
+    public bool UsePalette { get; set; }
+    public int PaletteIndex { get; set; }
+    public int PaletteFadeIndex { get; set; } = 0;
+    public float PaletteFade { get; set; } = 0f;
+
     public HexColor LayerColor1;
     public HexColor LayerColor2;
     public HexColor LayerColor3;
@@ -172,6 +180,7 @@ class UserPreferences
         ViewCameras = false;
         ViewTiles = false;
         ViewProps = false;
+        ViewPreviews = false;
 
         GeometryViewMode = "overlay";
         PropSnap = "0.5x";
@@ -186,8 +195,13 @@ class UserPreferences
         ShowRenderPreview = true;
         CheckForUpdates = true;
         AutotileMouseMode = AutotileMouseModeOptions.Hold;
+        OptimizedTilePreviews = true;
 
         Theme = "Dark";
+
+        ShowPaletteWindow = false;
+        UsePalette = false;
+        PaletteIndex = 0;
         LayerColor1 = new HexColor("#000000");
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
@@ -262,7 +276,10 @@ class UserPreferences
     {
         try
         {
-            var filePath = Path.Combine(Boot.AppDataPath, "config", "themes", Theme + ".json");
+            var dir = Path.Combine(Boot.AppDataPath, "config", "themes");
+            var filePath = Path.Combine(dir, Theme + ".jsonc");
+            if (!File.Exists(filePath)) filePath = Path.Combine(dir, Theme + ".json");
+
             var style = SerializableStyle.FromFile(filePath);
             style!.Apply(ImGui.GetStyle());
         }

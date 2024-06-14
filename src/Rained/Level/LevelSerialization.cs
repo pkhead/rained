@@ -46,9 +46,20 @@ static class LevelSerialization
         Lingo.List levelProperties = (Lingo.List)
             (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
         
-        Lingo.List? levelCameraData = lingoParser.Read(levelData[6]) as Lingo.List;
-        Lingo.List? levelWaterData = lingoParser.Read(levelData[7]) as Lingo.List;
-        Lingo.List? levelPropData = lingoParser.Read(levelData[8]) as Lingo.List;
+        // it is valid for these lines to be omitted
+        // i assume these were features not present in older versions of the RWLE
+        Lingo.List? levelCameraData = null;
+        Lingo.List? levelWaterData = null;
+        Lingo.List? levelPropData = null;
+        
+        if (levelData.Length >= 7)
+            levelCameraData = lingoParser.Read(levelData[6]) as Lingo.List;
+        
+        if (levelData.Length >= 8)
+            levelWaterData = lingoParser.Read(levelData[7]) as Lingo.List;
+
+        if (levelData.Length >= 9)
+            levelPropData = lingoParser.Read(levelData[8]) as Lingo.List;
 
         // get level dimensions
         Vector2 levelSize = (Vector2) levelProperties.fields["size"];

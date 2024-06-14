@@ -26,6 +26,7 @@ partial class PropEditor : IEditorMode
     private PropInit selectedInit;
     private RlManaged.RenderTexture2D previewTexture = null!;
     private PropInit? curPropPreview = null;
+    private int initSublayer = 0;
 
     // search results only process groups because i'm too lazy to have
     // it also process the resulting props
@@ -952,6 +953,10 @@ partial class PropEditor : IEditorMode
             else
             {
                 ImGui.Text("No props selected");
+
+                ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
+                ImGui.SliderInt("Sublayer", ref initSublayer, 0, 9, "%i", ImGuiSliderFlags.AlwaysClamp);
+                ImGui.PopItemWidth();
             }
 
         } ImGui.End();

@@ -123,6 +123,11 @@ static class EditorWindow
 
         fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+        {
+            if (isRw) return new BrowserLevelPreview(path);
+            return null;
+        };
     }
 
     private static void DrawMenuBar()
@@ -253,6 +258,11 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
+                
+                if (ImGui.MenuItem("Tile Graphics", null, prefs.ViewPreviews))
+                {
+                    prefs.ViewPreviews = !prefs.ViewPreviews;
+                }
 
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
@@ -274,6 +284,11 @@ static class EditorWindow
                 if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
                 {
                     LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
+                }
+
+                if (ImGui.MenuItem("Palettes", null, PaletteWindow.IsWindowOpen))
+                {
+                    PaletteWindow.IsWindowOpen = !PaletteWindow.IsWindowOpen;
                 }
 
                 ImGui.Separator();
@@ -398,6 +413,16 @@ static class EditorWindow
         promptCallback = null;
     }
 
+    static void ShowMiscWindows()
+    {
+        ShortcutsWindow.ShowWindow();
+        AboutWindow.ShowWindow();
+        LevelLoadFailedWindow.ShowWindow();
+        PreferencesWindow.ShowWindow();
+        PaletteWindow.ShowWindow();
+        LuaInterface.ShowLogs();
+    }
+    
     private static bool closeDrizzleRenderWindow = false;
 
     public static void Render()
@@ -481,12 +506,7 @@ static class EditorWindow
             }
         }
 
-        // show miscellaneous windows
-        ShortcutsWindow.ShowWindow();
-        AboutWindow.ShowWindow();
-        LevelLoadFailedWindow.ShowWindow();
-        PreferencesWindow.ShowWindow();
-        LuaInterface.ShowLogs();
+        ShowMiscWindows();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)

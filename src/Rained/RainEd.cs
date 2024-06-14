@@ -21,7 +21,7 @@ public class RainEdStartupException : Exception
 
 sealed class RainEd
 {
-    public const string Version = "b1.4.4";
+    public const string Version = "b1.5.3";
 
     public static RainEd Instance = null!;
 
@@ -264,6 +264,7 @@ sealed class RainEd
             Window.WindowState = Silk.NET.Windowing.WindowState.Maximized;
         }
         ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
+        PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
 
         // level boot load
         if (levelPath.Length > 0)
@@ -319,6 +320,7 @@ sealed class RainEd
         // save user preferences
         levelView.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
+        Preferences.ShowPaletteWindow = PaletteWindow.IsWindowOpen;
 
         Preferences.WindowWidth = Raylib.GetScreenWidth();
         Preferences.WindowHeight = Raylib.GetScreenHeight();

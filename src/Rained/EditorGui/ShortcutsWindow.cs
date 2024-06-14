@@ -9,8 +9,6 @@ static partial class ShortcutsWindow
     public static bool IsWindowOpen = false;
     
     private readonly static string[] NavTabs = new string[] { "General", "Environment Edit", "Geometry Edit", "Tile Edit", "Camera Edit", "Light Edit", "Effects Edit", "Prop Edit" };
-    private static int selectedNavTab = 0;
-    private static int lastEditMode = -1;
 
     private readonly static (string, string)[][] TabData = new (string, string)[][]
     {
@@ -62,7 +60,10 @@ static partial class ShortcutsWindow
             ("[SetMaterial]", "Set selected to default material"),
             ("Left Mouse", "Place tile/material"),
             ("Right Mouse", "Remove tile/material"),
+            ("Shift+Left Mouse", "Rect fill tile/material"),
+            ("Shift+Right Mouse", "Rect remove tile/material"),
             ("[TileIgnoreDifferent]+Left Mouse", "Ignore differing materials"),
+            ("[TileIgnoreDifferent]+Left Mouse", "Ignore materials or tiles"),
             ("[TileForcePlacement]+Left Mouse", "Force tile placement"),
             ("[TileForceGeometry]+Left Mouse", "Force tile geometry"),
             ("[TileForceGeometry]+Right Mouse", "Remove tile and geometry"),
@@ -123,27 +124,37 @@ static partial class ShortcutsWindow
 
     public static void ShowWindow()
     {
-        var editMode = RainEd.Instance.LevelView.EditMode;
-
-        if (lastEditMode == -1)
-        {
-            lastEditMode = editMode;
-        }
-
-        if (editMode != lastEditMode)
-        {
-            // if not selected general, switch tab to whatever editor user is currently one
-            if (selectedNavTab > 0)
-                selectedNavTab = editMode + 1;
-            
-            lastEditMode = editMode;
-        }
-
         if (!IsWindowOpen) return;
 
+        var editMode = RainEd.Instance.LevelView.EditMode;
         if (ImGui.Begin("Shortcuts", ref IsWindowOpen))
         {
-            ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
+            if (ImGui.BeginTabBar("ShortcutTabs"))
+            {
+                if (ImGui.BeginTabItem("General"))
+                {
+                    ShowTab(0);
+                    ImGui.EndTabItem();
+                }
+
+                if (ImGui.BeginTabItem("Current Edit Mode"))
+                {
+                    ShowTab(editMode + 1);
+                    ImGui.EndTabItem();
+                }
+
+                ImGui.EndTabBar();
+            }
+            /*var halfWidth = ImGui.GetTextLineHeight() * 30.0f;
+            ImGui.BeginChild("General", new Vector2(halfWidth, ImGui.GetContentRegionAvail().Y));
+            ShowTab(0);
+            ImGui.EndChild();
+
+            ImGui.SameLine();
+            ImGui.BeginChild("Edit Mode", ImGui.GetContentRegionAvail());
+            ShowTab(editMode + 1);
+            ImGui.EndChild();*/
+            /*ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
             {
                 for (int i = 0; i < NavTabs.Length; i++)
                 {
@@ -158,22 +169,22 @@ static partial class ShortcutsWindow
             ImGui.SameLine();
             ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
             ShowTab();
-            ImGui.EndChild();
+            ImGui.EndChild();*/
         } ImGui.End();
     }
 
-    private static void ShowTab()
+    private static void ShowTab(int navTab)
     {
         var strBuilder = new StringBuilder();
 
         var tableFlags = ImGuiTableFlags.RowBg;
         if (ImGui.BeginTable("ControlTable", 2, tableFlags))
         {
-            ImGui.TableSetupColumn("Shortcut");
+            ImGui.TableSetupColumn("Shortcut", ImGuiTableColumnFlags.WidthFixed, ImGui.GetTextLineHeight() * 10.0f);
             ImGui.TableSetupColumn("Action");
             ImGui.TableHeadersRow();
 
-            var tabData = TabData[selectedNavTab];
+            var tabData = TabData[navTab];
 
             for (int i = 0; i < tabData.Length; i++)
             {

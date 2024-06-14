@@ -59,6 +59,12 @@ class EffectInit
     public bool useDecalAffect = false;
     public bool decalAffectDefault = false;
     public bool deprecated = false;
+    
+    /// <summary>
+    /// The default layer configuration for a newly created effect.
+    /// Applicable only if useLayers is true.
+    /// </summary>
+    public Effect.LayerMode defaultLayer = Effect.LayerMode.All;
 
     public readonly List<CustomEffectConfig> customConfigs;
 
@@ -293,6 +299,7 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Cacti", EffectType.NN)
             {
                 useLayers = true,
+                usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Rain Moss", EffectType.NN)
@@ -389,14 +396,16 @@ class EffectsDatabase
             {
                 binary = true,
                 single = true,
-                useLayers = true
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Lighthouse Flowers", EffectType.NN)
             {
                 binary = true,
                 single = true,
-                useLayers = true
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Fern", EffectType.NN)
@@ -404,7 +413,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Giant Mushroom", EffectType.NN)
@@ -412,7 +422,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Sprawlbush", EffectType.NN)
@@ -420,7 +431,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("featherFern", EffectType.NN)
@@ -428,7 +440,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Fungus Tree", EffectType.NN)
@@ -436,7 +449,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
         }
 
@@ -515,12 +529,14 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Colored Fungi Flowers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Root Plants", EffectType.NN)

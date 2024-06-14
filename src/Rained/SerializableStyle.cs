@@ -225,6 +225,7 @@ class SerializableStyle
         
         //PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
+        ReadCommentHandling = JsonCommentHandling.Skip
         //DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
     };
 

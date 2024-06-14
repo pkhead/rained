@@ -1,16 +1,19 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
-
-using System.Text;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace RainEd;
 
-class FileBrowser
+partial class FileBrowser
 {
     private bool isOpen = false;
     private bool isDone = false;
     private string callbackStr = string.Empty;
+    
+    public Func<string, bool, FileBrowserPreview?>? PreviewCallback;
+    private FileBrowserPreview? curPreview;
 
     private readonly Action<string> callback;
     private string cwd; // current directory of file browser
@@ -28,6 +31,7 @@ class FileBrowser
     private string nameBuf;
     
     private int selected = -1;
+    private string selectedFilePath = "";
     private bool scrollToSelected = false;
     private readonly List<Entry> entries = new();
     private readonly List<(int, Entry)> filteredEntries = new();
@@ -35,6 +39,7 @@ class FileBrowser
     private FileFilter selectedFilter;
     private bool needFilterRefresh = false;
     private readonly List<BookmarkItem> bookmarks = new();
+    private readonly List<BookmarkItem> drives = new();
 
     private bool openErrorPopup = false;
     private bool openOverwritePopup = false;
@@ -75,71 +80,6 @@ class FileBrowser
         {
             Name = name;
             Path = path;
-        }
-    }
-
-    private record FileFilter
-    {
-        public string FilterName;
-        public string FullText;
-        public string[] AllowedExtensions;
-        public Func<string, bool, bool>? FilterCallback;
-
-        public FileFilter(string name, string[] extensions, Func<string, bool, bool>? filterCallback = null)
-        {
-            FilterName = name;
-            AllowedExtensions = extensions;
-            FilterCallback = filterCallback;
-
-            var strBuilder = new StringBuilder();
-            strBuilder.Append(name);
-            strBuilder.Append(" (");
-            
-            for (int i = 0; i < extensions.Length; i++)
-            {
-                var ext = extensions[i];
-                if (i > 0) strBuilder.Append(", ");
-                strBuilder.Append('*');
-                strBuilder.Append(ext);
-            }
-
-            strBuilder.Append(')');
-            FullText = strBuilder.ToString();
-        }
-
-        // the isRw parameter -- if teh SetPath function had identified it as a
-        // Rain World level file
-        public bool Match(string fileName, bool isRw)
-        {
-            foreach (var ext in AllowedExtensions)
-            {
-                if (ext == ".*") return true;
-            }
-
-            var pathExt = Path.GetExtension(fileName);
-            if (string.IsNullOrEmpty(pathExt)) return false;
-            
-            foreach (var ext in AllowedExtensions)
-            {
-                if (pathExt == ext)
-                {
-                    if (FilterCallback is null) return true;
-                    else if (FilterCallback(fileName, isRw))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        public string Enforce(string fileName)
-        {
-            if (AllowedExtensions[0] != ".*" && Path.GetExtension(fileName) != AllowedExtensions[0])
-                return fileName + AllowedExtensions[0];
-
-            return fileName;
         }
     }
 
@@ -208,9 +148,80 @@ class FileBrowser
         AddBookmark("Pictures", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
         AddBookmark("Videos", Environment.GetFolderPath(Environment.SpecialFolder.MyVideos));
 
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        // idk why Environment.SpecialFolder doesn't have a MyDownloads enum;
+        // xdg_user_dirs standardizes a download location, and mac has one as well.
+        var downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        if (Directory.Exists(downloadsFolder))
         {
-            AddBookmark("Downloads", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"));
+            AddBookmark("Downloads", downloadsFolder);
+        }
+
+        // list drives
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                foreach (var driveInfo in DriveInfo.GetDrives())
+                {
+                    if (!driveInfo.IsReady) continue;
+                    var driveType = driveInfo.DriveType;
+
+                    if (driveType == DriveType.NoRootDirectory) continue;
+
+                    drives.Add(new BookmarkItem()
+                    {
+                        Name = driveInfo.Name,
+                        Path = driveInfo.RootDirectory.FullName
+                    });
+                }
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // DriveInfo.GetDrives() lists a bunch of system stuff
+                // that the user probably doesn't want to save their
+                // rain world data in. I'm not sure how to properly
+                // filter that stuff out. Instead, I will use
+                // lsblk since it doesn't list that stuff.
+                var proc = Process.Start(new ProcessStartInfo("lsblk")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    Arguments = "-P -o NAME,MOUNTPOINT"
+                });
+
+                if (proc is null)
+                {
+                    drives.Add(new BookmarkItem("/", "/"));
+                }
+                else
+                {
+                    var stdout = proc.StandardOutput;
+                    while (!stdout.EndOfStream)
+                    {
+                        var line = stdout.ReadLine();
+                        if (string.IsNullOrEmpty(line)) break;
+
+                        var match = MyRegex().Match(line);
+                        string mountPoint = match.Groups[2].Value;
+                        if (mountPoint.Length == 0 || mountPoint[0] != '/') continue; // mountpoint may be empty or [SWAP]
+                        if (mountPoint.Length >= 5 && mountPoint[0..5] == "/boot") continue; // ignore efi boot stuff
+
+                        var name = mountPoint == "/" ? mountPoint : Path.GetFileNameWithoutExtension(mountPoint);
+                        drives.Add(new BookmarkItem(name, mountPoint));
+                    }
+                }
+            }
+            else if (OperatingSystem.IsFreeBSD())
+            {
+                // what the hell is free bsd
+                drives.Add(new BookmarkItem("/", "/"));
+            }
+            
+            // mac os doesn't get a drive listing i suppose
+        }
+        catch (Exception e)
+        {
+            LogError("Could not get drive info:\n{Exception}", e.ToString());
         }
     }
 
@@ -220,17 +231,6 @@ class FileBrowser
         if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
         bookmarks.Add(new BookmarkItem(name, path));
     }
-
-    public void AddFilterWithCallback(string filterName, Func<string, bool, bool>? callback = null, params string[] allowedExtensions)
-    {
-        fileFilters.Add(new FileFilter(filterName, allowedExtensions, callback));
-
-        // default filter is the first filter added, else "Any"
-        selectedFilter = fileFilters[1];
-    }
-
-    public void AddFilter(string filterName, params string[] allowedExtensions)
-        => AddFilterWithCallback(filterName, null, allowedExtensions);
 
     private static Rectangle GetIconRect(int index)
         => new Rectangle(index * 13, 0, 13, 13);
@@ -242,7 +242,7 @@ class FileBrowser
         {
             openErrorPopup = true;
             errorMsg = "Directory does not exist";
-            if (RainEd.Instance is not null) RainEd.Logger.Error("Directory {Path} does not exist", path);
+            LogError("Directory {Path} does not exist", path);
 
             return false;
         }
@@ -324,38 +324,6 @@ class FileBrowser
         return true;
     }
 
-    private void RefreshFilter()
-    {
-        filteredEntries.Clear();
-
-        if (mode == OpenMode.Directory)
-        {
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var entry = entries[i];
-
-                if (entry.Name[0] == '.') continue; // hidden files/folders
-                if (entry.Type == EntryType.Directory)
-                {
-                    filteredEntries.Add((i, entry));
-                }
-            }    
-        }
-        else
-        {
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var entry = entries[i];
-
-                if (entry.Name[0] == '.') continue; // hidden files/folders
-                if (entry.Type == EntryType.Directory || selectedFilter.Match(Path.Combine(cwd, entry.Name), entry.IconIndex == 7))
-                {
-                    filteredEntries.Add((i, entry));
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Render the file browser window, setting the referenced variable to null
     /// once the window has closed.
@@ -393,7 +361,7 @@ class FileBrowser
             ImGui.OpenPopup(winName + "###File Browser");
 
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 60f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 80f, ImGui.GetTextLineHeight() * 40f), ImGuiCond.FirstUseEver);
         }
 
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
@@ -498,8 +466,7 @@ class FileBrowser
                             }
                             catch (Exception e)
                             {
-                                if (RainEd.Instance is not null)
-                                    RainEd.Logger.Error("Could not create directory!\n" + e);
+                                LogError("Could not create directory!\n" + e);
                                 
                                 errorMsg = e.Message;
                                 ImGui.OpenPopup("Error");
@@ -607,22 +574,39 @@ class FileBrowser
                 style.ItemSpacing.Y - style.WindowPadding.Y * 2f;
             
             // list bookmarks/locations
+            void ListBookmark(BookmarkItem location)
+            {
+                if (ImGui.Selectable(location.Name, cwd == location.Path))
+                {
+                    if (cwd != location.Path)
+                    {
+                        var old = cwd;
+                        if (SetPath(location.Path))
+                        {
+                            backStack.Push(old);
+                            forwardStack.Clear();
+                            selected = -1;
+                        }
+                    }
+                }
+            }
+
             ImGui.BeginChild("Locations", new Vector2(ImGui.GetTextLineHeight() * 10f, listingHeight));
             {
+                // list user locations
                 foreach (var location in bookmarks)
                 {
-                    if (ImGui.Selectable(location.Name, cwd == location.Path))
+                    ListBookmark(location);
+                }
+
+                // list drives, if available
+                if (drives.Count > 0)
+                {
+                    ImGui.Separator();
+
+                    foreach (var drive in drives)
                     {
-                        if (cwd != location.Path)
-                        {
-                            var old = cwd;
-                            if (SetPath(location.Path))
-                            {
-                                backStack.Push(old);
-                                forwardStack.Clear();
-                                selected = -1;
-                            }
-                        }
+                        ListBookmark(drive);
                     }
                 }
             }
@@ -635,14 +619,33 @@ class FileBrowser
             var dirSelect = false;
 
             // list files in cwd
-            ImGui.BeginChild("Listing", new Vector2(-0.0001f, listingHeight));
+            if (needFilterRefresh)
             {
-                if (needFilterRefresh)
-                {
-                    RefreshFilter();
-                    needFilterRefresh = false;
-                }
+                RefreshFilter();
+                needFilterRefresh = false;
+            }
 
+            // update currently selected file for the preview
+            var curFileName = (selected < 0 || selected >= entries.Count) ? "" : Path.Combine(cwd, entries[selected].Name);
+            if (curFileName != selectedFilePath)
+            {
+                selectedFilePath = curFileName;
+
+                curPreview?.Dispose();
+                curPreview = null;
+
+                if (curFileName != "")
+                    curPreview = PreviewCallback?.Invoke(selectedFilePath, entries[selected].IconIndex == 7);
+            }
+
+            float listingWidth = ImGui.GetContentRegionAvail().X;
+            if (curPreview is not null)
+            {
+                listingWidth *= 0.6f;
+            }
+
+            ImGui.BeginChild("Listing", new Vector2(listingWidth, listingHeight));
+            {
                 foreach ((var i, var entry) in filteredEntries)
                 {
                     if (selected == i && scrollToSelected)
@@ -667,7 +670,7 @@ class FileBrowser
                         selected = i;
                     }
 
-                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    if (ImGui.IsItemClicked() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                         ok = true;
 
                     if (ImGui.IsItemActivated() && entry.Type == EntryType.File)
@@ -677,6 +680,32 @@ class FileBrowser
                 }
             }
             ImGui.EndChild();
+
+            // show preview
+            if (curPreview is not null)
+            {
+                ImGui.SameLine();
+                float childWidth = ImGui.GetContentRegionAvail().X;
+                ImGui.BeginChild("Preview", new Vector2(childWidth, listingHeight));
+                {
+                    // show file name, centered
+                    var fileName = Path.GetFileName(curPreview.Path);
+                    ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(fileName).X) / 2f);
+                    ImGui.Text(fileName);
+
+                    curPreview.Render();
+
+                    // if preview is not ready yet, show text that says
+                    // "Loading preview..."
+                    if (!curPreview.IsReady)
+                    {
+                        string text = "Loading preview...";
+                        ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(text).X) / 2f);
+                        ImGui.Text(text);
+                    }
+                }
+                ImGui.EndChild();
+            }
 
             scrollToSelected = false;
 
@@ -847,6 +876,8 @@ class FileBrowser
             if (isDone)
             {
                 ImGui.CloseCurrentPopup();
+                curPreview?.Dispose();
+                curPreview = null;
                 callback(callbackStr);
             }
 
@@ -889,6 +920,22 @@ class FileBrowser
                 forwardStack.Clear();
                 selected = -1;
             }
+        }
+    }
+
+    private void LogInfo(string s, params string[] args)
+    {
+        if (RainEd.Instance is not null)
+        {
+            RainEd.Logger.Information(s, args);
+        }
+    }
+
+    private void LogError(string s, params string[] args)
+    {
+        if (RainEd.Instance is not null)
+        {
+            RainEd.Logger.Error(s, args);
         }
     }
 
@@ -941,4 +988,8 @@ class FileBrowser
 
         return false;
     }
+
+    // used for getting drive list from lsblk
+    [GeneratedRegex("NAME=\"(.*?)\" MOUNTPOINT=\"(.*?)\"")]
+    private static partial Regex MyRegex();
 }

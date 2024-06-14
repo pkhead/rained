@@ -28,6 +28,9 @@ enum PropFlags
     Colorize = 16,
     CanSetThickness = 32,
     Tile = 64,
+    RandomFlipX = 128,
+    RandomFlipY = 256,
+    RandomRotation = 512
 }
 
 // data in propColors.txt, used for custom colors
@@ -209,12 +212,16 @@ record PropInit
             PropFlags |= PropFlags.CustomColorAvailable;
         }
 
-        // random variation
+        // random parameters on placement
         if (randVar)
         {
             PropFlags |= PropFlags.RandomVariation;
         }
 
+        if (tags.Contains("randomFlipX")) PropFlags |= PropFlags.RandomFlipX;
+        if (tags.Contains("randomFlipY")) PropFlags |= PropFlags.RandomFlipY;
+        if (tags.Contains("randomRotat")) PropFlags |= PropFlags.RandomRotation;
+        
         // the following two are tags defined by me,
         // written in the rope-type prop init data (written by me)
         if (tags.Contains("wire"))

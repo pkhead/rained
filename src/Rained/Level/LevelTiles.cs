@@ -177,14 +177,14 @@ partial class Level
                     if (specInt >= 0)
                     {
                         Layers[layer, gx, gy].Geo = (GeoType) specInt;
-                        levelRenderer.MarkNeedsRedraw(gx, gy, layer);
+                        levelRenderer.InvalidateGeo(gx, gy, layer);
                     }
 
                     // place second layer
                     if (layer < 2 && spec2Int >= 0)
                     {
                         Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
-                        levelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
+                        levelRenderer.InvalidateGeo(gx, gy, layer+1);
                     }
                 }
 
@@ -192,6 +192,9 @@ partial class Level
                 if (specInt >= 0)
                 {
                     ref var cell = ref Layers[layer, gx, gy];
+                    if (cell.HasTile())
+                        levelRenderer.InvalidateTileHead(gx, gy, layer);
+                    
                     cell.TileRootX = tileRootX;
                     cell.TileRootY = tileRootY;
                     cell.TileLayer = layer;
@@ -201,6 +204,9 @@ partial class Level
                 if (spec2Int >= 0 && layer < 2)
                 {
                     ref var cell = ref Layers[layer+1, gx, gy];
+                    if (cell.HasTile())
+                        levelRenderer.InvalidateTileHead(gx, gy, layer+1);
+                    
                     cell.TileRootX = tileRootX;
                     cell.TileRootY = tileRootY;
                     cell.TileLayer = layer;
@@ -210,6 +216,7 @@ partial class Level
 
         // place tile root
         Layers[layer, tileRootX, tileRootY].TileHead = tile;
+        levelRenderer.InvalidateTileHead(tileRootX, tileRootY, layer);
     }
 
     /// <summary>
@@ -261,13 +268,13 @@ partial class Level
                     if (specInt >= 0)
                     {
                         Layers[layer, gx, gy].Geo = GeoType.Air;
-                        levelRenderer.MarkNeedsRedraw(gx, gy, layer);
+                        levelRenderer.InvalidateGeo(gx, gy, layer);
                     }
 
                     if (spec2Int >= 0 && layer < 2)
                     {
                         Layers[layer+1, gx, gy].Geo = GeoType.Air;
-                        levelRenderer.MarkNeedsRedraw(gx, gy, layer+1);
+                        levelRenderer.InvalidateGeo(gx, gy, layer+1);
                     }
                 }
             }
@@ -278,6 +285,8 @@ partial class Level
 
         // remove chain data
         RemoveChainData(layer, tileRootX, tileRootY);
+
+        levelRenderer.InvalidateTileHead(tileRootX, tileRootY, layer);
     }
 
     /// <summary>
