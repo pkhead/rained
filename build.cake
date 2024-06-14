@@ -69,9 +69,9 @@ Task("Package")
     .Does(() =>
 {
     if (os == "linux-x64")
-        GZipCompress(buildDir, $"rained_X.X.X_{os}.tar.gz");
+        GZipCompress(buildDir, $"rained_{os}.tar.gz");
     else
-        Zip(buildDir, $"rained_X.X.X_{os}.zip");
+        Zip(buildDir, $"rained_{os}.zip");
 });
 
 RunTarget(target);
