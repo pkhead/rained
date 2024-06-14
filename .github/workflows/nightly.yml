@@ -46,16 +46,24 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: linux-x64
-          path: ./artifacts/
+          path: ./artifacts
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          draft: false
-          prerelease: true
+          tag: "nightly"
           name: "Nightly"
-          tag_name: "nightly"
-          make_latest: false
-          files: ./artifacts/rained_linux-x64.tar.gz
+          allowUpdates: true
+          makeLatest: false
+          prerelease: true
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GTIHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/rained_linux-x64.tar.gz
+          asset_name: rained_linux-x64.tar.gz
+          asset_content_type: application/gzip
