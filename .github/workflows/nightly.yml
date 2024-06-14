@@ -38,6 +38,8 @@ jobs:
   create_release:
     needs: [build_linux]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download Linux Artifact
