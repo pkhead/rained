@@ -52,7 +52,7 @@ class AssetGraphicsProvider
 
         texture = null;
 
-        var srcImage = RlManaged.Image.Load(texturePath);
+        using var srcImage = RlManaged.Image.Load(texturePath);
         if (Raylib.IsImageReady(srcImage))
         {
             CropImage(srcImage);
@@ -100,7 +100,7 @@ class AssetGraphicsProvider
             texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
         }
 
-        var srcImage = RlManaged.Image.Load(texturePath);
+        using var srcImage = RlManaged.Image.Load(texturePath);
 
         if (Raylib.IsImageReady(srcImage))
         {
@@ -136,7 +136,7 @@ class AssetGraphicsProvider
             graphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
         }
 
-        var fullImage = RlManaged.Image.Load(graphicsPath);
+        using var fullImage = RlManaged.Image.Load(graphicsPath);
         if (Raylib.IsImageReady(fullImage))
         {
             CropImage(fullImage);
@@ -156,7 +156,7 @@ class AssetGraphicsProvider
             if (previewRect.Y + previewRect.Height > fullImage.Height)
                 previewRect.Height = fullImage.Height - previewRect.Y;
 
-            var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
+            using var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
             Raylib.ImageDraw(

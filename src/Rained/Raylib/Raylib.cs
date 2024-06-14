@@ -1,4 +1,5 @@
 using Glib;
+using SixLabors.ImageSharp.Processing;
 using System.Numerics;
 namespace Raylib_cs;
 
@@ -637,6 +638,11 @@ static class Raylib
         return obj;
     }
 
+    public static void UnloadImage(Image image)
+    {
+        image.image?.Dispose();
+    }
+
     public static Image LoadImageFromTexture(Texture2D tex)
     {
         return new Image()
@@ -647,14 +653,9 @@ static class Raylib
 
     public static Image ImageCopy(Image src)
     {
-        var srcPixels = src.image!.Pixels;
-        var newPixels = new byte[srcPixels.Length];
-        srcPixels.CopyTo(newPixels, 0);
-        var newImage = new Glib.Image(newPixels, src.Width, src.Height, src.image!.PixelFormat);
-
         return new Image()
         {
-            image = newImage
+            image = src.image!.Clone()
         };
     }
 
@@ -708,126 +709,7 @@ static class Raylib
 
     private static void ImageDraw(Glib.Image dstImage, Glib.Image srcImage, Glib.Rectangle srcRec, Glib.Rectangle dstRec, Glib.Color tintCol)
     {
-        var srcStartX = (int)srcRec.X;
-        var srcStartY = (int)srcRec.Y;
-        var srcW = (int)srcRec.Width;
-        var srcH = (int)srcRec.Height;
-        
-        var dstStartX = (int)dstRec.X;
-        var dstStartY = (int)dstRec.Y;
-        var dstW = (int)dstRec.Width;
-        var dstH = (int)dstRec.Height;
-
-        // if the src rect is outside the bounds of the source image,
-        // all pixels will be discarded. therefore, there is no need
-        // to do anything processing if this is the case
-        if (srcStartX >= srcImage.Width || srcStartY >= srcImage.Height || srcStartX + srcW < 1 || srcStartY + srcH < 1)
-            return;
-
-        // similarly, if the dst rect is outside the bounds of the dest image,
-        // there is no need to do any processing
-        if (dstStartX >= dstImage.Width || dstStartY >= dstImage.Height || dstStartX + dstW < 1 || dstStartY + dstH < 1)
-            return;
-
-        // no scaling needs to be performed, so the draw operation
-        // can be optimized
-        if (srcW == dstW && srcH == dstH)
-        {
-            // if the two pixel formats are the same, and tint is white
-            // each section of the image row can just be blitted to the destination image
-            bool isTintWhite = tintCol.R == 1.0 && tintCol.G == 1.0 && tintCol.B == 1.0 && tintCol.A == 1.0;
-            if (srcImage.PixelFormat == dstImage.PixelFormat && isTintWhite)
-            {
-                int pDstStartX = Math.Max(0, dstStartX - Math.Min(srcStartX, 0));
-                int pDstStartY = Math.Max(0, dstStartY - Math.Min(srcStartY, 0));
-
-                int bpp = (int)srcImage.BytesPerPixel;
-                int srcRowOffset = Math.Max(srcStartX - Math.Min(dstStartX, 0), 0) * bpp;
-                int dstRowOffset = pDstStartX * bpp;
-                int rowLen = Math.Min(
-                    Math.Min(pDstStartX + dstW, dstImage.Width) - pDstStartX,
-                    Math.Min(srcStartX + srcW, srcImage.Width) - srcStartX
-                ) * bpp;
-
-                int srcRowLen = srcImage.Width * bpp;
-                int dstRowLen = dstImage.Width * bpp;
-
-                int srcColOffset = Math.Max(srcStartY - Math.Min(dstStartY, 0), 0);
-                int dstColOffset = pDstStartY;
-                int colLen = Math.Min(
-                    Math.Min(pDstStartY + dstH, dstImage.Height) - dstStartY,
-                    Math.Min(srcStartY + srcH, srcImage.Height) - srcStartY
-                );
-
-                var srcPixels = srcImage.Pixels;
-                var dstPixels = dstImage.Pixels;
-
-                int dstY = dstColOffset;
-                int srcY = srcColOffset;
-                for (int i = 0; i < colLen; i++)
-                {
-                    Buffer.BlockCopy(srcPixels, srcY * srcRowLen + srcRowOffset, dstPixels, dstY * dstRowLen + dstRowOffset, rowLen);
-                    srcY++; dstY++;
-                }
-            }
-
-            // but if they are not the same, looping through each individual pixel is required
-            // since format conversions need to be done
-            else
-            {
-                int srcX = srcStartX;
-
-                for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
-                {
-                    if (dstX < 0 || dstX >= dstImage.Width) continue;
-                    
-                    int srcY = srcStartY;
-                    for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
-                    {
-                        if (dstY < 0 || dstY >= dstImage.Height) continue;
-
-                        // discard pixel if reading from outside source bounds
-                        if (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height)
-                        {
-                            var col = srcImage.GetPixel(srcX, srcY);
-                            dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
-                        }
-
-                        srcY++;
-                    }
-
-                    srcX++;
-                }
-            }
-        }
-
-        // here nearest-filtering scaling needs to be
-        // performed
-        else
-        {
-            float u;
-            for (int dstX = dstStartX; dstX < dstStartX + dstW; dstX++)
-            {
-                if (dstX < 0 || dstX >= dstImage.Width) continue;
-                u = (float)(dstX - dstStartX) / dstW;
-                int srcX = (int)(u * srcW + srcStartX);
-
-                float v;
-                for (int dstY = dstStartY; dstY < dstStartY + dstH; dstY++)
-                {
-                    if (dstY < 0 || dstY >= dstImage.Height) continue;
-                    v = (float)(dstY - dstStartY) / dstH;
-                    int srcY = (int)(v * srcH + srcStartY);
-
-                    // discard pixel if reading from outside source bounds
-                    if (srcX >= 0 && srcY >= 0 && srcX < srcImage.Width && srcY < srcImage.Height)
-                    {
-                        var col = srcImage.GetPixel(srcX, srcY);
-                        dstImage.SetPixel(dstX, dstY, new Glib.Color(col.R * tintCol.R, col.G * tintCol.G, col.B * tintCol.B, col.A * tintCol.A));
-                    }
-                }
-            }
-        }
+        dstImage.DrawImage(srcImage, srcRec, dstRec, tintCol);
     }
 
     public static void ImageDraw(Image dst, Image src, Rectangle srcRec, Rectangle dstRec, Color tint)
@@ -849,33 +731,12 @@ static class Raylib
         var newImage = Glib.Image.FromColor(endX - startX, endY - startY, Glib.Color.Transparent, srcImage.PixelFormat);
 
         ImageDraw(newImage, srcImage, new Glib.Rectangle(crop.Position, crop.Size), new Glib.Rectangle(Vector2.Zero, crop.Size), Glib.Color.White);
-        // copy slices of each row that are within the crop rectangle
-        // using the pixels array directly
-        /*int bpp = (int)srcImage.BytesPerPixel;
-        int rowLen = (endX - startX) * bpp;
-        int rowOffset = startX * bpp;
-        int rowSize = srcImage.Width * bpp;
-        int dstRowSize = newImage.Width * bpp;
-
-        for (int y = startY; y < endY; y++)
-        {
-            Buffer.BlockCopy(srcImage.Pixels, y * rowSize + rowOffset, newImage.Pixels, (y - startY) * dstRowSize, rowLen);
-        }*/
-
         image.image = newImage;
     }
 
     public static void ImageFlipVertical(Image image)
     {
-        var oldImage = image.image!;
-        var newImage = Glib.Image.FromColor(oldImage.Width, oldImage.Height, Glib.Color.Transparent, oldImage.PixelFormat);
-
-        int bpp = (int)Glib.Image.GetBytesPerPixel(oldImage.PixelFormat);
-        int rowSize = oldImage.Width * bpp;
-        for (int y = 0; y < oldImage.Height; y++)
-        {
-            Buffer.BlockCopy(oldImage.Pixels, y * rowSize, newImage.Pixels, (oldImage.Height - y - 1) * rowSize, rowSize);
-        }
+        image.image!.FlipVertical();
     }
 
     public static void ImageResizeCanvas(ref Image image, int newWidth, int newHeight, int offsetX, int offsetY, Color fill)

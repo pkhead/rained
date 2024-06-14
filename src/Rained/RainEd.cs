@@ -159,7 +159,7 @@ sealed class RainEd
 
         // create placeholder for missing texture
         {
-            var img = RlManaged.Image.GenColor(2, 2, Color.Black);
+            using var img = RlManaged.Image.GenColor(2, 2, Color.Black);
             img.DrawPixel(0, 0, new Color(255, 0, 255, 255));
             img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);

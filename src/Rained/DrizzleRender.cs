@@ -9,6 +9,7 @@ using Drizzle.Logic.Rendering;
 using Drizzle.Ported;
 using Raylib_cs;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 namespace RainEd;
 
 enum RenderPreviewStage 
@@ -562,8 +563,10 @@ class DrizzleRender : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hopefully this is a good idea...
-    private unsafe static void CopyLingoImage(LingoImage srcImg, Raylib_cs.Image dstImg)
+    private unsafe static void CopyLingoImage(LingoImage srcImg, Raylib_cs.Image raylibImage)
     {
+        var dstImg = raylibImage.image!;
+
         if (srcImg.Width != dstImg.Width || srcImg.Height != dstImg.Height)
         {
             RainEd.Logger.Warning("Mismatched image sizes");
@@ -572,12 +575,34 @@ class DrizzleRender : IDisposable
         
         if (srcImg.Depth == 1)
         {
-            if (dstImg.Format != PixelFormat.UncompressedGrayscale)
+            if (dstImg.PixelFormat != Glib.PixelFormat.Grayscale)
                 throw new Exception("Mismatched image formats");
+            
+            var rawImage = (Image<L8>) dstImg.ImageSharpImage;
+            var srcBuf = srcImg.ImageBuffer;
 
             // convert 1 bit per pixel bitmap to
             // 8 bits per pixel grayscale image
-            byte[] dstData = dstImg.Data;
+            rawImage.ProcessPixelRows(pixels =>
+            {
+                int p = 0;
+
+                for (int y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (int x = 0; x < row.Length; x++)
+                    {
+                        int i = p / 8;
+                        int j = p % 8;
+                        row[x] = new L8((byte)(255 * ((srcBuf[i] >> j) & 1)));
+
+                        p++;
+                    }
+                }
+            });
+
+            // old version of code that does not use ImageSharp
+            /*byte[] dstData = dstImg.Data;
             
             int k = 0;
             for (int i = 0; i < (dstImg.Width * dstImg.Height) / 8; i++)
@@ -591,16 +616,32 @@ class DrizzleRender : IDisposable
                 dstData[k++] = (byte)(255 * ((v >> 5) & 1));
                 dstData[k++] = (byte)(255 * ((v >> 6) & 1));
                 dstData[k++] = (byte)(255 * ((v >> 7) & 1));
-            } 
+            }*/
         }
         else if (srcImg.Depth == 32)
         {
-            if (dstImg.Format != PixelFormat.UncompressedR8G8B8A8)
+            if (dstImg.PixelFormat != Glib.PixelFormat.RGBA)
                 throw new Exception("Mismatched image formats");
             
             // note: BGR format - is converted to RGB in the shader
-            //Marshal.Copy(srcImg.ImageBuffer, 0, (nint)dstImg.Data, dstImg.Width * dstImg.Height * 4);
-            Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.image!.Pixels, 0, dstImg.Width * dstImg.Height * (int)dstImg.image!.BytesPerPixel);
+            var rawImage = (Image<Rgba32>) dstImg.ImageSharpImage;
+            var srcBuf = srcImg.ImageBuffer;
+
+            rawImage.ProcessPixelRows(pixels =>
+            {
+                int i = 0;
+                for (int y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (int x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgba32(srcBuf[i++], srcBuf[i++], srcBuf[i++], srcBuf[i++]);
+                    }
+                }
+            });
+
+            // old version of code that does not use ImageSharp
+            // Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.image!.Pixels, 0, dstImg.Width * dstImg.Height * (int)dstImg.image!.BytesPerPixel);
         }
         else
         {

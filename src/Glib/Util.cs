@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace Glib;
@@ -35,6 +36,16 @@ public struct Color
     public static Color Cyan => new(1f, 0f, 1f);
     public static Color Magenta => new(0f, 0f, 1f);
 
+    public static bool operator ==(Color a, Color b)
+    {
+        return a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A;
+    }
+
+    public static bool operator !=(Color a, Color b)
+    {
+        return !(a == b);
+    }
+
     public static explicit operator Color(System.Drawing.Color color) =>
         FromRGBA(color.R, color.G, color.B, color.A);
     
@@ -48,6 +59,17 @@ public struct Color
     
     public static explicit operator Vector4(Color color) =>
         new(color.R, color.G, color.B, color.A);
+
+    public override readonly bool Equals([NotNullWhen(true)] object? obj)
+    {
+        if (obj is null || obj.GetType() != GetType()) return false;
+        return this == (Color)obj;
+    }
+
+    public override readonly int GetHashCode()
+    {
+        return HashCode.Combine(R.GetHashCode(), G.GetHashCode(), B.GetHashCode(), A.GetHashCode());
+    }
 }
 
 public struct Rectangle

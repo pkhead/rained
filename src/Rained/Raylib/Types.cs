@@ -199,7 +199,7 @@ struct Image
         Glib.PixelFormat.RGBA => PixelFormat.UncompressedR8G8B8A8,
         _ => throw new NotImplementedException(image!.PixelFormat.ToString())
     };
-    public readonly byte[] Data => image!.Pixels;
+    //public readonly byte[] Data => image!.Pixels;
 }
 
 struct Texture2D

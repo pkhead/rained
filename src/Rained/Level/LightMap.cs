@@ -94,10 +94,10 @@ class LightMap : IDisposable
         width = levelWidth * 20 + 300;
         height = levelHeight * 20 + 300;
 
-        var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
+        using var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
         AssetGraphicsProvider.CropImage(croppedLightMap);
 
-        RlManaged.Image finalImage = RlManaged.Image.GenColor(width, height, Color.White);
+        using var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
 
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
@@ -140,7 +140,7 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        var lightMapImage = GetImage();
+        using var lightMapImage = GetImage();
         
         // vertical flip dest rect (idk why i need to do this it worked before)
         dstOriginY = newHeight - dstOriginY - lightMapImage.Height;

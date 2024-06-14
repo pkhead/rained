@@ -416,7 +416,7 @@ static class LevelSerialization
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         if (File.Exists(lightPath))
         {
-            var img = RlManaged.Image.Load(lightPath);
+            using var img = RlManaged.Image.Load(lightPath);
 
             // some level pngs have no data written to them.
             // wtf??
@@ -1050,7 +1050,7 @@ static class LevelSerialization
 
         // write light image
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        var lightMapImg = level.LightMap.GetImage();
+        using var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
         lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
         Raylib.ExportImage(lightMapImg, lightPath);

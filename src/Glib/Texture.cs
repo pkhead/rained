@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Silk.NET.OpenGL;
 
 namespace Glib;
@@ -108,21 +109,29 @@ public class Texture : GLResource
 
         unsafe
         {
-            fixed (byte* data = image.Pixels)
-            {
-                gl.TexImage2D(
-                    target: GLEnum.Texture2D,
-                    level: 0,
-                    internalformat: (int)InternalFormat.Rgba,
-                    width: (uint)image.Width,
-                    height: (uint)image.Height,
-                    border: 0,
-                    format: fmt,
-                    type: GLEnum.UnsignedByte,
-                    pixels: data
-                );
+            // just use NativeMemory here i guess, it is a very large array and i know the
+            // exact lifetime of the object. probably more performant to do this than putting it
+            // in managed memory?
 
-            }
+            nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
+            void* pixelBuf = NativeMemory.Alloc(bufLen);
+            var span = new Span<byte>(pixelBuf, (int)bufLen);
+
+            image.CopyPixelDataTo(span);
+            
+            gl.TexImage2D(
+                target: GLEnum.Texture2D,
+                level: 0,
+                internalformat: (int)InternalFormat.Rgba,
+                width: (uint)image.Width,
+                height: (uint)image.Height,
+                border: 0,
+                format: fmt,
+                type: GLEnum.UnsignedByte,
+                pixels: pixelBuf
+            );
+
+            NativeMemory.Free(pixelBuf);
         }
 
         if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
@@ -212,17 +221,24 @@ public class Texture : GLResource
         };
 
         gl.BindTexture(GLEnum.Texture2D, texture);
-
-        fixed (byte* ptr = image.Pixels)
+        
+        unsafe
         {
-            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, ptr);
+            nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
+            void* pixelBuf = NativeMemory.Alloc(bufLen);
+            var span = new Span<byte>(pixelBuf, (int)bufLen);
+            image.CopyPixelDataTo(span);
+
+            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, pixelBuf);
+
+            NativeMemory.Free(pixelBuf);
         }
     }
 
     internal void Activate(uint unit)
     {
         if (unit >= 16)
-            throw new ArgumentOutOfRangeException(nameof(unit), "The given unit index is greater than 15");
+            throw new ArgumentOutOfRangeException(nameof(unit), "The given unit index must be less than 16");
         
         gl.ActiveTexture((GLEnum)((int)GLEnum.Texture0 + unit));
         gl.BindTexture(GLEnum.Texture2D, texture);

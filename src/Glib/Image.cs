@@ -1,4 +1,11 @@
-using StbImageSharp;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
+using RawImage = SixLabors.ImageSharp.Image;
 
 namespace Glib;
 
@@ -10,7 +17,7 @@ public enum PixelFormat
     RGBA
 };
 
-public class Image
+public class Image : IDisposable
 {
     public static uint GetBytesPerPixel(PixelFormat format)
     {
@@ -24,7 +31,7 @@ public class Image
         };
     }
 
-    private static ColorComponents StbPixelFormat(PixelFormat format)
+    /*private static ColorComponents StbPixelFormat(PixelFormat format)
     {
         return format switch
         {
@@ -34,56 +41,79 @@ public class Image
             PixelFormat.RGBA => ColorComponents.RedGreenBlueAlpha,
             _ => throw new ArgumentOutOfRangeException(nameof(format))
         };
-    }
+    }*/
 
-    private readonly ImageResult stbImage;
+    private readonly RawImage rawImage;
     public readonly PixelFormat PixelFormat;
     public readonly uint BytesPerPixel;
 
-    public int Width { get => stbImage.Width; }
-    public int Height { get => stbImage.Height; }
-    public byte[] Pixels { get => stbImage.Data; set => stbImage.Data = value; }
+    public int Width { get => rawImage.Width; }
+    public int Height { get => rawImage.Height; }
+    public RawImage ImageSharpImage => rawImage;
 
-    private Image(ImageResult srcImage, byte[] pixels, PixelFormat format)
-    {
-        stbImage = new ImageResult()
+    // make a Configuration instance for specifically for glib images because
+    // Drizzle also uses ImageSharp and assumes PreferContiguousImageBuffers to be true
+    // for the image it creates
+    private static Configuration _globalConfig = null!;
+
+    public static Configuration ImageSharpConfiguration {
+        get
         {
-            Comp = StbPixelFormat(format),
-            Width = srcImage.Width,
-            Height = srcImage.Height,
-            SourceComp = srcImage.SourceComp,
-            Data = pixels
+            if (_globalConfig is not null) return _globalConfig;
+            return _globalConfig = new Configuration(
+                new PngConfigurationModule(),
+                new JpegConfigurationModule()
+            );
+        }
+    } 
+
+    private Image(RawImage image)
+    {
+        rawImage = image;
+        
+        PixelFormat = rawImage.PixelType.BitsPerPixel switch
+        {
+            8 => PixelFormat.Grayscale,
+            16 => PixelFormat.GrayscaleAlpha,
+            24 => PixelFormat.RGB,
+            32 => PixelFormat.RGBA,
+            _ => throw new Exception("Unrecognized color depth of " + rawImage.PixelType.BitsPerPixel)
         };
 
-        PixelFormat = format;
-        BytesPerPixel = GetBytesPerPixel(format);
+        BytesPerPixel = GetBytesPerPixel(PixelFormat);
     }
 
     public Image(Stream stream, PixelFormat format = PixelFormat.RGBA)
     {
-        PixelFormat = format;
-        stbImage = ImageResult.FromStream(stream, StbPixelFormat(format));
-        BytesPerPixel = GetBytesPerPixel(PixelFormat);
-    }
+        var config = ImageSharpConfiguration;
 
-    public Image(byte[] imageData, PixelFormat format)
-    {
-        PixelFormat = format;
-        stbImage = ImageResult.FromMemory(imageData, StbPixelFormat(format));
-        BytesPerPixel = GetBytesPerPixel(PixelFormat);
-    }
-
-    public Image(byte[] rawPixels, int width, int height, PixelFormat format)
-    {
-        PixelFormat = format;
-        stbImage = new ImageResult()
+        rawImage = format switch
         {
-            Comp = StbPixelFormat(format),
-            Width = width,
-            Height = height,
-            SourceComp = StbPixelFormat(format),
-            Data = rawPixels
+            PixelFormat.Grayscale => RawImage.Load<L8>(config, stream),
+            PixelFormat.GrayscaleAlpha => RawImage.Load<La16>(config, stream),
+            PixelFormat.RGB => RawImage.Load<Rgb24>(config, stream),
+            PixelFormat.RGBA => RawImage.Load<Rgba32>(config, stream),
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
         };
+
+        PixelFormat = format;
+        BytesPerPixel = GetBytesPerPixel(PixelFormat);
+    }
+
+    public Image(ReadOnlySpan<byte> rawPixels, int width, int height, PixelFormat format)
+    {
+        var config = ImageSharpConfiguration;
+
+        rawImage = format switch
+        {
+            PixelFormat.Grayscale => RawImage.LoadPixelData<L8>(config, rawPixels, width, height),
+            PixelFormat.GrayscaleAlpha => RawImage.LoadPixelData<La16>(config, rawPixels, width, height),
+            PixelFormat.RGB => RawImage.LoadPixelData<Rgb24>(config, rawPixels, width, height),
+            PixelFormat.RGBA => RawImage.LoadPixelData<Rgba32>(config, rawPixels, width, height),
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        };
+
+        PixelFormat = format;
         BytesPerPixel = GetBytesPerPixel(PixelFormat);
     }
 
@@ -148,67 +178,189 @@ public class Image
 
     public Image ConvertToFormat(PixelFormat newFormat)
     {
-        var newData = new byte[stbImage.Width * stbImage.Height * GetBytesPerPixel(newFormat)];
-        var newImg = new Image(stbImage, newData, newFormat);
+        var config = ImageSharpConfiguration;
 
-        uint j = 0;
-        for (uint i = 0; i < stbImage.Data.Length; i += BytesPerPixel)
+        return new Image(newFormat switch
         {
-            newImg.SetPixel(j, GetPixel(i));
-            j += newImg.BytesPerPixel;
-        }
-
-        return newImg;
+            PixelFormat.Grayscale => rawImage.CloneAs<L8>(config),
+            PixelFormat.GrayscaleAlpha => rawImage.CloneAs<La16>(config),
+            PixelFormat.RGB => rawImage.CloneAs<Rgb24>(config),
+            PixelFormat.RGBA => rawImage.CloneAs<Rgba32>(config),
+            _ => throw new ArgumentOutOfRangeException(nameof(newFormat))
+        });
     }
 
-    private Color GetPixel(uint idx)
+    public Color GetPixel(int x, int y)
     {
-        return PixelFormat switch
-        {
-            PixelFormat.Grayscale => Color.FromRGBA(stbImage.Data[idx], stbImage.Data[idx], stbImage.Data[idx]),
-            PixelFormat.GrayscaleAlpha => Color.FromRGBA(stbImage.Data[idx], stbImage.Data[idx], stbImage.Data[idx], stbImage.Data[idx+1]),
-            PixelFormat.RGB => Color.FromRGBA(stbImage.Data[idx], stbImage.Data[idx+1], stbImage.Data[idx+2], stbImage.Data[idx+3]),
-            PixelFormat.RGBA => Color.FromRGBA(stbImage.Data[idx], stbImage.Data[idx+1], stbImage.Data[idx+2], stbImage.Data[idx+3]),
-            _ => throw new Exception()
-        };
-    }
+        Rgba32 rgba = new();
 
-    private void SetPixel(uint idx, Color color)
-    {
         switch (PixelFormat)
         {
             case PixelFormat.Grayscale:
-                stbImage.Data[idx] = (byte)(Math.Clamp((color.R + color.G + color.B) / 3f, 0f, 1f) * 255f);
+            {
+                var pixel = ((Image<L8>)rawImage)[x, y];
+                pixel.ToRgba32(ref rgba);
                 break;
+            }
 
             case PixelFormat.GrayscaleAlpha:
-                stbImage.Data[idx] = (byte)(Math.Clamp((color.R + color.G + color.B) / 3f, 0f, 1f) * 255f);
-                stbImage.Data[idx+1] = (byte)Math.Clamp(color.A * 255f, 0f, 255f);
+            {
+                var pixel = ((Image<La16>)rawImage)[x, y];
+                pixel.ToRgba32(ref rgba);
                 break;
+            }
 
             case PixelFormat.RGB:
-                stbImage.Data[idx] = (byte)Math.Clamp(color.R * 255f, 0f, 255f);
-                stbImage.Data[idx+1] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
-                stbImage.Data[idx+2] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
+            {
+                var pixel = ((Image<Rgb24>)rawImage)[x, y];
+                pixel.ToRgba32(ref rgba);
                 break;
+            }
 
             case PixelFormat.RGBA:
-                stbImage.Data[idx] = (byte)Math.Clamp(color.R * 255f, 0f, 255f);
-                stbImage.Data[idx+1] = (byte)Math.Clamp(color.G * 255f, 0f, 255f);
-                stbImage.Data[idx+2] = (byte)Math.Clamp(color.B * 255f, 0f, 255f);
-                stbImage.Data[idx+3] = (byte)Math.Clamp(color.A * 255f, 0f, 255f);
+            {
+                var pixel = ((Image<Rgba32>)rawImage)[x, y];
+                pixel.ToRgba32(ref rgba);
                 break;
-        }   
-    }
-    public Color GetPixel(int x, int y)
-    {
-        uint idx = (uint)(y * stbImage.Width + x) * BytesPerPixel;
-        return GetPixel(idx);
+            }
+        }
+        
+        return new Color(rgba.R / 255f, rgba.G / 255f, rgba.B / 255f, rgba.A / 255f);
     }
 
     public void SetPixel(int x, int y, Color color)
     {
-        uint idx = (uint)(y * stbImage.Width + x) * BytesPerPixel;
-        SetPixel(idx, color);
+        Rgba32 rgba = new(
+            (byte)Math.Clamp(color.R * 255f, 0f, 255f),
+            (byte)Math.Clamp(color.G * 255f, 0f, 255f),
+            (byte)Math.Clamp(color.B * 255f, 0f, 255f),
+            (byte)Math.Clamp(color.A * 255f, 0f, 255f)
+        );
+
+        switch (PixelFormat)
+        {
+            case PixelFormat.Grayscale:
+            {
+                var lum = (rgba.R + rgba.G + rgba.B) / 3 * (rgba.A / 255f);
+                ((Image<L8>)rawImage)[x, y] = new L8((byte)lum);
+                break;
+            }
+
+            case PixelFormat.GrayscaleAlpha:
+            {
+                var lum = (rgba.R + rgba.G + rgba.B) / 3;
+                ((Image<La16>)rawImage)[x, y] = new La16((byte)lum, rgba.A);
+                break;
+            }
+
+            case PixelFormat.RGB:
+            {
+                ((Image<Rgb24>)rawImage)[x, y] = new Rgb24(rgba.R, rgba.G, rgba.B);
+                break;
+            }
+
+            case PixelFormat.RGBA:
+            {
+                ((Image<Rgba32>)rawImage)[x, y] = rgba;
+                break;
+            }
+        }
+    }
+
+    public void CopyPixelDataTo(Span<byte> bytes)
+    {
+        switch (PixelFormat)
+        {
+            case PixelFormat.Grayscale:
+            {
+                ((Image<L8>)rawImage).CopyPixelDataTo(bytes);
+                break;
+            }
+
+            case PixelFormat.GrayscaleAlpha:
+            {
+                ((Image<La16>)rawImage).CopyPixelDataTo(bytes);
+                break;
+            }
+
+            case PixelFormat.RGB:
+            {
+                ((Image<Rgb24>)rawImage).CopyPixelDataTo(bytes);
+                break;
+            }
+
+            case PixelFormat.RGBA:
+            {
+                ((Image<Rgba32>)rawImage).CopyPixelDataTo(bytes);
+                break;
+            }
+
+            default: throw new Exception("Unrecognized pixel format");
+        }
+    }
+
+    public void DrawImage(Image srcImage, Rectangle srcRec, Rectangle dstRec, Color tintCol)
+    {
+        var opts = new GraphicsOptions();
+        {
+            opts.Antialias = false;
+            //opts.AlphaCompositionMode = PixelAlphaCompositionMode.Src;
+        };
+        
+        var imgSrcRect = new SixLabors.ImageSharp.Rectangle((int)srcRec.X, (int)srcRec.Y, (int)srcRec.Width, (int)srcRec.Height);
+        var imgDstRect = new SixLabors.ImageSharp.Rectangle((int)dstRec.X, (int)dstRec.Y, (int)dstRec.Width, (int)dstRec.Height);
+
+        var srcImg = srcImage.ImageSharpImage;
+
+        if (imgSrcRect.X != 0 || imgSrcRect.Y != 0 || dstRec.Width != srcRec.Width || dstRec.Height != srcRec.Height || tintCol != Color.White)
+        {
+            var mat = ColorMatrix.Identity;
+            mat.M11 = tintCol.R;
+            mat.M22 = tintCol.G;
+            mat.M33 = tintCol.G;
+            mat.M44 = tintCol.A;
+
+            var resampler = new NearestNeighborResampler();
+
+            using var clone = srcImg.Clone(
+                x => x.Crop(imgSrcRect)
+                    .Resize(imgDstRect.Width, imgDstRect.Height, resampler)
+                    .Filter(mat)
+            );
+            
+            ImageSharpImage.Mutate(x => x.DrawImage(clone, new Point(imgDstRect.X, imgDstRect.Y), opts));
+        }
+        else
+        {
+            ImageSharpImage.Mutate(x => x.DrawImage(srcImage.ImageSharpImage, new Point(imgDstRect.X, imgDstRect.Y), opts));
+        }
+    }
+
+    public void FlipVertical()
+    {
+        ImageSharpImage.Mutate(x => x.Flip(FlipMode.Vertical));
+    }
+
+    public void FlipHorizontal()
+    {
+        ImageSharpImage.Mutate(x => x.Flip(FlipMode.Horizontal));
+    }
+
+    public Image Clone()
+    {
+        return PixelFormat switch
+        {
+            PixelFormat.Grayscale => new Image(((Image<L8>)rawImage).Clone()),
+            PixelFormat.GrayscaleAlpha => new Image(((Image<La16>)rawImage).Clone()),
+            PixelFormat.RGB => new Image(((Image<Rgb24>)rawImage).Clone()),
+            PixelFormat.RGBA => new Image(((Image<Rgba32>)rawImage).Clone()),
+            _ => throw new Exception("Unrecognized pixel format"),
+        };
+    }
+
+    public void Dispose()
+    {
+        rawImage.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

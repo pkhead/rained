@@ -52,13 +52,13 @@ namespace RlManaged
         public static implicit operator Raylib_cs.RenderTexture2D(RenderTexture2D tex) => tex.raw;
     }
 
-    class Image
+    class Image : IDisposable
     {
         private Raylib_cs.Image raw;
 
         public int Width { get => raw.image!.Width; }
         public int Height { get => raw.image!.Height; }
-        public byte[] Data { get => raw.image!.Pixels; }
+        //public byte[] Data { get => throw new NotImplementedException(); }
         public Raylib_cs.PixelFormat PixelFormat => raw.image!.PixelFormat switch
         {
             Glib.PixelFormat.Grayscale => Raylib_cs.PixelFormat.UncompressedGrayscale,
@@ -130,10 +130,10 @@ namespace RlManaged
             Raylib.ImageFormat(ref raw, newFormat);
         }
 
-        // this function does nothing as the new Glib.Image
-        // does not store unmanaged memory
         public void Dispose()
-        {}
+        {
+            Raylib.UnloadImage(raw);
+        }
 
         public static implicit operator Raylib_cs.Image(Image tex) => tex.raw;
 
