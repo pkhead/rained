@@ -1,6 +1,4 @@
 using Raylib_cs;
-using SFML.Window;
-using SFML.Graphics;
 using ImGuiNET;
 using System.Runtime.InteropServices;
 using System.Globalization;
@@ -26,7 +24,7 @@ namespace RainEd
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
         private static bool isAppReady = false;
-        private static RenderWindow? splashScreenWindow = null;
+        private static Glib.Window? splashScreenWindow = null;
 
         private static Glib.Window window = null!;
         public static Glib.Window Window => window;
@@ -91,21 +89,31 @@ namespace RainEd
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;
             
-            // create splash screen window using sfml
-            // to display while editor is loading
-            // funny how i have to use two separate window/graphics libraries
-            // cus raylib doesn't have multi-window support
-            // I was originally going to use only SFML, but it didn't have any
-            // good C# ImGui integration libraries. (Raylib did, though)
+            // create splash screen window to display while editor is loading
             if (!bootOptions.NoSplashScreen)
             {
-                splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                SFML.Graphics.Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
-                var sprite = new Sprite(texture);
+                var winOptions = new WindowOptions()
+                {
+                    Width = 523,
+                    Height = 307,
+                    Border = WindowBorder.Hidden,
+                    Title = "Loading Rained...",
+                    VSync = false
+                };
 
-                splashScreenWindow.Clear();
-                splashScreenWindow.Draw(sprite);
-                splashScreenWindow.Display();
+                splashScreenWindow = new Glib.Window(winOptions);
+                splashScreenWindow.Initialize();
+
+                var rctx = splashScreenWindow.RenderContext!;
+                var texture = rctx.LoadTexture(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+
+                splashScreenWindow.BeginRender();
+
+                rctx.Clear(Glib.Color.Black);
+                rctx.Draw(texture);
+                
+                splashScreenWindow.EndRender();
+                splashScreenWindow.SwapBuffers();
             }
 
             {
@@ -116,7 +124,8 @@ namespace RainEd
                     Border = WindowBorder.Resizable,
                     Title = "Rained",
                     Visible = false,
-                    VSync = true
+                    VSync = true,
+                    SetupImGui = true
                 };
 
                 window = new Glib.Window(windowOptions);
@@ -160,13 +169,12 @@ namespace RainEd
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
                     Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                    splashScreenWindow?.SetVisible(false);
-
+                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    
                     var appSetup = new AppSetup();
                     if (!appSetup.Start(out assetDataPath))
                     {
                         window.Dispose();
-                        splashScreenWindow?.Close();
                         return;
                     }
                 }
@@ -189,16 +197,10 @@ namespace RainEd
                     return;
                 }
 #endif
-
-                //Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
                 Window.Visible = true;
-                
-                // for some reason, closing the window bugs
-                // out raylib, so i just set it invisible
-                // and close it when the program ends
-                splashScreenWindow?.SetVisible(false);
+                if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+
                 isAppReady = true;
-                
 #if !DEBUG
                 try
 #endif
@@ -259,7 +261,7 @@ namespace RainEd
                 else
                 {
                     Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                    splashScreenWindow?.SetVisible(false);
+                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
 
                     while (!Raylib.WindowShouldClose())
                     {

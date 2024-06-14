@@ -70,6 +70,7 @@ public class Window : IDisposable
     public RenderContext? RenderContext { get => _renderContext; }
 
     private ImGuiController? imGuiController = null;
+    private bool setupImGui;
     public ImGuiController? ImGuiController => imGuiController;
 
     private double lastTime = 0.0;
@@ -77,6 +78,7 @@ public class Window : IDisposable
     public Window(WindowOptions options)
     {
         window = options.CreateSilkWindow();
+        setupImGui = options.SetupImGui;
 
         window.Load += OnLoad;
         window.Update += OnUpdate;
@@ -112,12 +114,15 @@ public class Window : IDisposable
 
         _renderContext = new RenderContext(window);
 
-        imGuiController = new ImGuiController(
-            gl: _renderContext.gl,
-            view: window,
-            input: input,
-            onConfigureIO: OnConfigureImGuiIO
-        );
+        if (setupImGui)
+        {
+            imGuiController = new ImGuiController(
+                gl: _renderContext.gl,
+                view: window,
+                input: input,
+                onConfigureIO: OnConfigureImGuiIO
+            );
+        }
 
         Load?.Invoke();
 

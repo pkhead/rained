@@ -66,6 +66,12 @@ public struct WindowOptions
     /// </summary>
     public int RefreshRate = 0;
 
+    /// <summary>
+    /// True if the window should set up an ImGui controller
+    /// on load. This is false by default.
+    /// </summary>
+    public bool SetupImGui = false;
+
     public WindowOptions() {}
 
     internal readonly IWindow CreateSilkWindow()
