@@ -58,12 +58,4 @@ jobs:
           allowUpdates: true
           makeLatest: false
           prerelease: true
-      - name: Upload Linux Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GTIHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./rained_linux-x64.tar.gz
-          asset_name: rained_linux-x64.tar.gz
-          asset_content_type: application/gzip
+          artifacts: "linux-x64"
