@@ -57,6 +57,7 @@ class EditorGeometryRenderer
     
     private readonly List<Vector3> verticesBuf = [];
     private readonly List<Glib.Color> colorsBuf = [];
+    private readonly List<int> indicesBuf = [];
 
     public EditorGeometryRenderer(LevelEditRender renderer)
     {
@@ -94,32 +95,44 @@ class EditorGeometryRenderer
     {
         var vertices = verticesBuf;
         var colors = colorsBuf;
+        var indices = indicesBuf;
+
         vertices.Clear();
         colors.Clear();
+        indices.Clear();
+
+        int meshIndex = 0;
 
         void drawRect(float x, float y, float w, float h, Glib.Color color)
         {
             vertices.Add(new Vector3(x, y, 0));
             vertices.Add(new Vector3(x, y+h, 0));
-            vertices.Add(new Vector3(x+w, y+h, 0));
+            //vertices.Add(new Vector3(x+w, y+h, 0));
 
             vertices.Add(new Vector3(x+w, y+h, 0));
             vertices.Add(new Vector3(x+w, y, 0));
-            vertices.Add(new Vector3(x, y, 0));
+            //vertices.Add(new Vector3(x, y, 0));
 
             colors.Add(color);
             colors.Add(color);
             colors.Add(color);
+            colors.Add(color);
 
-            colors.Add(color);
-            colors.Add(color);
-            colors.Add(color);
+            indices.Add(meshIndex + 0);
+            indices.Add(meshIndex + 1);
+            indices.Add(meshIndex + 2);
+
+            indices.Add(meshIndex + 2);
+            indices.Add(meshIndex + 3);
+            indices.Add(meshIndex + 0);
+
+            meshIndex += 4;
         }
 
         void drawRectLines(float x, float y, float w, float h, Glib.Color color)
         {
             drawRect(x, y, 1, h, color);
-            drawRect(x, y+h, w, 1, color);
+            drawRect(x, y+h-1, w, 1, color);
             drawRect(x+w-1, y, 1, h, color);
             drawRect(x, y, w, 1, color);
         }
@@ -133,6 +146,10 @@ class EditorGeometryRenderer
             colors.Add(color);
             colors.Add(color);
             colors.Add(color);
+
+            indices.Add(meshIndex++);
+            indices.Add(meshIndex++);
+            indices.Add(meshIndex++);
         }
 
         static bool crackCanConnect(int x, int y, int layer)
@@ -312,6 +329,7 @@ class EditorGeometryRenderer
 
         geoMesh.SetVertices(vertices.ToArray());
         geoMesh.SetColors(colors.ToArray());
+        geoMesh.SetIndexBufferData([..indices]);
         geoMesh.Upload();
     }
 
@@ -325,7 +343,7 @@ class EditorGeometryRenderer
             ref Glib.StandardMesh? chunk = ref chunkLayers[chunkPos.X, chunkPos.Y, chunkPos.Layer];
 
             chunk?.Dispose();
-            chunk = RainEd.RenderContext.CreateMesh();
+            chunk = RainEd.RenderContext.CreateMesh(true);
 
             MeshGeometry(
                 geoMesh: chunk,
