@@ -146,7 +146,10 @@ class DrizzleRenderWindow : IDisposable
         if (cancelDisabled)
             ImGui.BeginDisabled();
         
-        if (ImGui.Button("Cancel"))
+        // render preview lags a lot, so make it so the user doesn't have to let go of
+        // mouse button in order to activate the cancel button
+        ImGui.Button("Cancel");
+        if (ImGui.IsItemClicked())
             drizzleRenderer?.Cancel();
         
         if (cancelDisabled)
@@ -248,7 +251,7 @@ class DrizzleRenderWindow : IDisposable
 
             // if preview is enabled, show the progress bar above the preview image
             // otherwise show it below the button line and above the status text
-            if (isPreviewEnabled && Raylib.IsRenderTextureReady(previewComposite))
+            if (isPreviewEnabled)
             {
                 ImGui.BeginGroup();
                 ShowControlButtons(ref doClose);
