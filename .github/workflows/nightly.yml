@@ -58,4 +58,4 @@ jobs:
           name: "Nightly"
           tag_name: "nightly"
           make_latest: false
-          files: ./artifacts/rained_linux-x64.tar.gz
+          files: ./rained/artifacts/rained_linux-x64.tar.gz
