@@ -143,7 +143,7 @@ class LightMap : IDisposable
         using var lightMapImage = GetImage();
         
         // vertical flip dest rect (idk why i need to do this it worked before)
-        dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
+        //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
 
         // resize light map image
         Raylib.ImageResizeCanvas(
@@ -152,6 +152,7 @@ class LightMap : IDisposable
             dstOriginX, dstOriginY,
             Color.White
         );
+        Raylib.ImageFlipVertical(lightMapImage);
 
         // get light map as a texture
         var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);

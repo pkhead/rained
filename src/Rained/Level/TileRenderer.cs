@@ -353,9 +353,9 @@ class TileRenderer
             Raylib.BeginShaderMode(shader);
 
             // send palette color information to the shader
-            Span<Glib.Color> litColorData = stackalloc Glib.Color[30];
-            Span<Glib.Color> neutralColorData = stackalloc Glib.Color[30];
-            Span<Glib.Color> shadedColorData = stackalloc Glib.Color[30];
+            Span<Vector3> litColorData = stackalloc Vector3[30];
+            Span<Vector3> neutralColorData = stackalloc Vector3[30];
+            Span<Vector3> shadedColorData = stackalloc Vector3[30];
 
             for (int i = 0; i < 30; i++)
             {
@@ -363,9 +363,9 @@ class TileRenderer
                 var neutralColor = renderInfo.GetSunColor(PaletteLightLevel.Neutral, i);
                 var shadedColor = renderInfo.GetSunColor(PaletteLightLevel.Shaded, i);
 
-                litColorData[i] = Glib.Color.FromRGBA(litColor.R, litColor.G, litColor.B);
-                neutralColorData[i] = Glib.Color.FromRGBA(neutralColor.R, neutralColor.G, neutralColor.B);
-                shadedColorData[i] = Glib.Color.FromRGBA(shadedColor.R, shadedColor.G, shadedColor.B);
+                litColorData[i] = new Vector3(litColor.R, litColor.G, litColor.B) / 255f;
+                neutralColorData[i] = new Vector3(neutralColor.R, neutralColor.G, neutralColor.B) / 255f;
+                shadedColorData[i] = new Vector3(shadedColor.R, shadedColor.G, shadedColor.B) / 255f;
             }
 
             shader.GlibShader.SetUniform("litColor", litColorData);

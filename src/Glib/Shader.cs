@@ -120,18 +120,37 @@ public class Shader : GLResource
             int uniformCount = 0;
             gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms, &uniformCount);
 
+            Span<byte> nameArr = stackalloc byte[64];
+
+            uint j = 0;
             for (uint i = 0; i < uniformCount; i++)
             {
-                gl.GetActiveUniform(shaderProgram, i, out int size, out UniformType type);
+                gl.GetActiveUniform(shaderProgram, i, out uint len, out int size, out UniformType type, nameArr);
+                /*string name = System.Text.Encoding.UTF8.GetString(nameArr[..(int)len]);
+                string typeName = type switch
+                {
+                    UniformType.Int => "int",
+                    UniformType.Float => "float",
+                    UniformType.FloatVec2 => "vec2",
+                    UniformType.FloatVec3 => "vec3",
+                    UniformType.FloatVec4 => "vec4",
+                    UniformType.FloatMat4 => "mat4",
+                    UniformType.Sampler2D => "sampler2D",
+                    _ => "???"
+                };
+
+                Console.WriteLine($"Shader ID: {shaderProgram}, name: {name}, type: {typeName} size: {size}");*/
 
                 switch (type)
                 {
                     case UniformType.Sampler1D:
                     case UniformType.Sampler2D:
                     case UniformType.Sampler3D:
-                        textureLocs.Add(i);
+                        textureLocs.Add(j);
                         break;
                 }
+
+                j += (uint)size;
             }
         }
     }
@@ -158,26 +177,46 @@ public class Shader : GLResource
         return loc;
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, float value)
     {
         gl.Uniform1(GetUniformLocation(uName), value);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, int value)
     {
         gl.Uniform1(GetUniformLocation(uName), value);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, ReadOnlySpan<int> values)
     {
         gl.Uniform1(GetUniformLocation(uName), values);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Vector2 value)
     {
         gl.Uniform2(GetUniformLocation(uName), value);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public unsafe void SetUniform(string uName, ReadOnlySpan<Vector2> values)
     {
         fixed (float* floats = MemoryMarshal.Cast<Vector2, float>(values))
@@ -186,11 +225,19 @@ public class Shader : GLResource
         }
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Vector3 value)
     {
         gl.Uniform3(GetUniformLocation(uName), value);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public unsafe void SetUniform(string uName, ReadOnlySpan<Vector3> values)
     {
         fixed (float* floats = MemoryMarshal.Cast<Vector3, float>(values))
@@ -199,11 +246,19 @@ public class Shader : GLResource
         }
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Vector4 value)
     {
         gl.Uniform4(GetUniformLocation(uName), value);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public unsafe void SetUniform(string uName, ReadOnlySpan<Vector4> values)
     {
         fixed (float* floats = MemoryMarshal.Cast<Vector4, float>(values))
@@ -212,11 +267,19 @@ public class Shader : GLResource
         }
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Color value)
     {
         gl.Uniform4(GetUniformLocation(uName), value.R, value.G, value.B, value.A);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public unsafe void SetUniform(string uName, ReadOnlySpan<Color> values)
     {
         fixed (float* floats = MemoryMarshal.Cast<Color, float>(values))
@@ -225,6 +288,10 @@ public class Shader : GLResource
         }
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Matrix4x4 matrix)
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
@@ -253,6 +320,10 @@ public class Shader : GLResource
         gl.UniformMatrix4(loc, false, flat);
     }
 
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Texture texture)
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);

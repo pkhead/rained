@@ -94,6 +94,7 @@ public class RenderContext : IDisposable
             if (shaderValue == value) return;
             DrawBatch();
             shaderValue = value;
+            value?.Use(gl);
         }
     }
 
@@ -107,6 +108,7 @@ public class RenderContext : IDisposable
 
         // create default shader
         defaultShader = new Shader(gl);
+        defaultShader.Use(gl);
 
         // create default texture
         var img = new Image([255, 255, 255, 255], 1, 1, PixelFormat.RGBA);
