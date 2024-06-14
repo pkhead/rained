@@ -2,8 +2,10 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using System.Diagnostics;
+using DrizzleRender = RainEd.Drizzle.DrizzleRender;
+using RenderState = RainEd.Drizzle.DrizzleRender.RenderState;
+using System.Runtime.CompilerServices;
 
-using RenderState = RainEd.DrizzleRender.RenderState;
 namespace RainEd;
 
 class DrizzleRenderWindow : IDisposable
@@ -246,7 +248,7 @@ class DrizzleRenderWindow : IDisposable
 
             // if preview is enabled, show the progress bar above the preview image
             // otherwise show it below the button line and above the status text
-            if (isPreviewEnabled)
+            if (isPreviewEnabled && Raylib.IsRenderTextureReady(previewComposite))
             {
                 ImGui.BeginGroup();
                 ShowControlButtons(ref doClose);
@@ -272,6 +274,10 @@ class DrizzleRenderWindow : IDisposable
 
                     drizzleRenderer.UpdatePreviewImages();
 
+                    stopwatch.Stop();
+                    RainEd.Logger.Information("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    stopwatch.Restart();
+
                     // update preview images
                     for (int i = 0; i < 30; i++)
                     {
@@ -283,7 +289,7 @@ class DrizzleRenderWindow : IDisposable
                     UpdateComposite();
 
                     stopwatch.Stop();
-                    RainEd.Logger.Information("Update preview in {Time} ms", stopwatch.Elapsed.Milliseconds);
+                    RainEd.Logger.Information("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 int cWidth = previewComposite.Texture.Width;
@@ -309,7 +315,27 @@ class DrizzleRenderWindow : IDisposable
         return doClose;
     }
 
-    private static void UpdateTexture(RlManaged.Image? img, ref RlManaged.Texture2D? tex)
+    // 1-bit-per-pixel images need to be converted into a 8-bit-per-pixel image...
+    private byte[]? convertedBitmap = null;
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static void ConvertBitmap(byte[] pixels, byte[] convertedBitmap)
+    {
+        int k = 0;
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            convertedBitmap[k++] = (byte)(255 * (pixels[i] & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 1) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 2) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 3) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 4) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 5) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 6) & 1));
+            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 7) & 1));
+        }
+    }
+
+    private void UpdateTexture(Drizzle.RenderImage? img, ref RlManaged.Texture2D? tex)
     {
         if (img == null)
         {
@@ -318,14 +344,32 @@ class DrizzleRenderWindow : IDisposable
             return;
         }
 
+        Glib.Texture gtex;
+
         if (tex == null || img.Width != tex.Width || img.Height != tex.Height)
         {
             tex?.Dispose();
-            tex = RlManaged.Texture2D.LoadFromImage(img);
+            gtex = RainEd.RenderContext.CreateTexture(img.Width, img.Height, Glib.PixelFormat.RGBA);
+            tex = new RlManaged.Texture2D(new Texture2D() { ID = gtex });
         }
         else
         {
-            img.UpdateTexture(tex);
+            gtex = ((Texture2D)tex).ID!;
+        }
+
+        // convert 1-bit-per-pixel image to an 8-bit-per-pixel image
+        if (img.Format == Drizzle.PixelFormat.L1)
+        {
+            if (convertedBitmap is null || convertedBitmap.Length != img.Width * img.Height)
+                convertedBitmap = new byte[img.Width * img.Height];
+            
+            ConvertBitmap(img.Pixels, convertedBitmap);
+            gtex.UpdateFromImage(convertedBitmap, Glib.PixelFormat.Grayscale);
+        }
+        else
+        {
+            // bgra -> rgba conversion is done in the shader
+            gtex.UpdateFromImage(img.Pixels, Glib.PixelFormat.RGBA);
         }
     }
 
@@ -337,10 +381,10 @@ class DrizzleRenderWindow : IDisposable
         var previewStatus = drizzleRenderer!.PreviewImages!;
         var renderStage = previewStatus.Stage;
 
-        if (renderStage != RenderPreviewStage.Setup)
+        if (renderStage != Drizzle.RenderPreviewStage.Setup)
         {
             var shader = layerPreviewShader;
-            if (renderStage == RenderPreviewStage.Lights)
+            if (renderStage == Drizzle.RenderPreviewStage.Lights)
             {
                 shader = layerPreviewLightShader;
                 Raylib.ClearBackground(Color.Black);

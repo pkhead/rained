@@ -440,6 +440,17 @@ public class RenderContext : IDisposable
         => new(gl, indexed);
     
     /// <summary>
+    /// Create an uninitialized texture.
+    /// </summary>
+    /// <param name="width">The width of the texture.</param>
+    /// <param name="height">The height of the texture.</param>
+    /// <param name="pixelFormat">The pixel format to use.</param>
+    public Texture CreateTexture(int width, int height, PixelFormat pixelFormat)
+    {
+        return new Texture(gl, width, height, pixelFormat);
+    }
+    
+    /// <summary>
     /// Create a texture from an Image.
     /// </summary>
     /// <param name="image"></param>

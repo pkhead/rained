@@ -53,7 +53,7 @@ public class Texture : GLResource
             _ => throw new ArgumentOutOfRangeException(nameof(v))
         };
     
-    internal Texture(GL gl, int width, int height, GLEnum format, bool mipmaps = false)
+    internal Texture(GL gl, int width, int height, GLEnum format)
     {
         this.gl = gl;
 
@@ -78,8 +78,6 @@ public class Texture : GLResource
             );
         }
 
-        if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
-
         int defaultFilter = (int)GLEnum.Linear;
         int defaultWrapMode = (int)GLEnum.ClampToEdge;
         gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
@@ -87,6 +85,17 @@ public class Texture : GLResource
         gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
         gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
     }
+
+    internal Texture(GL gl, int width, int height, PixelFormat format) :
+        this(gl, width, height, format switch
+        {
+            PixelFormat.Grayscale => GLEnum.Red,
+            PixelFormat.GrayscaleAlpha => GLEnum.RG,
+            PixelFormat.RGB => GLEnum.Rgb,
+            PixelFormat.RGBA => GLEnum.Rgba,
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        })
+    {}
 
     internal Texture(GL gl, Image image, bool mipmaps = false)
     {
@@ -204,6 +213,12 @@ public class Texture : GLResource
         return new Image(pixels, Width, Height, pixelFormat);
     }
 
+    /// <summary>
+    /// Update the whole texture with an image.
+    /// The given image must have the same dimensions as the texture.
+    /// </summary>
+    /// <param name="image">The image to update the texture with.</param>
+    /// <exception cref="Exception">Thrown if the image does not have the same dimensions as the texture.</exception>
     public unsafe void UpdateFromImage(Image image)
     {
         if (image.Width != Width || image.Height != Height)
@@ -221,17 +236,39 @@ public class Texture : GLResource
         };
 
         gl.BindTexture(GLEnum.Texture2D, texture);
-        
-        unsafe
+
+        nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
+        void* pixelBuf = NativeMemory.Alloc(bufLen);
+        var span = new Span<byte>(pixelBuf, (int)bufLen);
+        image.CopyPixelDataTo(span);
+
+        gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, pixelBuf);
+
+        NativeMemory.Free(pixelBuf);
+    }
+
+    /// <summary>
+    /// Update the whole texture with an image given by a byte array.
+    /// The dimensions of the image will be interpreted as the dimensions of the texture.
+    /// </summary>
+    /// <param name="pixels">The image pixels to update the texture with.</param>
+    /// <param name="format">The pixel format that the span will be interpreted as.</param> 
+    public unsafe void UpdateFromImage(ReadOnlySpan<byte> pixels, PixelFormat format)
+    {
+        var glFmt = format switch
         {
-            nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
-            void* pixelBuf = NativeMemory.Alloc(bufLen);
-            var span = new Span<byte>(pixelBuf, (int)bufLen);
-            image.CopyPixelDataTo(span);
+            PixelFormat.Grayscale => GLEnum.Red,
+            PixelFormat.GrayscaleAlpha => GLEnum.RG,
+            PixelFormat.RGB => GLEnum.Rgb,
+            PixelFormat.RGBA => GLEnum.Rgba,
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
+        };
 
-            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, pixelBuf);
-
-            NativeMemory.Free(pixelBuf);
+        gl.BindTexture(GLEnum.Texture2D, texture);
+        
+        fixed (byte* ptr = pixels)
+        {
+            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)Width, (uint)Height, glFmt, GLEnum.UnsignedByte, ptr);
         }
     }
 

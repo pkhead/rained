@@ -97,6 +97,9 @@ sealed class RainEd
 #endif
 
         var loggerConfig = new LoggerConfiguration()
+#if DEBUG
+            .MinimumLevel.Debug()
+#endif
             .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day);
 
         if (logToStdout)
@@ -249,7 +252,7 @@ sealed class RainEd
         if (Preferences.StaticDrizzleLingoRuntime)
         {
             Logger.Information("Initializing Zygote runtime...");
-            DrizzleRender.InitStaticRuntime();
+            Drizzle.DrizzleRender.InitStaticRuntime();
         }
 
         UpdateTitle();

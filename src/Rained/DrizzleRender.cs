@@ -1,16 +1,12 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
 using Drizzle.Logic.Rendering;
 using Drizzle.Ported;
-using Raylib_cs;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-namespace RainEd;
+namespace RainEd.Drizzle;
 
 enum RenderPreviewStage 
 {
@@ -21,11 +17,54 @@ enum RenderPreviewStage
 }
 
 [Serializable]
-public class DrizzleRenderException : System.Exception
+public class DrizzleRenderException : Exception
 {
     public DrizzleRenderException() { }
     public DrizzleRenderException(string message) : base(message) { }
     public DrizzleRenderException(string message, System.Exception inner) : base(message, inner) { }
+}
+
+enum PixelFormat
+{
+    /// <summary>
+    /// BGRA format, 32 bits per pixel
+    /// </summary>
+    Bgra32,
+
+    /// <summary>
+    /// Luminance, 1 bit per pixel
+    /// </summary>
+    L1
+}
+
+/// <summary>
+/// An image for a render sublayer.
+/// </summary> 
+class RenderImage : IDisposable
+{
+    public readonly int Width;
+    public readonly int Height;
+    public readonly byte[] Pixels;
+    public readonly PixelFormat Format;
+    
+    public RenderImage(int width, int height, PixelFormat format)
+    {
+        Width = width;
+        Height = height;
+        Format = format;
+
+        Pixels = format switch
+        {
+            PixelFormat.Bgra32 => new byte[width * height * 4],
+            PixelFormat.L1 => new byte[(int)Math.Ceiling(width * height / 8.0)],
+            _ => throw new ArgumentOutOfRangeException(nameof(format)),
+        };
+        Array.Clear(Pixels);
+    }
+
+    // dispose does nothing, but use it anyway.
+    public void Dispose()
+    {}
 }
 
 /// <summary>
@@ -33,11 +72,11 @@ public class DrizzleRenderException : System.Exception
 /// </summary>
 class RenderPreviewImages : IDisposable
 {
-    public RlManaged.Image[] Layers;
+    public RenderImage[] Layers;
     
     // this is used for the effects stage
-    public RlManaged.Image? BlackOut1 = null;
-    public RlManaged.Image? BlackOut2 = null;
+    public RenderImage? BlackOut1 = null;
+    public RenderImage? BlackOut2 = null;
 
     public bool RenderBlackOut1 = false;
     public bool RenderBlackOut2 = false;
@@ -51,72 +90,52 @@ class RenderPreviewImages : IDisposable
     public RenderPreviewImages()
     {
         Stage = RenderPreviewStage.Setup;
-        Layers = new RlManaged.Image[30];
-        oldPixelFormat = PixelFormat.UncompressedR8G8B8A8;
+        Layers = new RenderImage[30];
+        oldPixelFormat = PixelFormat.Bgra32;
     }
 
     public void SetSize(int newWidth, int newHeight, PixelFormat format)
     {
-        if (lastWidth == newWidth && lastHeight == newHeight)
-        {
-            if (format != oldPixelFormat)
-            {
-                for (int i = 0; i < 30; i++)
-                {
-                    Layers[i]?.Format(format);
-                }
-            }
-
-            oldPixelFormat = format;
+        if (lastWidth == newWidth && lastHeight == newHeight && format == oldPixelFormat)
             return;
-        }
 
         lastWidth = newWidth;
         lastHeight = newHeight;
+        oldPixelFormat = format;
+
+        RainEd.Logger.Debug("Resize/reformat images");
 
         for (int i = 0; i < 30; i++)
         {
             Layers[i]?.Dispose();
-            Layers[i] = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
-            Layers[i].Format(format);
+            Layers[i] = new RenderImage(newWidth, newHeight, format);
         }
         
         if (BlackOut1 is not null)
         {
             BlackOut1.Dispose();
-            BlackOut1 = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
+            BlackOut1 = new RenderImage(newWidth, newHeight, PixelFormat.Bgra32);
             //BlackOut1.Format(PixelFormat.UncompressedGrayscale);
         }
 
         if (BlackOut2 is not null)
         {
             BlackOut2.Dispose();
-            BlackOut2 = RlManaged.Image.GenColor(newWidth, newHeight, Raylib_cs.Color.Black);
+            BlackOut2 = new RenderImage(newWidth, newHeight, PixelFormat.Bgra32);
             //BlackOut2.Format(PixelFormat.UncompressedGrayscale);
         }
     }
 
     public void EnableBlackOut()
     {
-        BlackOut1 ??= RlManaged.Image.GenColor(lastWidth, lastHeight, Raylib_cs.Color.Black);
-        BlackOut2 ??= RlManaged.Image.GenColor(lastWidth, lastHeight, Raylib_cs.Color.Black);
-
-        if (BlackOut1.PixelFormat != PixelFormat.UncompressedGrayscale)
-        {
-            //BlackOut1.Format(PixelFormat.UncompressedGrayscale);
-        }
-
-        if (BlackOut2.PixelFormat != PixelFormat.UncompressedGrayscale)
-        {
-            //BlackOut2.Format(PixelFormat.UncompressedGrayscale);
-        }
+        BlackOut1 ??= new RenderImage(lastWidth, lastHeight, PixelFormat.Bgra32);
+        BlackOut2 ??= new RenderImage(lastWidth, lastHeight, PixelFormat.Bgra32);
     }
 
     public void DisableBlackOut()
     {
         BlackOut1?.Dispose();
         BlackOut2?.Dispose();
-
         BlackOut1 = null;
         BlackOut2 = null;
     }
@@ -516,7 +535,7 @@ class DrizzleRender : IDisposable
         {
             case RenderPreviewProps props:
                 PreviewImages.Stage = RenderPreviewStage.Props;
-                PreviewImages.SetSize(2000, 1200, PixelFormat.UncompressedR8G8B8A8);
+                PreviewImages.SetSize(2000, 1200, PixelFormat.Bgra32);
                 PreviewImages.DisableBlackOut();
 
                 for (int i = 0; i < 30; i++)
@@ -529,7 +548,7 @@ class DrizzleRender : IDisposable
             case RenderPreviewEffects effects:
             {
                 PreviewImages.Stage = RenderPreviewStage.Effects;
-                PreviewImages.SetSize(2000, 1200, PixelFormat.UncompressedR8G8B8A8);
+                PreviewImages.SetSize(2000, 1200, PixelFormat.Bgra32);
                 PreviewImages.EnableBlackOut();
 
                 for (int i = 0; i < 30; i++)
@@ -549,7 +568,7 @@ class DrizzleRender : IDisposable
             case RenderPreviewLights lights:
             {
                 PreviewImages.Stage = RenderPreviewStage.Lights;
-                PreviewImages.SetSize(2300, 1500, PixelFormat.UncompressedGrayscale);
+                PreviewImages.SetSize(2300, 1500, PixelFormat.L1);
                 PreviewImages.DisableBlackOut();
 
                 for (int i = 0; i < 30; i++)
@@ -562,91 +581,34 @@ class DrizzleRender : IDisposable
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hopefully this is a good idea...
-    private unsafe static void CopyLingoImage(LingoImage srcImg, Raylib_cs.Image raylibImage)
+    private unsafe static void CopyLingoImage(LingoImage srcImg, RenderImage dstImg)
     {
-        var dstImg = raylibImage.image!;
-
         if (srcImg.Width != dstImg.Width || srcImg.Height != dstImg.Height)
         {
-            RainEd.Logger.Warning("Mismatched image sizes");
+            RainEd.Logger.Debug("Mismatched image sizes");
             return;
         }
         
+        // depth validation
         if (srcImg.Depth == 1)
         {
-            if (dstImg.PixelFormat != Glib.PixelFormat.Grayscale)
+            if (dstImg.Format != PixelFormat.L1)
                 throw new Exception("Mismatched image formats");
-            
-            var rawImage = (Image<L8>) dstImg.ImageSharpImage;
-            var srcBuf = srcImg.ImageBuffer;
-
-            // convert 1 bit per pixel bitmap to
-            // 8 bits per pixel grayscale image
-            rawImage.ProcessPixelRows(pixels =>
-            {
-                int p = 0;
-
-                for (int y = 0; y < pixels.Height; y++)
-                {
-                    var row = pixels.GetRowSpan(y);
-                    for (int x = 0; x < row.Length; x++)
-                    {
-                        int i = p / 8;
-                        int j = p % 8;
-                        row[x] = new L8((byte)(255 * ((srcBuf[i] >> j) & 1)));
-
-                        p++;
-                    }
-                }
-            });
-
-            // old version of code that does not use ImageSharp
-            /*byte[] dstData = dstImg.Data;
-            
-            int k = 0;
-            for (int i = 0; i < (dstImg.Width * dstImg.Height) / 8; i++)
-            {
-                var v = srcImg.ImageBuffer[i];
-                dstData[k++] = (byte)(255 * (v & 1));
-                dstData[k++] = (byte)(255 * ((v >> 1) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 2) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 3) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 4) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 5) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 6) & 1));
-                dstData[k++] = (byte)(255 * ((v >> 7) & 1));
-            }*/
         }
         else if (srcImg.Depth == 32)
         {
-            if (dstImg.PixelFormat != Glib.PixelFormat.RGBA)
+            if (dstImg.Format != PixelFormat.Bgra32)
                 throw new Exception("Mismatched image formats");
-            
-            // note: BGR format - is converted to RGB in the shader
-            var rawImage = (Image<Rgba32>) dstImg.ImageSharpImage;
-            var srcBuf = srcImg.ImageBuffer;
-
-            rawImage.ProcessPixelRows(pixels =>
-            {
-                int i = 0;
-                for (int y = 0; y < pixels.Height; y++)
-                {
-                    var row = pixels.GetRowSpan(y);
-                    for (int x = 0; x < row.Length; x++)
-                    {
-                        row[x] = new Rgba32(srcBuf[i++], srcBuf[i++], srcBuf[i++], srcBuf[i++]);
-                    }
-                }
-            });
-
-            // old version of code that does not use ImageSharp
-            // Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.image!.Pixels, 0, dstImg.Width * dstImg.Height * (int)dstImg.image!.BytesPerPixel);
         }
         else
         {
-            throw new Exception("Unknown image depth " + srcImg.Depth);
+            throw new Exception("Unknown image color depth " + srcImg.Depth);
         }
+
+        Debug.Assert(srcImg.ImageBufferNoPadding.Length >= dstImg.Pixels.Length);
+
+        // copy the memory
+        Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.Pixels, 0, dstImg.Pixels.Length);
     }
 
     /// <summary>

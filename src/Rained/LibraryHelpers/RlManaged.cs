@@ -95,7 +95,7 @@ namespace RlManaged
             };
         }
         
-        private Image(Raylib_cs.Image raw) : base()
+        public Image(Raylib_cs.Image raw) : base()
         {
             this.raw = raw;
         }
@@ -149,7 +149,7 @@ namespace RlManaged
         public int Width { get => raw.ID!.Width; }
         public int Height { get => raw.ID!.Height; }
 
-        private Texture2D(Raylib_cs.Texture2D raw)
+        public Texture2D(Raylib_cs.Texture2D raw)
         {
             this.raw = raw;
         }

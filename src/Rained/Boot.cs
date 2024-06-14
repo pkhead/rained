@@ -63,9 +63,9 @@ namespace RainEd
 
             try
             {
-                DrizzleRender.Render(bootOptions.LevelToLoad);
+                Drizzle.DrizzleRender.Render(bootOptions.LevelToLoad);
             }
-            catch (DrizzleRenderException e)
+            catch (Drizzle.DrizzleRenderException e)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("error: ");
@@ -279,7 +279,7 @@ namespace RainEd
         {
             if (RainEd.Instance is not null)
             {
-                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+                RainEd.Logger.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
             }
 
             Environment.ExitCode = 1;
