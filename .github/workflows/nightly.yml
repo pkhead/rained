@@ -22,7 +22,6 @@ jobs:
     - name: Restore dependencies
       run: |
         cd src/Drizzle
-        dotnet restore
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
