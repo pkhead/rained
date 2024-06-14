@@ -805,8 +805,11 @@ class LevelEditRender
         }
 
         // draw the meshes
+        // opacity decreases as user zooms out. value is sqrt'd to
+        // make it fall off at a better rate.
+        var opacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
         rctx.Shader = gridShader;
-        rctx.DrawColor = Glib.Color.FromRGBA(255, 255, 255, 50);
+        rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * (50f/255f));
         rctx.Draw(gridMinor);
         rctx.Draw(gridMajor);
         rctx.Shader = null;
