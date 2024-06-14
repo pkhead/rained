@@ -30,8 +30,12 @@ Task("DotNetPublish")
     CopyDirectory("assets", buildDir + "/assets");
     CopyDirectory("scripts", buildDir + "/scripts");
     CopyDirectory("config", buildDir + "/config");
-    DeleteFile(buildDir + "/config/preferences.json");
     CopyFile("LICENSE.md", buildDir + "/LICENSE.md");
+    
+    if (FileExists(buildDir + "/config/preferences.json"))
+    {
+        DeleteFile(buildDir + "/config/preferences.json");
+    }
 
     CopyDirectory("dist", buildDir);
 });
