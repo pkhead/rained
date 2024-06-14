@@ -131,6 +131,32 @@ class LevelEditRender
         }
     ";
 
+    private const string GridVertexShaderSource = @"
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+
+        uniform mat4 glib_uMatrix;
+
+        void main()
+        {
+            gl_Position = glib_uMatrix * vec4(aPos.xyz, 1.0);
+        }
+    ";
+
+    private const string GridFragmentShaderSource = @"
+        #version 330 core
+
+        out vec4 fragColor;
+
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
+
+        void main()
+        {
+            fragColor = texture(glib_uTexture, vec2(0.0, 0.0)) * glib_uColor;
+        }
+    ";
+
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -150,6 +176,12 @@ class LevelEditRender
     public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
     public readonly RlManaged.Shader TilePreviewShader;
     public readonly RlManaged.Shader PaletteShader;
+    
+    private readonly Glib.Shader gridShader;
+    private Glib.Mesh? gridMajor = null;
+    private Glib.Mesh? gridMinor = null;
+    private int gridWidth = 0;
+    private int gridHeight = 0;
 
     private readonly RlManaged.Texture2D bigChainSegment;
 
@@ -177,6 +209,7 @@ class LevelEditRender
         propPreviewShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TilePreviewShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
         PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
+        gridShader = RainEd.RenderContext!.CreateShader(GridVertexShaderSource, GridFragmentShaderSource);
 
         geoRenderer = new EditorGeometryRenderer(this);
         tileRenderer = new TileRenderer(this);
@@ -699,32 +732,84 @@ class LevelEditRender
     {
         if (!ViewGrid) return;
 
-        int viewL = (int) Math.Floor(ViewTopLeft.X);
-        int viewT = (int) Math.Floor(ViewTopLeft.Y);
-        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
-        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
-        
-        var col = new Color(255, 255, 255, 50);
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
+        var rctx = RainEd.RenderContext!;
+
+        // recreate grid mesh if it needs updating
+        if (gridMajor is null || gridMinor is null || Level.Width != gridWidth || Level.Height != gridHeight)
         {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
+            var meshConfig = new Glib.MeshConfiguration([Glib.DataType.Vector3], true)
             {
-                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
+                PrimitiveType = Glib.MeshPrimitiveType.Lines
+            };
+
+            gridWidth = Level.Width;
+            gridHeight = Level.Height;
+
+            gridMajor?.Dispose();
+            gridMinor?.Dispose();
+            
+            gridMajor = rctx.CreateMesh(meshConfig);
+            gridMinor = rctx.CreateMesh(meshConfig);
+            
+            // create minor grid lines
+            var vertices = new List<Vector3>();
+            var indices = new List<int>();
+
+            int meshIndex = 0;
+            for (int x = 0; x < gridWidth; x++)
+            {
+                for (int y = 0; y < gridHeight; y++)
+                {
+                    vertices.Add(new Vector3(x, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x+1, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x, y+1, 0f) * Level.TileSize);
+
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 1);
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 2);
+
+                    meshIndex += 3;
+                }
             }
+
+            gridMinor.SetBufferData(0, [..vertices]);
+            gridMinor.SetIndexBufferData([..indices]);
+            gridMinor.Upload();
+
+            // create major grid lines
+            vertices.Clear();
+            indices.Clear();
+            meshIndex = 0;
+
+            for (int x = 0; x < gridWidth; x += 2)
+            {
+                for (int y = 0; y < gridHeight; y += 2)
+                {
+                    vertices.Add(new Vector3(x, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x+2, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x, y+2, 0f) * Level.TileSize);
+
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 1);
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 2);
+
+                    meshIndex += 3;
+                }
+            }
+
+            gridMajor.SetBufferData(0, [..vertices]);
+            gridMajor.SetIndexBufferData([..indices]);
+            gridMajor.Upload();
         }
 
-        // draw bigger grid squares
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x += 2)
-        {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y += 2)
-            {
-                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
-            }
-        }
+        // draw the meshes
+        rctx.Shader = gridShader;
+        rctx.DrawColor = Glib.Color.FromRGBA(255, 255, 255, 50);
+        rctx.Draw(gridMinor);
+        rctx.Draw(gridMajor);
+        rctx.Shader = null;
     }
 
     public void RenderCameraBorders()
