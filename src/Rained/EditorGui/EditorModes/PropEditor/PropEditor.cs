@@ -20,6 +20,10 @@ partial class PropEditor : IEditorMode
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
     
+    private int initDepth = -1; // the depth of the last selected prop(s)
+    private float selectionTime = 0; // last time a prop was selected
+
+    
     private ChangeHistory.PropChangeRecorder changeRecorder;
 
     private readonly Color[] OutlineColors =
@@ -682,6 +686,25 @@ partial class PropEditor : IEditorMode
 
             ImGui.EndPopup();
         }
+
+        // update depth init for next prop placement based on currently selected props
+        if (selectedProps.Count > 0)
+        {
+            selectionTime = (float) Raylib.GetTime();
+
+            // check that the depth offset of all selected props are the same
+            int curDepthOffset = selectedProps[0].DepthOffset;
+            foreach (var prop in selectedProps)
+            {
+                if (prop.DepthOffset != curDepthOffset)
+                {
+                    curDepthOffset = -1;
+                    break;
+                }
+            }
+
+            initDepth = curDepthOffset;
+        }
     }
 
     private void SelectProp(Prop prop)
@@ -792,9 +815,21 @@ partial class PropEditor : IEditorMode
             {
                 changeRecorder.BeginListChange();
 
+                int propDepth = window.WorkLayer * 10;
+
+                // if a prop is selected while adding a new one, the new prop will copy
+                // the depth offset value of the old prop. also make sure that it is on the same
+                // work layer.
+                // there is a time check here, because if the user double-clicks to add a prop,
+                // the prop will be deselected for at least one frame...
+                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer && ((float)Raylib.GetTime() - selectionTime) < 0.1)
+                {
+                    propDepth = initDepth;
+                }
+
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
-                    DepthOffset = window.WorkLayer * 10 + initSublayer
+                    DepthOffset = propDepth
                 };
                 prop.Randomize();
 
@@ -844,10 +879,10 @@ partial class PropEditor : IEditorMode
         if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
-                foreach (var prop in selectedProps)
-                {
-                    RainEd.Instance.Level.Props.Remove(prop);
-                }
+            foreach (var prop in selectedProps)
+            {
+                RainEd.Instance.Level.Props.Remove(prop);
+            }
             changeRecorder.PushListChange();
 
             selectedProps.Clear();
