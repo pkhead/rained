@@ -56,7 +56,7 @@ class DrizzleRenderWindow : IDisposable
         void main()
         {
             vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
+            bool isWhite = texelColor.r == 1.0;
             vec3 correctColor = texelColor.bgr;
             
             glib_fragColor = vec4(
@@ -275,7 +275,7 @@ class DrizzleRenderWindow : IDisposable
                     drizzleRenderer.UpdatePreviewImages();
 
                     stopwatch.Stop();
-                    RainEd.Logger.Information("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    RainEd.Logger.Debug("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                     stopwatch.Restart();
 
                     // update preview images
@@ -289,7 +289,7 @@ class DrizzleRenderWindow : IDisposable
                     UpdateComposite();
 
                     stopwatch.Stop();
-                    RainEd.Logger.Information("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    RainEd.Logger.Debug("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 int cWidth = previewComposite.Texture.Width;
@@ -321,17 +321,17 @@ class DrizzleRenderWindow : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static void ConvertBitmap(byte[] pixels, byte[] convertedBitmap)
     {
-        int k = 0;
+        int j = 0;
         for (int i = 0; i < pixels.Length; i++)
         {
-            convertedBitmap[k++] = (byte)(255 * (pixels[i] & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 1) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 2) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 3) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 4) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 5) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 6) & 1));
-            convertedBitmap[k++] = (byte)(255 * ((pixels[i] >> 7) & 1));
+            convertedBitmap[j++] = (byte)(255 * (pixels[i] & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 1) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 2) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 3) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 4) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 5) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 6) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 7) & 1));
         }
     }
 
