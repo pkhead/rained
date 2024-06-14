@@ -46,7 +46,7 @@ jobs:
           name: linux-x64
           path: ./rained_linux-x64.tar.gz
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
