@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Silk.NET.OpenGL;
 
 namespace Glib;
@@ -150,46 +151,78 @@ public class Shader : GLResource
         return loc >= 0;
     }
 
-    public void SetUniform(string uName, float value)
+    private int GetUniformLocation(string uName)
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
         if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform1(loc, value);
+        return loc;
+    }
+
+    public void SetUniform(string uName, float value)
+    {
+        gl.Uniform1(GetUniformLocation(uName), value);
     }
 
     public void SetUniform(string uName, int value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform1(loc, value);
+        gl.Uniform1(GetUniformLocation(uName), value);
+    }
+
+    public void SetUniform(string uName, ReadOnlySpan<int> values)
+    {
+        gl.Uniform1(GetUniformLocation(uName), values);
     }
 
     public void SetUniform(string uName, Vector2 value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform2(loc, value);
+        gl.Uniform2(GetUniformLocation(uName), value);
+    }
+
+    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector2> values)
+    {
+        fixed (float* floats = MemoryMarshal.Cast<Vector2, float>(values))
+        {
+            gl.Uniform2(GetUniformLocation(uName), (uint)values.Length, floats);
+        }
     }
 
     public void SetUniform(string uName, Vector3 value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform3(loc, value);
+        gl.Uniform3(GetUniformLocation(uName), value);
+    }
+
+    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector3> values)
+    {
+        fixed (float* floats = MemoryMarshal.Cast<Vector3, float>(values))
+        {
+            gl.Uniform3(GetUniformLocation(uName), (uint)values.Length, floats);
+        }
     }
 
     public void SetUniform(string uName, Vector4 value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform4(loc, value);
+        gl.Uniform4(GetUniformLocation(uName), value);
+    }
+
+    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector4> values)
+    {
+        fixed (float* floats = MemoryMarshal.Cast<Vector4, float>(values))
+        {
+            gl.Uniform4(GetUniformLocation(uName), (uint)values.Length, floats);
+        }
     }
 
     public void SetUniform(string uName, Color value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        gl.Uniform4(loc, value.R, value.G, value.B, value.A);
+        gl.Uniform4(GetUniformLocation(uName), value.R, value.G, value.B, value.A);
+    }
+
+    public unsafe void SetUniform(string uName, ReadOnlySpan<Color> values)
+    {
+        fixed (float* floats = MemoryMarshal.Cast<Color, float>(values))
+        {
+            gl.Uniform4(GetUniformLocation(uName), (uint)values.Length, floats);
+        }
     }
 
     public void SetUniform(string uName, Matrix4x4 matrix)

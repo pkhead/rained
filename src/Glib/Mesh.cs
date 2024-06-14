@@ -3,7 +3,7 @@ using Silk.NET.OpenGL;
 
 namespace Glib;
 
-public enum MeshBufferType
+public enum DataType
 {
     Int,
     Float,
@@ -30,25 +30,25 @@ public enum MeshBufferUsage
 
 public struct MeshConfiguration
 {
-    private readonly List<MeshBufferType?> types;
+    private readonly List<DataType?> types;
     public bool Indexed = false;
     public MeshBufferUsage BufferUsage = MeshBufferUsage.Dynamic;
     public MeshPrimitiveType PrimitiveType = MeshPrimitiveType.Triangles;
 
-    public readonly List<MeshBufferType?> Types => types;
+    public readonly List<DataType?> Types => types;
 
     public MeshConfiguration()
     {
         types = [];
     }
 
-    public MeshConfiguration(ReadOnlySpan<MeshBufferType> types, bool indexed)
+    public MeshConfiguration(ReadOnlySpan<DataType> types, bool indexed)
     {
         this.types = [..types];
         Indexed = indexed;
     }
 
-    public readonly void SetupBuffer(int index, MeshBufferType type)
+    public readonly void SetupBuffer(int index, DataType type)
     {
         while (types.Count < index)
             types.Add(null);
@@ -64,7 +64,7 @@ public class Mesh : GLResource
 
     private int[]? indexBuffer = null;
 
-    private readonly MeshBufferType?[] types;
+    private readonly DataType?[] types;
     private readonly bool indexed;
     private uint elemCount = 0;
     private readonly BufferUsageARB usage;
@@ -115,7 +115,7 @@ public class Mesh : GLResource
                 continue;
             }
 
-            if (config.Types[i] == MeshBufferType.Int)
+            if (config.Types[i] == DataType.Int)
             {
                 bufferIndices[i] = intBufCount++;
             }
@@ -151,7 +151,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<int> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Int)
+        if (types[bufferIndex] != DataType.Int)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var intArr = new int[data.Length];
@@ -161,7 +161,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<float> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Float)
+        if (types[bufferIndex] != DataType.Float)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var floatArr = new float[data.Length];
@@ -171,7 +171,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector2> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Vector2)
+        if (types[bufferIndex] != DataType.Vector2)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var floatArr = new float[data.Length * 2];
@@ -187,7 +187,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector3> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Vector3)
+        if (types[bufferIndex] != DataType.Vector3)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var floatArr = new float[data.Length * 3];
@@ -204,7 +204,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector4> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Vector4)
+        if (types[bufferIndex] != DataType.Vector4)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var floatArr = new float[data.Length * 4];
@@ -222,7 +222,7 @@ public class Mesh : GLResource
 
     public void SetBufferData(int bufferIndex, ReadOnlySpan<Color> data)
     {
-        if (types[bufferIndex] != MeshBufferType.Vector4 && types[bufferIndex] != MeshBufferType.Color)
+        if (types[bufferIndex] != DataType.Vector4 && types[bufferIndex] != DataType.Color)
             throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
         
         var floatArr = new float[data.Length * 4];
@@ -249,16 +249,16 @@ public class Mesh : GLResource
         for (int i = 0; i < types.Length; i++)
         {
             // if this buffer is null, don't process it
-            if (types[i] == MeshBufferType.Int && intBuffers[bufferIndices[i]] is null || floatBuffers[bufferIndices[i]] is null)
+            if (types[i] == DataType.Int && intBuffers[bufferIndices[i]] is null || floatBuffers[bufferIndices[i]] is null)
                 continue;
             
             uint count = types[i] switch
             {
-                MeshBufferType.Int => (uint)intBuffers[bufferIndices[i]].Length,
-                MeshBufferType.Float => (uint)floatBuffers[bufferIndices[i]].Length,
-                MeshBufferType.Vector2 => (uint)floatBuffers[bufferIndices[i]].Length / 2,
-                MeshBufferType.Vector3 => (uint)floatBuffers[bufferIndices[i]].Length / 3,
-                MeshBufferType.Vector4 or MeshBufferType.Color => (uint)floatBuffers[bufferIndices[i]].Length / 4,
+                DataType.Int => (uint)intBuffers[bufferIndices[i]].Length,
+                DataType.Float => (uint)floatBuffers[bufferIndices[i]].Length,
+                DataType.Vector2 => (uint)floatBuffers[bufferIndices[i]].Length / 2,
+                DataType.Vector3 => (uint)floatBuffers[bufferIndices[i]].Length / 3,
+                DataType.Vector4 or DataType.Color => (uint)floatBuffers[bufferIndices[i]].Length / 4,
                 _ => throw new Exception("Invalid MeshBufferType enum value")
             };
 
@@ -274,7 +274,7 @@ public class Mesh : GLResource
             var type = types[i];
             gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo[i]);
 
-            if (type == MeshBufferType.Int)
+            if (type == DataType.Int)
             {
                 var buf = intBuffers[i];
                 if (buf is null) continue;
@@ -300,28 +300,28 @@ public class Mesh : GLResource
 
             switch (type)
             {
-                case MeshBufferType.Int:
+                case DataType.Int:
                     size = 1;
                     glType = GLEnum.Int;
                     break;
                 
-                case MeshBufferType.Float:
+                case DataType.Float:
                     size = 1;
                     glType = GLEnum.Float;
                     break;
                 
-                case MeshBufferType.Vector2:
+                case DataType.Vector2:
                     size = 2;
                     glType = GLEnum.Float;
                     break;
                 
-                case MeshBufferType.Vector3:
+                case DataType.Vector3:
                     size = 3;
                     glType = GLEnum.Float;
                     break;
                 
-                case MeshBufferType.Vector4:
-                case MeshBufferType.Color:
+                case DataType.Vector4:
+                case DataType.Color:
                     size = 4;
                     glType = GLEnum.Float;
                     break;
@@ -385,15 +385,15 @@ public class Mesh : GLResource
 public class StandardMesh : Mesh
 {
     private static readonly MeshConfiguration Config = new([
-        MeshBufferType.Vector3, // vertices
-        MeshBufferType.Vector2, // uvs
-        MeshBufferType.Color,   // colors
+        DataType.Vector3, // vertices
+        DataType.Vector2, // uvs
+        DataType.Color,   // colors
     ], false);
 
     private static readonly MeshConfiguration ConfigIndexed = new([
-        MeshBufferType.Vector3, // vertices
-        MeshBufferType.Vector2, // uvs
-        MeshBufferType.Color,   // colors
+        DataType.Vector3, // vertices
+        DataType.Vector2, // uvs
+        DataType.Color,   // colors
     ], true);
 
     internal StandardMesh(GL gl, bool indexed) : base(gl, indexed ? ConfigIndexed : Config)

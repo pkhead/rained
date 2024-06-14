@@ -70,19 +70,19 @@ class LevelEditRender
     private readonly static string TileShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
 
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
@@ -91,20 +91,20 @@ class LevelEditRender
             bool isShaded = isLight || isShade || isNormal;
 
             float light = float(isLight) * 1.0 + float(isShade) * 0.4 + float(isNormal) * 0.8;
-            vec3 shadedCol = fragColor.rgb * light;
+            vec3 shadedCol = glib_color.rgb * light;
 
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * fragColor.a) * colDiffuse;
+            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
         }
     ";
 
     private readonly static string PaletteShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         uniform vec3[30] litColor;
         uniform vec3[30] neutralColor;
@@ -114,9 +114,9 @@ class LevelEditRender
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
 
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
@@ -124,10 +124,10 @@ class LevelEditRender
             bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
             bool isShaded = isLight || isShade || isNormal;
 
-            int colIndex = int(fragColor.r * 29.0);
+            int colIndex = int(glib_color.r * 29.0);
             vec3 shadedCol = float(isLight) * litColor[colIndex] + float(isShade) * shadedColor[colIndex] + float(isNormal) * neutralColor[colIndex];
 
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * fragColor.a) * colDiffuse;
+            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
         }
     ";
 

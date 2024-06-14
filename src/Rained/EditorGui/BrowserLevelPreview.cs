@@ -6,7 +6,7 @@ namespace RainEd;
 
 class BrowserLevelPreview : FileBrowserPreview
 {
-    record MeshData(int Width, int Height, Vector3[] Vertices, Color[] Colors);
+    record MeshData(int Width, int Height, Vector3[] Vertices, Glib.Color[] Colors);
     record ThreadData(string Path, CancellationToken CancelToken); 
 
     public override bool IsReady => isReady;
@@ -16,8 +16,7 @@ class BrowserLevelPreview : FileBrowserPreview
     private bool isReady = false;
     private int levelWidth = -1;
     private int levelHeight = -1;
-    private RlManaged.Mesh? geoMesh;
-    private RlManaged.Material? geoMaterial;
+    private Glib.StandardMesh? geoMesh;
     private RlManaged.RenderTexture2D? renderTexture;
     private CancellationTokenSource cancelTokenSrc;
 
@@ -51,7 +50,7 @@ class BrowserLevelPreview : FileBrowserPreview
         if (parser.Read(geoData) is not Lingo.List geoList) return null;
 
         List<Vector3> vertices = [];
-        List<Color> colors = []; 
+        List<Glib.Color> colors = []; 
 
         int levelWidth = 0;
         int levelHeight = 0;
@@ -79,10 +78,10 @@ class BrowserLevelPreview : FileBrowserPreview
 
                     var color = l switch
                     {
-                        0 => Color.Black,
-                        1 => new Color(50, 50, 50, 255),
-                        2 => new Color(100, 100, 100, 255),
-                        _ => Color.Blank // should be impossible
+                        0 => Glib.Color.Black,
+                        1 => Glib.Color.FromRGBA(50, 50, 50, 255),
+                        2 => Glib.Color.FromRGBA(100, 100, 100, 255),
+                        _ => Glib.Color.Transparent // should be impossible
                     };
 
                     BuildShape(x, y, geoValue, objects, color, vertices, colors);
@@ -95,7 +94,7 @@ class BrowserLevelPreview : FileBrowserPreview
         return new MeshData(levelWidth, levelHeight, [..vertices], [..colors]);
     }
 
-    private static void BuildShape(int x, int y, GeoType v, LevelObject objects, Color color, List<Vector3> vertices, List<Color> colors)
+    private static void BuildShape(int x, int y, GeoType v, LevelObject objects, Glib.Color color, List<Vector3> vertices, List<Glib.Color> colors)
     {
         switch (v)
         {
@@ -238,12 +237,10 @@ class BrowserLevelPreview : FileBrowserPreview
                     levelWidth = meshData.Width;
                     levelHeight = meshData.Height;
 
-                    geoMesh = new RlManaged.Mesh();
+                    geoMesh = RainEd.RenderContext!.CreateMesh();
                     geoMesh.SetVertices(meshData.Vertices);
                     geoMesh.SetColors(meshData.Colors);
-                    geoMesh.UploadMesh(false);
-
-                    geoMaterial = RlManaged.Material.LoadMaterialDefault();
+                    geoMesh.Upload();
                 }
                 else if (geoLoadTask.IsFaulted)
                 {
@@ -258,7 +255,7 @@ class BrowserLevelPreview : FileBrowserPreview
 
         if (isReady)
         {
-            if (geoMesh is null || geoMaterial is null)
+            if (geoMesh is null)
             {
                 var text = "Could not display preview";
                 ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(text).X) / 2f);
@@ -278,15 +275,16 @@ class BrowserLevelPreview : FileBrowserPreview
                 {
                     Raylib.ClearBackground(Color.Blank);
 
-                    Rlgl.DrawRenderBatchActive();
+                    //RainEd.RenderContext!.DrawBatch();
 
                     Rlgl.PushMatrix();
                     Rlgl.Scalef(viewScale, viewScale, 1f);
                     Rlgl.Translatef(-viewPan.X, -viewPan.Y, 0f);
 
                     Raylib.DrawRectangle(0, 0, levelWidth, levelHeight, new Color(127, 127, 127, 255));
-                    Rlgl.DrawRenderBatchActive();
-                    Raylib.DrawMesh(geoMesh, geoMaterial, Matrix4x4.Identity);
+                    //RainEd.RenderContext!.DrawBatch();
+                    RainEd.RenderContext.DrawColor = Glib.Color.White;
+                    RainEd.RenderContext!.Draw(geoMesh);
 
                     Rlgl.PopMatrix();
                 }
@@ -294,7 +292,7 @@ class BrowserLevelPreview : FileBrowserPreview
 
                 var cursorPos = ImGui.GetCursorPos();
                 var cursorScreenPos = ImGui.GetCursorScreenPos();
-                rlImGui_cs.rlImGui.ImageRenderTexture(renderTexture);
+                ImGuiExt.ImageRenderTexture(renderTexture);
                 ImGui.SetCursorPos(cursorPos);
 
                 ImGui.InvisibleButton("##interactArea", new Vector2(renderTexture.Texture.Width, renderTexture.Texture.Height));
@@ -327,7 +325,8 @@ class BrowserLevelPreview : FileBrowserPreview
         }
 
         geoMesh?.Dispose();
-        geoMaterial?.Dispose();
-        renderTexture?.Dispose();
+
+        if (renderTexture is not null)
+            RainEd.Instance.DeferToNextFrame(renderTexture.Dispose);
     }
 }

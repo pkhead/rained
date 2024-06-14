@@ -525,11 +525,29 @@ sealed class RainEd
             }
         }
     }
+
+    private readonly List<Action> deferredActions = [];
+
+    /// <summary>
+    /// Run an action on the next frame. <br /><br />
+    /// Used mainly for deferring the disposal of textures
+    /// that were drawn in ImGui on the same frame, as ImGui
+    /// will use the texture ID of the disposed texture at the
+    /// end of the frame.
+    /// </summary>
+    /// <param name="action">The action to run on the next frame.</param> 
+    public void DeferToNextFrame(Action action)
+    {
+        deferredActions.Add(action);
+    }
     
     public void Draw(float dt)
     {
         if (Raylib.WindowShouldClose())
             EditorWindow.PromptUnsavedChanges(() => Running = false);
+        
+        foreach (var f in deferredActions) f();
+        deferredActions.Clear();
         
         EditorWindow.UpdateMouseState();
         
