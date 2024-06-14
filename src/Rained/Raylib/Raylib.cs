@@ -686,7 +686,26 @@ static class Raylib
 
     public static bool ExportImage(Image image, string fileName)
     {
-        throw new NotImplementedException();
+        var ext = Path.GetExtension(fileName);
+        if (ext == ".png")
+        {
+            try
+            {
+                image.image!.ExportPng(fileName);
+                return true;
+            }
+            catch (Exception e)
+            {
+                if (RainEd.RainEd.Instance is not null)
+                    RainEd.RainEd.Logger.Error("Error exporting image: {Exception}", e.ToString());
+                
+                return false;
+            }
+        }
+        else
+        {
+            throw new NotImplementedException(ext + " export not implemented!");
+        }
     }
 
     public static Image GenImageColor(int width, int height, Color color)

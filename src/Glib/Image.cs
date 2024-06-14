@@ -63,7 +63,10 @@ public class Image : IDisposable
             return _globalConfig = new Configuration(
                 new PngConfigurationModule(),
                 new JpegConfigurationModule()
-            );
+            )
+            {
+                MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 3)
+            };
         }
     } 
 
@@ -342,6 +345,16 @@ public class Image : IDisposable
     public void FlipHorizontal()
     {
         ImageSharpImage.Mutate(x => x.Flip(FlipMode.Horizontal));
+    }
+
+    public void ExportPng(string filePath)
+    {
+        ImageSharpImage.SaveAsPng(filePath);
+    }
+
+    public void ExprtPng(Stream stream)
+    {
+        ImageSharpImage.SaveAsPng(stream);
     }
 
     public Image Clone()

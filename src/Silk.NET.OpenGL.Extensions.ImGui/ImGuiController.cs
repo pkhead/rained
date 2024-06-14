@@ -324,6 +324,10 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
         private void AddKeyEvent(ImGuiIOPtr io, Key k, bool down)
         {
+            // Rained-specific modification:
+            // ImGui ignores the tab key
+            if (k == Key.Tab) return;
+
             if (keyMap.TryGetValue(k, out ImGuiKey imKey))
             {
                 var keyboardState = _input.Keyboards[0];
