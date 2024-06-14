@@ -28,7 +28,7 @@ jobs:
     - name: Package
       run: |
         dotnet tool restore
-        dotnet cake
+        dotnet cake --os=linux-x64
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
