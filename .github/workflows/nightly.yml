@@ -46,7 +46,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: linux-x64
-          path: ./rained_linux-x64.tar.gz
+          path: ./artifacts/rained_linux-x64.tar.gz
       - name: Create Release
         uses: softprops/action-gh-release@v2
         id: create_release
@@ -58,4 +58,4 @@ jobs:
           name: "Nightly"
           tag_name: "nightly"
           make_latest: false
-          files: rained_linux-x64.tar.gz
+          files: ./artifacts/rained_linux-x64.tar.gz
