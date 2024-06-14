@@ -48,14 +48,14 @@ jobs:
           name: linux-x64
           path: ./rained_linux-x64.tar.gz
       - name: Create Release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v2
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag: "nightly"
-          name: "Nightly"
-          allowUpdates: true
-          makeLatest: false
+          draft: false
           prerelease: true
-          artifacts: "linux-x64"
+          name: "Nightly"
+          tag_name: "nightly"
+          make_latest: false
+          files: rained_linux-x64.tar.gz
