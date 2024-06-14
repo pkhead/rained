@@ -1,0 +1,67 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Nightly build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: |
+        cd src/Drizzle
+        dotnet run --project Drizzle.Transpiler
+        cd ../..
+        dotnet restore
+    - name: Build
+      run: |
+        dotnet build --no-restore
+    - name: Package
+      run: |
+        dotnet tool restore
+        dotnet cake
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: linux-x64
+        path: ./rained_linux-x64.tar.gz
+
+  create_release:
+    needs: [build_linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-x64
+          path: ./rained_linux-x64.tar.gz
+      - name: Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag: "nightly"
+          name: "Nightly"
+          allowUpdates: true
+          makeLatest: false
+          prerelease: true
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GTIHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./rained_linux-x64.tar.gz
+          asset_name: rained_linux-x64.tar.gz
+          asset_content_type: application/gzip
