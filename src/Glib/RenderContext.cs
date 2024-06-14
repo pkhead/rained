@@ -697,7 +697,6 @@ public class RenderContext : IDisposable
     {
         if (numVertices + newVertices >= MaxVertices)
         {
-            Console.WriteLine("Batch was full - flush batch");
             DrawBatch();
         }
     }

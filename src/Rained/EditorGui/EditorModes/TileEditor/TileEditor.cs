@@ -205,7 +205,7 @@ partial class TileEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
-            Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
+            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 

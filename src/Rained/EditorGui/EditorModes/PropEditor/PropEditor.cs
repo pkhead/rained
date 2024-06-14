@@ -312,7 +312,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -333,7 +333,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
         
@@ -367,10 +367,10 @@ partial class PropEditor : IEditorMode
                 }
                 
                 var pts = prop.QuadPoints;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
         else
@@ -381,10 +381,10 @@ partial class PropEditor : IEditorMode
 
                 var pts = prop.QuadPoints;
                 var col = prop.IsMovable ? OutlineColors[0] : OutlineColors[3];;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
 
@@ -392,10 +392,10 @@ partial class PropEditor : IEditorMode
         {
             var pts = highlightedProp.QuadPoints;
             var col = OutlineGlowColors[0];
-            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
         }
 
         // prop transform gizmos
@@ -487,10 +487,9 @@ partial class PropEditor : IEditorMode
                 Vector2 rotDotPos = handleCnPos + handleDir * 5f / window.ViewZoom;
 
                 // draw line to gizmo handle
-                Raylib.DrawLineEx(
+                Raylib.DrawLineV(
                     startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
-                    1f / window.ViewZoom,
                     OutlineColors[0]
                 );
 

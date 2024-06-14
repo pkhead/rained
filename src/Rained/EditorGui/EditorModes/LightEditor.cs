@@ -314,7 +314,7 @@ class LightEditor : IEditorMode
         // render light plane
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
-        Raylib.DrawRenderTextureV(
+        RlExt.DrawRenderTextureV(
             level.LightMap.RenderTexture,
             new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
             new Color(255, 0, 0, 100)
@@ -394,7 +394,7 @@ class LightEditor : IEditorMode
             -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
         );
 
-        Raylib.DrawRenderTextureV(level.LightMap.RenderTexture, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
+        RlExt.DrawRenderTextureV(level.LightMap.RenderTexture, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
         /*Raylib.DrawTextureRec(
             level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),

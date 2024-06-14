@@ -915,31 +915,13 @@ static class Raylib
 
     public static void DrawTextureV(Texture2D texture, Vector2 position, Color tint)
     {
-        DrawTextureRec(texture, new Rectangle(0f, 0f, texture.ID!.Width, texture.ID!.Height), position, tint);
+        Raylib.DrawTextureRec(texture, new Rectangle(0f, 0f, texture.ID!.Width, texture.ID!.Height), position, tint);
     }
 
     public static void DrawTexture(Texture2D texture, int posX, int posY, Color tint)
     {
         DrawTextureV(texture, new Vector2(posX, posY), tint);
     }
-
-    // Not actually a function in Raylib. I just added this because
-    // drawing the contents of a framebuffer will be upside down.
-    public static void DrawRenderTextureV(RenderTexture2D target, Vector2 pos, Color tint)
-    {
-        var tex = target.Texture;
-        DrawTexturePro(
-            texture: target.Texture,
-            source: new Rectangle(0f, tex.Height, tex.Width, -tex.Height),
-            dest: new Rectangle(pos, tex.Width, tex.Height),
-            origin: Vector2.Zero,
-            rotation: 0f,
-            tint: tint
-        );
-    }
-    
-    public static void DrawRenderTexture(RenderTexture2D target, int posX, int posY, Color tint)
-        => DrawRenderTextureV(target, new Vector2(posX, posY), tint);
 
     #endregion
 
