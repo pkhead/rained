@@ -78,7 +78,7 @@ jobs:
       - name: Download Windows Artifact
         uses: actions/download-artifact@v2
         with:
-          name: windows-x64
+          name: win-x64
           path: ./artifacts/
       - name: Create Release
         uses: softprops/action-gh-release@v2
