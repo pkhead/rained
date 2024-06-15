@@ -34,9 +34,37 @@ jobs:
       with:
         name: linux-x64
         path: ./rained_linux-x64.tar.gz
+  
+  build_windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: |
+        cd src\Drizzle
+        dotnet run --project Drizzle.Transpiler
+        cd ..\..
+        dotnet restore
+    - name: Package
+      run: |
+        dotnet tool restore
+        dotnet cake --os=win-x64
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: win-x64
+        path: .\rained_win-x64.zip
 
   create_release:
-    needs: [build_linux]
+    needs: [build_linux, build_windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,15 +75,20 @@ jobs:
         with:
           name: linux-x64
           path: ./artifacts/
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-x64
+          path: ./artifacts/
       - name: Create Release
         uses: softprops/action-gh-release@v2
         id: create_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: false
           prerelease: true
           name: "Nightly"
           tag_name: "nightly"
           make_latest: false
-          files: ./artifacts/rained_linux-x64.tar.gz
+          files: |
+            ./artifacts/rained_linux-x64.tar.gz
+            ./artifacts/rained_win-x64.zip
