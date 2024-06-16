@@ -80,6 +80,8 @@ jobs:
         with:
           name: win-x64
           path: ./artifacts/
+      - name: Remove Old Release
+        run: gh release delete nightly --cleanup-tag -y
       - name: Create Release
         uses: softprops/action-gh-release@v2
         id: create_release
@@ -89,6 +91,7 @@ jobs:
           name: "Nightly"
           tag_name: "nightly"
           make_latest: false
+          body: Latest in-development build.
           files: |
             ./artifacts/rained_linux-x64.tar.gz
             ./artifacts/rained_win-x64.zip
