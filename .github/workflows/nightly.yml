@@ -81,6 +81,8 @@ jobs:
           name: win-x64
           path: ./artifacts/
       - name: Remove Old Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh release delete nightly --cleanup-tag -y
       - name: Create Release
         uses: softprops/action-gh-release@v2
