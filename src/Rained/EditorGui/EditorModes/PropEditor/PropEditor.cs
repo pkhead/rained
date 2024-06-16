@@ -21,8 +21,7 @@ partial class PropEditor : IEditorMode
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
     
     private int initDepth = -1; // the depth of the last selected prop(s)
-    private float selectionTime = 0; // last time a prop was selected
-
+    private bool isDoubleClick = false; // if mouse double clicks, wait until mouse release to open the selector popup
     
     private ChangeHistory.PropChangeRecorder changeRecorder;
 
@@ -120,6 +119,7 @@ partial class PropEditor : IEditorMode
 
     public void Load()
     {
+        isDoubleClick = false;
         selectedProps.Clear();
         transformMode = null;
         initSelectedProps = null;
@@ -662,7 +662,7 @@ partial class PropEditor : IEditorMode
 
         // props selection popup (opens when right-clicking over an area with multiple props)
         highlightedProp = null;
-        if (ImGui.IsPopupOpen("PropSelectionList") && ImGui.BeginPopup("PropSelectionList"))
+        if (ImGui.BeginPopup("PropSelectionList"))
         {
             for (int i = propSelectionList.Length - 1; i >= 0; i--)
             {
@@ -681,8 +681,10 @@ partial class PropEditor : IEditorMode
                     highlightedProp = prop;
                 
                 ImGui.PopID();
-
             }
+
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+                ImGui.CloseCurrentPopup();
 
             ImGui.EndPopup();
         }
@@ -690,8 +692,6 @@ partial class PropEditor : IEditorMode
         // update depth init for next prop placement based on currently selected props
         if (selectedProps.Count > 0)
         {
-            selectionTime = (float) Raylib.GetTime();
-
             // check that the depth offset of all selected props are the same
             int curDepthOffset = selectedProps[0].DepthOffset;
             foreach (var prop in selectedProps)
@@ -778,18 +778,16 @@ partial class PropEditor : IEditorMode
             }
         }
 
-        // right-click opens menu to select one of multiple props under the cursor
+        // left double-click opens menu to select one of multiple props under the cursor
         // useful for when props overlap (which i assume is common)
-        if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Right) && !isMouseDragging)
+        if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
+        if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
         {
+            isDoubleClick = false;
+
             propSelectionList = GetPropsAt(window.MouseCellFloat, window.WorkLayer);
-            if (propSelectionList.Length == 1)
-            {
-                if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                    selectedProps.Clear();
-                
-                SelectProp(propSelectionList[0]);
-            } else if (propSelectionList.Length > 1)
+            
+            if (propSelectionList.Length > 1)
             {
                 ImGui.OpenPopup("PropSelectionList");
             }
@@ -798,9 +796,9 @@ partial class PropEditor : IEditorMode
         if (!EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
             isMouseDragging = false;
 
-        // when N is pressed, create new selected prop
+        // when C is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
         {
             var createPos = window.MouseCellFloat;
             
@@ -820,9 +818,7 @@ partial class PropEditor : IEditorMode
                 // if a prop is selected while adding a new one, the new prop will copy
                 // the depth offset value of the old prop. also make sure that it is on the same
                 // work layer.
-                // there is a time check here, because if the user double-clicks to add a prop,
-                // the prop will be deselected for at least one frame...
-                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer && ((float)Raylib.GetTime() - selectionTime) < 0.1)
+                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer)
                 {
                     propDepth = initDepth;
                 }
