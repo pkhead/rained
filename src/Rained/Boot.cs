@@ -282,32 +282,43 @@ namespace RainEd
             }
             
             // user does not have a supported system of showing a dialog error box
-            // so just show in raylib. looks kind of ugly, but it's better than nothing
+            // so just show it in imgui.
             if (!success)
             {
-                if (isAppReady)
+                if (!isAppReady)
                 {
-                    while (!Raylib.WindowShouldClose())
-                    {
-                        Raylib.BeginDrawing();
-                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                        Raylib.EndDrawing();
-                    }
-                }
-                else
-                {
-                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
+                    window.Visible = true;
                     if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                }
 
-                    while (!Raylib.WindowShouldClose())
+                ImGui.StyleColorsDark();
+
+                while (!Raylib.WindowShouldClose())
+                {
+                    Raylib.BeginDrawing();
+                    Raylib.ClearBackground(Raylib_cs.Color.Black);
+
+                    window.ImGuiController!.Update(Raylib.GetFrameTime());
+
+                    var windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings;
+
+                    var viewport = ImGui.GetMainViewport();
+                    ImGui.SetNextWindowPos(viewport.Pos);
+                    ImGui.SetNextWindowSize(viewport.Size);
+
+                    if (ImGui.Begin(windowTitle + "##ErrorWindow", windowFlags))
                     {
-                        Raylib.BeginDrawing();
-                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                        Raylib.EndDrawing();
-                    }
+                        ImGui.PushTextWrapPos(ImGui.GetContentRegionAvail().X);
+                        ImGui.TextWrapped(windowContents);
+                        ImGui.PopTextWrapPos();
+                    } ImGui.End();
 
+                    window.ImGuiController!.Render();
+                    Raylib.EndDrawing();
+                }
+
+                if (!isAppReady)
+                {
                     Raylib.CloseWindow();
                     splashScreenWindow?.Close();
                 }

@@ -943,11 +943,4 @@ static class Raylib
     }
 
     #endregion
-
-    #region rtext
-    public static void DrawText(string text, int posX, int posY, int fontSize, Color color)
-    {
-        throw new NotImplementedException();
-    }
-    #endregion
 }

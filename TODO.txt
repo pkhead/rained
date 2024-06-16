@@ -1,5 +1,3 @@
-DRAWTEXT!
-
 Priority:
 - configurable tile spec colors
 - dissolve material/tile separation
