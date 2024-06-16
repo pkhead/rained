@@ -370,8 +370,7 @@ class LevelView
         // blend into the imgui background when rendered.
         // Good thing I downloaded renderdoc, otherwise there was no way
         // I would've figured that was the problem!
-        Rlgl.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-        Raylib.BeginBlendMode(BlendMode.CustomSeparate);
+        RainEd.RenderContext.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
 
         // drwa resize preview
@@ -412,7 +411,7 @@ class LevelView
             );
         }
 
-        Raylib.EndBlendMode();
+        RainEd.RenderContext.SetBlendMode(Glib.BlendMode.Normal);
 
         // view controls
         if (canvasWidget.IsHovered)

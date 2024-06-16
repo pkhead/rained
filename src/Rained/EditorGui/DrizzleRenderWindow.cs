@@ -1,8 +1,11 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-using rlImGui_cs;
-using RenderState = RainEd.DrizzleRender.RenderState;
+using System.Diagnostics;
+using DrizzleRender = RainEd.Drizzle.DrizzleRender;
+using RenderState = RainEd.Drizzle.DrizzleRender.RenderState;
+using System.Runtime.CompilerServices;
+
 namespace RainEd;
 
 class DrizzleRenderWindow : IDisposable
@@ -18,48 +21,48 @@ class DrizzleRenderWindow : IDisposable
     private const string LayerPreviewShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
-        out vec4 finalColor;
+        out vec4 glib_fragColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
             bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
             vec3 correctColor = texelColor.bgr;
             
-            finalColor = vec4(
-                mix(correctColor, vec3(1.0), fragColor.r * 0.8),
+            glib_fragColor = vec4(
+                mix(correctColor, vec3(1.0), glib_color.r * 0.8),
                 1.0 - float(isWhite)
-            ) * colDiffuse;
+            ) * glib_uColor;
         }    
     ";
 
     private const string LayerPreviewLightShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
-        out vec4 finalColor;
+        out vec4 glib_fragColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
-            bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
+            bool isWhite = texelColor.r == 1.0;
             vec3 correctColor = texelColor.bgr;
             
-            finalColor = vec4(
+            glib_fragColor = vec4(
                 vec3(1.0, 0.0, 0.0),
                 1.0 - float(isWhite)
-            ) * colDiffuse;
+            ) * glib_uColor;
         }    
     ";
 
@@ -143,7 +146,10 @@ class DrizzleRenderWindow : IDisposable
         if (cancelDisabled)
             ImGui.BeginDisabled();
         
-        if (ImGui.Button("Cancel"))
+        // render preview lags a lot, so make it so the user doesn't have to let go of
+        // mouse button in order to activate the cancel button
+        ImGui.Button("Cancel");
+        if (ImGui.IsItemClicked())
             drizzleRenderer?.Cancel();
         
         if (cancelDisabled)
@@ -263,9 +269,17 @@ class DrizzleRenderWindow : IDisposable
                     if (previewLayers is null)
                         throw new NullReferenceException("previewLayers is null");
 
+                    RainEd.Logger.Information("update preview");
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+
                     needUpdateTextures = false;
 
                     drizzleRenderer.UpdatePreviewImages();
+
+                    stopwatch.Stop();
+                    RainEd.Logger.Debug("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    stopwatch.Restart();
 
                     // update preview images
                     for (int i = 0; i < 30; i++)
@@ -276,11 +290,14 @@ class DrizzleRenderWindow : IDisposable
                     UpdateTexture(previewImages.BlackOut1, ref previewBlackout1);
                     UpdateTexture(previewImages.BlackOut2, ref previewBlackout2);
                     UpdateComposite();
+
+                    stopwatch.Stop();
+                    RainEd.Logger.Debug("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 int cWidth = previewComposite.Texture.Width;
                 int cHeight = previewComposite.Texture.Height;
-                rlImGui.ImageRect(
+                ImGuiExt.ImageRect(
                     previewComposite.Texture,
                     (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
                     new Rectangle(0, cHeight, cWidth, -cHeight)
@@ -301,7 +318,27 @@ class DrizzleRenderWindow : IDisposable
         return doClose;
     }
 
-    private static void UpdateTexture(RlManaged.Image? img, ref RlManaged.Texture2D? tex)
+    // 1-bit-per-pixel images need to be converted into a 8-bit-per-pixel image...
+    private byte[]? convertedBitmap = null;
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static void ConvertBitmap(byte[] pixels, byte[] convertedBitmap)
+    {
+        int j = 0;
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            convertedBitmap[j++] = (byte)(255 * (pixels[i] & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 1) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 2) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 3) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 4) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 5) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 6) & 1));
+            convertedBitmap[j++] = (byte)(255 * ((pixels[i] >> 7) & 1));
+        }
+    }
+
+    private void UpdateTexture(Drizzle.RenderImage? img, ref RlManaged.Texture2D? tex)
     {
         if (img == null)
         {
@@ -310,14 +347,32 @@ class DrizzleRenderWindow : IDisposable
             return;
         }
 
+        Glib.Texture gtex;
+
         if (tex == null || img.Width != tex.Width || img.Height != tex.Height)
         {
             tex?.Dispose();
-            tex = RlManaged.Texture2D.LoadFromImage(img);
+            gtex = RainEd.RenderContext.CreateTexture(img.Width, img.Height, Glib.PixelFormat.RGBA);
+            tex = new RlManaged.Texture2D(new Texture2D() { ID = gtex });
         }
         else
         {
-            img.UpdateTexture(tex);
+            gtex = ((Texture2D)tex).ID!;
+        }
+
+        // convert 1-bit-per-pixel image to an 8-bit-per-pixel image
+        if (img.Format == Drizzle.PixelFormat.L1)
+        {
+            if (convertedBitmap is null || convertedBitmap.Length != img.Width * img.Height)
+                convertedBitmap = new byte[img.Width * img.Height];
+            
+            ConvertBitmap(img.Pixels, convertedBitmap);
+            gtex.UpdateFromImage(convertedBitmap, Glib.PixelFormat.Grayscale);
+        }
+        else
+        {
+            // bgra -> rgba conversion is done in the shader
+            gtex.UpdateFromImage(img.Pixels, Glib.PixelFormat.RGBA);
         }
     }
 
@@ -329,10 +384,10 @@ class DrizzleRenderWindow : IDisposable
         var previewStatus = drizzleRenderer!.PreviewImages!;
         var renderStage = previewStatus.Stage;
 
-        if (renderStage != RenderPreviewStage.Setup)
+        if (renderStage != Drizzle.RenderPreviewStage.Setup)
         {
             var shader = layerPreviewShader;
-            if (renderStage == RenderPreviewStage.Lights)
+            if (renderStage == Drizzle.RenderPreviewStage.Lights)
             {
                 shader = layerPreviewLightShader;
                 Raylib.ClearBackground(Color.Black);

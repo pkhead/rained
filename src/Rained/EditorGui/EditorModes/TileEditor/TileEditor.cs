@@ -176,7 +176,6 @@ partial class TileEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
-
         wasToolActive = isToolActive;
         isToolActive = false;
 
@@ -194,7 +193,10 @@ partial class TileEditor : IEditorMode
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
 
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.EndScissorMode();
+            Raylib.ClearBackground(Color.Blank);
+            window.BeginLevelScissorMode();
+
             Rlgl.PushMatrix();
                 levelRender.RenderGeometry(l, LevelView.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
@@ -211,12 +213,7 @@ partial class TileEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
-            Raylib.DrawTextureRec(
-                layerFrames[l].Texture,
-                new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),
-                Vector2.Zero,
-                new Color(255, 255, 255, alpha)
-            );
+            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -455,10 +452,12 @@ partial class TileEditor : IEditorMode
             {
                 if (rectMode == RectMode.Place)
                 {
-                    for (int x = rMinX; x < rMaxX; x++)
+                    for (int x = rMinX; x <= rMaxX; x++)
                     {
-                        for (int y = rMinY; y < rMaxY; y++)
+                        for (int y = rMinY; y <= rMaxY; y++)
                         {
+                            if (!level.IsInBounds(x, y)) continue;
+
                             if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == 0)
                             {
                                 if (modifyGeometry)
@@ -474,10 +473,12 @@ partial class TileEditor : IEditorMode
                 }
                 else if (rectMode == RectMode.Remove)
                 {
-                    for (int x = rMinX; x < rMaxX; x++)
+                    for (int x = rMinX; x <= rMaxX; x++)
                     {
-                        for (int y = rMinY; y < rMaxY; y++)
+                        for (int y = rMinY; y <= rMaxY; y++)
                         {
+                            if (!level.IsInBounds(x, y)) continue;
+
                             if (!disallowMatOverwrite || level.Layers[window.WorkLayer, x, y].Material == selectedMaterial)
                             {
                                 level.Layers[window.WorkLayer, x, y].Material = 0;
@@ -568,8 +569,8 @@ partial class TileEditor : IEditorMode
                     for (int y = cursorTop; y <= window.MouseCy + materialBrushSize / 2; y++)
                     {
                         if (!level.IsInBounds(x, y)) continue;
-                        ref var cell = ref level.Layers[window.WorkLayer, x, y];
 
+                        ref var cell = ref level.Layers[window.WorkLayer, x, y];
                         if (cell.HasTile()) continue;
 
                         if (placeMode == 1)
@@ -688,6 +689,7 @@ partial class TileEditor : IEditorMode
                         {
                             var gx = (int)minX + x;
                             var gy = (int)minY + y;
+                            if (!level.IsInBounds(gx, gy)) continue;
 
                             if (level.Layers[window.WorkLayer, gx, gy].HasTile())
                                 level.RemoveTileCell(window.WorkLayer, gx, gy, modifyGeometry);
@@ -705,9 +707,14 @@ partial class TileEditor : IEditorMode
         // check if rect place mode will start
         else if (isMouseHeldInMode && isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
+            int rectOffsetX = 0;
+            int rectOffsetY = 0;
+
             if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
             {
                 rectMode = RectMode.Place;
+                rectOffsetX = -selectedTile.CenterX;
+                rectOffsetY = -selectedTile.CenterY;
             }
             else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
             {
@@ -715,7 +722,7 @@ partial class TileEditor : IEditorMode
             }
 
             if (rectMode != RectMode.Inactive)
-                rectStart = new CellPosition(window.MouseCx - selectedTile.CenterX, window.MouseCy - selectedTile.CenterY, window.WorkLayer);
+                rectStart = new CellPosition(window.MouseCx + rectOffsetX, window.MouseCy + rectOffsetY, window.WorkLayer);
         }
 
         // single-tile place mode
@@ -836,7 +843,7 @@ partial class TileEditor : IEditorMode
             }
 
             // remove material under mouse cursor
-            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && level.IsInBounds(window.MouseCx, window.MouseCy))
             {
                 ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
                 if (!cell.HasTile() && !disallowMatOverwrite)

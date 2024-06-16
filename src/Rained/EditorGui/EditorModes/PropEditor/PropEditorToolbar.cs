@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-using rlImGui_cs;
+
 using RainEd.Props;
 using Raylib_cs;
 
@@ -259,18 +259,18 @@ partial class PropEditor : IEditorMode
             curPropPreview = prop;
 
             previewTexture?.Dispose();
-            previewTexture = RlManaged.RenderTexture2D.Load(texWidth, texHeight);
-            
+            previewTexture = RlManaged.RenderTexture2D.Load(texWidth, texHeight);   
+        }
+
             Raylib.BeginTextureMode(previewTexture);
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.ClearBackground(Color.Blank);
             Raylib.BeginShaderMode(window.Renderer.PropPreviewShader);
             {
+                var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop);
                 for (int depth = prop.LayerCount - 1; depth >= 0; depth--)
                 {
                     float whiteFade = Math.Clamp(depth / 16f, 0f, 1f);
                     Rectangle srcRect, dstRec;
-
-                    var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop);
 
                     if (propTexture is not null)
                     {
@@ -293,7 +293,6 @@ partial class PropEditor : IEditorMode
             }
             Raylib.EndShaderMode();
             Raylib.EndTextureMode();
-        }
     }
 
     public void DrawToolbar()
@@ -443,7 +442,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }
@@ -523,7 +522,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }

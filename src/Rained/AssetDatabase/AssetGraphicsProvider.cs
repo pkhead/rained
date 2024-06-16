@@ -160,7 +160,7 @@ class AssetGraphicsProvider
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
             Raylib.ImageDraw(
-                ref previewImage.Ref(),
+                previewImage,
                 fullImage,
                 previewRect,
                 new Rectangle(0, 0, previewRect.Width, previewRect.Height),

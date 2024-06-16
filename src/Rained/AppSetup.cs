@@ -7,7 +7,6 @@
 using ImGuiNET;
 using RainEd;
 using Raylib_cs;
-using rlImGui_cs;
 using System.Numerics;
 using System.IO.Compression;
 
@@ -48,7 +47,7 @@ class AppSetup
 
             Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            rlImGui.Begin();
+            Raylib.GlibWindow.ImGuiController!.Update(Raylib.GetFrameTime());
 
             ImGuiExt.EnsurePopupIsOpen("Configure Data");
             ImGuiExt.CenterNextWindow(ImGuiCond.Always);
@@ -126,7 +125,7 @@ class AppSetup
                 ImGui.EndPopup();
             }
 
-            rlImGui.End();
+            Raylib.GlibWindow.ImGuiController!.Render();
 
             if (callbackRes is not null)
             {

@@ -123,6 +123,11 @@ static class EditorWindow
 
         fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+        {
+            if (isRw) return new BrowserLevelPreview(path);
+            return null;
+        };
     }
 
     private static void DrawMenuBar()
@@ -418,6 +423,8 @@ static class EditorWindow
         LuaInterface.ShowLogs();
         RendererWindow.ShowWindow();
     }
+    
+    private static bool closeDrizzleRenderWindow = false;
 
     public static void Render()
     {
@@ -430,13 +437,23 @@ static class EditorWindow
         FileBrowser.Render(ref fileBrowser);
         
         // render drizzle render, if in progress
+        // disposing of drizzle render window must be done on the next frame
+        // otherwise the texture ID given to ImGui for the previee will be invalid
+        // and it will spit out an opengl error. it's not a fatal error, it's just...
+        // not supposed to happen.
         if (drizzleRenderWindow is not null)
         {
-            // if this returns true, the render window had closed
-            if (drizzleRenderWindow.DrawWindow())
+            if (closeDrizzleRenderWindow)
             {
+                closeDrizzleRenderWindow = false;
                 drizzleRenderWindow.Dispose();
                 drizzleRenderWindow = null;
+            }
+            
+            // if this returns true, the render window had closed
+            else if (drizzleRenderWindow.DrawWindow())
+            {
+                closeDrizzleRenderWindow = true;
 
                 // the whole render process allocates ~1 gb of memory
                 // so, try to free all that

@@ -1,7 +1,7 @@
 using ImGuiNET;
 using RainEd.Props;
 using Raylib_cs;
-using rlImGui_cs;
+
 using System.Numerics;
 namespace RainEd;
 
@@ -19,6 +19,9 @@ partial class PropEditor : IEditorMode
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
+    
+    private int initDepth = -1; // the depth of the last selected prop(s)
+    private bool isDoubleClick = false; // if mouse double clicks, wait until mouse release to open the selector popup
     
     private ChangeHistory.PropChangeRecorder changeRecorder;
 
@@ -116,6 +119,7 @@ partial class PropEditor : IEditorMode
 
     public void Load()
     {
+        isDoubleClick = false;
         selectedProps.Clear();
         transformMode = null;
         initSelectedProps = null;
@@ -312,15 +316,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -329,7 +325,7 @@ partial class PropEditor : IEditorMode
         {
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.ClearBackground(Color.Blank);
             levelRender.RenderProps(l, 255);
         }
 
@@ -341,15 +337,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
         
@@ -383,10 +371,10 @@ partial class PropEditor : IEditorMode
                 }
                 
                 var pts = prop.QuadPoints;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
         else
@@ -397,10 +385,10 @@ partial class PropEditor : IEditorMode
 
                 var pts = prop.QuadPoints;
                 var col = prop.IsMovable ? OutlineColors[0] : OutlineColors[3];;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
 
@@ -408,10 +396,10 @@ partial class PropEditor : IEditorMode
         {
             var pts = highlightedProp.QuadPoints;
             var col = OutlineGlowColors[0];
-            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
         }
 
         // prop transform gizmos
@@ -503,10 +491,9 @@ partial class PropEditor : IEditorMode
                 Vector2 rotDotPos = handleCnPos + handleDir * 5f / window.ViewZoom;
 
                 // draw line to gizmo handle
-                Raylib.DrawLineEx(
+                Raylib.DrawLineV(
                     startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
-                    1f / window.ViewZoom,
                     OutlineColors[0]
                 );
 
@@ -658,7 +645,7 @@ partial class PropEditor : IEditorMode
 
         // props selection popup (opens when right-clicking over an area with multiple props)
         highlightedProp = null;
-        if (ImGui.IsPopupOpen("PropSelectionList") && ImGui.BeginPopup("PropSelectionList"))
+        if (ImGui.BeginPopup("PropSelectionList"))
         {
             for (int i = propSelectionList.Length - 1; i >= 0; i--)
             {
@@ -677,10 +664,29 @@ partial class PropEditor : IEditorMode
                     highlightedProp = prop;
                 
                 ImGui.PopID();
-
             }
 
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+                ImGui.CloseCurrentPopup();
+
             ImGui.EndPopup();
+        }
+
+        // update depth init for next prop placement based on currently selected props
+        if (selectedProps.Count > 0)
+        {
+            // check that the depth offset of all selected props are the same
+            int curDepthOffset = selectedProps[0].DepthOffset;
+            foreach (var prop in selectedProps)
+            {
+                if (prop.DepthOffset != curDepthOffset)
+                {
+                    curDepthOffset = -1;
+                    break;
+                }
+            }
+
+            initDepth = curDepthOffset;
         }
     }
 
@@ -755,18 +761,16 @@ partial class PropEditor : IEditorMode
             }
         }
 
-        // right-click opens menu to select one of multiple props under the cursor
+        // left double-click opens menu to select one of multiple props under the cursor
         // useful for when props overlap (which i assume is common)
-        if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Right) && !isMouseDragging)
+        if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
+        if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
         {
+            isDoubleClick = false;
+
             propSelectionList = GetPropsAt(window.MouseCellFloat, window.WorkLayer);
-            if (propSelectionList.Length == 1)
-            {
-                if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                    selectedProps.Clear();
-                
-                SelectProp(propSelectionList[0]);
-            } else if (propSelectionList.Length > 1)
+            
+            if (propSelectionList.Length > 1)
             {
                 ImGui.OpenPopup("PropSelectionList");
             }
@@ -775,9 +779,9 @@ partial class PropEditor : IEditorMode
         if (!EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
             isMouseDragging = false;
 
-        // when N is pressed, create new selected prop
+        // when C is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
         {
             var createPos = window.MouseCellFloat;
             
@@ -792,10 +796,21 @@ partial class PropEditor : IEditorMode
             {
                 changeRecorder.BeginListChange();
 
+                int propDepth = window.WorkLayer * 10;
+
+                // if a prop is selected while adding a new one, the new prop will copy
+                // the depth offset value of the old prop. also make sure that it is on the same
+                // work layer.
+                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer)
+                {
+                    propDepth = initDepth;
+                }
+
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
-                    DepthOffset = window.WorkLayer * 10
+                    DepthOffset = propDepth
                 };
+                prop.Randomize();
 
                 RainEd.Instance.Level.Props.Add(prop);
                 selectedProps.Clear();
@@ -843,10 +858,10 @@ partial class PropEditor : IEditorMode
         if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
-                foreach (var prop in selectedProps)
-                {
-                    RainEd.Instance.Level.Props.Remove(prop);
-                }
+            foreach (var prop in selectedProps)
+            {
+                RainEd.Instance.Level.Props.Remove(prop);
+            }
             changeRecorder.PushListChange();
 
             selectedProps.Clear();

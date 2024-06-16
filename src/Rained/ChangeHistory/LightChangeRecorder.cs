@@ -159,15 +159,7 @@ class LightChangeRecorder : IDisposable
 
             foreach (var atom in thisStroke.atoms)
             {
-                var tex = RainEd.Instance.LightBrushDatabase.Brushes[atom.brush].Texture;
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    new Vector2(atom.rect.Width, atom.rect.Height) / 2f,
-                    atom.rotation,
-                    atom.mode ? Color.Black : Color.White
-                );
+                LightMap.DrawAtom(atom);
             }
         }
     }

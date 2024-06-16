@@ -19,20 +19,20 @@ struct BrushAtom
 class LightBrushDatabase
 {
     private readonly static string levelLightShaderSrc = @"
-        #version 330
+        #version 330 core
+        
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
-
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
-            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * fragColor * colDiffuse;
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
+            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * glib_color * glib_uColor;
         }
     ";
 
@@ -75,6 +75,7 @@ class LightMap : IDisposable
     public int Width { get => width; }
     public int Height { get => height; }
     public Texture2D Texture { get => lightmapRt.Texture; }
+    public RenderTexture2D RenderTexture { get => lightmapRt; }
 
     public LightMap(int levelWidth, int levelHeight)
     {
@@ -96,18 +97,18 @@ class LightMap : IDisposable
         using var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
         AssetGraphicsProvider.CropImage(croppedLightMap);
 
-        using RlManaged.Image finalImage = RlManaged.Image.GenColor(width, height, Color.White);
+        using var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
 
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
-            RainEd.Logger.Information("Adapted light rect. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
-            EditorWindow.ShowNotification("Adapted light rect");
+            RainEd.Logger.Information("Cropped light map. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
+            EditorWindow.ShowNotification("Cropped light map");
         }
 
         var subWidth = croppedLightMap.Width;
         var subHeight = croppedLightMap.Height;
         Raylib.ImageDraw(
-            dst: ref finalImage.Ref(),
+            dst: finalImage,
             src: croppedLightMap,
             srcRec: new Rectangle(0, 0, subWidth, subHeight),
             dstRec: new Rectangle((width - subWidth) / 2f, (height - subHeight) / 2f, subWidth, subHeight),
@@ -115,7 +116,7 @@ class LightMap : IDisposable
         );
 
         // get light map as a texture
-        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
+        var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
 
         // put into a render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
@@ -139,24 +140,38 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        // resize light map image
         using var lightMapImage = GetImage();
+        
+        // vertical flip dest rect (idk why i need to do this it worked before)
+        //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
+
+        // resize light map image
         Raylib.ImageResizeCanvas(
             ref lightMapImage.Ref(),
             newWidth, newHeight,
             dstOriginX, dstOriginY,
             Color.White
         );
+        Raylib.ImageFlipVertical(lightMapImage);
 
         // get light map as a texture
-        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
+        var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
 
         // put into a render texture
         lightmapRt.Dispose();
         lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
+
+        // texture is loaded upside down...
+        Raylib.DrawTexturePro(
+            lightmapTex,
+            new Rectangle(0f, lightmapTex.Height, lightmapTex.Width, -lightmapTex.Height),
+            new Rectangle(0f, 0f, lightmapTex.Width, lightmapTex.Height),
+            Vector2.Zero, 0f,
+            Color.White
+        );
+
         Raylib.EndTextureMode();
 
         width = newWidth;
@@ -184,9 +199,8 @@ class LightMap : IDisposable
     public RlManaged.Image GetImage()
     {
         var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
-        Raylib.ImageFlipVertical(ref img.Ref());
-        Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
-
+        Raylib.ImageFlipVertical(img);
+        
         return img;
     }
 }

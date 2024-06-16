@@ -1,10 +1,8 @@
 using Raylib_cs;
-using rlImGui_cs;
-using SFML.Window;
-using SFML.Graphics;
 using ImGuiNET;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace RainEd
 {
@@ -26,7 +24,10 @@ namespace RainEd
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
         private static bool isAppReady = false;
-        private static RenderWindow? splashScreenWindow = null;
+        private static Glib.Window? splashScreenWindow = null;
+
+        private static Glib.Window window = null!;
+        public static Glib.Window Window => window;
 
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
@@ -60,9 +61,9 @@ namespace RainEd
 
             try
             {
-                DrizzleRender.Render(bootOptions.LevelToLoad);
+                Drizzle.DrizzleRender.Render(bootOptions.LevelToLoad);
             }
-            catch (DrizzleRenderException e)
+            catch (Drizzle.DrizzleRenderException e)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("error: ");
@@ -88,32 +89,84 @@ namespace RainEd
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;
             
-            // create splash screen window using sfml
-            // to display while editor is loading
-            // funny how i have to use two separate window/graphics libraries
-            // cus raylib doesn't have multi-window support
-            // I was originally going to use only SFML, but it didn't have any
-            // good C# ImGui integration libraries. (Raylib did, though)
+            // create splash screen window to display while editor is loading
             if (!bootOptions.NoSplashScreen)
             {
-                splashScreenWindow = new RenderWindow(new VideoMode(523, 307), "Loading Rained...", Styles.None);
-                Texture texture = new(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
-                var sprite = new Sprite(texture);
+                var winOptions = new Glib.WindowOptions()
+                {
+                    Width = 523,
+                    Height = 307,
+                    Border = Glib.WindowBorder.Hidden,
+                    Title = "Loading Rained...",
+                    VSync = false
+                };
 
-                splashScreenWindow.Clear();
-                splashScreenWindow.Draw(sprite);
-                splashScreenWindow.Display();
+                splashScreenWindow = new Glib.Window(winOptions);
+                splashScreenWindow.Initialize();
+
+                var rctx = splashScreenWindow.RenderContext!;
+                var texture = rctx.LoadTexture(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+
+                splashScreenWindow.BeginRender();
+
+                rctx.Clear(Glib.Color.Black);
+                rctx.Draw(texture);
+                
+                splashScreenWindow.EndRender();
+                splashScreenWindow.SwapBuffers();
             }
 
             {
-                Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
-                Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
-                Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
+                var windowOptions = new Glib.WindowOptions()
+                {
+                    Width = DefaultWindowWidth,
+                    Height = DefaultWindowHeight,
+                    Border = Glib.WindowBorder.Resizable,
+                    Title = "Rained",
+                    Visible = false,
+                    VSync = true,
+                    SetupImGui = true
+                };
+
+                windowOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
+                windowOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
+
+#if DEBUG
+                windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+#endif
+
+                window = new Glib.Window(windowOptions);
+
+                window.ImGuiConfigure += () =>
+                {
+                    ImGuiExt.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
+                    ImGui.StyleColorsDark();
+
+                    var io = ImGui.GetIO();
+                    io.KeyRepeatDelay = 0.5f;
+                    io.KeyRepeatRate = 0.03f;
+                    io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+                };
+
+                window.Initialize();
+                Raylib.InitWindow(window);
+
+#if DEBUG
+                window.RenderContext!.SetupErrorCallback((string msg) =>
+                {
+                    if (RainEd.Instance is not null)
+                        RainEd.Logger.Error("GL error: {Error}", msg);
+                });
+#endif
+
+                //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
+                //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+                //Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
                 //Raylib.SetTargetFPS(240);
-                Raylib.SetExitKey(KeyboardKey.Null);
+                //Raylib.SetExitKey(KeyboardKey.Null);
 
                 // set window icons
-                var windowIcons = new Raylib_cs.Image[6];
+                /*var windowIcons = new Raylib_cs.Image[6];
                 windowIcons[0] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon16.png"));
                 windowIcons[1] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon24.png"));
                 windowIcons[2] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon32.png"));
@@ -125,26 +178,18 @@ namespace RainEd
                 {
                     fixed (Raylib_cs.Image* iconArr = windowIcons)
                         Raylib.SetWindowIcons(iconArr, windowIcons.Length);
-                }
-
-                // setup imgui
-                rlImGui.Setup(true, true);
-                rlImGui.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
-                ImGui.GetIO().KeyRepeatDelay = 0.5f;
-                ImGui.GetIO().KeyRepeatRate = 0.03f;
+                }*/
 
                 string? assetDataPath = null;
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
-                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                    splashScreenWindow?.SetVisible(false);
-
+                    window.Visible = true;
+                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    
                     var appSetup = new AppSetup();
                     if (!appSetup.Start(out assetDataPath))
                     {
-                        rlImGui.Shutdown();
-                        Raylib.CloseWindow();
-                        splashScreenWindow?.Close();
+                        window.Dispose();
                         return;
                     }
                 }
@@ -167,15 +212,10 @@ namespace RainEd
                     return;
                 }
 #endif
+                Window.Visible = true;
+                if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
 
-                Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                
-                // for some reason, closing the window bugs
-                // out raylib, so i just set it invisible
-                // and close it when the program ends
-                splashScreenWindow?.SetVisible(false);
                 isAppReady = true;
-                
 #if !DEBUG
                 try
 #endif
@@ -183,11 +223,12 @@ namespace RainEd
                     while (app.Running)
                     {
                         Raylib.BeginDrawing();
+                        window.ImGuiController!.Update(Raylib.GetFrameTime());
                         app.Draw(Raylib.GetFrameTime());
-                        
+                        window.ImGuiController!.Render();
                         Raylib.EndDrawing();
 
-                        RlManaged.RlObject.UnloadGCQueue();
+                        Glib.GLResource.UnloadGCQueue();
                     }
 
                     RainEd.Logger.Information("Shutting down Rained...");
@@ -199,52 +240,85 @@ namespace RainEd
                     NotifyError(e);
                 }
 #endif
+                window.Dispose();
+                //rlImGui.Shutdown();
 
-                rlImGui.Shutdown();
-
-                foreach (var img in windowIcons)
-                    Raylib.UnloadImage(img);
+                //foreach (var img in windowIcons)
+                //    Raylib.UnloadImage(img);
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            RlManaged.RlObject.UnloadGCQueue();
+            //RlManaged.RlObject.UnloadGCQueue();
             
-            Raylib.CloseWindow();
+            //Raylib.CloseWindow();
             splashScreenWindow?.Close();
         }
 
         public static void DisplayError(string windowTitle, string windowContents)
         {
+            bool success = false;
+
             if (OperatingSystem.IsWindows())
             {
+                success = true;
                 MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
             }
-            else
+            else if (OperatingSystem.IsLinux())
             {
-                if (isAppReady)
+                // try using zenity
+                try
                 {
-                    while (!Raylib.WindowShouldClose())
+                    var procStartInfo = new ProcessStartInfo("zenity", ["--error", "--text", windowContents, "--title", windowTitle])
                     {
-                        Raylib.BeginDrawing();
-                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                        Raylib.EndDrawing();
-                    }
+                        UseShellExecute = false,
+                    };
+
+                    Process.Start(procStartInfo)!.WaitForExit();
+                    success = true;
                 }
-                else
+                catch (Exception)
+                {}
+            }
+            
+            // user does not have a supported system of showing a dialog error box
+            // so just show it in imgui.
+            if (!success)
+            {
+                if (!isAppReady)
                 {
-                    Raylib.ClearWindowState(ConfigFlags.HiddenWindow);
-                    splashScreenWindow?.SetVisible(false);
+                    window.Visible = true;
+                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                }
 
-                    while (!Raylib.WindowShouldClose())
+                ImGui.StyleColorsDark();
+
+                while (!Raylib.WindowShouldClose())
+                {
+                    Raylib.BeginDrawing();
+                    Raylib.ClearBackground(Raylib_cs.Color.Black);
+
+                    window.ImGuiController!.Update(Raylib.GetFrameTime());
+
+                    var windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings;
+
+                    var viewport = ImGui.GetMainViewport();
+                    ImGui.SetNextWindowPos(viewport.Pos);
+                    ImGui.SetNextWindowSize(viewport.Size);
+
+                    if (ImGui.Begin(windowTitle + "##ErrorWindow", windowFlags))
                     {
-                        Raylib.BeginDrawing();
-                        Raylib.ClearBackground(new Raylib_cs.Color(0, 0, 255, 255));
-                        Raylib.DrawText(windowContents, 20, 20, 20, Raylib_cs.Color.White);
-                        Raylib.EndDrawing();
-                    }
+                        ImGui.PushTextWrapPos(ImGui.GetContentRegionAvail().X);
+                        ImGui.TextWrapped(windowContents);
+                        ImGui.PopTextWrapPos();
+                    } ImGui.End();
 
+                    window.ImGuiController!.Render();
+                    Raylib.EndDrawing();
+                }
+
+                if (!isAppReady)
+                {
                     Raylib.CloseWindow();
                     splashScreenWindow?.Close();
                 }
@@ -255,7 +329,7 @@ namespace RainEd
         {
             if (RainEd.Instance is not null)
             {
-                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+                RainEd.Logger.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
             }
 
             Environment.ExitCode = 1;

@@ -45,23 +45,23 @@ class LevelEditRender
     private readonly static string PropShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
-            vec3 color = mix(texelColor.rgb, vec3(1.0), fragColor.y);
+            vec3 color = mix(texelColor.rgb, vec3(1.0), glib_color.y);
 
-            finalColor = vec4(color, (1.0 - float(isTransparent)) * fragColor.x) * colDiffuse;
+            finalColor = vec4(color, (1.0 - float(isTransparent)) * glib_color.x) * glib_uColor;
         }
     ";
 
@@ -70,19 +70,19 @@ class LevelEditRender
     private readonly static string TileShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
 
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
@@ -91,20 +91,20 @@ class LevelEditRender
             bool isShaded = isLight || isShade || isNormal;
 
             float light = float(isLight) * 1.0 + float(isShade) * 0.4 + float(isNormal) * 0.8;
-            vec3 shadedCol = fragColor.rgb * light;
+            vec3 shadedCol = glib_color.rgb * light;
 
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * fragColor.a) * colDiffuse;
+            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
         }
     ";
 
     private readonly static string PaletteShaderSrc = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         uniform vec3[30] litColor;
         uniform vec3[30] neutralColor;
@@ -114,9 +114,9 @@ class LevelEditRender
 
         void main()
         {
-            bool inBounds = fragTexCoord.x >= 0.0 && fragTexCoord.x <= 1.0 && fragTexCoord.y >= 0.0 && fragTexCoord.y <= 1.0;
+            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
 
-            vec4 texelColor = texture(texture0, fragTexCoord);
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
 
             bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
             bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
@@ -124,10 +124,36 @@ class LevelEditRender
             bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
             bool isShaded = isLight || isShade || isNormal;
 
-            int colIndex = int(fragColor.r * 29.0);
+            int colIndex = int(glib_color.r * 29.0);
             vec3 shadedCol = float(isLight) * litColor[colIndex] + float(isShade) * shadedColor[colIndex] + float(isNormal) * neutralColor[colIndex];
 
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * fragColor.a) * colDiffuse;
+            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
+        }
+    ";
+
+    private const string GridVertexShaderSource = @"
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+
+        uniform mat4 glib_uMatrix;
+
+        void main()
+        {
+            gl_Position = glib_uMatrix * vec4(aPos.xyz, 1.0);
+        }
+    ";
+
+    private const string GridFragmentShaderSource = @"
+        #version 330 core
+
+        out vec4 fragColor;
+
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
+
+        void main()
+        {
+            fragColor = texture(glib_uTexture, vec2(0.0, 0.0)) * glib_uColor;
         }
     ";
 
@@ -150,6 +176,12 @@ class LevelEditRender
     public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
     public readonly RlManaged.Shader TilePreviewShader;
     public readonly RlManaged.Shader PaletteShader;
+    
+    private readonly Glib.Shader gridShader;
+    private Glib.Mesh? gridMajor = null;
+    private Glib.Mesh? gridMinor = null;
+    private int gridWidth = 0;
+    private int gridHeight = 0;
 
     private readonly RlManaged.Texture2D bigChainSegment;
 
@@ -177,6 +209,7 @@ class LevelEditRender
         propPreviewShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TilePreviewShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
         PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
+        gridShader = RainEd.RenderContext!.CreateShader(GridVertexShaderSource, GridFragmentShaderSource);
 
         geoRenderer = new EditorGeometryRenderer(this);
         tileRenderer = new TileRenderer(this);
@@ -608,6 +641,8 @@ class LevelEditRender
     {
         int srcDepth = srcLayer * 10;
 
+        var rctx = RainEd.RenderContext;
+
         foreach (var prop in Level.Props)
         {
             // cull prop if it is outside of the view bounds
@@ -629,9 +664,8 @@ class LevelEditRender
             var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop.PropInit);
             var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
 
-            Rlgl.DisableBackfaceCulling();
+            rctx.SetEnabled(Glib.Feature.CullFace, false);
             Raylib.BeginShaderMode(propPreviewShader);
-            Rlgl.SetTexture(displayTexture.Id);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
@@ -649,32 +683,30 @@ class LevelEditRender
                     ? new Rectangle(Vector2.Zero, 2.0f * Vector2.One)
                     : prop.PropInit.GetPreviewRectangle(variation, depth);
 
-                Rlgl.Begin(DrawMode.Quads);
-                {
-                    Rlgl.Color4f(alpha / 255f, whiteFade, 0f, 0f);
+                rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
 
+                {
+                    using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
+                        
                     // top-left
-                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+                    batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                    batch.Vertex(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
 
                     // bottom-left
-                    Rlgl.TexCoord2f(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
+                    batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                    batch.Vertex(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
 
                     // bottom-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                    batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
 
-                    // top-right
-                    Rlgl.TexCoord2f((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    Rlgl.Vertex2f(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
+                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                    batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
                 }
-                Rlgl.End();
             }
 
-            Rlgl.SetTexture(0);
             Raylib.EndShaderMode();
-            Rlgl.EnableBackfaceCulling();
+            rctx.SetEnabled(Glib.Feature.CullFace, true);
 
             // render segments of rope-type props
             if (prop.Rope is not null)
@@ -700,32 +732,87 @@ class LevelEditRender
     {
         if (!ViewGrid) return;
 
-        int viewL = (int) Math.Floor(ViewTopLeft.X);
-        int viewT = (int) Math.Floor(ViewTopLeft.Y);
-        int viewR = (int) Math.Ceiling(ViewBottomRight.X);
-        int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
-        
-        var col = new Color(255, 255, 255, 50);
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
+        var rctx = RainEd.RenderContext!;
+
+        // recreate grid mesh if it needs updating
+        if (gridMajor is null || gridMinor is null || Level.Width != gridWidth || Level.Height != gridHeight)
         {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
+            var meshConfig = new Glib.MeshConfiguration([Glib.DataType.Vector3], true)
             {
-                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
+                PrimitiveType = Glib.MeshPrimitiveType.Lines
+            };
+
+            gridWidth = Level.Width;
+            gridHeight = Level.Height;
+
+            gridMajor?.Dispose();
+            gridMinor?.Dispose();
+            
+            gridMajor = rctx.CreateMesh(meshConfig);
+            gridMinor = rctx.CreateMesh(meshConfig);
+            
+            // create minor grid lines
+            var vertices = new List<Vector3>();
+            var indices = new List<int>();
+
+            int meshIndex = 0;
+            for (int x = 0; x < gridWidth; x++)
+            {
+                for (int y = 0; y < gridHeight; y++)
+                {
+                    vertices.Add(new Vector3(x, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x+1, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x, y+1, 0f) * Level.TileSize);
+
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 1);
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 2);
+
+                    meshIndex += 3;
+                }
             }
+
+            gridMinor.SetBufferData(0, [..vertices]);
+            gridMinor.SetIndexBufferData([..indices]);
+            gridMinor.Upload();
+
+            // create major grid lines
+            vertices.Clear();
+            indices.Clear();
+            meshIndex = 0;
+
+            for (int x = 0; x < gridWidth; x += 2)
+            {
+                for (int y = 0; y < gridHeight; y += 2)
+                {
+                    vertices.Add(new Vector3(x, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x+2, y, 0f) * Level.TileSize);
+                    vertices.Add(new Vector3(x, y+2, 0f) * Level.TileSize);
+
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 1);
+                    indices.Add(meshIndex);
+                    indices.Add(meshIndex + 2);
+
+                    meshIndex += 3;
+                }
+            }
+
+            gridMajor.SetBufferData(0, [..vertices]);
+            gridMajor.SetIndexBufferData([..indices]);
+            gridMajor.Upload();
         }
 
-        // draw bigger grid squares
-        for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x += 2)
-        {
-            for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y += 2)
-            {
-                var cellRect = new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize * 2, Level.TileSize * 2);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(cellRect.Size.X, 0f), col);
-                Raylib.DrawLineV(cellRect.Position, cellRect.Position + new Vector2(0f, cellRect.Size.Y), col);
-            }
-        }
+        // draw the meshes
+        // opacity decreases as user zooms out. value is sqrt'd to
+        // make it fall off at a better rate.
+        var opacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
+        rctx.Shader = gridShader;
+        rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * (50f/255f));
+        rctx.Draw(gridMinor);
+        rctx.Draw(gridMajor);
+        rctx.Shader = null;
     }
 
     public void RenderCameraBorders()

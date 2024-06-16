@@ -1,5 +1,5 @@
 using Raylib_cs;
-using rlImGui_cs;
+
 using System.Numerics;
 using ImGuiNET;
 using Serilog;
@@ -21,13 +21,16 @@ public class RainEdStartupException : Exception
 
 sealed class RainEd
 {
-    public const string Version = "b1.5.0";
+    public const string Version = "b1.5.4";
 
     public static RainEd Instance = null!;
 
     public bool Running = true; // if false, Boot.cs will close the window
     private readonly Logger _logger;
     public static Logger Logger { get => Instance._logger; }
+
+    public static Glib.Window Window => Boot.Window;
+    public static Glib.RenderContext RenderContext => Boot.Window.RenderContext!;
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
@@ -94,6 +97,9 @@ sealed class RainEd
 #endif
 
         var loggerConfig = new LoggerConfiguration()
+#if DEBUG
+            .MinimumLevel.Debug()
+#endif
             .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day);
 
         if (logToStdout)
@@ -246,16 +252,16 @@ sealed class RainEd
         if (Preferences.StaticDrizzleLingoRuntime)
         {
             Logger.Information("Initializing Zygote runtime...");
-            DrizzleRender.InitStaticRuntime();
+            Drizzle.DrizzleRender.InitStaticRuntime();
         }
 
         UpdateTitle();
 
         // apply window preferences
-        Raylib.SetWindowSize(Preferences.WindowWidth, Preferences.WindowHeight);
+        Window.SetSize(Preferences.WindowWidth, Preferences.WindowHeight);
         if (Preferences.WindowMaximized)
         {
-            Raylib.SetWindowState(ConfigFlags.MaximizedWindow);
+            Window.WindowState = Silk.NET.Windowing.WindowState.Maximized;
         }
         ShortcutsWindow.IsWindowOpen = Preferences.ViewKeyboardShortcuts;
         PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
@@ -519,17 +525,33 @@ sealed class RainEd
             }
         }
     }
+
+    private readonly List<Action> deferredActions = [];
+
+    /// <summary>
+    /// Run an action on the next frame. <br /><br />
+    /// Used mainly for deferring the disposal of textures
+    /// that were drawn in ImGui on the same frame, as ImGui
+    /// will use the texture ID of the disposed texture at the
+    /// end of the frame.
+    /// </summary>
+    /// <param name="action">The action to run on the next frame.</param> 
+    public void DeferToNextFrame(Action action)
+    {
+        deferredActions.Add(action);
+    }
     
     public void Draw(float dt)
     {
         if (Raylib.WindowShouldClose())
             EditorWindow.PromptUnsavedChanges(() => Running = false);
         
+        foreach (var f in deferredActions) f();
+        deferredActions.Clear();
+        
         EditorWindow.UpdateMouseState();
         
         Raylib.ClearBackground(Color.DarkGray);
-        
-        rlImGui.Begin();
         KeyShortcuts.Update();
         ImGui.DockSpaceOverViewport();
 
@@ -547,8 +569,6 @@ sealed class RainEd
         {
             ImGui.ShowDemoWindow(ref ShowDemoWindow);
         }
-
-        rlImGui.End();
     }
 
     public void UpdateRopeSimulation()

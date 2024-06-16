@@ -1,7 +1,8 @@
 using System.Numerics;
 using ImGuiNET;
+using RainEd.Light;
 using Raylib_cs;
-using rlImGui_cs;
+
 
 namespace RainEd;
 
@@ -174,7 +175,7 @@ class LightEditor : IEditorMode
                     }
 
                     ImGui.PushID(i);
-                    if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                    if (ImGuiExt.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
                     {
                         selectedBrush = i;
                     }
@@ -313,12 +314,17 @@ class LightEditor : IEditorMode
         // render light plane
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
-        Raylib.DrawTextureRec(
+        RlExt.DrawRenderTextureV(
+            level.LightMap.RenderTexture,
+            new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
+            new Color(255, 0, 0, 100)
+        );
+        /*Raylib.DrawTextureRec(
             level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
             new Color(255, 0, 0, 100)
-        );
+        );*/
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -376,7 +382,10 @@ class LightEditor : IEditorMode
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
 
-        Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
+        var shader = RainEd.Instance.LightBrushDatabase.Shader;
+        Raylib.BeginShaderMode(shader);
+        //shader.GlibShader.SetUniform("uColor", Glib.Color.FromRGBA(0, 0, 0, 80));
+        //shader.GlibShader.SetUniform("uTexture", RainEd.RenderContext.WhiteTexture);
 
         // render cast
         var correctedAngle = level.LightAngle + MathF.PI / 2f;
@@ -385,12 +394,13 @@ class LightEditor : IEditorMode
             -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
         );
 
-        Raylib.DrawTextureRec(
+        RlExt.DrawRenderTextureV(level.LightMap.RenderTexture, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
+        /*Raylib.DrawTextureRec(
             level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             lightMapOffset + castOffset,
             new Color(0, 0, 0, 80)
-        );
+        );*/
 
         // Render mouse cursor
         if (window.IsViewportHovered)
@@ -428,15 +438,7 @@ class LightEditor : IEditorMode
                 };
 
                 changeRecorder.RecordAtom(atom);
-
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    screenSize / 2f,
-                    atom.rotation,
-                    lmb ? Color.Black : Color.White
-                );
+                LightMap.DrawAtom(atom);
                 
                 Raylib.BeginTextureMode(mainFrame);
             }

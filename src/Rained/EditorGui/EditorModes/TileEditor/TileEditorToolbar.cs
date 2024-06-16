@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-using rlImGui_cs;
+
 
 namespace RainEd;
 
@@ -260,9 +260,9 @@ partial class TileEditor : IEditorMode
 
                                 var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
                                 if (previewTexture is not null)
-                                    rlImGui.Image(previewTexture, tile.Category.Color);
+                                    ImGuiExt.Image(previewTexture, tile.Category.Color);
                                 else
-                                    rlImGui.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
+                                    ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
 
                                 ImGui.EndTooltip();
                             }

@@ -353,9 +353,9 @@ class TileRenderer
             Raylib.BeginShaderMode(shader);
 
             // send palette color information to the shader
-            Span<float> litColorData = stackalloc float[30 * 3];
-            Span<float> neutralColorData = stackalloc float[30 * 3];
-            Span<float> shadedColorData = stackalloc float[30 * 3];
+            Span<Vector3> litColorData = stackalloc Vector3[30];
+            Span<Vector3> neutralColorData = stackalloc Vector3[30];
+            Span<Vector3> shadedColorData = stackalloc Vector3[30];
 
             for (int i = 0; i < 30; i++)
             {
@@ -363,22 +363,14 @@ class TileRenderer
                 var neutralColor = renderInfo.GetSunColor(PaletteLightLevel.Neutral, i);
                 var shadedColor = renderInfo.GetSunColor(PaletteLightLevel.Shaded, i);
 
-                litColorData[i*3+0] = litColor.R / 255f;
-                litColorData[i*3+1] = litColor.G / 255f;
-                litColorData[i*3+2] = litColor.B / 255f;
-
-                neutralColorData[i*3+0] = neutralColor.R / 255f;
-                neutralColorData[i*3+1] = neutralColor.G / 255f;
-                neutralColorData[i*3+2] = neutralColor.B / 255f;
-
-                shadedColorData[i*3+0] = shadedColor.R / 255f;
-                shadedColorData[i*3+1] = shadedColor.G / 255f;
-                shadedColorData[i*3+2] = shadedColor.B / 255f;
+                litColorData[i] = new Vector3(litColor.R, litColor.G, litColor.B) / 255f;
+                neutralColorData[i] = new Vector3(neutralColor.R, neutralColor.G, neutralColor.B) / 255f;
+                shadedColorData[i] = new Vector3(shadedColor.R, shadedColor.G, shadedColor.B) / 255f;
             }
 
-            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "litColor"), litColorData, ShaderUniformDataType.Vec3, 30);
-            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "neutralColor"), neutralColorData, ShaderUniformDataType.Vec3, 30);
-            Raylib.SetShaderValueV(shader, Raylib.GetShaderLocation(shader, "shadedColor"), shadedColorData, ShaderUniformDataType.Vec3, 30);
+            shader.GlibShader.SetUniform("litColor", litColorData);
+            shader.GlibShader.SetUniform("neutralColor", neutralColorData);
+            shader.GlibShader.SetUniform("shadedColor", shadedColorData);
         }
 
         // normal rendering mode
