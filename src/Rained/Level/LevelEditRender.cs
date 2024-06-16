@@ -705,7 +705,11 @@ class LevelEditRender
         int viewR = (int) Math.Ceiling(ViewBottomRight.X);
         int viewB = (int) Math.Ceiling(ViewBottomRight.Y);
         
-        var col = new Color(255, 255, 255, 50);
+        // grid opacity decreases as user zooms out. value is sqrt'd to
+        // make it fall off at a smoother rate.
+        var gridOpacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
+        var col = new Color(255, 255, 255, (int)(gridOpacity * 50f));
+        
         for (int x = Math.Max(0, viewL); x < Math.Min(Level.Width, viewR); x++)
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
