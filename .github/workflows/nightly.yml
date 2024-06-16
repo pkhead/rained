@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_linux:
+  package:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,75 +25,58 @@ jobs:
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
-    - name: Package
-      run: |
-        dotnet tool restore
-        dotnet cake --os=linux-x64
-    - name: Upload Artifact
+    - name: Restore Cake Tool
+      run: dotnet tool restore
+    - name: Linux Package
+      run: dotnet cake --os=linux-x64
+    - name: Windows Package
+      run: dotnet cake --os=win-x64
+    - name: Upload Linux Artifact
       uses: actions/upload-artifact@v2
       with:
         name: linux-x64
         path: ./rained_linux-x64.tar.gz
-  
-  build_windows:
-    runs-on: windows-latest
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: win-x64
+        path: ./rained_win-x64.zip
+
+  create_release:
+    needs: [package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - name: Download Linux Artifact
+      uses: actions/download-artifact@v2
       with:
-        dotnet-version: 8.0.x
-    - name: Restore dependencies
-      run: |
-        cd src\Drizzle
-        dotnet run --project Drizzle.Transpiler
-        cd ..\..
-        dotnet restore
-    - name: Package
-      run: |
-        dotnet tool restore
-        dotnet cake --os=win-x64
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+        name: linux-x64
+        path: ./artifacts/
+    - name: Download Windows Artifact
+      uses: actions/download-artifact@v2
       with:
         name: win-x64
-        path: .\rained_win-x64.zip
-
-  create_release:
-    needs: [build_linux, build_windows]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download Linux Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: linux-x64
-          path: ./artifacts/
-      - name: Download Windows Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: win-x64
-          path: ./artifacts/
-      - name: Remove Old Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release delete nightly --cleanup-tag -y
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        id: create_release
-        with:
-          draft: false
-          prerelease: true
-          name: "Nightly"
-          tag_name: "nightly"
-          make_latest: false
-          body: Latest in-development build.
-          files: |
-            ./artifacts/rained_linux-x64.tar.gz
-            ./artifacts/rained_win-x64.zip
+        path: ./artifacts/
+    - name: Remove Old Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release delete nightly --cleanup-tag -y
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      id: create_release
+      with:
+        draft: false
+        prerelease: true
+        name: "Nightly"
+        tag_name: "nightly"
+        make_latest: false
+        body: Latest in-development build.
+        files: |
+          ./artifacts/rained_linux-x64.tar.gz
+          ./artifacts/rained_win-x64.zip
