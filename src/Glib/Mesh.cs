@@ -48,12 +48,34 @@ public struct MeshConfiguration
         Indexed = indexed;
     }
 
-    public readonly void SetupBuffer(int index, DataType type)
+    public MeshConfiguration SetIndexed(bool indexed)
+    {
+        Indexed = indexed;
+        return this;
+    }
+
+    public MeshConfiguration SetUsage(MeshBufferUsage usage)
+    {
+        BufferUsage = usage;
+        return this;
+    }
+
+    public MeshConfiguration SetPrimitiveType(MeshPrimitiveType type)
+    {
+        PrimitiveType = type;
+        return this;
+    }
+
+    public readonly MeshConfiguration SetupBuffer(int index, DataType type)
     {
         while (types.Count < index)
             types.Add(null);
         types.Add(type);
+
+        return this;
     }
+
+    public readonly Mesh Create(RenderContext rctx) => rctx.CreateMesh(this);
 }
 
 public class Mesh : GLResource

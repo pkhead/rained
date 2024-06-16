@@ -49,8 +49,11 @@ public class RenderContext : IDisposable
     private readonly uint batchBuffer;
     private readonly uint batchVertexArray;
 
-    private int ScreenWidth = 0;
-    private int ScreenHeight = 0;
+    private int screenWidth = 0;
+    private int screenHeight = 0;
+
+    public int ScreenWidth => screenWidth;
+    public int ScreenHeight => screenHeight;
 
     private readonly Texture whiteTexture;
 
@@ -193,8 +196,8 @@ public class RenderContext : IDisposable
 
     internal void Begin(int width, int height)
     {
-        ScreenWidth = width;
-        ScreenHeight = height;
+        screenWidth = width;
+        screenHeight = height;
         SetViewport(width, height);
         
         Clear();
@@ -241,7 +244,7 @@ public class RenderContext : IDisposable
     public void ResetScissorBounds()
     {
         DrawBatch();
-        gl.Scissor(0, 0, (uint)ScreenWidth, (uint)ScreenHeight);
+        gl.Scissor(0, 0, (uint)screenWidth, (uint)screenHeight);
     }
 
     /// <summary>
@@ -527,7 +530,7 @@ public class RenderContext : IDisposable
         else
         {
             gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            SetViewport(ScreenWidth, ScreenHeight);
+            SetViewport(screenWidth, screenHeight);
             curFramebuffer = null;
         }
 
