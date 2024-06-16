@@ -23,6 +23,7 @@ namespace Raylib_cs;
 *   in vec4 fragColor => in vec4 glib_color
 *   uniform sampler2D uTexture => uniform sampler2D glib_uTexture
 *   uniform vec4 colDiffuse => uniform vec4 glib_uColor
+*   uniform mat4 mvp => uniform mat4 glib_uMatrix
 */
 
 static class Raylib

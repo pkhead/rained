@@ -50,10 +50,13 @@ public struct FramebufferConfiguration
         Height = height;
     }
 
-    public readonly void AddAttachment(AttachmentConfig config)
+    public readonly FramebufferConfiguration AddAttachment(AttachmentConfig config)
     {
         Attachments.Add(config);
+        return this;
     }
+
+    public readonly Framebuffer Create(RenderContext rctx) => rctx.CreateFramebuffer(this);
 
     public static FramebufferConfiguration Standard(int width, int height)
     {
