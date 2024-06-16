@@ -7,8 +7,10 @@
 **/obj
 /build_win-x64
 /build_linux-x64
-/rained_X.X.X_*.zip
-/rained_X.X.X_*.tar.gz
+
+# package output
+/rained_*.zip
+/rained_*.tar.gz
 
 # Cake Tool files
 /tools
