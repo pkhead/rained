@@ -5,7 +5,7 @@
 #addin nuget:?package=Cake.Compression
 
 var target = Argument("Target", "Package");
-var os = Argument("OS", "win-x64");
+var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 
 var buildDir = "build_" + os;
 
@@ -30,48 +30,30 @@ Task("DotNetPublish")
     CopyDirectory("assets", buildDir + "/assets");
     CopyDirectory("scripts", buildDir + "/scripts");
     CopyDirectory("config", buildDir + "/config");
-    DeleteFile(buildDir + "/config/preferences.json");
     CopyFile("LICENSE.md", buildDir + "/LICENSE.md");
+    
+    if (FileExists(buildDir + "/config/preferences.json"))
+    {
+        DeleteFile(buildDir + "/config/preferences.json");
+    }
 
     CopyDirectory("dist", buildDir);
-});
 
-Task("ConsoleWrapper")
-    .Does(() =>
-{
-    if (os != "win-x64") return;
-
-    EnsureDirectoryExists(buildDir);
-
-    bool clangExists = false;
-    string cxxCompiler = EnvironmentVariable<string>("CXX_COMPILER", "c++");
-    try
+    // only keep console wrapper if building for Windows
+    if (os != "win-x64" && FileExists(buildDir + "/Rained.Console.exe"))
     {
-        StartProcess(cxxCompiler, "-v");
-        clangExists = true;
-    }
-    catch
-    {}
-    
-    if (!clangExists)
-    {
-        Information("A C++ compiler was not found! Rained will still build normally, just without the console wrapper app.");
-    }
-    else
-    {
-        StartProcess(cxxCompiler, $"-static -Os src/Rained.Console/console-launch.cpp -o {buildDir}/Rained.Console.exe");
+        DeleteFile(buildDir + "/Rained.Console.exe");
     }
 });
 
 Task("Package")
     .IsDependentOn("DotNetPublish")
-    .IsDependentOn("ConsoleWrapper")
     .Does(() =>
 {
     if (os == "linux-x64")
-        GZipCompress(buildDir, $"rained_X.X.X_{os}.tar.gz");
+        GZipCompress(buildDir, $"rained_{os}.tar.gz");
     else
-        Zip(buildDir, $"rained_X.X.X_{os}.zip");
+        Zip(buildDir, $"rained_{os}.zip");
 });
 
 RunTarget(target);
