@@ -42,3 +42,14 @@ Report bugs and other complaints by creating an issue or pinging @chromosoze in 
 that it'll take me a while to notice them as I don't pinged for it.
 
 Pull requests are welcome.
+
+### The "nightly" tag
+The "nightly" tag really only exists so that I'm able to create nightly GitHub releases. It's a bit annoying. I wouldn't recommend interacting with it.
+
+Since the action deletes and re-creates the "nightly" tag on every release, in order to update the tag
+on your clone (not that you would want to, I suppose), you would have to run the following Git commands:
+```bash
+git tag -d nightly # delete the nightly tag on your clone
+git fetch origin tag nightly # fetch the nightly tag from origin
+# running `git fetch` or `git pull` itself after deleting the tag should also work.
+```
