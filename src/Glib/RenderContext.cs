@@ -396,9 +396,16 @@ public class RenderContext : IDisposable
     public void Scale(Vector3 scale)
         => TransformMatrix = Matrix4x4.CreateScale(scale) * TransformMatrix;
     
+    /// <summary>
+    /// Set the transform matrix to the identity matrix.
+    /// </summary>
     public void ResetTransform()
         => TransformMatrix = Matrix4x4.Identity;
 
+    /// <summary>
+    /// Clear the transformation stack.
+    /// <br /><br />See also: PushTransform, PopTransform.
+    /// </summary>
     public void ClearTransformationStack()
         => transformStack.Clear();
 
@@ -469,6 +476,11 @@ public class RenderContext : IDisposable
         return tex;
     }
     
+    /// <summary>
+    /// Create a framebuffer from a framebuffer configuration.
+    /// <br /><br />
+    /// See also: FramebufferConfiguration.Create(RenderContext)
+    /// </summary>
     public Framebuffer CreateFramebuffer(FramebufferConfiguration config)
     {
         var buffer = new Framebuffer(gl, config);
