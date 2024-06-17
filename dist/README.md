@@ -1,5 +1,5 @@
 # Rained Level Editor
-Read LICENSE.md for software licenses
+Read LICENSE.md for software licenses to the open-source libraries I have used.
 
 This is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs. Hope you like it!
 
@@ -13,7 +13,7 @@ Check https://github.com/pkhead/rained/releases for any new releases. If you wan
 - Your Data folder, if present
 
 ## Importing Custom Tiles, Props, or Materials
-You *can* do so by editing the Init.txt files manually and copying over the graphics and stuff... Or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first. I'll think of a way to change that... 
+You *can* do so by editing the Init.txt files manually and copying over the graphics and stuff... Or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first. I'll think of a way to change that...
 
 ## Quick Start
 If you've used a Rain World level editor before, how to use Rained hopefully shouldn't be too obtuse. But here are some notes on new stuff I added:
@@ -38,6 +38,11 @@ Here are some tips on using the GUI elements:
   click and drag left/right in the box.
 - Experiment with activating inputs with a modifier key down (ctrl, shift, alt).
 
+## Autosaving
+Rained does not have a system that auto-saves the level periodically. However, it does automatically save the current state
+of the level to a different file if it catches a fatal exception and crashes, which should be an adequate alleviator.
+I would recommend pressng Ctrl+S every minute anyway.
+
 ## Scripting
-Rained has a Lua scripting API. For "documentation", check `scripts/init.lua`, `scripts/definition/rained.defs.lua`, and
-look at the built-in scripts as examples.
+Rained has a Lua scripting API, used for autotiling and level manipulation.
+For "documentation", check `scripts/init.lua`, `scripts/definition/rained.defs.lua`, and look at the built-in scripts as examples.
