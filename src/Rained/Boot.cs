@@ -146,7 +146,19 @@ namespace RainEd
                     io.KeyRepeatDelay = 0.5f;
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-                    io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
+
+                    // this is the easiest way i figured to access preferences.json before
+                    // RainEd initialization, but it does result in preferences.json being
+                    // loaded twice 
+                    var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
+                    if (File.Exists(prefsFile))
+                    {
+                        var prefs = UserPreferences.LoadFromFile(prefsFile);
+                        if (prefs.ImGuiMultiViewport)
+                        {
+                            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
+                        }
+                    }
                 };
 
                 window.Initialize();

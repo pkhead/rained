@@ -10,7 +10,7 @@ Bugs:
   - already figured this out, fix is on the glib branch (though doesn't actually require glib)
 
 Overall:
-- figure out github actions to make nightly builds
+- client code mouse position doesn't work with multi-viewports
 - favorite tiles and props
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)

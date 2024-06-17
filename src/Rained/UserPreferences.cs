@@ -164,6 +164,7 @@ class UserPreferences
     public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
 
     public string Theme { get; set; }
+    public bool ImGuiMultiViewport { get; set; }
     
     public Dictionary<string, string> Shortcuts { get; set; }
     public List<string> RecentFiles { get; set; }
@@ -198,6 +199,7 @@ class UserPreferences
         OptimizedTilePreviews = true;
 
         Theme = "Dark";
+        ImGuiMultiViewport = false;
 
         ShowPaletteWindow = false;
         UsePalette = false;
