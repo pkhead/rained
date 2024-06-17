@@ -1,3 +1,7 @@
+//#if !DEBUG
+#define EXCEPTION_CATCHING
+//#endif
+
 using Raylib_cs;
 using rlImGui_cs;
 using SFML.Window;
@@ -161,7 +165,7 @@ namespace RainEd
                     Environment.ExitCode = 1;
                     return;
                 }
-#if !DEBUG
+#if EXCEPTION_CATCHING
                 catch (Exception e)
                 {
                     NotifyError(e);
@@ -177,7 +181,7 @@ namespace RainEd
                 splashScreenWindow?.SetVisible(false);
                 isAppReady = true;
                 
-#if !DEBUG
+#if EXCEPTION_CATCHING
                 try
 #endif
                 {
@@ -194,9 +198,18 @@ namespace RainEd
                     RainEd.Logger.Information("Shutting down Rained...");
                     app.Shutdown();
                 }
-#if !DEBUG
+#if EXCEPTION_CATCHING
                 catch (Exception e)
                 {
+                    try
+                    {
+                        LevelSerialization.Save(RainEd.EmergencySaveFilePath);
+                    }
+                    catch (Exception saveError)
+                    {
+                        RainEd.Logger.Error("Failed to make an emergency level save.\n{Message}", saveError);
+                    }
+
                     NotifyError(e);
                 }
 #endif
@@ -278,7 +291,7 @@ namespace RainEd
         {
             if (RainEd.Instance is not null)
             {
-                RainEd.Logger.Error("FATAL EXCEPTION.\n{ErrorMessage}", e);
+                RainEd.Logger.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
             }
 
             Environment.ExitCode = 1;
