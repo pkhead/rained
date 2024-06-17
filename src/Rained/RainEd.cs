@@ -53,6 +53,13 @@ sealed class RainEd
     private string currentFilePath = string.Empty;
 
     public string CurrentFilePath { get => currentFilePath; }
+    
+    /// <summary>
+    /// The path of the emergency save file. Is created when the application
+    /// encounters a fatal error.
+    /// </summary> 
+    public static readonly string EmergencySaveFilePath = Path.Combine(Boot.AppDataPath, "emergency-save.txt");
+
     public Level Level { get => level; }
     public LevelView LevelView { get => levelView; }
     
@@ -272,6 +279,10 @@ sealed class RainEd
             Logger.Information("Boot load " + levelPath);
             LoadLevel(levelPath);
         }
+        else
+        {
+            EditorWindow.RequestLoadEmergencySave();
+        }
 
         // force gc. i just added this to try to collect
         // the now-garbage asset image data, as they have
@@ -328,6 +339,16 @@ sealed class RainEd
         Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
+
+        // delete emergency save file
+        if (File.Exists(EmergencySaveFilePath))
+        {
+            File.Delete(EmergencySaveFilePath);
+            var parentDir = Path.GetDirectoryName(EmergencySaveFilePath);
+
+            if (parentDir is not null)
+                File.Delete(Path.Combine(parentDir, Path.GetFileNameWithoutExtension(EmergencySaveFilePath) + ".png"));
+        }
     }
 
     public void ShowPathInSystemBrowser(string path, bool reveal)
@@ -561,6 +582,10 @@ sealed class RainEd
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             ShowDemoWindow = !ShowDemoWindow;
         
+#if DEBUG
+        if (ImGui.IsKeyPressed(ImGuiKey.F2))
+            throw new Exception("Test Exception");
+#endif
         // this is how imgui is documented
         // you see what it can do and when i want to know how it does that,
         // i ctrl+f imgui_demo.cpp.

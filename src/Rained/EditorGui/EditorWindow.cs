@@ -421,6 +421,17 @@ static class EditorWindow
         PreferencesWindow.ShowWindow();
         PaletteWindow.ShowWindow();
         LuaInterface.ShowLogs();
+        EmergencySaveWindow.ShowWindow();
+    }
+
+    /// <summary>
+    /// Called on startup, and asks the user if
+    /// they want to load the emergency save file if it exists.
+    /// </summary>
+    public static void RequestLoadEmergencySave()
+    {
+        if (File.Exists(RainEd.EmergencySaveFilePath))
+            EmergencySaveWindow.IsWindowOpen = true;
     }
     
     private static bool closeDrizzleRenderWindow = false;
