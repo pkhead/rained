@@ -159,13 +159,16 @@ class AssetGraphicsProvider
             using var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
-            Raylib.ImageDraw(
-                previewImage,
-                fullImage,
-                previewRect,
-                new Rectangle(0, 0, previewRect.Width, previewRect.Height),
-                Color.White
-            );
+            if (previewRect.Height > 0) // thanks, huge tnak.
+            {
+                Raylib.ImageDraw(
+                    previewImage,
+                    fullImage,
+                    previewRect,
+                    new Rectangle(0, 0, previewRect.Width, previewRect.Height),
+                    Color.White
+                );
+            }
 
             // convert black-and-white image to white-and-transparent, respectively
             for (int x = 0; x < previewImage.Width; x++)

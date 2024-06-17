@@ -11,6 +11,7 @@ Bugs:
 
 Overall:
 - client code mouse position doesn't work with multi-viewports
+- new level screen
 - favorite tiles and props
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
 - auto-recovery saves (main problem is figuring out how to do it non-blocking)
