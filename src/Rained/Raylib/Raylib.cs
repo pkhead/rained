@@ -43,6 +43,7 @@ static class Raylib
     private static double frameTime = 0.0;
     private static Vector2? lastMousePos = null;
     private static Vector2 mouseDelta = Vector2.Zero;
+    private static bool windowShouldClose = false;
 
     public static Glib.Color ToGlibColor(Color color)
     {
@@ -208,6 +209,12 @@ static class Raylib
                     break;
             }
         };
+
+        window.Closing += () =>
+        {
+            windowShouldClose = true;
+            window.IsClosing = false;
+        };
         
         lastFrame = window.Time;
         window.RenderContext!.DefaultTextureMinFilter = TextureFilterMode.Nearest;
@@ -227,7 +234,7 @@ static class Raylib
     /// </summary>
     public static bool WindowShouldClose()
     {
-        return window.IsClosing;
+        return windowShouldClose;
     }
 
     /// <summary>
@@ -459,6 +466,7 @@ static class Raylib
             mouseButtonsReleased[i] = false;
         }
 
+        windowShouldClose = false;
         window.PollEvents();
 
         if (lastMousePos is null)
