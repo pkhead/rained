@@ -3,16 +3,18 @@ namespace RainEd.Rendering;
 
 class VoxelRenderer
 {
-    private readonly Level level;
-    private Glib.Framebuffer renderTexture;
+    private Level level = null!;
+    private readonly Glib.Framebuffer renderTexture;
     public Glib.Framebuffer Framebuffer => renderTexture;
 
     private Glib.Mesh? levelMesh;
-    private List<TileInstance> tileInstances;
-    private Glib.Shader shader3D;
+    private readonly List<TileInstance> tileInstances;
+    private readonly Glib.Shader shader3D;
     private readonly Glib.Texture testTexture;
 
     private readonly Dictionary<string, Glib.Mesh> tileMeshes = [];
+
+    public bool Wireframe = false;
 
     struct TileInstance
     {
@@ -66,17 +68,16 @@ class VoxelRenderer
             float diff = max(dot(fragNormal, lightDirection), 0.0);
 
             vec4 baseColor = texture(glib_uTexture, fragTexCoord) * fragColor;
-            finalColor = vec4((vec3(1.0, 1.0, 1.0) * diff + ambientLightColor) * baseColor.rgb, baseColor.a);
+            finalColor = vec4((vec3(0.6, 0.6, 0.6) * diff + ambientLightColor) * baseColor.rgb, baseColor.a);
             
             //finalColor = vec4((fragNormal + vec3(1.0, 1.0, 1.0)) / 2.0, baseColor.a);
         }    
     ";
 
-    public VoxelRenderer(Level level)
+    public VoxelRenderer()
     {
         var rctx = RainEd.RenderContext!;
 
-        this.level = level;
         tileInstances = [];
 
         renderTexture = Glib.FramebufferConfiguration.Standard(1400, 800)
@@ -107,8 +108,10 @@ class VoxelRenderer
         return mesh;
     }
 
-    public void UpdateLevel()
+    public void UpdateLevel(Level level)
     {
+        this.level = level;
+
         var voxelizer = new GeometryVoxelizer(level);
         var mesh = voxelizer.Voxelize();
 
@@ -171,7 +174,8 @@ class VoxelRenderer
         rctx.PushFramebuffer(renderTexture);
         rctx.Clear(Glib.Color.White, Glib.ClearFlags.Color | Glib.ClearFlags.Depth);
         rctx.SetEnabled(Glib.Feature.DepthTest, true);
-        rctx.SetEnabled(Glib.Feature.CullFace, false);
+        rctx.SetEnabled(Glib.Feature.CullFace, true);
+        rctx.SetEnabled(Glib.Feature.WireframeRendering, Wireframe);
         rctx.Shader = shader3D;
 
         rctx.PushTransform();
@@ -184,7 +188,7 @@ class VoxelRenderer
         shader3D.SetUniform("uProjectionMatrix", projectionMatrix);
         shader3D.SetUniform("uViewMatrix", viewMatrix);
         shader3D.SetUniform("ambientLightColor", new Vector3(0.2f, 0.2f, 0.2f));
-        shader3D.SetUniform("lightDirection", Vector3.Normalize(new Vector3(0.8f, -1f, 0.4f)));
+        shader3D.SetUniform("lightDirection", Vector3.Normalize(new Vector3(2f, -0.7f, 0.4f)));
 
         // draw level geometry
         shader3D.SetUniform("uNormalMatrix", Matrix4x4.Identity);
@@ -201,6 +205,7 @@ class VoxelRenderer
         }
 
         rctx.SetEnabled(Glib.Feature.DepthTest, false);
+        rctx.SetEnabled(Glib.Feature.WireframeRendering, false);
         rctx.PopFramebuffer();
         rctx.Shader = null;
     }

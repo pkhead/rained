@@ -15,12 +15,14 @@ static class RendererWindow
         {
             if (ImGui.Button("Render"))
             {
-                renderer = new Rendering.VoxelRenderer(RainEd.Instance.Level);
-                renderer.UpdateLevel();
+                renderer ??= new Rendering.VoxelRenderer();
+                renderer.UpdateLevel(RainEd.Instance.Level);
             }
 
             if (renderer is not null)
             {
+                ImGui.Checkbox("Wireframe", ref renderer.Wireframe);
+
                 var levelView = RainEd.Instance.LevelView;
                 renderer.Render(levelView.ViewOffset.X, levelView.ViewOffset.Y, 1.0f / levelView.ViewZoom);
                 ImGuiExt.ImageRenderTexture(renderer.Framebuffer);
