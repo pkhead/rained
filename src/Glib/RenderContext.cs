@@ -32,7 +32,8 @@ public enum Feature
     Blend,
     ScissorTest,
     DepthTest,
-    CullFace
+    CullFace,
+    WireframeRendering
 }
 
 public class RenderContext : IDisposable
@@ -283,6 +284,13 @@ public class RenderContext : IDisposable
                     gl.Enable(EnableCap.CullFace);
                 else
                     gl.Disable(EnableCap.CullFace);
+                break;
+            
+            case Feature.WireframeRendering:
+                if (enabled)
+                    gl.PolygonMode(GLEnum.FrontAndBack, GLEnum.Line);
+                else
+                    gl.PolygonMode(GLEnum.FrontAndBack, GLEnum.Fill);
                 break;
         }
     }
