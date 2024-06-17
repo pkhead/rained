@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using ImGuiNET;
 using Silk.NET.Input;
 using Silk.NET.Input.Extensions;
@@ -30,11 +31,12 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
     public class ImGuiController : IDisposable
     {
         private GL _gl;
-        private IView _view;
+        private IWindow _view;
         private IInputContext _input;
         private bool _frameBegun;
         private static readonly Dictionary<Key, ImGuiKey> keyMap = new Dictionary<Key, ImGuiKey>();
         private IKeyboard _keyboard;
+        private ImGuiViewports _viewports;
 
         private int _attribLocationTex;
         private int _attribLocationProjMtx;
@@ -56,28 +58,28 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
         /// <summary>
         /// Constructs a new ImGuiController.
         /// </summary>
-        public ImGuiController(GL gl, IView view, IInputContext input) : this(gl, view, input, null, null)
+        public ImGuiController(GL gl, IWindow view, IInputContext input) : this(gl, view, input, null, null)
         {
         }
 
         /// <summary>
         /// Constructs a new ImGuiController with font configuration.
         /// </summary>
-        public ImGuiController(GL gl, IView view, IInputContext input, ImGuiFontConfig imGuiFontConfig) : this(gl, view, input, imGuiFontConfig, null)
+        public ImGuiController(GL gl, IWindow view, IInputContext input, ImGuiFontConfig imGuiFontConfig) : this(gl, view, input, imGuiFontConfig, null)
         {
         }
 
         /// <summary>
         /// Constructs a new ImGuiController with an onConfigureIO Action.
         /// </summary>
-        public ImGuiController(GL gl, IView view, IInputContext input, Action onConfigureIO) : this(gl, view, input, null, onConfigureIO)
+        public ImGuiController(GL gl, IWindow view, IInputContext input, Action onConfigureIO) : this(gl, view, input, null, onConfigureIO)
         {
         }
 
         /// <summary>
         /// Constructs a new ImGuiController with font configuration and onConfigure Action.
         /// </summary>
-        public ImGuiController(GL gl, IView view, IInputContext input, ImGuiFontConfig? imGuiFontConfig = null, Action onConfigureIO = null)
+        public ImGuiController(GL gl, IWindow view, IInputContext input, ImGuiFontConfig? imGuiFontConfig = null, Action onConfigureIO = null)
         {
             Init(gl, view, input);
 
@@ -92,11 +94,17 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             onConfigureIO?.Invoke();
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+            io.BackendFlags |= ImGuiBackendFlags.PlatformHasViewports;
+            io.BackendFlags |= ImGuiBackendFlags.RendererHasViewports;
 
             CreateDeviceResources();
             SetKeyMappings();
 
             SetPerFrameImGuiData(1f / 60f);
+
+            _viewports = null;
+            if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+                _viewports = new ImGuiViewports(this, gl, _view);
 
             BeginFrame();
         }
@@ -106,7 +114,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             ImGuiNET.ImGui.SetCurrentContext(Context);
         }
 
-        private void Init(GL gl, IView view, IInputContext input)
+        private void Init(GL gl, IWindow view, IInputContext input)
         {
             _gl = gl;
             _view = view;
@@ -268,6 +276,14 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
                 RenderImDrawData(ImGuiNET.ImGui.GetDrawData());
 
+                // update and render additional platform windows
+                if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+                {
+                    ImGuiNET.ImGui.UpdatePlatformWindows();
+                    ImGuiNET.ImGui.RenderPlatformWindowsDefault();
+                    _view.MakeCurrent();
+                }
+
                 if (oldCtx != Context)
                 {
                     ImGuiNET.ImGui.SetCurrentContext(oldCtx);
@@ -322,7 +338,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
         }
 
-        private void AddKeyEvent(ImGuiIOPtr io, Key k, bool down)
+        internal void AddKeyEvent(ImGuiIOPtr io, Key k, bool down)
         {
             // Rained-specific modification:
             // ImGui ignores the tab key
@@ -352,7 +368,14 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             //io.MouseDown[1] = mouseState.IsButtonPressed(MouseButton.Right);
             //io.MouseDown[2] = mouseState.IsButtonPressed(MouseButton.Middle);
 
-            var point = new Point((int) mouseState.Position.X, (int) mouseState.Position.Y);
+            Point point = new((int) mouseState.Position.X, (int) mouseState.Position.Y);
+            if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+            {
+                var windowPos = _view.Position;
+                point.X += windowPos.X;
+                point.Y += windowPos.Y;
+            }
+            
             io.AddMousePosEvent(point.X, point.Y);
 
             var wheel = mouseState.GetScrollWheels()[0];
@@ -522,7 +545,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             _gl.VertexAttribPointer((uint) _attribLocationVtxColor, 4, GLEnum.UnsignedByte, true, (uint) sizeof(ImDrawVert), (void*) 16);
         }
 
-        private unsafe void RenderImDrawData(ImDrawDataPtr drawDataPtr)
+        internal unsafe void RenderImDrawData(ImDrawDataPtr drawDataPtr)
         {
             int framebufferWidth = (int) (drawDataPtr.DisplaySize.X * drawDataPtr.FramebufferScale.X);
             int framebufferHeight = (int) (drawDataPtr.DisplaySize.Y * drawDataPtr.FramebufferScale.Y);
@@ -843,6 +866,9 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
         /// </summary>
         public void Dispose()
         {
+            _viewports?.Dispose();
+            _view.MakeCurrent();
+
             _view.Resize -= WindowResized;
             _keyboard.KeyChar -= OnKeyChar;
 

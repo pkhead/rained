@@ -146,6 +146,7 @@ namespace RainEd
                     io.KeyRepeatDelay = 0.5f;
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+                    io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
                 };
 
                 window.Initialize();

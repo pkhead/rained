@@ -21,5 +21,6 @@
       <PackageReference Include="Silk.NET.Input.Extensions" Version="2.21.0" />
       <PackageReference Include="Silk.NET.OpenGL" Version="2.21.0" />
       <PackageReference Include="Silk.NET.Windowing.Common" Version="2.21.0" />
+      <PackageReference Include="Silk.NET.Windowing.Glfw" Version="2.21.0" />
     </ItemGroup>
 </Project>
