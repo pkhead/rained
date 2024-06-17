@@ -560,9 +560,10 @@ sealed class RainEd
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             ShowDemoWindow = !ShowDemoWindow;
         
+#if DEBUG
         if (ImGui.IsKeyPressed(ImGuiKey.F2))
             throw new Exception("Test Exception");
-        
+#endif
         // this is how imgui is documented
         // you see what it can do and when i want to know how it does that,
         // i ctrl+f imgui_demo.cpp.
