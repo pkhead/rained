@@ -16,6 +16,11 @@ class VoxelRenderer
 
     public bool Wireframe = false;
     public float LightAngle = 0f;
+    public float FieldOfView = 30f;
+
+    public Vector3 CameraPosition;
+    public Vector3 CameraRotation = Vector3.Zero;
+    public Matrix4x4 CameraRotationMatrix => Matrix4x4.CreateRotationX(CameraRotation.X) * Matrix4x4.CreateRotationY(CameraRotation.Y) * Matrix4x4.CreateRotationZ(CameraRotation.Z);
 
     struct TileInstance
     {
@@ -86,6 +91,8 @@ class VoxelRenderer
         //testTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_331_bricksTexture.png"));
         testTexture = rctx.CreateTexture(Glib.Image.FromColor(1, 1, Glib.Color.FromRGBA(255, 0, 0)));
         shader3D = rctx.CreateShader(Shader3DVSrc, Shader3DFSrc);
+
+        CameraPosition = new Vector3(0f, 0f, -200f);
     }
 
     public bool IsTransparent(int x, int y, int layer)
@@ -182,9 +189,11 @@ class VoxelRenderer
         rctx.PushTransform();
         rctx.ResetTransform();
 
-        var camPos = new Vector3(camX / Level.TileSize * 10f, camY / Level.TileSize * 10f, -200f * camZoom);
-        var projectionMatrix = Glib.GlibMath.CreatePerspective(70f / 180f * MathF.PI, (float)renderTexture.Width / renderTexture.Height, 0.1f, 1000f);
-        var viewMatrix = Matrix4x4.CreateTranslation(-camPos) * Matrix4x4.CreateScale(1f, -1f, -1f);
+        //var camPos = new Vector3(camX / Level.TileSize * 10f, camY / Level.TileSize * 10f, -200f * camZoom);
+        var camPos = CameraPosition;
+
+        var projectionMatrix = Glib.GlibMath.CreatePerspective(FieldOfView / 180f * MathF.PI, (float)renderTexture.Width / renderTexture.Height, 0.1f, 1000f);
+        var viewMatrix = InvertMatrix(CameraRotationMatrix * Matrix4x4.CreateTranslation(camPos)) * Matrix4x4.CreateScale(1f, -1f, -1f);
 
         var lightDirection = Vector3.Normalize(new Vector3(-1f, -1f, 0.6f));
         lightDirection = Vector3.Transform(lightDirection, Matrix4x4.CreateRotationZ(LightAngle));
