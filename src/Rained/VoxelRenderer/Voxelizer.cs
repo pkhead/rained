@@ -23,6 +23,8 @@ struct VoxelRenderInfo()
     // 2 = bottom right
     // 3 = top right
     public bool DoRender = true;
+    public bool RenderSides = true;
+    public Vector3? CustomNormal = null;
 
     public Color[] FrontColors = [
         Color.White,
@@ -152,6 +154,8 @@ class Voxelizer
             meshIndex += 3;
         }
 
+        Vector3? customNormal;
+
         void LeftRect(float x, float y, float z, float w, float h, float d)
         {
             vertices.Add(new Vector3(x, y, z) * voxelSize);
@@ -164,10 +168,11 @@ class Voxelizer
             uvs.Add(new Vector2(1f, 1f));
             uvs.Add(new Vector2(1f, 0f));
 
-            normals.Add(new Vector3(-1f, 0f, 0f));
-            normals.Add(new Vector3(-1f, 0f, 0f));
-            normals.Add(new Vector3(-1f, 0f, 0f));
-            normals.Add(new Vector3(-1f, 0f, 0f));
+            var n = customNormal ?? new Vector3(-1f, 0f, 0f);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
 
             colors.Add(Glib.Color.White);
             colors.Add(Glib.Color.White);
@@ -189,10 +194,11 @@ class Voxelizer
             uvs.Add(new Vector2(1f, 1f));
             uvs.Add(new Vector2(1f, 0f));
 
-            normals.Add(new Vector3(1f, 0f, 0f));
-            normals.Add(new Vector3(1f, 0f, 0f));
-            normals.Add(new Vector3(1f, 0f, 0f));
-            normals.Add(new Vector3(1f, 0f, 0f));
+            var n = customNormal ?? new Vector3(1f, 0f, 0f);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
 
             colors.Add(Glib.Color.White);
             colors.Add(Glib.Color.White);
@@ -214,10 +220,11 @@ class Voxelizer
             uvs.Add(new Vector2(1f, 1f));
             uvs.Add(new Vector2(1f, 0f));
 
-            normals.Add(new Vector3(0f, -1f, 0f));
-            normals.Add(new Vector3(0f, -1f, 0f));
-            normals.Add(new Vector3(0f, -1f, 0f));
-            normals.Add(new Vector3(0f, -1f, 0f));
+            var n = customNormal ?? new Vector3(0f, -1f, 0f);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
 
             colors.Add(Glib.Color.White);
             colors.Add(Glib.Color.White);
@@ -239,10 +246,11 @@ class Voxelizer
             uvs.Add(new Vector2(1f, 1f));
             uvs.Add(new Vector2(1f, 0f));
 
-            normals.Add(new Vector3(0f, 1f, 0f));
-            normals.Add(new Vector3(0f, 1f, 0f));
-            normals.Add(new Vector3(0f, 1f, 0f));
-            normals.Add(new Vector3(0f, 1f, 0f));
+            var n = customNormal ?? new Vector3(0f, 1f, 0f);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
+            normals.Add(n);
 
             colors.Add(Glib.Color.White);
             colors.Add(Glib.Color.White);
@@ -279,6 +287,9 @@ class Voxelizer
                     if (visited[x,y]) continue;
                     if (this[x,y,z] != VoxelCell.Solid) continue;
 
+                    var renderInfo = renderInfos[x,y,z];
+                    if (!renderInfo.DoRender) continue;
+
                     // find rectangle
                     // (startX, startY) = (x, y) at this point
                     // (endX, endY) is the closest cell to the bottom-right of the bottom-right corner of the rectangle
@@ -292,9 +303,16 @@ class Voxelizer
                         for (int x0 = x; x0 <= width; x0++)
                         {
                             var cell = VoxelCell.Air;
-                            if (IsInBounds(x0, y0, z) && !visited[x0, y0] && renderInfos[x0,y0,z].DoRender)
+                            if (IsInBounds(x0, y0, z) && !visited[x0, y0])
                             {
-                                cell = this[x0, y0, z];
+                                var cellInfo = renderInfos[x0,y0,z];
+                                if (cellInfo.CustomNormal == renderInfo.CustomNormal
+                                    && cellInfo.DoRender == renderInfo.DoRender
+                                    && cellInfo.RenderSides == renderInfo.RenderSides
+                                )
+                                {
+                                    cell = this[x0, y0, z];
+                                }
                             }
 
                             if (cell != VoxelCell.Solid)
@@ -339,10 +357,11 @@ class Voxelizer
                         uvs.Add(new Vector2(1f, 1f));
                         uvs.Add(new Vector2(1f, 0f));
 
-                        normals.Add(new Vector3(0f, 0f, 1f));
-                        normals.Add(new Vector3(0f, 0f, 1f));
-                        normals.Add(new Vector3(0f, 0f, 1f));
-                        normals.Add(new Vector3(0f, 0f, 1f));
+                        var n = renderInfo.CustomNormal ?? new Vector3(0f, 0f, 1f);
+                        normals.Add(n);
+                        normals.Add(n);
+                        normals.Add(n);
+                        normals.Add(n);
 
                         colors.Add(Glib.Color.White);
                         colors.Add(Glib.Color.White);
@@ -352,16 +371,22 @@ class Voxelizer
                         FinishQuad();
 
                         // side faces
-                        RightRect(x, y, z, w, h, 1);
-                        LeftRect(x, y, z, w, h, 1);
-                        TopRect(x, y, z, w, h, 1);
-                        BottomRect(x, y, z, w, h, 1);
+                        if (renderInfo.RenderSides)
+                        {
+                            customNormal = renderInfo.CustomNormal;
+                            RightRect(x, y, z, w, h, 1);
+                            LeftRect(x, y, z, w, h, 1);
+                            TopRect(x, y, z, w, h, 1);
+                            BottomRect(x, y, z, w, h, 1);
+                        }
                     }
                 }
             }
         }
 
         // slopes
+        customNormal = null;
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -410,7 +435,7 @@ class Voxelizer
                             uvs.Add(new Vector2(1f, 1f));
                             uvs.Add(new Vector2(1f, 0f));
 
-                            var n = new Vector3(sqrt2over2, sqrt2over2, 0f);
+                            var n = new Vector3(sqrt2over2, -sqrt2over2, 0f);
                             normals.Add(n);
                             normals.Add(n);
                             normals.Add(n);
@@ -464,7 +489,7 @@ class Voxelizer
                             uvs.Add(new Vector2(1f, 1f));
                             uvs.Add(new Vector2(1f, 0f));
 
-                            var n = new Vector3(-sqrt2over2, sqrt2over2, 0f);
+                            var n = new Vector3(-sqrt2over2, -sqrt2over2, 0f);
                             normals.Add(n);
                             normals.Add(n);
                             normals.Add(n);
@@ -518,7 +543,7 @@ class Voxelizer
                             uvs.Add(new Vector2(1f, 1f));
                             uvs.Add(new Vector2(1f, 0f));
 
-                            var n = new Vector3(-sqrt2over2, -sqrt2over2, 0f);
+                            var n = new Vector3(-sqrt2over2, sqrt2over2, 0f);
                             normals.Add(n);
                             normals.Add(n);
                             normals.Add(n);
@@ -572,7 +597,7 @@ class Voxelizer
                             uvs.Add(new Vector2(1f, 1f));
                             uvs.Add(new Vector2(1f, 0f));
 
-                            var n = new Vector3(sqrt2over2, -sqrt2over2, 0f);
+                            var n = new Vector3(sqrt2over2, sqrt2over2, 0f);
                             normals.Add(n);
                             normals.Add(n);
                             normals.Add(n);
@@ -651,10 +676,21 @@ class GeometryVoxelizer : Voxelizer
 
 class TileVoxelizer : Voxelizer
 {
+    enum ShadeType : byte
+    {
+        Shaded = 0,
+        Neutral = 1,
+        Lit = 2
+    }
+
+    private ShadeType[,,] shades;
+
     public TileVoxelizer(Tiles.Tile init) : base((init.Width + init.BfTiles * 2) * 20, (init.Height + init.BfTiles * 2) * 20, init.LayerCount)
     {
         var texPath = Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", init.Name + ".png");
         using var img = RlManaged.Image.Load(texPath);
+
+        shades = new ShadeType[Width, Height, Depth];
 
         VoxelWidth = 0.5f;
         VoxelHeight = 0.5f;
@@ -667,11 +703,22 @@ class TileVoxelizer : Voxelizer
                 for (int l = 0; l < init.LayerCount; l++)
                 {
                     var yOffset = init.ImageYOffset + Height * l;
+
+                    if (x < 0 || y + yOffset < 0 || x >= img.Width || y + yOffset >= img.Height)
+                    {
+                        this[x,y,l] = VoxelCell.Air;
+                        break;
+                    }
+
                     var col = Raylib.GetImageColor(img, x, y + yOffset);
                     
                     if (col.R != 255 || col.G != 255 || col.B != 255)
                     {
                         this[x,y,l] = VoxelCell.Solid;
+
+                        if (col.R >= 230) shades[x,y,l] = ShadeType.Shaded;
+                        if (col.G >= 230) shades[x,y,l] = ShadeType.Neutral;
+                        if (col.B >= 230) shades[x,y,l] = ShadeType.Lit;
                     }
                     else
                     {
@@ -685,6 +732,21 @@ class TileVoxelizer : Voxelizer
     protected override VoxelRenderInfo GetRenderInfo(int x, int y, int z)
     {
         var renderInfo = base.GetRenderInfo(x, y, z);
+
+        switch (shades[x,y,z])
+        {
+            case ShadeType.Shaded:
+                renderInfo.CustomNormal = Vector3.Normalize(new Vector3(1f, 1f, 0f));
+                break;
+
+            case ShadeType.Neutral:
+                renderInfo.CustomNormal = Vector3.Normalize(new Vector3(0f, 0f, 1f));
+                break;
+
+            case ShadeType.Lit:
+                renderInfo.CustomNormal = Vector3.Normalize(new Vector3(-1f, -1f, 0f));
+                break;
+        }
 
         // top-left
         renderInfo.FrontUVs[0] = new Vector2(x / Width, y / Height);

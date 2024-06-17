@@ -22,6 +22,8 @@ static class RendererWindow
             if (renderer is not null)
             {
                 ImGui.Checkbox("Wireframe", ref renderer.Wireframe);
+                ImGui.SameLine();
+                ImGui.SliderAngle("Light Angle", ref renderer.LightAngle);
 
                 var levelView = RainEd.Instance.LevelView;
                 renderer.Render(levelView.ViewOffset.X, levelView.ViewOffset.Y, 1.0f / levelView.ViewZoom);

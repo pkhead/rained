@@ -15,6 +15,7 @@ class VoxelRenderer
     private readonly Dictionary<string, Glib.Mesh> tileMeshes = [];
 
     public bool Wireframe = false;
+    public float LightAngle = 0f;
 
     struct TileInstance
     {
@@ -130,7 +131,7 @@ class VoxelRenderer
                 {
                     var cell = level.Layers[l,x,y];
                     var init = cell.TileHead;
-                    if (init is not null)
+                    if (init is not null && init.Type == Tiles.TileType.VoxelStruct)
                     {
                         var tileMesh = GetTileMesh(init);
                         tileInstances.Add(new TileInstance()
@@ -185,10 +186,13 @@ class VoxelRenderer
         var projectionMatrix = Glib.GlibMath.CreatePerspective(70f / 180f * MathF.PI, (float)renderTexture.Width / renderTexture.Height, 0.1f, 1000f);
         var viewMatrix = Matrix4x4.CreateTranslation(-camPos) * Matrix4x4.CreateScale(1f, -1f, -1f);
 
+        var lightDirection = Vector3.Normalize(new Vector3(-1f, -1f, 0.6f));
+        lightDirection = Vector3.Transform(lightDirection, Matrix4x4.CreateRotationZ(LightAngle));
+
         shader3D.SetUniform("uProjectionMatrix", projectionMatrix);
         shader3D.SetUniform("uViewMatrix", viewMatrix);
         shader3D.SetUniform("ambientLightColor", new Vector3(0.2f, 0.2f, 0.2f));
-        shader3D.SetUniform("lightDirection", Vector3.Normalize(new Vector3(2f, -0.7f, 0.4f)));
+        shader3D.SetUniform("lightDirection", lightDirection);
 
         // draw level geometry
         shader3D.SetUniform("uNormalMatrix", Matrix4x4.Identity);
@@ -201,7 +205,7 @@ class VoxelRenderer
             var modelMatrix = Matrix4x4.CreateTranslation(inst.pos);
             shader3D.SetUniform("uModelMatrix", modelMatrix);
             shader3D.SetUniform("uNormalMatrix", CreateNormalMatrix(modelMatrix));
-            rctx.Draw(inst.mesh, testTexture);
+            rctx.Draw(inst.mesh);
         }
 
         rctx.SetEnabled(Glib.Feature.DepthTest, false);
