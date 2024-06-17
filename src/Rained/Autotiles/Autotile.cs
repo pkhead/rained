@@ -313,6 +313,8 @@ abstract class Autotile
         if (tiles.Horizontal is null) return;
         if (tiles.Vertical is null) return;
 
+        var tileRenderer = RainEd.Instance.LevelView.Renderer;
+
         bool JoinOutsideTile(Vector2i pos, int layer, Direction dir)
         {
             Vector2i newPos = pos + dir switch
@@ -337,6 +339,7 @@ abstract class Autotile
 
             tileDirs |= (PathDirection)((4 << (int)dir) % 15);
             cell.TileHead = GetTileFromDirections(tiles, tileDirs);
+            tileRenderer.InvalidateTileHead(newPos.X, newPos.Y, layer);
 
             return true;
         }
@@ -374,6 +377,7 @@ abstract class Autotile
                         {
                             tileDirs |= segDirs;
                             cellHere.TileHead = GetTileFromDirections(tiles, tileDirs);
+                            tileRenderer.InvalidateTileHead(seg.X, seg.Y, layer);
                             continue;
                         }
                     }
