@@ -73,12 +73,29 @@ class Voxelizer
     /// </summary>
     public float VoxelDepth = 1f;
 
+    private Glib.MeshConfiguration meshConfiguration;
+    private enum MeshBufferIndex : int
+    {
+        Positions = 0,
+        TexCoords = 1,
+        Colors = 2,
+        Normals = 3,
+    }
+
     public Voxelizer(int w, int h, int d)
     {
         width = w;
         height = h;
         depth = d;
         Voxels = new VoxelCell[w,h,d];
+
+        meshConfiguration = new Glib.MeshConfiguration()
+            .SetIndexed(false)
+            .SetPrimitiveType(Glib.MeshPrimitiveType.Triangles)
+            .SetupBuffer((int) MeshBufferIndex.Positions, Glib.DataType.Vector3) // vertices
+            .SetupBuffer((int) MeshBufferIndex.TexCoords, Glib.DataType.Vector2) // tex coords
+            .SetupBuffer((int) MeshBufferIndex.Colors, Glib.DataType.Vector4) // colors
+            .SetupBuffer((int) MeshBufferIndex.Normals, Glib.DataType.Vector3); // normals
     }
 
     protected virtual VoxelRenderInfo GetRenderInfo(int x, int y, int z)
@@ -92,11 +109,12 @@ class Voxelizer
         return Voxels[x,y,z];
     }
 
-    public RlManaged.Mesh Voxelize()
+    public Glib.Mesh Voxelize()
     {
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var normals = new List<Vector3>();
+        var colors = new List<Glib.Color>();
 
         var voxelSize = new Vector3(VoxelWidth, VoxelHeight, VoxelDepth);
 
@@ -142,6 +160,13 @@ class Voxelizer
                                 normals.Add(new Vector3(0f, 0f, 1f));
                                 normals.Add(new Vector3(0f, 0f, 1f));
                                 normals.Add(new Vector3(0f, 0f, 1f));
+
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
                             }
 
                             ocell = GetCell(x+1, y, z);
@@ -171,6 +196,13 @@ class Voxelizer
                                 normals.Add(new Vector3(1f, 0f, 0f));
                                 normals.Add(new Vector3(1f, 0f, 0f));
                                 normals.Add(new Vector3(1f, 0f, 0f));
+
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
                             }
 
                             ocell = GetCell(x-1, y, z);
@@ -200,6 +232,13 @@ class Voxelizer
                                 normals.Add(new Vector3(-1f, 0f, 0f));
                                 normals.Add(new Vector3(-1f, 0f, 0f));
                                 normals.Add(new Vector3(-1f, 0f, 0f));
+
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
                             }
 
                             ocell = GetCell(x, y-1, z);
@@ -229,6 +268,13 @@ class Voxelizer
                                 normals.Add(new Vector3(0f, -1f, 0f));
                                 normals.Add(new Vector3(0f, -1f, 0f));
                                 normals.Add(new Vector3(0f, -1f, 0f));
+
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
                             }
 
                             ocell = GetCell(x, y+1, z);
@@ -258,6 +304,13 @@ class Voxelizer
                                 normals.Add(new Vector3(0f, 1f, 0f));
                                 normals.Add(new Vector3(0f, 1f, 0f));
                                 normals.Add(new Vector3(0f, 1f, 0f));
+
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
+                                colors.Add(Glib.Color.White);
                             }
 
                         break;
@@ -266,10 +319,13 @@ class Voxelizer
             }
         }
 
-        var mesh = new RlManaged.Mesh();
-        mesh.SetVertices([..vertices]);
-        mesh.SetTexCoords([..uvs]);
-        mesh.SetNormals([..normals]);
+        // create mesh
+        var rctx = RainEd.RenderContext!;
+        var mesh = rctx.CreateMesh(meshConfiguration);
+        mesh.SetBufferData((int)MeshBufferIndex.Positions, [..vertices]);
+        mesh.SetBufferData((int)MeshBufferIndex.TexCoords, [..uvs]);
+        mesh.SetBufferData((int)MeshBufferIndex.Normals, [..normals]);
+        mesh.SetBufferData((int)MeshBufferIndex.Colors, [..colors]);
         return mesh;
     }
 }

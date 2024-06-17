@@ -1,5 +1,4 @@
 using ImGuiNET;
-using rlImGui_cs;
 namespace RainEd;
 
 static class RendererWindow
@@ -24,7 +23,7 @@ static class RendererWindow
             {
                 var levelView = RainEd.Instance.LevelView;
                 renderer.Render(levelView.ViewOffset.X, levelView.ViewOffset.Y, 1.0f / levelView.ViewZoom);
-                rlImGui.ImageRenderTexture(renderer.RenderTexture);
+                ImGuiExt.ImageRenderTexture(renderer.Framebuffer);
             }
         } ImGui.End();
     }

@@ -33,7 +33,7 @@ namespace RlManaged
         private Raylib_cs.RenderTexture2D raw;
         protected override Glib.GLResource? GetGLResource() => raw.ID;
 
-        private RenderTexture2D(Raylib_cs.RenderTexture2D raw) : base()
+        public RenderTexture2D(Raylib_cs.RenderTexture2D raw) : base()
         {
             this.raw = raw;
         }
