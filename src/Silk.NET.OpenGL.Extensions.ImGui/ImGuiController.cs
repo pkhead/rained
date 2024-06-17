@@ -55,6 +55,8 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
         public IntPtr Context;
 
+        public bool ignoreMouseUp = false;
+
         /// <summary>
         /// Constructs a new ImGuiController.
         /// </summary>
@@ -162,6 +164,12 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
             mouse.MouseUp += (IMouse mouse, MouseButton button) =>
             {
+                if (ignoreMouseUp)
+                {
+                    ignoreMouseUp = false;
+                    return;
+                }
+
                 var io = ImGuiNET.ImGui.GetIO();
 
                 switch (button)
@@ -223,6 +231,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
                 }
 
                 _frameBegun = false;
+
                 ImGuiNET.ImGui.Render();
 
                 // update mouse

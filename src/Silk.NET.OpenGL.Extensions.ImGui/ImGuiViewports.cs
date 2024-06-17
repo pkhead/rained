@@ -99,6 +99,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             platformIO.Platform_RenderWindow = Marshal.GetFunctionPointerForDelegate(_delegates[i++] = ImplRenderWindow);
             platformIO.Platform_SwapBuffers = Marshal.GetFunctionPointerForDelegate(_delegates[i++] = ImplSwapBuffers);
             platformIO.Platform_UpdateWindow = Marshal.GetFunctionPointerForDelegate(_delegates[i++] = ImplUpdateWindow);
+            platformIO.Platform_SetWindowAlpha = Marshal.GetFunctionPointerForDelegate(_delegates[i++] = ImplSetWindowAlpha);
 
             // Some function pointers in the ImGuiPlatformIO structure are not C-compatible because of their
             // use of a complex return type. CImgui provides a workaround for this.
@@ -314,6 +315,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
         {
             var window = GetWindow(viewport);
             // TODO: respect ImGuiViewportFlags_NoFocusOnAppearing
+            controller.ignoreMouseUp = true;
             window.IsVisible = true;
         }
 
@@ -386,7 +388,14 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
         private unsafe void ImplSetWindowAlpha(ImGuiViewport* viewport, float alpha)
         {
-            Console.WriteLine("ImplSetWindowAlpha not implemented!");
+            var window = GetWindow(viewport);
+
+            var glfw = Windowing.Glfw.GlfwWindowing.GetExistingApi(window);
+            if (glfw is not null)
+            {
+                var handle = (GLFW.WindowHandle*) window.Native.Glfw!;
+                glfw.SetWindowOpacity(handle, alpha);
+            }
         }
 
         private unsafe void ImplRenderWindow(ImGuiViewport* viewport, void* _)
@@ -427,7 +436,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             int framebufferWidth = (int) (drawData->DisplaySize.X * drawData->FramebufferScale.X);
             int framebufferHeight = (int) (drawData->DisplaySize.Y * drawData->FramebufferScale.Y);
             if (framebufferHeight < 0 || framebufferHeight < 0) return;
-            
+
             gl.Viewport(0, 0, (uint)framebufferWidth, (uint)framebufferHeight);
             controller.RenderImDrawData(viewport->DrawData);
         }
