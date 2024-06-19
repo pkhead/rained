@@ -1,9 +1,9 @@
 # Rained Level Editor
-Read LICENSE.md for software licenses to the open-source libraries I have used.
+Read LICENSE.md for software licenses for the open-source libraries I have used.
 
-This is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs. Hope you like it!
+Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding server. I also accept DMs. Hope you like it!
 
-Also, if you are on Windows and Rained fails to even open a window when launching it, it's probably because you are missing the Microsoft Visual Studio C++ runtime package.  It can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe). (I might figure out how to remove that requirement at a later date.)
+Also, if you are on Windows and Rained fails to even open a window when launching it, it's probably because you are missing the Microsoft Visual Studio C++ runtime package. It can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe). (I might figure out how to remove that requirement at a later date.)
 
 ## Updates
 Check https://github.com/pkhead/rained/releases for any new releases. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
@@ -11,6 +11,21 @@ Check https://github.com/pkhead/rained/releases for any new releases. If you wan
 - config/
 - scripts/
 - Your Data folder, if present
+
+## Asset Folder
+The Rained installation folder does not come with an assets folder for storing files such as tiles, props, and level projects.
+Instead, on first launch, it will show a prompt asking you if you want to download the level data or select a pre-existing folder on
+your computer.
+
+If this is the first time you have installed a level editor on your computer, then you should press "Download Data". The download
+may take a while, since it downloads directly from a GitHub repository, but it should complete eventually. After it finishes,
+Rained will launch properly.
+
+However, if you have installed another level editor on your computer previously, you have the option of using the same asset folder 
+of the previous level editor on your computer. Which folder you should select depends on which level editor you used. If you have used
+the vanilla/Downpour level editor, or a mod of it like the Community Editor, you would select the folder that contains the
+level editor executable. For other level editors, you will have to select the location of its Drizzle data folder. For
+RWE+, you would thus select `/drizzle/Data`, and for Henry's level editor, you would select `/assets/renderer`.
 
 ## Importing Custom Tiles, Props, or Materials
 You *can* do so by editing the Init.txt files manually and copying over the graphics and stuff... Or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first. I'll think of a way to change that...
@@ -41,7 +56,7 @@ Here are some tips on using the GUI elements:
 ## Autosaving
 Rained does not have a system that auto-saves the level periodically. However, it does automatically save the current state
 of the level to a different file if it catches a fatal exception and crashes, which should be an adequate alleviator.
-I would recommend pressng Ctrl+S every minute anyway.
+Then, upon relaunching Rained, it will ask you if would like to open the emergency save file. Crashes don't happen very often, but I would recommend pressing Ctrl+S frequently regardless.
 
 ## Scripting
 Rained has a Lua scripting API, used for autotiling and level manipulation.
