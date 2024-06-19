@@ -1,3 +1,8 @@
+geo-improvements;
+- changing level doesn't clear selection
+- move selected, add wall (selection clears), undo, redo, bug: selection doesn't clear
+- objects don't display in selection
+
 Changes for Next Minor Update:
 - render shortcuts in tile editor when hovering over them
 - slope rect mode
