@@ -33,6 +33,11 @@ struct HexColor(byte r = 0, byte g = 0, byte b = 0)
     {
         return new Color(R, G, B, alpha);
     }
+
+    public readonly System.Numerics.Vector3 ToVector3()
+    {
+        return new System.Numerics.Vector3(R / 255f, G / 255f, B / 255f);
+    }
 }
 
 class UserPreferences

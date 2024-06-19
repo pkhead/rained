@@ -16,10 +16,10 @@ static class PreferencesWindow
         Shortcuts = 1,
         Theme = 2,
         Assets = 3,
-        Rendering = 4
+        Drizzle = 4
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Rendering"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
@@ -72,7 +72,7 @@ static class PreferencesWindow
             switch (selectedNavTab)
             {
                 case NavTabEnum.General:
-                    ShowGeneralTab();
+                    ShowGeneralTab(lastNavTab != selectedNavTab);
                     break;
 
                 case NavTabEnum.Shortcuts:
@@ -88,8 +88,8 @@ static class PreferencesWindow
                     showAssetsTab = true;
                     break;
                 
-                case NavTabEnum.Rendering:
-                    ShowRenderingTab();
+                case NavTabEnum.Drizzle:
+                    ShowDrizzleTab();
                     showRenderSettingsTab = true;
                     break;
             }
@@ -156,14 +156,18 @@ static class PreferencesWindow
             AssetManagerGUI.Unload();
         }
 
-        if (!showRenderSettingsTab && activeDrizzleConfig is not null)
+        if (!showRenderSettingsTab)
         {
-            activeDrizzleConfig.SavePreferences();
             activeDrizzleConfig = null;
         }
     }
 
-    private static void ShowGeneralTab()
+    private static Vector3 layerColor1;
+    private static Vector3 layerColor2;
+    private static Vector3 layerColor3;
+    private static Vector3 bgColor;
+
+    private static void ShowGeneralTab(bool entered)
     {
         static Vector3 HexColorToVec3(HexColor color) => new(color.R / 255f, color.G / 255f, color.B / 255f);
         static HexColor Vec3ToHexColor(Vector3 vec) => new(
@@ -173,98 +177,72 @@ static class PreferencesWindow
         );
 
         var prefs = RainEd.Instance.Preferences;
-        bool boolRef;
-
-        ImGui.SeparatorText("Rendering");
-        
-        // static lingo runtime
-        {
-            boolRef = prefs.StaticDrizzleLingoRuntime;
-            if (ImGui.Checkbox("Initialize the Zygote runtime on app startup", ref boolRef))
-                prefs.StaticDrizzleLingoRuntime = boolRef;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            ImGui.SetItemTooltip(
-                """
-                This will run the Zygote runtime initialization
-                process once, when the app starts. This results
-                in a longer startup time and more idle RAM
-                usage, but will decrease the time it takes to
-                start a render.
-
-                This option requires a restart in order to
-                take effect.    
-                """);
-        }
-
-        // show render preview
-        {
-            boolRef = prefs.ShowRenderPreview;
-            if (ImGui.Checkbox("Show render preview", ref boolRef))
-                prefs.ShowRenderPreview = boolRef;
-        }
         
         ImGui.SeparatorText("Level Colors");
         {
             ImGui.Separator();
 
-            Vector3 layerColor1 = HexColorToVec3(prefs.LayerColor1);
-            Vector3 layerColor2 = HexColorToVec3(prefs.LayerColor2);
-            Vector3 layerColor3 = HexColorToVec3(prefs.LayerColor3);
-            Vector3 bgColor = HexColorToVec3(prefs.BackgroundColor);
+            if (entered)
+            {
+                layerColor1 = HexColorToVec3(prefs.LayerColor1);
+                layerColor2 = HexColorToVec3(prefs.LayerColor2);
+                layerColor3 = HexColorToVec3(prefs.LayerColor3);
+                bgColor = HexColorToVec3(prefs.BackgroundColor);
+            }
 
-            if (ImGui.ColorEdit3("##Layer Color 1", ref layerColor1))
-                prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
+            ImGui.ColorEdit3("##Layer Color 1", ref layerColor1);
 
             ImGui.SameLine();
             if (ImGui.Button("X##ResetLC1"))
             {
-                prefs.LayerColor1 = new HexColor("#000000");
+                layerColor1 = new HexColor("#000000").ToVector3();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Layer Color 1");
 
-            if (ImGui.ColorEdit3("##Layer Color 2", ref layerColor2))
-                prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
+            ImGui.ColorEdit3("##Layer Color 2", ref layerColor2);
 
             ImGui.SameLine();
             if (ImGui.Button("X##ResetLC2"))
             {
-                prefs.LayerColor2 = new HexColor("#59ff59");
+                layerColor2 = new HexColor("#59ff59").ToVector3();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Layer Color 2");
 
-            if (ImGui.ColorEdit3("##Layer Color 3", ref layerColor3))
-                prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
+            ImGui.ColorEdit3("##Layer Color 3", ref layerColor3);
 
             ImGui.SameLine();
             if (ImGui.Button("X##ResetLC3"))
             {
-                prefs.LayerColor3 = new HexColor("#ff1e1e");
+                layerColor3 = new HexColor("#ff1e1e").ToVector3();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Layer Color 3");
 
-            if (ImGui.ColorEdit3("##Background Color", ref bgColor))
-                prefs.BackgroundColor = Vec3ToHexColor(bgColor);
+            ImGui.ColorEdit3("##Background Color", ref bgColor);
 
             ImGui.SameLine();
             if (ImGui.Button("X##ResetBGC"))
             {
-                prefs.BackgroundColor = new HexColor(127, 127, 127);
+                bgColor = new HexColor(127, 127, 127).ToVector3();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Background Color");
+
+            // update layer colors in preferences class
+            prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
+            prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
+            prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
+            prefs.BackgroundColor = Vec3ToHexColor(bgColor);
 
             // TODO: font scale
         }
@@ -491,7 +469,7 @@ static class PreferencesWindow
         ImGui.PopID();
     }
 
-    private static void ShowRenderingTab()
+    private static void ShowDrizzleTab()
     {
         activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
 
@@ -504,7 +482,42 @@ static class PreferencesWindow
                 activeDrizzleConfig.SavePreferences();
             }
         }
+
+        ImGui.SeparatorText("Integration");
+
+        bool boolRef;
+        var prefs = RainEd.Instance.Preferences;
+
+        // static lingo runtime
+        {
+            boolRef = prefs.StaticDrizzleLingoRuntime;
+            if (ImGui.Checkbox("Initialize the Zygote runtime on app startup", ref boolRef))
+                prefs.StaticDrizzleLingoRuntime = boolRef;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will run the Zygote runtime initialization
+                process once, when the app starts. This results
+                in a longer startup time and more idle RAM
+                usage, but will decrease the time it takes to
+                start a render.
+
+                This option requires a restart in order to
+                take effect.    
+                """);
+        }
+
+        // show render preview
+        {
+            boolRef = prefs.ShowRenderPreview;
+            if (ImGui.Checkbox("Show render preview", ref boolRef))
+                prefs.ShowRenderPreview = boolRef;
+        }
         
+        ImGui.SeparatorText("Configuration");
+
         ConfigCheckbox("Grime on gradients");
         ConfigCheckbox("Grime");
         ConfigCheckbox("Material fixes");
