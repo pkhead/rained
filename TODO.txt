@@ -1,4 +1,8 @@
 geo-improvements;
+- tools: Build, Select, Move Selected, Magic Wand, Copy Backwards
+  each tool will then have an options visible in the gui under the tool selection ui
+  the build tool will have building stuff
+
 - move selected, add wall (selection clears), undo, redo, bug: selection doesn't clear
 - objects don't display in selection
 
