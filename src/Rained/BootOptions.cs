@@ -39,6 +39,27 @@ partial class BootOptions
     public readonly bool LogToStdout = false;
     public readonly bool Render = false;
 
+    private static void PrintHelpMessage()
+    {
+        Console.WriteLine(
+        $"""
+        Usage:
+            Rained [-v | --version]
+            Rained [-h | --help]
+            Rained [options...] [level path]
+        
+        --help                  Show this help screen
+        --version -v            Print out version
+        --render -r             Render the given level and exit
+        --log-to-stdout         Print logs to the standard output stream instead of to a file
+        --no-splash-screen      Do not show the splash screen when starting
+        --app-data <path>       Run with app data directory at <path>
+        --data <path>           Run with the Drizzle data directory at <path>
+        --ogscule               the intrusive thoughts defeated me
+        """
+        );
+    }
+
     public BootOptions(string[] args)
     {
         // first, scan for the --console argument
@@ -66,26 +87,10 @@ partial class BootOptions
             
             if (arg == "--help" || arg == "-h")
             {
-                Console.WriteLine(
-                $"""
-                Rained {RainEd.Version}
+                Console.WriteLine($"Rained {RainEd.Version}");
+                Console.WriteLine();
 
-                Usage:
-                    Rained [-v | --version]
-                    Rained [-h | --help]
-                    Rained [options...] [level path]
-                
-                --help                  Show this help screen
-                --version -v            Print out version
-                --render -r             Render the given level and exit
-                --log-to-stdout         Print logs to the standard output stream instead of to a file
-                --no-splash-screen      Do not show the splash screen when starting
-                --app-data <path>       Run with app data directory at <path>
-                --data <path>           Run with the Drizzle data directory at <path>
-                --ogscule               the intrusive thoughts defeated me
-                """
-                );
-
+                PrintHelpMessage();
                 ContinueBoot = false;
                 return;
             }
@@ -157,6 +162,8 @@ partial class BootOptions
                 Console.Write("error: ");
                 Console.ResetColor();
                 Console.WriteLine($"unknown option: {str}");
+                Console.WriteLine();
+                PrintHelpMessage();
 
                 Environment.ExitCode = 2;
                 ContinueBoot = false;

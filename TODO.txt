@@ -16,8 +16,6 @@ Overall:
 - new level screen
 - favorite tiles and props
 - move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
-- auto-recovery saves (main problem is figuring out how to do it non-blocking)
-  - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
 - Move Level
 - undo/redo for level resize
 - level resze drag
