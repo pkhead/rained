@@ -1,5 +1,4 @@
 geo-improvements;
-- changing level doesn't clear selection
 - move selected, add wall (selection clears), undo, redo, bug: selection doesn't clear
 - objects don't display in selection
 

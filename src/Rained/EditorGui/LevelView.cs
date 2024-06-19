@@ -188,7 +188,7 @@ class LevelView
     }
 
     public void ReloadLevel()
-    {
+    {        
         foreach (var mode in editorModes)
             mode.ReloadLevel();
     }

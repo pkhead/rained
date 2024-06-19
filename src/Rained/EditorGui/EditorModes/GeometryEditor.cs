@@ -9,7 +9,7 @@ class GeometryEditor : IEditorMode
 {
     public string Name { get => "Geometry"; }
 
-    private readonly LevelView window;
+    private readonly LevelView view;
     
     public enum Tool : int
     {
@@ -169,7 +169,7 @@ class GeometryEditor : IEditorMode
         layerMask = new bool[3];
         layerMask[0] = true;
 
-        window = levelView;
+        view = levelView;
         toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
 
         switch (RainEd.Instance.Preferences.GeometryViewMode)
@@ -226,19 +226,19 @@ class GeometryEditor : IEditorMode
         layerMask[0] = false;
         layerMask[1] = false;
         layerMask[2] = false;
-        layerMask[window.WorkLayer] = true;
+        layerMask[view.WorkLayer] = true;
     }
 
     public void Unload()
     {
         if (selectedTool == Tool.MoveSelected)
         {
-            EndSelectedMovement();
+            ClearSelection();
         }
 
         isToolActive = false;
         toolRectMode = RectMode.None;
-        window.CellChangeRecorder.TryPushChange();
+        view.CellChangeRecorder.TryPushChange();
 
         // if there is only a single geo layer active,
         // update the global work layer variable to the
@@ -255,7 +255,15 @@ class GeometryEditor : IEditorMode
             
         }
 
-        window.WorkLayer = activeLayer;
+        view.WorkLayer = activeLayer;
+    }
+
+    public void ReloadLevel()
+    {
+        view.Renderer.Geometry.ClearOverlay();
+        isSelectionActive = false;
+        isToolActive = false;
+        toolRectMode = RectMode.None;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -368,11 +376,11 @@ class GeometryEditor : IEditorMode
 
                 RainEd.Logger.Debug("({StartX}, {StartY}), ({EndX}, {EndY})", rectSX, rectSY, rectEX, rectEY);
 
-                window.StatusText = $"({rectW}, {rectH})";
+                view.StatusText = $"({rectW}, {rectH})";
             }
             else if (CanRectPlace(selectedTool))
             {
-                window.StatusText = "Shift+Drag to fill rect";
+                view.StatusText = "Shift+Drag to fill rect";
             }
         } ImGui.End();
 
@@ -396,10 +404,10 @@ class GeometryEditor : IEditorMode
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         bool wasToolActive = isToolActive;
-        window.BeginLevelScissorMode();
+        view.BeginLevelScissorMode();
 
         var level = RainEd.Instance.Level;
-        var levelRender = window.Renderer;
+        var levelRender = view.Renderer;
 
         // draw level background (solid white)
         Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
@@ -551,22 +559,22 @@ class GeometryEditor : IEditorMode
         }
         
         // forward selection data to the cell change recorder
-        window.CellChangeRecorder.IsSelectionActive = isSelectionActive;
-        window.CellChangeRecorder.SelectionX = selectSX;
-        window.CellChangeRecorder.SelectionY = selectSY;
-        window.CellChangeRecorder.SelectionWidth = selectEX - selectSX + 1;
-        window.CellChangeRecorder.SelectionHeight = selectEY - selectSY + 1;
+        view.CellChangeRecorder.IsSelectionActive = isSelectionActive;
+        view.CellChangeRecorder.SelectionX = selectSX;
+        view.CellChangeRecorder.SelectionY = selectSY;
+        view.CellChangeRecorder.SelectionWidth = selectEX - selectSX + 1;
+        view.CellChangeRecorder.SelectionHeight = selectEY - selectSY + 1;
         
         // begin mouse interaction code
-        if (window.IsViewportHovered)
+        if (view.IsViewportHovered)
         {
             // rect fill mode
             if (toolRectMode != RectMode.None)
             {
                 if (isMouseDown)
                 {
-                    rectEX = window.MouseCx;
-                    rectEY = window.MouseCy;
+                    rectEX = view.MouseCx;
+                    rectEY = view.MouseCy;
                 }
                 
                 if (toolRectMode == RectMode.Fill)
@@ -598,8 +606,8 @@ class GeometryEditor : IEditorMode
 
                 // draw grid cursor
                 Raylib.DrawRectangleLinesEx(
-                    new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
-                    1f / window.ViewZoom,
+                    new Rectangle(view.MouseCx * Level.TileSize, view.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
+                    1f / view.ViewZoom,
                     Color.White
                 );
 
@@ -611,13 +619,13 @@ class GeometryEditor : IEditorMode
                     isClicked = true;
                     isErasing = KeyShortcuts.Active(KeyShortcut.RightMouse);
                     isToolActive = true;
-                    window.CellChangeRecorder.BeginChange();
+                    view.CellChangeRecorder.BeginChange();
                 }
                 
                 // when user activates tool, or when mouse cell position moves while tool is active
                 if (isToolActive)
                 {
-                    if (isClicked || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
+                    if (isClicked || view.MouseCx != lastMouseX || view.MouseCy != lastMouseY)
                     {
                         if (toolRectMode == RectMode.None)
                         {
@@ -626,8 +634,8 @@ class GeometryEditor : IEditorMode
                             if (fillMode && CanRectPlace(selectedTool))
                             {
                                 toolRectMode = RectMode.Fill;
-                                rectSX = window.MouseCx;
-                                rectSY = window.MouseCy;
+                                rectSX = view.MouseCx;
+                                rectSY = view.MouseCy;
                                 rectEX = rectSX;
                                 rectEY = rectSY;
                             }
@@ -635,9 +643,9 @@ class GeometryEditor : IEditorMode
                             {
                                 // left = place, right = erase
                                 if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
-                                    ActivateTool(window.MouseCx, window.MouseCy, !wasToolActive);
+                                    ActivateTool(view.MouseCx, view.MouseCy, !wasToolActive);
                                 else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
-                                    Erase(window.MouseCx, window.MouseCy);
+                                    Erase(view.MouseCx, view.MouseCy);
                             }
                         }
                     }
@@ -649,7 +657,7 @@ class GeometryEditor : IEditorMode
         if (isToolActive && !isMouseDown)
         {
             isToolActive = false;
-            window.CellChangeRecorder.PushChange();
+            view.CellChangeRecorder.PushChange();
         }
 
         // draw tool rect
@@ -671,7 +679,7 @@ class GeometryEditor : IEditorMode
 
             Raylib.DrawRectangleLinesEx(
                 new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
-                1f / window.ViewZoom,
+                1f / view.ViewZoom,
                 Color.White
             );
 
@@ -702,16 +710,16 @@ class GeometryEditor : IEditorMode
 
             Raylib.DrawRectangleLinesEx(
                 new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
-                1f / window.ViewZoom,
+                1f / view.ViewZoom,
                 Color.White
             );
             
             Raylib.EndShaderMode();
         }
         
-        lastMouseX = window.MouseCx;
-        lastMouseY = window.MouseCy;
-        lastMousePos = window.MouseCellFloat;
+        lastMouseX = view.MouseCx;
+        lastMouseY = view.MouseCy;
+        lastMousePos = view.MouseCellFloat;
 
         Raylib.EndScissorMode();
     }
@@ -789,8 +797,8 @@ class GeometryEditor : IEditorMode
                     }
                     
                     // move selected
-                    window.Renderer.Geometry.OverlayX += tx - toolLastX;
-                    window.Renderer.Geometry.OverlayY += ty - toolLastY;
+                    view.Renderer.Geometry.OverlayX += tx - toolLastX;
+                    view.Renderer.Geometry.OverlayY += ty - toolLastY;
                     
                     // move selection bounds too
                     selectSX += tx - toolLastX;
@@ -897,7 +905,7 @@ class GeometryEditor : IEditorMode
                     ref var dstCell = ref level.Layers[dstLayer, tx, ty];
                     dstCell.Geo = cell.Geo;
                     dstCell.Objects = cell.Objects;
-                    window.Renderer.InvalidateGeo(tx, ty, dstLayer);
+                    view.Renderer.InvalidateGeo(tx, ty, dstLayer);
 
                     break;
                 }
@@ -980,7 +988,7 @@ class GeometryEditor : IEditorMode
             }
             
             level.Layers[layer, tx, ty] = cell;
-            window.Renderer.InvalidateGeo(tx, ty, layer);
+            view.Renderer.InvalidateGeo(tx, ty, layer);
         }
     }
 
@@ -1000,7 +1008,7 @@ class GeometryEditor : IEditorMode
                 cell.Geo = GeoType.Air;
             }
 
-            window.Renderer.InvalidateGeo(x, y, l);
+            view.Renderer.InvalidateGeo(x, y, l);
         }
     }
 
@@ -1014,11 +1022,26 @@ class GeometryEditor : IEditorMode
         var rectMaxX = Math.Max(rectSX, rectEX);
         var rectMaxY = Math.Max(rectSY, rectEY);
 
-        for (int x = rectMinX; x <= rectMaxX; x++)
+        if (isErasing)
         {
-            for (int y = rectMinY; y <= rectMaxY; y++)
+            for (int x = rectMinX; x <= rectMaxX; x++)
             {
-                ActivateTool(x, y, true);
+                for (int y = rectMinY; y <= rectMaxY; y++)
+                {
+                    Erase(x, y);
+                }
+            }
+        }
+        else
+        {
+            toolPlaceMode = isErasing; // if right-click, activate tool in erase mode
+
+            for (int x = rectMinX; x <= rectMaxX; x++)
+            {
+                for (int y = rectMinY; y <= rectMaxY; y++)
+                {
+                    ActivateTool(x, y, false);
+                }
             }
         }
         
@@ -1036,7 +1059,7 @@ class GeometryEditor : IEditorMode
         RainEd.Logger.Information("Start selected movement");
 
         // if an overlay already exists, only continue if canOverwrite is true
-        if (window.Renderer.Geometry.Overlay is not null && !canOverwrite)
+        if (view.Renderer.Geometry.Overlay is not null && !canOverwrite)
         {
             return;
         }
@@ -1092,31 +1115,31 @@ class GeometryEditor : IEditorMode
 
                         // clear original cell
                         level.Layers[l, cellX, cellY] = new LevelCell();
-                        window.Renderer.InvalidateGeo(cellX, cellY, l);
+                        view.Renderer.InvalidateGeo(cellX, cellY, l);
                     }
                 }
             }
         }
 
-        window.Renderer.Geometry.SetOverlay(rectMinX, rectMinY, rectW, rectH, overlayCells, overlayMask);
+        view.Renderer.Geometry.SetOverlay(rectMinX, rectMinY, rectW, rectH, overlayCells, overlayMask);
     }
 
     private void EndSelectedMovement()
     {
-        RainEd.Logger.Information("End selected movement");
+        RainEd.Logger.Debug("End selected movement");
 
         // apply geometry overlay into the actual level
         var level = RainEd.Instance.Level;
 
-        var overlayCells = window.Renderer.Geometry.Overlay;
-        var overlayMask = window.Renderer.Geometry.OverlayMask;
+        var overlayCells = view.Renderer.Geometry.Overlay;
+        var overlayMask = view.Renderer.Geometry.OverlayMask;
 
         if (overlayCells is not null && overlayMask is not null)
         {
-            int overlayX = window.Renderer.Geometry.OverlayX;
-            int overlayY = window.Renderer.Geometry.OverlayY;
-            int overlayW = window.Renderer.Geometry.OverlayWidth;
-            int overlayH = window.Renderer.Geometry.OverlayHeight;
+            int overlayX = view.Renderer.Geometry.OverlayX;
+            int overlayY = view.Renderer.Geometry.OverlayY;
+            int overlayW = view.Renderer.Geometry.OverlayWidth;
+            int overlayH = view.Renderer.Geometry.OverlayHeight;
 
             for (int x = 0; x < overlayW; x++)
             {
@@ -1131,19 +1154,19 @@ class GeometryEditor : IEditorMode
                         if (overlayMask[l, x, y])
                         {
                             level.Layers[l, cellX, cellY] = overlayCells[l, x, y];
-                            window.Renderer.InvalidateGeo(cellX, cellY, l);
+                            view.Renderer.InvalidateGeo(cellX, cellY, l);
                         }      
                     }
                 }
             }
         }
 
-        window.Renderer.Geometry.ClearOverlay();
+        view.Renderer.Geometry.ClearOverlay();
     }
 
     public void SetSelection(ChangeHistory.SelectionRecord selection)
     {
-        window.Renderer.Geometry.ClearOverlay();
+        view.Renderer.Geometry.ClearOverlay();
 
         isSelectionActive = selection.IsActive;
         selectSX = selection.X;
