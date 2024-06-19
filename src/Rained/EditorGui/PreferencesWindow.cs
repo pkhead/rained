@@ -33,8 +33,11 @@ static class PreferencesWindow
 
     public static void ShowWindow()
     {
+        bool justOpened = false;
+
         if (openPopupCmd)
         {
+            justOpened = true;
             openPopupCmd = false;
             isWindowOpen = true;
             ImGui.OpenPopup(WindowName);
@@ -72,7 +75,7 @@ static class PreferencesWindow
             switch (selectedNavTab)
             {
                 case NavTabEnum.General:
-                    ShowGeneralTab(lastNavTab != selectedNavTab);
+                    ShowGeneralTab(justOpened || lastNavTab != selectedNavTab);
                     break;
 
                 case NavTabEnum.Shortcuts:
@@ -80,7 +83,7 @@ static class PreferencesWindow
                     break;
 
                 case NavTabEnum.Theme:
-                    ShowThemeTab(lastNavTab != selectedNavTab);
+                    ShowThemeTab(justOpened || lastNavTab != selectedNavTab);
                     break;
                 
                 case NavTabEnum.Assets:
