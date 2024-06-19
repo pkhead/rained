@@ -16,12 +16,14 @@ static class PreferencesWindow
         Shortcuts = 1,
         Theme = 2,
         Assets = 3,
+        Rendering = 4
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Rendering"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
+    private static DrizzleConfiguration? activeDrizzleConfig = null;
 
     private static bool openPopupCmd = false;
     public static void OpenWindow()
@@ -45,6 +47,7 @@ static class PreferencesWindow
         // keep track of this, as i want to clear some data
         // when the following tabs are no longer shown
         bool showAssetsTab = false;
+        bool showRenderSettingsTab = false;
 
         if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
         {
@@ -83,6 +86,11 @@ static class PreferencesWindow
                 case NavTabEnum.Assets:
                     AssetManagerGUI.Show();
                     showAssetsTab = true;
+                    break;
+                
+                case NavTabEnum.Rendering:
+                    ShowRenderingTab();
+                    showRenderSettingsTab = true;
                     break;
             }
 
@@ -146,6 +154,12 @@ static class PreferencesWindow
         if (!showAssetsTab)
         {
             AssetManagerGUI.Unload();
+        }
+
+        if (!showRenderSettingsTab && activeDrizzleConfig is not null)
+        {
+            activeDrizzleConfig.SavePreferences();
+            activeDrizzleConfig = null;
         }
     }
 
@@ -475,5 +489,32 @@ static class PreferencesWindow
         ImGui.Text(nameOverride ?? KeyShortcuts.GetName(id));
 
         ImGui.PopID();
+    }
+
+    private static void ShowRenderingTab()
+    {
+        activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
+
+        static void ConfigCheckbox(string key)
+        {
+            bool v = activeDrizzleConfig!.GetConfig(key);
+            if (ImGui.Checkbox(key, ref v))
+            {
+                activeDrizzleConfig.TrySetConfig(key, v);
+                activeDrizzleConfig.SavePreferences();
+            }
+        }
+        
+        ConfigCheckbox("Grime on gradients");
+        ConfigCheckbox("Grime");
+        ConfigCheckbox("Material fixes");
+        ConfigCheckbox("Slime always affects editor decals");
+        ConfigCheckbox("notTrashProp fix");
+        ConfigCheckbox("Trash and Small pipes non solid");
+        ConfigCheckbox("Gradients with BackgroundScenes fix");
+        ConfigCheckbox("Invisible material fix");
+        ConfigCheckbox("Large trash debug log");
+        ConfigCheckbox("Rough Rock spreads more");
+        ConfigCheckbox("Tiles as props fix");
     }
 }
