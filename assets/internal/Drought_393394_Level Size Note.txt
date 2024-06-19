@@ -1,0 +1,1 @@
+Note: The size of the level can't be zero or less.

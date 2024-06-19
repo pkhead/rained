@@ -53,7 +53,7 @@ class LightParametersChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Light;
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Light;
         var level = RainEd.Instance.Level;
 
         if (useNew)
@@ -141,7 +141,7 @@ class LightChangeRecorder : IDisposable
 
     public void Retrace()
     {
-        RainEd.Instance.Window.EditMode = (int) EditModeEnum.Light;
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Light;
         var lightMap = RainEd.Instance.Level.LightMap;
 
         lightMap.RaylibBeginTextureMode();
@@ -159,15 +159,7 @@ class LightChangeRecorder : IDisposable
 
             foreach (var atom in thisStroke.atoms)
             {
-                var tex = RainEd.Instance.LightBrushDatabase.Brushes[atom.brush].Texture;
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    new Vector2(atom.rect.Width, atom.rect.Height) / 2f,
-                    atom.rotation,
-                    atom.mode ? Color.Black : Color.White
-                );
+                LightMap.DrawAtom(atom);
             }
         }
     }

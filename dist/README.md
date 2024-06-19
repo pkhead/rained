@@ -1,25 +1,26 @@
-# RAINED LEVEL EDITOR!!!
+# Rained Level Editor
+Read LICENSE.md for software licenses to the open-source libraries I have used.
 
-Read LICENSE.md for software licenses
+This is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server or Rain World Modding Academy server. I also accept DMs. Hope you like it!
 
+Also, if you are on Windows and Rained fails to even open a window when launching it, it's probably because you are missing the Microsoft Visual Studio C++ runtime package.  It can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe). (I might figure out how to remove that requirement at a later date.)
+
+## Updates
 Check https://github.com/pkhead/rained/releases for any new releases. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
-- preferences.json
-- imgui.ini
-- Data/
 - logs/
+- config/
+- scripts/
+- Your Data folder, if present
 
-Also, this is still in beta, so expect changes and bugs. Please report bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in the Rain World Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
+## Importing Custom Tiles, Props, or Materials
+You *can* do so by editing the Init.txt files manually and copying over the graphics and stuff... Or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first. I'll think of a way to change that...
 
-The Data folder in this zip does not contain all the level files used in the vanilla game and More Slugcats. I did this to decrease download and decompression time.
-If you want all of the levels, you can download them from this repository:
-https://github.com/SlimeCubed/Drizzle.Data/tree/community ([Direct download](https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip))
-
-Some usability hints, as I don't yet know a better place to put this:
+## Quick Start
+If you've used a Rain World level editor before, how to use Rained hopefully shouldn't be too obtuse. But here are some notes on new stuff I added:
 - Check out the menus (on the top) and the shortcuts!
-  (In the future I may make keyboard actions in each editor accessible through a menu)
 - In the effects editor, you can drag effect slots up and down in the active effects list.
 - You can also delete effect slots by right-clicking on them.
-- In the prop editor, double-click or press N in the level to add a prop.
+- In the prop editor, double-click (or press C) in the level to add a prop.
 - When vertex mode is on in the prop editor, the outline colors for each prop mean different things about the way they're moved/rotated/scaled:
   - Blue: The scale axis is determined by the prop's rotation - this will keep rectangles rectangles.
   - White: In contrast to blue, the scale axis is not determined by its rotation - it will be distorted if it's rotated.
@@ -28,10 +29,20 @@ Some usability hints, as I don't yet know a better place to put this:
 - If you scale multiple props, it will force proportional scaling.
 - You can use your mouse to manipulate the light circle in the light editor.
 
-Here are some tips on using Dear ImGui (the GUI library I'm using):
+If you do not like the default keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
+accessible by going to the "File" clicking on "Preferences".
+
+Here are some tips on using the GUI elements:
 - You can freely move and resize docks (e.g. the level dock, the build dock, the shortcuts dock, etc).
 - In the prop editor, some inputs for the prop options are drag inputs, meaning that to change them you
   click and drag left/right in the box.
 - Experiment with activating inputs with a modifier key down (ctrl, shift, alt).
 
-Hope you like it!
+## Autosaving
+Rained does not have a system that auto-saves the level periodically. However, it does automatically save the current state
+of the level to a different file if it catches a fatal exception and crashes, which should be an adequate alleviator.
+I would recommend pressng Ctrl+S every minute anyway.
+
+## Scripting
+Rained has a Lua scripting API, used for autotiling and level manipulation.
+For "documentation", check `scripts/init.lua`, `scripts/definition/rained.defs.lua`, and look at the built-in scripts as examples.

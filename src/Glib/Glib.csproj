@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.Input" Version="2.21.0" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.21.0" />
+    <PackageReference Include="Silk.NET.Windowing" Version="2.21.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Silk.NET.OpenGL.Extensions.ImGui/Silk.NET.OpenGL.Extensions.ImGui.csproj" />
+  </ItemGroup>
+
+</Project>

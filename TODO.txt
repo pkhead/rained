@@ -3,79 +3,49 @@ geo-improvements;
 - move selected, add wall (selection clears), undo, redo, bug: selection doesn't clear
 - objects don't display in selection
 
-Changes for Next Minor Update:
-- render shortcuts in tile editor when hovering over them
-- slope rect mode
-- Remove set default material keybind?
-- Showing geo specs in tile preview?
-- GEO EDITOR SELECT-COPY-PASTE
-- keep track of recent files
-- view option to show camera border
-- geo mirror
-- rect/material tile place
-- change geo spec color
-- view geo specs in tile preview?
+Priority:
+- configurable tile spec colors
+- dissolve material/tile separation
 
 Bugs:
 - change history doesn't work well with level resize
-- crashes when calling UnloadMesh on Debian Linux
+- fix weird bug where keyboard release doesn't get registered
+- weird graphical issue on certain drivers when level is out of bounds
+  - already figured this out, fix is on the glib branch (though doesn't actually require glib)
 
 Overall:
-- shortcut window: General and Current sections (not tabs)
-- keyboard replacements for scroll wheel stuff
-- auto-recovery saves (main problem is figuring out how to do it non-blocking)
-  - probably just create a copy of the level on the main thread, and save it on another? still would probably freeze app for a bit
-- combine geo and tile editor
-- configurable geo colors
-- configurable keybinds
-- configurable theme
-- check for latest version using https://api.github.com/repos/pkhead/rained/releases/latest
+- client code mouse position doesn't work with multi-viewports
+- autotile joining
+  - option to join only inner tiles
+  - ability to recognize more than one tile as a direction type
+- new level screen
+- favorite tiles and props
+- move away from Raylib, perhaps use a single windowing/graphics library like SFML or Silk.NET or Veldrid
 - Move Level
 - undo/redo for level resize
 - level resze drag
 - help pages/hints/tooltips/whatever
-- Edit/View menu buttons for specific editors
-  e.g. New Camera button in camera editor,
-  no copy/paste in light/effects editor
 - tile cat# and index# saving is probably incorrect
-- favorite tiles and props
-- fix trans flag prop loading
 - option to use "legacy" shortcut icons
-- CUSTOM MATERIALS
-
-Post-Full Release:
-(full release will include a combined geo and tile editor)
-- custom tile/prop manager
-- tile init editor
-- ability to change directory of drizzle data folder
-  (so people don't have to copy files or symlink) 
 
 Geometry Editor:
+- mirror tool
 - select and copy/paste
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
-- ability to view tiles (hm... what if i combined geo/tile editor?)
 - keyboard shortcut for shortcut & shortcut dots
-- optimized cell change recorder
-  (i.e. record specific changes in user code instead of scanning the entire level for such)
-  (though, after implementing LevelCell.Equals manually, the pause is barely noticeable)
-
-NOTE: shortcut entrances always have an object of type 4. (dunno why, probably some leftovers from an older impl)
 
 Tile Editor:
-- make 2nd geo spec layer a lighter red 
-- optimize tile rendering
-- customizable autotiling (what's a way to do this without scripting?)
-- force geo on materials (hm... what if i combined geo/tile editor?)
-- G+right click is buggy with specs2 (really?)
+- make 2nd geo spec layer a lighter red
 
 Camera Editor:
 - render order
+  - cameras show a number on the top left corner of their bounds (this is the render order)
+  - you can change the render order in the Edit menu with the "Set First" button
 
 Light Editor:
-- save intermediate textures for change history
-  (i guess once per every 1000 stroke atoms or something)
 - toggle view shadow plane and occlusion plane
+- prop/tile as brush
 
 Effects Editor:
 - WASD navigation
@@ -88,129 +58,4 @@ Prop Editor:
   freeform props should flip about the center of the AABB
 
 Render:
-- select camera to render first
 - show time elapsed
-- show light render stage
-- if possible, show coloring stage, although i don't think
-  drizzle has the code required to show that?
-
-tile data format (from rwe+):
-    {"tp": "tileHead", "data": ["point(C, T)", "N"]}
-    C = Category ID (starting from 1) plus 2 (Stone = 3, Machinery = 15, Misc = 12)
-    T = Tile index starting from 1
-    N = tile name
-
-    {"tp": "tileBody", "data": ["PT", L]}
-    PT = location of the tile head plus (1, 1)
-    L = layer
-
-    {"tp": "material", "data": "N"}
-    N = material name
-
-    {"tp": "default": "data": 0}
-
-FX MATRIX FORMAT
-  {
-    #nm: string
-    #tp: "nn" | "standardErosion" (don't really know what this means),
-    #crossScreen: 0 (idk what this means, but it is effect-specific),
-    #mtrx: (2d array with values ranging from 0 to 100)
-    #Options: [
-      [
-        section Header as string,
-        options as string array (no options = empty array),
-        selected value? (string, but a number is used for seed)
-      ]
-    ],
-
-    [if #tp == "standardErosion"] (
-      #repeats: number (idk what this does, but it is effect-specific)
-      #affectOpenAreas: number (idk what this does either, but it is effect-specific)
-    )
-  }
-
-PROP INIT FORMAT
-  [
-    #nm: string
-    #tp: "standard" | "soft" | "variedStandard" | "simpleDecal" | "variedSoft" | "variedDecal" | "antimatter" | "coloredSoft"
-
-    #colorize?: integer
-
-    if tp == "standard" | "variedStandard" (
-      #colorTreatment: "standard" | "bevel"
-      
-      if colorTreatment == "bevel" (
-        #bevel: integer  
-      )
-
-      #sz: point
-      #repeatL: int[]
-    )
-
-    if tp == "variedStandard" (
-      #vars: integer
-      #random: integer
-    )
-
-    if tp == "variedSoft" | "variedDecal" (
-      #pxlSize: point
-      #vars: integer
-      #random: integer
-    )
-
-    if tp == "coloredSoft" (
-      #pxlSize: point
-    )
-
-    if tp == "soft" (
-      #depth: integer
-      #round: integer
-      #contourExp: float
-      #selfShade: integer
-      #highLightBorder: float
-      #depthAffectHilites: float
-      #shadowBorder: float
-      #smoothShading: integer
-    )
-
-    if tp == "simpleDecal" | tp == "variedDecal" (
-      #depth: integer
-    )
-
-    if tp == "antimatter" (
-      #depth: number
-      #contourExp: number
-    )
-
-    #tags: ("randomRotat" | "snapToGrid" | "Circular Sign" | "randomFlipX" | "randomFlipY")[]
-    #layerExceptions: []
-    #notes: string[]
-  ]
-
-PROP LEVEL FORMAT
-    (sorted from ascending to descending their sublayer origin (when positive))
-
-    PROPDATA: [
-      sublayer origin as negative integer
-      name as string
-      point(category#, tile#) (Cogs and Gears = 1)
-      array for quad corners, starting from top-left and continuing clockwise. 16 units = 1 cell
-      [
-        #settings: [
-          #renderorder: any integer
-          #seed: integer [0,1000]
-          #renderTime: 0 = PreEffects; 1 = PostEffects
-          #customDepth?: integer
-          #color?: integer index into colors list, 1-indexed
-          #variation?: integer, starting from 1
-          #applyColor?: 1 if true, 0 if false
-          #release?: (rope release mode) -1 = Left, 0 = None, 1 = Right
-
-        ],
-        #points: point[] (if rope-type prop)
-      ]
-    ]
-
-    [
-      #props: PROPDATA[]
-    ]

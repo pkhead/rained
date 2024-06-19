@@ -2,7 +2,7 @@ using System.Numerics;
 using System.Text;
 namespace RainEd.Lingo;
 
-class LingoParser
+public class LingoParser
 {
     private readonly Queue<Token> tokens = new();
 
@@ -20,7 +20,7 @@ class LingoParser
                 tokens.Enqueue(tok);
             }
             
-            return ReadValue();
+            return ParseExpression();
         }
 
         // do this because even level file reading is janky
@@ -51,6 +51,17 @@ class LingoParser
 
     private float ExpectNumber()
     {
+        int sign = 1;
+
+        // check if there is a hyphen before the number
+        // meaning that the number will be negative
+        var signTok = PeekToken();
+        if (signTok.Type == TokenType.Hyphen)
+        {
+            PopToken();
+            sign = -1;
+        }
+
         var tok = PopToken();
         if (tok.Type != TokenType.Integer && tok.Type != TokenType.Float)
         {
@@ -59,13 +70,13 @@ class LingoParser
 
         var v = tok.Value!;
         if (tok.Type == TokenType.Integer)
-            return (float) (int) v;
+            return (float)(int)v * sign;
         else
-            return (float) v;
+            return (float)v * sign;
     }
 
     // this assumes the open bracket was already popped off
-    private List ReadList()
+    private List ParseList()
     {
         List list = new();
         if (PeekToken().Type == TokenType.CloseBracket){
@@ -81,13 +92,13 @@ class LingoParser
             {
                 PopToken();
                 Expect(TokenType.Colon);
-                object? value = ReadValue();
+                object? value = ParseExpression();
                 if (value is not null)
                     list.fields[(string) initTok.Value!] = value;
             }
             else if (initTok.Type != TokenType.Void)
             {
-                var value = ReadValue()!;
+                var value = ParseExpression()!;
                 list.values.Add(value);
             }
             else
@@ -103,7 +114,7 @@ class LingoParser
         return list;
     }
 
-    private object? ReadValue()
+    private object? ParseValue()
     {
         var tok = PopToken();
         switch (tok.Type)
@@ -111,13 +122,30 @@ class LingoParser
             case TokenType.Void:
                 return null;
 
-            case TokenType.String:
-            case TokenType.Float:
-            case TokenType.Integer:
+            case TokenType.String: case TokenType.StringConstant:
+            case TokenType.Float: case TokenType.FloatConstant:
+            case TokenType.Integer: case TokenType.IntConstant:
                 return tok.Value;
             
+            case TokenType.Hyphen:
+            {
+                var number = PopToken();
+                if (number.Type == TokenType.Float || number.Type == TokenType.FloatConstant)
+                {
+                    return -(float)number.Value!;
+                }
+                else if (number.Type == TokenType.Integer || number.Type == TokenType.IntConstant)
+                {
+                    return -(int)number.Value!;
+                }
+                else
+                {
+                    throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected float or integer, got {tok.Type}");
+                }
+            }
+            
             case TokenType.OpenBracket:
-                return ReadList();
+                return ParseList();
             
             case TokenType.KeywordColor:
             {
@@ -168,5 +196,43 @@ class LingoParser
 
         
         throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
+    }
+
+    private object? ParseExpression()
+    {
+        var accumValue = ParseValue();
+
+        while (tokens.Count > 0)
+        {
+            var op = PeekToken();
+
+            switch (op.Type)
+            {
+                // ampersand: string concatenation operator
+                case TokenType.Ampersand:
+                {
+                    PopToken();
+                    
+                    var nextValue = ParseValue();
+
+                    // check that both arguments are a string
+                    if (accumValue is not string strLeft || nextValue is not string strRight)
+                    {
+                        var typeA = accumValue?.GetType().Name ?? "null";
+                        var typeB = nextValue?.GetType().Name ?? "null";
+                        throw new ParseException($"{op.Line}:{op.CharOffset}: Attempt to concatenate {typeA} with {typeB}");
+                    }
+
+                    accumValue = strLeft + strRight;
+                    break;
+                }
+                
+                default:
+                    goto endLoop;
+            }
+        }
+        endLoop:;
+
+        return accumValue;
     }
 }

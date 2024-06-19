@@ -1,5 +1,5 @@
 using ImGuiNET;
-using rlImGui_cs;
+
 using System.Diagnostics;
 using System.Numerics;
 namespace RainEd;
@@ -18,8 +18,7 @@ static class AboutWindow
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
@@ -27,14 +26,23 @@ static class AboutWindow
             rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
             // TODO: version number, build date, os/runtime information, library licenses
-            rlImGui.Image(rainedLogo);
+            ImGuiExt.Image(rainedLogo);
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");
             ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");
             LinkText("GitHub", "https://github.com/pkhead/rained");
+
+            // notify user of a new version
+            if (RainEd.Instance.LatestVersionInfo is not null && RainEd.Instance.LatestVersionInfo.VersionName != RainEd.Version)
+            {
+                ImGui.NewLine();
+                ImGui.Text("New version available!");
+                ImGui.SameLine();
+                LinkText(RainEd.Instance.LatestVersionInfo.VersionName, RainEd.Instance.LatestVersionInfo.GitHubReleaseUrl);
+            }
             
-            ImGui.SeparatorText("Licenses");
+            ImGui.SeparatorText("Libraries");
             
             ImGui.Bullet();
             LinkText("Drizzle", "https://github.com/pkhead/Drizzle");

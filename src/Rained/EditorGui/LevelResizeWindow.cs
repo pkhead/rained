@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-using rlImGui_cs;
+
 namespace RainEd;
 
 class LevelResizeWindow
@@ -44,7 +44,7 @@ class LevelResizeWindow
         if (!IsWindowOpen) return;
 
         var winFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoDocking;
-        ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetWorkCenter(), ImGuiCond.Once, new Vector2(0.5f, 0.5f));
+        ImGuiExt.CenterNextWindow(ImGuiCond.Once);
         if (ImGui.Begin("Resize Level", ref IsWindowOpen, winFlags))
         {
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
@@ -65,20 +65,23 @@ class LevelResizeWindow
                 ImGui.EndGroup();
 
                 // screen size, using the formula from the modding wiki
-                ImGui.SameLine();
-                ImGui.BeginGroup();
-                if (ImGui.InputFloat("Screen Width", ref screenW))
+                if (!RainEd.Instance.Preferences.HideScreenSize)
                 {
-                    newWidth = (int)(screenW * 52f + 20f);
-                }
-                screenW = Math.Max(screenW, 0);
+                    ImGui.SameLine();
+                    ImGui.BeginGroup();
+                    if (ImGui.InputFloat("Screen Width", ref screenW))
+                    {
+                        newWidth = (int)(screenW * 52f + 20f);
+                    }
+                    screenW = Math.Max(screenW, 0);
 
-                if (ImGui.InputFloat("Screen Height", ref screenH))
-                {
-                    newHeight = (int)(screenH * 40f + 3f);
+                    if (ImGui.InputFloat("Screen Height", ref screenH))
+                    {
+                        newHeight = (int)(screenH * 40f + 3f);
+                    }
+                    screenH = Math.Max(screenH, 0); // minimum value is 1
+                    ImGui.EndGroup();
                 }
-                screenH = Math.Max(screenH, 0); // minimum value is 1
-                ImGui.EndGroup();
             }
 
             ImGui.SeparatorText("Anchors");
@@ -137,7 +140,7 @@ class LevelResizeWindow
                             // need to check it here
                         }
 
-                        if (rlImGui.ImageButtonRect(
+                        if (ImGuiExt.ImageButtonRect(
                             "##button",
                             RainEd.Instance.LevelGraphicsTexture, 20, 20,
                             new Rectangle(textureX * 20, textureY * 20, 20, 20)
@@ -168,6 +171,8 @@ class LevelResizeWindow
                 newBufB = Math.Max(newBufB, 0);
 
                 ImGui.PopItemWidth();
+
+                ImGui.Separator();
 
                 if (ImGui.Button("OK"))
                 {

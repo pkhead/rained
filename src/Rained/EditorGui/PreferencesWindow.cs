@@ -1,37 +1,61 @@
 using System.Numerics;
 using ImGuiNET;
-using RainEd;
+using Raylib_cs;
 
+// i probably should create an IGUIWindow interface for the various miscellaneous windows...
+namespace RainEd;
 static class PreferencesWindow
 {
     private const string WindowName = "Preferences";
-    public static bool IsWindowOpen = false;
+    private static bool isWindowOpen = false;
+    public static bool IsWindowOpen { get => isWindowOpen; }
 
     enum NavTabEnum : int
     {
         General = 0,
-        Shortcuts = 1
+        Shortcuts = 1,
+        Theme = 2,
+        Assets = 3,
+        Drizzle = 4
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
+    private static DrizzleConfiguration? activeDrizzleConfig = null;
+
+    private static bool openPopupCmd = false;
+    public static void OpenWindow()
+    {
+        openPopupCmd = true;
+    }
 
     public static void ShowWindow()
     {
-        if (!ImGui.IsPopupOpen(WindowName) && IsWindowOpen)
+        bool justOpened = false;
+
+        if (openPopupCmd)
         {
+            justOpened = true;
+            openPopupCmd = false;
+            isWindowOpen = true;
             ImGui.OpenPopup(WindowName);
 
             // center popup modal
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.FirstUseEver);
         }
 
-        if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen))
+        // keep track of this, as i want to clear some data
+        // when the following tabs are no longer shown
+        bool showAssetsTab = false;
+        bool showRenderSettingsTab = false;
+
+        if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
         {
+            var lastNavTab = selectedNavTab;
+
             // show navigation sidebar
             ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
             {
@@ -48,16 +72,33 @@ static class PreferencesWindow
             ImGui.SameLine();
             ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
             
-            if (selectedNavTab == NavTabEnum.General)
+            switch (selectedNavTab)
             {
-                ShowGeneralTab();
-            }
-            else if (selectedNavTab == NavTabEnum.Shortcuts)
-            {
-                ShowShortcutsTab();
+                case NavTabEnum.General:
+                    ShowGeneralTab(justOpened || lastNavTab != selectedNavTab);
+                    break;
+
+                case NavTabEnum.Shortcuts:
+                    ShowShortcutsTab();
+                    break;
+
+                case NavTabEnum.Theme:
+                    ShowThemeTab(justOpened || lastNavTab != selectedNavTab);
+                    break;
+                
+                case NavTabEnum.Assets:
+                    AssetManagerGUI.Show();
+                    showAssetsTab = true;
+                    break;
+                
+                case NavTabEnum.Drizzle:
+                    ShowDrizzleTab();
+                    showRenderSettingsTab = true;
+                    break;
             }
 
             ImGui.EndChild();
+            ImGui.EndPopup();
         }
         else
         {
@@ -86,45 +127,326 @@ static class PreferencesWindow
                 if (ImGui.IsKeyDown(ImGuiKey.ModSuper)) modFlags |= ImGuiModFlags.Super;
 
                 // find the key that is currently pressed
-                for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+                if (Raylib.IsKeyPressed(KeyboardKey.Tab))
                 {
-                    ImGuiKey key = (ImGuiKey) ki;
-                    
-                    // don't process if this is a modifier key
-                    if (key == ImGuiKey.LeftShift || key == ImGuiKey.RightShift
-                        || key == ImGuiKey.LeftCtrl || key == ImGuiKey.RightCtrl
-                        || key == ImGuiKey.LeftAlt || key == ImGuiKey.RightAlt
-                        || key == ImGuiKey.LeftSuper || key == ImGuiKey.RightSuper
-                        || key == ImGuiKey.ReservedForModAlt
-                        || key == ImGuiKey.ReservedForModCtrl
-                        || key == ImGuiKey.ReservedForModShift
-                        || key == ImGuiKey.ReservedForModSuper
-                    )
-                        continue;
-                    
-                    if (ImGui.IsKeyPressed(key))
+                    KeyShortcuts.Rebind(activeShortcut, ImGuiKey.Tab, modFlags);
+                    activeShortcut = KeyShortcut.None;
+                }
+                else
+                {
+                    for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
                     {
-                        // rebind the shortcut to this key
-                        KeyShortcuts.Rebind(activeShortcut, key, modFlags);
-                        activeShortcut = KeyShortcut.None;
-                        break;
+                        ImGuiKey key = (ImGuiKey) ki;
+                        
+                        // don't process if this is a modifier key
+                        if (KeyShortcuts.IsModifierKey(key))
+                            continue;
+                        
+                        if (ImGui.IsKeyPressed(key))
+                        {
+                            // rebind the shortcut to this key
+                            KeyShortcuts.Rebind(activeShortcut, key, modFlags);
+                            activeShortcut = KeyShortcut.None;
+                            break;
+                        }
                     }
                 }
             }
         }
+
+        if (!showAssetsTab)
+        {
+            AssetManagerGUI.Unload();
+        }
+
+        if (!showRenderSettingsTab)
+        {
+            activeDrizzleConfig = null;
+        }
     }
 
-    private static void ShowGeneralTab()
+    private static Vector3 layerColor1;
+    private static Vector3 layerColor2;
+    private static Vector3 layerColor3;
+    private static Vector3 bgColor;
+
+    private static void ShowGeneralTab(bool entered)
     {
-        ImGui.Text("Lorem ipsum dolor sit amet");
+        static Vector3 HexColorToVec3(HexColor color) => new(color.R / 255f, color.G / 255f, color.B / 255f);
+        static HexColor Vec3ToHexColor(Vector3 vec) => new(
+            (byte)(Math.Clamp(vec.X, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Y, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Z, 0f, 1f) * 255f)
+        );
+
+        var prefs = RainEd.Instance.Preferences;
+        
+        ImGui.SeparatorText("Level Colors");
+        {
+            ImGui.Separator();
+
+            if (entered)
+            {
+                layerColor1 = HexColorToVec3(prefs.LayerColor1);
+                layerColor2 = HexColorToVec3(prefs.LayerColor2);
+                layerColor3 = HexColorToVec3(prefs.LayerColor3);
+                bgColor = HexColorToVec3(prefs.BackgroundColor);
+            }
+
+            ImGui.ColorEdit3("##Layer Color 1", ref layerColor1);
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC1"))
+            {
+                layerColor1 = new HexColor("#000000").ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 1");
+
+            ImGui.ColorEdit3("##Layer Color 2", ref layerColor2);
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC2"))
+            {
+                layerColor2 = new HexColor("#59ff59").ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 2");
+
+            ImGui.ColorEdit3("##Layer Color 3", ref layerColor3);
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetLC3"))
+            {
+                layerColor3 = new HexColor("#ff1e1e").ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Layer Color 3");
+
+            ImGui.ColorEdit3("##Background Color", ref bgColor);
+
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetBGC"))
+            {
+                bgColor = new HexColor(127, 127, 127).ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Background Color");
+
+            // update layer colors in preferences class
+            prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
+            prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
+            prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
+            prefs.BackgroundColor = Vec3ToHexColor(bgColor);
+
+            // TODO: font scale
+        }
+
+        ImGui.SeparatorText("Miscellaneous");
+        {
+            // they've brainwashed me to not add this
+            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
+            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
+            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
+
+            bool versionCheck = prefs.CheckForUpdates;
+            if (ImGui.Checkbox("Check for updates", ref versionCheck))
+                prefs.CheckForUpdates = versionCheck;
+            
+            bool hideScreenSize = prefs.HideScreenSize;
+            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
+                prefs.HideScreenSize = hideScreenSize;
+            
+            bool optimizedTile = prefs.OptimizedTilePreviews;
+            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
+                prefs.OptimizedTilePreviews = optimizedTile;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will optimize tile preview rendering such
+                that only tile cells located in the bounds of
+                its tile head will be rendered. If this option
+                is turned off, all tile bodies will be
+                processed regardless or not if it is within the
+                bounds of its tile head.
+
+                Turning this off may be useful if you have very
+                erroneous tiles in a level and want to see them,
+                but otherwise there is no reason to do so.
+                """
+            );
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            bool multiViewport = prefs.ImGuiMultiViewport;
+            if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
+                prefs.ImGuiMultiViewport = multiViewport;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                Turning this on will allow inner windows to
+                go outside of the bounds of the main window.
+                This option requires a restart in order to
+                take effect.
+                """
+            );
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+            
+            // camera border view mode
+            var camBorderMode = (int) prefs.CameraBorderMode;
+            if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
+                prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
+            
+            // autotile mouse mode
+            var autotileMouseMode = (int) prefs.AutotileMouseMode;
+            if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
+                prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions) autotileMouseMode;
+            
+            ImGui.PopItemWidth();
+        }
     }
 
     private static void ShowShortcutsTab()
     {
+        ImGui.SeparatorText("Accessibility");
+        ShortcutButton(KeyShortcut.RightMouse);
+        
+        ImGui.SeparatorText("General");
+        ShortcutButton(KeyShortcut.ViewZoomIn);
+        ShortcutButton(KeyShortcut.ViewZoomOut);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.Undo);
+        ShortcutButton(KeyShortcut.Redo);
+        ShortcutButton(KeyShortcut.Cut);
+        ShortcutButton(KeyShortcut.Copy);
+        ShortcutButton(KeyShortcut.Paste);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.New);
+        ShortcutButton(KeyShortcut.Open);
+        ShortcutButton(KeyShortcut.Save);
+        ShortcutButton(KeyShortcut.SaveAs);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.Render);
+        ShortcutButton(KeyShortcut.ExportGeometry);
+
+        ImGui.SeparatorText("Editing");
         ShortcutButton(KeyShortcut.NavUp);
+        ShortcutButton(KeyShortcut.NavDown);
+        ShortcutButton(KeyShortcut.NavLeft);
+        ShortcutButton(KeyShortcut.NavRight);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.NewObject);
+        ShortcutButton(KeyShortcut.RemoveObject);
+        ShortcutButton(KeyShortcut.Duplicate);
+        ShortcutButton(KeyShortcut.Eyedropper);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.SwitchLayer);
+        ShortcutButton(KeyShortcut.SwitchTab);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.IncreaseBrushSize);
+        ShortcutButton(KeyShortcut.DecreaseBrushSize);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.ToggleViewGrid);
+        ShortcutButton(KeyShortcut.ToggleViewTiles);
+        ShortcutButton(KeyShortcut.ToggleViewProps);
+        ShortcutButton(KeyShortcut.ToggleViewCameras);
+
+        ImGui.SeparatorText("Geometry");
+        ShortcutButton(KeyShortcut.ToggleLayer1);
+        ShortcutButton(KeyShortcut.ToggleLayer2);
+        ShortcutButton(KeyShortcut.ToggleLayer3);
+
+        ImGui.SeparatorText("Tiles");
+        ShortcutButton(KeyShortcut.SetMaterial);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.TileForceGeometry);
+        ShortcutButton(KeyShortcut.TileForcePlacement);
+        ShortcutButton(KeyShortcut.TileIgnoreDifferent);
+
+        ImGui.SeparatorText("Cameras");
+        ShortcutButton(KeyShortcut.CameraSnapX);
+        ShortcutButton(KeyShortcut.CameraSnapY);
+
+        ImGui.SeparatorText("Light");
+        ShortcutButton(KeyShortcut.ResetBrushTransform);
+        ShortcutButton(KeyShortcut.ScaleLightBrush);
+        ShortcutButton(KeyShortcut.RotateLightBrush);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.ZoomLightIn);
+        ShortcutButton(KeyShortcut.ZoomLightOut);
+        ShortcutButton(KeyShortcut.RotateLightCW);
+        ShortcutButton(KeyShortcut.RotateLightCCW);
+
+        ImGui.SeparatorText("Props");
+        ShortcutButton(KeyShortcut.ToggleVertexMode);
     }
 
-    private static void ShortcutButton(KeyShortcut id)
+    private static readonly List<string> availableThemes = [];
+    private static bool initTheme = true;
+
+    private static void ReloadThemeList()
+    {
+        availableThemes.Clear();
+        foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "config", "themes")))
+        {
+            var ext = Path.GetExtension(fileName);
+            if (ext != ".json" && ext != ".jsonc") continue;
+            availableThemes.Add(Path.GetFileNameWithoutExtension(fileName));    
+        }
+        availableThemes.Sort();
+    }
+
+    private static void ShowThemeTab(bool entered)
+    {
+        if (initTheme)
+        {
+            initTheme = false;
+            ThemeEditor.ThemeSaved += ReloadThemeList;
+        }
+
+        // compile available themes when the tab is clicked
+        if (entered)
+        {
+            ReloadThemeList();        
+        }
+
+        ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12.0f);
+        if (ImGui.BeginCombo("Theme", RainEd.Instance.Preferences.Theme))
+        {
+            foreach (var themeName in availableThemes)
+            {
+                if (ImGui.Selectable(themeName, themeName == RainEd.Instance.Preferences.Theme))
+                {
+                    RainEd.Instance.Preferences.Theme = themeName;
+                    RainEd.Instance.Preferences.ApplyTheme();
+                    ThemeEditor.SaveRef();
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        if (ImGui.TreeNode("Theme Editor"))
+        {
+            ThemeEditor.Show();
+            ImGui.TreePop();
+        }
+    }
+
+    private static void ShortcutButton(KeyShortcut id, string? nameOverride = null)
     {
         ImGui.PushID((int) id);
 
@@ -135,10 +457,80 @@ static class PreferencesWindow
         }
 
         ImGui.SetItemTooltip(KeyShortcuts.GetShortcutString(id));
+        
+        // reset button
+        ImGui.SameLine();
+        if (ImGui.Button("X"))
+        {
+            KeyShortcuts.Reset(id);
+        }
+        ImGui.SetItemTooltip("Reset");
 
         ImGui.SameLine();
-        ImGui.Text(KeyShortcuts.GetName(id));
+        ImGui.Text(nameOverride ?? KeyShortcuts.GetName(id));
 
         ImGui.PopID();
+    }
+
+    private static void ShowDrizzleTab()
+    {
+        activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
+
+        static void ConfigCheckbox(string key)
+        {
+            bool v = activeDrizzleConfig!.GetConfig(key);
+            if (ImGui.Checkbox(key, ref v))
+            {
+                activeDrizzleConfig.TrySetConfig(key, v);
+                activeDrizzleConfig.SavePreferences();
+            }
+        }
+
+        ImGui.SeparatorText("Integration");
+
+        bool boolRef;
+        var prefs = RainEd.Instance.Preferences;
+
+        // static lingo runtime
+        {
+            boolRef = prefs.StaticDrizzleLingoRuntime;
+            if (ImGui.Checkbox("Initialize the Zygote runtime on app startup", ref boolRef))
+                prefs.StaticDrizzleLingoRuntime = boolRef;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will run the Zygote runtime initialization
+                process once, when the app starts. This results
+                in a longer startup time and more idle RAM
+                usage, but will decrease the time it takes to
+                start a render.
+
+                This option requires a restart in order to
+                take effect.    
+                """);
+        }
+
+        // show render preview
+        {
+            boolRef = prefs.ShowRenderPreview;
+            if (ImGui.Checkbox("Show render preview", ref boolRef))
+                prefs.ShowRenderPreview = boolRef;
+        }
+        
+        ImGui.SeparatorText("Configuration");
+
+        ConfigCheckbox("Grime on gradients");
+        ConfigCheckbox("Grime");
+        ConfigCheckbox("Material fixes");
+        ConfigCheckbox("Slime always affects editor decals");
+        ConfigCheckbox("notTrashProp fix");
+        ConfigCheckbox("Trash and Small pipes non solid");
+        ConfigCheckbox("Gradients with BackgroundScenes fix");
+        ConfigCheckbox("Invisible material fix");
+        ConfigCheckbox("Large trash debug log");
+        ConfigCheckbox("Rough Rock spreads more");
+        ConfigCheckbox("Tiles as props fix");
     }
 }

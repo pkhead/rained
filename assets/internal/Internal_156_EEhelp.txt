@@ -1,0 +1,1 @@
+Create new: Use the W, A, S, D keys and the spacebar to select an effect to add. Press E to edit effects added previously.

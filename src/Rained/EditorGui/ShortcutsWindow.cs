@@ -1,27 +1,27 @@
 using System.Numerics;
+using System.Text;
+using System.Text.RegularExpressions;
 using ImGuiNET;
 namespace RainEd;
 
-static class ShortcutsWindow
+static partial class ShortcutsWindow
 {
     public static bool IsWindowOpen = false;
     
     private readonly static string[] NavTabs = new string[] { "General", "Environment Edit", "Geometry Edit", "Tile Edit", "Camera Edit", "Light Edit", "Effects Edit", "Prop Edit" };
-    private static int selectedNavTab = 0;
-    private static int lastEditMode = -1;
 
     private readonly static (string, string)[][] TabData = new (string, string)[][]
     {
         // General
         [
             ("Scroll Wheel", "Zoom"),
+            ("[ViewZoomIn]/[ViewZoomOut]", "Zoom In/Out"),
             ("Middle Mouse", "Pan"),
             ("Alt+Left Mouse", "Pan"),
-            ("Ctrl+Z", "Undo"),
-            ("Ctrl+Shift+Z / Ctrl+Y", "Redo"),
-            ("Ctrl+R", "Render"),
-            ("Ctrl+T", "Toggle tile rendering"),
-            ("Ctrl+G", "Toggle grid"),
+            ("[Undo]", "Undo"),
+            ("[Redo]", "Redo"),
+            ("[Render]", "Render"),
+            ("[ExportGeometry]", "Export geometry"),
             ("1", "Edit environment"),
             ("2", "Edit geometry"),
             ("3", "Edit tiles"),
@@ -38,54 +38,59 @@ static class ShortcutsWindow
 
         // Geometry
         [
-            ("WASD", "Browse tool selector"),
+            ("[NavUp][NavLeft][NavDown][NavRight]", "Browse tool selector"),
             ("Left Mouse", "Place/remove"),
-            ("Right Mouse", "Remove"),
+            ("Right Mouse", "Remove object"),
             ("Shift+Left Mouse", "Rect fill"),
-            ("Tab", "Cycle layers"),
-            ("E", "Toggle layer 1"),
-            ("R", "Toggle layer 2"),
-            ("T", "Toggle layer 3"),
+            ("[SwitchLayer]", "Cycle layers"),
+            ("[ToggleLayer1]", "Toggle layer 1"),
+            ("[ToggleLayer2]", "Toggle layer 2"),
+            ("[ToggleLayer3]", "Toggle layer 3"),
         ],
 
         // Tile
         [
-            ("Tab", "Switch layer"),
-            ("Shift+Tab", "Switch selector tab"),
-            ("W/S", "Browse selected category"),
-            ("A/D", "Browse tile categories"),
+            ("[SwitchLayer]", "Switch layer"),
+            ("[SwitchTab]", "Switch selector tab"),
+            ("[NavUp]/[NavDown]", "Browse selected category"),
+            ("[NavLeft]/[NavRight]", "Browse tile categories"),
             ("Shift+Mouse Wheel", "Change material brush size"),
-            ("Q", "Sample tile from level"),
-            ("E", "Set selected to default material"),
+            ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change material brush size"),
+            ("[Eyedropper]", "Sample tile from level"),
+            ("[SetMaterial]", "Set selected to default material"),
             ("Left Mouse", "Place tile/material"),
             ("Right Mouse", "Remove tile/material"),
-            ("R+Left Mouse", "Disallow overwriting materials"),
-            ("R+Right Mouse", "Disallow erasing other materials"),
-            ("F+Left Mouse", "Force tile placement"),
-            ("G+Left Mouse", "Force tile geometry"),
-            ("G+Right Mouse", "Remove tile and geometry"),
+            ("Shift+Left Mouse", "Rect fill tile/material"),
+            ("Shift+Right Mouse", "Rect remove tile/material"),
+            ("[TileIgnoreDifferent]+Left Mouse", "Ignore differing materials"),
+            ("[TileIgnoreDifferent]+Left Mouse", "Ignore materials or tiles"),
+            ("[TileForcePlacement]+Left Mouse", "Force tile placement"),
+            ("[TileForceGeometry]+Left Mouse", "Force tile geometry"),
+            ("[TileForceGeometry]+Right Mouse", "Remove tile and geometry"),
         ],
 
         // Camera
         [
             ("Double-click", "Create camera"),
-            ("N", "Create camera"),
+            ("[NewObject]", "Create camera"),
             ("Left Mouse", "Select camera"),
             ("Right Mouse", "Reset camera corner"),
-            ("Backspace/Delete", "Delete selected camera"),
-            ("Ctrl+D", "Duplicate selected camera"),
-            ("W/S", "Snap X to other cameras"),
-            ("A/D", "Snap Y to other cameras"),
+            ("[RemoveObject]", "Delete selected camera"),
+            ("[Duplicate]", "Duplicate selected camera"),
+            ("[CameraSnapX]/[NavUp]/[NavDown]", "Snap X to other cameras"),
+            ("[CameraSnapY]/[NavLeft]/[NavRight]", "Snap Y to other cameras"),
         ],
 
         // Light
         [
-            ("WASD", "Browse brush catalog"),
-            ("Shift+W/D", "Change light distance"),
-            ("Shift+A/D", "Change light angle"),
-            ("Q+Mouse Move", "Scale brush"),
-            ("E+Mouse Move", "Rotate brush"),
-            ("R", "Reset brush transform"),
+            ("[NavUp][NavLeft][NavDown][NavRight]", "Browse brush catalog"),
+            ("[ZoomLightIn]", "Move light inward"),
+            ("[ZoomLightOut]", "Move light outward"),
+            ("[RotateLightCW]", "Rotate light clockwise"),
+            ("[RotateLightCCW]", "Rotate light counter-clockwise"),
+            ("[ScaleLightBrush]+Mouse Move", "Scale brush"),
+            ("[RotateLightBrush]+Mouse Move", "Rotate brush"),
+            ("[ResetBrushTransform]", "Reset brush transform"),
             ("Left Mouse", "Paint shadow"),
             ("Right Mouse", "Paint light"),
         ],
@@ -95,50 +100,61 @@ static class ShortcutsWindow
             ("Left Mouse", "Paint effect"),
             ("Shift+Left Mouse", "Paint effect stronger"),
             ("Right Mouse", "Erase effect"),
-            ("Shift+Mouse Wheel", "Change brush size")
+            ("Shift+Mouse Wheel", "Change brush size"),
+            ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change brush size"),
         ],
 
         // Props
         [
-            ("Tab", "Switch layer"),
-            ("Shift+Tab", "Switch selector tab"),
-            ("W/S", "Browse selected category"),
-            ("A/D", "Browse prop categories"),
-            ("Q", "Sample prop under mouse"),
-            ("Double-click", "Create prop"),
-            ("N", "Create prop"),
+            ("[SwitchLayer]", "Switch layer"),
+            ("[SwitchTab]", "Switch selector tab"),
+            ("[NavUp]/[NavDown]", "Browse selected category"),
+            ("[NavLeft]/[NavRight]", "Browse prop categories"),
+            ("[Eyedropper]", "Sample prop under mouse"),
+            ("Right-click", "Create prop"),
+            ("[NewObject]", "Create prop"),
             ("Left Mouse", "Select prop"),
             ("Shift+Left Mouse", "Add prop to selection"),
-            ("Right Mouse", "Find prop(s) under the mouse"),
-            ("Backspace/Delete", "Delete selected prop(s)"),
-            ("F", "Toggle vertex mode"),
-            ("Ctrl+D", "Duplicate selected prop(s)"),
+            ("Double-click", "Find prop(s) under the mouse"),
+            ("[RemoveObject]", "Delete selected prop(s)"),
+            ("[ToggleVertexMode]", "Toggle vertex mode"),
+            ("[Duplicate]", "Duplicate selected prop(s)"),
         ]
     };
 
     public static void ShowWindow()
     {
-        var editMode = RainEd.Instance.Window.EditMode;
-
-        if (lastEditMode == -1)
-        {
-            lastEditMode = editMode;
-        }
-
-        if (editMode != lastEditMode)
-        {
-            // if not selected general, switch tab to whatever editor user is currently one
-            if (selectedNavTab > 0)
-                selectedNavTab = editMode + 1;
-            
-            lastEditMode = editMode;
-        }
-
         if (!IsWindowOpen) return;
 
+        var editMode = RainEd.Instance.LevelView.EditMode;
         if (ImGui.Begin("Shortcuts", ref IsWindowOpen))
         {
-            ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
+            if (ImGui.BeginTabBar("ShortcutTabs"))
+            {
+                if (ImGui.BeginTabItem("General"))
+                {
+                    ShowTab(0);
+                    ImGui.EndTabItem();
+                }
+
+                if (ImGui.BeginTabItem("Current Edit Mode"))
+                {
+                    ShowTab(editMode + 1);
+                    ImGui.EndTabItem();
+                }
+
+                ImGui.EndTabBar();
+            }
+            /*var halfWidth = ImGui.GetTextLineHeight() * 30.0f;
+            ImGui.BeginChild("General", new Vector2(halfWidth, ImGui.GetContentRegionAvail().Y));
+            ShowTab(0);
+            ImGui.EndChild();
+
+            ImGui.SameLine();
+            ImGui.BeginChild("Edit Mode", ImGui.GetContentRegionAvail());
+            ShowTab(editMode + 1);
+            ImGui.EndChild();*/
+            /*ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
             {
                 for (int i = 0; i < NavTabs.Length; i++)
                 {
@@ -153,27 +169,31 @@ static class ShortcutsWindow
             ImGui.SameLine();
             ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
             ShowTab();
-            ImGui.EndChild();
+            ImGui.EndChild();*/
         } ImGui.End();
     }
 
-    private static void ShowTab()
+    private static void ShowTab(int navTab)
     {
+        var strBuilder = new StringBuilder();
+
         var tableFlags = ImGuiTableFlags.RowBg;
         if (ImGui.BeginTable("ControlTable", 2, tableFlags))
         {
-            ImGui.TableSetupColumn("Shortcut");
+            ImGui.TableSetupColumn("Shortcut", ImGuiTableColumnFlags.WidthFixed, ImGui.GetTextLineHeight() * 10.0f);
             ImGui.TableSetupColumn("Action");
             ImGui.TableHeadersRow();
 
-            var tabData = TabData[selectedNavTab];
+            var tabData = TabData[navTab];
 
             for (int i = 0; i < tabData.Length; i++)
             {
                 var tuple = tabData[i];
+                var str = ShortcutRegex().Replace(tuple.Item1, ShortcutEvaluator);
+
                 ImGui.TableNextRow();
                 ImGui.TableSetColumnIndex(0);
-                ImGui.Text(tuple.Item1);
+                ImGui.Text(str);
                 ImGui.TableSetColumnIndex(1);
                 ImGui.Text(tuple.Item2);
             }
@@ -181,4 +201,13 @@ static class ShortcutsWindow
             ImGui.EndTable();
         }
     }
+
+    private static string ShortcutEvaluator(Match match)
+    {
+        var shortcutId = Enum.Parse<KeyShortcut>(match.Value[1..^1]);
+        return KeyShortcuts.GetShortcutString(shortcutId);
+    }
+
+    [GeneratedRegex("\\[(\\w+?)\\]")]
+    private static partial Regex ShortcutRegex();
 }

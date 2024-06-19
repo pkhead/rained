@@ -192,6 +192,22 @@ class TokenParser
                 ReadChar();
                 EndToken(TokenType.Colon);
                 break;
+            
+            case '&':
+            {
+                BeginToken();
+                ReadChar();
+                EndToken(TokenType.Ampersand);
+                break;
+            }
+
+            case '-':
+            {
+                BeginToken();
+                ReadChar();
+                EndToken(TokenType.Hyphen);
+                break;
+            }
 
             // symbol
             case '#':
@@ -224,52 +240,84 @@ class TokenParser
 
         default:
             // hyphen -- may be a negative number, or simply a hyphen
-            if (PeekChar() == '-')
-            {
-                BeginToken();
-                ReadChar();
-
-                if (char.IsDigit(PeekChar()))
-                {
-                    ParseNumber(true);
-                }
-                else
-                {
-                    throw new ParseException("Unexpected hyphen");
-                }
-            }
-
-            else if (char.IsDigit(PeekChar()))
+            if (char.IsDigit(PeekChar()))
             {
                 BeginToken();
                 ParseNumber();
             }
 
-            // keyword
+            // parse keywords and string constants
             else
             {
                 BeginToken();
                 var kw = ReadWord();
 
-                if (kw == "point")
+                switch (kw)
                 {
-                    EndToken(TokenType.KeywordPoint);
-                }
-                else if (kw == "color")
-                {
-                    EndToken(TokenType.KeywordColor);
-                }
-                else if (kw == "rect")
-                {
-                    EndToken(TokenType.KeywordRect);
-                }
-                else if (kw == "void")
-                {
-                    EndToken(TokenType.Void);
-                }
-                else
-                {
-                    Error($"Invalid keyword {kw}");
+                    case "point":
+                        EndToken(TokenType.KeywordPoint);
+                        break;
+                    
+                    case "color":
+                        EndToken(TokenType.KeywordColor);
+                        break;
+                    
+                    case "rect":
+                        EndToken(TokenType.KeywordRect);
+                        break;
+                    
+                    case "void":
+                        EndToken(TokenType.Void);
+                        break;
+
+                    // parse string constants
+                    case "BACKSPACE":
+                        EndToken(TokenType.StringConstant, "\b");
+                        break;
+                    
+                    case "EMPTY":
+                        EndToken(TokenType.StringConstant, string.Empty);
+                        break;
+                    
+                    case "ENTER":
+                        EndToken(TokenType.StringConstant, Environment.NewLine);
+                        break;
+                    
+                    case "FALSE":
+                        EndToken(TokenType.IntConstant, 0);
+                        break;
+                    
+                    case "PI":
+                        EndToken(TokenType.FloatConstant, MathF.PI);
+                        break;
+                    
+                    case "QUOTE":
+                        EndToken(TokenType.StringConstant, "\"");
+                        break;
+                    
+                    case "RETURN":
+                        EndToken(TokenType.StringConstant, "\r");
+                        break;
+                    
+                    case "SPACE":
+                        EndToken(TokenType.StringConstant, " ");
+                        break;
+                    
+                    case "TAB":
+                        EndToken(TokenType.StringConstant, "\t");
+                        break;
+                    
+                    case "TRUE":
+                        EndToken(TokenType.IntConstant, 1);
+                        break;
+                    
+                    case "VOID":
+                        EndToken(TokenType.Void);
+                        break;
+                    
+                    default:
+                        Error($"Invalid keyword {kw}");
+                        break;
                 }
             }
 

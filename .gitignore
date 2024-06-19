@@ -5,19 +5,26 @@
 # MSBuild output
 **/bin
 **/obj
-/build
+/build_win-x64
+/build_linux-x64
 
-# Visual Studio Code fieles
+# package output
+/rained_*.zip
+/rained_*.tar.gz
+
+# Cake Tool files
+/tools
+
+# Visual Studio Code files
 /.vscode
 
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated
 
-# rained user preferences
-/preferences.json
-
-# rained logs
-/logs
-
-# some distribution files
+# data
 /dist/Data
+/Data
+
+# rained-generated files
+/config/preferences.json
+/logs

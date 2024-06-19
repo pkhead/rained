@@ -1,3 +1,6 @@
+## Asset credits
+The files located in assets/internal and assets/light were created by Videocult and various community members. The app/window icon was created by quivel and pkhead.
+
 ## Rained
 Copyright 2024 pkhead
 

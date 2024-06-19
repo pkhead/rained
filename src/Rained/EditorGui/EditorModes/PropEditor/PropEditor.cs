@@ -1,14 +1,14 @@
 using ImGuiNET;
 using RainEd.Props;
 using Raylib_cs;
-using rlImGui_cs;
+
 using System.Numerics;
 namespace RainEd;
 
 partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
     
     private readonly List<Prop> selectedProps = new();
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
@@ -19,6 +19,9 @@ partial class PropEditor : IEditorMode
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
     private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
+    
+    private int initDepth = -1; // the depth of the last selected prop(s)
+    private bool isDoubleClick = false; // if mouse double clicks, wait until mouse release to open the selector popup
     
     private ChangeHistory.PropChangeRecorder changeRecorder;
 
@@ -51,7 +54,7 @@ partial class PropEditor : IEditorMode
 
     private ITransformMode? transformMode;
 
-    public PropEditor(EditorWindow window)
+    public PropEditor(LevelView window)
     {
         this.window = window;
         selectedInit = RainEd.Instance.PropDatabase.Categories[selectedPropGroup].Props[0];
@@ -116,6 +119,7 @@ partial class PropEditor : IEditorMode
 
     public void Load()
     {
+        isDoubleClick = false;
         selectedProps.Clear();
         transformMode = null;
         initSelectedProps = null;
@@ -188,11 +192,12 @@ partial class PropEditor : IEditorMode
         return MathF.Round(number / snap) * snap;
     }
 
-    private static Prop? GetPropAt(Vector2 point)
+    private static Prop? GetPropAt(Vector2 point, int layer)
     {
         for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
         {
             var prop = RainEd.Instance.Level.Props[i];
+            if (prop.DepthOffset < layer * 10) continue;
 
             var pts = prop.QuadPoints;
             if (
@@ -207,12 +212,14 @@ partial class PropEditor : IEditorMode
         return null;
     }
 
-    private static Prop[] GetPropsAt(Vector2 point)
+    private static Prop[] GetPropsAt(Vector2 point, int layer)
     {
         var list = new List<Prop>();
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
+            if (prop.DepthOffset < layer * 10) continue;
+
             var pts = prop.QuadPoints;
             if (
                 IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
@@ -280,23 +287,25 @@ partial class PropEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
+        var level = RainEd.Instance.Level;
+        var levelRender = window.Renderer;
 
         level.SortPropsByDepth();
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw geometry/tile layers
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-            if (window.ViewTiles) levelRender.RenderTiles(l, 100);
+            levelRender.RenderGeometry(l, LevelView.GeoColor(255));
+            if (drawTiles)
+                levelRender.RenderTiles(l, 100);
         }
 
         // draw alpha-blended result into main frame
@@ -307,15 +316,7 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -324,7 +325,7 @@ partial class PropEditor : IEditorMode
         {
             // draw layer into framebuffer
             Raylib.BeginTextureMode(layerFrames[l]);
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            Raylib.ClearBackground(Color.Blank);
             levelRender.RenderProps(l, 255);
         }
 
@@ -336,21 +337,14 @@ partial class PropEditor : IEditorMode
                 Rlgl.LoadIdentity();
 
                 var alpha = l == window.WorkLayer ? 255 : 50;
-                Raylib.DrawTextureRec(
-                    layerFrames[l].Texture,
-                    new Rectangle(
-                        new Vector2(0f, layerFrames[l].Texture.Height),
-                        new Vector2(layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height)
-                    ),
-                    Vector2.Zero,
-                    new Color(255, 255, 255, alpha)
-                );
+                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
         
         levelRender.RenderGrid();
         levelRender.RenderBorder();
-
+        levelRender.RenderCameraBorders();
+        
         // highlight selected props
         if (isWarpMode)
         {
@@ -377,10 +371,10 @@ partial class PropEditor : IEditorMode
                 }
                 
                 var pts = prop.QuadPoints;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
         else
@@ -391,10 +385,10 @@ partial class PropEditor : IEditorMode
 
                 var pts = prop.QuadPoints;
                 var col = prop.IsMovable ? OutlineColors[0] : OutlineColors[3];;
-                Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-                Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+                Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+                Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
             }
         }
 
@@ -402,10 +396,10 @@ partial class PropEditor : IEditorMode
         {
             var pts = highlightedProp.QuadPoints;
             var col = OutlineGlowColors[0];
-            Raylib.DrawLineEx(pts[0] * Level.TileSize, pts[1] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[1] * Level.TileSize, pts[2] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[2] * Level.TileSize, pts[3] * Level.TileSize, 1f / window.ViewZoom, col);
-            Raylib.DrawLineEx(pts[3] * Level.TileSize, pts[0] * Level.TileSize, 1f / window.ViewZoom, col);
+            Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[2] * Level.TileSize, pts[3] * Level.TileSize, col);
+            Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
         }
 
         // prop transform gizmos
@@ -468,7 +462,7 @@ partial class PropEditor : IEditorMode
                     var handlePos = (handle1 + handle2) / 2f;
                     
                     // draw gizmo handle at corner
-                    if (DrawGizmoHandle(handlePos, 0) && window.IsMouseClicked(ImGuiMouseButton.Left))
+                    if (DrawGizmoHandle(handlePos, 0) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                     {
                         changeRecorder.BeginTransform();
                         transformMode = new ScaleTransformMode(
@@ -497,15 +491,14 @@ partial class PropEditor : IEditorMode
                 Vector2 rotDotPos = handleCnPos + handleDir * 5f / window.ViewZoom;
 
                 // draw line to gizmo handle
-                Raylib.DrawLineEx(
+                Raylib.DrawLineV(
                     startPos: handleCnPos * Level.TileSize,
                     endPos: rotDotPos * Level.TileSize,
-                    1f / window.ViewZoom,
                     OutlineColors[0]
                 );
 
                 // draw gizmo handle
-                if (DrawGizmoHandle(rotDotPos, 0) && window.IsMouseClicked(ImGuiMouseButton.Left))
+                if (DrawGizmoHandle(rotDotPos, 0) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     changeRecorder.BeginTransform();
                     transformMode = new RotateTransformMode(
@@ -536,7 +529,7 @@ partial class PropEditor : IEditorMode
                             var handlePos = corners[i];
                             
                             // draw gizmo handle at corner
-                            if (DrawGizmoHandle(handlePos, 1) && window.IsMouseClicked(ImGuiMouseButton.Left))
+                            if (DrawGizmoHandle(handlePos, 1) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                             {
                                 changeRecorder.BeginTransform();
                                 transformMode = new WarpTransformMode(
@@ -564,7 +557,7 @@ partial class PropEditor : IEditorMode
                             if (transformMode is LongTransformMode ropeMode && ropeMode.handleId != i)
                                 continue;
                             
-                            if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && window.IsMouseClicked(ImGuiMouseButton.Left))
+                            if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                             {
                                 changeRecorder.BeginTransform();
                                 transformMode = new LongTransformMode(
@@ -608,6 +601,7 @@ partial class PropEditor : IEditorMode
             foreach (var prop in level.Props)
             {
                 if (selectedProps.Contains(prop)) continue;
+                if (prop.DepthOffset < window.WorkLayer * 10) continue;
                 
                 var pc = GetPropCenter(prop);
                 if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
@@ -617,32 +611,33 @@ partial class PropEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            if (window.IsMouseClicked(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragStartPos = window.MouseCellFloat;
             }
 
             // in prop transform mode
-            if (transformMode is not null)
-            {
-                transformMode.Update(dragStartPos, window.MouseCellFloat);
-                
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
-                {
-                    changeRecorder.PushTransform();
-
-                    if (transformMode is WarpTransformMode)
-                    {
-                        selectedProps[0].TryConvertToAffine();
-                    }
-
-                    transformMode = null;
-                }
-            }
-            else
+            if (transformMode is null)
             {
                 // in default mode
                 PropSelectUpdate();
+            }
+        }
+
+        // update transform mode
+        if (transformMode is not null)
+        {
+            transformMode.Update(dragStartPos, window.MouseCellFloat);
+            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                changeRecorder.PushTransform();
+
+                if (transformMode is WarpTransformMode)
+                {
+                    selectedProps[0].TryConvertToAffine();
+                }
+
+                transformMode = null;
             }
         }
 
@@ -650,7 +645,7 @@ partial class PropEditor : IEditorMode
 
         // props selection popup (opens when right-clicking over an area with multiple props)
         highlightedProp = null;
-        if (ImGui.IsPopupOpen("PropSelectionList") && ImGui.BeginPopup("PropSelectionList"))
+        if (ImGui.BeginPopup("PropSelectionList"))
         {
             for (int i = propSelectionList.Length - 1; i >= 0; i--)
             {
@@ -669,10 +664,29 @@ partial class PropEditor : IEditorMode
                     highlightedProp = prop;
                 
                 ImGui.PopID();
-
             }
 
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+                ImGui.CloseCurrentPopup();
+
             ImGui.EndPopup();
+        }
+
+        // update depth init for next prop placement based on currently selected props
+        if (selectedProps.Count > 0)
+        {
+            // check that the depth offset of all selected props are the same
+            int curDepthOffset = selectedProps[0].DepthOffset;
+            foreach (var prop in selectedProps)
+            {
+                if (prop.DepthOffset != curDepthOffset)
+                {
+                    curDepthOffset = -1;
+                    break;
+                }
+            }
+
+            initDepth = curDepthOffset;
         }
     }
 
@@ -693,12 +707,12 @@ partial class PropEditor : IEditorMode
 
     public void PropSelectUpdate()
     {
-        if (window.IsMouseDragging(ImGuiMouseButton.Left))
+        if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
         {
             if (!isMouseDragging)
             {
                 // drag had begun
-                var hoverProp = GetPropAt(dragStartPos);
+                var hoverProp = GetPropAt(dragStartPos, window.WorkLayer);
 
                 // if dragging over an empty space, begin rect select
                 if (hoverProp is null)
@@ -735,41 +749,39 @@ partial class PropEditor : IEditorMode
         }
 
         // user clicked a prop, so add it to the selection
-        if (window.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
+        if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
         {
             if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
                 selectedProps.Clear();
             
-            var prop = GetPropAt(window.MouseCellFloat);
+            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
             if (prop is not null)
             {
                 SelectProp(prop);
             }
         }
 
-        // right-click opens menu to select one of multiple props under the cursor
+        // left double-click opens menu to select one of multiple props under the cursor
         // useful for when props overlap (which i assume is common)
-        if (window.IsMouseReleased(ImGuiMouseButton.Right) && !isMouseDragging)
+        if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
+        if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
         {
-            propSelectionList = GetPropsAt(window.MouseCellFloat);
-            if (propSelectionList.Length == 1)
-            {
-                if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                    selectedProps.Clear();
-                
-                SelectProp(propSelectionList[0]);
-            } else if (propSelectionList.Length > 1)
+            isDoubleClick = false;
+
+            propSelectionList = GetPropsAt(window.MouseCellFloat, window.WorkLayer);
+            
+            if (propSelectionList.Length > 1)
             {
                 ImGui.OpenPopup("PropSelectionList");
             }
         }
 
-        if (!window.IsMouseDragging(ImGuiMouseButton.Left))
+        if (!EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
             isMouseDragging = false;
 
-        // when N is pressed, create new selected prop
+        // when C is pressed, create new selected prop
         // TODO: drag and drop from props list
-        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || window.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
         {
             var createPos = window.MouseCellFloat;
             
@@ -784,10 +796,21 @@ partial class PropEditor : IEditorMode
             {
                 changeRecorder.BeginListChange();
 
+                int propDepth = window.WorkLayer * 10;
+
+                // if a prop is selected while adding a new one, the new prop will copy
+                // the depth offset value of the old prop. also make sure that it is on the same
+                // work layer.
+                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer)
+                {
+                    propDepth = initDepth;
+                }
+
                 var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                 {
-                    DepthOffset = window.WorkLayer * 10
+                    DepthOffset = propDepth
                 };
+                prop.Randomize();
 
                 RainEd.Instance.Level.Props.Add(prop);
                 selectedProps.Clear();
@@ -798,9 +821,9 @@ partial class PropEditor : IEditorMode
         }
 
         // when E is pressed, sample prop
-        if (EditorWindow.IsKeyPressed(ImGuiKey.E))
+        if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
         {
-            var prop = GetPropAt(window.MouseCellFloat);
+            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
             if (prop is not null)
             {
                 // if prop is a tile as prop
@@ -835,10 +858,10 @@ partial class PropEditor : IEditorMode
         if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
-                foreach (var prop in selectedProps)
-                {
-                    RainEd.Instance.Level.Props.Remove(prop);
-                }
+            foreach (var prop in selectedProps)
+            {
+                RainEd.Instance.Level.Props.Remove(prop);
+            }
             changeRecorder.PushListChange();
 
             selectedProps.Clear();
@@ -846,7 +869,7 @@ partial class PropEditor : IEditorMode
         }
 
         // duplicate props
-        if (EditorWindow.IsKeyPressed(ImGuiKey.D) && EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
+        if (KeyShortcuts.Activated(KeyShortcut.Duplicate))
         {
             changeRecorder.BeginListChange();
 

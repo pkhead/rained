@@ -7,7 +7,7 @@ namespace RainEd;
 class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private Camera? selectedCamera = null;
     private int selectedCorner = -1;
@@ -19,7 +19,7 @@ class CameraEditor : IEditorMode
 
     private ChangeHistory.CameraChangeRecorder changeRecorder;
 
-    public CameraEditor(EditorWindow window) {
+    public CameraEditor(LevelView window) {
         this.window = window;
         changeRecorder = new ChangeHistory.CameraChangeRecorder();
 
@@ -37,9 +37,26 @@ class CameraEditor : IEditorMode
 
         changeRecorder.TryPushChange();
     }
-    
-    public void DrawToolbar() {
+
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Camera");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Camera");
+        if (ImGui.MenuItem("Reset Camera Corners") && selectedCamera is not null)
+        {
+            changeRecorder.BeginChange();
+
+            for (int i = 0; i < 4; i++)
+            {
+                selectedCamera.CornerAngles[i] = 0f;
+                selectedCamera.CornerOffsets[i] = 0f;
+            }
+
+            changeRecorder.PushChange();
+        }
     }
+    
+    public void DrawToolbar() {}
 
     private void PickCameraAt(Vector2 mpos)
     {
@@ -75,23 +92,31 @@ class CameraEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
+        var level = RainEd.Instance.Level;
+        var levelRender = window.Renderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = new Color(30, 30, 30, alpha);
+            var color = LevelView.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
             Rlgl.Translatef(offset, offset, 0f);
             levelRender.RenderGeometry(l, color);
-            if (window.ViewTiles) levelRender.RenderTiles(l, (int)(alpha * 100f/255f));
+
+            if (drawTiles)
+                levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (drawProps)
+                levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+            
             Rlgl.PopMatrix();
         }
 
@@ -99,8 +124,8 @@ class CameraEditor : IEditorMode
         levelRender.RenderBorder();
 
         bool doubleClick = false;
-        bool horizSnap = EditorWindow.IsKeyDown(ImGuiKey.W) || EditorWindow.IsKeyDown(ImGuiKey.S);
-        bool vertSnap = EditorWindow.IsKeyDown(ImGuiKey.D) || EditorWindow.IsKeyDown(ImGuiKey.A);
+        bool horizSnap = KeyShortcuts.Active(KeyShortcut.NavUp) || KeyShortcuts.Active(KeyShortcut.NavDown) || KeyShortcuts.Active(KeyShortcut.CameraSnapX);
+        bool vertSnap = KeyShortcuts.Active(KeyShortcut.NavRight) || KeyShortcuts.Active(KeyShortcut.NavLeft) || KeyShortcuts.Active(KeyShortcut.CameraSnapY);
 
         if (horizSnap && vertSnap)
         {
@@ -117,71 +142,16 @@ class CameraEditor : IEditorMode
 
         if (window.IsViewportHovered)
         {
-            doubleClick = window.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+            doubleClick = EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left);
 
             var mpos = window.MouseCellFloat;
 
-            if (window.IsMouseClicked(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 dragBegin = mpos;
             }
 
-            if (isDraggingCamera)
-            {
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
-                {
-                    // stop dragging camera
-                    isDraggingCamera = false;
-                    changeRecorder.PushChange();
-                }
-
-                // corner drag
-                if (selectedCorner >= 0)
-                {
-                    var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
-
-                    var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
-                    var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
-                    selectedCamera!.CornerAngles[selectedCorner] = angle;
-                    selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
-                }
-
-                // camera drag
-                else
-                {
-                    dragTargetPos += window.MouseCellFloat - lastMousePos;
-
-                    // camera snap
-                    var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
-                    var snapThreshold = 1.5f / window.ViewZoom;
-
-                    float minDistX = float.PositiveInfinity;
-                    float minDistY = float.PositiveInfinity;
-
-                    selectedCamera!.Position = dragTargetPos;
-                    foreach (var camera in level.Cameras)
-                    {
-                        if (selectedCamera == camera) continue;
-
-                        var camCenter = camera.Position + Camera.WidescreenSize / 2f;
-                        var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
-                        var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
-
-                        if (horizSnap && distX < snapThreshold && distX < minDistX)
-                        {
-                            minDistX = distX;
-                            selectedCamera!.Position.X = camera.Position.X;
-                        }
-
-                        if (vertSnap && distY < snapThreshold && distY < minDistY)
-                        {
-                            minDistY = distY;
-                            selectedCamera!.Position.Y = camera.Position.Y;
-                        }
-                    }
-                }
-            }
-            else
+            if (!isDraggingCamera)
             {
                 // determine if mouse is close enough to one of its corners
                 selectedCorner = -1;
@@ -200,7 +170,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // drag begin
-                if (window.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && window.IsMouseDown(ImGuiMouseButton.Left)))
+                if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && EditorWindow.IsMouseDown(ImGuiMouseButton.Left)))
                 {
                     if (selectedCorner == -1)
                     {
@@ -216,7 +186,7 @@ class CameraEditor : IEditorMode
                 }
 
                 // right-click to reset corner
-                if (selectedCorner >= 0 && selectedCamera is not null && window.IsMouseClicked(ImGuiMouseButton.Right))
+                if (selectedCorner >= 0 && selectedCamera is not null && EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
                 {
                     changeRecorder.BeginChange();
                     selectedCamera.CornerAngles[selectedCorner] = 0f;
@@ -225,9 +195,66 @@ class CameraEditor : IEditorMode
                 }
 
                 // mouse-pick select when lmb pressed
-                if (window.IsMouseReleased(ImGuiMouseButton.Left))
+                if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
                 {
                     PickCameraAt(dragBegin);
+                }
+            }
+        }
+
+        // camera drag mode
+        if (isDraggingCamera)
+        {
+            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                // stop dragging camera
+                isDraggingCamera = false;
+                changeRecorder.PushChange();
+            }
+
+            // corner drag
+            if (selectedCorner >= 0)
+            {
+                var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
+
+                var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
+                var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
+                selectedCamera!.CornerAngles[selectedCorner] = angle;
+                selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
+            }
+
+            // camera drag
+            else
+            {
+                dragTargetPos += window.MouseCellFloat - lastMousePos;
+
+                // camera snap
+                var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
+                var snapThreshold = 1.5f / window.ViewZoom;
+
+                float minDistX = float.PositiveInfinity;
+                float minDistY = float.PositiveInfinity;
+
+                selectedCamera!.Position = dragTargetPos;
+                foreach (var camera in level.Cameras)
+                {
+                    if (selectedCamera == camera) continue;
+
+                    var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+                    var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
+                    var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
+
+                    if (horizSnap && distX < snapThreshold && distX < minDistX)
+                    {
+                        minDistX = distX;
+                        selectedCamera!.Position.X = camera.Position.X;
+                    }
+
+                    if (vertSnap && distY < snapThreshold && distY < minDistY)
+                    {
+                        minDistY = distY;
+                        selectedCamera!.Position.Y = camera.Position.Y;
+                    }
                 }
             }
         }
@@ -237,7 +264,7 @@ class CameraEditor : IEditorMode
         {
             // N or double-click to create new camera
             bool wantCreate = KeyShortcuts.Activated(KeyShortcut.NewObject) || doubleClick;
-            if (wantCreate && level.Cameras.Count < Level.MaxCameraCount)
+            if (wantCreate)
             {
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
@@ -282,7 +309,7 @@ class CameraEditor : IEditorMode
                     }
                     else
                     {
-                        RainEd.Instance.ShowNotification("Cannot delete only camera");
+                        EditorWindow.ShowNotification("Cannot delete only camera");
                     }
                 }
             }

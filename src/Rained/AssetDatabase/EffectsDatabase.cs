@@ -58,6 +58,13 @@ class EffectInit
     public bool usePlantColors = false;
     public bool useDecalAffect = false;
     public bool decalAffectDefault = false;
+    public bool deprecated = false;
+    
+    /// <summary>
+    /// The default layer configuration for a newly created effect.
+    /// Applicable only if useLayers is true.
+    /// </summary>
+    public Effect.LayerMode defaultLayer = Effect.LayerMode.All;
 
     public readonly List<CustomEffectConfig> customConfigs;
 
@@ -167,6 +174,9 @@ class EffectsDatabase
         /////////////
         BeginGroup("Erosion");
         {
+            //////////////
+            // Erosion1 //
+            //////////////
             CreateEffect(new EffectInit("Roughen", EffectType.StandardErosion)
             {
                 repeats = 30,
@@ -210,7 +220,8 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Erode", EffectType.StandardErosion)
             {
                 repeats = 80,
-                affectOpenAreas = 0.5f
+                affectOpenAreas = 0.5f,
+                useLayers = true
             });
 
             CreateEffect(new EffectInit("Super Erode", EffectType.StandardErosion)
@@ -224,6 +235,18 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Slag", EffectType.NN) // DEPRECATED
+            {
+                deprecated = true,
+                useLayers = true
+            });
+
+            CreateEffect(new EffectInit("Corruption No Eye", EffectType.NN) // DEPRECATED
+            {
+                deprecated = true,
+                useLayers = true
             });
         }
 
@@ -276,6 +299,7 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Cacti", EffectType.NN)
             {
                 useLayers = true,
+                usePlantColors = true
             });
 
             CreateEffect(new EffectInit("Rain Moss", EffectType.NN)
@@ -372,14 +396,16 @@ class EffectsDatabase
             {
                 binary = true,
                 single = true,
-                useLayers = true
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Lighthouse Flowers", EffectType.NN)
             {
                 binary = true,
                 single = true,
-                useLayers = true
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Fern", EffectType.NN)
@@ -387,7 +413,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Giant Mushroom", EffectType.NN)
@@ -395,7 +422,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("Sprawlbush", EffectType.NN)
@@ -403,7 +431,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
 
             CreateEffect(new EffectInit("featherFern", EffectType.NN)
@@ -411,7 +440,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Fungus Tree", EffectType.NN)
@@ -419,7 +449,8 @@ class EffectsDatabase
                 binary = true,
                 single = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First
             });
         }
 
@@ -459,14 +490,13 @@ class EffectsDatabase
             CustomConfig("Ceramic Color", "Colored", ["None", "Colored"]);
             //CustomConfig("Colored", "White", [ "None", "White" ]);
 
-            /* AN UNUSED EFFECT
-            CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN)
+            CreateEffect(new EffectInit("Restore As Pipes", EffectType.NN) // DEPRECATED
             {
+                deprecated = true,
                 binary = true,
                 single = true,
                 useLayers = true
             });
-            */
         }
 
         ////////////////////
@@ -499,12 +529,14 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Colored Fungi Flowers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
+                defaultLayer = Effect.LayerMode.First,
             });
 
             CreateEffect(new EffectInit("Root Plants", EffectType.NN)
@@ -626,6 +658,14 @@ class EffectsDatabase
                 binary = true
             });
 
+            CreateEffect(new EffectInit("Scales", EffectType.StandardErosion) // DEPRECATED
+            {
+                deprecated = true,
+                repeats = 200,
+                affectOpenAreas = 0.05f,
+                useLayers = true
+            });
+
             CreateEffect(new EffectInit("Stained Glass Properties", EffectType.NN)
             {
             });
@@ -650,6 +690,15 @@ class EffectsDatabase
                 useLayers = true,
             });
             CustomConfig("Effect Color", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
+
+            CreateEffect(new EffectInit("Sand", EffectType.StandardErosion) // DEPRECATED
+            {
+                deprecated = true,
+                repeats = 80,
+                affectOpenAreas = 0.5f,
+                useLayers = true,
+            });
+            CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
 
             CreateEffect(new EffectInit("Fat Slime", EffectType.StandardErosion)
             {
@@ -771,6 +820,24 @@ class EffectsDatabase
         }
 
         throw new Exception($"Effect '{name}' not found");
+    }
+
+    public bool TryGetEffectFromName(string name, out EffectInit? effect)
+    {
+        foreach (var group in groups)
+        {
+            foreach (var e in group.effects)
+            {
+                if (e.name == name)
+                {
+                    effect = e;
+                    return true;
+                }
+            }
+        }
+
+        effect = null;
+        return false;
     }
 
 #region Helpers

@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-using rlImGui_cs;
+
 using RainEd.Props;
 using Raylib_cs;
 
@@ -259,22 +259,40 @@ partial class PropEditor : IEditorMode
             curPropPreview = prop;
 
             previewTexture?.Dispose();
-            previewTexture = RlManaged.RenderTexture2D.Load(texWidth, texHeight);
-            
+            previewTexture = RlManaged.RenderTexture2D.Load(texWidth, texHeight);   
+        }
+
             Raylib.BeginTextureMode(previewTexture);
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            Raylib.BeginShaderMode(window.LevelRenderer.PropPreviewShader);
+            Raylib.ClearBackground(Color.Blank);
+            Raylib.BeginShaderMode(window.Renderer.PropPreviewShader);
             {
+                var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop);
                 for (int depth = prop.LayerCount - 1; depth >= 0; depth--)
                 {
                     float whiteFade = Math.Clamp(depth / 16f, 0f, 1f);
-                    var srcRect = prop.GetPreviewRectangle(0, depth);
-                    Raylib.DrawTextureRec(prop.Texture, srcRect, Vector2.Zero, new Color(255, (int)(whiteFade * 255f), 0, 0));
+                    Rectangle srcRect, dstRec;
+
+                    if (propTexture is not null)
+                    {
+                        srcRect = prop.GetPreviewRectangle(0, depth);
+                        dstRec = new Rectangle(Vector2.Zero, srcRect.Size);
+                    }
+                    else
+                    {
+                        srcRect = new Rectangle(Vector2.Zero, 2.0f * Vector2.One);
+                        dstRec = new Rectangle(Vector2.Zero, prop.Width * 20f, prop.Height * 20f);
+                    }
+
+                    Raylib.DrawTexturePro(
+                        propTexture ?? RainEd.Instance.PlaceholderTexture,
+                        srcRect, dstRec,
+                        Vector2.Zero, 0f,
+                        new Color(255, (int)(whiteFade * 255f), 0, 0)
+                    );
                 }
             }
             Raylib.EndShaderMode();
             Raylib.EndTextureMode();
-        }
     }
 
     public void DrawToolbar()
@@ -292,7 +310,7 @@ partial class PropEditor : IEditorMode
         SelectorToolbar();
         OptionsToolbar();
 
-        if (EditorWindow.IsKeyPressed(ImGuiKey.F))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleVertexMode))
         {
             isWarpMode = !isWarpMode;
         }
@@ -310,16 +328,16 @@ partial class PropEditor : IEditorMode
         }
 
         if (isWarpMode)
-            RainEd.Instance.Window.StatusText = "Vertex Mode";
+            RainEd.Instance.LevelView.StatusText = "Vertex Mode";
         
         // transform mode hints
         if (transformMode is ScaleTransformMode)
         {
-            RainEd.Instance.Window.StatusText = "Shift - Constrain proportion    Ctrl - Scale by center";
+            RainEd.Instance.LevelView.StatusText = "Shift - Constrain proportion    Ctrl - Scale by center";
         }
         else if (transformMode is RotateTransformMode)
         {
-            RainEd.Instance.Window.StatusText = "Shift - Snap rotation";
+            RainEd.Instance.LevelView.StatusText = "Shift - Snap rotation";
         }
 
         // push rope transform if simulation had just ended
@@ -424,7 +442,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }
@@ -475,7 +493,7 @@ partial class PropEditor : IEditorMode
                             drawList.AddRectFilled(
                                 p_min: cursor,
                                 p_max: cursor + new Vector2(10f, textHeight),
-                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
                         
@@ -504,7 +522,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                rlImGui.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTexture(previewTexture);
                                 ImGui.EndTooltip();
                             }
                         }
@@ -792,7 +810,7 @@ partial class PropEditor : IEditorMode
                             // thickness
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                             {
-                                ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 2f, 5f, "%.3f", ImGuiSliderFlags.AlwaysClamp);
+                                ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 1f, 5f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
                                 if (ImGui.IsItemDeactivatedAfterEdit())
                                     changeRecorder.PushSettingsChanges();
                             }
@@ -937,6 +955,13 @@ partial class PropEditor : IEditorMode
             }
 
         } ImGui.End();
+    }
+
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Selected Prop(s)");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Prop(s)");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleVertexMode, "Toggle Vertex Edit");
     }
 
     private static int Mod(int a, int b)

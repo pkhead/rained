@@ -1,179 +1,20 @@
 using Raylib_cs;
-using ImGuiNET;
 using System.Numerics;
 using RainEd.Rendering;
+using ImGuiNET;
 
 namespace RainEd;
 
-interface IEditorMode
+static class EditorWindow
 {
-    string Name { get; }
-
-    void Load() {}
-    void Unload() {}
-    void SavePreferences(UserPreferences prefs) {}
-
-    // write dirty changes to the Level object
-    // this is used by the light editor, since most everything is done in the GPU
-    // since doing the processing on the CPU would prove too slow
-    void FlushDirty() {}
-    void ReloadLevel() {}
-
-    void DrawToolbar();
-    void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames);
-}
-
-enum EditModeEnum
-{
-    None = -1,
-    Environment = 0,
-    Geometry,
-    Tile,
-    Camera,
-    Light,
-    Effect,
-    Prop
-};
-
-class EditorWindow
-{
-    public bool IsWindowOpen = true;
-
-    public readonly RainEd Editor;
-
-    private Vector2 viewOffset = new();
-    private float viewZoom = 1f;
-    private int zoomSteps = 0;
-    private int workLayer = 0;
-    public bool ViewTiles = false;
-
-    public float ViewZoom { get => viewZoom; }
-    public int WorkLayer { get => workLayer; set => workLayer = value; }
-
-    public Vector2 ViewOffset { get => viewOffset; set => viewOffset = value; }
-
-    private int mouseCx = 0;
-    private int mouseCy = 0;
-    private Vector2 mouseCellFloat = new();
-    
     // input overrides for lmb because of alt + left click drag
-    private bool isLmbPanning = false;
-    private bool isLmbDown = false;
-    private bool isLmbClicked = false;
-    private bool isLmbReleased = false;
-    private bool isLmbDragging = false;
-    private bool isFocused = false;
+    private static bool isLmbPanning = false;
+    private static bool isLmbDown = false;
+    private static bool isLmbClicked = false;
+    private static bool isLmbReleased = false;
+    private static bool isLmbDragging = false;
 
-    public int MouseCx { get => mouseCx; }
-    public int MouseCy { get => mouseCy; }
-    public Vector2 MouseCellFloat { get => mouseCellFloat; }
-    public bool IsFocused { get => isFocused; }
-    public bool IsMouseInLevel() => Editor.Level.IsInBounds(mouseCx, mouseCy);
-    public bool OverrideMouseWheel = false;
-    public string StatusText = string.Empty;
-
-    private readonly UICanvasWidget canvasWidget;
-    public bool IsViewportHovered { get => canvasWidget.IsHovered; }
-
-    private readonly List<IEditorMode> editorModes = new();
-    private int selectedMode = (int) EditModeEnum.Environment;
-    private int queuedEditMode = (int) EditModeEnum.None;
-
-    public int EditMode {
-        get => selectedMode;
-        set => queuedEditMode = value;
-    }
-
-    // render texture given to each editor mode class
-    private RlManaged.RenderTexture2D[] layerRenderTextures;
-    public readonly LevelEditRender LevelRenderer;
-
-    private ChangeHistory.CellChangeRecorder cellChangeRecorder;
-    public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
-
-    public IEditorMode GetEditor(int editMode)
-    {
-        return editorModes[editMode];
-    }
-
-    public IEditorMode GetEditor(EditModeEnum editMode) => GetEditor((int) editMode);
-
-    public T GetEditor<T>()
-    {
-        foreach (var editor in editorModes)
-        {
-            if (editor is T subclass) return subclass;
-        }
-        
-        throw new Exception("Could not find editor mode");
-    }
-    
-    public EditorWindow()
-    {
-        Editor = RainEd.Instance;
-        canvasWidget = new(1, 1);
-        layerRenderTextures = new RlManaged.RenderTexture2D[3];
-
-        for (int i = 0; i < 3; i++)
-        {
-            layerRenderTextures[i] = RlManaged.RenderTexture2D.Load(1, 1);
-        }
-        
-        LevelRenderer = new LevelEditRender();
-        cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
-        RainEd.Instance.ChangeHistory.Cleared += () =>
-        {
-            cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
-        };
-
-        editorModes.Add(new EnvironmentEditor(this));
-        editorModes.Add(new GeometryEditor(this));
-        editorModes.Add(new TileEditor(this));
-        editorModes.Add(new CameraEditor(this));
-        editorModes.Add(new LightEditor(this));
-        editorModes.Add(new EffectsEditor(this));
-        editorModes.Add(new PropEditor(this));
-
-        // load user preferences
-        LevelRenderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
-        LevelRenderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
-        LevelRenderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
-        ViewTiles = RainEd.Instance.Preferences.ViewTiles;
-    }
-
-    public void SavePreferences(UserPreferences prefs)
-    {
-        prefs.ViewGrid = LevelRenderer.ViewGrid;
-        prefs.ViewObscuredBeams = LevelRenderer.ViewObscuredBeams;
-        prefs.ViewTileHeads = LevelRenderer.ViewTileHeads;
-        prefs.ViewTiles = ViewTiles;
-        
-        foreach (var mode in editorModes)
-        {
-            mode.SavePreferences(prefs);
-        }
-    }
-
-    public void UnloadView()
-    {
-        editorModes[selectedMode].Unload();
-    }
-
-    public void LoadView()
-    {
-        editorModes[selectedMode].Load();
-    }
-
-    public void FlushDirty()
-    {
-        editorModes[selectedMode].FlushDirty();
-    }
-
-    public void ReloadLevel()
-    {
-        foreach (var mode in editorModes)
-            mode.ReloadLevel();
-    }
+    public static bool IsPanning { get => isLmbPanning; set => isLmbPanning = value; }
 
     public static bool IsKeyDown(ImGuiKey key)
     {
@@ -195,312 +36,581 @@ class EditorWindow
         return Raylib.IsKeyPressed(KeyboardKey.Tab);
     }
 
-    public bool IsMouseClicked(ImGuiMouseButton button, bool repeat = false)
+    public static bool IsMouseClicked(ImGuiMouseButton button, bool repeat = false)
     {
         if (button == ImGuiMouseButton.Left) return isLmbClicked;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Activated(KeyShortcut.RightMouse);
         return ImGui.IsMouseClicked(button, repeat);
     }
 
-    public bool IsMouseDown(ImGuiMouseButton button)
+    public static bool IsMouseDown(ImGuiMouseButton button)
     {
         if (button == ImGuiMouseButton.Left) return isLmbDown;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Active(KeyShortcut.RightMouse);
         return ImGui.IsMouseDown(button);
     }
 
-    public bool IsMouseDoubleClicked(ImGuiMouseButton button)
+    public static bool IsMouseDoubleClicked(ImGuiMouseButton button)
     {
         if (isLmbPanning) return false;
         return ImGui.IsMouseDoubleClicked(button);
     }
 
-    public bool IsMouseReleased(ImGuiMouseButton button)
+    public static bool IsMouseReleased(ImGuiMouseButton button)
     {
         if (button == ImGuiMouseButton.Left) return isLmbReleased;
+        if (button == ImGuiMouseButton.Right) return KeyShortcuts.Deactivated(KeyShortcut.RightMouse);
         return ImGui.IsMouseReleased(button);
     }
 
-    public bool IsMouseDragging(ImGuiMouseButton button)
+    public static bool IsMouseDragging(ImGuiMouseButton button)
     {
         if (button == ImGuiMouseButton.Left) return isLmbDragging;
         return ImGui.IsMouseDragging(button);
     }
 
-    public void Render(float dt)
-    {
-        if (queuedEditMode >= 0)
-        {
-            if (queuedEditMode != selectedMode)
-            {
-                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[queuedEditMode].Name);
-                editorModes[selectedMode].Unload();
-                selectedMode = queuedEditMode;
-                editorModes[selectedMode].Load();
-            }
+    private static FileBrowser? fileBrowser = null;
 
-            queuedEditMode = -1;
+    private static string notification = "";
+    private static float notificationTime = 0f;
+    private static float notifFlash = 0f;
+    private static int timerDelay = 2;
+
+    private static DrizzleRenderWindow? drizzleRenderWindow = null;
+    private static LevelResizeWindow? levelResizeWin = null;
+    public static LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
+
+    public static void ShowNotification(string msg)
+    {
+        if (notification == "" || notificationTime != 3f)
+        {
+            notification = msg;
+        }
+        else
+        {
+            notification += "\n" + msg;
         }
         
-        isFocused = false;
-        if (IsWindowOpen && ImGui.Begin("Level"))
+        notificationTime = 3f;
+        notifFlash = 0f;
+    }
+
+    private static Action? promptCallback;
+    private static bool promptUnsavedChanges;
+    private static bool promptUnsavedChangesCancelable;
+
+    public static void PromptUnsavedChanges(Action callback, bool canCancel = true)
+    {
+        var changeHistory = RainEd.Instance.ChangeHistory;
+        promptUnsavedChangesCancelable = canCancel;
+
+        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath)))
         {
-            isFocused = ImGui.IsWindowFocused();
+            promptUnsavedChanges = true;
+            promptCallback = callback;
+        }
+        else
+        {
+            callback();
+        }
+    }
+
+    private static void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
+    {
+        static bool levelCheck(string path, bool isRw)
+        {
+            return isRw;
+        }
+
+        fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
+        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+        {
+            if (isRw) return new BrowserLevelPreview(path);
+            return null;
+        };
+    }
+
+    private static void DrawMenuBar()
+    {
+        if (ImGui.BeginMainMenuBar())
+        {
+            if (ImGui.BeginMenu("File"))
+            {
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
+
+                var recentFiles = RainEd.Instance.Preferences.RecentFiles;
+                if (ImGui.BeginMenu("Open Recent"))
+                {
+                    if (recentFiles.Count == 0)
+                    {
+                        ImGui.MenuItem("(no recent files)", false);
+                    }
+                    else
+                    {
+                        // traverse backwards
+                        for (int i = recentFiles.Count - 1; i >= 0; i--)
+                        {
+                            var filePath = recentFiles[i];
+
+                            if (ImGui.MenuItem(Path.GetFileName(filePath)))
+                            {
+                                if (File.Exists(filePath))
+                                {
+                                    PromptUnsavedChanges(() =>
+                                    {
+                                        RainEd.Instance.LoadLevel(filePath);
+                                    });
+                                }
+                                else
+                                {
+                                    ShowNotification("File could not be accessed");
+                                    recentFiles.RemoveAt(i);
+                                }
+                            }
+
+                        }
+                    }
+
+                    ImGui.EndMenu();
+                }
+
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Save, "Save");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.SaveAs, "Save As...");
+
+                ImGui.Separator();
+
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...");
+                ImGui.MenuItem("Mass Render", false);
+
+                ImGui.Separator();
+                if (ImGui.MenuItem("Preferences"))
+                {
+                    PreferencesWindow.OpenWindow();
+                }
+
+                ImGui.Separator();
+                if (ImGui.MenuItem("Quit", "Alt+F4"))
+                {
+                    PromptUnsavedChanges(() => RainEd.Instance.Running = false);
+                }
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("Edit"))
+            {
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Undo, "Undo");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Redo, "Redo");
+                //ImGui.Separator();
+                //ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
+                //ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
+                //ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
+                ImGui.Separator();
+
+                if (ImGui.MenuItem("Resize Level..."))
+                {
+                    levelResizeWin = new LevelResizeWindow();
+                }
+
+                var customCommands = RainEd.Instance.CustomCommands;
+                if (customCommands.Count > 0)
+                {
+                    ImGui.Separator();
+
+                    if (ImGui.BeginMenu("Commands"))
+                    {
+                        foreach (RainEd.Command cmd in customCommands)
+                        {
+                            if (ImGui.MenuItem(cmd.Name))
+                            {
+                                cmd.Callback(cmd.ID);
+                            }
+                        }
+
+                        ImGui.EndMenu();
+                    }
+                }
+
+                ImGui.Separator();
+                RainEd.Instance.LevelView.ShowEditMenu();
+
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("View"))
+            {
+                var prefs = RainEd.Instance.Preferences;
+
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
+                if (ImGui.MenuItem("Reset View"))
+                {
+                    RainEd.Instance.LevelView.ResetView();
+                }
+
+                ImGui.Separator();
+
+                var renderer = RainEd.Instance.LevelView.Renderer;
+
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", renderer.ViewGrid);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
+                
+                if (ImGui.MenuItem("Tile Graphics", null, prefs.ViewPreviews))
+                {
+                    prefs.ViewPreviews = !prefs.ViewPreviews;
+                }
+
+                if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
+                {
+                    renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
+                    renderer.InvalidateGeo(0);
+                    renderer.InvalidateGeo(1);
+                    renderer.InvalidateGeo(2);
+                }
+
+                if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
+                {
+                    renderer.ViewTileHeads = !renderer.ViewTileHeads;
+                }
+
+                ImGui.Separator();
+
+                if (ImGui.MenuItem("Keyboard Shortcuts", null, ShortcutsWindow.IsWindowOpen))
+                {
+                    ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
+                }
+
+                if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
+                {
+                    LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
+                }
+
+                if (ImGui.MenuItem("Palettes", null, PaletteWindow.IsWindowOpen))
+                {
+                    PaletteWindow.IsWindowOpen = !PaletteWindow.IsWindowOpen;
+                }
+
+                ImGui.Separator();
+                
+                if (ImGui.MenuItem("Show Data Folder..."))
+                    RainEd.Instance.ShowPathInSystemBrowser(RainEd.Instance.AssetDataPath, false);
+                
+                if (ImGui.MenuItem("Show Render Folder..."))
+                    RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
+                
+                ImGui.EndMenu();
+            }
+
+            if (ImGui.BeginMenu("Help"))
+            {
+                if (ImGui.MenuItem("About..."))
+                {
+                    AboutWindow.IsWindowOpen = true;
+                }
+                
+                ImGui.EndMenu();
+            }
+
+            ImGui.EndMainMenuBar();
+        }
+    }
+
+    private static void HandleShortcuts()
+    {
+        var changeHistory = RainEd.Instance.ChangeHistory;
+        var prefs = RainEd.Instance.Preferences;
+        var renderer = RainEd.Instance.LevelView.Renderer;
+
+        if (KeyShortcuts.Activated(KeyShortcut.New))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                RainEd.Logger.Information("Load default level...");
+                RainEd.Instance.LoadDefaultLevel();
+                RainEd.Logger.Information("Done!");
+            });
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Open))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                OpenLevelBrowser(FileBrowser.OpenMode.Read, RainEd.Instance.LoadLevel);
+            });
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Save))
+        {
+            if (string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath))
+                OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+            else
+                SaveLevelCallback(RainEd.Instance.CurrentFilePath);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.SaveAs))
+        {
+            OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Undo))
+        {
+            changeHistory.Undo();
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Redo))
+        {
+            changeHistory.Redo();
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Render))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                drizzleRenderWindow = new DrizzleRenderWindow(false);
+            }, false);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ExportGeometry))
+        {
+            PromptUnsavedChanges(() =>
+            {
+                drizzleRenderWindow = new DrizzleRenderWindow(true);
+            }, false);
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGrid))
+        {
+            renderer.ViewGrid = !renderer.ViewGrid;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewTiles))
+        {
+            prefs.ViewTiles = !prefs.ViewTiles;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewProps))
+        {
+            prefs.ViewProps = !prefs.ViewProps;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewCameras))
+        {
+            renderer.ViewCameras = !renderer.ViewCameras;
+        }
+    }
+
+    private static void SaveLevelCallback(string path)
+    {
+        if (!string.IsNullOrEmpty(path))
+        {
+            if (RainEd.Instance.SaveLevel(path))
+            {
+                promptCallback?.Invoke();
+            }
+        }
+
+        promptCallback = null;
+    }
+
+    static void ShowMiscWindows()
+    {
+        ShortcutsWindow.ShowWindow();
+        AboutWindow.ShowWindow();
+        LevelLoadFailedWindow.ShowWindow();
+        PreferencesWindow.ShowWindow();
+        PaletteWindow.ShowWindow();
+        LuaInterface.ShowLogs();
+        EmergencySaveWindow.ShowWindow();
+    }
+
+    /// <summary>
+    /// Called on startup, and asks the user if
+    /// they want to load the emergency save file if it exists.
+    /// </summary>
+    public static void RequestLoadEmergencySave()
+    {
+        if (File.Exists(RainEd.EmergencySaveFilePath))
+            EmergencySaveWindow.IsWindowOpen = true;
+    }
+    
+    private static bool closeDrizzleRenderWindow = false;
+
+    public static void Render()
+    {
+        DrawMenuBar();
+        HandleShortcuts();
+        
+        RainEd.Instance.LevelView.Render();
+
+        // render level browser
+        FileBrowser.Render(ref fileBrowser);
+        
+        // render drizzle render, if in progress
+        // disposing of drizzle render window must be done on the next frame
+        // otherwise the texture ID given to ImGui for the previee will be invalid
+        // and it will spit out an opengl error. it's not a fatal error, it's just...
+        // not supposed to happen.
+        if (drizzleRenderWindow is not null)
+        {
+            if (closeDrizzleRenderWindow)
+            {
+                closeDrizzleRenderWindow = false;
+                drizzleRenderWindow.Dispose();
+                drizzleRenderWindow = null;
+            }
             
-            var newEditMode = selectedMode;
-
-            // edit mode
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Edit Mode");
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 8f);
-            if (ImGui.BeginCombo("##EditMode", editorModes[selectedMode].Name))
+            // if this returns true, the render window had closed
+            else if (drizzleRenderWindow.DrawWindow())
             {
-                for (int i = 0; i < editorModes.Count; i++)
-                {
-                    var isSelected = i == selectedMode;
-                    if (ImGui.Selectable(editorModes[i].Name, isSelected))
-                    {
-                        newEditMode = i;
-                    }
+                closeDrizzleRenderWindow = true;
 
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
-                }
-
-                ImGui.EndCombo();
+                // the whole render process allocates ~1 gb of memory
+                // so, try to free all that
+                GC.Collect(2, GCCollectionMode.Aggressive, true, true);
+                GC.WaitForFullGCComplete();
             }
+        }
 
-            ImGui.SameLine();
-            if (ImGui.Button("Reset View"))
-            {
-                viewOffset = Vector2.Zero;
-                viewZoom = 1f;
-                zoomSteps = 0;
-            }
-
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})    {StatusText}");
-            StatusText = string.Empty;
-
-            if (!ImGui.GetIO().WantTextInput)
-            {
-                // scroll keybinds
-                var moveX = (IsKeyDown(ImGuiKey.RightArrow)?1:0) - (IsKeyDown(ImGuiKey.LeftArrow)?1:0);
-                var moveY = (IsKeyDown(ImGuiKey.DownArrow)?1:0) - (IsKeyDown(ImGuiKey.UpArrow)?1:0);
-                var moveSpeed = IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
-                viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
-                viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
-
-                // edit mode keybinds
-                if (IsKeyPressed(ImGuiKey._1))
-                    newEditMode = (int) EditModeEnum.Environment;
-                
-                if (IsKeyPressed(ImGuiKey._2))
-                    newEditMode = (int) EditModeEnum.Geometry;
-                
-                if (IsKeyPressed(ImGuiKey._3))
-                    newEditMode = (int) EditModeEnum.Tile;
-                
-                if (IsKeyPressed(ImGuiKey._4))
-                    newEditMode = (int) EditModeEnum.Camera;
-                
-                if (IsKeyPressed(ImGuiKey._5))
-                    newEditMode = (int) EditModeEnum.Light;
-                
-                if (IsKeyPressed(ImGuiKey._6))
-                    newEditMode = (int) EditModeEnum.Effect;
-
-                if (IsKeyPressed(ImGuiKey._7))
-                    newEditMode = (int) EditModeEnum.Prop;
-            }
-
-            // change edit mode if requested
-            if (newEditMode != selectedMode)
-            {
-                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
-                editorModes[selectedMode].Unload();
-                selectedMode = newEditMode;
-                editorModes[selectedMode].Load();
-            }
-
-            // canvas widget
-            {
-                var regionMax = ImGui.GetWindowContentRegionMax();
-                var regionMin = ImGui.GetCursorPos();
-
-                int canvasW = (int)(regionMax.X - regionMin.X);
-                int canvasH = (int)(regionMax.Y - regionMin.Y);
-
-                canvasWidget.Resize(canvasW, canvasH);
-
-                for (int i = 0; i < 3; i++)
-                {
-                    ref var renderTex = ref layerRenderTextures[i];
-
-                    if (renderTex.Texture.Width != canvasW || renderTex.Texture.Height != canvasH)
-                    {
-                        renderTex.Dispose();
-                        renderTex = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
-                    }
-                }
-                
-                Raylib.BeginTextureMode(canvasWidget.RenderTexture);
-                DrawCanvas();
-                Raylib.EndTextureMode();
-
-                canvasWidget.Draw();
-            }
+        // render level resize window
+        if (levelResizeWin is not null)
+        {
+            levelResizeWin.DrawWindow();
+            if (!levelResizeWin.IsWindowOpen) levelResizeWin = null;
         }
         
-        editorModes[selectedMode].DrawToolbar();
-    }
-
-    private void Zoom(float factor, Vector2 mpos)
-    {
-        viewZoom *= factor;
-        viewOffset = -(mpos - viewOffset) / factor + mpos;
-    }
-
-    private void DrawCanvas()
-    {
-        OverrideMouseWheel = false;
-        Raylib.ClearBackground(new Color(0, 0, 0, 0));
-
-        Rlgl.PushMatrix();
-        Rlgl.Scalef(viewZoom, viewZoom, 1f);
-        Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
-
-        // send view info to the level renderer
-        var viewportW = canvasWidget.RenderTexture.Texture.Width;
-        var viewportH = canvasWidget.RenderTexture.Texture.Height;
-        LevelRenderer.ViewTopLeft = viewOffset / Level.TileSize;
-        LevelRenderer.ViewBottomRight =
-            (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
-            / Level.TileSize;
-        LevelRenderer.ViewZoom = viewZoom;
-
-        // obtain mouse coordinates
-        mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
-        mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / Level.TileSize;
-        mouseCx = (int) Math.Floor(mouseCellFloat.X);
-        mouseCy = (int) Math.Floor(mouseCellFloat.Y);
-
-        // draw viewport
-        // the blending functions here are some stupid hack
-        // to fix transparent object writing to the fbo's alpha value
-        // when being drawn, thus making the render texture at those areas
-        // blend into the imgui background when rendered.
-        // Good thing I downloaded renderdoc, otherwise there was no way
-        // I would've figured that was the problem!
-        Rlgl.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-        Raylib.BeginBlendMode(BlendMode.CustomSeparate);
-        editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
-
-        // drwa resize preview
-        if (Editor.LevelResizeWindow is LevelResizeWindow resizeData)
-        {
-            var level = Editor.Level;
-
-            var lineWidth = 1f / ViewZoom;
-
-            // calculate new level origin based on input anchor
-            Vector2 newOrigin = new Vector2(resizeData.InputWidth - level.Width, resizeData.InputHeight - level.Height) * -resizeData.InputAnchor;
-
-            // draw preview level dimensions
-            Raylib.DrawRectangleLinesEx(
-                new Rectangle(
-                    (int)newOrigin.X * Level.TileSize, (int)newOrigin.Y * Level.TileSize,
-                    resizeData.InputWidth * Level.TileSize, resizeData.InputHeight * Level.TileSize
-                ),
-                lineWidth,
-                Color.White
-            );
-
-            // draw preview level buffer tiles
-            int borderRight = resizeData.InputWidth - resizeData.InputBufferRight;
-            int borderBottom = resizeData.InputHeight - resizeData.InputBufferBottom;
-            int borderW = borderRight - resizeData.InputBufferLeft;
-            int borderH = borderBottom - resizeData.InputBufferTop;
-            int borderLeft = resizeData.InputBufferLeft + (int)newOrigin.X;
-            int borderTop = resizeData.InputBufferTop + (int)newOrigin.Y;
+        // notification window
+        if (notificationTime > 0f) {
+            ImGuiWindowFlags windowFlags =
+                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
+                ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
             
-            Raylib.DrawRectangleLinesEx(
-                new Rectangle(
-                    borderLeft * Level.TileSize, borderTop * Level.TileSize,
-                    borderW * Level.TileSize, borderH * Level.TileSize
-                ),
-                lineWidth,
-                new Color(255, 0, 255, 255)
+            ImGuiViewportPtr viewport = ImGui.GetMainViewport();
+            const float pad = 10f;
+
+            Vector2 windowPos = new(
+                viewport.WorkPos.X + pad,
+                viewport.WorkPos.Y + viewport.WorkSize.Y - pad
             );
+            Vector2 windowPosPivot = new(0f, 1f);
+            ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always, windowPosPivot);
+
+            var flashValue = (float) (Math.Sin(Math.Min(notifFlash, 0.25f) * 16 * Math.PI) + 1f) / 2f;
+            var windowBg = ImGui.GetStyle().Colors[(int) ImGuiCol.WindowBg];
+
+            if (flashValue > 0.5f)
+                ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(flashValue, flashValue, flashValue, windowBg.W));
+            else
+                ImGui.PushStyleColor(ImGuiCol.WindowBg, windowBg);
+            
+            if (ImGui.Begin("Notification", windowFlags))
+                ImGui.TextUnformatted(notification);
+            ImGui.End();
+
+            ImGui.PopStyleColor();
+
+            if (timerDelay == 0)
+            {
+                var dt = Raylib.GetFrameTime();
+                notificationTime -= dt;
+                notifFlash += dt;
+            }
         }
 
-        Raylib.EndBlendMode();
+        ShowMiscWindows();
 
-        // view controls
+        // prompt unsaved changes
+        if (promptUnsavedChanges)
+        {
+            promptUnsavedChanges = false;
+            ImGui.OpenPopup("Unsaved Changes");
+
+            // center popup 
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        }
+
+        bool unused = true;
+        if (ImGui.BeginPopupModal("Unsaved Changes", ref unused, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        {
+            if (promptUnsavedChangesCancelable)
+            {
+                ImGui.Text("Do you want to save your changes before proceeding?");
+            }
+            else
+            {
+                ImGui.Text("You must save before proceeding.\nDo you want to save now?");
+            }
+
+            ImGui.Separator();
+
+            if (ImGui.Button("Yes", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.Space))
+            {
+                ImGui.CloseCurrentPopup();
+
+                // unsaved change callback is run in SaveLevel
+                if (string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath))
+                    OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+                else
+                    SaveLevelCallback(RainEd.Instance.CurrentFilePath);
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("No", StandardPopupButtons.ButtonSize) || (!promptUnsavedChangesCancelable && ImGui.IsKeyPressed(ImGuiKey.Escape)))
+            {
+                ImGui.CloseCurrentPopup();
+
+                if (promptUnsavedChangesCancelable)
+                {
+                    if (promptCallback is not null)
+                    {
+                        promptCallback();
+                    }
+                }
+                
+                promptCallback = null;
+            }
+
+            if (promptUnsavedChangesCancelable)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Escape))
+                {
+                    ImGui.CloseCurrentPopup();
+                    promptCallback = null;
+                }
+            }
+
+            ImGui.EndPopup();
+        }
+
+        if (timerDelay > 0)
+            timerDelay--;
+    }
+
+    public static void UpdateMouseState()
+    {
+        bool wasLmbDown = isLmbDown;
         isLmbClicked = false;
         isLmbDown = false;
         isLmbReleased = false;
         isLmbDragging = false;
 
-        if (canvasWidget.IsHovered)
+        if (!isLmbPanning)
         {
-            // middle click pan
-            if (isLmbPanning || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
-            {
-                var mouseDelta = Raylib.GetMouseDelta();
-                viewOffset -= mouseDelta / viewZoom;
-            }
-
-            // begin alt+left panning
-            if (ImGui.IsKeyDown(ImGuiKey.ModAlt) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-            {
-                isLmbPanning = true;
-            }
-
-            // scroll wheel zooming
-            if (!OverrideMouseWheel)
-            {
-                var wheelMove = Raylib.GetMouseWheelMove();
-                var zoomFactor = 1.5;
-                if (wheelMove > 0f && zoomSteps < 5)
-                {
-                    var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
-                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                    zoomSteps++;
-                }
-                else if (wheelMove < 0f && zoomSteps > -5)
-                {
-                    var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
-                    Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                    zoomSteps--;
-                }
-            }
-        }
-
-        if (isLmbPanning)
-        {
-            if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
-            {
-                isLmbPanning = false;
-            }
-        }
-        else
-        {
-            isLmbClicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
             isLmbDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            isLmbReleased = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
             isLmbDragging = ImGui.IsMouseDragging(ImGuiMouseButton.Left);
+
+            // manually set Clicked or Released bools based on lmbdown state changes
+            // this is so it registers that the mouse was released when ther user alt+tabs out of the window
+            if (!wasLmbDown && isLmbDown)
+                isLmbClicked = true;
+
+            if (wasLmbDown && !isLmbDown)
+                isLmbReleased = true;
         }
-
-        Rlgl.PopMatrix();
-    }
-
-    public void BeginLevelScissorMode()
-    {
-        Raylib.BeginScissorMode(
-            (int) (-viewOffset.X * viewZoom),
-            (int) (-viewOffset.Y * viewZoom),
-            (int) (Editor.Level.Width * Level.TileSize * viewZoom),
-            (int) (Editor.Level.Height * Level.TileSize * viewZoom)
-        );
     }
 }

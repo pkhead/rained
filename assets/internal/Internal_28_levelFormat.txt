@@ -1,0 +1,1 @@
+[#timeLimit:4800, #defaultTerrain:1/0, #maxFlies:0-20, #flySpawnRate:1-100, #lizards:[["green", 5, 150]], #ambientSounds:[], #lightDynamic:1/0, #lightRect:rect(0,01040,800),#lightBlend:0-100, #matrix:[]]  

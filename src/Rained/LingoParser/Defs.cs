@@ -1,24 +1,61 @@
 namespace RainEd.Lingo;
 
-class ParseException : Exception
+public class ParseException : Exception
 {
     public ParseException() {}
     public ParseException(string message) : base(message) {}
     public ParseException(string message, Exception inner) : base(message, inner) {}
 }
 
-struct Color
+public static class LingoNumber
 {
-    public int R, G, B;
-    public Color(int r, int g, int b)
+    public static float AsFloat(object obj)
     {
-        R = r;
-        G = g;
-        B = b;
+        if (obj is int vi) return vi;
+        if (obj is float vf) return vf;
+        throw new InvalidCastException($"Unable to cast object of type '{obj.GetType().FullName}' to 'System.Int32'.");
+    }
+
+    public static int AsInt(object obj)
+    {
+        return (int) obj;
     }
 }
 
-struct Rectangle
+public struct Color(int r, int g, int b)
+{
+    public int R = r, G = g, B = b;
+
+    public readonly override bool Equals(object? obj)
+    {
+        if (obj == null || GetType() != obj.GetType())
+        {
+            return false;
+        }
+        
+        return this == (Color) obj;
+    }
+    
+    public override readonly int GetHashCode()
+    {
+        return HashCode.Combine(R.GetHashCode(), G.GetHashCode(), B.GetHashCode());
+    }
+
+    public static bool operator==(Color a, Color b)
+    {
+        return
+            a.R == b.R &&
+            a.G == b.G &&
+            a.B == b.B;
+    }
+
+    public static bool operator!=(Color a, Color b)
+    {
+        return !(a == b);
+    }
+}
+
+public struct Rectangle
 {
     public float X, Y, Width, Height;
 
@@ -31,22 +68,10 @@ struct Rectangle
     }
 }
 
-class List
+public class List
 {
     public List<object> values = new();
     public Dictionary<string, object> fields = new(); 
-}
-
-class Table
-{
-    public object Header;
-    public List<Lingo.List> Items;
-
-    public Table(object header)
-    {
-        Header = header;
-        Items = new();
-    }
 }
 
 enum TokenType
@@ -57,6 +82,8 @@ enum TokenType
     OpenParen,
     Comma,
     Colon,
+    Hyphen,
+    Ampersand,
     
     Void,
     String,
@@ -65,7 +92,11 @@ enum TokenType
     Symbol,
     KeywordColor,
     KeywordPoint,
-    KeywordRect
+    KeywordRect,
+
+    StringConstant,
+    IntConstant,
+    FloatConstant,
 }
 
 struct Token

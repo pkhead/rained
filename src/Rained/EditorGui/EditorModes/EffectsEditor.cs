@@ -7,7 +7,7 @@ namespace RainEd;
 class EffectsEditor : IEditorMode
 {
     public string Name { get => "Effects"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private int selectedGroup = 0;
     private int selectedEffect = -1;
@@ -21,18 +21,18 @@ class EffectsEditor : IEditorMode
     private readonly static string MatrixTextureShaderSource = @"
         #version 330
 
-        in vec2 fragTexCoord;
-        in vec4 fragColor;
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
 
-        uniform sampler2D texture0;
-        uniform vec4 colDiffuse;
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
 
         out vec4 finalColor;
 
         void main()
         {
-            vec4 texelColor = texture(texture0, fragTexCoord);
-            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * fragColor * colDiffuse;
+            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
+            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * glib_color * glib_uColor;
         }
     ";
     private readonly RlManaged.Shader matrixTexShader;
@@ -43,7 +43,7 @@ class EffectsEditor : IEditorMode
 
     private ChangeHistory.EffectsChangeRecorder changeRecorder;
 
-    public EffectsEditor(EditorWindow window)
+    public EffectsEditor(LevelView window)
     {
         this.window = window;
 
@@ -51,7 +51,7 @@ class EffectsEditor : IEditorMode
         matrixTexShader = RlManaged.Shader.LoadFromMemory(null, MatrixTextureShaderSource);
 
         // create matrix texture
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         matrixImage = RlManaged.Image.GenColor(level.Width, level.Height, Color.Black);
         matrixTexture = RlManaged.Texture2D.LoadFromImage(matrixImage);
 
@@ -73,7 +73,7 @@ class EffectsEditor : IEditorMode
     {
         selectedEffect = -1;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         matrixImage.Dispose();
         matrixTexture.Dispose();
         
@@ -88,20 +88,41 @@ class EffectsEditor : IEditorMode
         isToolActive = false;
     }
 
-    private static readonly string[] layerModeNames = new string[]
-    {
+    private static readonly string[] layerModeNames =
+    [
         "All", "1", "2", "3", "1+2", "2+3"
-    };
+    ];
 
-    private static readonly string[] plantColorNames = new string[]
-    {
+    private static readonly string[] plantColorNames =
+    [
         "Color1", "Color2", "Dead"
-    };
+    ];
+
+    private bool doDeleteCurrent = false;
+    private bool doMoveCurrentUp = false;
+    private bool doMoveCurrentDown = false;
+    
+    public void ShowEditMenu()
+    {
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
+
+        if (ImGui.MenuItem("Delete Effect", selectedEffect >= 0))
+            doDeleteCurrent = true;
+
+        if (ImGui.MenuItem("Move Effect Up", selectedEffect >= 0))
+            doMoveCurrentUp = true;
+
+        if (ImGui.MenuItem("Move Effect Down", selectedEffect >= 0))
+            doMoveCurrentDown = true;
+
+        // TODO: clear effect menu item
+    }
 
     public void DrawToolbar()
     {
-        var level = window.Editor.Level;
-        var fxDatabase = window.Editor.EffectsDatabase;
+        var level = RainEd.Instance.Level;
+        var fxDatabase = RainEd.Instance.EffectsDatabase;
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -130,7 +151,10 @@ class EffectsEditor : IEditorMode
 
                 for (int j = 0; j < fxDatabase.Groups[i].effects.Count; j++)
                 {
-                    if (fxDatabase.Groups[i].effects[j].name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
+                    var effect = fxDatabase.Groups[i].effects[j];
+                    if (effect.deprecated) continue; // ignore deprecated effects
+
+                    if (effect.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                     {
                         groupsPassingSearch.Add(i);
                         break;
@@ -163,6 +187,8 @@ class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
+                    if (effectData.deprecated) continue; // ignore deprecated effects
+
                     if (searchQuery != "" && !effectData.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase)) continue;
 
                     if (ImGui.Selectable(effectData.name))
@@ -230,8 +256,9 @@ class EffectsEditor : IEditorMode
         } ImGui.End();
 
         // delete/backspace to delete selected effect
-        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
+        if (KeyShortcuts.Activated(KeyShortcut.RemoveObject) || doDeleteCurrent)
         {
+            doDeleteCurrent = false;
             deleteRequest = selectedEffect;
         }
 
@@ -256,8 +283,10 @@ class EffectsEditor : IEditorMode
                     doDelete = true;
                 
                 ImGui.SameLine();
-                if (ImGui.Button("Move Up") && selectedEffect > 0)
+                if ((ImGui.Button("Move Up") || doMoveCurrentUp) && selectedEffect > 0)
                 {
+                    doMoveCurrentUp = false;
+
                     // swap this effect with up
                     changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect - 1];
@@ -267,8 +296,10 @@ class EffectsEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Move Down") && selectedEffect < level.Effects.Count - 1)
+                if ((ImGui.Button("Move Down") || doMoveCurrentDown) && selectedEffect < level.Effects.Count - 1)
                 {
+                    doMoveCurrentDown = false;
+
                     // swap this effect with down
                     changeRecorder.BeginListChange();
                     level.Effects[selectedEffect] = level.Effects[selectedEffect + 1];
@@ -276,6 +307,9 @@ class EffectsEditor : IEditorMode
                     selectedEffect++;
                     changeRecorder.PushListChange();
                 }
+
+                if (effect.Data.deprecated)
+                    ImGui.TextDisabled("This effect is deprecated!");
 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 
@@ -433,24 +467,34 @@ class EffectsEditor : IEditorMode
         bool wasToolActive = isToolActive;
         isToolActive = false;
 
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
+        var level = RainEd.Instance.Level;
+        var levelRender = window.Renderer;
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
 
         // draw layers, including tiles
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             // draw layer into framebuffer
             int offset = l * 2;
             Raylib.BeginTextureMode(layerFrames[l]);
 
+            Raylib.EndScissorMode();
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            window.BeginLevelScissorMode();
+
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
-                levelRender.RenderGeometry(l, new Color(0, 0, 0, 255));
-                if (window.ViewTiles) levelRender.RenderTiles(l, 100);
+                levelRender.RenderGeometry(l, LevelView.GeoColor(30f / 255f, 255));
+
+                if (drawTiles)
+                    levelRender.RenderTiles(l, 100);
+
+                if (drawProps)
+                    levelRender.RenderProps(l, 100);
             Rlgl.PopMatrix();
         }
 
@@ -462,12 +506,7 @@ class EffectsEditor : IEditorMode
             Rlgl.LoadIdentity();
 
             var alpha = l == window.WorkLayer ? 255 : 50;
-            Raylib.DrawTextureRec(
-                layerFrames[l].Texture,
-                new Rectangle(0f, layerFrames[l].Texture.Height, layerFrames[l].Texture.Width, -layerFrames[l].Texture.Height),
-                Vector2.Zero,
-                new Color(255, 255, 255, alpha)
-            );
+            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
             Rlgl.PopMatrix();
         }
 
@@ -494,25 +533,27 @@ class EffectsEditor : IEditorMode
             if (window.IsViewportHovered)
             {
                 // shift + scroll to change brush size
-                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+                bool brushSizeKey =
+                    KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize) || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize);
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModShift) || brushSizeKey)
                 {
                     window.OverrideMouseWheel = true;
 
-                    if (Raylib.GetMouseWheelMove() > 0.0f)
+                    if (Raylib.GetMouseWheelMove() > 0.0f || KeyShortcuts.Activated(KeyShortcut.IncreaseBrushSize))
                         brushSize += 1;
-                    else if (Raylib.GetMouseWheelMove() < 0.0f)
+                    else if (Raylib.GetMouseWheelMove() < 0.0f || KeyShortcuts.Activated(KeyShortcut.DecreaseBrushSize))
                         brushSize -= 1;
                     
                     brushSize = Math.Clamp(brushSize, 1, 10);
                 }
 
-                if (window.IsMouseClicked(ImGuiMouseButton.Left) || window.IsMouseClicked(ImGuiMouseButton.Right))
+                if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
                     lastBrushPos = new(-9999, -9999);
                 
                 // paint when user's mouse is down and moving
-                if (window.IsMouseDown(ImGuiMouseButton.Left))
+                if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
                     brushFac = 1.0f;
-                else if (window.IsMouseDown(ImGuiMouseButton.Right))
+                else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
                     brushFac = -1.0f;
                 
                 if (brushFac != 0.0f)
@@ -549,7 +590,7 @@ class EffectsEditor : IEditorMode
                 for (int y = 0; y < level.Height; y++)
                 {
                     int v = (int)(effect.Matrix[x,y] / 100f * 255f);
-                    Raylib.ImageDrawPixel(ref matrixImage.Ref(), x, y, new Color(v, v, v, 255));
+                    Raylib.ImageDrawPixel(matrixImage, x, y, new Color(v, v, v, 255));
                 }
             }
             matrixImage.UpdateTexture(matrixTexture);
@@ -613,6 +654,7 @@ class EffectsEditor : IEditorMode
         }
 
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
         Raylib.EndScissorMode();
 
         if (!isToolActive && wasToolActive)
@@ -622,7 +664,7 @@ class EffectsEditor : IEditorMode
     private void AddEffect(EffectInit init)
     {
         changeRecorder.BeginListChange();
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         selectedEffect = level.Effects.Count;
         level.Effects.Add(new Effect(level, init));
         changeRecorder.PushListChange();

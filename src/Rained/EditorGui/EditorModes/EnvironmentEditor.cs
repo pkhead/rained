@@ -6,12 +6,12 @@ namespace RainEd;
 class EnvironmentEditor : IEditorMode
 {
     public string Name { get => "Environment"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private ChangeHistory.EnvironmentChangeRecorder changeRecorder;
     private bool isDragging = false;
 
-    public EnvironmentEditor(EditorWindow window)
+    public EnvironmentEditor(LevelView window)
     {
         this.window = window;
         changeRecorder = new();
@@ -44,7 +44,7 @@ class EnvironmentEditor : IEditorMode
 
     public void DrawToolbar()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
 
         if (ImGui.Begin("Environment", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -72,7 +72,8 @@ class EnvironmentEditor : IEditorMode
 
     private void DrawWater()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
+
         float waterHeight = level.WaterLevel + level.BufferTilesBot + 0.5f;
         Raylib.DrawRectangle(
             0,
@@ -88,13 +89,13 @@ class EnvironmentEditor : IEditorMode
         bool wasDragging = isDragging;
         isDragging = false;
 
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
+        var level = RainEd.Instance.Level;
+        var levelRender = window.Renderer;
 
         // set water level
         if (window.IsViewportHovered && level.HasWater)
         {
-            if (window.IsMouseDown(ImGuiMouseButton.Left))
+            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
             {
                 isDragging = true;
 
@@ -104,19 +105,28 @@ class EnvironmentEditor : IEditorMode
         }
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
+
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = new Color(0, 0, 0, alpha);
+            var color = LevelView.GeoColor(alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
             Rlgl.Translatef(offset, offset, 0f);
             levelRender.RenderGeometry(l, color);
-            levelRender.RenderTiles(l, (int)(alpha * 100f/255f));
+
+            if (drawTiles)
+                levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (drawProps)
+                levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+            
             Rlgl.PopMatrix();
 
             // draw water behind first layer if set
@@ -130,6 +140,7 @@ class EnvironmentEditor : IEditorMode
 
         levelRender.RenderGrid();
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
 
         if (wasDragging && !isDragging)
             changeRecorder.PushChange();

@@ -1,14 +1,15 @@
 using System.Numerics;
 using ImGuiNET;
+using RainEd.Light;
 using Raylib_cs;
-using rlImGui_cs;
+
 
 namespace RainEd;
 
 class LightEditor : IEditorMode
 {
     public string Name { get => "Light"; }
-    private readonly EditorWindow window;
+    private readonly LevelView window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
@@ -22,7 +23,7 @@ class LightEditor : IEditorMode
 
     private ChangeHistory.LightChangeRecorder changeRecorder = null!;
 
-    public LightEditor(EditorWindow window)
+    public LightEditor(LevelView window)
     {
         this.window = window;
         ReloadLevel();
@@ -68,21 +69,24 @@ class LightEditor : IEditorMode
         }
     }
 
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.ResetBrushTransform, "Reset Brush Transform");
+    }
+
     public void DrawToolbar()
     {
         bool wasParamChanging = isChangingParameters;
         isChangingParameters = false;
 
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
-            float lightDeg = level.LightAngle / MathF.PI * 180f;
-
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 
-            ImGui.SliderFloat("Light Angle", ref lightDeg, 0f, 360f, "%.1f deg");
+            ImGui.SliderAngle("Light Angle", ref level.LightAngle, 0f, 360f, "%.1f deg");
             if (ImGui.IsItemDeactivatedAfterEdit())
                 changeRecorder.PushParameterChanges();
             
@@ -91,8 +95,6 @@ class LightEditor : IEditorMode
                 changeRecorder.PushParameterChanges();
             
             ImGui.PopItemWidth();
-
-            level.LightAngle = lightDeg / 180f * MathF.PI;
 
             // draw light angle ring
             {
@@ -173,7 +175,7 @@ class LightEditor : IEditorMode
                     }
 
                     ImGui.PushID(i);
-                    if (rlImGui.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                    if (ImGuiExt.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
                     {
                         selectedBrush = i;
                     }
@@ -307,23 +309,28 @@ class LightEditor : IEditorMode
 
     private void DrawOcclusionPlane()
     {
-        var level = window.Editor.Level;
+        var level = RainEd.Instance.Level;
         
         // render light plane
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
-        Raylib.DrawTextureRec(
+        RlExt.DrawRenderTextureV(
+            level.LightMap.RenderTexture,
+            new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
+            new Color(255, 0, 0, 100)
+        );
+        /*Raylib.DrawTextureRec(
             level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
             new Color(255, 0, 0, 100)
-        );
+        );*/
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        var level = window.Editor.Level;
-        var levelRender = window.LevelRenderer;
+        var level = RainEd.Instance.Level;
+        var levelRender = window.Renderer;
 
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
@@ -348,25 +355,37 @@ class LightEditor : IEditorMode
         );
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, new Color(127, 127, 127, 255));
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
         
         // draw the layers
+        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = RainEd.Instance.Preferences.ViewProps;
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = new Color(30, 30, 30, alpha);
+            var color = LevelView.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
             Rlgl.Translatef(offset, offset, 0f);
             levelRender.RenderGeometry(l, color);
-            if (window.ViewTiles) levelRender.RenderTiles(l, (int)(alpha * 100f/255f));
+
+            if (drawTiles)
+                levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (drawProps)
+                levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+            
             Rlgl.PopMatrix();
         }
 
         levelRender.RenderBorder();
+        levelRender.RenderCameraBorders();
 
-        Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
+        var shader = RainEd.Instance.LightBrushDatabase.Shader;
+        Raylib.BeginShaderMode(shader);
+        //shader.GlibShader.SetUniform("uColor", Glib.Color.FromRGBA(0, 0, 0, 80));
+        //shader.GlibShader.SetUniform("uTexture", RainEd.RenderContext.WhiteTexture);
 
         // render cast
         var correctedAngle = level.LightAngle + MathF.PI / 2f;
@@ -375,12 +394,13 @@ class LightEditor : IEditorMode
             -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
         );
 
-        Raylib.DrawTextureRec(
+        RlExt.DrawRenderTextureV(level.LightMap.RenderTexture, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
+        /*Raylib.DrawTextureRec(
             level.LightMap.Texture,
             new Rectangle(0, level.LightMap.Height, level.LightMap.Width, -level.LightMap.Height),
             lightMapOffset + castOffset,
             new Color(0, 0, 0, 80)
-        );
+        );*/
 
         // Render mouse cursor
         if (window.IsViewportHovered)
@@ -393,8 +413,8 @@ class LightEditor : IEditorMode
 
             // render brush preview
             // if drawing, draw on light texture instead of screen
-            var lmb = window.IsMouseDown(ImGuiMouseButton.Left);
-            var rmb = window.IsMouseDown(ImGuiMouseButton.Right);
+            var lmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
+            var rmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
             if (lmb || rmb)
             {
                 isDrawing = true;
@@ -418,15 +438,7 @@ class LightEditor : IEditorMode
                 };
 
                 changeRecorder.RecordAtom(atom);
-
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    atom.rect,
-                    screenSize / 2f,
-                    atom.rotation,
-                    lmb ? Color.Black : Color.White
-                );
+                LightMap.DrawAtom(atom);
                 
                 Raylib.BeginTextureMode(mainFrame);
             }
@@ -463,8 +475,8 @@ class LightEditor : IEditorMode
                 );
             }
 
-            var doScale = EditorWindow.IsKeyDown(ImGuiKey.Q);
-            var doRotate = EditorWindow.IsKeyDown(ImGuiKey.E);
+            var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
+            var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
 
             if (doScale || doRotate)
             {

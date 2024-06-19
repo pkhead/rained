@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-using rlImGui_cs;
+
 
 namespace RainEd;
 
@@ -8,7 +8,7 @@ partial class TileEditor : IEditorMode
 {
     enum SelectionMode
     {
-        Materials, Tiles
+        Materials, Tiles, Autotiles
     }
     private string searchQuery = "";
 
@@ -18,8 +18,8 @@ partial class TileEditor : IEditorMode
     
     private void ProcessSearch()
     {
-        var tileDb = window.Editor.TileDatabase;
-        var matDb = window.Editor.MaterialDatabase;
+        var tileDb = RainEd.Instance.TileDatabase;
+        var matDb = RainEd.Instance.MaterialDatabase;
 
         tileSearchResults.Clear();
         matSearchResults.Clear();
@@ -75,10 +75,17 @@ partial class TileEditor : IEditorMode
         }
     }
 
+    public void ShowEditMenu()
+    {
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
+        //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.SetMaterial, "Set Selected Material as Default");
+    }
+
     public void DrawToolbar()
     {
-        var tileDb = window.Editor.TileDatabase;
-        var matDb = window.Editor.MaterialDatabase;
+        var tileDb = RainEd.Instance.TileDatabase;
+        var matDb = RainEd.Instance.MaterialDatabase;
 
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -91,7 +98,7 @@ partial class TileEditor : IEditorMode
             }
 
             // default material button (or press E)
-            int defaultMat = window.Editor.Level.DefaultMaterial;
+            int defaultMat = RainEd.Instance.Level.DefaultMaterial;
             ImGui.TextUnformatted($"Default Material: {matDb.GetMaterial(defaultMat).Name}");
 
             if (selectionMode != SelectionMode.Materials)
@@ -99,9 +106,9 @@ partial class TileEditor : IEditorMode
             
             if ((ImGui.Button("Set Selected Material as Default") || KeyShortcuts.Activated(KeyShortcut.SetMaterial)) && selectionMode == SelectionMode.Materials)
             {
-                var oldMat = window.Editor.Level.DefaultMaterial;
+                var oldMat = RainEd.Instance.Level.DefaultMaterial;
                 var newMat = selectedMaterial;
-                window.Editor.Level.DefaultMaterial = newMat;
+                RainEd.Instance.Level.DefaultMaterial = newMat;
 
                 if (oldMat != newMat)
                     RainEd.Instance.ChangeHistory.Push(new ChangeHistory.DefaultMaterialChangeRecord(oldMat, newMat));
@@ -118,19 +125,23 @@ partial class TileEditor : IEditorMode
             // search bar
             var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
 
-            if (ImGui.BeginTabBar("TileSelector"))
+            if (ImGui.BeginTabBar("ModeSelector"))
             {
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
 
                 ImGuiTabItemFlags materialsFlags = ImGuiTabItemFlags.None;
                 ImGuiTabItemFlags tilesFlags = ImGuiTabItemFlags.None;
+                ImGuiTabItemFlags autotilesFlags = ImGuiTabItemFlags.None;
 
                 // apply force selection
                 if (forceSelection == SelectionMode.Materials)
                     materialsFlags = ImGuiTabItemFlags.SetSelected;
                 else if (forceSelection == SelectionMode.Tiles)
                     tilesFlags = ImGuiTabItemFlags.SetSelected;
+                else if (forceSelection == SelectionMode.Autotiles)
+                    autotilesFlags = ImGuiTabItemFlags.SetSelected;
 
+                // Materials tab
                 if (ImGuiExt.BeginTabItem("Materials", materialsFlags))
                 {
                     if (selectionMode != SelectionMode.Materials)
@@ -184,6 +195,7 @@ partial class TileEditor : IEditorMode
 
                     ImGui.EndTabItem();
                 }
+
                 // Tiles tab
                 if (ImGuiExt.BeginTabItem("Tiles", tilesFlags))
                 {
@@ -216,7 +228,7 @@ partial class TileEditor : IEditorMode
                             drawList.AddRectFilled(
                                 p_min: cursor,
                                 p_max: cursor + new Vector2(10f, textHeight),
-                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255, 1f))
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
                         
@@ -245,7 +257,13 @@ partial class TileEditor : IEditorMode
                             if (ImGui.IsItemHovered())
                             {
                                 ImGui.BeginTooltip();
-                                rlImGui.Image(tile.PreviewTexture, tile.Category.Color);
+
+                                var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
+                                if (previewTexture is not null)
+                                    ImGuiExt.Image(previewTexture, tile.Category.Color);
+                                else
+                                    ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
+
                                 ImGui.EndTooltip();
                             }
                         }
@@ -256,14 +274,111 @@ partial class TileEditor : IEditorMode
                     ImGui.EndTabItem();
                 }
 
+                // Autotiles tab
+                if (ImGuiExt.BeginTabItem("Autotiles", autotilesFlags))
+                {
+                    if (selectionMode != SelectionMode.Autotiles)
+                    {
+                        selectionMode = SelectionMode.Autotiles;
+                        //ProcessSearch();
+                    }
+
+                    var catalog = RainEd.Instance.Autotiles;
+                    var autotileGroups = catalog.AutotileCategories;
+
+                    // deselect autotile if it was removed
+                    if (selectedAutotile is not null && !RainEd.Instance.Autotiles.HasAutotile(selectedAutotile))
+                    {
+                        selectedAutotile = null;
+                    }
+
+                    var boxWidth = ImGui.GetTextLineHeight() * 16f;
+
+                    // create autotile button
+                    ImGui.BeginGroup();
+                    if (ImGui.Button("Create Autotile", new Vector2(boxWidth, 0f)))
+                    {
+                        RainEd.Instance.Autotiles.OpenCreatePopup();
+                        ImGui.OpenPopup("Create Autotile");
+                        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    }
+
+                    RainEd.Instance.Autotiles.RenderCreatePopup();
+
+                    // autotile list
+                    var boxHeight = ImGui.GetContentRegionAvail().Y;
+                    if (ImGui.BeginListBox("##Autotiles", new Vector2(boxWidth, boxHeight)))
+                    {
+                        for (int i = 0; i < autotileGroups.Count; i++)
+                        {
+                            ImGui.PushID(i);
+                            var group = catalog.GetAutotilesInCategory(i);
+
+                            if (group.Count > 0 && ImGui.TreeNode(autotileGroups[i]))
+                            {
+                                foreach (var autotile in group)
+                                {
+                                    if (ImGui.Selectable(autotile.Name, selectedAutotile == autotile))
+                                    {
+                                        selectedAutotile = autotile;
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+
+                            ImGui.PopID();
+                        }
+                        
+                        ImGui.EndListBox();
+                    }
+                    ImGui.EndGroup();
+
+                    // selected autotile options
+                    ImGui.SameLine();
+                    ImGui.BeginGroup();
+                        if (selectedAutotile is not null)
+                        {
+                            var autotile = selectedAutotile;
+
+                            ImGui.SeparatorText(autotile.Name);
+                            if (autotile.Type == Autotiles.AutotileType.Path)
+                            {
+                                ImGui.Text("Path Autotile");
+                            }
+                            else if (autotile.Type == Autotiles.AutotileType.Rect)
+                            {
+                                ImGui.Text("Rectangle Autotile");
+                            }
+
+                            ImGui.Separator();
+
+                            if (!autotile.IsReady)
+                            {
+                                ImGui.TextWrapped("There was a problem loading this autotile.");
+                            }
+                            else
+                            {
+                                autotile.ConfigGui();
+                            }
+                        }
+                        else
+                        {
+                            ImGui.TextDisabled("(no autotile selected)");
+                        }
+                    ImGui.EndGroup();
+
+                    ImGui.EndTabItem();
+                }
+
                 forceSelection = null;
             }
         }
         
-        // shift+tab to switch between Tiles/Materials tabs
+        // shift+tab to switch between tabs
         if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
         {
-            forceSelection = (SelectionMode)(((int)selectionMode + 1) % 2);
+            forceSelection = (SelectionMode)(((int)selectionMode + 1) % 3);
         }
         
         // tab to change work layer

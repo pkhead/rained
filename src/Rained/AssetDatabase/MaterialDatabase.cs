@@ -108,8 +108,14 @@ class MaterialDatabase
     private void RegisterCustomMaterials()
     {
         var parser = new Lingo.LingoParser();
-
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data", "Materials", "Init.txt")))
+        var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
+        if (!File.Exists(initFile))
+        {
+            RainEd.Logger.Error("Materials/Init.txt not found!");
+            return;
+        }
+        
+        foreach (var line in File.ReadLines(initFile))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -119,7 +125,7 @@ class MaterialDatabase
             }
             else
             {
-                var data = (Lingo.List) parser.Read(line)!;
+                var data = parser.Read(line) as Lingo.List ?? throw new Exception("Malformed material init");
                 
                 var name = (string) data.fields["nm"];
                 var color = (Lingo.Color) data.fields["color"];
@@ -131,6 +137,8 @@ class MaterialDatabase
 
     private MaterialInfo CreateMaterial(string name, Color color)
     {
+        if (Categories.Count == 0) throw new Exception("The first category header is missing");
+        
         var mat = new MaterialInfo(materialList.Count + 1, name, color, Categories[^1]);
         materialList.Add(mat);
         Categories[^1].Materials.Add(mat);

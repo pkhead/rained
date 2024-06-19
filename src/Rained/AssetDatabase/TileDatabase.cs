@@ -3,27 +3,27 @@ using Raylib_cs;
 
 namespace RainEd.Tiles;
 
-public enum TileType
+public enum TileType : byte
 {
-    VoxelStruct,
-    VoxelStructRockType,
-    VoxelStructRandomDisplaceVertical,
-    VoxelStructRandomDisplaceHorizontal,
-    Box,
-    VoxelStructSandType,
+    VoxelStruct = 0,
+    VoxelStructRockType = 1,
+    VoxelStructRandomDisplaceVertical = 2,
+    VoxelStructRandomDisplaceHorizontal = 3,
+    Box = 4,
+    VoxelStructSandType = 5,
 }
 
 class Tile
 {
     public readonly string Name;
     public readonly TileCategory Category;
+    public readonly TileType Type;
     public readonly int Width;
     public readonly int Height;
     public readonly sbyte[,] Requirements;
     public readonly sbyte[,] Requirements2;
     public readonly bool HasSecondLayer;
     public readonly int BfTiles = 0;
-    public readonly RlManaged.Texture2D PreviewTexture;
     public readonly bool CanBeProp;
     public readonly int LayerCount;
     public readonly int LayerDepth;
@@ -32,7 +32,10 @@ class Tile
     public readonly int CenterX;
     public readonly int CenterY;
 
-    public readonly string GraphicsPath;
+    public readonly int ImageYOffset;
+    public readonly int ImageRowCount;
+
+    public readonly string[] Tags;
 
     public Tile(
         string name,
@@ -43,10 +46,11 @@ class Tile
         List<int>? repeatL,
         List<int> specs, List<int>? specs2,
         int rnd,
-        bool noPropTag
+        string[] tags
     )
     {
         Name = name;
+        Type = type;
         Width = width;
         Height = height;
         BfTiles = bfTiles;
@@ -54,6 +58,7 @@ class Tile
         CanBeProp = false;
         LayerCount = 1;
         VariationCount = rnd;
+        Tags = tags;
 
         CenterX = (int)MathF.Ceiling((float)Width / 2) - 1;
         CenterY = (int)MathF.Ceiling((float)Height / 2) - 1;
@@ -91,16 +96,16 @@ class Tile
             }
         }
 
-        // retrieve Y location of preview image
-        int rowCount = height + bfTiles * 2;
-        int imageOffset = 1;
+        // get parameters required for the retrieval of the Y location of preview image
+        ImageRowCount = height + bfTiles * 2;
+        ImageYOffset = 1;
         switch (type)
         {
             case TileType.VoxelStruct:
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
                 LayerCount = repeatL!.Count;
-                rowCount *= LayerCount;
+                ImageRowCount *= LayerCount;
                 CanBeProp = true;
 
                 break;
@@ -110,66 +115,12 @@ class Tile
                 break;
             
             case TileType.Box:
-                rowCount = height * width + height + bfTiles * 2;
-                imageOffset = 0;
+                ImageRowCount = height * width + height + bfTiles * 2;
+                ImageYOffset = 0;
                 break;
         }
-        
-        // find path to image
-        // if it doesn't exist in Data/Graphics, check in assets/internal
-        GraphicsPath = Path.Combine(Boot.AppDataPath, "Data", "Graphics", name + ".png");
-        if (!File.Exists(GraphicsPath))
-        {
-            GraphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", name + ".png");
-        }
 
-        using var fullImage = RlManaged.Image.Load(GraphicsPath);
-        var previewRect = new Rectangle(
-            0,
-            rowCount * 20 + imageOffset,
-            width * 16,
-            height * 16
-        );
-
-        if (previewRect.X < 0 || previewRect.Y < 0 ||
-            previewRect.X >= fullImage.Width || previewRect.Y >= fullImage.Height ||
-            previewRect.X + previewRect.Width > fullImage.Width ||
-            previewRect.Y + previewRect.Height > fullImage.Height
-        )
-        {
-            RainEd.Logger.Warning($"Tile '{name}' preview image is out of bounds");
-        }
-
-        using var previewImage = RlManaged.Image.GenColor(width * 16, height * 16, Color.White);
-        previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
-
-        Raylib.ImageDraw(
-            ref previewImage.Ref(),
-            fullImage,
-            previewRect,
-            new Rectangle(0, 0, previewRect.Width, previewRect.Height),
-            Color.White
-        );
-
-        // convert black-and-white image to white-and-transparent, respectively
-        for (int x = 0; x < previewImage.Width; x++)
-        {
-            for (int y = 0; y < previewImage.Height; y++)
-            {
-                if (Raylib.GetImageColor(previewImage, x, y).Equals(new Color(255, 255, 255, 255)))
-                {
-                    previewImage.DrawPixel(x, y, new Color(255, 25, 255, 0));
-                }
-                else
-                {
-                    previewImage.DrawPixel(x, y, new Color(255, 255, 255, 255));
-                }
-            }
-        }
-
-        PreviewTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
-
-        if (noPropTag)
+        if (Tags.Contains("notProp"))
             CanBeProp = false;
     }
 }
@@ -202,14 +153,23 @@ class TileDatabase
         TileCategory? curGroup = null;
         int groupIndex = 0;
 
-        void ProcessLine(string line)
+        // helper function to create error string with line information
+        static string ErrorString(int lineNo, string msg)
+            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+
+        void ProcessLine(string line, int lineNo)
         {
             if (string.IsNullOrWhiteSpace(line)) return;
             
             // read header
             if (line[0] == '-')
             {
-                var header = (Lingo.List) (lingoParser.Read(line[1..]) ?? throw new Exception("Invalid header"));
+                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                {
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    return;
+                }
+
                 curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
                 {
                     Index = groupIndex
@@ -222,21 +182,21 @@ class TileDatabase
             }
             else
             {
-                if (curGroup is null) throw new Exception("Invalid tile init file");
+                if (curGroup is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
 
-                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Invalid tile init file"));
+                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed tile init")));
 
                 object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];
                 var tp = (string) tileInit.fields["tp"];
                 var size = (Vector2) tileInit.fields["sz"];
                 var specsData = (Lingo.List) tileInit.fields["specs"];
-                var bfTiles = (int) tileInit.fields["bfTiles"];
+                var bfTiles = Lingo.LingoNumber.AsInt(tileInit.fields["bfTiles"]);
                 Lingo.List? specs2Data = null;
                 Lingo.List? repeatLayerList =
                     tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
                 int rnd =
-                    tileInit.fields.TryGetValue("rnd", out tempValue) ? (int)tempValue : 1;
+                    tileInit.fields.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
                 
                 if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
                 {
@@ -264,28 +224,30 @@ class TileDatabase
                         name: name,
                         category: curGroup,
                         type: tileType,
-                        width: (int)size.X, height: (int)size.Y,
+                        width: (int) size.X,
+                        height: (int) size.Y,
                         bfTiles: bfTiles,
                         repeatL: repeatL,
                         specs: specs,
                         specs2: specs2,
                         rnd: rnd,
-                        noPropTag: tags.Contains("notProp")
+                        tags: [..tags]
                     );
 
                     curGroup.Tiles.Add(tileData);
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    RainEd.Logger.Warning("Could not add tile '{Name}': {ErrorMessage}", name, e.Message);
+                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }
 
         // read Init.txt
-        foreach (var line in File.ReadLines(Path.Combine(Boot.AppDataPath, "Data","Graphics","Init.txt")))
+        int lineNo = 1;
+        foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt")))
         {
-            ProcessLine(line);
+            ProcessLine(line, lineNo++);
         }
 
         // read internal extra tiles
@@ -293,7 +255,7 @@ class TileDatabase
         string? line2;
         while ((line2 = reader.ReadLine()) is not null)
         {
-            ProcessLine(line2);
+            ProcessLine(line2, -1);
         }
     }
 
