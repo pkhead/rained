@@ -267,6 +267,9 @@ static class EditorWindow
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
                     renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
+                    renderer.InvalidateGeo(0);
+                    renderer.InvalidateGeo(1);
+                    renderer.InvalidateGeo(2);
                 }
 
                 if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
