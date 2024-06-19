@@ -17,7 +17,7 @@ Bugs:
   - already figured this out, fix is on the glib branch (though doesn't actually require glib)
 
 Overall:
-- client code mouse position doesn't work with multi-viewports
+- client code mouse position doesn't work with multi-viewport
 - autotile joining
   - option to join only inner tiles
   - ability to recognize more than one tile as a direction type
@@ -30,6 +30,8 @@ Overall:
 - help pages/hints/tooltips/whatever
 - tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
+- put asterik in window title for unsaved levels
+- ability to have more than one level loaded at once
 
 Geometry Editor:
 - mirror tool
@@ -59,6 +61,3 @@ Prop Editor:
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
-
-Render:
-- show time elapsed
