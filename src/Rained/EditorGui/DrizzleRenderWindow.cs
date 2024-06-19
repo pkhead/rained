@@ -5,6 +5,7 @@ using System.Diagnostics;
 using DrizzleRender = RainEd.Drizzle.DrizzleRender;
 using RenderState = RainEd.Drizzle.DrizzleRender.RenderState;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace RainEd;
 
@@ -68,6 +69,8 @@ class DrizzleRenderWindow : IDisposable
 
     private readonly RlManaged.Shader layerPreviewShader;
     private readonly RlManaged.Shader layerPreviewLightShader;
+
+    private Stopwatch elapsedStopwatch = new();
 
     public DrizzleRenderWindow(bool onlyGeo)
     {
@@ -187,42 +190,60 @@ class DrizzleRenderWindow : IDisposable
 
     private void ShowStatusText()
     {
+        bool showTime = true;
+
         // status sidebar
         if (drizzleRenderer is null || drizzleRenderer.State == RenderState.Errored)
         {
             ImGui.Text("An error occured!\nCheck the logs for more info.");
+            if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
         }
         else if (drizzleRenderer.State == RenderState.Cancelling)
         {
             ImGui.Text("Cancelling...");
+            if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
         }
         else if (drizzleRenderer.State == RenderState.Canceled)
         {
             ImGui.Text("Canceled");
+            if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
         }
         else
         {
             if (drizzleRenderer.State == RenderState.Finished)
             {
                 ImGui.Text("Done!");
+                if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
             }
             else if (drizzleRenderer.State == RenderState.Initializing)
             {
                 ImGui.Text("Initializing Zygote runtime...");
+                showTime = false;
             }
             else if (drizzleRenderer.State == RenderState.Loading)
             {
                 ImGui.Text("Loading level...");
+                showTime = false;
             }
             else if (drizzleRenderer.State == RenderState.GeometryExport)
             {
                 ImGui.Text($"Exporting geometry...");
+                showTime = false;
             }
             else
             {
                 ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");
+                
+                if (!elapsedStopwatch.IsRunning)
+                {
+                    elapsedStopwatch.Start();
+                }
             }
 
+            if (showTime)
+                ImGui.TextUnformatted(elapsedStopwatch.Elapsed.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture));
+            
+            ImGui.NewLine();
             ImGui.TextUnformatted(drizzleRenderer.DisplayString);
         }
     }
