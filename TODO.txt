@@ -18,6 +18,7 @@ Bugs:
 
 Overall:
 - client code mouse position doesn't work with multi-viewport
+- prop selection box is affected by bfTiles (don't do this)
 - autotile joining
   - option to join only inner tiles
   - ability to recognize more than one tile as a direction type
