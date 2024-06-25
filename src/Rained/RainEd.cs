@@ -175,6 +175,9 @@ sealed class RainEd
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
         }
 
+        // load shaders
+        Shaders.LoadShaders();
+
         // run the update checker
         var versionCheckTask = UpdateChecker.FetchLatestVersion();
 

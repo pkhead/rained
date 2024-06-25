@@ -147,7 +147,7 @@ class LightChangeRecorder : IDisposable
         lightMap.RaylibBeginTextureMode();
         Raylib.ClearBackground(Color.Black);
         Raylib.DrawTexture(origLightmap, 0, 0, Color.White);
-        Raylib.BeginShaderMode(RainEd.Instance.LightBrushDatabase.Shader);
+        Raylib.BeginShaderMode(Shaders.LevelLightShader);
         recurse(lastStroke);
         Raylib.EndShaderMode();
         Raylib.EndTextureMode();

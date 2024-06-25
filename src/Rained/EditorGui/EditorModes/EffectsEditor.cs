@@ -18,25 +18,6 @@ class EffectsEditor : IEditorMode
     private RlManaged.Texture2D matrixTexture;
     private RlManaged.Image matrixImage;
 
-    private readonly static string MatrixTextureShaderSource = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            finalColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * glib_color * glib_uColor;
-        }
-    ";
-    private readonly RlManaged.Shader matrixTexShader;
-
     private int brushSize = 4;
     private Vector2 lastBrushPos = new();
     private bool isToolActive = false;
@@ -46,9 +27,6 @@ class EffectsEditor : IEditorMode
     public EffectsEditor(LevelView window)
     {
         this.window = window;
-
-        // create shader
-        matrixTexShader = RlManaged.Shader.LoadFromMemory(null, MatrixTextureShaderSource);
 
         // create matrix texture
         var level = RainEd.Instance.Level;
@@ -596,7 +574,7 @@ class EffectsEditor : IEditorMode
             matrixImage.UpdateTexture(matrixTexture);
 
             // then, draw the matrix texture
-            Raylib.BeginShaderMode(matrixTexShader);
+            Raylib.BeginShaderMode(Shaders.EffectsMatrixShader);
             Raylib.DrawTextureEx(
                 matrixTexture,
                 Vector2.Zero,

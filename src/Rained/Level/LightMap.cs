@@ -18,28 +18,9 @@ struct BrushAtom
 
 class LightBrushDatabase
 {
-    private readonly static string levelLightShaderSrc = @"
-        #version 330 core
-        
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            finalColor = vec4(1.0, 1.0, 1.0, 1.0 - texelColor.r) * glib_color * glib_uColor;
-        }
-    ";
-
     private readonly List<LightBrush> lightBrushes;
 
     public List<LightBrush> Brushes { get => lightBrushes; }
-    public readonly RlManaged.Shader Shader;
 
     public LightBrushDatabase()
     {
@@ -61,8 +42,6 @@ class LightBrushDatabase
                 Texture = tex
             });
         }
-
-        Shader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
     }
 }
 

@@ -264,7 +264,7 @@ partial class PropEditor : IEditorMode
 
             Raylib.BeginTextureMode(previewTexture);
             Raylib.ClearBackground(Color.Blank);
-            Raylib.BeginShaderMode(window.Renderer.PropPreviewShader);
+            Raylib.BeginShaderMode(Shaders.PropShader);
             {
                 var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop);
                 for (int depth = prop.LayerCount - 1; depth >= 0; depth--)

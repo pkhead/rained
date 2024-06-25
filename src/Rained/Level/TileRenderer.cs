@@ -349,7 +349,7 @@ class TileRenderer
         if (renderInfo.Palette >= 0)
         {
             renderPalette = true;
-            shader = renderInfo.PaletteShader;
+            shader = Shaders.PaletteShader;
             Raylib.BeginShaderMode(shader);
 
             // send palette color information to the shader
@@ -377,7 +377,7 @@ class TileRenderer
         else
         {
             renderPalette = false;
-            shader = renderInfo.TilePreviewShader;
+            shader = Shaders.TileShader;
             Raylib.BeginShaderMode(shader);
         }
 
