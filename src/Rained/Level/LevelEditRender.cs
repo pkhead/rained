@@ -40,124 +40,6 @@ class LevelEditRender
         LevelObject.WhackAMoleHole, LevelObject.ScavengerHole
     };
 
-    // the shader used for prop rendering in the editor.
-    // white pixels are transparent
-    // the R color component controls transparency and the G color component controls white blend 
-    private readonly static string PropShaderSrc = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
-
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
-            vec3 color = mix(texelColor.rgb, vec3(1.0), glib_color.y);
-
-            finalColor = vec4(color, (1.0 - float(isTransparent)) * glib_color.x) * glib_uColor;
-        }
-    ";
-
-    // the shader used for tile rendering in the editor.
-    // while pixels are transparent.
-    private readonly static string TileShaderSrc = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
-
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-
-            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
-            bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
-            bool isShade = length(texelColor.rgb - vec3(1.0, 0.0, 0.0)) < 0.3;
-            bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
-            bool isShaded = isLight || isShade || isNormal;
-
-            float light = float(isLight) * 1.0 + float(isShade) * 0.4 + float(isNormal) * 0.8;
-            vec3 shadedCol = glib_color.rgb * light;
-
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
-        }
-    ";
-
-    private readonly static string PaletteShaderSrc = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        uniform vec3[30] litColor;
-        uniform vec3[30] neutralColor;
-        uniform vec3[30] shadedColor; 
-
-        out vec4 finalColor;
-
-        void main()
-        {
-            bool inBounds = glib_texCoord.x >= 0.0 && glib_texCoord.x <= 1.0 && glib_texCoord.y >= 0.0 && glib_texCoord.y <= 1.0;
-
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-
-            bool isTransparent = (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
-            bool isLight = length(texelColor.rgb - vec3(0.0, 0.0, 1.0)) < 0.3;
-            bool isShade = length(texelColor.rgb - vec3(1.0, 0.0, 0.0)) < 0.3;
-            bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
-            bool isShaded = isLight || isShade || isNormal;
-
-            int colIndex = int(glib_color.r * 29.0);
-            vec3 shadedCol = float(isLight) * litColor[colIndex] + float(isShade) * shadedColor[colIndex] + float(isNormal) * neutralColor[colIndex];
-
-            finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
-        }
-    ";
-
-    private const string GridVertexShaderSource = @"
-        #version 330 core
-        layout (location = 0) in vec3 aPos;
-
-        uniform mat4 glib_uMatrix;
-
-        void main()
-        {
-            gl_Position = glib_uMatrix * vec4(aPos.xyz, 1.0);
-        }
-    ";
-
-    private const string GridFragmentShaderSource = @"
-        #version 330 core
-
-        out vec4 fragColor;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        void main()
-        {
-            fragColor = texture(glib_uTexture, vec2(0.0, 0.0)) * glib_uColor;
-        }
-    ";
-
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
@@ -173,13 +55,7 @@ class LevelEditRender
     private readonly EditorGeometryRenderer geoRenderer;
     public EditorGeometryRenderer Geometry { get => geoRenderer; }
     private readonly TileRenderer tileRenderer;
-    private readonly RlManaged.Shader propPreviewShader;
 
-    public RlManaged.Shader PropPreviewShader { get => propPreviewShader; }
-    public readonly RlManaged.Shader TilePreviewShader;
-    public readonly RlManaged.Shader PaletteShader;
-    
-    private readonly Glib.Shader gridShader;
     private Glib.Mesh? gridMajor = null;
     private Glib.Mesh? gridMinor = null;
     private int gridWidth = 0;
@@ -206,12 +82,6 @@ class LevelEditRender
             palettes.Add(new Palette(filePath));
         }
         Palettes = [..palettes];
-        
-        // load graphic shaders
-        propPreviewShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
-        TilePreviewShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
-        PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
-        gridShader = RainEd.RenderContext!.CreateShader(GridVertexShaderSource, GridFragmentShaderSource);
 
         geoRenderer = new EditorGeometryRenderer(this);
         tileRenderer = new TileRenderer(this);
@@ -667,7 +537,7 @@ class LevelEditRender
             var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
 
             rctx.SetEnabled(Glib.Feature.CullFace, false);
-            Raylib.BeginShaderMode(propPreviewShader);
+            Raylib.BeginShaderMode(Shaders.PropShader);
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
 
@@ -810,7 +680,7 @@ class LevelEditRender
         // opacity decreases as user zooms out. value is sqrt'd to
         // make it fall off at a better rate.
         var opacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
-        rctx.Shader = gridShader;
+        rctx.Shader = Shaders.GridShader.GlibShader;
         rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * (50f/255f));
         rctx.Draw(gridMinor);
         rctx.Draw(gridMajor);

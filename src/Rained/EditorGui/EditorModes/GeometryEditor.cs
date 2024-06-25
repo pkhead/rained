@@ -142,28 +142,6 @@ class GeometryEditor : IEditorMode
     // work layer
     private readonly bool[] layerMask;
 
-    private readonly static string OutlineMarqueeShaderSource = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 finalColor;
-
-        uniform float time;
-
-        void main()
-        {
-            vec4 col = texture(glib_uTexture, glib_texCoord) * glib_uColor * glib_color;
-            bool marquee = mod(gl_FragCoord.x + gl_FragCoord.y + time * 50.0, 10.0) < 5.0;
-            finalColor = vec4(col.rgb, col.a * float(marquee));
-        }
-    ";
-    private readonly RlManaged.Shader outlineMarqueeShader;
-
     public GeometryEditor(LevelView levelView)
     {
         layerMask = new bool[3];
@@ -186,8 +164,6 @@ class GeometryEditor : IEditorMode
                 RainEd.Logger.Error("Invalid layer view mode '{ViewMode}' in preferences.json", RainEd.Instance.Preferences.GeometryViewMode);
                 break;
         }
-
-        outlineMarqueeShader = RlManaged.Shader.LoadFromMemory(null, OutlineMarqueeShaderSource);
 
         isSelectionActive = false;
         selectSX = 0;
@@ -673,8 +649,8 @@ class GeometryEditor : IEditorMode
             bool marquee = toolRectMode == RectMode.Select;
             if (marquee)
             {
-                Raylib.BeginShaderMode(outlineMarqueeShader);
-                outlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
+                Raylib.BeginShaderMode(Shaders.OutlineMarqueeShader);
+                Shaders.OutlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
             }
 
             Raylib.DrawRectangleLinesEx(
@@ -705,8 +681,8 @@ class GeometryEditor : IEditorMode
             var rectW = rectMaxX - rectMinX + 1;
             var rectH = rectMaxY - rectMinY + 1;
 
-            Raylib.BeginShaderMode(outlineMarqueeShader);
-            outlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
+            Raylib.BeginShaderMode(Shaders.OutlineMarqueeShader);
+            Shaders.OutlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
 
             Raylib.DrawRectangleLinesEx(
                 new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),

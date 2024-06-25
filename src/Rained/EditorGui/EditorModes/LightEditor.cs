@@ -382,7 +382,7 @@ class LightEditor : IEditorMode
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
 
-        var shader = RainEd.Instance.LightBrushDatabase.Shader;
+        var shader = Shaders.LevelLightShader;
         Raylib.BeginShaderMode(shader);
         //shader.GlibShader.SetUniform("uColor", Glib.Color.FromRGBA(0, 0, 0, 80));
         //shader.GlibShader.SetUniform("uTexture", RainEd.RenderContext.WhiteTexture);
