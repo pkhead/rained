@@ -18,6 +18,7 @@ Bugs:
 - on last/row column, crash on geo modify if axis of level size is a power of 2
 - "i hovered over a broken tile and [it crashed]"
 - make the use of save as more obvious for emergency saves
+- multiple emergency saves
 
 Overall:
 - client code mouse position doesn't work with multi-viewport
