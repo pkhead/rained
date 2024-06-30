@@ -132,12 +132,7 @@ class GeometryEditor : IEditorMode
     private int rectEX;
     private int rectEY;
 
-    private bool isSelectionActive = false;
-    private int selectSX, selectSY;
-    private int selectEX, selectEY;
-
     private int lastMouseX, lastMouseY;
-    private Vector2 lastMousePos;
 
     // work layer
     private readonly bool[] layerMask;
@@ -165,11 +160,11 @@ class GeometryEditor : IEditorMode
                 break;
         }
 
-        isSelectionActive = false;
-        selectSX = 0;
-        selectSY = 0;
-        selectEX = 0;
-        selectEY = 0;
+        view.IsSelectionActive = false;
+        view.SelectMinX = 0;
+        view.SelectMinY = 0;
+        view.SelectMaxX = 0;
+        view.SelectMaxY = 0;
     }
     
     public enum LayerViewMode : int
@@ -209,7 +204,7 @@ class GeometryEditor : IEditorMode
     {
         if (selectedTool == Tool.MoveSelected)
         {
-            ClearSelection();
+            EndSelectedMovement();
         }
 
         isToolActive = false;
@@ -237,7 +232,7 @@ class GeometryEditor : IEditorMode
     public void ReloadLevel()
     {
         view.Renderer.Geometry.ClearOverlay();
-        isSelectionActive = false;
+        view.IsSelectionActive = false;
         isToolActive = false;
         toolRectMode = RectMode.None;
     }
@@ -535,11 +530,11 @@ class GeometryEditor : IEditorMode
         }
         
         // forward selection data to the cell change recorder
-        view.CellChangeRecorder.IsSelectionActive = isSelectionActive;
-        view.CellChangeRecorder.SelectionX = selectSX;
-        view.CellChangeRecorder.SelectionY = selectSY;
-        view.CellChangeRecorder.SelectionWidth = selectEX - selectSX + 1;
-        view.CellChangeRecorder.SelectionHeight = selectEY - selectSY + 1;
+        view.CellChangeRecorder.IsSelectionActive = view.IsSelectionActive;
+        view.CellChangeRecorder.SelectionX = view.SelectMinX;
+        view.CellChangeRecorder.SelectionY = view.SelectMinY;
+        view.CellChangeRecorder.SelectionWidth = view.SelectMaxX - view.SelectMinX + 1;
+        view.CellChangeRecorder.SelectionHeight = view.SelectMaxY - view.SelectMinY + 1;
         
         // begin mouse interaction code
         if (view.IsViewportHovered)
@@ -562,11 +557,11 @@ class GeometryEditor : IEditorMode
                 }
                 else if (toolRectMode == RectMode.Select)
                 {
-                    isSelectionActive = true;
-                    selectSX = rectSX;
-                    selectSY = rectSY;
-                    selectEX = rectEX;
-                    selectEY = rectEY;
+                    view.IsSelectionActive = true;
+                    view.SelectMinX = Math.Min(rectSX, rectEX);
+                    view.SelectMaxX = Math.Max(rectSX, rectEX);
+                    view.SelectMinY = Math.Min(rectSY, rectEY);
+                    view.SelectMaxY = Math.Max(rectSY, rectEY);
 
                     if (!isMouseDown)
                     {
@@ -672,12 +667,12 @@ class GeometryEditor : IEditorMode
         }
 
         // draw selection rect
-        if (isSelectionActive)
+        if (view.IsSelectionActive)
         {
-            var rectMinX = Math.Min(selectSX, selectEX);
-            var rectMinY = Math.Min(selectSY, selectEY);
-            var rectMaxX = Math.Max(selectSX, selectEX);
-            var rectMaxY = Math.Max(selectSY, selectEY);
+            var rectMinX = view.SelectMinX;
+            var rectMinY = view.SelectMinY;
+            var rectMaxX = view.SelectMaxX;
+            var rectMaxY = view.SelectMaxY;
             var rectW = rectMaxX - rectMinX + 1;
             var rectH = rectMaxY - rectMinY + 1;
 
@@ -695,7 +690,6 @@ class GeometryEditor : IEditorMode
         
         lastMouseX = view.MouseCx;
         lastMouseY = view.MouseCy;
-        lastMousePos = view.MouseCellFloat;
 
         Raylib.EndScissorMode();
     }
@@ -743,7 +737,7 @@ class GeometryEditor : IEditorMode
                 return;
             
             case Tool.MoveSelection:
-                if (isSelectionActive)
+                if (view.IsSelectionActive)
                 {
                     if (pressed)
                     {
@@ -752,10 +746,10 @@ class GeometryEditor : IEditorMode
                         toolLastY = ty;
                     }
                     
-                    selectSX += tx - toolLastX;
-                    selectSY += ty - toolLastY;
-                    selectEX += tx - toolLastX;;
-                    selectEY += ty - toolLastY;
+                    view.SelectMinX += tx - toolLastX;
+                    view.SelectMinY += ty - toolLastY;
+                    view.SelectMaxX += tx - toolLastX;;
+                    view.SelectMaxY += ty - toolLastY;
 
                     toolLastX = tx;
                     toolLastY = ty;
@@ -763,7 +757,7 @@ class GeometryEditor : IEditorMode
                 return;
             
             case Tool.MoveSelected:
-                if (isSelectionActive)
+                if (view.IsSelectionActive)
                 {
                     if (pressed)
                     {
@@ -777,10 +771,10 @@ class GeometryEditor : IEditorMode
                     view.Renderer.Geometry.OverlayY += ty - toolLastY;
                     
                     // move selection bounds too
-                    selectSX += tx - toolLastX;
-                    selectSY += ty - toolLastY;
-                    selectEX += tx - toolLastX;;
-                    selectEY += ty - toolLastY;
+                    view.SelectMinX += tx - toolLastX;
+                    view.SelectMinY += ty - toolLastY;
+                    view.SelectMaxX += tx - toolLastX;;
+                    view.SelectMaxY += ty - toolLastY;
 
                     toolLastX = tx;
                     toolLastY = ty;
@@ -789,7 +783,7 @@ class GeometryEditor : IEditorMode
         }
 
         // handle geo tools
-        if (pressed && isSelectionActive)
+        if (pressed && view.IsSelectionActive)
         {
             ClearSelection();
         }
@@ -1026,7 +1020,7 @@ class GeometryEditor : IEditorMode
 
     private void ClearSelection()
     {
-        isSelectionActive = false;
+        view.IsSelectionActive = false;
         EndSelectedMovement();
     }
     
@@ -1044,10 +1038,10 @@ class GeometryEditor : IEditorMode
         // then clearing the cells in the level data that correspond to the overlay
         var level = RainEd.Instance.Level;
 
-        var rectMinX = Math.Min(selectSX, selectEX);
-        var rectMinY = Math.Min(selectSY, selectEY);
-        var rectMaxX = Math.Max(selectSX, selectEX);
-        var rectMaxY = Math.Max(selectSY, selectEY);
+        var rectMinX = Math.Min(view.SelectMinX, view.SelectMaxX);
+        var rectMinY = Math.Min(view.SelectMinY, view.SelectMaxY);
+        var rectMaxX = Math.Max(view.SelectMinX, view.SelectMaxX);
+        var rectMaxY = Math.Max(view.SelectMinY, view.SelectMaxY);
         var rectW = rectMaxX - rectMinX + 1;
         var rectH = rectMaxY - rectMinY + 1;
 
@@ -1144,10 +1138,10 @@ class GeometryEditor : IEditorMode
     {
         view.Renderer.Geometry.ClearOverlay();
 
-        isSelectionActive = selection.IsActive;
-        selectSX = selection.X;
-        selectSY = selection.Y;
-        selectEX = selection.X + selection.Width - 1;
-        selectEY = selection.Y + selection.Height - 1;
+        view.IsSelectionActive = selection.IsActive;
+        view.SelectMinX = selection.X;
+        view.SelectMinY = selection.Y;
+        view.SelectMaxX = selection.X + selection.Width - 1;
+        view.SelectMaxY = selection.Y + selection.Height - 1;
     }
 }

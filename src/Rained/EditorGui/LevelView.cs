@@ -27,6 +27,12 @@ class LevelView
     public bool OverrideMouseWheel = false;
     public string StatusText = string.Empty;
 
+    public bool IsSelectionActive = false;
+    public int SelectMinX = 0;
+    public int SelectMinY = 0;
+    public int SelectMaxX = 0;
+    public int SelectMaxY = 0;
+
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
 

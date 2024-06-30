@@ -5,6 +5,8 @@ geo-improvements;
 
 - move selected, add wall (selection clears), undo, redo, bug: selection doesn't clear
 - objects don't display in selection
+- ctrl to select in geo editor
+- have selection in tile editor do somethign...
 
 Priority:
 - configurable tile spec colors

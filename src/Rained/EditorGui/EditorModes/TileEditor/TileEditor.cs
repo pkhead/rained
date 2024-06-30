@@ -45,8 +45,8 @@ partial class TileEditor : IEditorMode
     // rect fill start
     private CellPosition rectStart;
 
-    enum RectMode { Inactive, Place, Remove };
-    private RectMode rectMode = 0;
+    enum RectMode { Inactive, Place, Remove, Select };
+    private RectMode rectMode = RectMode.Inactive;
     
     public TileEditor(LevelView window) {
         this.window = window;
@@ -283,21 +283,51 @@ partial class TileEditor : IEditorMode
                 {
                     isMouseHeldInMode = false;
                 }
-                
-                // render selected tile
-                switch (selectionMode)
+
+                // begin selection mode on ctrl
+                if (rectMode == RectMode.Inactive && isMouseHeldInMode && isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
                 {
-                    case SelectionMode.Tiles:
-                        ProcessTiles();
-                        break;
+                    rectStart = new CellPosition(window.MouseCx, window.MouseCy, window.WorkLayer);
+                    rectMode = RectMode.Select;
+                }
+                
+                if (rectMode == RectMode.Select)
+                {
+                    var rMinX = Math.Min(rectStart.X, window.MouseCx);
+                    var rMaxX = Math.Max(rectStart.X, window.MouseCx);
+                    var rMinY = Math.Min(rectStart.Y, window.MouseCy);
+                    var rMaxY = Math.Max(rectStart.Y, window.MouseCy);
+                    var rWidth = rMaxX - rMinX + 1;
+                    var rHeight = rMaxY - rMinY + 1;
 
-                    case SelectionMode.Materials:
-                        ProcessMaterials();
-                        break;
+                    window.IsSelectionActive = true;
+                    window.SelectMinX = rMinX;
+                    window.SelectMinY = rMinY;
+                    window.SelectMaxX = rMaxX;
+                    window.SelectMaxY = rMaxY;
 
-                    case SelectionMode.Autotiles:
-                        ProcessAutotiles();
-                        break;
+                    if (!isToolActive)
+                    {
+                        rectMode = RectMode.Inactive;
+                    }
+                }
+                else
+                {
+                    // render current mode
+                    switch (selectionMode)
+                    {
+                        case SelectionMode.Tiles:
+                            ProcessTiles();
+                            break;
+
+                        case SelectionMode.Materials:
+                            ProcessMaterials();
+                            break;
+
+                        case SelectionMode.Autotiles:
+                            ProcessAutotiles();
+                            break;
+                    }
                 }
 
                 // material and tile eyedropper and removal
@@ -398,6 +428,33 @@ partial class TileEditor : IEditorMode
             lastPlaceX = -1;
             lastPlaceY = -1;
             lastPlaceL = -1;
+        }
+
+        // draw selection area
+        if (window.IsSelectionActive)
+        {
+            int rMinX = window.SelectMinX;
+            int rMinY = window.SelectMinY;
+            int rWidth = window.SelectMaxX - rMinX + 1;
+            int rHeight = window.SelectMaxY - rMinY + 1;
+
+            Raylib.BeginShaderMode(Shaders.OutlineMarqueeShader);
+            Shaders.OutlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
+
+            Raylib.DrawRectangleLines(
+                rMinX * Level.TileSize,
+                rMinY * Level.TileSize,
+                rWidth * Level.TileSize,
+                rHeight * Level.TileSize,
+                Color.White
+            );
+            
+            Raylib.EndShaderMode();
+
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                window.IsSelectionActive = false;
+            }
         }
         
         Raylib.EndScissorMode();
@@ -514,7 +571,7 @@ partial class TileEditor : IEditorMode
                 rectMode = RectMode.Remove;
             }
 
-            if (rectMode != RectMode.Inactive)
+            if (rectMode == RectMode.Place || rectMode == RectMode.Remove)
                 rectStart = new CellPosition(window.MouseCx, window.MouseCy, window.WorkLayer);
         }
 
@@ -721,7 +778,7 @@ partial class TileEditor : IEditorMode
                 rectMode = RectMode.Remove;
             }
 
-            if (rectMode != RectMode.Inactive)
+            if (rectMode == RectMode.Place || rectMode == RectMode.Remove)
                 rectStart = new CellPosition(window.MouseCx + rectOffsetX, window.MouseCy + rectOffsetY, window.WorkLayer);
         }
 
