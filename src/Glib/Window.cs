@@ -14,6 +14,13 @@ public enum MouseButton
     Middle = 2
 }
 
+public enum WindowTheme
+{
+    Default,
+    Light,
+    Dark
+}
+
 public class Window : IDisposable
 {
     private readonly IWindow window;
@@ -32,6 +39,12 @@ public class Window : IDisposable
     public bool IsClosing { get => window.IsClosing; set => window.IsClosing = value; }
     public string Title { get => window.Title; set => window.Title = value; }
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
+
+    /// <summary>
+    /// The theme of the window's titlebar. It is always
+    /// Default before Initialize is called.
+    /// </summary>
+    public WindowTheme Theme { get; private set; } = WindowTheme.Default;
 
     public event Action? Load;
     public event Action? ImGuiConfigure;
@@ -246,6 +259,8 @@ public class Window : IDisposable
     public void Initialize()
     {
         window.Initialize();
+        PlatformSpecific.TryWindowTheme(window, out WindowTheme theme);
+        Theme = theme;
     }
 
     public void MakeCurrent()

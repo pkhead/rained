@@ -210,8 +210,15 @@ class UserPreferences
         OptimizedTilePreviews = true;
 
         Theme = "Dark";
-        ImGuiMultiViewport = false;
+        if (Boot.Window is not null)
+        {
+            if (Boot.Window.Theme == Glib.WindowTheme.Light)
+                Theme = "Light";
+            else if (Boot.Window.Theme == Glib.WindowTheme.Dark)
+                Theme = "Dark";
+        }
 
+        ImGuiMultiViewport = false;
         ShowPaletteWindow = false;
         UsePalette = false;
         PaletteIndex = 0;
