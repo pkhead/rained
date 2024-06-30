@@ -382,6 +382,12 @@ class EditorGeometryRenderer
 
     private void MarkNeedsRedraw(ChunkPos cpos)
     {
+        // out of bounds check
+        if ((cpos.X + 1) * ChunkWidth <= 0) return;
+        if ((cpos.X + 1) * ChunkHeight <= 0) return;
+        if (cpos.X * ChunkWidth >= RainEd.Instance.Level.Width) return;
+        if (cpos.Y * ChunkHeight >= RainEd.Instance.Level.Height) return;
+
         if (!dirtyChunks.Contains(cpos))
             dirtyChunks.Add(cpos);
     }
