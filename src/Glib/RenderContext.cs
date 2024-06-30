@@ -820,10 +820,29 @@ public class RenderContext : IDisposable
 
     public void DrawRectangleLines(float x, float y, float w, float h)
     {
-        DrawRectangle(x, y, w, LineWidth); // top side
-        DrawRectangle(x, y+LineWidth, LineWidth, h-LineWidth); // left side
-        DrawRectangle(x, y+h-LineWidth, w-LineWidth, LineWidth); // bottom side
-        DrawRectangle(x+w-LineWidth, y+LineWidth, LineWidth, h-LineWidth); // right side
+        if (UseGlLines)
+        {
+            BeginBatchDraw(8, PrimitiveType.Lines);
+
+            PushVertex(x, y);
+            PushVertex(x, y + h);
+
+            PushVertex(x, y + h);
+            PushVertex(x + w, y + h);
+
+            PushVertex(x + w, y + h);
+            PushVertex(x + w, y);
+
+            PushVertex(x + w, y);
+            PushVertex(x, y);
+        }
+        else
+        {
+            DrawRectangle(x, y, w, LineWidth); // top side
+            DrawRectangle(x, y+LineWidth, LineWidth, h-LineWidth); // left side
+            DrawRectangle(x, y+h-LineWidth, w-LineWidth, LineWidth); // bottom side
+            DrawRectangle(x+w-LineWidth, y+LineWidth, LineWidth, h-LineWidth); // right side
+        }
     }
 
     private const float SmoothCircleErrorRate = 0.5f;
