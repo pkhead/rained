@@ -20,4 +20,13 @@ static class RlExt
     
     public static void DrawRenderTexture(RenderTexture2D target, int posX, int posY, Color tint)
         => DrawRenderTextureV(target, new Vector2(posX, posY), tint);
+    
+    // Not supported by Raylib
+    public static void DrawRectangleLinesRec(Rectangle rect, Color color)
+    {
+        var ctx = Raylib.GlibWindow.RenderContext!;
+        ctx.UseGlLines = true;
+        ctx.DrawColor = Raylib.ToGlibColor(color);
+        ctx.DrawRectangleLines(rect.X, rect.Y, rect.Width, rect.Height);
+    }
 }

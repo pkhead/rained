@@ -158,6 +158,8 @@ class UserPreferences
     public HexColor LayerColor2;
     public HexColor LayerColor3;
     public HexColor BackgroundColor;
+    public HexColor TileSpec1;
+    public HexColor TileSpec2;
     
     [JsonPropertyName("layerColor1")]
     public string LayerColor1String { get => LayerColor1.ToString(); set => LayerColor1 = new HexColor(value); }
@@ -167,6 +169,10 @@ class UserPreferences
     public string LayerColor3String { get => LayerColor3.ToString(); set => LayerColor3 = new HexColor(value); }
     [JsonPropertyName("bgColor")]
     public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
+    [JsonPropertyName("tileSpec1")]
+    public string TileSpec1String { get => TileSpec1.ToString(); set => TileSpec1 = new HexColor(value); }
+    [JsonPropertyName("tileSpec2")]
+    public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColor(value); }
 
     public string Theme { get; set; }
     public bool ImGuiMultiViewport { get; set; }
@@ -213,6 +219,8 @@ class UserPreferences
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
         BackgroundColor = new HexColor(127, 127, 127);
+        TileSpec1 = new HexColor("#99FF5B");
+        TileSpec2 = new HexColor("#61A338");
 
         RecentFiles = [];
 

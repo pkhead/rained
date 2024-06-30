@@ -169,6 +169,8 @@ static class PreferencesWindow
     private static Vector3 layerColor2;
     private static Vector3 layerColor3;
     private static Vector3 bgColor;
+    private static Vector3 tileSpec1Color;
+    private static Vector3 tileSpec2Color;
 
     private static void ShowGeneralTab(bool entered)
     {
@@ -191,6 +193,8 @@ static class PreferencesWindow
                 layerColor2 = HexColorToVec3(prefs.LayerColor2);
                 layerColor3 = HexColorToVec3(prefs.LayerColor3);
                 bgColor = HexColorToVec3(prefs.BackgroundColor);
+                tileSpec1Color = HexColorToVec3(prefs.TileSpec1);
+                tileSpec2Color = HexColorToVec3(prefs.TileSpec2);
             }
 
             ImGui.ColorEdit3("##Layer Color 1", ref layerColor1);
@@ -241,11 +245,37 @@ static class PreferencesWindow
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Background Color");
 
+            // L1 TILE SPECS
+            ImGui.ColorEdit3("##Tile Specs L1", ref tileSpec1Color);
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetTS1"))
+            {
+                tileSpec1Color = new HexColor("#99FF5B").ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Tile Specs L1");
+
+            // L2 TILE SPECS
+            ImGui.ColorEdit3("##Tile Specs L2", ref tileSpec2Color);
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetTS2"))
+            {
+                tileSpec2Color = new HexColor("#61A338").ToVector3();
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Tile Specs L2");
+
             // update layer colors in preferences class
             prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
             prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
             prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
             prefs.BackgroundColor = Vec3ToHexColor(bgColor);
+            prefs.TileSpec1 = Vec3ToHexColor(tileSpec1Color);
+            prefs.TileSpec2 = Vec3ToHexColor(tileSpec2Color);
 
             // TODO: font scale
         }

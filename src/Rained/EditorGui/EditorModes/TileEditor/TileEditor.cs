@@ -83,17 +83,15 @@ partial class TileEditor : IEditorMode
         {
             // air is represented by a cross (OMG ASCEND WITH GORB???)
             // an empty cell (-1) would mean any tile is accepted
-            Raylib.DrawLineEx(
+            Raylib.DrawLineV(
                 startPos: new Vector2(x * Level.TileSize + 5, y * Level.TileSize + 5),
                 endPos: new Vector2((x+1) * Level.TileSize - 5, (y+1) * Level.TileSize - 5),
-                lineWidth,
                 color
             );
 
-            Raylib.DrawLineEx(
+            Raylib.DrawLineV(
                 startPos: new Vector2((x+1) * Level.TileSize - 5, y * Level.TileSize + 5),
                 endPos: new Vector2(x * Level.TileSize + 5, (y+1) * Level.TileSize - 5),
-                lineWidth,
                 color
             );
         }
@@ -103,33 +101,29 @@ partial class TileEditor : IEditorMode
             switch (cellType)
             {
                 case GeoType.Solid:
-                    Raylib.DrawRectangleLinesEx(
+                    RlExt.DrawRectangleLinesRec(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                        lineWidth,
                         color
                     );
                     break;
                 
                 case GeoType.Platform:
-                    Raylib.DrawRectangleLinesEx(
+                    RlExt.DrawRectangleLinesRec(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, 10),
-                        lineWidth,
                         color
                     );
                     break;
                 
                 case GeoType.Glass:
-                    Raylib.DrawRectangleLinesEx(
+                    RlExt.DrawRectangleLinesRec(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                        lineWidth,
                         color
                     );
                     break;
 
                 case GeoType.ShortcutEntrance:
-                    Raylib.DrawRectangleLinesEx(
+                    RlExt.DrawRectangleLinesRec(
                         new Rectangle(x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize),
-                        lineWidth,
                         Color.Red
                     );
                     break;
@@ -730,6 +724,8 @@ partial class TileEditor : IEditorMode
         {
             // draw tile requirements
             // second layer
+            var prefs = RainEd.Instance.Preferences;
+
             if (selectedTile.HasSecondLayer)
             {
                 for (int x = 0; x < selectedTile.Width; x++)
@@ -740,7 +736,7 @@ partial class TileEditor : IEditorMode
                         Rlgl.Translatef(tileOriginX * Level.TileSize + 2, tileOriginY * Level.TileSize + 2, 0);
 
                         sbyte tileInt = selectedTile.Requirements2[x,y];
-                        DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(0, 255, 0, 255));
+                        DrawTile(tileInt, x, y, 1f / window.ViewZoom, prefs.TileSpec2.ToRGBA(255));
                         Rlgl.PopMatrix();
                     }
                 }
@@ -755,7 +751,7 @@ partial class TileEditor : IEditorMode
                     Rlgl.Translatef(tileOriginX * Level.TileSize, tileOriginY * Level.TileSize, 0);
 
                     sbyte tileInt = selectedTile.Requirements[x,y];
-                    DrawTile(tileInt, x, y, 1f / window.ViewZoom, new Color(255, 0, 0, 255));
+                    DrawTile(tileInt, x, y, 1f / window.ViewZoom, prefs.TileSpec1.ToRGBA(255));
                     Rlgl.PopMatrix();
                 }
             }
