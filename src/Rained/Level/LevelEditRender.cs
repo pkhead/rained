@@ -242,7 +242,7 @@ class LevelEditRender
         geoRenderer.Render(layer, color);
     }
 
-    public void RenderObjects(Color color)
+    public void RenderObjects(int layer, Color color)
     {
         int viewL = (int) Math.Floor(ViewTopLeft.X);
         int viewT = (int) Math.Floor(ViewTopLeft.Y);
@@ -253,7 +253,7 @@ class LevelEditRender
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                ref var cell = ref Level.Layers[0, x, y];
+                ref var cell = ref Level.Layers[layer, x, y];
 
                 // draw object graphics
                 for (int i = 1; i < 32; i++)

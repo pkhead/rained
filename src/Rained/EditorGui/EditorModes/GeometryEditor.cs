@@ -35,7 +35,7 @@ class GeometryEditor : IEditorMode
         ForbidFlyChain,
         GarbageWorm,
         WormGrass,
-        CopyBackwards, // TODO: this will be superseded whenever i finish the geo-improvements branch
+        CopyBackwards,
 
         ToolCount // not an enum, just the number of tools
     }
@@ -158,9 +158,7 @@ class GeometryEditor : IEditorMode
     }
 
     public LayerViewMode layerViewMode = LayerViewMode.Overlay;
-    private readonly string[] viewModeNames = new string[2] {
-        "Overlay", "Stack"
-    };
+    private readonly string[] viewModeNames = [ "Overlay", "Stack" ];
 
     public void Load()
     {
@@ -225,6 +223,21 @@ class GeometryEditor : IEditorMode
                 RainEd.Logger.Error("Invalid LayerViewMode {EnumID}", (int) layerViewMode);
                 break;
         }
+    }
+
+    private bool ToolCanRectPlace(Tool tool)
+    {
+        return tool switch
+        {
+            Tool.CreatureDen => false,
+            Tool.Entrance => false,
+            Tool.GarbageWorm => false,
+            Tool.Rock => false,
+            Tool.ScavengerHole => false,
+            Tool.ShortcutEntrance => false,
+            Tool.Spear => false,
+            _ => true,
+        };
     }
 
     public void DrawToolbar()
@@ -339,13 +352,7 @@ class GeometryEditor : IEditorMode
 
                 window.StatusText = $"({rectW}, {rectH})";
             }
-            else if (
-                selectedTool == Tool.Wall ||
-                selectedTool == Tool.Air ||
-                selectedTool == Tool.Inverse ||
-                selectedTool == Tool.Glass ||
-                selectedTool == Tool.CopyBackwards
-            )
+            else if (ToolCanRectPlace(selectedTool))
             {
                 window.StatusText = "Shift+Drag to fill rect";
             }
@@ -420,6 +427,10 @@ class GeometryEditor : IEditorMode
                     }
                 }
 
+                levelRender.RenderObjects(2, new Color(255, 255, 255, foregroundAlpha / 4));
+                levelRender.RenderObjects(1, new Color(255, 255, 255, foregroundAlpha / 2));
+                levelRender.RenderObjects(0, new Color(255, 255, 255, foregroundAlpha));
+
                 break;
             
             // stack: view each layer individually, each other layer is transparent
@@ -460,15 +471,14 @@ class GeometryEditor : IEditorMode
                         levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
                     }
 
+                    levelRender.RenderObjects(l, new Color(255, 255, 255, alpha));
+
                     Rlgl.PopMatrix();
                 }
 
                 break;
         }
 
-        // draw object graphics
-        var objColor = new Color(255, 255, 255, foregroundAlpha);
-        levelRender.RenderObjects(objColor);
         levelRender.RenderShortcuts(Color.White);
         levelRender.RenderGrid();
         levelRender.RenderBorder();
@@ -620,19 +630,19 @@ class GeometryEditor : IEditorMode
                     Color.White
                 );
 
-                if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
+                if (!isMouseDown)
                 {
-                    ApplyToolRect();
+                    ApplyToolRect(!isErasing);
                 }
             }
             
             // normal cursor mode
             // if mouse is within level bounds?
-            else if (window.IsMouseInLevel())
+            else
             {
                 isToolRectActive = false;
 
-                // draw grid cursor otherwise
+                // draw grid cursor
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(window.MouseCx * Level.TileSize, window.MouseCy * Level.TileSize, Level.TileSize, Level.TileSize),
                     1f / window.ViewZoom,
@@ -654,27 +664,20 @@ class GeometryEditor : IEditorMode
                 {
                     if (isClicked || window.MouseCx != lastMouseX || window.MouseCy != lastMouseY)
                     {
-                        if (isErasing)
+                        if (isClicked && EditorWindow.IsKeyDown(ImGuiKey.ModShift) && ToolCanRectPlace(selectedTool))
                         {
-                            for (int l = 0; l < 3; l++)
-                            {
-                                if (!layerMask[l]) continue;
-
-                                ref var cell = ref level.Layers[l, window.MouseCx, window.MouseCy];
-                                cell.Objects = 0;
-
-                                if (cell.Geo == GeoType.ShortcutEntrance)
-                                {
-                                    cell.Geo = GeoType.Air;
-                                }
-
-                                window.Renderer.InvalidateGeo(window.MouseCx, window.MouseCy, l);
-                            }
+                            isToolRectActive = true;
+                            toolRectX = window.MouseCx;
+                            toolRectY = window.MouseCy;
+                        }
+                        else if (isErasing && window.IsMouseInLevel())
+                        {
+                            Erase(window.MouseCx, window.MouseCy);
                         }
                         else
                         {
                             if (!isToolRectActive)
-                                ActivateTool(window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left), EditorWindow.IsKeyDown(ImGuiKey.ModShift));
+                                ActivateTool(window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
                         }
                     }
                 }
@@ -693,31 +696,49 @@ class GeometryEditor : IEditorMode
         Raylib.EndScissorMode();
     }
 
-    private void ActivateTool(int tx, int ty, bool pressed, bool shift)
+    private void Erase(int tx, int ty)
     {
-        ActivateToolSingleTile(tx, ty, pressed, shift);
+        var level = RainEd.Instance.Level;
+
+        for (int l = 0; l < 3; l++)
+        {
+            if (!layerMask[l]) continue;
+
+            ref var cell = ref level.Layers[l, tx, ty];
+            cell.Objects = 0;
+
+            if (cell.Geo == GeoType.ShortcutEntrance)
+                cell.Geo = GeoType.Air;
+
+            window.Renderer.InvalidateGeo(tx, ty, l);
+        }
+    }
+
+    private void ActivateTool(int tx, int ty, bool pressed)
+    {
+        ActivateToolSingleTile(tx, ty, pressed);
         if (isToolRectActive) return;
 
         // mirror logic
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed, shift);
-            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed, shift);
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed, shift);
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed);
+            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed);
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed);
         }
         else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
         {
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed, shift);
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed);
         }
         else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
-            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed, shift);
+            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed);
         }
     }
 
     private bool toolPlaceMode;
 
-    private void ActivateToolSingleTile(int tx, int ty, bool pressed, bool shift)
+    private void ActivateToolSingleTile(int tx, int ty, bool pressed)
     {
         var level = RainEd.Instance.Level;
         if (!level.IsInBounds(tx, ty)) return;
@@ -734,31 +755,11 @@ class GeometryEditor : IEditorMode
             switch (selectedTool)
             {
                 case Tool.Wall:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Solid;
-                    }
-
+                    cell.Geo = GeoType.Solid;
                     break;
                 
                 case Tool.Air:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Air;
-                    }
-
+                    cell.Geo = GeoType.Air;
                     break;
 
                 case Tool.Platform:
@@ -766,32 +767,12 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.Glass:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        cell.Geo = GeoType.Glass;
-                    }
-
+                    cell.Geo = GeoType.Glass;
                     break;
                 
                 case Tool.Inverse:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
-                        cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
-                    }
-
+                    if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
+                    cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
                     break;
 
                 case Tool.ShortcutEntrance:
@@ -801,75 +782,56 @@ class GeometryEditor : IEditorMode
                 
                 case Tool.Slope:
                 {
-                    if (shift)
+                    if (!pressed) break;
+                    static bool IsSolid(Level level, int l, int x, int y)
                     {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
+                        if (x < 0 || y < 0) return false;
+                        if (x >= level.Width || y >= level.Height) return false;
+                        return level.Layers[l,x,y].Geo == GeoType.Solid;
                     }
-                    else
+
+                    GeoType newType = GeoType.Air;
+                    int possibleConfigs = 0;
+
+                    // figure out how to orient the slope using solid neighbors
+                    if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
                     {
-                        if (!pressed) break;
-                        static bool IsSolid(Level level, int l, int x, int y)
-                        {
-                            if (x < 0 || y < 0) return false;
-                            if (x >= level.Width || y >= level.Height) return false;
-                            return level.Layers[l,x,y].Geo == GeoType.Solid;
-                        }
-
-                        GeoType newType = GeoType.Air;
-                        int possibleConfigs = 0;
-
-                        // figure out how to orient the slope using solid neighbors
-                        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
-                        {
-                            newType = GeoType.SlopeRightUp;
-                            possibleConfigs++;
-                        }
-                        
-                        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
-                        {
-                            newType = GeoType.SlopeLeftUp;
-                            possibleConfigs++;
-                        }
-                        
-                        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
-                        {
-                            newType = GeoType.SlopeRightDown;
-                            possibleConfigs++;
-                        }
-                        
-                        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
-                        {
-                            newType = GeoType.SlopeLeftDown;
-                            possibleConfigs++;
-                        }
-
-                        if (possibleConfigs == 1)
-                            cell.Geo = newType;
+                        newType = GeoType.SlopeRightUp;
+                        possibleConfigs++;
                     }
+                    
+                    if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+                    {
+                        newType = GeoType.SlopeLeftUp;
+                        possibleConfigs++;
+                    }
+                    
+                    if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
+                    {
+                        newType = GeoType.SlopeRightDown;
+                        possibleConfigs++;
+                    }
+                    
+                    if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
+                    {
+                        newType = GeoType.SlopeLeftDown;
+                        possibleConfigs++;
+                    }
+
+                    if (possibleConfigs == 1)
+                        cell.Geo = newType;
 
                     break;
                 }
 
-                // TODO: this will be superseded by a finished geo-improvements branch
                 case Tool.CopyBackwards:
                 {
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        int dstLayer = (layer + 1) % 3;
+                    int dstLayer = (layer + 1) % 3;
 
-                        ref var dstCell = ref level.Layers[dstLayer, tx, ty];
-                        dstCell.Geo = cell.Geo;
-                        dstCell.Objects = cell.Objects;
-                        window.Renderer.InvalidateGeo(tx, ty, dstLayer);
-                    }
+                    ref var dstCell = ref level.Layers[dstLayer, tx, ty];
+                    dstCell.Geo = cell.Geo;
+                    dstCell.Objects = cell.Objects;
+                    window.Renderer.InvalidateGeo(tx, ty, dstLayer);
 
                     break;
                 }
@@ -877,30 +839,11 @@ class GeometryEditor : IEditorMode
                 // the following will use the default object tool
                 // handler
                 case Tool.HorizontalBeam:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.HorizontalBeam;
-                    }
+                    levelObject = LevelObject.HorizontalBeam;
                     break;
 
                 case Tool.VerticalBeam:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.VerticalBeam;
-                    }
-
+                    levelObject = LevelObject.VerticalBeam;
                     break;
                     
                 case Tool.Rock:
@@ -912,45 +855,23 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.Crack:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.Crack;
-                    }
-
+                    levelObject = LevelObject.Crack;
                     break;
                 
                 case Tool.Hive:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
+                    // hives can only be placed above ground
+                    if (ty < level.Height - 1 && level.Layers[layer, tx, ty + 1].Geo == GeoType.Solid)
                     {
                         levelObject = LevelObject.Hive;
                     }
-
+                    else
+                    {
+                        levelObject = LevelObject.None;
+                    }
                     break;
                 
                 case Tool.ForbidFlyChain:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.ForbidFlyChain;
-                    }
-
+                    levelObject = LevelObject.ForbidFlyChain;
                     break;
                 
                 case Tool.Waterfall:
@@ -958,31 +879,11 @@ class GeometryEditor : IEditorMode
                     break;
                 
                 case Tool.WormGrass:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.WormGrass;
-                    }
-
+                    levelObject = LevelObject.WormGrass;
                     break;
 
                 case Tool.Shortcut:
-                    if (shift)
-                    {
-                        isToolRectActive = true;
-                        toolRectX = tx;
-                        toolRectY = ty;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.Shortcut;
-                    }
-
+                    levelObject = LevelObject.Shortcut;
                     break;
 
                 case Tool.Entrance:
@@ -1009,7 +910,7 @@ class GeometryEditor : IEditorMode
             if (levelObject != LevelObject.None)
             {
                 // player can only place objects on work layer 1 (except if it's a beam or crack)
-                if (layer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack)
+                if (layer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack || levelObject == LevelObject.Hive)
                 {
                     if (pressed) toolPlaceMode = cell.Has(levelObject);
                     if (toolPlaceMode)
@@ -1024,7 +925,7 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private void ApplyToolRect()
+    private void ApplyToolRect(bool place)
     {
         // apply the rect to the tool by
         // applying the tool at every cell
@@ -1036,34 +937,42 @@ class GeometryEditor : IEditorMode
         var rectMaxX = Math.Max(mx, toolRectX);
         var rectMaxY = Math.Max(my, toolRectY);
 
-        // hardcoded slope handler...
-        // this geo code is pretty Bad anyway
-        // if i wanted it to be more readable i'd probably uhh
-        // have some sort of state machine
-        // have rect mode not be called from within the function that
-        // activates the tool... you know
-        // but eh, i'm the only one who will modify this code anyway.
-        if (selectedTool == Tool.Slope)
+        if (place)
         {
+            // hardcoded slope handler...
+            // but eh, i'm the only one who will modify this code anyway.
             if (selectedTool == Tool.Slope)
             {
-                int size = Math.Max(rectMaxX - rectMinX, rectMaxY - rectMinY);
-                rectMaxX = rectMinX + size;
-                rectMaxY = rectMinY + size;
-            }
-                
-            for (int i = 0; i < 3; i++)
+                if (selectedTool == Tool.Slope)
+                {
+                    int size = Math.Max(rectMaxX - rectMinX, rectMaxY - rectMinY);
+                    rectMaxX = rectMinX + size;
+                    rectMaxY = rectMinY + size;
+                }
+                    
+                for (int i = 0; i < 3; i++)
+                {
+                    if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
+                }
+            } 
+            else
             {
-                if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
+                for (int x = rectMinX; x <= rectMaxX; x++)
+                {
+                    for (int y = rectMinY; y <= rectMaxY; y++)
+                    {
+                        ActivateTool(x, y, true);
+                    }
+                }
             }
-        } 
-        else
+        }
+        else // erase
         {
             for (int x = rectMinX; x <= rectMaxX; x++)
             {
                 for (int y = rectMinY; y <= rectMaxY; y++)
                 {
-                    ActivateTool(x, y, true, false);
+                    Erase(x, y);
                 }
             }
         }
@@ -1144,11 +1053,17 @@ class GeometryEditor : IEditorMode
                 level.Layers[layer, x, i].Geo = GeoType.Solid;
                 window.Renderer.InvalidateGeo(x, i, layer);
 
-                if (i == fillTo) break;
+                if (i == fillTo)
+                {
+                    break;
+                }
+
                 if (fillTo == rectBt) i++;
                 else i--;
             }
 
+            // this cell should already be invalidated
+            level.Layers[layer, x, tileY].Geo = slopeType;
             tileY += dy;
         }
     }
