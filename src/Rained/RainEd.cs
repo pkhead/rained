@@ -58,7 +58,7 @@ sealed class RainEd
     /// The path of the emergency save file. Is created when the application
     /// encounters a fatal error.
     /// </summary> 
-    public static readonly string EmergencySaveFilePath = Path.Combine(Boot.AppDataPath, "emergency-save.txt");
+    public static readonly string EmergencySaveFolder = Path.Combine(Boot.AppDataPath, "emsavs");
 
     public Level Level { get => level; }
     public LevelView LevelView { get => levelView; }
@@ -342,16 +342,6 @@ sealed class RainEd
         Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
-
-        // delete emergency save file
-        if (File.Exists(EmergencySaveFilePath))
-        {
-            File.Delete(EmergencySaveFilePath);
-            var parentDir = Path.GetDirectoryName(EmergencySaveFilePath);
-
-            if (parentDir is not null)
-                File.Delete(Path.Combine(parentDir, Path.GetFileNameWithoutExtension(EmergencySaveFilePath) + ".png"));
-        }
     }
 
     public void ShowPathInSystemBrowser(string path, bool reveal)
@@ -476,6 +466,71 @@ sealed class RainEd
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Create an emergency save of the level. Level serialization is quite stable,
+    /// so this should work from a caught fatal exception.
+    /// </summary>
+    public void EmergencySave()
+    {
+        Directory.CreateDirectory(EmergencySaveFolder);
+
+        var secs = (int)Math.Floor((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
+        var id = secs.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        var fileName = CurrentFilePath;
+        if (string.IsNullOrEmpty(fileName))
+        {
+            fileName = "unnamed";
+        }
+        else
+        {
+            fileName = Path.GetFileNameWithoutExtension(fileName);
+        }
+
+        LevelSerialization.Save(Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt"));
+    }
+
+    public static string[] DetectEmergencySaves()
+    {
+        if (!Directory.Exists(EmergencySaveFolder)) return [];
+        List<string> output = [];
+        
+        foreach (var file in Directory.EnumerateFiles(EmergencySaveFolder))
+        {
+            // if this is a .txt file and there is also a .png file of the same name,
+            // this is most likely a level file...
+            if (Path.GetExtension(file) == ".txt" && File.Exists(Path.Combine(EmergencySaveFolder, Path.GetFileNameWithoutExtension(file) + ".png")))
+            {
+                output.Add(file);
+            }
+        }
+
+        return [..output];
+    }
+
+    public static void DiscardEmergencySaves()
+    {
+        if (!Directory.Exists(EmergencySaveFolder)) return;
+
+        foreach (var file in Directory.GetFiles(EmergencySaveFolder))
+        {
+            if (file is not null)
+            {
+                // move file to trash bin
+                if (OperatingSystem.IsWindows())
+                {
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(file, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                }
+                else
+                {
+                    File.Delete(file);
+                }
+            }
+        }
+
+        Directory.Delete(EmergencySaveFolder);
     }
 
     private void AddToRecentFiles(string filePath)

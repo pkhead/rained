@@ -433,8 +433,12 @@ static class EditorWindow
     /// </summary>
     public static void RequestLoadEmergencySave()
     {
-        if (File.Exists(RainEd.EmergencySaveFilePath))
+        var list = RainEd.DetectEmergencySaves();
+        if (list.Length > 0)
+        {
+            EmergencySaveWindow.UpdateList(list);
             EmergencySaveWindow.IsWindowOpen = true;
+        }
     }
     
     private static bool closeDrizzleRenderWindow = false;

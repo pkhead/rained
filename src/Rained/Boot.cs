@@ -36,6 +36,8 @@ namespace RainEd
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
 
+        public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
+
         private static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -258,7 +260,7 @@ namespace RainEd
                 {
                     try
                     {
-                        LevelSerialization.Save(RainEd.EmergencySaveFilePath);
+                        app.EmergencySave();
                     }
                     catch (Exception saveError)
                     {
