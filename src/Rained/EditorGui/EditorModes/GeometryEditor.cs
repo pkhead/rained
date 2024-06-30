@@ -225,7 +225,7 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private bool ToolCanRectPlace(Tool tool)
+    private static bool ToolCanRectPlace(Tool tool)
     {
         return tool switch
         {
@@ -238,6 +238,33 @@ class GeometryEditor : IEditorMode
             Tool.Spear => false,
             _ => true,
         };
+    }
+
+    private void GetRectBounds(out int rectMinX, out int rectMinY, out int rectMaxX, out int rectMaxY)
+    {
+        var mx = window.MouseCx;
+        var my = window.MouseCy;
+
+        rectMinX = Math.Min(mx, toolRectX);
+        rectMinY = Math.Min(my, toolRectY);
+        rectMaxX = Math.Max(mx, toolRectX);
+        rectMaxY = Math.Max(my, toolRectY);
+
+        // constrain to square
+        if (selectedTool == Tool.Slope)
+        {
+            int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
+
+            int startX = toolRectX;
+            int startY = toolRectY;
+            int endX = startX + size * (mx - toolRectX >= 0 ? 1 : -1);
+            int endY = startY + size * (my - toolRectY >= 0 ? 1 : -1);
+
+            rectMinX = Math.Min(startX, endX);
+            rectMaxX = Math.Max(startX, endX);
+            rectMinY = Math.Min(startY, endY);
+            rectMaxY = Math.Max(startY, endY);
+        }
     }
 
     public void DrawToolbar()
@@ -339,17 +366,9 @@ class GeometryEditor : IEditorMode
             // show fill rect hint
             if (isToolRectActive)
             {
-                var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
-                var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
-
-                // draw tool rect
-                var rectMinX = Math.Min(mx, toolRectX);
-                var rectMinY = Math.Min(my, toolRectY);
-                var rectMaxX = Math.Max(mx, toolRectX);
-                var rectMaxY = Math.Max(my, toolRectY);
+                GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
                 var rectW = rectMaxX - rectMinX + 1;
                 var rectH = rectMaxY - rectMinY + 1;
-
                 window.StatusText = $"({rectW}, {rectH})";
             }
             else if (ToolCanRectPlace(selectedTool))
@@ -606,24 +625,11 @@ class GeometryEditor : IEditorMode
             // cursor rect mode
             if (isToolRectActive)
             {
-                var mx = Math.Clamp(window.MouseCx, 0, level.Width - 1);
-                var my = Math.Clamp(window.MouseCy, 0, level.Height - 1);
-
-                // draw tool rect
-                var rectMinX = Math.Min(mx, toolRectX);
-                var rectMinY = Math.Min(my, toolRectY);
-                var rectMaxX = Math.Max(mx, toolRectX);
-                var rectMaxY = Math.Max(my, toolRectY);
+                GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
                 var rectW = rectMaxX - rectMinX + 1;
                 var rectH = rectMaxY - rectMinY + 1;
 
-                if (selectedTool == Tool.Slope)
-                {
-                    int size = Math.Max(rectW, rectH);
-                    rectW = size;
-                    rectH = size;
-                }
-
+                // draw tool rect
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
                     1f / window.ViewZoom,
@@ -699,6 +705,7 @@ class GeometryEditor : IEditorMode
     private void Erase(int tx, int ty)
     {
         var level = RainEd.Instance.Level;
+        if (!level.IsInBounds(tx, ty)) return;
 
         for (int l = 0; l < 3; l++)
         {
@@ -737,6 +744,51 @@ class GeometryEditor : IEditorMode
     }
 
     private bool toolPlaceMode;
+
+    private static GeoType CalcPossibleSlopeType(int tx, int ty, int layer)
+    {
+        var level = RainEd.Instance.Level;
+
+        static bool IsSolid(Level level, int l, int x, int y)
+        {
+            if (x < 0 || y < 0) return false;
+            if (x >= level.Width || y >= level.Height) return false;
+            return level.Layers[l,x,y].Geo == GeoType.Solid;
+        }
+
+        GeoType newType = GeoType.Air;
+        int possibleConfigs = 0;
+
+        // figure out how to orient the slope using solid neighbors
+        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
+        {
+            newType = GeoType.SlopeRightUp;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+        {
+            newType = GeoType.SlopeLeftUp;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
+        {
+            newType = GeoType.SlopeRightDown;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
+        {
+            newType = GeoType.SlopeLeftDown;
+            possibleConfigs++;
+        }
+
+        if (possibleConfigs == 1)
+            return newType;
+            
+        return GeoType.Air;
+    }
 
     private void ActivateToolSingleTile(int tx, int ty, bool pressed)
     {
@@ -783,43 +835,12 @@ class GeometryEditor : IEditorMode
                 case Tool.Slope:
                 {
                     if (!pressed) break;
-                    static bool IsSolid(Level level, int l, int x, int y)
-                    {
-                        if (x < 0 || y < 0) return false;
-                        if (x >= level.Width || y >= level.Height) return false;
-                        return level.Layers[l,x,y].Geo == GeoType.Solid;
-                    }
-
-                    GeoType newType = GeoType.Air;
-                    int possibleConfigs = 0;
-
-                    // figure out how to orient the slope using solid neighbors
-                    if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
-                    {
-                        newType = GeoType.SlopeRightUp;
-                        possibleConfigs++;
-                    }
                     
-                    if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+                    var slopeType = CalcPossibleSlopeType(tx, ty, layer);
+                    if (slopeType != GeoType.Air)
                     {
-                        newType = GeoType.SlopeLeftUp;
-                        possibleConfigs++;
+                        cell.Geo = slopeType;
                     }
-                    
-                    if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
-                    {
-                        newType = GeoType.SlopeRightDown;
-                        possibleConfigs++;
-                    }
-                    
-                    if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
-                    {
-                        newType = GeoType.SlopeLeftDown;
-                        possibleConfigs++;
-                    }
-
-                    if (possibleConfigs == 1)
-                        cell.Geo = newType;
 
                     break;
                 }
@@ -927,15 +948,7 @@ class GeometryEditor : IEditorMode
 
     private void ApplyToolRect(bool place)
     {
-        // apply the rect to the tool by
-        // applying the tool at every cell
-        // in the rectangle.
-        var mx = Math.Clamp(window.MouseCx, 0, RainEd.Instance.Level.Width - 1);
-        var my = Math.Clamp(window.MouseCy, 0, RainEd.Instance.Level.Height - 1);
-        var rectMinX = Math.Min(mx, toolRectX);
-        var rectMinY = Math.Min(my, toolRectY);
-        var rectMaxX = Math.Max(mx, toolRectX);
-        var rectMaxY = Math.Max(my, toolRectY);
+        GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
 
         if (place)
         {
@@ -943,18 +956,15 @@ class GeometryEditor : IEditorMode
             // but eh, i'm the only one who will modify this code anyway.
             if (selectedTool == Tool.Slope)
             {
-                if (selectedTool == Tool.Slope)
-                {
-                    int size = Math.Max(rectMaxX - rectMinX, rectMaxY - rectMinY);
-                    rectMaxX = rectMinX + size;
-                    rectMaxY = rectMinY + size;
-                }
-                    
                 for (int i = 0; i < 3; i++)
                 {
                     if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
                 }
-            } 
+            }
+
+            // apply the rect to the tool by
+            // applying the tool at every cell
+            // in the rectangle.
             else
             {
                 for (int x = rectMinX; x <= rectMaxX; x++)
@@ -966,7 +976,7 @@ class GeometryEditor : IEditorMode
                 }
             }
         }
-        else // erase
+        else // erase mode
         {
             for (int x = rectMinX; x <= rectMaxX; x++)
             {
@@ -996,75 +1006,119 @@ class GeometryEditor : IEditorMode
         }
 
         var level = RainEd.Instance.Level;
-        GeoType slopeType = GeoType.Air;
-        int possibleConfigs = 0;
 
-        // figure out how to orient the slope using solid neighbors
-        if (IsSolid(level, layer, rectLf-1, rectBt) && IsSolid(level, layer, rectLf, rectBt+1))
+        static bool isSolid(Level level, int l, int x, int y)
         {
-            slopeType = GeoType.SlopeRightUp;
-            possibleConfigs++;
-        }
-        
-        if (IsSolid(level, layer, rectRt+1, rectBt) && IsSolid(level, layer, rectRt, rectBt+1))
-        {
-            slopeType = GeoType.SlopeLeftUp;
-            possibleConfigs++;
-        }
-        
-        if (IsSolid(level, layer, rectLf-1, rectTp) && IsSolid(level, layer, rectLf, rectTp-1))
-        {
-            slopeType = GeoType.SlopeRightDown;
-            possibleConfigs++;
-        }
-        
-        if (IsSolid(level, layer, rectRt+1, rectTp) && IsSolid(level, layer, rectRt, rectTp-1))
-        {
-            slopeType = GeoType.SlopeLeftDown;
-            possibleConfigs++;
+            if (x < 0 || y < 0) return false;
+            if (x >= level.Width || y >= level.Height) return false;
+            return level.Layers[l,x,y].Geo == GeoType.Solid;
         }
 
-        if (possibleConfigs != 1) return;
-
-        int tileY = 0;
-        int dy = 0;
-        int fillTo = 0;
-
-        // positive dy/dx
-        if (slopeType == GeoType.SlopeLeftUp || slopeType == GeoType.SlopeRightDown)
+        static int CalcDirection(int x, int y, int layer)
         {
-            tileY = rectBt;
-            dy = -1;
-            fillTo = slopeType == GeoType.SlopeRightDown ? rectTp : rectBt;
-        }
-        else // negative dy/dx
-        {
-            tileY = rectTp;
-            dy = 1;
-            fillTo = slopeType == GeoType.SlopeLeftDown ? rectTp : rectBt;
-        }
+            var level = RainEd.Instance.Level;
+            int possibleDirections = 0;
+            int selectedDir = -1;
 
-        for (int x = rectLf; x <= rectRt; x++)
-        {
-            int i = tileY;
-            
-            while (true)
+            // right
+            if (isSolid(level, layer, x+1, y))
             {
-                level.Layers[layer, x, i].Geo = GeoType.Solid;
-                window.Renderer.InvalidateGeo(x, i, layer);
-
-                if (i == fillTo)
-                {
-                    break;
-                }
-
-                if (fillTo == rectBt) i++;
-                else i--;
+                possibleDirections++;
+                selectedDir = 0;
+            }
+            
+            // bottom
+            if (isSolid(level, layer, x, y+1))
+            {
+                possibleDirections++;
+                selectedDir = 1;
             }
 
-            // this cell should already be invalidated
-            level.Layers[layer, x, tileY].Geo = slopeType;
-            tileY += dy;
+            // left
+            if (isSolid(level, layer, x-1, y))
+            {
+                possibleDirections++;
+                selectedDir = 2;
+            }
+
+            // top
+            if (isSolid(level, layer, x, y-1))
+            {
+                possibleDirections++;
+                selectedDir = 3;
+            }
+
+            if (possibleDirections == 1)
+            {
+                return selectedDir;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        // figure out how to orient the slope by checking the slope type
+        // at each corner. slopes can only be formed if the two edges at
+        // one of the two diagonals are the same slope
+        GeoType slopeType = GeoType.Air;
+        int topLeft = CalcDirection(rectLf, rectTp, layer);
+        int topRight = CalcDirection(rectRt, rectTp, layer);
+        int bottomRight = CalcDirection(rectRt, rectBt, layer);
+        int bottomLeft = CalcDirection(rectLf, rectBt, layer);
+
+        // check slope type dependent on the corner directions
+        if (bottomLeft == 1 && topRight == 0)
+            slopeType = GeoType.SlopeLeftUp;
+        else if (bottomLeft == 2 && topRight == 3)
+            slopeType = GeoType.SlopeRightDown;
+        else if (bottomRight == 1 && topLeft == 2)
+            slopeType = GeoType.SlopeRightUp;
+        else if (bottomRight == 0 && topLeft == 3)
+            slopeType = GeoType.SlopeLeftDown;
+
+        if (slopeType != GeoType.Air)
+        {
+            int tileY = 0;
+            int dy = 0;
+            int fillTo = 0;
+
+            // positive dy/dx
+            if (slopeType == GeoType.SlopeLeftUp || slopeType == GeoType.SlopeRightDown)
+            {
+                tileY = rectBt;
+                dy = -1;
+                fillTo = slopeType == GeoType.SlopeRightDown ? rectTp : rectBt;
+            }
+            else // negative dy/dx
+            {
+                tileY = rectTp;
+                dy = 1;
+                fillTo = slopeType == GeoType.SlopeLeftDown ? rectTp : rectBt;
+            }
+
+            for (int x = rectLf; x <= rectRt; x++)
+            {
+                int i = tileY;
+                
+                while (true)
+                {
+                    level.Layers[layer, x, i].Geo = GeoType.Solid;
+                    window.Renderer.InvalidateGeo(x, i, layer);
+
+                    if (i == fillTo)
+                    {
+                        break;
+                    }
+
+                    if (fillTo == rectBt) i++;
+                    else i--;
+                }
+
+                // this cell should already be invalidated
+                level.Layers[layer, x, tileY].Geo = slopeType;
+                tileY += dy;
+            }
         }
     }
 }
