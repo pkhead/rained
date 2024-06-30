@@ -182,20 +182,21 @@ namespace RainEd
                 //Raylib.SetTargetFPS(240);
                 //Raylib.SetExitKey(KeyboardKey.Null);
 
-                // set window icons
-                /*var windowIcons = new Raylib_cs.Image[6];
-                windowIcons[0] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon16.png"));
-                windowIcons[1] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon24.png"));
-                windowIcons[2] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon32.png"));
-                windowIcons[3] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon48.png"));
-                windowIcons[4] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon128.png"));
-                windowIcons[5] = Raylib.LoadImage(Path.Combine(AppDataPath, "assets", "icon256.png"));
-                
-                unsafe
                 {
-                    fixed (Raylib_cs.Image* iconArr = windowIcons)
-                        Raylib.SetWindowIcons(iconArr, windowIcons.Length);
-                }*/
+                    var windowIcons = new Glib.Image[6];
+                    windowIcons[0] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon16.png"));
+                    windowIcons[1] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon24.png"));
+                    windowIcons[2] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon32.png"));
+                    windowIcons[3] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon48.png"));
+                    windowIcons[4] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon128.png"));
+                    windowIcons[5] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon256.png"));
+                    window.SetIcon(windowIcons);
+
+                    for (int i = 0; i < windowIcons.Length; i++)
+                    {
+                        windowIcons[i].Dispose();
+                    }
+                }
 
                 string? assetDataPath = null;
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))

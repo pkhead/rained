@@ -294,6 +294,33 @@ public class Window : IDisposable
         _renderContext!.End();
     }
 
+    public void SetIcon(ReadOnlySpan<Image> icons)
+    {
+        // convert Glib.Images into rawImages
+        // (ImageSharp does not store image memory in a contiguous region)
+        Silk.NET.Core.RawImage[] rawImages = new Silk.NET.Core.RawImage[icons.Length];
+
+        for (int i = 0; i < rawImages.Length; i++)
+        {
+            var srcImage = icons[i];
+            byte[] pixels = new byte[srcImage.Width * srcImage.Height * srcImage.BytesPerPixel];
+            
+            if (srcImage.PixelFormat != PixelFormat.RGBA)
+            {
+                using var converted = srcImage.ConvertToFormat(PixelFormat.RGBA);
+                converted.CopyPixelDataTo(pixels);
+            }
+            else
+            {
+                srcImage.CopyPixelDataTo(pixels);
+            }
+            
+            rawImages[i] = new Silk.NET.Core.RawImage(srcImage.Width, srcImage.Height, pixels);
+        }
+
+        window.SetWindowIcon(rawImages);
+    }
+
     public void Dispose()
     {
         Closing?.Invoke();
