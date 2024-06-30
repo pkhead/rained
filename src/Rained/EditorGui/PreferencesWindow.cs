@@ -368,6 +368,8 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ToggleLayer1);
         ShortcutButton(KeyShortcut.ToggleLayer2);
         ShortcutButton(KeyShortcut.ToggleLayer3);
+        ShortcutButton(KeyShortcut.ToggleMirrorX);
+        ShortcutButton(KeyShortcut.ToggleMirrorY);
 
         ImGui.SeparatorText("Tiles");
         ShortcutButton(KeyShortcut.SetMaterial);
@@ -486,7 +488,7 @@ static class PreferencesWindow
             }
         }
 
-        ImGui.SeparatorText("Integration");
+        ImGui.SeparatorText("Options");
 
         bool boolRef;
         var prefs = RainEd.Instance.Preferences;
@@ -519,7 +521,7 @@ static class PreferencesWindow
                 prefs.ShowRenderPreview = boolRef;
         }
         
-        ImGui.SeparatorText("Configuration");
+        ImGui.SeparatorText("Rendering");
 
         ConfigCheckbox("Grime on gradients");
         ConfigCheckbox("Grime");

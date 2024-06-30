@@ -112,13 +112,25 @@ class GeometryEditor : IEditorMode
     private int toolRectY;
     private int lastMouseX, lastMouseY;
 
-    // work layer
     private bool[] layerMask;
+    
+    private enum MirrorFlags
+    {
+        MirrorX = 1,
+        MirrorY = 2
+    }
+    private MirrorFlags mirrorFlags = 0;
+    private MirrorFlags mirrorDrag = 0;
+
+    private int mirrorOriginX;
+    private int mirrorOriginY;
 
     public GeometryEditor(LevelView levelView)
     {
         layerMask = new bool[3];
         layerMask[0] = true;
+        mirrorOriginX = RainEd.Instance.Level.Width / 2;
+        mirrorOriginY = RainEd.Instance.Level.Height / 2;
 
         window = levelView;
         toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
@@ -176,6 +188,7 @@ class GeometryEditor : IEditorMode
     {
         isToolActive = false;
         isToolRectActive = false;
+        mirrorDrag = 0;
         window.CellChangeRecorder.TryPushChange();
 
         // if there is only a single geo layer active,
@@ -295,6 +308,21 @@ class GeometryEditor : IEditorMode
                 ImGui.Checkbox("Layer " + (i+1), ref layerMask[i]);
             }
 
+            ImGui.Separator();
+
+            // show mirror toggles
+            {
+                bool mirrorX = mirrorFlags.HasFlag(MirrorFlags.MirrorX);
+                bool mirrorY = mirrorFlags.HasFlag(MirrorFlags.MirrorY);
+
+                ImGui.Checkbox("Mirror X", ref mirrorX);
+                ImGui.Checkbox("Mirror Y", ref mirrorY);
+
+                mirrorFlags = 0;
+                if (mirrorX) mirrorFlags |= MirrorFlags.MirrorX;
+                if (mirrorY) mirrorFlags |= MirrorFlags.MirrorY;
+            }
+
             // show fill rect hint
             if (isToolRectActive)
             {
@@ -338,6 +366,12 @@ class GeometryEditor : IEditorMode
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleLayer3))
             layerMask[2] = !layerMask[2];
+        
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleMirrorX))
+            mirrorFlags ^= MirrorFlags.MirrorX;
+        
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleMirrorY))
+            mirrorFlags ^= MirrorFlags.MirrorY;
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -440,6 +474,67 @@ class GeometryEditor : IEditorMode
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
 
+        // draw mirror splits
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
+        {
+            Raylib.DrawLineEx(
+                new Vector2(mirrorOriginX * Level.TileSize, 0),
+                new Vector2(mirrorOriginX * Level.TileSize, level.Height * Level.TileSize),
+                2f / window.ViewZoom,
+                mirrorDrag == MirrorFlags.MirrorX ? Color.White : Color.Red
+            );
+
+            // click and drag to move split
+            if (mirrorDrag == 0 && !isToolActive)
+            {
+                if (MathF.Abs(window.MouseCellFloat.X - mirrorOriginX) * window.ViewZoom < 0.2)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+
+                    if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+                        mirrorDrag = MirrorFlags.MirrorX;
+                }
+            }
+        }
+
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        {
+            Raylib.DrawLineEx(
+                new Vector2(0, mirrorOriginY * Level.TileSize),
+                new Vector2(level.Width * Level.TileSize, mirrorOriginY * Level.TileSize),
+                2f / window.ViewZoom,
+                mirrorDrag == MirrorFlags.MirrorY ? Color.White : Color.Red
+            );
+
+            // click and drag to move split
+            if (mirrorDrag == 0 && !isToolActive)
+            {
+                if (MathF.Abs(window.MouseCellFloat.Y - mirrorOriginY) * window.ViewZoom < 0.2)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+
+                    if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+                        mirrorDrag = MirrorFlags.MirrorY;
+                }
+            }
+        }
+
+        // mirror drag logic
+        if (mirrorDrag == MirrorFlags.MirrorX)
+        {
+            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+            mirrorOriginX = (int)MathF.Round(window.MouseCellFloat.X);
+        }
+
+        if (mirrorDrag == MirrorFlags.MirrorY)
+        {
+            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+            mirrorOriginY = (int)MathF.Round(window.MouseCellFloat.Y);
+        }
+
+        if (mirrorDrag != 0 && !EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            mirrorDrag = 0;
+
         // WASD navigation
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
         {
@@ -496,7 +591,7 @@ class GeometryEditor : IEditorMode
 
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
         
-        if (window.IsViewportHovered)
+        if (window.IsViewportHovered && mirrorDrag == 0)
         {
             // cursor rect mode
             if (isToolRectActive)
@@ -591,11 +686,34 @@ class GeometryEditor : IEditorMode
         Raylib.EndScissorMode();
     }
 
-    private bool toolPlaceMode;
-
     private void ActivateTool(int tx, int ty, bool pressed, bool shift)
     {
+        ActivateToolSingleTile(tx, ty, pressed, shift);
+        if (isToolRectActive) return;
+
+        // mirror logic
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        {
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed, shift);
+            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed, shift);
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed, shift);
+        }
+        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
+        {
+            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed, shift);
+        }
+        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        {
+            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed, shift);
+        }
+    }
+
+    private bool toolPlaceMode;
+
+    private void ActivateToolSingleTile(int tx, int ty, bool pressed, bool shift)
+    {
         var level = RainEd.Instance.Level;
+        if (!level.IsInBounds(tx, ty)) return;
 
         isToolRectActive = false;
 
