@@ -607,6 +607,13 @@ class GeometryEditor : IEditorMode
                 var rectW = rectMaxX - rectMinX + 1;
                 var rectH = rectMaxY - rectMinY + 1;
 
+                if (selectedTool == Tool.Slope)
+                {
+                    int size = Math.Max(rectW, rectH);
+                    rectW = size;
+                    rectH = size;
+                }
+
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(rectMinX * Level.TileSize, rectMinY * Level.TileSize, rectW * Level.TileSize, rectH * Level.TileSize),
                     1f / window.ViewZoom,
@@ -794,44 +801,53 @@ class GeometryEditor : IEditorMode
                 
                 case Tool.Slope:
                 {
-                    if (!pressed) break;
-                    static bool isSolid(Level level, int l, int x, int y)
+                    if (shift)
                     {
-                        if (x < 0 || y < 0) return false;
-                        if (x >= level.Width || y >= level.Height) return false;
-                        return level.Layers[l,x,y].Geo == GeoType.Solid;
+                        isToolRectActive = true;
+                        toolRectX = tx;
+                        toolRectY = ty;
                     }
+                    else
+                    {
+                        if (!pressed) break;
+                        static bool IsSolid(Level level, int l, int x, int y)
+                        {
+                            if (x < 0 || y < 0) return false;
+                            if (x >= level.Width || y >= level.Height) return false;
+                            return level.Layers[l,x,y].Geo == GeoType.Solid;
+                        }
 
-                    GeoType newType = GeoType.Air;
-                    int possibleConfigs = 0;
+                        GeoType newType = GeoType.Air;
+                        int possibleConfigs = 0;
 
-                    // figure out how to orient the slope using solid neighbors
-                    if (isSolid(level, layer, tx-1, ty) && isSolid(level, layer, tx, ty+1))
-                    {
-                        newType = GeoType.SlopeRightUp;
-                        possibleConfigs++;
-                    }
-                    
-                    if (isSolid(level, layer, tx+1, ty) && isSolid(level, layer, tx, ty+1))
-                    {
-                        newType = GeoType.SlopeLeftUp;
-                        possibleConfigs++;
-                    }
-                    
-                    if (isSolid(level, layer, tx-1, ty) && isSolid(level, layer, tx, ty-1))
-                    {
-                        newType = GeoType.SlopeRightDown;
-                        possibleConfigs++;
-                    }
-                    
-                    if (isSolid(level, layer, tx+1, ty) && isSolid(level, layer, tx, ty-1))
-                    {
-                        newType = GeoType.SlopeLeftDown;
-                        possibleConfigs++;
-                    }
+                        // figure out how to orient the slope using solid neighbors
+                        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
+                        {
+                            newType = GeoType.SlopeRightUp;
+                            possibleConfigs++;
+                        }
+                        
+                        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+                        {
+                            newType = GeoType.SlopeLeftUp;
+                            possibleConfigs++;
+                        }
+                        
+                        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
+                        {
+                            newType = GeoType.SlopeRightDown;
+                            possibleConfigs++;
+                        }
+                        
+                        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
+                        {
+                            newType = GeoType.SlopeLeftDown;
+                            possibleConfigs++;
+                        }
 
-                    if (possibleConfigs == 1)
-                        cell.Geo = newType;
+                        if (possibleConfigs == 1)
+                            cell.Geo = newType;
+                    }
 
                     break;
                 }
@@ -1020,14 +1036,120 @@ class GeometryEditor : IEditorMode
         var rectMaxX = Math.Max(mx, toolRectX);
         var rectMaxY = Math.Max(my, toolRectY);
 
-        for (int x = rectMinX; x <= rectMaxX; x++)
+        // hardcoded slope handler...
+        // this geo code is pretty Bad anyway
+        // if i wanted it to be more readable i'd probably uhh
+        // have some sort of state machine
+        // have rect mode not be called from within the function that
+        // activates the tool... you know
+        // but eh, i'm the only one who will modify this code anyway.
+        if (selectedTool == Tool.Slope)
         {
-            for (int y = rectMinY; y <= rectMaxY; y++)
+            if (selectedTool == Tool.Slope)
             {
-                ActivateTool(x, y, true, false);
+                int size = Math.Max(rectMaxX - rectMinX, rectMaxY - rectMinY);
+                rectMaxX = rectMinX + size;
+                rectMaxY = rectMinY + size;
+            }
+                
+            for (int i = 0; i < 3; i++)
+            {
+                if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
+            }
+        } 
+        else
+        {
+            for (int x = rectMinX; x <= rectMaxX; x++)
+            {
+                for (int y = rectMinY; y <= rectMaxY; y++)
+                {
+                    ActivateTool(x, y, true, false);
+                }
             }
         }
         
         isToolRectActive = false;
+    }
+
+    static bool IsSolid(Level level, int l, int x, int y)
+    {
+        if (x < 0 || y < 0) return false;
+        if (x >= level.Width || y >= level.Height) return false;
+        return level.Layers[l,x,y].Geo == GeoType.Solid;
+    }
+
+    private void RectSlope(int layer, int rectLf, int rectTp, int rectRt, int rectBt)
+    {
+        if (rectRt - rectLf != rectBt - rectTp)
+        {
+            RainEd.Logger.Error("Slope mode rect fill is not square!");
+            return;
+        }
+
+        var level = RainEd.Instance.Level;
+        GeoType slopeType = GeoType.Air;
+        int possibleConfigs = 0;
+
+        // figure out how to orient the slope using solid neighbors
+        if (IsSolid(level, layer, rectLf-1, rectBt) && IsSolid(level, layer, rectLf, rectBt+1))
+        {
+            slopeType = GeoType.SlopeRightUp;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, rectRt+1, rectBt) && IsSolid(level, layer, rectRt, rectBt+1))
+        {
+            slopeType = GeoType.SlopeLeftUp;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, rectLf-1, rectTp) && IsSolid(level, layer, rectLf, rectTp-1))
+        {
+            slopeType = GeoType.SlopeRightDown;
+            possibleConfigs++;
+        }
+        
+        if (IsSolid(level, layer, rectRt+1, rectTp) && IsSolid(level, layer, rectRt, rectTp-1))
+        {
+            slopeType = GeoType.SlopeLeftDown;
+            possibleConfigs++;
+        }
+
+        if (possibleConfigs != 1) return;
+
+        int tileY = 0;
+        int dy = 0;
+        int fillTo = 0;
+
+        // positive dy/dx
+        if (slopeType == GeoType.SlopeLeftUp || slopeType == GeoType.SlopeRightDown)
+        {
+            tileY = rectBt;
+            dy = -1;
+            fillTo = slopeType == GeoType.SlopeRightDown ? rectTp : rectBt;
+        }
+        else // negative dy/dx
+        {
+            tileY = rectTp;
+            dy = 1;
+            fillTo = slopeType == GeoType.SlopeLeftDown ? rectTp : rectBt;
+        }
+
+        for (int x = rectLf; x <= rectRt; x++)
+        {
+            int i = tileY;
+            
+            while (true)
+            {
+                level.Layers[layer, x, i].Geo = GeoType.Solid;
+                window.Renderer.InvalidateGeo(x, i, layer);
+
+                if (i == fillTo) break;
+                if (fillTo == rectBt) i++;
+                else i--;
+            }
+
+            tileY += dy;
+        }
     }
 }

@@ -5,9 +5,10 @@ Priority:
 Bugs:
 - change history doesn't work well with level resize
 - fix weird bug where keyboard release doesn't get registered
+- client code mouse position doesn't work with multi-viewport
 
 Overall:
-- client code mouse position doesn't work with multi-viewport
+- multiple emergency saves (also account for ppl who don't realize save as... exists lol)
 - prop selection box is affected by bfTiles (don't do this)
 - autotile joining
   - option to join only inner tiles
