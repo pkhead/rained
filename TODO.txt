@@ -17,6 +17,10 @@ Bugs:
 - fix weird bug where keyboard release doesn't get registered
 - weird graphical issue on certain drivers when level is out of bounds
   - already figured this out, fix is on the glib branch (though doesn't actually require glib)
+- on last/row column, crash on geo modify if axis of level size is a power of 2
+- "i hovered over a broken tile and [it crashed]"
+- make the use of save as more obvious for emergency saves
+- multiple emergency saves
 
 Overall:
 - client code mouse position doesn't work with multi-viewport
