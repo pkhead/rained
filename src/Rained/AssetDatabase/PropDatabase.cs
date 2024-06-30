@@ -52,12 +52,31 @@ record PropInit
     public readonly RopeInit? Rope;
 
     // used for obtaining preview image
-    private readonly int pixelWidth;
-    private readonly int pixelHeight;
+    private bool sizeKnown = false;
+    private int pixelWidth = 0;
+    private int pixelHeight = 0;
     private readonly int layerCount;
 
-    public float Width { get => pixelWidth / 20f; }
-    public float Height { get => pixelHeight / 20f; }
+    public int PixelWidth
+    {
+        get
+        {
+            if (!sizeKnown) GetPropSize();
+            return pixelWidth;
+        }
+    }
+
+    public int PixelHeight
+    {
+        get
+        {
+            if (!sizeKnown) GetPropSize();
+            return pixelHeight;
+        }
+    }
+
+    public float Width { get => PixelWidth / 20f; }
+    public float Height { get => PixelHeight / 20f; }
     public int LayerCount { get => layerCount; }
 
     public PropInit(PropCategory category, Lingo.List init)
@@ -81,19 +100,6 @@ record PropInit
             "long" => PropType.Long,
             _ => throw new Exception("Invalid prop init")
         };
-
-        var texture = RainEd.Instance.AssetGraphics.GetPropTexture(Name);
-
-        if (texture is not null)
-        {
-            pixelWidth = texture.Width;
-            pixelHeight = texture.Height;
-        }
-        else
-        {
-            pixelWidth = 20;
-            pixelHeight = 20;
-        }
 
         // initialize rope-type prop
         if (Type == PropType.Rope)
@@ -121,12 +127,14 @@ record PropInit
                 var pxlSize = (Vector2) tempObject;
                 pixelWidth = (int) pxlSize.X;
                 pixelHeight = (int) pxlSize.Y;
+                sizeKnown = true;
             }
             else if (init.fields.TryGetValue("sz", out tempObject))
             {
                 var sz = (Vector2) tempObject;
                 pixelWidth = (int)sz.X * 20;
                 pixelHeight = (int)sz.Y * 20;
+                sizeKnown = true;
             }
 
             // get image layer count and depth
@@ -266,10 +274,31 @@ record PropInit
         Depth = srcTile.LayerDepth;
         pixelWidth = (srcTile.Width + srcTile.BfTiles * 2) * 20;
         pixelHeight = (srcTile.Height + srcTile.BfTiles * 2) * 20;
+        sizeKnown = true;
         VariationCount = srcTile.VariationCount;
 
         if (VariationCount > 1)
             PropFlags |= PropFlags.RandomVariation;
+    }
+
+    private void GetPropSize()
+    {
+        if (sizeKnown) return;
+
+        var texture = RainEd.Instance.AssetGraphics.GetPropTexture(this);
+
+        if (texture is not null)
+        {
+            pixelWidth = texture.Width;
+            pixelHeight = texture.Height;
+        }
+        else
+        {
+            pixelWidth = 20;
+            pixelHeight = 20;
+        }
+
+        sizeKnown = true;
     }
 
     public Rectangle GetPreviewRectangle(int variation, int layer)
@@ -284,9 +313,9 @@ record PropInit
         }
         
         return new Rectangle(
-            pixelWidth * variation,
-            pixelHeight * layer + oy,
-            pixelWidth, pixelHeight
+            PixelWidth * variation,
+            PixelHeight * layer + oy,
+            PixelWidth, PixelHeight
         );
     }
 }
