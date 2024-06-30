@@ -178,10 +178,12 @@ class DrizzleRender : IDisposable
         public Action<RenderStatus>? StatusChanged = null;
 
         public readonly bool GeometryExport;
+        public readonly int PrioritizedCameraIndex;
 
-        public RenderThread(string filePath, bool geoExport)
+        public RenderThread(string filePath, bool geoExport, int prioCam)
         {
             GeometryExport = geoExport;
+            PrioritizedCameraIndex = prioCam;
 
             Queue = new ConcurrentQueue<ThreadMessage>();
             InQueue = new ConcurrentQueue<ThreadMessage>();
@@ -223,6 +225,9 @@ class DrizzleRender : IDisposable
                 
                 EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
 
+                var movie = (MovieScript)runtime.MovieScriptInstance;
+                movie.gPrioCam = PrioritizedCameraIndex + 1;
+
                 if (GeometryExport)
                 {
                     // process user cancel if cancelled while init
@@ -235,8 +240,6 @@ class DrizzleRender : IDisposable
                     Queue.Enqueue(new MessageRenderGeometryStarted());
 
                     RainEd.Logger.Information("RENDER: Exporting Geometry...");
-
-                    var movie = (MovieScript)runtime.MovieScriptInstance;
                     movie.newmakelevel(movie.gLoadedName);
                 }
                 else
@@ -313,7 +316,7 @@ class DrizzleRender : IDisposable
 
     public readonly bool OnlyGeometry;
 
-    public DrizzleRender(bool geoExport)
+    public DrizzleRender(bool geoExport, int prioCam = -1)
     {
         OnlyGeometry = geoExport;
 
@@ -329,7 +332,7 @@ class DrizzleRender : IDisposable
             PreviewImages = new RenderPreviewImages();
         }
         
-        threadState = new RenderThread(filePath, OnlyGeometry);
+        threadState = new RenderThread(filePath, OnlyGeometry, prioCam);
         threadState.StatusChanged += StatusChanged;
         Configuration.Default.PreferContiguousImageBuffers = true;
         thread = new Thread(new ThreadStart(threadState.ThreadProc))

@@ -295,6 +295,7 @@ partial class Level
     public int DefaultMaterial = 1;
 
     public readonly List<Camera> Cameras = new();
+    public Camera? PrioritizedCamera = null;
 
     public int Width { get => _width; }
     public int Height { get => _height; }

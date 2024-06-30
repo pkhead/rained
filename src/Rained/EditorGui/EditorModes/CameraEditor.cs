@@ -54,6 +54,22 @@ class CameraEditor : IEditorMode
 
             changeRecorder.PushChange();
         }
+
+        ImGui.Separator();
+
+        if (ImGui.MenuItem("Prioritize Camera") && selectedCamera is not null)
+        {
+            changeRecorder.BeginChange();
+            RainEd.Instance.Level.PrioritizedCamera = selectedCamera;
+            changeRecorder.PushChange();
+        }
+
+        if (ImGui.MenuItem("Clear Priority"))
+        {
+            changeRecorder.BeginChange();
+            RainEd.Instance.Level.PrioritizedCamera = null;
+            changeRecorder.PushChange();
+        }
     }
     
     public void DrawToolbar() {}
@@ -304,6 +320,8 @@ class CameraEditor : IEditorMode
                     {
                         changeRecorder.BeginChange();
                         level.Cameras.Remove(selectedCamera);
+                        if (level.PrioritizedCamera == selectedCamera)
+                            level.PrioritizedCamera = null;
                         selectedCamera = null;
                         changeRecorder.PushChange();
                     }
@@ -360,6 +378,7 @@ class CameraEditor : IEditorMode
         );
 
         // 4:3 outline
+        Color cameraColor = RainEd.Instance.Level.PrioritizedCamera == camera ? new Color(255, 0, 0, 255) : new Color(0, 255, 0, 255);
         var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
@@ -367,7 +386,7 @@ class CameraEditor : IEditorMode
                 standardResOutlineSize * Level.TileSize
             ),
             2f / window.ViewZoom,
-            new Color(255, 0, 0, 255)
+            cameraColor
         );
 
         // draw center circle

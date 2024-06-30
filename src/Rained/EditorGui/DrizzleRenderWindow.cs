@@ -76,7 +76,10 @@ class DrizzleRenderWindow : IDisposable
     {
         try
         {
-            drizzleRenderer = new DrizzleRender(onlyGeo);
+            var level = RainEd.Instance.Level;            
+            var prioCam = level.PrioritizedCamera is null ? -1 : level.Cameras.IndexOf(level.PrioritizedCamera);
+
+            drizzleRenderer = new DrizzleRender(onlyGeo, prioCam);
 
             if (!onlyGeo)
             {

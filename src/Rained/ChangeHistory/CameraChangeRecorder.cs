@@ -6,10 +6,12 @@ struct CameraData
     public Vector2 Position;
     public float[] CornerOffsets = new float[4];
     public float[] CornerAngles = new float[4];
+    public bool Priority;
 
     public CameraData(Camera camera)
     {
         Position = camera.Position;
+        Priority = RainEd.Instance.Level.PrioritizedCamera == camera;
         camera.CornerOffsets.CopyTo(CornerOffsets, 0);
         camera.CornerAngles.CopyTo(CornerAngles, 0);
     }
@@ -19,11 +21,17 @@ struct CameraData
         camera.Position = Position;
         CornerOffsets.CopyTo(camera.CornerOffsets, 0);
         CornerAngles.CopyTo(camera.CornerAngles, 0);
+
+        if (Priority)
+        {
+            RainEd.Instance.Level.PrioritizedCamera = camera;
+        }
     }
 
     public readonly bool IsEqual(Camera other)
     {
         if (Position != other.Position) return false;
+        if (Priority != (RainEd.Instance.Level.PrioritizedCamera == other)) return false;
 
         for (int i = 0; i < 4; i++)
             if (CornerOffsets[i] != other.CornerOffsets[i]) return false;
@@ -50,6 +58,8 @@ class CameraChangeRecord : IChangeRecord
 
         var data = useNew ? NewData : OldData;
         if (level.Cameras.Count > data.Length) level.Cameras.RemoveRange(data.Length-1, level.Cameras.Count - data.Length);
+        
+        level.PrioritizedCamera = null;
         for (int i = 0; i < data.Length; i++)
         {
             if (i < level.Cameras.Count)
