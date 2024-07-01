@@ -39,7 +39,7 @@ static class Shaders
     }
 
     private readonly static string EffectsMatrixShaderSource = @"
-        #version 330
+        #version 330 core
 
         in vec2 glib_texCoord;
         in vec4 glib_color;
@@ -60,7 +60,7 @@ static class Shaders
     // white pixels are transparent
     // the R color component controls transparency and the G color component controls white blend 
     private readonly static string PropShaderSrc = @"
-        #version 330
+        #version 330 core
 
         in vec2 glib_texCoord;
         in vec4 glib_color;
@@ -85,7 +85,7 @@ static class Shaders
     // the shader used for tile rendering in the editor.
     // while pixels are transparent.
     private readonly static string TileShaderSrc = @"
-        #version 330
+        #version 330 core
 
         in vec2 glib_texCoord;
         in vec4 glib_color;
@@ -115,7 +115,7 @@ static class Shaders
     ";
 
     private readonly static string PaletteShaderSrc = @"
-        #version 330
+        #version 330 core
 
         in vec2 glib_texCoord;
         in vec4 glib_color;

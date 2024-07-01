@@ -518,12 +518,7 @@ sealed class RainEd
         {
             if (file is not null)
             {
-                // move file to trash bin
-                if (OperatingSystem.IsWindows())
-                {
-                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(file, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
-                }
-                else
+                if (!Platform.TrashFile(file))
                 {
                     File.Delete(file);
                 }

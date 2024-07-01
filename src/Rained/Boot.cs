@@ -4,13 +4,11 @@
 
 using Raylib_cs;
 using ImGuiNET;
-using System.Runtime.InteropServices;
 using System.Globalization;
-using System.Diagnostics;
 
 namespace RainEd
 {
-    static partial class Boot
+    static class Boot
     {
         // find the location of the app data folder
 #if DATA_ASSEMBLY
@@ -20,10 +18,6 @@ namespace RainEd
 #else
         public static string AppDataPath = Directory.GetCurrentDirectory();
 #endif
-
-        // import win32 MessageBox function
-        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
@@ -287,29 +281,7 @@ namespace RainEd
 
         public static void DisplayError(string windowTitle, string windowContents)
         {
-            bool success = false;
-
-            if (OperatingSystem.IsWindows())
-            {
-                success = true;
-                MessageBoxW(new IntPtr(0), windowContents, windowTitle, 0x10);
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                // try using zenity
-                try
-                {
-                    var procStartInfo = new ProcessStartInfo("zenity", ["--error", "--text", windowContents, "--title", windowTitle])
-                    {
-                        UseShellExecute = false,
-                    };
-
-                    Process.Start(procStartInfo)!.WaitForExit();
-                    success = true;
-                }
-                catch (Exception)
-                {}
-            }
+            var success = Platform.DisplayError(windowTitle, windowContents);
             
             // user does not have a supported system of showing a dialog error box
             // so just show it in imgui.
