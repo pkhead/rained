@@ -1,7 +1,7 @@
 ﻿﻿namespace Glib;
 
 using System.Numerics;
-using ImGuiNET;
+using System.Runtime.InteropServices;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL.Extensions.ImGui;
@@ -41,6 +41,29 @@ public class Window : IDisposable
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
 
     /// <summary>
+    /// The content scale of the window. Only valid after Initialize has been called.
+    /// <br /><br />
+    /// Supported only for the GLFW backend. On other backends, this always reports Vector2.One
+    /// </summary>
+    public Vector2 ContentScale
+    {
+        get
+        {
+            unsafe
+            {
+                var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
+                if (glfwWindow is null)
+                {
+                    return Vector2.One;
+                }
+                
+                PlatformSpecific.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+                return new Vector2(xScale, yScale);
+            }
+        }
+    }
+
+    /// <summary>
     /// The theme of the window's titlebar. It is always
     /// Default before Initialize is called.
     /// </summary>
@@ -52,6 +75,7 @@ public class Window : IDisposable
     public event Action<float, RenderContext>? Draw;
     public event Action<int, int>? Resize;
     public event Action? Closing;
+    public event Action<Vector2>? ContentScaleChanged;
 
     public event Action<Key, int>? KeyDown;
     public event Action<Key, int>? KeyUp;
@@ -251,14 +275,35 @@ public class Window : IDisposable
         Closing?.Invoke();
     }
 
+    private unsafe void UnsafeOnContentScaleChanged(nint _, float xscale, float yscale)
+    {
+        ContentScaleChanged?.Invoke(new Vector2(xscale, yscale));
+    }
+
     public void SetSize(int width, int height)
     {
         window.Size = new Vector2D<int>(width, height);
     }
 
+    private delegate void GlfwContentScaleChanged(nint window, float xscale, float yscale);
+    private GlfwContentScaleChanged _glfwContentScaleChangedCallback;
+
     public void Initialize()
     {
         window.Initialize();
+
+        unsafe
+        {
+            var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
+
+            if (glfwWindow is not null)
+            {
+                _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
+                var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
+                PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+            }
+        }
+        
         PlatformSpecific.TryWindowTheme(window, out WindowTheme theme);
         Theme = theme;
     }
