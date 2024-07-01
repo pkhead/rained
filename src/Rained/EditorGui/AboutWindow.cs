@@ -1,6 +1,5 @@
 using ImGuiNET;
 
-using System.Diagnostics;
 using System.Numerics;
 namespace RainEd;
 
@@ -30,7 +29,7 @@ static class AboutWindow
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");
-            ImGui.Text("Rain World by Videocult/Adult Swim Games/Akapura Games");
+            ImGui.Text("Rain World - Videocult/Adult Swim Games/Akapura Games");
             LinkText("GitHub", "https://github.com/pkhead/rained");
 
             // notify user of a new version
@@ -60,24 +59,9 @@ static class AboutWindow
             ImGui.Text("(c) 2014-2024 Omar Cornut - MIT License");
 
             ImGui.Bullet();
-            LinkText("rlImGui-cs", "https://github.com/raylib-extras/rlImGui-cs");
+            LinkText("Silk.NET", "https://dotnet.github.io/Silk.NET");
             ImGui.SameLine();
-            ImGui.Text("(c) 2020-2021 Jeffery Myers - MIT License");
-
-            ImGui.Bullet();
-            LinkText("Raylib-cs", "https://github.com/ChrisDill/Raylib-cs");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2018-2024 ChrisDill - Zlib License");
-            
-            ImGui.Bullet();
-            LinkText("SFML.Net", "https://github.com/SFML/SFML.Net");
-            ImGui.SameLine();
-            ImGui.Text("(C) 2007-2023 Laurent Gomila - laurent@sfml-dev.org - Zlib License");
-
-            ImGui.Bullet();
-            LinkText("CSFML", "https://github.com/SFML/CSFML");
-            ImGui.SameLine();
-            ImGui.Text("(C) 2007-2023 Laurent Gomila - laurent@sfml-dev.org - Zlib License");
+            ImGui.Text("(c) 2021- .NET Foundation and Contributors - MIT License");
         }
     }
 
