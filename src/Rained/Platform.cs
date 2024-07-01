@@ -240,7 +240,5 @@ static partial class Platform
 
             return false;
         }
-
-        return false;
     }
 }

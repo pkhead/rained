@@ -683,7 +683,7 @@ class GeometryEditor : IEditorMode
                         else
                         {
                             if (!isToolRectActive)
-                                ActivateTool(window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                                ActivateTool(selectedTool, window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
                         }
                     }
                 }
@@ -721,25 +721,25 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private void ActivateTool(int tx, int ty, bool pressed)
+    private void ActivateTool(Tool tool, int tx, int ty, bool pressed)
     {
-        ActivateToolSingleTile(tx, ty, pressed);
+        ActivateToolSingleTile(tool, tx, ty, pressed);
         if (isToolRectActive) return;
 
         // mirror logic
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed);
-            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed);
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed);
+            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, ty, pressed);
+            ActivateToolSingleTile(tool, tx, mirrorOriginY * 2 - ty - 1, pressed);
+            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed);
         }
         else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
         {
-            ActivateToolSingleTile(mirrorOriginX * 2 - tx - 1, ty, pressed);
+            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, ty, pressed);
         }
         else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
-            ActivateToolSingleTile(tx, mirrorOriginY * 2 - ty - 1, pressed);
+            ActivateToolSingleTile(tool, tx, mirrorOriginY * 2 - ty - 1, pressed);
         }
     }
 
@@ -790,7 +790,7 @@ class GeometryEditor : IEditorMode
         return GeoType.Air;
     }
 
-    private void ActivateToolSingleTile(int tx, int ty, bool pressed)
+    private void ActivateToolSingleTile(Tool tool, int tx, int ty, bool pressed)
     {
         var level = RainEd.Instance.Level;
         if (!level.IsInBounds(tx, ty)) return;
@@ -804,7 +804,7 @@ class GeometryEditor : IEditorMode
             var cell = level.Layers[layer, tx, ty];
             LevelObject levelObject = LevelObject.None;
 
-            switch (selectedTool)
+            switch (tool)
             {
                 case Tool.Wall:
                     cell.Geo = GeoType.Solid;
@@ -971,7 +971,7 @@ class GeometryEditor : IEditorMode
                 {
                     for (int y = rectMinY; y <= rectMaxY; y++)
                     {
-                        ActivateTool(x, y, true);
+                        ActivateTool(selectedTool, x, y, true);
                     }
                 }
             }
@@ -1079,9 +1079,9 @@ class GeometryEditor : IEditorMode
 
         if (slopeType != GeoType.Air)
         {
-            int tileY = 0;
-            int dy = 0;
-            int fillTo = 0;
+            int tileY;
+            int dy;
+            int fillTo;
 
             // positive dy/dx
             if (slopeType == GeoType.SlopeLeftUp || slopeType == GeoType.SlopeRightDown)
@@ -1097,14 +1097,17 @@ class GeometryEditor : IEditorMode
                 fillTo = slopeType == GeoType.SlopeLeftDown ? rectTp : rectBt;
             }
 
+            List<Vector2i> desiredSlopes = [];
+
             for (int x = rectLf; x <= rectRt; x++)
             {
                 int i = tileY;
                 
                 while (true)
                 {
-                    level.Layers[layer, x, i].Geo = GeoType.Solid;
-                    window.Renderer.InvalidateGeo(x, i, layer);
+                    // use ActivateTool instead of setting geo directly
+                    // so mirroring works
+                    ActivateTool(Tool.Wall, x, i, true);
 
                     if (i == fillTo)
                     {
@@ -1115,9 +1118,15 @@ class GeometryEditor : IEditorMode
                     else i--;
                 }
 
-                // this cell should already be invalidated
+                // place slopes after
+                desiredSlopes.Add(new(x, tileY));
                 level.Layers[layer, x, tileY].Geo = slopeType;
                 tileY += dy;
+            }
+
+            foreach (var pos in desiredSlopes)
+            {
+                ActivateTool(Tool.Slope, pos.X, pos.Y, true);
             }
         }
     }

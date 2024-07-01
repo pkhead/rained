@@ -1,9 +1,8 @@
 Bugs:
-- change history doesn't work well with level resize
 - client code mouse position doesn't work with multi-viewport
 
 Overall:
-- multiple emergency saves (also account for ppl who don't realize save as... exists lol)
+- palette on props
 - dissolve material/tile separation
 - prop selection box is affected by bfTiles (don't do this)
 - autotile joining
@@ -14,6 +13,7 @@ Overall:
 - Move Level
 - undo/redo for level resize
 - level resze drag
+- level resize change history
 - help pages/hints/tooltips/whatever
 - tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
@@ -25,9 +25,6 @@ Geometry Editor:
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
 - keyboard shortcut for shortcut & shortcut dots
-
-Tile Editor:
-- make 2nd geo spec layer a lighter red
 
 Light Editor:
 - toggle view shadow plane and occlusion plane
