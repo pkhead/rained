@@ -26,9 +26,10 @@ static class EmergencySaveWindow
         for (int i = 0; i < emSavList.Length; i++)
         {
             var writeTime = File.GetLastWriteTime(emSavList[i]);
+            var levelName = Path.GetFileNameWithoutExtension(emSavList[i]);
 
             savList[i] = emSavList[i];
-            savDisplays[i] = Path.GetFileNameWithoutExtension(emSavList[i]).Split('-')[0];
+            savDisplays[i] = levelName[0..levelName.LastIndexOf('-')];
             dateList[i] = writeTime.ToString(culture.DateTimeFormat.ShortDatePattern, culture) + " at " + writeTime.ToString(culture.DateTimeFormat.ShortTimePattern, culture);
         }
 
@@ -48,7 +49,7 @@ static class EmergencySaveWindow
         if (ImGuiExt.BeginPopupModal(WindowName, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
             ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 32.0f);
-            ImGui.TextWrapped("rainED has detected one or more emergency saves. You may choose what to do with them.");
+            ImGui.TextWrapped("Rained has detected one or more emergency saves. You may choose what to do with them.");
             ImGui.TextWrapped("If you choose to open a file, it is recommended that you review the level and, if desired, use Save As to replace the original level file with the emergency save.");
             ImGui.PopTextWrapPos();
             

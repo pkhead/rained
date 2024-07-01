@@ -121,7 +121,7 @@ static class EditorWindow
             return isRw;
         }
 
-        fileBrowser = new FileBrowser(openMode, callback, Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
+        fileBrowser = new FileBrowser(openMode, callback, RainEd.Instance.IsTemporaryFile ? null : Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
         fileBrowser.PreviewCallback = (string path, bool isRw) =>
         {
@@ -345,7 +345,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Save))
         {
-            if (string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath))
+            if (RainEd.Instance.IsTemporaryFile)
                 OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
             else
                 SaveLevelCallback(RainEd.Instance.CurrentFilePath);

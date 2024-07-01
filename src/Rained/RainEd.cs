@@ -60,6 +60,11 @@ sealed class RainEd
     /// </summary> 
     public static readonly string EmergencySaveFolder = Path.Combine(Boot.AppDataPath, "emsavs");
 
+    /// <summary>
+    /// True if the file for the current level is non-existent or is an emergency save.
+    /// </summary>
+    public bool IsTemporaryFile => string.IsNullOrEmpty(CurrentFilePath) || Path.GetDirectoryName(CurrentFilePath) == EmergencySaveFolder;
+
     public Level Level { get => level; }
     public LevelView LevelView { get => levelView; }
     
@@ -435,6 +440,8 @@ sealed class RainEd
 
         try
         {
+            string oldFilePath = currentFilePath;
+
             LevelSerialization.Save(path);
             currentFilePath = path;
             UpdateTitle();
@@ -442,6 +449,18 @@ sealed class RainEd
             Logger.Information("Done!");
             EditorWindow.ShowNotification("Saved!");
             AddToRecentFiles(currentFilePath);
+
+            // if the old level was an emergency save and the user
+            // saved it to a non-emergency save file, delete the
+            // old file as it is no longer necessary.
+            var oldParentFolder = Path.GetDirectoryName(oldFilePath);
+            var newParentFolder = Path.GetDirectoryName(currentFilePath);
+
+            if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
+            {
+                File.Delete(oldFilePath);
+                File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
+            }
 
             return true;
         }
@@ -552,9 +571,22 @@ sealed class RainEd
 
     private void UpdateTitle()
     {
-        var levelName =
+        string levelName =
             string.IsNullOrEmpty(currentFilePath) ? "Untitled" :
             Path.GetFileNameWithoutExtension(currentFilePath);
+        
+        if (currentFilePath is not null && Path.GetDirectoryName(currentFilePath) == EmergencySaveFolder)
+        {
+            int hyphenIndex = levelName.LastIndexOf('-');
+            if (hyphenIndex >= 0)
+            {
+                levelName = levelName[0..hyphenIndex] + " [EMERGENCY SAVE]";
+            }
+            else
+            {
+                levelName += " [EMERGENCY SAVE]";
+            }
+        }
         
         Raylib.SetWindowTitle($"Rained - {levelName}");
     }
