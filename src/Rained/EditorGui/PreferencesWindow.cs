@@ -171,6 +171,7 @@ static class PreferencesWindow
     private static Vector3 bgColor;
     private static Vector3 tileSpec1Color;
     private static Vector3 tileSpec2Color;
+    private static float contentScale;
 
     private static void ShowGeneralTab(bool entered)
     {
@@ -276,8 +277,72 @@ static class PreferencesWindow
             prefs.BackgroundColor = Vec3ToHexColor(bgColor);
             prefs.TileSpec1 = Vec3ToHexColor(tileSpec1Color);
             prefs.TileSpec2 = Vec3ToHexColor(tileSpec2Color);
+        }
 
-            // TODO: font scale
+        ImGui.SeparatorText("User Interface");
+        {
+            if (entered)
+            {
+                contentScale = Boot.WindowScale;
+            }
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            // Content Scale
+            ImGui.DragFloat("##Content Scale", ref contentScale, 0.005f, 1.0f, 2.0f, "%.3f");
+            if (ImGui.IsItemDeactivatedAfterEdit())
+            {
+                Boot.WindowScale = contentScale;
+                prefs.ContentScale = contentScale;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("X##Reset Content Scale"))
+            {
+                contentScale = Boot.Window.ContentScale.Y;
+                Boot.WindowScale = contentScale;
+                prefs.ContentScale = contentScale;
+            }
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Content Scale");
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                The default value for this is determined
+                by your monitor's DPI.
+                """
+            );
+
+            // Font Selection
+            {
+                ImGui.PushItemWidth(ImGui.GetFontSize() * 12f);
+
+                var curFont = Fonts.GetCurrentFont();
+                if (ImGui.BeginCombo("Font", curFont ?? ""))
+                {
+                    foreach (var fontName in Fonts.AvailableFonts)
+                    {
+                        bool isSelected = fontName == curFont;
+                        if (ImGui.Selectable(fontName, isSelected))
+                        {
+                            Fonts.SetFont(fontName);
+                            prefs.Font = fontName;
+                        }
+
+                        if (isSelected)
+                            ImGui.SetItemDefaultFocus();
+                    }
+
+                    ImGui.EndCombo();
+                }
+
+
+                ImGui.PopItemWidth();
+            }
+
+            ImGui.PopItemWidth();
         }
 
         ImGui.SeparatorText("Miscellaneous");

@@ -849,7 +849,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
         /// <summary>
         /// Creates the texture used to render text.
         /// </summary>
-        private unsafe void RecreateFontDeviceTexture()
+        public unsafe void RecreateFontDeviceTexture()
         {
             // Build texture atlas
             var io = ImGuiNET.ImGui.GetIO();
@@ -858,6 +858,7 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
             // Upload texture to graphics system
             _gl.GetInteger(GLEnum.TextureBinding2D, out int lastTexture);
 
+            _fontTexture?.Dispose();
             _fontTexture = new Texture(_gl, width, height, pixels);
             _fontTexture.Bind();
             _fontTexture.SetMagFilter(TextureMagFilter.Linear);

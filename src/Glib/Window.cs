@@ -130,7 +130,22 @@ public class Window : IDisposable
     }
 
     private void OnLoad()
-    {   
+    {
+        unsafe
+        {
+            var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
+
+            if (glfwWindow is not null)
+            {
+                _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
+                var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
+                PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+            }
+        }
+        
+        PlatformSpecific.TryWindowTheme(window, out WindowTheme theme);
+        Theme = theme;
+
         IInputContext input = window.CreateInput();
         inputContext = input;
 
@@ -291,21 +306,6 @@ public class Window : IDisposable
     public void Initialize()
     {
         window.Initialize();
-
-        unsafe
-        {
-            var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
-
-            if (glfwWindow is not null)
-            {
-                _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
-                var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
-                PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
-            }
-        }
-        
-        PlatformSpecific.TryWindowTheme(window, out WindowTheme theme);
-        Theme = theme;
     }
 
     public void MakeCurrent()

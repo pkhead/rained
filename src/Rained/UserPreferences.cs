@@ -175,6 +175,8 @@ class UserPreferences
     public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColor(value); }
 
     public string Theme { get; set; }
+    public string Font { get; set; } = "ProggyVector-Regular";
+    public float ContentScale { get; set; }
     public bool ImGuiMultiViewport { get; set; }
     
     public Dictionary<string, string> Shortcuts { get; set; }
@@ -209,6 +211,7 @@ class UserPreferences
         AutotileMouseMode = AutotileMouseModeOptions.Hold;
         OptimizedTilePreviews = true;
 
+        ContentScale = Boot.Window is null ? 1.0f : Boot.WindowScale;
         Theme = "Dark";
         if (Boot.Window is not null)
         {

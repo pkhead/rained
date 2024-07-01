@@ -30,6 +30,8 @@ namespace RainEd
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
 
+        // window scale for dpi
+        public static float WindowScale { get; set; } = 1.0f;
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
 
         private static void Main(string[] args)
@@ -135,10 +137,13 @@ namespace RainEd
                 windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
 #endif
 
+                // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
 
                 window.ImGuiConfigure += () =>
                 {
+                    WindowScale = window.ContentScale.Y;
+
                     ImGuiExt.SetIniFilename(Path.Combine(AppDataPath, "config", "imgui.ini"));
                     ImGui.StyleColorsDark();
 
@@ -159,9 +164,13 @@ namespace RainEd
                             io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
                         }
                     }
+
+                    Fonts.UpdateAvailableFonts();
+                    Fonts.ReloadFonts();
                 };
 
                 window.Initialize();
+                float curWindowScale = WindowScale;
                 Raylib.InitWindow(window);
 
 #if DEBUG
@@ -235,24 +244,30 @@ namespace RainEd
                 try
 #endif
                 {
-                    var dpiScale = window.ContentScale.Y;
+                    Fonts.SetFont(app.Preferences.Font);
 
                     while (app.Running)
                     {
+                        // update fonts if scale changed
+                        var io = ImGui.GetIO();
+                        if (WindowScale != curWindowScale)
+                        {
+                            curWindowScale = WindowScale;
+                            Fonts.ReloadFonts();
+                            window.ImGuiController!.RecreateFontDeviceTexture();
+                        }
+
                         Raylib.BeginDrawing();
                         window.ImGuiController!.Update(Raylib.GetFrameTime());
                         app.Draw(Raylib.GetFrameTime());
 
-                        var io = ImGui.GetIO();
-                        io.FontGlobalScale = dpiScale;
-
-                        // save style sizes and sacle to dpi before rendering
+                        // save style sizes and scale to dpi before rendering
                         // restore it back to normal afterwards
                         // (this is so the style editor works)
                         unsafe
                         {
                             ImGuiStyle styleCopy = *ImGui.GetStyle().NativePtr;
-                            ImGui.GetStyle().ScaleAllSizes(dpiScale);
+                            ImGui.GetStyle().ScaleAllSizes(curWindowScale);
                             window.ImGuiController!.Render();
                             *ImGui.GetStyle().NativePtr = styleCopy;
                         }
