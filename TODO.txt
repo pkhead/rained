@@ -1,5 +1,6 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
+- someone reported hovering over a tile body causes a crash
 
 Overall:
 - palette on props
