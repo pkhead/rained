@@ -100,28 +100,9 @@ static class AboutWindow
         // link interactive
         if (ImGui.InvisibleButton(id, textSize))
         {
-            if (OperatingSystem.IsWindows())
+            if (!Platform.OpenURL(link))
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = link,
-                    UseShellExecute = true
-                });
-            }
-            else if (OperatingSystem.IsMacOS())
-            {
-                Process.Start("open", link);
-            }
-            else // assume linux
-            {
-                try
-                {
-                    Process.Start("xdg-open", link);
-                }
-                catch
-                {
-                    RainEd.Logger.Error("Could not open URL");
-                }
+                RainEd.Logger.Error("Could not open URL on user platform.");
             }
         }
 
@@ -130,11 +111,11 @@ static class AboutWindow
         Vector4 textColor;
         if (ImGui.IsItemHovered() || ImGui.IsItemActive())
         {
-            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.TabHovered];
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonActive];
         }
         else
         {
-            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Tab];
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
         }
         
         ImGui.TextColored(textColor, display);

@@ -346,34 +346,20 @@ sealed class RainEd
 
     public void ShowPathInSystemBrowser(string path, bool reveal)
     {
-        try
+        var success = false;
+
+        if (reveal)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (reveal)
-                    Process.Start("explorer.exe", "/select," + path);
-                else
-                    Process.Start("explorer.exe", path);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // I can't test if this actually works as intended
-                if (reveal)
-                    Process.Start("open", "-R " + path);
-                else
-                    Process.Start("open", path);
-            }
-            else // assume Linux
-            {
-                if (reveal)
-                    Process.Start("xdg-open", Path.GetDirectoryName(path)!);
-                else
-                    Process.Start("xdg-open", path);
-            }
+            success = Platform.RevealPath(path);
         }
-        catch (Exception e)
+        else
         {
-            Logger.Error("Could not show path '{Path}':\n{Error}", e);
+            success = Platform.OpenPath(path);
+        }
+
+        if (!success)
+        {
+            Logger.Error("Could not show path '{Path}'", path);
             EditorWindow.ShowNotification("Could not open the system file browser");
         }
     }
@@ -520,6 +506,7 @@ sealed class RainEd
             {
                 if (!Platform.TrashFile(file))
                 {
+                    Logger.Warning("TrashFile is not supported, resorted to permanent deletion.");
                     File.Delete(file);
                 }
             }

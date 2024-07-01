@@ -49,6 +49,100 @@ static partial class Platform
     }
 
     /// <summary>
+    /// Open a URL in the user's preferred browser application.
+    /// </summary>
+    /// <param name="url">The URL to open.</param>
+    /// <returns>True if the operation is supported on the running platform, false if not.</return>
+    public static bool OpenURL(string url)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+            return true;
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            Process.Start("open", url);
+            return true;
+        }
+        else // assume linux
+        {
+            try
+            {
+                Process.Start("xdg-open", url);
+                return true;
+            }
+            catch { return false; }
+        }
+    }
+
+    /// <summary>
+    /// Open a file or folder using the user's preferred viewer application for the item.
+    /// </summary>
+    /// <param name="path">The target path.</param>
+    /// <returns>True if the operation is supported on the running platform, false if not.</return>
+    public static bool OpenPath(string path)
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("explorer.exe", path);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                // I can't test if this actually works as intended
+                Process.Start("open", path);
+            }
+            else // assume Linux
+            {
+                Process.Start("xdg-open", path);
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Show a file or directory in the user's file system browser.
+    /// </summary>
+    /// <param name="path">The target path.</param>
+    /// <returns>True if the operation is supported on the running platform, false if not.</return>
+    public static bool RevealPath(string path)
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("explorer.exe", "/select," + path);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                // I can't test if this actually works as intended
+                Process.Start("open", "-R " + path);
+            }
+            else // assume Linux
+            {
+                Process.Start("xdg-open", Path.GetDirectoryName(path)!);
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Send a file to the trash bin.
     /// </summary>
     /// <param name="filePath">The path of the file to trash.</param>
@@ -66,7 +160,21 @@ static partial class Platform
             Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(file, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
             return true;
         }
-        else if (OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsMacOS())
+        {
+            // run AppleScript interpreter to trash file
+            // (untested)
+            try
+            {
+                var proc = Process.Start("osascript", ["-e", $"tell application \"Finder\" to delete POSIX file \"{file}\""])!;
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) return true;
+            }
+            catch {}
+
+            return false;
+        }
+        else // assume Linux...
         {
             bool success = false;
             
@@ -116,7 +224,7 @@ static partial class Platform
 
                 File.Move(file, Path.Combine(trashFilesFolder, fileName));
                 
-                using (StreamWriter infoFile = new StreamWriter(Path.Combine(trashInfoFolder, fileName + ".trashinfo"), false))
+                using (var infoFile = new StreamWriter(Path.Combine(trashInfoFolder, fileName + ".trashinfo"), false))
                 {
                     var dateStr = DateTime.Now.ToString(@"yyyy-MM-dd\THH:mm:ss", CultureInfo.InvariantCulture);
                     
@@ -129,20 +237,6 @@ static partial class Platform
             }
             catch {}
             if (success) return true;
-
-            return false;
-        }
-        else if (OperatingSystem.IsMacOS())
-        {
-            // run AppleScript interpreter to trash file
-            // (untested)
-            try
-            {
-                var proc = Process.Start("osascript", ["-e", $"tell application \"Finder\" to delete POSIX file \"{file}\""])!;
-                proc.WaitForExit();
-                if (proc.ExitCode == 0) return true;
-            }
-            catch {}
 
             return false;
         }
