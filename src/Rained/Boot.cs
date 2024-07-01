@@ -235,12 +235,29 @@ namespace RainEd
                 try
 #endif
                 {
+                    var dpiScale = window.ContentScale.Y;
+
                     while (app.Running)
                     {
                         Raylib.BeginDrawing();
                         window.ImGuiController!.Update(Raylib.GetFrameTime());
                         app.Draw(Raylib.GetFrameTime());
-                        window.ImGuiController!.Render();
+
+                        var io = ImGui.GetIO();
+                        io.FontGlobalScale = dpiScale;
+
+                        // save style sizes and sacle to dpi before rendering
+                        // restore it back to normal afterwards
+                        // (this is so the style editor works)
+                        unsafe
+                        {
+                            ImGuiStyle styleCopy = *ImGui.GetStyle().NativePtr;
+                            ImGui.GetStyle().ScaleAllSizes(dpiScale);
+                            window.ImGuiController!.Render();
+                            *ImGui.GetStyle().NativePtr = styleCopy;
+                        }
+                        
+                        
                         Raylib.EndDrawing();
 
                         Glib.GLResource.UnloadGCQueue();
