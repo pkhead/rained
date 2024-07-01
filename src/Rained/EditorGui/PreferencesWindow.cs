@@ -381,22 +381,19 @@ static class PreferencesWindow
                 """
             );
 
-            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
-
-            bool multiViewport = prefs.ImGuiMultiViewport;
-            if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
-                prefs.ImGuiMultiViewport = multiViewport;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            ImGui.SetItemTooltip(
-                """
-                Turning this on will allow inner windows to
-                go outside of the bounds of the main window.
-                This option requires a restart in order to
-                take effect.
-                """
-            );
+            //bool multiViewport = prefs.ImGuiMultiViewport;
+            //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
+            //    prefs.ImGuiMultiViewport = multiViewport;
+            //ImGui.SameLine();
+            //ImGui.TextDisabled("(?)");
+            //ImGui.SetItemTooltip(
+            //    """
+            //    Turning this on will allow inner windows to
+            //    go outside of the bounds of the main window.
+            //    This option requires a restart in order to
+            //    take effect.
+            //    """
+            //);
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             
