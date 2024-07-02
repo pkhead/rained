@@ -316,6 +316,32 @@ partial class PropEditor : IEditorMode
         public void Update(Vector2 dragStart, Vector2 mousePos)
         {
             prop.QuadPoints[handleId] = Snap(mousePos, snap);
+
+            // hold shift for vertex snapping
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+            {
+                float minDist = 1.0f / RainEd.Instance.LevelView.ViewZoom;
+                minDist *= minDist;
+
+                Vector2 snapPos = prop.QuadPoints[handleId];
+                foreach (var prop in RainEd.Instance.Level.Props)
+                {
+                    if (prop == this.prop) continue;
+                    var quadPts = prop.QuadPoints;
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var d = Vector2.DistanceSquared(quadPts[i], mousePos);
+                        if (d < minDist)
+                        {
+                            snapPos = quadPts[i];
+                            minDist = d;
+                        }
+                    }
+                }
+
+                prop.QuadPoints[handleId] = snapPos;
+            }
         }
     }
 

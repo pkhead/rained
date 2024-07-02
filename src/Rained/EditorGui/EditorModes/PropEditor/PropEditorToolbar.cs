@@ -339,6 +339,10 @@ partial class PropEditor : IEditorMode
         {
             RainEd.Instance.LevelView.StatusText = "Shift - Snap rotation";
         }
+        else if (transformMode is WarpTransformMode)
+        {
+            RainEd.Instance.LevelView.StatusText = "Shift - Vertex snap";
+        }
 
         // push rope transform if simulation had just ended
         if (wasRopeSimulationActive && !isRopeSimulationActive)
