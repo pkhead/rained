@@ -27,6 +27,7 @@ Glib:
 - shader class should keep a list of texture slots. when Use() is called, re-set the texture units based on this list.
 
 Geometry Editor:
+- fill
 - select and copy/paste
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
