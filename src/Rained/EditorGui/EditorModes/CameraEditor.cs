@@ -145,15 +145,15 @@ class CameraEditor : IEditorMode
 
         if (horizSnap && vertSnap)
         {
-            window.StatusText = "X and Y Snap";
+            window.WriteStatus("X and Y Snap");
         }
         else if (horizSnap)
         {
-            window.StatusText = "X snap";
+            window.WriteStatus("X snap");
         }
         else if (vertSnap)
         {
-            window.StatusText = "Y snap";
+            window.WriteStatus("Y snap");
         }
 
         if (window.IsViewportHovered)

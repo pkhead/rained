@@ -389,7 +389,7 @@ partial class Level
         }
         else
         {
-            return Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead!;
+            return Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
         }
     }
 

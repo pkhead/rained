@@ -369,11 +369,11 @@ class GeometryEditor : IEditorMode
                 GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
                 var rectW = rectMaxX - rectMinX + 1;
                 var rectH = rectMaxY - rectMinY + 1;
-                window.StatusText = $"({rectW}, {rectH})";
+                window.WriteStatus($"({rectW}, {rectH})");
             }
             else if (ToolCanRectPlace(selectedTool))
             {
-                window.StatusText = "Shift+Drag to fill rect";
+                window.WriteStatus("Shift+Drag to fill rect");
             }
         } ImGui.End();
 

@@ -25,7 +25,7 @@ class LevelView
     public Vector2 MouseCellFloat { get => mouseCellFloat; }
     public bool IsMouseInLevel() => RainEd.Instance.Level.IsInBounds(mouseCx, mouseCy);
     public bool OverrideMouseWheel = false;
-    public string StatusText = string.Empty;
+    public string StatusText { get; private set; } = string.Empty;
 
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
@@ -207,6 +207,17 @@ class LevelView
         mode.ShowEditMenu();
     }
 
+    /// <summary>
+    /// Append the given text to the status text.
+    /// </summary>
+    /// <param name="text">The text to append</param>
+    /// <param name="extraSpace">Extra text space to reserve for the text</param>
+    public void WriteStatus(string text, int extraSpace = 0)
+    {
+        int spaces = 6 * (extraSpace+1);
+        StatusText += text.PadRight(((int)MathF.Floor((text.Length+1) / spaces) + 1) * spaces, ' ');
+    }
+
     public void Render()
     {
         var dt = Raylib.GetFrameTime();
@@ -251,14 +262,12 @@ class LevelView
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("Reset View"))
-            {
-                ResetView();
-            }
-
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%  Mouse: ({MouseCx}, {MouseCy})    {StatusText}");
+            ImGui.TextUnformatted(StatusText);
             StatusText = string.Empty;
+            WriteStatus($"Zoom: {Math.Floor(viewZoom * 100f)}%");
+            WriteStatus($"Mouse: ({MouseCx}, {MouseCy})");
+            //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
+
 
             if (!ImGui.GetIO().WantTextInput)
             {

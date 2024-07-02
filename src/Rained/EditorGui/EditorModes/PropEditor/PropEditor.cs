@@ -615,13 +615,13 @@ partial class PropEditor : IEditorMode
             {
                 dragStartPos = window.MouseCellFloat;
             }
+        }
 
-            // in prop transform mode
-            if (transformMode is null)
-            {
-                // in default mode
-                PropSelectUpdate();
-            }
+        // in prop transform mode
+        if (transformMode is null)
+        {
+            // in default mode
+            PropSelectUpdate();
         }
 
         // update transform mode
@@ -707,162 +707,170 @@ partial class PropEditor : IEditorMode
 
     public void PropSelectUpdate()
     {
-        if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+        if (window.IsViewportHovered)
         {
-            if (!isMouseDragging)
+            // write selected tile
+            var propsAtCursor = GetPropsAt(EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) ? dragStartPos : window.MouseCellFloat, window.WorkLayer);
+            Prop? hoveredProp;
             {
-                // drag had begun
-                Prop? hoverProp;
+                hoveredProp = propsAtCursor.Length == 0 ? null : propsAtCursor[0];
+                foreach (var prop in propsAtCursor)
                 {
-                    var propList = GetPropsAt(dragStartPos, window.WorkLayer);
-                    hoverProp = propList.Length == 0 ? null : propList[0];
-
-                    foreach (var prop in propList)
+                    if (selectedProps.Contains(prop))
                     {
-                        if (selectedProps.Contains(prop))
-                        {
-                            hoverProp = prop;
-                            break;
-                        }
+                        hoveredProp = prop;
+                        break;
                     }
                 }
+            }
+            
+            if (hoveredProp is not null)
+            {
+                window.WriteStatus(hoveredProp.PropInit.Name, 3);
+            }
 
-                // if dragging over an empty space, begin rect select
-                if (hoverProp is null)
+            if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+            {
+                if (!isMouseDragging)
                 {
-                    dragMode = DragMode.Select;
+                    // drag had begun
+                    // if dragging over an empty space, begin rect select
+                    if (hoveredProp is null)
+                    {
+                        dragMode = DragMode.Select;
 
-                    // if shift is held, rect select Adds instead of Replace
-                    if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                        initSelectedProps = selectedProps.ToList(); // clone selection list
+                        // if shift is held, rect select Adds instead of Replace
+                        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+                            initSelectedProps = selectedProps.ToList(); // clone selection list
+                        else
+                            initSelectedProps = null;
+                    }
                     else
-                        initSelectedProps = null;
-                }
-                else
-                {
-                    // if dragging over a prop, drag all currently selected props
-                    // if active prop is in selection. if not, then set selection
-                    // to this prop
-                    dragMode = DragMode.Move;
-                    if (!selectedProps.Contains(hoverProp))
                     {
-                        selectedProps.Clear();
-                        selectedProps.Add(hoverProp);
+                        // if dragging over a prop, drag all currently selected props
+                        // if active prop is in selection. if not, then set selection
+                        // to this prop
+                        dragMode = DragMode.Move;
+                        if (!selectedProps.Contains(hoveredProp))
+                        {
+                            selectedProps.Clear();
+                            selectedProps.Add(hoveredProp);
+                        }
+
+                        changeRecorder.BeginTransform();
+                        transformMode = new MoveTransformMode(
+                            selectedProps,
+                            snappingMode / 2f
+                        );
+                    }
+                }
+                
+                isMouseDragging = true;
+            }
+
+            // user clicked a prop, so add it to the selection
+            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
+            {
+                if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+                    selectedProps.Clear();
+                
+                var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
+                if (prop is not null)
+                {
+                    SelectProp(prop);
+                }
+            }
+
+            // left double-click opens menu to select one of multiple props under the cursor
+            // useful for when props overlap (which i assume is common)
+            if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
+            if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
+            {
+                isDoubleClick = false;
+
+                propSelectionList = propsAtCursor;
+                
+                if (propSelectionList.Length > 1)
+                {
+                    ImGui.OpenPopup("PropSelectionList");
+                }
+            }
+
+            if (!EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+                isMouseDragging = false;
+
+            // when C is pressed, create new selected prop
+            // TODO: drag and drop from props list
+            if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
+            {
+                var createPos = window.MouseCellFloat;
+                
+                var snap = snappingMode / 2f;
+                if (snap > 0)
+                {
+                    createPos.X = MathF.Round(createPos.X / snap) * snap;
+                    createPos.Y = MathF.Round(createPos.Y / snap) * snap;
+                
+                }
+                if (selectedInit is not null)
+                {
+                    changeRecorder.BeginListChange();
+
+                    int propDepth = window.WorkLayer * 10;
+
+                    // if a prop is selected while adding a new one, the new prop will copy
+                    // the depth offset value of the old prop. also make sure that it is on the same
+                    // work layer.
+                    if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer)
+                    {
+                        propDepth = initDepth;
                     }
 
-                    changeRecorder.BeginTransform();
-                    transformMode = new MoveTransformMode(
-                        selectedProps,
-                        snappingMode / 2f
-                    );
-                }
-            }
-            
-            isMouseDragging = true;
-        }
-
-        // user clicked a prop, so add it to the selection
-        if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
-        {
-            if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                selectedProps.Clear();
-            
-            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
-            if (prop is not null)
-            {
-                SelectProp(prop);
-            }
-        }
-
-        // left double-click opens menu to select one of multiple props under the cursor
-        // useful for when props overlap (which i assume is common)
-        if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
-        if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
-        {
-            isDoubleClick = false;
-
-            propSelectionList = GetPropsAt(window.MouseCellFloat, window.WorkLayer);
-            
-            if (propSelectionList.Length > 1)
-            {
-                ImGui.OpenPopup("PropSelectionList");
-            }
-        }
-
-        if (!EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
-            isMouseDragging = false;
-
-        // when C is pressed, create new selected prop
-        // TODO: drag and drop from props list
-        if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
-        {
-            var createPos = window.MouseCellFloat;
-            
-            var snap = snappingMode / 2f;
-            if (snap > 0)
-            {
-                createPos.X = MathF.Round(createPos.X / snap) * snap;
-                createPos.Y = MathF.Round(createPos.Y / snap) * snap;
-            
-            }
-            if (selectedInit is not null)
-            {
-                changeRecorder.BeginListChange();
-
-                int propDepth = window.WorkLayer * 10;
-
-                // if a prop is selected while adding a new one, the new prop will copy
-                // the depth offset value of the old prop. also make sure that it is on the same
-                // work layer.
-                if (initDepth != -1 && (int)Math.Floor(initDepth / 10f) == window.WorkLayer)
-                {
-                    propDepth = initDepth;
-                }
-
-                var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
-                {
-                    DepthOffset = propDepth
-                };
-                prop.Randomize();
-
-                RainEd.Instance.Level.Props.Add(prop);
-                selectedProps.Clear();
-                selectedProps.Add(prop);
-
-                changeRecorder.PushListChange();
-            }
-        }
-
-        // when E is pressed, sample prop
-        if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
-        {
-            var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
-            if (prop is not null)
-            {
-                // if prop is a tile as prop
-                if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
-                {
-                    for (int i = 0; i < RainEd.Instance.PropDatabase.TileCategories.Count; i++)
+                    var prop = new Prop(selectedInit, createPos, new Vector2(selectedInit.Width, selectedInit.Height))
                     {
-                        var group = RainEd.Instance.PropDatabase.TileCategories[i];
-                        var idx = group.Props.IndexOf(prop.PropInit);
+                        DepthOffset = propDepth
+                    };
+                    prop.Randomize();
 
-                        if (idx >= 0)
+                    RainEd.Instance.Level.Props.Add(prop);
+                    selectedProps.Clear();
+                    selectedProps.Add(prop);
+
+                    changeRecorder.PushListChange();
+                }
+            }
+
+            // when E is pressed, sample prop
+            if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
+            {
+                var prop = hoveredProp;
+                if (prop is not null)
+                {
+                    // if prop is a tile as prop
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
+                    {
+                        for (int i = 0; i < RainEd.Instance.PropDatabase.TileCategories.Count; i++)
                         {
-                            forceSelection = SelectionMode.Tiles;
-                            selectedTileGroup = i;
-                            selectedTileIdx = idx;
-                            break;
+                            var group = RainEd.Instance.PropDatabase.TileCategories[i];
+                            var idx = group.Props.IndexOf(prop.PropInit);
+
+                            if (idx >= 0)
+                            {
+                                forceSelection = SelectionMode.Tiles;
+                                selectedTileGroup = i;
+                                selectedTileIdx = idx;
+                                break;
+                            }
                         }
                     }
-                }
 
-                // prop is a regular prop
-                else
-                {
-                    forceSelection = SelectionMode.Props;
-                    selectedPropGroup = prop.PropInit.Category.Index;
-                    selectedPropIdx = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
+                    // prop is a regular prop
+                    else
+                    {
+                        forceSelection = SelectionMode.Props;
+                        selectedPropGroup = prop.PropInit.Category.Index;
+                        selectedPropIdx = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
+                    }
                 }
             }
         }

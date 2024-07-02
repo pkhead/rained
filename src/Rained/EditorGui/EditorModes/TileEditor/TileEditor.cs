@@ -221,27 +221,47 @@ partial class TileEditor : IEditorMode
 
         if (chainHolderMode)
         {
-            window.StatusText = "Chain Attach";
+            window.WriteStatus("Chain Attach");
         }
         else
         {
+            // show hovered tile/material in status text
+            if (window.IsMouseInLevel())
+            {
+                ref var mouseCell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+
+                if (mouseCell.HasTile())
+                {
+                    var tile = level.GetTile(mouseCell);
+                    if (tile is not null)
+                    {
+                        window.WriteStatus(tile.Name, 3);
+                    }
+                }
+                else if (mouseCell.Material != 0)
+                {
+                    var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(mouseCell.Material);
+                    window.WriteStatus(matInfo.Name, 3);
+                }
+            }
+
             if (selectionMode == SelectionMode.Tiles || selectionMode == SelectionMode.Autotiles)
             {
                 if (modifyGeometry)
-                    window.StatusText = "Force Geometry  ";
+                    window.WriteStatus("Force Geometry");
                 else if (forcePlace)
-                    window.StatusText = "Force Placement  ";
+                    window.WriteStatus("Force Placement");
                 
                 if (disallowMatOverwrite)
-                    window.StatusText += "Ignore Materials";
+                    window.WriteStatus("Ignore Materials");
             }
             else if (selectionMode == SelectionMode.Materials)
             {
                 if (disallowMatOverwrite)
-                    window.StatusText = "Disallow Overwrite  ";
+                    window.WriteStatus("Disallow Overwrite");
 
                 if (modifyGeometry)
-                    window.StatusText += "Force Geometry";
+                    window.WriteStatus("Force Geometry");
             }
         }
 

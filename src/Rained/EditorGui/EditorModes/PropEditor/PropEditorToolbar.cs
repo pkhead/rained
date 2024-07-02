@@ -328,20 +328,21 @@ partial class PropEditor : IEditorMode
         }
 
         if (isWarpMode)
-            RainEd.Instance.LevelView.StatusText = "Vertex Mode";
+            RainEd.Instance.LevelView.WriteStatus("Vertex Mode");
         
         // transform mode hints
         if (transformMode is ScaleTransformMode)
         {
-            RainEd.Instance.LevelView.StatusText = "Shift - Constrain proportion    Ctrl - Scale by center";
+            RainEd.Instance.LevelView.WriteStatus("Shift - Constrain proportion");
+            RainEd.Instance.LevelView.WriteStatus("Ctrl - Scale by center");
         }
         else if (transformMode is RotateTransformMode)
         {
-            RainEd.Instance.LevelView.StatusText = "Shift - Snap rotation";
+            RainEd.Instance.LevelView.WriteStatus("Shift - Snap rotation");
         }
         else if (transformMode is WarpTransformMode)
         {
-            RainEd.Instance.LevelView.StatusText = "Shift - Vertex snap";
+            RainEd.Instance.LevelView.WriteStatus("Shift - Vertex snap");
         }
 
         // push rope transform if simulation had just ended
