@@ -5,9 +5,11 @@ Overall:
 - palette on props
 - dissolve material/tile separation
 - prop selection box is affected by bfTiles (don't do this)
-- autotile joining
+- autotiles
   - option to join only inner tiles
   - ability to recognize more than one tile as a direction type
+  - cross beams autotile
+    - ability to constrain autotile shape into a square
 - new level screen
 - favorite tiles and props
 - Move Level
