@@ -65,6 +65,7 @@ class LevelEditRender : IDisposable
     public int FadePalette = -1;
     public float PaletteMix = 0f;
     public readonly Palette[] Palettes;
+    public Glib.Texture PaletteTexture => paletteTexture;
     private readonly Glib.Texture paletteTexture;
     private readonly Glib.Image _paletteImgBuf; // for updating paletteTexture
 
@@ -521,7 +522,6 @@ class LevelEditRender : IDisposable
         var rctx = RainEd.RenderContext;
         rctx.SetEnabled(Glib.Feature.CullFace, false);
 
-        RlManaged.Shader? curShader = null;
         bool renderPalette;
 
         // palette rendering mode
@@ -563,12 +563,7 @@ class LevelEditRender : IDisposable
             // draw missing texture if needed
             if (propTexture is null)
             {
-                if (curShader != null)
-                {
-                    curShader = null;
-                    Raylib.EndShaderMode();
-                }
-
+                rctx.Shader = null;
                 var srcRect = new Rectangle(Vector2.Zero, 2.0f * Vector2.One);
 
                 using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
@@ -591,27 +586,27 @@ class LevelEditRender : IDisposable
             }
             else
             {
-                RlManaged.Shader? desiredShader = null;
+                var isStdProp = prop.PropInit.Type is Props.PropType.Standard or Props.PropType.VariedStandard;
 
-                if (renderPalette &&
-                    prop.PropInit.Type is Props.PropType.Standard or Props.PropType.VariedStandard &&
-                    prop.PropInit.ColorTreatment == Props.PropColorTreatment.Standard)
+                if (renderPalette)
                 {
-                    desiredShader = Shaders.PaletteShader;
+                    if (isStdProp && prop.PropInit.ColorTreatment == Props.PropColorTreatment.Standard)
+                    {
+                        rctx.Shader = Shaders.PaletteShader.GlibShader;
+                        rctx.Shader.SetUniform("paletteTex", paletteTexture);
+                    }
+                    else if (isStdProp && prop.PropInit.ColorTreatment == Props.PropColorTreatment.Bevel)
+                    {
+                        rctx.Shader = Shaders.BevelTreatmentShader.GlibShader;
+                        if (rctx.Shader.HasUniform("paletteTex")) rctx.Shader.SetUniform("paletteTex", paletteTexture);
+                        if (rctx.Shader.HasUniform("textureSize")) rctx.Shader.SetUniform("textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
+                        if (rctx.Shader.HasUniform("bevelSize")) rctx.Shader.SetUniform("bevelSize", 4); // TODO: get bevel information
+                        rctx.DrawBatch(); // force flush batch as uniform changes aren't detected
+                    }
                 }
                 else
                 {
-                    desiredShader = Shaders.PropShader;
-                }
-
-                if (curShader != desiredShader)
-                {
-                    curShader = desiredShader;
-
-                    if (desiredShader == Shaders.PaletteShader)
-                        BeginPaletteShaderMode();
-                    else
-                        Raylib.BeginShaderMode(desiredShader);
+                    rctx.Shader = Shaders.PropShader.GlibShader;
                 }
 
                 // draw each sublayer of the prop
@@ -624,7 +619,7 @@ class LevelEditRender : IDisposable
                     float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
                     var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
 
-                    if (curShader == Shaders.PaletteShader)
+                    if (renderPalette)
                     {
                         // R channel represents sublayer
                         // A channel is alpha, as usual
@@ -656,11 +651,7 @@ class LevelEditRender : IDisposable
                 }
             }
 
-            if (curShader != null)
-            {
-                curShader = null;
-                Raylib.EndShaderMode();
-            }
+            rctx.Shader = null;
             rctx.SetEnabled(Glib.Feature.CullFace, false);
 
             // render segments of rope-type props
@@ -681,12 +672,8 @@ class LevelEditRender : IDisposable
                 }
             }
         }
-
-        if (curShader != null)
-        {
-            curShader = null;
-            Raylib.EndShaderMode();
-        }
+        
+        rctx.Shader = null;
     }
 
     public void RenderGrid()

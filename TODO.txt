@@ -1,3 +1,5 @@
+SEND ROTATION TO BEVEL SHADER
+
 Bugs:
 - client code mouse position doesn't work with multi-viewport
 

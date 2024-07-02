@@ -41,6 +41,7 @@ static class Shaders
     public static void LoadShaders()
     {
         EffectsMatrixShader = RlManaged.Shader.LoadFromMemory(null, EffectsMatrixShaderSource);
+        BevelTreatmentShader = RlManaged.Shader.LoadFromMemory(null, BevelTreatmentShaderSrc);
         PropShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TileShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
         PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
@@ -169,6 +170,99 @@ static class Shaders
             finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
         }
     ";
+
+    private const string BevelTreatmentShaderSrc =
+        """
+        #version 330 core
+
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
+
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
+        uniform sampler2D paletteTex;
+
+        uniform int bevelSize;
+        uniform vec2 textureSize;
+
+        out vec4 finalColor;
+
+        vec3 getLitColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, 0.5 / 3.0)).rgb;
+        }
+
+        vec3 getNeutralColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (1.0+0.5) / 3.0)).rgb;
+        }
+
+        vec3 getShadeColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (2.0+0.5) / 3.0)).rgb;
+        }
+
+        bool isTransparent(vec2 coords)
+        {
+            bool inBounds = coords.x >= 0.0 && coords.x <= 1.0 && coords.y >= 0.0 && coords.y <= 1.0;
+            vec4 texelColor = texture(glib_uTexture, coords);
+            return (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
+        }
+
+        void main()
+        {
+            if (isTransparent(glib_texCoord)) discard;
+
+            int bevelDst = 0;
+            vec2 bevelDir = vec2(0.0, 0.0);
+
+            finalColor = vec4(vec3(0.0, 0.0, 0.0), float(bevelSize) / 4.0);
+
+            for (int i = 0; i < bevelSize; i++)
+            {
+                bevelDst = i;
+                
+                // right
+                if (isTransparent(glib_texCoord + vec2(i, 0.0) / textureSize))
+                {
+                    bevelDir = vec2(1.0, 0.0);
+                    break;
+                }
+
+                // down
+                if (isTransparent(glib_texCoord + vec2(0.0, -i) / textureSize))
+                {
+                    bevelDir = vec2(0.0, -1.0);
+                    break;                
+                }
+
+                // left
+                if (isTransparent(glib_texCoord + vec2(-i, 0.0) / textureSize))
+                {
+                    bevelDir = vec2(-1.0, 0.0);
+                    break;
+                }
+
+                // up
+                if (isTransparent(glib_texCoord + vec2(0, i) / textureSize))
+                {
+                    bevelDir = vec2(0.0, 1.0);
+                    break;
+                }
+            }
+
+            vec2 lightDir = normalize(vec2(1.0, -1.0));
+
+            bool isLight = dot(lightDir, -bevelDir) > 0.5;
+            bool isShade = dot(lightDir, -bevelDir) <= 0.5;
+            bool isNormal = bevelDir == vec2(0.0, 0.0);
+
+            float colIndex = floor(glib_color.r * 29.0);
+            vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
+
+            finalColor = vec4(shadedCol, glib_color.a) * glib_uColor;
+        }
+        """;
 
     private const string GridVertexShaderSource = @"
         #version 330 core
