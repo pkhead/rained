@@ -324,6 +324,49 @@ public class Shader : GLResource
     /// Set the value of the shader's uniform. This is only valid for the shader
     /// if it is currently active.
     /// </summary>
+    public void SetUniform(string uName, Matrix2x2 matrix)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+
+        Span<float> flat = [
+            matrix.M11,
+            matrix.M12,
+            matrix.M21,
+            matrix.M22
+        ];
+
+        gl.UniformMatrix2(loc, false, flat);
+    }
+    
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
+    public void SetUniform(string uName, Matrix3x3 matrix)
+    {
+        var loc = gl.GetUniformLocation(shaderProgram, uName);
+        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+
+        Span<float> flat = [
+            matrix.M11,
+            matrix.M12,
+            matrix.M13,
+            matrix.M21,
+            matrix.M22,
+            matrix.M23,
+            matrix.M31,
+            matrix.M32,
+            matrix.M33
+        ];
+
+        gl.UniformMatrix3(loc, false, flat);
+    }
+
+    /// <summary>
+    /// Set the value of the shader's uniform. This is only valid for the shader
+    /// if it is currently active.
+    /// </summary>
     public void SetUniform(string uName, Texture texture)
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);

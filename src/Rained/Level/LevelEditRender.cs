@@ -600,7 +600,25 @@ class LevelEditRender : IDisposable
                         rctx.Shader = Shaders.BevelTreatmentShader.GlibShader;
                         if (rctx.Shader.HasUniform("paletteTex")) rctx.Shader.SetUniform("paletteTex", paletteTexture);
                         if (rctx.Shader.HasUniform("textureSize")) rctx.Shader.SetUniform("textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
-                        if (rctx.Shader.HasUniform("bevelSize")) rctx.Shader.SetUniform("bevelSize", 4); // TODO: get bevel information
+                        
+                        if (rctx.Shader.HasUniform("bevelSize"))
+                        {
+                            rctx.Shader.SetUniform("bevelSize", prop.PropInit.Bevel);
+                        }
+                        
+                        if (rctx.Shader.HasUniform("lightDirection"))
+                        {
+                            var correctedAngle = Level.LightAngle + MathF.PI / 2f;
+                            rctx.Shader.SetUniform("lightDirection", new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)));
+                        }
+                        
+                        if (rctx.Shader.HasUniform("propRotation"))
+                        {
+                            var right = Vector2.Normalize(quad[1] - quad[0]);
+                            var up = Vector2.Normalize(quad[3] - quad[0]);
+                            rctx.Shader.SetUniform("propRotation", new Glib.Matrix2x2(right.X, right.Y, up.X, up.Y));
+                        }
+
                         rctx.DrawBatch(); // force flush batch as uniform changes aren't detected
                     }
                 }
@@ -645,6 +663,7 @@ class LevelEditRender : IDisposable
                         batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
                         batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
 
+                        // top right
                         batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
                         batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
                     }

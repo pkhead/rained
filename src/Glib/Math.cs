@@ -1,6 +1,55 @@
 using System.Numerics;
 namespace Glib;
 
+public struct Matrix2x2
+{
+    public float M11;
+    public float M12;
+    public float M21;
+    public float M22;
+
+    public Matrix2x2()
+    {
+        M11 = 0f;
+        M12 = 0f;
+        M21 = 0f;
+        M22 = 0f;
+    }
+
+    public Matrix2x2(float m11, float m12, float m21, float m22)
+    {
+        M11 = m11;
+        M12 = m12;
+        M21 = m21;
+        M22 = m22;
+    }
+
+    public static Matrix2x2 Identity => new(
+        1.0f, 0.0f,
+        0.0f, 1.0f
+    );
+
+    public static Matrix2x2 CreateRotation(float rot)
+    {
+        var cos = MathF.Cos(rot);
+        var sin = MathF.Sin(rot);
+
+        return new Matrix2x2(
+            cos, -sin,
+            sin, cos
+        );
+    }
+
+    public static explicit operator Matrix4x4(Matrix2x2 mat)
+    {
+        return new Matrix4x4(
+            mat.M11, mat.M12, 0f,    0f,
+            mat.M21, mat.M22, 0f,    0f,
+            0f,      0f,      1f,    0f,
+            0f,      0f,      0f,    1f
+        );
+    }
+}
 public struct Matrix3x3
 {
     public float M11;

@@ -66,6 +66,7 @@ record PropInit
     public readonly PropType Type;
     public readonly PropFlags PropFlags;
     public readonly PropColorTreatment ColorTreatment;
+    public readonly int Bevel;
     public readonly int Depth;
     public readonly int VariationCount;
     public readonly string[] Notes;
@@ -106,6 +107,7 @@ record PropInit
 
         Category = category;
         ColorTreatment = PropColorTreatment.Unspecified;
+        Bevel = 0;
         Name = (string) init.fields["nm"];
         Type = (string) init.fields["tp"] switch
         {
@@ -221,6 +223,11 @@ record PropInit
             {
                 ColorTreatment = PropColorTreatment.Bevel;
                 PropFlags |= PropFlags.ProcedurallyShaded;
+
+                if (init.fields.TryGetValue("bevel", out var bevelObj))
+                {
+                    Bevel = (int)bevelObj;
+                }
             }
             else if (treatmentVal == "standard")
             {

@@ -184,6 +184,8 @@ static class Shaders
 
         uniform int bevelSize;
         uniform vec2 textureSize;
+        uniform mat2 propRotation;
+        uniform vec2 lightDirection;
 
         out vec4 finalColor;
 
@@ -213,49 +215,37 @@ static class Shaders
         {
             if (isTransparent(glib_texCoord)) discard;
 
-            int bevelDst = 0;
+            float bevelDst = bevelSize + 1.0;
             vec2 bevelDir = vec2(0.0, 0.0);
 
             finalColor = vec4(vec3(0.0, 0.0, 0.0), float(bevelSize) / 4.0);
 
-            for (int i = 0; i < bevelSize; i++)
+            float newDist;
+            bool trans;
+            bool replace;
+            int dx, dy;
+            for (int i = 0; i < 4 * bevelSize * bevelSize; i++)
             {
-                bevelDst = i;
-                
-                // right
-                if (isTransparent(glib_texCoord + vec2(i, 0.0) / textureSize))
-                {
-                    bevelDir = vec2(1.0, 0.0);
-                    break;
-                }
+                dy = i / (bevelSize * 2) - bevelSize;
+                dx = i % (bevelSize * 2) - bevelSize;
 
-                // down
-                if (isTransparent(glib_texCoord + vec2(0.0, -i) / textureSize))
-                {
-                    bevelDir = vec2(0.0, -1.0);
-                    break;                
-                }
+                newDist = length(vec2(dx, dy));
+                trans = isTransparent(glib_texCoord + vec2(dx, dy) / textureSize);
+                replace = trans && newDist < bevelDst;
 
-                // left
-                if (isTransparent(glib_texCoord + vec2(-i, 0.0) / textureSize))
+                if (replace)
                 {
-                    bevelDir = vec2(-1.0, 0.0);
-                    break;
-                }
-
-                // up
-                if (isTransparent(glib_texCoord + vec2(0, i) / textureSize))
-                {
-                    bevelDir = vec2(0.0, 1.0);
-                    break;
+                    bevelDst = newDist;
+                    bevelDir = normalize(vec2(dx, dy));
                 }
             }
+            
+            vec2 lightDir = normalize(lightDirection);
+            vec2 globalBevelDir = normalize(propRotation[0] * bevelDir.x + propRotation[1] * bevelDir.y);
 
-            vec2 lightDir = normalize(vec2(1.0, -1.0));
-
-            bool isLight = dot(lightDir, -bevelDir) > 0.5;
-            bool isShade = dot(lightDir, -bevelDir) <= 0.5;
-            bool isNormal = bevelDir == vec2(0.0, 0.0);
+            bool isNormal = bevelDst > bevelSize;
+            bool isLight = !isNormal && dot(lightDir, globalBevelDir) > 0;
+            bool isShade = !isNormal && dot(lightDir, globalBevelDir) <= 0;
 
             float colIndex = floor(glib_color.r * 29.0);
             vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
