@@ -191,7 +191,7 @@ static class Shaders
         uniform int bevelSize;
         uniform vec2 textureSize;
         uniform mat2 propRotation;
-        uniform vec2 lightDirection;
+        uniform vec3 lightDirection;
 
         out vec4 finalColor;
 
@@ -246,12 +246,12 @@ static class Shaders
                 }
             }
             
-            vec2 lightDir = normalize(lightDirection);
+            vec2 lightDir = normalize(lightDirection.xy);
             vec2 globalBevelDir = normalize(propRotation[0] * bevelDir.x + propRotation[1] * bevelDir.y);
 
-            bool isNormal = bevelDst > bevelSize;
-            bool isLight = !isNormal && dot(lightDir, globalBevelDir) > 0;
-            bool isShade = !isNormal && dot(lightDir, globalBevelDir) <= 0;
+            bool isLight = bevelDst <= bevelSize && dot(lightDir, globalBevelDir) > 0.5;
+            bool isShade = bevelDst <= bevelSize && dot(lightDir, globalBevelDir) <= 0;
+            bool isNormal = !isLight && !isShade;
 
             float colIndex = floor(glib_color.r * 29.0);
             vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
@@ -273,8 +273,11 @@ static class Shaders
 
         uniform vec2 textureSize;
         uniform mat2 propRotation;
-        uniform vec2 lightDirection;
-        uniform float lightPlaneZ;
+        uniform vec3 lightDirection;
+        uniform float contourExponent;
+        uniform float highlightThreshold;
+        uniform float shadowThreshold;
+        uniform int propDepth;
 
         out vec4 finalColor;
 
@@ -305,27 +308,37 @@ static class Shaders
             if (isTransparent(glib_texCoord)) discard;
             float center = texture(glib_uTexture, glib_texCoord).g;
             
+            // get x partial derivative
             float row[3];
             row[0] = texture(glib_uTexture, glib_texCoord - vec2(1.0, 0.0) / textureSize).g;
             row[1] = center;
             row[2] = texture(glib_uTexture, glib_texCoord + vec2(1.0, 0.0) / textureSize).g;
-
             float slopeX = (row[2] - row[0]) / (3.0 / textureSize.x);
 
+            // get y partial derivative
             row[0] = texture(glib_uTexture, glib_texCoord - vec2(0.0, 1.0) / textureSize).g;
             row[1] = center;
             row[2] = texture(glib_uTexture, glib_texCoord + vec2(0.0, 1.0) / textureSize).g;
-
             float slopeY = (row[2] - row[0]) / (3.0 / textureSize.y);
 
+            // calculate curve normal
             vec3 normal = cross( normalize(vec3(propRotation[0], slopeX)), normalize(vec3(propRotation[1], slopeY)) );
             normal = normalize(normal);
+            
+            // shadeValue is used to determine if this pixel is a shade, highlight, or neutral
+            vec3 lightDir = normalize(lightDirection);
+            float shadeValue =  max(0.0, dot(lightDir, normal));
 
-            //finalColor = vec4(max(0.0, slopeY) / 4.0, max(0.0, -slopeY) / 4.0, 0.0, 1.0);
-            //finalColor = vec4((normal.x + 1.0) / 2.0, (normal.y + 1.0) / 2.0, (normal.z + 1.0) / 2.0, 1.0);
-            vec3 lightDir = normalize(vec3(lightDirection.x, lightDirection.y, lightPlaneZ));
+            float depth = (pow(1.0 - center, contourExponent) * propDepth) / 29.0 + glib_color.r;
 
-            finalColor = vec4(vec3(1.0, 1.0, 1.0) * max(0.0, dot(lightDir, normal)), 1.0);
+            bool isNormal = shadeValue > shadowThreshold && shadeValue < highlightThreshold;
+            bool isLight = shadeValue >= highlightThreshold;
+            bool isShade = shadeValue <= shadowThreshold;
+
+            float colIndex = floor(clamp(depth, 0.0, 1.0) * 29.0);
+            vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
+
+            finalColor = vec4(shadedCol, glib_color.a) * glib_uColor;
         }
         """;
 

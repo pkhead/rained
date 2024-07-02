@@ -598,9 +598,17 @@ class LevelEditRender : IDisposable
                     {
                         rctx.Shader = Shaders.BevelTreatmentShader.GlibShader;
                     }
-                    else if (prop.PropInit.Type is Props.PropType.Soft or Props.PropType.ColoredSoft or Props.PropType.VariedSoft)
+                    else if (prop.PropInit.SoftPropRender is not null)
                     {
                         rctx.Shader = Shaders.SoftPropShader.GlibShader;
+
+                        var softProp = prop.PropInit.SoftPropRender.Value;
+                        rctx.Shader.SetUniform("contourExponent", softProp.ContourExponent);
+                        rctx.Shader.SetUniform("propDepth", prop.CustomDepth);
+
+                        // i don't really know how these options work...
+                        rctx.Shader.SetUniform("highlightThreshold", 0.666f);
+                        rctx.Shader.SetUniform("shadowThreshold", 0.333f);
                     }
                     else
                     {
@@ -627,7 +635,9 @@ class LevelEditRender : IDisposable
                     if (rctx.Shader.HasUniform("lightDirection"))
                     {
                         var correctedAngle = Level.LightAngle + MathF.PI / 2f;
-                        rctx.Shader.SetUniform("lightDirection", new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)));
+                        var lightDist = 1f - Level.LightDistance / 10f;
+                        var lightZ = lightDist * (3.0f - 0.5f) + 0.5f; // an approximation
+                        rctx.Shader.SetUniform("lightDirection", new Vector3(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle), lightZ));
                     }
                     
                     if (rctx.Shader.HasUniform("propRotation"))
@@ -635,13 +645,6 @@ class LevelEditRender : IDisposable
                         var right = Vector2.Normalize(quad[1] - quad[0]);
                         var up = Vector2.Normalize(quad[3] - quad[0]);
                         rctx.Shader.SetUniform("propRotation", new Glib.Matrix2x2(right.X, right.Y, up.X, up.Y));
-                    }
-
-                    if (rctx.Shader.HasUniform("lightPlaneZ"))
-                    {
-                        // an approximation
-                        float dist = (1f - Level.LightDistance / 10f);
-                        rctx.Shader.SetUniform("lightPlaneZ", dist * (3.0f - 0.5f) + 0.5f);
                     }
 
                     rctx.DrawBatch(); // force flush batch, as uniform changes aren't detected
@@ -657,7 +660,7 @@ class LevelEditRender : IDisposable
                     float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
                     var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
 
-                    if (renderPalette)
+                    if (renderPalette && rctx.Shader != Shaders.PropShader.GlibShader)
                     {
                         // R channel represents sublayer
                         // A channel is alpha, as usual

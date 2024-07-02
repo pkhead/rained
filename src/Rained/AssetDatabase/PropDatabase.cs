@@ -52,6 +52,27 @@ enum PropColorTreatment : byte
     Bevel = 2
 }
 
+/// <summary>
+/// Information used for the coloring of soft props.
+/// </summary>
+readonly struct SoftPropRenderInfo(float contourExp, float highLightBorder, float shadowBorder)
+{
+    /// <summary>
+    /// Exponent used to determine the sublayer of a pixel given its depth in the texture.
+    /// </summary>
+    public readonly float ContourExponent = contourExp;
+
+    /// <summary>
+    /// The minimum pixel shade value needed to be colored as a highlight.
+    /// </summary>
+    public readonly float HighlightBorder = highLightBorder;
+
+    /// <summary>
+    /// The maximum pixel shade value needed to be colored as a shadow. 
+    /// </summary>
+    public readonly float ShadowBorder = shadowBorder;
+}
+
 // data in propColors.txt, used for custom colors
 struct PropColor
 {
@@ -66,6 +87,7 @@ record PropInit
     public readonly PropType Type;
     public readonly PropFlags PropFlags;
     public readonly PropColorTreatment ColorTreatment;
+    public readonly SoftPropRenderInfo? SoftPropRender;
     public readonly int Bevel;
     public readonly int Depth;
     public readonly int VariationCount;
@@ -108,6 +130,7 @@ record PropInit
         Category = category;
         ColorTreatment = PropColorTreatment.Unspecified;
         Bevel = 0;
+        SoftPropRender = null;
         Name = (string) init.fields["nm"];
         Type = (string) init.fields["tp"] switch
         {
@@ -241,6 +264,15 @@ record PropInit
             if (init.fields.TryGetValue("selfShade", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
             {
                 PropFlags |= PropFlags.ProcedurallyShaded;
+            }
+
+            if (init.fields.TryGetValue("contourExp", out var contourExp) && init.fields.TryGetValue("highLightBorder", out var hl) && init.fields.TryGetValue("shadowBorder", out var sh))
+            {
+                SoftPropRender = new SoftPropRenderInfo(
+                    Lingo.LingoNumber.AsFloat(contourExp),
+                    Lingo.LingoNumber.AsFloat(hl),
+                    Lingo.LingoNumber.AsFloat(sh)
+                );
             }
         }
         else if (
