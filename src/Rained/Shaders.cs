@@ -8,25 +8,35 @@ static class Shaders
     /// <summary>
     /// The shader used for displaying the texture of an effect matrix.
     /// </summary>
-    public static RlManaged.Shader EffectsMatrixShader = null!;
+    public static RlManaged.Shader EffectsMatrixShader { get; private set; } = null!;
 
     /// <summary>
     /// The shader used for prop rendering in the editor. <br /><br />
     /// White pixels are transparent, the red color component controls transparency, and the green color component controls white blend 
     /// </summary>
-    public static RlManaged.Shader PropShader = null!;
+    public static RlManaged.Shader PropShader { get; private set; } = null!;
 
     /// <summary>
     /// The shader used for tile rendering in the editor. White pixels are transparent.
     /// </summary>
-    public static RlManaged.Shader TileShader = null!;
-    public static RlManaged.Shader PaletteShader = null!;
-    public static RlManaged.Shader LevelLightShader = null!;
+    public static RlManaged.Shader TileShader { get; private set; } = null!;
+
+    /// <summary>
+    /// The shader for rendering a tile or a prop with the standard color treatment, where it is given that pixel shade values are baked into the texture. 
+    /// </summary>
+    public static RlManaged.Shader PaletteShader { get; private set; } = null!;
+
+    /// <summary>
+    /// The shader for rendering a standard-type prop with the bevel color treatment.
+    /// </summary>
+    public static RlManaged.Shader BevelTreatmentShader { get; private set; } = null!;
+
+    public static RlManaged.Shader LevelLightShader { get; private set; } = null!;
 
     /// <summary>
     /// The vertex+fragment shader used for rendering the line mesh grid.
     /// </summary>
-    public static RlManaged.Shader GridShader = null!;
+    public static RlManaged.Shader GridShader { get; private set; } = null!;
 
     public static void LoadShaders()
     {
@@ -34,11 +44,11 @@ static class Shaders
         PropShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TileShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
         PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
-        LevelLightShader = RlManaged.Shader.LoadFromMemory(null, levelLightShaderSrc);
+        LevelLightShader = RlManaged.Shader.LoadFromMemory(null, LevelLightShaderSrc);
         GridShader = RlManaged.Shader.LoadFromMemory(GridVertexShaderSource, GridFragmentShaderSource);
     }
 
-    private readonly static string EffectsMatrixShaderSource = @"
+    private const string EffectsMatrixShaderSource = @"
         #version 330 core
 
         in vec2 glib_texCoord;
@@ -59,7 +69,7 @@ static class Shaders
     // the shader used for prop rendering in the editor.
     // white pixels are transparent
     // the R color component controls transparency and the G color component controls white blend 
-    private readonly static string PropShaderSrc = @"
+    private const string PropShaderSrc = @"
         #version 330 core
 
         in vec2 glib_texCoord;
@@ -84,7 +94,7 @@ static class Shaders
 
     // the shader used for tile rendering in the editor.
     // while pixels are transparent.
-    private readonly static string TileShaderSrc = @"
+    private const string TileShaderSrc = @"
         #version 330 core
 
         in vec2 glib_texCoord;
@@ -114,20 +124,32 @@ static class Shaders
         }
     ";
 
-    private readonly static string PaletteShaderSrc = @"
+    private const string PaletteShaderSrc = @"
         #version 330 core
 
         in vec2 glib_texCoord;
         in vec4 glib_color;
 
         uniform sampler2D glib_uTexture;
+        uniform sampler2D paletteTex;
         uniform vec4 glib_uColor;
 
-        uniform vec3[30] litColor;
-        uniform vec3[30] neutralColor;
-        uniform vec3[30] shadedColor; 
-
         out vec4 finalColor;
+
+        vec3 getLitColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, 0.5 / 3.0)).rgb;
+        }
+
+        vec3 getNeutralColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (1.0+0.5) / 3.0)).rgb;
+        }
+
+        vec3 getShadeColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (2.0+0.5) / 3.0)).rgb;
+        }
 
         void main()
         {
@@ -141,8 +163,8 @@ static class Shaders
             bool isNormal = length(texelColor.rgb - vec3(0.0, 1.0, 0.0)) < 0.3;
             bool isShaded = isLight || isShade || isNormal;
 
-            int colIndex = int(glib_color.r * 29.0);
-            vec3 shadedCol = float(isLight) * litColor[colIndex] + float(isShade) * shadedColor[colIndex] + float(isNormal) * neutralColor[colIndex];
+            float colIndex = floor(glib_color.r * 29.0);
+            vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
 
             finalColor = vec4(shadedCol * float(isShaded) + texelColor.rgb * float(!isShaded), (1.0 - float(isTransparent)) * glib_color.a) * glib_uColor;
         }
@@ -174,7 +196,7 @@ static class Shaders
         }
     ";
 
-    private readonly static string levelLightShaderSrc = @"
+    private const string LevelLightShaderSrc = @"
         #version 330 core
         
         in vec2 glib_texCoord;

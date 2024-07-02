@@ -347,6 +347,7 @@ sealed class RainEd
         Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
+        levelView.Renderer.Dispose();
     }
 
     public void ShowPathInSystemBrowser(string path, bool reveal)

@@ -4,7 +4,7 @@ using System.Numerics;
 namespace RainEd;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
-class LevelEditRender
+class LevelEditRender : IDisposable
 {
     // Grid offsets into the level graphics texture
     // used to render object images in the level
@@ -65,6 +65,8 @@ class LevelEditRender
     public int FadePalette = -1;
     public float PaletteMix = 0f;
     public readonly Palette[] Palettes;
+    private readonly Glib.Texture paletteTexture;
+    private readonly Glib.Image _paletteImgBuf; // for updating paletteTexture
 
     public LevelEditRender()
     {
@@ -80,6 +82,11 @@ class LevelEditRender
             palettes.Add(new Palette(filePath));
         }
         Palettes = [..palettes];
+
+        // create palette texture
+        // (Glib.PixelFormat.RGB does not work for some reason)
+        paletteTexture = RainEd.RenderContext!.CreateTexture(30, 3, Glib.PixelFormat.RGBA);
+        _paletteImgBuf = Glib.Image.FromColor(30, 3, Glib.Color.Black, Glib.PixelFormat.RGBA);
 
         geoRenderer = new EditorGeometryRenderer(this);
         tileRenderer = new TileRenderer(this);
@@ -521,8 +528,7 @@ class LevelEditRender
         if (Palette >= 0)
         {
             renderPalette = true;
-            BeginPaletteShaderMode();
-            curShader = Shaders.PaletteShader;
+            UpdatePaletteTexture();
         }
 
         // normal rendering mode
@@ -601,7 +607,11 @@ class LevelEditRender
                 if (curShader != desiredShader)
                 {
                     curShader = desiredShader;
-                    Raylib.BeginShaderMode(desiredShader);
+
+                    if (desiredShader == Shaders.PaletteShader)
+                        BeginPaletteShaderMode();
+                    else
+                        Raylib.BeginShaderMode(desiredShader);
                 }
 
                 // draw each sublayer of the prop
@@ -840,32 +850,43 @@ class LevelEditRender
     }
 
     /// <summary>
+    /// Update the texture used to send palette information to the palette shader.
+    /// </summary>
+    public void UpdatePaletteTexture()
+    {
+        for (int i = 0; i < 30; i++)
+        {
+            var litColorRGB = GetSunColor(PaletteLightLevel.Lit, i);
+            var neutralColorRGB = GetSunColor(PaletteLightLevel.Neutral, i);
+            var shadedColorRGB = GetSunColor(PaletteLightLevel.Shaded, i);
+
+            var litColor = Glib.Color.FromRGBA(litColorRGB.R, litColorRGB.G, litColorRGB.B);
+            var neutralColor = Glib.Color.FromRGBA(neutralColorRGB.R, neutralColorRGB.G, neutralColorRGB.B);
+            var shadedColor = Glib.Color.FromRGBA(shadedColorRGB.R, shadedColorRGB.G, shadedColorRGB.B);
+
+            _paletteImgBuf.SetPixel(i, 0, litColor);
+            _paletteImgBuf.SetPixel(i, 1, neutralColor);
+            _paletteImgBuf.SetPixel(i, 2, shadedColor);
+        }
+
+        paletteTexture.UpdateFromImage(_paletteImgBuf);
+    }
+
+    /// <summary>
     /// Use the palette shader for the upcoming draw operations.
-    /// Will automatically set up the palette shader uniforms.
+    /// <br/><br/>
+    /// Make sure the palette was recently updated using UpdatePaletteTexture before use.
     /// </summary>
     public void BeginPaletteShaderMode()
     {
         var shader = Shaders.PaletteShader;
         Raylib.BeginShaderMode(shader);
+        shader.GlibShader.SetUniform("paletteTex", paletteTexture);
+    }
 
-        // send palette color information to the shader
-        Span<Vector3> litColorData = stackalloc Vector3[30];
-        Span<Vector3> neutralColorData = stackalloc Vector3[30];
-        Span<Vector3> shadedColorData = stackalloc Vector3[30];
-
-        for (int i = 0; i < 30; i++)
-        {
-            var litColor = GetSunColor(PaletteLightLevel.Lit, i);
-            var neutralColor = GetSunColor(PaletteLightLevel.Neutral, i);
-            var shadedColor = GetSunColor(PaletteLightLevel.Shaded, i);
-
-            litColorData[i] = new Vector3(litColor.R, litColor.G, litColor.B) / 255f;
-            neutralColorData[i] = new Vector3(neutralColor.R, neutralColor.G, neutralColor.B) / 255f;
-            shadedColorData[i] = new Vector3(shadedColor.R, shadedColor.G, shadedColor.B) / 255f;
-        }
-
-        shader.GlibShader.SetUniform("litColor", litColorData);
-        shader.GlibShader.SetUniform("neutralColor", neutralColorData);
-        shader.GlibShader.SetUniform("shadedColor", shadedColorData);
+    public void Dispose()
+    {
+        paletteTexture.Dispose();
+        _paletteImgBuf.Dispose();
     }
 }

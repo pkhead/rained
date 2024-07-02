@@ -351,8 +351,7 @@ class TileRenderer
         {
             renderPalette = true;
             shader = Shaders.PaletteShader;
-            renderInfo.BeginPaletteShaderMode();
-            curShader = shader;
+            renderInfo.UpdatePaletteTexture();
         }
 
         // normal rendering mode
@@ -411,7 +410,11 @@ class TileRenderer
                     if (curShader != shader)
                     {
                         curShader = shader;
-                        Raylib.BeginShaderMode(shader);
+
+                        if (shader == Shaders.PaletteShader)
+                            renderInfo.BeginPaletteShaderMode();
+                        else
+                            Raylib.BeginShaderMode(shader);
                     }
 
                     // draw front face of box tile
