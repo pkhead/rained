@@ -33,21 +33,15 @@ static partial class PlatformSpecific
             var regValue = Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "AppsUseLightTheme", -1);
             if (regValue is not null && regValue is int appsUseLightTheme && appsUseLightTheme != -1)
             {
-                // 0 == dark mode
-                if (appsUseLightTheme == 0)
+                // 0 == dark mode, 1 == light mode
+                if (appsUseLightTheme == 0 || appsUseLightTheme == 1)
                 {
-                    windowTheme = WindowTheme.Dark;
-                    uint value = 1;
+                    windowTheme = appsUseLightTheme == 0 ? WindowTheme.Dark : WindowTheme.Light;
+                    uint value = windowTheme == WindowTheme.Dark ? (uint)1 : (uint)0;
                     if (DwmSetWindowAttribute(hwnd, (uint)DwmWindowAttribute.UseImmersiveDarkMode, (nint)(&value), sizeof(uint)) == 0)
                     {
                         return true; // success!
                     }
-                }
-
-                // 1 == light mode
-                else if (appsUseLightTheme == 1)
-                {
-                    windowTheme = WindowTheme.Light;
                 }
             }
         }
