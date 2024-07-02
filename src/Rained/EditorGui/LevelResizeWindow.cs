@@ -69,13 +69,13 @@ class LevelResizeWindow
                 {
                     ImGui.SameLine();
                     ImGui.BeginGroup();
-                    if (ImGui.InputFloat("Screen Width", ref screenW))
+                    if (ImGui.InputFloat("Screen Width", ref screenW, 0.5f, 0.125f))
                     {
                         newWidth = (int)(screenW * 52f + 20f);
                     }
                     screenW = Math.Max(screenW, 0);
 
-                    if (ImGui.InputFloat("Screen Height", ref screenH))
+                    if (ImGui.InputFloat("Screen Height", ref screenH, 0.5f, 0.125f))
                     {
                         newHeight = (int)(screenH * 40f + 3f);
                     }
@@ -87,6 +87,7 @@ class LevelResizeWindow
             ImGui.SeparatorText("Anchors");
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2f, 2f));
+                var textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
 
                 for (int y = 0; y < 3; y++)
                 {
@@ -143,7 +144,8 @@ class LevelResizeWindow
                         if (ImGuiExt.ImageButtonRect(
                             "##button",
                             RainEd.Instance.LevelGraphicsTexture, 20, 20,
-                            new Rectangle(textureX * 20, textureY * 20, 20, 20)
+                            new Rectangle(textureX * 20, textureY * 20, 20, 20),
+                            textColor
                         ))
                         {
                             anchorX = x;
