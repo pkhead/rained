@@ -46,6 +46,8 @@ static partial class ShortcutsWindow
             ("[ToggleLayer1]", "Toggle layer 1"),
             ("[ToggleLayer2]", "Toggle layer 2"),
             ("[ToggleLayer3]", "Toggle layer 3"),
+            ("[ToggleMirrorX]", "Toggle Mirror X"),
+            ("[ToggleMirrorY]", "Toggle Mirror Y")
         ],
 
         // Tile
