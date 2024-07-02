@@ -42,6 +42,8 @@ Effects Editor:
 - only store the pixels that changed in the matrix
 
 Prop Editor:
+- vertex/edge snap mode
+- be able to select props behind another one if it is already selected
 - do tile as prop depth change based on if specs2 is active?
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props

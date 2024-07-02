@@ -27,9 +27,14 @@ static class Shaders
     public static RlManaged.Shader PaletteShader { get; private set; } = null!;
 
     /// <summary>
-    /// The shader for rendering a standard-type prop with the bevel color treatment.
+    /// The shader for coloring a standard-type prop with the bevel color treatment.
     /// </summary>
     public static RlManaged.Shader BevelTreatmentShader { get; private set; } = null!;
+
+    /// <summary>
+    /// The shader for coloring a soft prop. It is not entirely accurate to how it is colored when rendering.
+    /// </summary>
+    public static RlManaged.Shader SoftPropShader { get; private set; } = null!;
 
     public static RlManaged.Shader LevelLightShader { get; private set; } = null!;
 
@@ -42,6 +47,7 @@ static class Shaders
     {
         EffectsMatrixShader = RlManaged.Shader.LoadFromMemory(null, EffectsMatrixShaderSource);
         BevelTreatmentShader = RlManaged.Shader.LoadFromMemory(null, BevelTreatmentShaderSrc);
+        SoftPropShader = RlManaged.Shader.LoadFromMemory(null, SoftPropShaderSrc);
         PropShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
         TileShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
         PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
@@ -251,6 +257,75 @@ static class Shaders
             vec3 shadedCol = float(isLight) * getLitColor(colIndex) + float(isShade) * getShadeColor(colIndex) + float(isNormal) * getNeutralColor(colIndex);
 
             finalColor = vec4(shadedCol, glib_color.a) * glib_uColor;
+        }
+        """;
+    
+    private const string SoftPropShaderSrc =
+        """
+        #version 330 core
+
+        in vec2 glib_texCoord;
+        in vec4 glib_color;
+
+        uniform sampler2D glib_uTexture;
+        uniform vec4 glib_uColor;
+        uniform sampler2D paletteTex;
+
+        uniform vec2 textureSize;
+        uniform mat2 propRotation;
+        uniform vec2 lightDirection;
+        uniform float lightPlaneZ;
+
+        out vec4 finalColor;
+
+        vec3 getLitColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, 0.5 / 3.0)).rgb;
+        }
+
+        vec3 getNeutralColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (1.0+0.5) / 3.0)).rgb;
+        }
+
+        vec3 getShadeColor(float index)
+        {
+            return texture(paletteTex, vec2((index+0.5) / 30.0, (2.0+0.5) / 3.0)).rgb;
+        }
+
+        bool isTransparent(vec2 coords)
+        {
+            bool inBounds = coords.x >= 0.0 && coords.x <= 1.0 && coords.y >= 0.0 && coords.y <= 1.0;
+            vec4 texelColor = texture(glib_uTexture, coords);
+            return (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
+        }
+
+        void main()
+        {
+            if (isTransparent(glib_texCoord)) discard;
+            float center = texture(glib_uTexture, glib_texCoord).g;
+            
+            float row[3];
+            row[0] = texture(glib_uTexture, glib_texCoord - vec2(1.0, 0.0) / textureSize).g;
+            row[1] = center;
+            row[2] = texture(glib_uTexture, glib_texCoord + vec2(1.0, 0.0) / textureSize).g;
+
+            float slopeX = (row[2] - row[0]) / (3.0 / textureSize.x);
+
+            row[0] = texture(glib_uTexture, glib_texCoord - vec2(0.0, 1.0) / textureSize).g;
+            row[1] = center;
+            row[2] = texture(glib_uTexture, glib_texCoord + vec2(0.0, 1.0) / textureSize).g;
+
+            float slopeY = (row[2] - row[0]) / (3.0 / textureSize.y);
+
+            vec3 normal = cross( normalize(vec3(propRotation[0], slopeX)), normalize(vec3(propRotation[1], slopeY)) );
+            normal = normalize(normal);
+
+            //finalColor = vec4(max(0.0, slopeY) / 4.0, max(0.0, -slopeY) / 4.0, 0.0, 1.0);
+            //finalColor = vec4((normal.x + 1.0) / 2.0, (normal.y + 1.0) / 2.0, (normal.z + 1.0) / 2.0, 1.0);
+            vec3 lightDir = normalize(vec3(lightDirection.x, lightDirection.y, lightPlaneZ));
+
+            finalColor = vec4(vec3(1.0, 1.0, 1.0) * max(0.0, dot(lightDir, normal)), 1.0);
         }
         """;
 

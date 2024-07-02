@@ -593,38 +593,58 @@ class LevelEditRender : IDisposable
                     if (isStdProp && prop.PropInit.ColorTreatment == Props.PropColorTreatment.Standard)
                     {
                         rctx.Shader = Shaders.PaletteShader.GlibShader;
-                        rctx.Shader.SetUniform("paletteTex", paletteTexture);
                     }
                     else if (isStdProp && prop.PropInit.ColorTreatment == Props.PropColorTreatment.Bevel)
                     {
                         rctx.Shader = Shaders.BevelTreatmentShader.GlibShader;
-                        if (rctx.Shader.HasUniform("paletteTex")) rctx.Shader.SetUniform("paletteTex", paletteTexture);
-                        if (rctx.Shader.HasUniform("textureSize")) rctx.Shader.SetUniform("textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
-                        
-                        if (rctx.Shader.HasUniform("bevelSize"))
-                        {
-                            rctx.Shader.SetUniform("bevelSize", prop.PropInit.Bevel);
-                        }
-                        
-                        if (rctx.Shader.HasUniform("lightDirection"))
-                        {
-                            var correctedAngle = Level.LightAngle + MathF.PI / 2f;
-                            rctx.Shader.SetUniform("lightDirection", new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)));
-                        }
-                        
-                        if (rctx.Shader.HasUniform("propRotation"))
-                        {
-                            var right = Vector2.Normalize(quad[1] - quad[0]);
-                            var up = Vector2.Normalize(quad[3] - quad[0]);
-                            rctx.Shader.SetUniform("propRotation", new Glib.Matrix2x2(right.X, right.Y, up.X, up.Y));
-                        }
-
-                        rctx.DrawBatch(); // force flush batch as uniform changes aren't detected
+                    }
+                    else if (prop.PropInit.Type is Props.PropType.Soft or Props.PropType.ColoredSoft or Props.PropType.VariedSoft)
+                    {
+                        rctx.Shader = Shaders.SoftPropShader.GlibShader;
+                    }
+                    else
+                    {
+                        rctx.Shader = Shaders.PropShader.GlibShader;
                     }
                 }
                 else
                 {
                     rctx.Shader = Shaders.PropShader.GlibShader;
+                }
+
+                if (rctx.Shader != Shaders.PropShader.GlibShader)
+                {
+                    if (rctx.Shader.HasUniform("paletteTex"))
+                        rctx.Shader.SetUniform("paletteTex", paletteTexture);
+                    if (rctx.Shader.HasUniform("textureSize"))
+                        rctx.Shader.SetUniform("textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
+                    
+                    if (rctx.Shader.HasUniform("bevelSize"))
+                    {
+                        rctx.Shader.SetUniform("bevelSize", prop.PropInit.Bevel);
+                    }
+                    
+                    if (rctx.Shader.HasUniform("lightDirection"))
+                    {
+                        var correctedAngle = Level.LightAngle + MathF.PI / 2f;
+                        rctx.Shader.SetUniform("lightDirection", new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)));
+                    }
+                    
+                    if (rctx.Shader.HasUniform("propRotation"))
+                    {
+                        var right = Vector2.Normalize(quad[1] - quad[0]);
+                        var up = Vector2.Normalize(quad[3] - quad[0]);
+                        rctx.Shader.SetUniform("propRotation", new Glib.Matrix2x2(right.X, right.Y, up.X, up.Y));
+                    }
+
+                    if (rctx.Shader.HasUniform("lightPlaneZ"))
+                    {
+                        // an approximation
+                        float dist = (1f - Level.LightDistance / 10f);
+                        rctx.Shader.SetUniform("lightPlaneZ", dist * (3.0f - 0.5f) + 0.5f);
+                    }
+
+                    rctx.DrawBatch(); // force flush batch, as uniform changes aren't detected
                 }
 
                 // draw each sublayer of the prop
