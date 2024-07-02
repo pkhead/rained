@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <TargetFramework>net8.0</TargetFramework>
     <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
+    <Version>2.0.0-rc1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppDataPath)'=='Assembly'">
