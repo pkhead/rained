@@ -512,6 +512,24 @@ class LevelEditRender
         int srcDepth = srcLayer * 10;
 
         var rctx = RainEd.RenderContext;
+        rctx.SetEnabled(Glib.Feature.CullFace, false);
+
+        RlManaged.Shader? curShader = null;
+        bool renderPalette;
+
+        // palette rendering mode
+        if (Palette >= 0)
+        {
+            renderPalette = true;
+            BeginPaletteShaderMode();
+            curShader = Shaders.PaletteShader;
+        }
+
+        // normal rendering mode
+        else
+        {
+            renderPalette = false;
+        }
 
         foreach (var prop in Level.Props)
         {
@@ -533,50 +551,107 @@ class LevelEditRender
             var quad = prop.QuadPoints;
             var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop.PropInit);
             var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
-
-            rctx.SetEnabled(Glib.Feature.CullFace, false);
-            Raylib.BeginShaderMode(Shaders.PropShader);
-
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
-
             var depthOffset = Math.Max(0, prop.DepthOffset - srcDepth);
         
-            for (int depth = prop.PropInit.LayerCount - 1; depth >= 0; depth--)
+            // draw missing texture if needed
+            if (propTexture is null)
             {
-                float startFade =
-                    (prop.PropInit.Type == Props.PropType.SimpleDecal || prop.PropInit.Type == Props.PropType.VariedDecal)
-                    ? 0.364f : 0f;
-                
-                float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
-
-                var srcRect = propTexture is null
-                    ? new Rectangle(Vector2.Zero, 2.0f * Vector2.One)
-                    : prop.PropInit.GetPreviewRectangle(variation, depth);
-
-                rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
-
+                if (curShader != null)
                 {
-                    using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
+                    curShader = null;
+                    Raylib.EndShaderMode();
+                }
+
+                var srcRect = new Rectangle(Vector2.Zero, 2.0f * Vector2.One);
+
+                using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
                         
-                    // top-left
-                    batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    batch.Vertex(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+                // top-left
+                batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                batch.Vertex(quad[0] * Level.TileSize);
 
-                    // bottom-left
-                    batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    batch.Vertex(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
+                // bottom-left
+                batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                batch.Vertex(quad[3] * Level.TileSize);
 
-                    // bottom-right
-                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                    batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+                // bottom-right
+                batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                batch.Vertex(quad[2] * Level.TileSize);
 
-                    batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                    batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
+                // top-right
+                batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                batch.Vertex(quad[1] * Level.TileSize);
+            }
+            else
+            {
+                RlManaged.Shader? desiredShader = null;
+
+                if (renderPalette &&
+                    prop.PropInit.Type is Props.PropType.Standard or Props.PropType.VariedStandard &&
+                    prop.PropInit.ColorTreatment == Props.PropColorTreatment.Standard)
+                {
+                    desiredShader = Shaders.PaletteShader;
+                }
+                else
+                {
+                    desiredShader = Shaders.PropShader;
+                }
+
+                if (curShader != desiredShader)
+                {
+                    curShader = desiredShader;
+                    Raylib.BeginShaderMode(desiredShader);
+                }
+
+                // draw each sublayer of the prop
+                for (int depth = prop.PropInit.LayerCount - 1; depth >= 0; depth--)
+                {
+                    float startFade =
+                        (prop.PropInit.Type == Props.PropType.SimpleDecal || prop.PropInit.Type == Props.PropType.VariedDecal)
+                        ? 0.364f : 0f;
+                    
+                    float whiteFade = Math.Clamp((1f - startFade) * ((depthOffset + depth / 2f) / 10f) + startFade, 0f, 1f);
+                    var srcRect = prop.PropInit.GetPreviewRectangle(variation, depth);
+
+                    if (curShader == Shaders.PaletteShader)
+                    {
+                        // R channel represents sublayer
+                        // A channel is alpha, as usual
+                        float sublayer = (float)depth / prop.PropInit.LayerCount * prop.PropInit.Depth + prop.DepthOffset;
+                        rctx.DrawColor = new Glib.Color(Math.Clamp(sublayer / 29f, 0f, 1f), 0f, 0f, 1f);
+                    }
+                    else
+                    {
+                        rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
+                    }
+                    
+                    using (var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture))
+                    {
+                        // top-left
+                        batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                        batch.Vertex(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+
+                        // bottom-left
+                        batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                        batch.Vertex(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
+
+                        // bottom-right
+                        batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                        batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+
+                        batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                        batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
+                    }
                 }
             }
 
-            Raylib.EndShaderMode();
-            rctx.SetEnabled(Glib.Feature.CullFace, true);
+            if (curShader != null)
+            {
+                curShader = null;
+                Raylib.EndShaderMode();
+            }
+            rctx.SetEnabled(Glib.Feature.CullFace, false);
 
             // render segments of rope-type props
             if (prop.Rope is not null)
@@ -595,6 +670,12 @@ class LevelEditRender
                     }
                 }
             }
+        }
+
+        if (curShader != null)
+        {
+            curShader = null;
+            Raylib.EndShaderMode();
         }
     }
 
@@ -756,5 +837,35 @@ class LevelEditRender
                 Color.Blue
             );
         }
+    }
+
+    /// <summary>
+    /// Use the palette shader for the upcoming draw operations.
+    /// Will automatically set up the palette shader uniforms.
+    /// </summary>
+    public void BeginPaletteShaderMode()
+    {
+        var shader = Shaders.PaletteShader;
+        Raylib.BeginShaderMode(shader);
+
+        // send palette color information to the shader
+        Span<Vector3> litColorData = stackalloc Vector3[30];
+        Span<Vector3> neutralColorData = stackalloc Vector3[30];
+        Span<Vector3> shadedColorData = stackalloc Vector3[30];
+
+        for (int i = 0; i < 30; i++)
+        {
+            var litColor = GetSunColor(PaletteLightLevel.Lit, i);
+            var neutralColor = GetSunColor(PaletteLightLevel.Neutral, i);
+            var shadedColor = GetSunColor(PaletteLightLevel.Shaded, i);
+
+            litColorData[i] = new Vector3(litColor.R, litColor.G, litColor.B) / 255f;
+            neutralColorData[i] = new Vector3(neutralColor.R, neutralColor.G, neutralColor.B) / 255f;
+            shadedColorData[i] = new Vector3(shadedColor.R, shadedColor.G, shadedColor.B) / 255f;
+        }
+
+        shader.GlibShader.SetUniform("litColor", litColorData);
+        shader.GlibShader.SetUniform("neutralColor", neutralColorData);
+        shader.GlibShader.SetUniform("shadedColor", shadedColorData);
     }
 }

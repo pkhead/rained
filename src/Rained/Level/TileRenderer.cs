@@ -342,6 +342,7 @@ class TileRenderer
 
         // draw the tile renders
         RlManaged.Shader shader;
+        RlManaged.Shader? curShader = null;
 
         // palette rendering mode
         bool renderPalette;
@@ -350,27 +351,8 @@ class TileRenderer
         {
             renderPalette = true;
             shader = Shaders.PaletteShader;
-            Raylib.BeginShaderMode(shader);
-
-            // send palette color information to the shader
-            Span<Vector3> litColorData = stackalloc Vector3[30];
-            Span<Vector3> neutralColorData = stackalloc Vector3[30];
-            Span<Vector3> shadedColorData = stackalloc Vector3[30];
-
-            for (int i = 0; i < 30; i++)
-            {
-                var litColor = renderInfo.GetSunColor(PaletteLightLevel.Lit, i);
-                var neutralColor = renderInfo.GetSunColor(PaletteLightLevel.Neutral, i);
-                var shadedColor = renderInfo.GetSunColor(PaletteLightLevel.Shaded, i);
-
-                litColorData[i] = new Vector3(litColor.R, litColor.G, litColor.B) / 255f;
-                neutralColorData[i] = new Vector3(neutralColor.R, neutralColor.G, neutralColor.B) / 255f;
-                shadedColorData[i] = new Vector3(shadedColor.R, shadedColor.G, shadedColor.B) / 255f;
-            }
-
-            shader.GlibShader.SetUniform("litColor", litColorData);
-            shader.GlibShader.SetUniform("neutralColor", neutralColorData);
-            shader.GlibShader.SetUniform("shadedColor", shadedColorData);
+            renderInfo.BeginPaletteShaderMode();
+            curShader = shader;
         }
 
         // normal rendering mode
@@ -378,7 +360,6 @@ class TileRenderer
         {
             renderPalette = false;
             shader = Shaders.TileShader;
-            Raylib.BeginShaderMode(shader);
         }
 
         var gfxProvider = RainEd.Instance.AssetGraphics;
@@ -415,13 +396,24 @@ class TileRenderer
                 // placeholder graphic
                 if (tex is null)
                 {
+                    if (curShader != null)
+                    {
+                        curShader = null;
+                        Raylib.EndShaderMode();
+                    }
+
                     Raylib.EndShaderMode();
                     var srcRec = new Rectangle(0f, 0f, 2f, 2f);
                     Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
-                    Raylib.BeginShaderMode(shader);
                 }
                 else
                 {
+                    if (curShader != shader)
+                    {
+                        curShader = shader;
+                        Raylib.BeginShaderMode(shader);
+                    }
+
                     // draw front face of box tile
                     if (init.Type == TileType.Box)
                     {
@@ -474,7 +466,10 @@ class TileRenderer
             }
         }
 
-        Raylib.EndShaderMode();
+        if (curShader != null)
+        {
+            Raylib.EndShaderMode();
+        }
 
         // highlight tile heads
         if (renderInfo.ViewTileHeads)

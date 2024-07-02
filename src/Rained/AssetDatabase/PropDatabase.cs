@@ -33,6 +33,25 @@ enum PropFlags
     RandomRotation = 512
 }
 
+/// <summary>
+/// How a color should be interpreted in a prop.
+/// </summary>
+enum PropColorTreatment : byte
+{
+    Unspecified = 0,
+
+    /// <summary>
+    /// The color should be interpreted as the pixel being lit, shaded, or normal.
+    /// </summary>
+    Standard = 1,
+
+    /// <summary>
+    /// The color in the prop texture will either be solid or transparent, and the renderer will
+    /// procedurally determine the pixel's shade using a bevel algorithm.
+    /// </summary>
+    Bevel = 2
+}
+
 // data in propColors.txt, used for custom colors
 struct PropColor
 {
@@ -46,6 +65,7 @@ record PropInit
     public readonly PropCategory Category;
     public readonly PropType Type;
     public readonly PropFlags PropFlags;
+    public readonly PropColorTreatment ColorTreatment;
     public readonly int Depth;
     public readonly int VariationCount;
     public readonly string[] Notes;
@@ -85,6 +105,7 @@ record PropInit
         var randVar = false; // if the prop will be placed with a random variation
 
         Category = category;
+        ColorTreatment = PropColorTreatment.Unspecified;
         Name = (string) init.fields["nm"];
         Type = (string) init.fields["tp"] switch
         {
@@ -192,9 +213,19 @@ record PropInit
             }
         }
         // set flags
-        if (init.fields.TryGetValue("colorTreatment", out tempObject) && (string)tempObject == "bevel")
+        if (init.fields.TryGetValue("colorTreatment", out tempObject))
         {
-            PropFlags |= PropFlags.ProcedurallyShaded;
+            var treatmentVal = (string)tempObject;
+
+            if (treatmentVal == "bevel")
+            {
+                ColorTreatment = PropColorTreatment.Bevel;
+                PropFlags |= PropFlags.ProcedurallyShaded;
+            }
+            else if (treatmentVal == "standard")
+            {
+                ColorTreatment = PropColorTreatment.Standard;
+            }
         }
 
         // is procedurally shaded?
@@ -268,6 +299,7 @@ record PropInit
         Name = srcTile.Name;
         Type = srcTile.VariationCount > 1 ? PropType.VariedStandard : PropType.Standard;
         PropFlags = PropFlags.Tile;
+        ColorTreatment = PropColorTreatment.Standard;
         Notes = [];
 
         layerCount = srcTile.LayerCount;
