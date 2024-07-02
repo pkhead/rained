@@ -712,7 +712,20 @@ partial class PropEditor : IEditorMode
             if (!isMouseDragging)
             {
                 // drag had begun
-                var hoverProp = GetPropAt(dragStartPos, window.WorkLayer);
+                Prop? hoverProp;
+                {
+                    var propList = GetPropsAt(dragStartPos, window.WorkLayer);
+                    hoverProp = propList.Length == 0 ? null : propList[0];
+
+                    foreach (var prop in propList)
+                    {
+                        if (selectedProps.Contains(prop))
+                        {
+                            hoverProp = prop;
+                            break;
+                        }
+                    }
+                }
 
                 // if dragging over an empty space, begin rect select
                 if (hoverProp is null)
