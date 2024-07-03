@@ -19,7 +19,7 @@ class EffectsEditor : IEditorMode
     private RlManaged.Image matrixImage;
 
     private int brushSize = 4;
-    private Vector2 lastBrushPos = new();
+    private Vector2i lastBrushPos = new();
     private bool isToolActive = false;
 
     private ChangeHistory.EffectsChangeRecorder changeRecorder;
@@ -525,8 +525,9 @@ class EffectsEditor : IEditorMode
                     brushSize = Math.Clamp(brushSize, 1, 10);
                 }
 
-                if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
-                    lastBrushPos = new(-9999, -9999);
+                bool strokeStart = EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right);
+                if (strokeStart)
+                    lastBrushPos = new(bcx, bcy);
                 
                 // paint when user's mouse is down and moving
                 if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
@@ -539,24 +540,32 @@ class EffectsEditor : IEditorMode
                     if (!wasToolActive) changeRecorder.BeginMatrixChange(effect);
                     isToolActive = true;
 
-                    if (new Vector2(bcx, bcy) != lastBrushPos)
+                    if (strokeStart || new Vector2i(bcx, bcy) != lastBrushPos)
                     {
-                        lastBrushPos.X = bcx;
-                        lastBrushPos.Y = bcy;
-
-                        for (int x = bLeft; x <= bRight; x++)
+                        Util.Bresenham(lastBrushPos.X, lastBrushPos.Y, bcx, bcy, (int origX, int origY) =>
                         {
-                            for (int y = bTop; y <= bBot; y++)
-                            {
-                                if (!level.IsInBounds(x, y)) continue;
-                                var brushP = GetBrushPower(bcx, bcy, bsize, x, y);
+                            var bLeft = origX - bsize;
+                            var bTop = origY - bsize;
+                            var bRight = origX + bsize;
+                            var bBot = origY + bsize;
 
-                                if (brushP > 0f)
+                            for (int x = bLeft; x <= bRight; x++)
+                            {
+                                for (int y = bTop; y <= bBot; y++)
                                 {
-                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
+                                    if (!level.IsInBounds(x, y)) continue;
+                                    var brushP = GetBrushPower(origX, origY, bsize, x, y);
+
+                                    if (brushP > 0f)
+                                    {
+                                        effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
+                                    }
                                 }
                             }
-                        }
+                        });
+
+                        lastBrushPos.X = bcx;
+                        lastBrushPos.Y = bcy;
                     }
                 }
             }

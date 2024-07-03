@@ -708,7 +708,10 @@ class GeometryEditor : IEditorMode
                                 }
                                 else
                                 {
-                                    ActivateTool(selectedTool, window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                                    Util.Bresenham(lastMouseX, lastMouseY, window.MouseCx, window.MouseCy, (int x, int y) =>
+                                    {
+                                        ActivateTool(selectedTool, x, y, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                                    });
                                 }
                             }
                         }
