@@ -2,3 +2,6 @@
 	path = src/Drizzle
 	url = https://github.com/pkhead/Drizzle
 	branch = embedded
+[submodule "src/ImGui.NET"]
+	path = src/ImGui.NET
+	url = https://github.com/ImGuiNET/ImGui.NET

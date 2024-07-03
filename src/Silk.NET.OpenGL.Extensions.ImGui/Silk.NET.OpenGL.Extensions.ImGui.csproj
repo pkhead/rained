@@ -16,11 +16,22 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.90.6.1" />
       <PackageReference Include="Silk.NET.Input.Common" Version="2.21.0" />
       <PackageReference Include="Silk.NET.Input.Extensions" Version="2.21.0" />
       <PackageReference Include="Silk.NET.OpenGL" Version="2.21.0" />
       <PackageReference Include="Silk.NET.Windowing.Common" Version="2.21.0" />
       <PackageReference Include="Silk.NET.Windowing.Glfw" Version="2.21.0" />
     </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="../ImGui.NET/deps/cimgui/linux-x64/cimgui.so" TargetPath="runtimes/linux-x64/native/cimgui.so" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/osx/cimgui.dylib" TargetPath="runtimes/osx/native/cimgui.dylib" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/win-arm64/cimgui.dll" TargetPath="runtimes/win-arm64/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/win-x86/cimgui.dll" TargetPath="runtimes/win-x86/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/win-x64/cimgui.dll" TargetPath="runtimes/win-x64/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
+      </ItemGroup>
 </Project>
