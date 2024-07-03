@@ -340,14 +340,14 @@ static class KeyShortcuts
         Register("Decrease Brush Size", KeyShortcut.DecreaseBrushSize, ImGuiKey.I, ImGuiModFlags.None, true);
         Register("Toggle Mirror X", KeyShortcut.ToggleMirrorX, ImGuiKey.F, ImGuiModFlags.None, false);
         Register("Toggle Mirror Y", KeyShortcut.ToggleMirrorY, ImGuiKey.G, ImGuiModFlags.None, false);
-        Register("Flood Fill", KeyShortcut.FloodFill, ImGuiKey.Q, ImGuiModFlags.None, false);
+        Register("Flood Fill Modifier", KeyShortcut.FloodFill, ImGuiKey.Q, ImGuiModFlags.None, false);
 
         // Tile Editor
         Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);
         Register("Set Material to Default", KeyShortcut.SetMaterial, ImGuiKey.E, ImGuiModFlags.None, true);
-        Register("Force Geometry", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None);
-        Register("Force Placement", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None);
-        Register("Disallow Overwrite", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None);
+        Register("Force Geometry Modifier", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None);
+        Register("Force Placement Modifier", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None);
+        Register("Disallow Overwrite Modifier", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None);
 
         // Light Editor
         Register("Reset Brush Transform", KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
