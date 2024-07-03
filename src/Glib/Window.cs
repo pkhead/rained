@@ -57,8 +57,15 @@ public class Window : IDisposable
                     return Vector2.One;
                 }
                 
-                PlatformSpecific.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
-                return new Vector2(xScale, yScale);
+                try
+                {
+                    PlatformSpecific.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+                    return new Vector2(xScale, yScale);
+                }
+                catch (DllNotFoundException)
+                {
+                    return Vector2.One;
+                }
             }
         }
     }
@@ -139,7 +146,13 @@ public class Window : IDisposable
             {
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
-                PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+
+                try
+                {
+                    PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+                }
+                catch (DllNotFoundException)
+                {}
             }
         }
         

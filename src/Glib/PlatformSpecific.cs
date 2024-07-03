@@ -53,10 +53,10 @@ static partial class PlatformSpecific
 
     // what is this bs...
     // Silk.NET does not have a binding to glfwGetWindowContentScale
-    [LibraryImport("glfw3.dll", EntryPoint = "glfwGetWindowContentScale")]
+    [LibraryImport("glfw3", EntryPoint = "glfwGetWindowContentScale")]
     public static unsafe partial void GlfwGetWindowContentScale(Silk.NET.GLFW.WindowHandle* window, out float xScale, out float yScale);
 
-    [LibraryImport("glfw3.dll", EntryPoint = "glfwSetWindowContentScaleCallback")]
+    [LibraryImport("glfw3", EntryPoint = "glfwSetWindowContentScaleCallback")]
     public static unsafe partial void GlfwSetWindowContentScaleCallback(Silk.NET.GLFW.WindowHandle* window, nint callback);
 
 }
