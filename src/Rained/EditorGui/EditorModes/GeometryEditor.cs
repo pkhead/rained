@@ -240,6 +240,16 @@ class GeometryEditor : IEditorMode
         };
     }
 
+    private static bool ToolCanFloodFill(Tool tool)
+    {
+        return tool switch
+        {
+            Tool.Wall => true,
+            Tool.Air => true,
+            _ => false
+        };
+    }
+
     private void GetRectBounds(out int rectMinX, out int rectMinY, out int rectMaxX, out int rectMaxY)
     {
         var mx = window.MouseCx;
@@ -371,9 +381,13 @@ class GeometryEditor : IEditorMode
                 var rectH = rectMaxY - rectMinY + 1;
                 window.WriteStatus($"({rectW}, {rectH})");
             }
-            else if (ToolCanRectPlace(selectedTool))
+            else
             {
-                window.WriteStatus("Shift+Drag to fill rect");
+                if (ToolCanRectPlace(selectedTool))
+                    window.WriteStatus("Shift+Drag to fill rect");
+                
+                if (ToolCanFloodFill(selectedTool))
+                    window.WriteStatus(KeyShortcuts.GetShortcutString(KeyShortcut.FloodFill) + "+Click to flood fill");
             }
         } ImGui.End();
 
@@ -683,7 +697,20 @@ class GeometryEditor : IEditorMode
                         else
                         {
                             if (!isToolRectActive)
-                                ActivateTool(selectedTool, window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                            {
+                                if (KeyShortcuts.Active(KeyShortcut.FloodFill) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && ToolCanFloodFill(selectedTool))
+                                {
+                                    for (int l = 0; l < Level.LayerCount; l++)
+                                    {
+                                        if (layerMask[l])
+                                            ActivateToolFloodFill(selectedTool, window.MouseCx, window.MouseCy, l);
+                                    }
+                                }
+                                else
+                                {
+                                    ActivateTool(selectedTool, window.MouseCx, window.MouseCy, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                                }
+                            }
                         }
                     }
                 }
@@ -943,6 +970,76 @@ class GeometryEditor : IEditorMode
 
             level.Layers[layer, tx, ty] = cell;
             window.Renderer.InvalidateGeo(tx, ty, layer);
+        }
+    }
+
+    private void ActivateToolFloodFill(Tool tool, int srcX, int srcY, int layer)
+    {
+        var level = RainEd.Instance.Level;
+        var renderer = RainEd.Instance.LevelView.Renderer;
+
+        if (!level.IsInBounds(srcX, srcY)) return;
+
+        isToolRectActive = false;
+
+        GeoType geoMedium = level.Layers[layer, srcX, srcY].Geo;
+        GeoType fillGeo = tool switch
+        {
+            Tool.Air => GeoType.Air,
+            Tool.Wall => GeoType.Solid,
+            _ => throw new ArgumentException("ActivateToolFloodFill only supports Tool.Air and Tool.Wall", nameof(tool))
+        };
+
+        if (fillGeo == geoMedium) return;
+
+        // use a recursive scanline fill algorithm
+        // with a manually-managed stack
+        Stack<(int, int)> fillStack = [];
+        fillStack.Push((srcX, srcY));
+
+        while (fillStack.Count > 0)
+        {
+            if (fillStack.Count > 100000)
+            {
+                RainEd.Logger.Error("Flood fill stack overflow!");
+                EditorWindow.ShowNotification("Stack overflow!");
+                break;
+            }
+
+            (int x, int y) = fillStack.Pop();
+
+            // go to left bounds of this scanline
+            while (level.IsInBounds(x, y) && level.Layers[layer, x, y].Geo == geoMedium)
+                x--;
+
+            x++;
+
+            bool oldAboveEmpty = false;
+            bool oldBelowEmpty = false;
+
+            // go to right bounds of the scanline, spawning new scanlines above or below if detected
+            while (level.IsInBounds(x, y) && level.Layers[layer, x, y].Geo == geoMedium)
+            {
+                bool aboveEmpty = level.IsInBounds(x, y-1) && level.Layers[layer, x, y-1].Geo == geoMedium;
+                bool belowEmpty = level.IsInBounds(x, y+1) && level.Layers[layer, x, y+1].Geo == geoMedium;
+
+                if (aboveEmpty != oldAboveEmpty && aboveEmpty)
+                {
+                    fillStack.Push((x, y-1));
+                }
+
+                if (belowEmpty != oldBelowEmpty && belowEmpty)
+                {
+                    fillStack.Push((x, y+1));
+                }
+
+                oldAboveEmpty = aboveEmpty;
+                oldBelowEmpty = belowEmpty;
+                
+                level.Layers[layer, x, y].Geo = fillGeo;
+                renderer.InvalidateGeo(x, y, layer);
+                x++;
+            } 
         }
     }
 

@@ -462,6 +462,7 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ToggleLayer3);
         ShortcutButton(KeyShortcut.ToggleMirrorX);
         ShortcutButton(KeyShortcut.ToggleMirrorY);
+        ShortcutButton(KeyShortcut.FloodFill);
 
         ImGui.SeparatorText("Tiles");
         ShortcutButton(KeyShortcut.SetMaterial);

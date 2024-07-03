@@ -24,6 +24,7 @@ enum KeyShortcut : int
     // Geometry
     ToggleLayer1, ToggleLayer2, ToggleLayer3,
     ToggleMirrorX, ToggleMirrorY,
+    FloodFill,
 
     // Tile Editor
     Eyedropper, SetMaterial,
@@ -339,6 +340,7 @@ static class KeyShortcuts
         Register("Decrease Brush Size", KeyShortcut.DecreaseBrushSize, ImGuiKey.I, ImGuiModFlags.None, true);
         Register("Toggle Mirror X", KeyShortcut.ToggleMirrorX, ImGuiKey.F, ImGuiModFlags.None, false);
         Register("Toggle Mirror Y", KeyShortcut.ToggleMirrorY, ImGuiKey.G, ImGuiModFlags.None, false);
+        Register("Flood Fill", KeyShortcut.FloodFill, ImGuiKey.Q, ImGuiModFlags.None, false);
 
         // Tile Editor
         Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);

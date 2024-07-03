@@ -42,6 +42,7 @@ static partial class ShortcutsWindow
             ("Left Mouse", "Place/remove"),
             ("Right Mouse", "Remove object"),
             ("Shift+Left Mouse", "Rect fill"),
+            ("[FloodFill]+Left Mouse", "Flood fill"),
             ("[SwitchLayer]", "Cycle layers"),
             ("[ToggleLayer1]", "Toggle layer 1"),
             ("[ToggleLayer2]", "Toggle layer 2"),
