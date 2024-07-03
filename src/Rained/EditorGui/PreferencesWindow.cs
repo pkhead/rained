@@ -186,8 +186,6 @@ static class PreferencesWindow
         
         ImGui.SeparatorText("Level Colors");
         {
-            ImGui.Separator();
-
             if (entered)
             {
                 layerColor1 = HexColorToVec3(prefs.LayerColor1);
