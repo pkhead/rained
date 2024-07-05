@@ -59,7 +59,7 @@ public class Window : IDisposable
                 
                 try
                 {
-                    PlatformSpecific.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+                    MoreGlfw.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
                     return new Vector2(xScale, yScale);
                 }
                 catch (DllNotFoundException)
@@ -144,12 +144,14 @@ public class Window : IDisposable
 
             if (glfwWindow is not null)
             {
+                MoreGlfw.InitializeDllImportResolver();
+
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
 
                 try
                 {
-                    PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+                    MoreGlfw.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
                 }
                 catch (DllNotFoundException)
                 {}
@@ -314,7 +316,7 @@ public class Window : IDisposable
     }
 
     private delegate void GlfwContentScaleChanged(nint window, float xscale, float yscale);
-    private GlfwContentScaleChanged _glfwContentScaleChangedCallback;
+    private GlfwContentScaleChanged? _glfwContentScaleChangedCallback = null;
 
     public void Initialize()
     {
