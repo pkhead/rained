@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj" />
+    <ProjectReference Include="../../../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj" />
     <ProjectReference Include="../Glib/Glib.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
@@ -35,11 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="../ImGui.NET/deps/cimgui/linux-x64/cimgui.so" TargetPath="runtimes/linux-x64/native/cimgui.so" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../ImGui.NET/deps/cimgui/osx/cimgui.dylib" TargetPath="runtimes/osx/native/cimgui.dylib" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../ImGui.NET/deps/cimgui/win-arm64/cimgui.dll" TargetPath="runtimes/win-arm64/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../ImGui.NET/deps/cimgui/win-x86/cimgui.dll" TargetPath="runtimes/win-x86/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../ImGui.NET/deps/cimgui/win-x64/cimgui.dll" TargetPath="runtimes/win-x64/native/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../../ImGui.NET/deps/cimgui/win-x64/*" DestinationFolder="runtimes/win-x64/native" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
