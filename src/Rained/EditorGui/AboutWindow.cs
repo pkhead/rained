@@ -24,8 +24,10 @@ static class AboutWindow
         {
             rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
-            // TODO: version number, build date, os/runtime information, library licenses
+            // TODO: os/runtime information
+            ImGui.SameLine(Math.Max(0f, (ImGui.GetWindowWidth() - rainedLogo.Width) / 2.0f));
             ImGuiExt.Image(rainedLogo);
+            
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");
