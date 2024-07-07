@@ -1,7 +1,7 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
+- chain holder undo/redo is broken
 - Someone got this stack trace:
-
   System.Exception: The uniform type is not a sampler
     at Glib.Shader.SetUniform(String uName, Texture texture) in rained\src\Glib\Shader.cs:line 376
     at Glib.RenderContext..ctor(IWindow window) in rained\src\Glib\RenderContext.cs:line 120
@@ -40,7 +40,6 @@ Glib:
 - shader class should keep a list of texture slots. when Use() is called, re-set the texture units based on this list.
 
 Geometry Editor:
-- fill
 - select and copy/paste
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)
