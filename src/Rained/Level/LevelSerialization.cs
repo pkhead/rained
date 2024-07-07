@@ -213,7 +213,7 @@ static class LevelSerialization
                                 ref var cell = ref level.Layers[z,x,y]; 
                                 cell.TileHead = tile;
 
-                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2)
+                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2 && data.values[2] as string != "NONE")
                                 {
                                     var chainPos = (Vector2) data.values[2];
                                     level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
@@ -678,12 +678,21 @@ static class LevelSerialization
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
 
-                        if (level.TryGetChainData(l, x, y, out var chainEndPos))
+                        if (cell.TileHead.Tags.Contains("Chain Holder"))
                         {
+                            string chainData;
+                            if (level.TryGetChainData(l, x, y, out var chainEndPos))
+                            {
+                                chainData = $"point({chainEndPos.X + 1}, {chainEndPos.Y + 1})";
+                            }
+                            else
+                            {
+                                chainData = "\"NONE\"";
+                            }
+
                             output.AppendFormat(
-                                "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", point({3}, {4})]]",
-                                group, sub, name,
-                                chainEndPos.X + 1, chainEndPos.Y + 1
+                                "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", {3}]]",
+                                group, sub, name, chainData
                             );
                         }
                         else
