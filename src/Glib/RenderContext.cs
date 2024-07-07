@@ -137,6 +137,7 @@ public class RenderContext : IDisposable
 
         if (glDebug)
         {
+            Shader._debug = true;
             glErrorCallback = DefaultErrorCallback;
             debugOutputEnabled = true;
             gl.Enable(EnableCap.DebugOutput);

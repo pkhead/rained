@@ -104,6 +104,15 @@ namespace RainEd
                     VSync = false
                 };
 
+                winOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
+                winOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
+
+                if (bootOptions.GlDebug)
+                {
+                    winOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+                    winOptions.SetupGlErrorCallback = true;
+                }
+
                 splashScreenWindow = new Glib.Window(winOptions);
                 splashScreenWindow.Initialize();
 

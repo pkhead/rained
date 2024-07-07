@@ -64,6 +64,8 @@ public class Shader : GLResource
 
     private readonly uint shaderProgram;
     private readonly GL gl;
+
+    internal static bool _debug = false;
     
     private List<uint> textureLocs = [];
 
@@ -77,9 +79,9 @@ public class Shader : GLResource
         gl.CompileShader(vShader);
 
         // check for compilation error
-        string infoLog = gl.GetShaderInfoLog(vShader);
-        if (!string.IsNullOrWhiteSpace(infoLog))
+        if (gl.GetShader(vShader, GLEnum.CompileStatus) == 0)
         {
+            string infoLog = gl.GetShaderInfoLog(vShader);
             throw new ShaderCompilationException(infoLog);
         }
 
@@ -89,9 +91,9 @@ public class Shader : GLResource
         gl.CompileShader(fShader);
 
         // check for compilation error
-        infoLog = gl.GetShaderInfoLog(fShader);
-        if (!string.IsNullOrWhiteSpace(infoLog))
+        if (gl.GetShader(fShader, GLEnum.CompileStatus) == 0)
         {
+            string infoLog = gl.GetShaderInfoLog(fShader);
             throw new ShaderCompilationException(infoLog);
         }
 
@@ -102,10 +104,57 @@ public class Shader : GLResource
         gl.LinkProgram(shaderProgram);
 
         // check for link error
-        gl.GetProgram(shaderProgram, GLEnum.LinkStatus, out var status);
-        if (status == 0)
+        if (gl.GetProgram(shaderProgram, GLEnum.LinkStatus) == 0)
         {
             throw new ShaderCompilationException(gl.GetProgramInfoLog(shaderProgram));
+        }
+
+        // get uniform data
+        unsafe
+        {
+            if (_debug)
+            {
+                Console.WriteLine($"== SHADER ID: {shaderProgram} ==");
+            }
+
+            int uniformCount = gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms);
+            var maxNameLen = gl.GetProgram(shaderProgram, GLEnum.ActiveUniformMaxLength);
+            Span<byte> nameArr = stackalloc byte[maxNameLen];
+
+            Console.WriteLine($"UNIFORMS: {uniformCount}, MAX UNIFORM NAME LENGTH: {maxNameLen}");
+
+            uint j = 0;
+            for (uint i = 0; i < uniformCount; i++)
+            {
+                gl.GetActiveUniform(shaderProgram, i, out uint len, out int size, out UniformType type, nameArr);
+                
+                if (_debug)
+                {
+                    string name = System.Text.Encoding.UTF8.GetString(nameArr[..(int)len]);
+                    Console.WriteLine($"{j}: name: {name}, type: {type}, size: {size}");
+                }
+
+                switch (type)
+                {
+                    case UniformType.Sampler1D:
+                    case UniformType.Sampler2D:
+                    case UniformType.Sampler3D:
+                        if (_debug)
+                        {
+                            Console.WriteLine($"   TEXTURE UNIT = {textureLocs.Count}");
+                        }
+
+                        textureLocs.Add(j);
+                        break;
+                }
+
+                j += (uint)size;
+            }
+
+            if (_debug)
+            {
+                Console.WriteLine("==================");
+            }
         }
 
         // delete the no longer useful individual shaders
@@ -113,46 +162,6 @@ public class Shader : GLResource
         gl.DetachShader(shaderProgram, fShader);
         gl.DeleteShader(vShader);
         gl.DeleteShader(fShader);
-
-        // get uniform data
-        unsafe
-        {
-            int uniformCount = 0;
-            gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms, &uniformCount);
-
-            Span<byte> nameArr = stackalloc byte[64];
-
-            uint j = 0;
-            for (uint i = 0; i < uniformCount; i++)
-            {
-                gl.GetActiveUniform(shaderProgram, i, out uint len, out int size, out UniformType type, nameArr);
-                /*string name = System.Text.Encoding.UTF8.GetString(nameArr[..(int)len]);
-                string typeName = type switch
-                {
-                    UniformType.Int => "int",
-                    UniformType.Float => "float",
-                    UniformType.FloatVec2 => "vec2",
-                    UniformType.FloatVec3 => "vec3",
-                    UniformType.FloatVec4 => "vec4",
-                    UniformType.FloatMat4 => "mat4",
-                    UniformType.Sampler2D => "sampler2D",
-                    _ => "???"
-                };
-
-                Console.WriteLine($"Shader ID: {shaderProgram}, name: {name}, type: {typeName} size: {size}");*/
-
-                switch (type)
-                {
-                    case UniformType.Sampler1D:
-                    case UniformType.Sampler2D:
-                    case UniformType.Sampler3D:
-                        textureLocs.Add(j);
-                        break;
-                }
-
-                j += (uint)size;
-            }
-        }
     }
 
     protected override void FreeResources(bool disposing)
@@ -371,6 +380,9 @@ public class Shader : GLResource
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
         if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+
+        if (_debug)
+            Console.WriteLine($"Shader.SetUniform(string, Texture): gl.GetUniformLocation({shaderProgram}, \"{uName}\") RETURNED {loc}");
 
         int texUnit = textureLocs.IndexOf((uint)loc);
         if (texUnit < 0) throw new Exception("The uniform type is not a sampler");
