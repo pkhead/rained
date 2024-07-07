@@ -101,6 +101,8 @@ public class Window : IDisposable
     public float MouseY { get => _mousePos.Y; }
     public float MouseWheel { get => inputContext.Mice[0].ScrollWheels[0].Y; }
 
+    private bool setupGlErrorCallback = false;
+
     public Vector2 MousePosition {
         get => _mousePos;
         set
@@ -123,6 +125,7 @@ public class Window : IDisposable
     {
         window = options.CreateSilkWindow();
         setupImGui = options.SetupImGui;
+        setupGlErrorCallback = options.SetupGlErrorCallback;
 
         window.Load += OnLoad;
         window.Update += OnUpdate;
@@ -179,7 +182,7 @@ public class Window : IDisposable
             mouse.MouseUp += OnMouseUp;
         }
 
-        _renderContext = new RenderContext(window);
+        _renderContext = new RenderContext(window, setupGlErrorCallback);
 
         if (setupImGui)
         {

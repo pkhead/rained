@@ -37,6 +37,14 @@ public enum Feature
     WireframeRendering
 }
 
+public enum DebugSeverity
+{
+    Notification,
+    Low,
+    Medium,
+    High
+};
+
 public class RenderContext : IDisposable
 {
     internal readonly GL gl;
@@ -105,8 +113,14 @@ public class RenderContext : IDisposable
 
     public readonly string GpuVendor;
     public readonly string GpuRenderer;
+    private static bool debugOutputEnabled = false;
 
-    internal unsafe RenderContext(IWindow window)
+    private static void DefaultErrorCallback(string msg, DebugSeverity severity)
+    {
+        Console.WriteLine($"GL message (Severity: {severity}): {msg}");
+    }
+
+    internal unsafe RenderContext(IWindow window, bool glDebug)
     {
         gl = GL.GetApi(window);
 
@@ -120,7 +134,15 @@ public class RenderContext : IDisposable
 
         Console.WriteLine("GL_VENDOR: " + GpuVendor);
         Console.WriteLine("GL_RENDERER: " + GpuRenderer);
-        
+
+        if (glDebug)
+        {
+            glErrorCallback = DefaultErrorCallback;
+            debugOutputEnabled = true;
+            gl.Enable(EnableCap.DebugOutput);
+            gl.DebugMessageCallback(ErrorCallbackHandler, null);
+        }
+
         //gl.Enable(EnableCap.CullFace);
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -1104,7 +1126,7 @@ public class RenderContext : IDisposable
         return new BatchDrawHandle(mode, this);
     }
 
-    private Action<string>? glErrorCallback = null;
+    private Action<string, DebugSeverity>? glErrorCallback = null;
 
     private unsafe void ErrorCallbackHandler(
         GLEnum source,
@@ -1115,14 +1137,28 @@ public class RenderContext : IDisposable
         nint message,
         nint userParam)
     {
+        var sev = severity switch
+        {
+            GLEnum.DebugSeverityNotification => DebugSeverity.Notification,
+            GLEnum.DebugSeverityLow => DebugSeverity.Low,
+            GLEnum.DebugSeverityMedium => DebugSeverity.Medium,
+            GLEnum.DebugSeverityHigh => DebugSeverity.High,
+            _ => DebugSeverity.Notification
+        };
+
         var errorStr = System.Text.Encoding.UTF8.GetString((byte*) message, length);
-        glErrorCallback!(errorStr);
+        glErrorCallback!(errorStr, sev);
     }
 
-    public unsafe void SetupErrorCallback(Action<string> proc)
+    public unsafe void SetupErrorCallback(Action<string, DebugSeverity> proc)
     {
         glErrorCallback = proc;
-        gl.Enable(EnableCap.DebugOutput);
-        gl.DebugMessageCallback(ErrorCallbackHandler, null);
+
+        if (!debugOutputEnabled)
+        {
+            debugOutputEnabled = true;
+            gl.Enable(EnableCap.DebugOutput);
+            gl.DebugMessageCallback(ErrorCallbackHandler, null);
+        }
     }
 }

@@ -5,6 +5,7 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
+using Glib;
 
 namespace RainEd
 {
@@ -136,11 +137,12 @@ namespace RainEd
                 if (bootOptions.GlDebug)
                 {
                     windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+                    windowOptions.SetupGlErrorCallback = true;
                 }
 
                 // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
-
+                
                 window.ImGuiConfigure += () =>
                 {
                     WindowScale = window.ContentScale.Y;
@@ -170,19 +172,29 @@ namespace RainEd
                     Fonts.ReloadFonts();
                 };
 
+                window.Load += () =>
+                {
+                    if (bootOptions.GlDebug)
+                    {
+                        Console.WriteLine("Initialize OpenGL debug context");
+                        window.RenderContext!.SetupErrorCallback((string msg, DebugSeverity severity) =>
+                        {
+                            if (severity != DebugSeverity.Notification)
+                            {
+                                if (RainEd.Instance is not null)
+                                    RainEd.Logger.Error("GL error ({severity}): {Error}", severity, msg);
+                                else
+                                {
+                                    Console.WriteLine($"GL error ({severity}): {msg}");
+                                }
+                            }
+                        });
+                    }
+                };
+
                 window.Initialize();
                 float curWindowScale = WindowScale;
                 Raylib.InitWindow(window);
-                
-                if (bootOptions.GlDebug)
-                {
-                    Console.WriteLine("Initialize OpenGL debug context");
-                    window.RenderContext!.SetupErrorCallback((string msg) =>
-                    {
-                        if (RainEd.Instance is not null)
-                            RainEd.Logger.Error("GL error: {Error}", msg);
-                    });
-                }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);

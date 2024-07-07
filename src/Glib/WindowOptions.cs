@@ -72,6 +72,13 @@ public struct WindowOptions
     /// </summary>
     public bool SetupImGui = false;
 
+    /// <summary>
+    /// True if the window should set up the a default OpenGL debug error callback
+    /// as soon as possible. If set to true, any OpenGL debug messages will be printed
+    /// to Console.Out.
+    /// </summary>
+    public bool SetupGlErrorCallback = false;
+
     public GraphicsAPI API = GraphicsAPI.Default;
 
     public WindowOptions() {}
