@@ -23,6 +23,13 @@ If you want to warp them, you enable vertex mode by pressing F (by default), and
 If you do not like the default keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
 accessible by going to the "File" menu, then clicking on "Preferences".
 
+## User Interface
+Each compartment of the user interface is in its own separate "window". A window can be docked or floating. To undock a window, simply drag the window by its title bar, and it will become a floating window. If you want to dock a floating window, drag the window by its title bar, move it to one of the blue dock areas that appears, and release the mouse. You may also resize a floating window if the window allows you to by dragging the bottom-right corner of the window.
+
+If you want to drag a floating window without having the dock areas appear, you can hold SHIFT while doing so, or drag the window by its contents.
+
+On the top of the window resides the "menu bar", the place where you can access menus. With the menus, you can perform certain actions for your level or open/close another window for further level editing.
+
 ## Environment
 This edit mode is basically an adaptation of the controls featured in the "level overview" screen from the official level editor. You may control simple parameters about the room.
 - **Tile Random Seed:** The seed tiles use for generating graphics when rendering.

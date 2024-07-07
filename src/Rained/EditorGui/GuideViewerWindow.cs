@@ -35,7 +35,7 @@ static class GuideViewerWindow
 #endif
             }
 
-            ImGui.SetNextWindowSize(new Vector2(40.0f, 50.0f) * ImGui.GetFontSize(), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(new Vector2(50.0f, 36.0f) * ImGui.GetFontSize(), ImGuiCond.FirstUseEver);
 
             //ImGui.PushTextWrapPos(ImGui.GetWindowWidth() - 1.0f);
             if (ImGui.Begin(WindowTitle, ref IsWindowOpen, ImGuiWindowFlags.None))
