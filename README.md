@@ -1,7 +1,7 @@
 # Rained
 ![Fancy Logoe](rained-logo.png)
 
-Another Rain World level editor. Currently in development.
+Another Rain World level editor.
 
 Please note that the "main" branch is ahead of the latest release. If you want to access the repository
 at the time of a certain release, use the Git tags system.
@@ -10,14 +10,14 @@ at the time of a certain release, use the Git tags system.
 - Ease of use (hopefully)
 - Undo/redo everything
 - Re-envisioned prop editor
-- Tile graphics and palette previews
+- Highly customizable UI
+- Asset graphics and palette previews
 - [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community) level rendering with a preview
-- Dark Mode for the Miros Birds
 
 Read [this document](dist/README.md) for information on how to use Rained.
 
 ## Building
-**NOTE**: Due to the Raylib-cs library, on Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+**NOTE**: On Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 
 ### .NET CLI
 Clone with Git:
@@ -40,8 +40,7 @@ dotnet run --project src/Rained/Rained.csproj
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
 ## Contributing
-Report bugs and other complaints by creating an issue or pinging @chromosoze in the Rain World Discord server. DM requests also work, but it's likely
-that it'll take me a while to notice them as I don't pinged for it.
+Report bugs and other complaints by creating an issue or pinging @chromosoze on a Rain World modding Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
 
 Pull requests are welcome.
 
