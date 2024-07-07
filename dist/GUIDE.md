@@ -1,9 +1,30 @@
 # User Guide
 ## Introduction
-This is a user guide that serves as a brief introduction to the level editing process. The level editor has seven different edit modes for each level, and there will be a section covering the basics of each edit mode, simply called "editors" in other level editors.
+This is a user guide that serves as a brief introduction to the level editing process. If you've used a Rain World level editor before, learning how to use this software shouldn't be too obtuse, so you probably don't need to read the later chapters of ths guide. However, if you're new to this, then you should. Later chapters provide descriptions about each edit mode in Rained.
 
-## Environment Editor
-This is basically an adaptation of the controls featured in the "level overview" screen from the official level editor. You may control simple parameters about the room.
+Assuming you have the expertise, here is a quick list of things that are different:
+- Check out the menus (the bar on the top of the window) and the shortcut list.
+- In the effects editor, you can drag effect slots up and down in the active effects list.
+- You can also delete effect slots by right-clicking on them.
+- In the light editor, you scale and rotate your brush by holding down a key and moving your mouse.
+- You can also use your mouse to manipulate the light ring for the light angle.
+
+The prop editor has some pretty significant changes in design when compared to RWE+ or the Lingo editor. It works akin to transform tools
+in other software like Photoshop.
+
+In the prop editor, right-click (or press C) in the level to add a prop. Afterward, moving a prop is done by simply selecting them and dragging them around. Scaling is done by dragging their corners.
+
+If you want to warp them, you enable vertex mode by pressing F (by default), and, for normal props, you may warp them by dragging their corners. When vertex mode is on, the outline colors for each prop mean different things about the way they're moved/rotated/scaled:
+  - Blue: The scale axis is determined by the prop's rotation - this will keep rectangles rectangles.
+  - White: In contrast to blue, the scale axis is not determined by its rotation - it will be distorted if it's scaled while rotated.
+  - Green: This is a rope or a long prop, and you can move its endpoints in vertex mode.
+  - Red: A rope/long prop that has been warped in a different level editor. The editor only supports rectangular rope/long props, so you can't transform it until you press "Reset Transform".
+
+If you do not like the default keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
+accessible by going to the "File" menu, then clicking on "Preferences".
+
+## Environment
+This edit mode is basically an adaptation of the controls featured in the "level overview" screen from the official level editor. You may control simple parameters about the room.
 - **Tile Random Seed:** The seed tiles use for generating graphics when rendering.
 - **Enclosed Room:** Corresponds to the "Default Medium" switch in the official level editor. I don't think this does anything.
 - **Sunlight:** If this is off, the room will be cast in darkness. If on, the light map created in the light editor will apply.
@@ -101,8 +122,10 @@ Each prop has a certain amount of options you can configure in regards to their 
 - **Apply Color:** A checkbox you can switch on and off. If it is off, it will use a color from the room palette.
 
 ## Playing Your Level
-To export your level to Rain World, select `File > Render` from the menubar (on the top). This is a process that takes a while. It will render a .txt file and one or more .png files into Levels folder. You can view this folder by clicking `View > Show Render Folder...` from the menubar. These rendered files use a different format than the format used for editing levels, so be sure to not have them mixed up with the type of level file you load in Rained.
+To export your level to Rain World, select File > Render from the menubar (on the top). This is a process that takes a while. It will render a .txt file and one or more .png files into Levels folder. You can view this folder by clicking View > Show Render Folder... from the menubar. These rendered files use a different format than the format used for editing levels, so be sure to not have them mixed up with the type of level file you load in Rained.
 
 You have to copy these files to a mod's "levels" folder to get them into Arena, or a subfolder within the "worlds" folder to get them into story mode. Once you are in them, you will use the Dev Tools to configure the level further, such as changing the color palette of the level, adding sounds, objects, etc. You will also have to edit a world_XX.txt file, or use a program like World Editor, to connect rooms together and add creature spawns.
 
-This guide will not go over the details of doing that since Rained only concerns itself with level editing. But there are resources for that on the World Wide Web, such as [this wiki page about the Dev Tools](https://rainworldmodding.miraheze.org/wiki/Dev_Tools) as well as [this page in regards to the world file format](https://rainworldmodding.miraheze.org/wiki/World_File_Format). Happy lediting!
+This guide will not go over the details of doing that since Rained only concerns itself with level editing. But there are resources for that on the World Wide Web, such as [this wiki page about the Dev Tools](https://rainworldmodding.miraheze.org/wiki/Dev_Tools) as well as [this page in regards to the world file format](https://rainworldmodding.miraheze.org/wiki/World_File_Format).
+
+Happy lediting!

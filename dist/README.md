@@ -47,7 +47,7 @@ If you want to warp them, you enable vertex mode by pressing F (by default), and
   - Red: A rope/long prop that has been warped in a different level editor. The editor only supports rectangular rope/long props, so you can't transform it until you press "Reset Transform".
 
 If you do not like the default keyboard shortcuts, feel free to complain to me. You may also change them through the preferences menu,
-accessible by going to the "File" clicking on "Preferences".
+accessible by going to the "File" menu, then clicking on "Preferences".
 
 ## Autosaving
 Rained does not have a system that auto-saves the level periodically. However, it does automatically save the current state
