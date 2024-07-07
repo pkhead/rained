@@ -39,6 +39,12 @@ partial class BootOptions
     public readonly bool LogToStdout = false;
     public readonly bool Render = false;
 
+#if DEBUG
+    public readonly bool GlDebug = true;
+#else
+    public readonly bool GlDebug = false;
+#endif
+
     private static void PrintHelpMessage()
     {
         Console.WriteLine(
@@ -54,6 +60,7 @@ partial class BootOptions
         --log-to-stdout         Print logs to the standard output stream instead of to a file
         --no-splash-screen      Do not show the splash screen when starting
         --app-data <path>       Run with app data directory at <path>
+        --gl-debug              Enable OpenGL debugging
         --data <path>           Run with the Drizzle data directory at <path>
         --ogscule               the intrusive thoughts defeated me
         """
@@ -142,6 +149,12 @@ partial class BootOptions
             if (str == "--render" || str == "-r")
             {
                 Render = true;
+                continue;
+            }
+
+            if (str == "--gl-debug")
+            {
+                GlDebug = true;
                 continue;
             }
 

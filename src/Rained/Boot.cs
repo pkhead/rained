@@ -133,9 +133,10 @@ namespace RainEd
                 windowOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
                 windowOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
 
-#if DEBUG
-                windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
-#endif
+                if (bootOptions.GlDebug)
+                {
+                    windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+                }
 
                 // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
@@ -172,14 +173,16 @@ namespace RainEd
                 window.Initialize();
                 float curWindowScale = WindowScale;
                 Raylib.InitWindow(window);
-
-#if DEBUG
-                window.RenderContext!.SetupErrorCallback((string msg) =>
+                
+                if (bootOptions.GlDebug)
                 {
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("GL error: {Error}", msg);
-                });
-#endif
+                    Console.WriteLine("Initialize OpenGL debug context");
+                    window.RenderContext!.SetupErrorCallback((string msg) =>
+                    {
+                        if (RainEd.Instance is not null)
+                            RainEd.Logger.Error("GL error: {Error}", msg);
+                    });
+                }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
