@@ -172,7 +172,7 @@ public class Framebuffer : GLResource
             if (attachConfig.CanRead)
             {
                 var tex = new Texture(gl, Width, Height, format);
-                gl.BindTexture(GLEnum.Texture2D, 0);
+                gl.BindTexture(GLEnum.Texture2D, tex.TextureHandle);
                 gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachEnum, GLEnum.Texture2D, tex.TextureHandle, 0);
                 textures[textureIndex++] = tex;
             }
@@ -181,7 +181,6 @@ public class Framebuffer : GLResource
                 var rbo = gl.GenRenderbuffer();
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, rbo);
                 gl.RenderbufferStorage(GLEnum.Renderbuffer, format, (uint)Width, (uint)Height);
-                gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachEnum, GLEnum.Renderbuffer, rbo);
                 renderBuffers[rbIndex++] = rbo;
             }
