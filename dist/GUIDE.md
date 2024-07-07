@@ -3,9 +3,9 @@
 This is a user guide that serves as a brief introduction to the level editing process. The level editor has seven different edit modes for each level, and there will be a section covering the basics of each edit mode, simply called "editors" in other level editors.
 
 ## Environment Editor
-This is basically an adaptation of the controls featured in the "level overview" screen from the original level editor. You may control simple parameters about the room.
+This is basically an adaptation of the controls featured in the "level overview" screen from the official level editor. You may control simple parameters about the room.
 - **Tile Random Seed:** The seed tiles use for generating graphics when rendering.
-- **Enclosed Room:** Corresponds to the "Default Medium" switch in the original level editor. I don't think this does anything.
+- **Enclosed Room:** Corresponds to the "Default Medium" switch in the official level editor. I don't think this does anything.
 - **Sunlight:** If this is off, the room will be cast in darkness. If on, the light map created in the light editor will apply.
 - **Water:** On if this room has water. You can change the height of the water by holding down your mouse in the level view.
 - **Is Water In Front:** If this is off, water will be behind the first layer.
@@ -19,7 +19,7 @@ Here is the list of items not related to shortcuts:
 - **Air:** Empty space.
 - **Toggle Wall/Air:** Corresponds to "Inverse" in the official level editor. Should be obvious.
 - **Slope:** A 45-degree slope. Can only be placed on corners.
-- **Invisible Wall:** Corresponds to "Glass" in the original level editor.
+- **Invisible Wall:** Corresponds to "Glass" in the official level editor.
 - **Platform:** A half-block. In game, you may freely pass through it if entering from the bottom, but in order to go through it from above, you have to hold the down button.
 - **Horizontal Beam/Vertical Beam**: Otherwise known as poles. Creatures can climb on them.
 - **Fissure:** Corresponds to "Crack Terrain" in the official level editor. You can use this to create a special type of tunnel. It's not used in game that often. For normal tunnels, you use air blocks.
@@ -73,8 +73,8 @@ Do note that the shadow projection shown in the light editor is not entirely acc
 
 Light maps are usually fairly simple. As a basic template, if you have an interior room, the light map will be filled with shadow except for some holes where light peeks through. If you have an exterior room, the light map will be filled with light except for some stuff that normally sort of looks like shapes found in the level itself, like there's more of what you're seeing in the level behind the camera.
 
-## Light Angle
-There's also controls on the top-right that control the light angle. This is basically the angle light is coming from. It's probably best to have the dot come from somewhere near the top-left, since tiles have lighting information baked in and they assume the light comes from that area.
+### Light Angle
+There are also controls on the top-right that control the light angle. This is basically the angle light is coming from. It's probably best to have the dot come from somewhere near the top-left, since tiles have lighting information baked in and they assume the light comes from that area.
 
 The radius of the ring with the dot on it basically controls how "head-on" the light angle is. This is known as "light flatness" or "light distance". If the radius of the ring that the dot resides on is larger, shadows will be longer. It's kind of similar to how shadow lengths change based on what time of day it is. If it's noon, the sun is directly overhead, so shadows are short and cast directly downwards. That corresponds to a smaller circle in the light editor. If it's sunset or sunrise, the sun is closer to the horizon and shadows will be longer. That corresponds to a larger circle.
 
@@ -92,7 +92,7 @@ Props are sort of like tiles, except they don't have to be grid-aligned and you 
 
 Each prop has a certain amount of options you can configure in regards to their rendering. Here is a list of all possible configuration options:
 - **Render Order:** For props with the same depth offset, props with a lower value of this render above props with a higher value.
-- **Depth Offset:** This is the sublayer that the prop is in (though, props actually span multiple sublayers so this isn't technically accurate). Ranges from 0 to 29.
+- **Depth Offset:** This is the sublayer that the prop is placed in. Ranges from 0 to 29.
 - **Seed:** This is the random seed the prop uses when generating its graphics. You can change this to make certain props look different than other instances of the same prop.
 - **Render Time:** This controls at what stage the prop is rendered in. As far as I'm aware, this option is only relevant if you have "Apply Color" turned on for the prop.
 - **Custom Depth:** Allows you to control the size of depth in regards to sublayers.

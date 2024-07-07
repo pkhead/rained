@@ -1,9 +1,21 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
+- Someone got this stack trace:
+
+  System.Exception: The uniform type is not a sampler
+    at Glib.Shader.SetUniform(String uName, Texture texture) in rained\src\Glib\Shader.cs:line 376
+    at Glib.RenderContext..ctor(IWindow window) in rained\src\Glib\RenderContext.cs:line 120
+    at Glib.Window.OnLoad() in rained\src\Glib\Window.cs:line 167
+    at Silk.NET.Windowing.Internals.ViewImplementationBase.Initialize()
+    at Glib.Window.Initialize() in src\Rained\Boot.cs:line 107
+    at RainEd.Boot.Main(String[] args ) in src\Rained\Boot.cs:line 48
 
 Overall:
 - dissolve material/tile separation
-- prop selection box is affected by bfTiles (don't do this, also make optional from preferences)
+- be able to view shortcut geo outside of the geometry editor
+- does update checker notif window timing work?
+- auto purge old log files
+- prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
 - autotiles
