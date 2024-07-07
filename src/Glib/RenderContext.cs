@@ -3,6 +3,7 @@ namespace Glib;
 using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 public enum BatchDrawMode
 {
@@ -102,9 +103,24 @@ public class RenderContext : IDisposable
         }
     }
 
+    public readonly string GpuVendor;
+    public readonly string GpuRenderer;
+
     internal unsafe RenderContext(IWindow window)
     {
         gl = GL.GetApi(window);
+
+        unsafe
+        {
+            byte* vendorStr = gl.GetString(GLEnum.Vendor);
+            byte* rendererStr = gl.GetString(GLEnum.Renderer);
+            GpuVendor = Marshal.PtrToStringAnsi((nint) vendorStr) ?? "[unknown]";
+            GpuRenderer = Marshal.PtrToStringAnsi((nint) rendererStr) ?? "[unknown]";
+        }
+
+        Console.WriteLine("GL_VENDOR: " + GpuVendor);
+        Console.WriteLine("GL_RENDERER: " + GpuRenderer);
+        
         //gl.Enable(EnableCap.CullFace);
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);

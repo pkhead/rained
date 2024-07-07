@@ -1,6 +1,6 @@
 using ImGuiNET;
 
-using System.Numerics;
+using System.Runtime.InteropServices;
 namespace RainEd;
 
 static class AboutWindow
@@ -9,6 +9,33 @@ static class AboutWindow
     public static bool IsWindowOpen = false;
 
     private static RlManaged.Texture2D? rainedLogo = null;
+
+    record SystemInfo(string FrameworkName, string OsName, string Arch, string GraphicsVendor, string GraphicsRenderer);
+    private static SystemInfo? systemInfo;
+
+    private static SystemInfo GetSystemInfo()
+    {
+        string osName = RuntimeInformation.OSDescription;
+        string frameworkName = RuntimeInformation.FrameworkDescription;
+        var arch = RuntimeInformation.OSArchitecture;
+        string archName = arch switch
+        {
+            Architecture.X86 => "x86",
+            Architecture.X64 => "x64",
+            Architecture.Arm => "arm",
+            Architecture.Arm64 => "arm64",
+            Architecture.Wasm => "wasm",
+            Architecture.S390x => "s390x",
+            Architecture.LoongArch64 => "LoongArch64",
+            Architecture.Armv6 => "armV6",
+            Architecture.Ppc64le => "ppc64le",
+            _ => "unknown"
+        };
+
+        var rctx = RainEd.RenderContext!;
+        systemInfo = new SystemInfo(frameworkName, osName, archName, rctx.GpuVendor, rctx.GpuRenderer);
+        return systemInfo;
+    }
 
     public static void ShowWindow()
     {
@@ -41,6 +68,15 @@ static class AboutWindow
                 ImGui.Text("New version available!");
                 ImGui.SameLine();
                 ImGuiExt.LinkText(RainEd.Instance.LatestVersionInfo.VersionName, RainEd.Instance.LatestVersionInfo.GitHubReleaseUrl);
+            }
+
+            ImGui.SeparatorText("System Information");
+            {
+                var sysInfo = systemInfo ?? GetSystemInfo();
+                ImGui.BulletText(".NET: " + sysInfo.FrameworkName);
+                ImGui.BulletText("OS: " + sysInfo.OsName);
+                ImGui.BulletText("Architecture: " + sysInfo.Arch);
+                ImGui.BulletText("Graphics Card: " + sysInfo.GraphicsRenderer);
             }
             
             ImGui.SeparatorText("Libraries");

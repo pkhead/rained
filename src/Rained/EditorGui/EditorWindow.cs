@@ -73,7 +73,7 @@ static class EditorWindow
     private static string notification = "";
     private static float notificationTime = 0f;
     private static float notifFlash = 0f;
-    private static int timerDelay = 2;
+    private static int timerDelay = 10;
 
     private static DrizzleRenderWindow? drizzleRenderWindow = null;
     private static LevelResizeWindow? levelResizeWin = null;
