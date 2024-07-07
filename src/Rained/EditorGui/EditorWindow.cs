@@ -307,6 +307,11 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("Help"))
             {
+                if (ImGui.MenuItem("Guide..."))
+                {
+                    GuideViewerWindow.IsWindowOpen = true;
+                }
+
                 if (ImGui.MenuItem("About..."))
                 {
                     AboutWindow.IsWindowOpen = true;
@@ -425,6 +430,7 @@ static class EditorWindow
         PaletteWindow.ShowWindow();
         LuaInterface.ShowLogs();
         EmergencySaveWindow.ShowWindow();
+        GuideViewerWindow.ShowWindow();
     }
 
     /// <summary>
