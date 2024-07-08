@@ -263,7 +263,7 @@ static class ThemeEditor
                     "Right-click to open edit options menu.");
 
                 ImGui.SetNextWindowSizeConstraints(new Vector2(0.0f, ImGui.GetTextLineHeightWithSpacing() * 10), new(float.MaxValue, float.MaxValue));
-                ImGui.BeginChild("##colors", Vector2.Zero, ImGuiChildFlags.Border, ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar | ImGuiWindowFlags.NavFlattened);
+                ImGui.BeginChild("##colors", Vector2.Zero, ImGuiChildFlags.Border | ImGuiChildFlags.NavFlattened, ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar);
                 ImGui.PushItemWidth(ImGui.GetFontSize() * -12);
                 for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
                 {

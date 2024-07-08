@@ -203,8 +203,6 @@ namespace RainEd
                         io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
                     }
 
-                    //io.Fonts.FontBuilderFlags = (uint) (ImGuiFreeTypeBuilderFlags.MonoHinting);
-
                     // this is the easiest way i figured to access preferences.json before
                     // RainEd initialization, but it does result in preferences.json being
                     // loaded twice 

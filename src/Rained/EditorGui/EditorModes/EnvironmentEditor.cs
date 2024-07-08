@@ -65,9 +65,7 @@ class EnvironmentEditor : IEditorMode
 
             ImGui.Checkbox("Is Water In Front", ref level.IsWaterInFront);
             RecordItemChanges();
-
-            ImGui.End();
-        }
+        } ImGui.End();
     }
 
     private void DrawWater()

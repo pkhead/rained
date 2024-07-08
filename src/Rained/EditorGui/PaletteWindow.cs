@@ -60,5 +60,6 @@ static class PaletteWindow
 
             ImGui.PopItemWidth();
         }
+        ImGui.End();
     }
 }

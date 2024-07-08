@@ -100,6 +100,8 @@ static class AboutWindow
             ImGuiExt.LinkText("Silk.NET", "https://dotnet.github.io/Silk.NET");
             ImGui.SameLine();
             ImGui.Text("(c) 2021- .NET Foundation and Contributors - MIT License");
+
+            ImGui.EndPopup();
         }
     }
 }
