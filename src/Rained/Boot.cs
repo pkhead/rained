@@ -36,6 +36,8 @@ namespace RainEd
         public static float WindowScale { get; set; } = 1.0f;
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
 
+        private static Serilog.Core.Logger? _logger = null;
+
         private static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -102,17 +104,26 @@ namespace RainEd
                 logToStdout = true;
                 #endif
 
+                var logLatest = Path.Combine(AppDataPath, "logs", "latest.log.txt");
+                if (File.Exists(logLatest))
+                    File.Delete(logLatest);
+
                 var loggerConfig = new LoggerConfiguration()
                 #if DEBUG
                 .MinimumLevel.Debug()
                 #endif
-                .WriteTo.File(Path.Combine(AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Hour);
+                .WriteTo.File(
+                    Path.Combine(AppDataPath, "logs", "log.txt"),
+                    rollingInterval: RollingInterval.Hour,
+                    retainedFileCountLimit: 10
+                )
+                .WriteTo.File(logLatest, retainedFileCountLimit: 1);
 
                 if (logToStdout)
                     loggerConfig = loggerConfig.WriteTo.Console();
 
-                var logger = loggerConfig.CreateLogger();
-                Serilog.Log.Logger = logger;
+                _logger = loggerConfig.CreateLogger();
+                Serilog.Log.Logger = _logger;
             }
             
             // create splash screen window to display while editor is loading
@@ -351,6 +362,7 @@ namespace RainEd
             
             //Raylib.CloseWindow();
             splashScreenWindow?.Close();
+            _logger.Dispose();
         }
 
         public static void DisplayError(string windowTitle, string windowContents)
