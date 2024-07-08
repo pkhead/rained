@@ -113,15 +113,14 @@ public class Shader : GLResource
         unsafe
         {
             if (_debug)
-            {
                 Console.WriteLine($"== SHADER ID: {shaderProgram} ==");
-            }
 
             int uniformCount = gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms);
             var maxNameLen = gl.GetProgram(shaderProgram, GLEnum.ActiveUniformMaxLength);
             Span<byte> nameArr = stackalloc byte[maxNameLen];
 
-            Console.WriteLine($"UNIFORMS: {uniformCount}, MAX UNIFORM NAME LENGTH: {maxNameLen}");
+            if (_debug)
+                Console.WriteLine($"UNIFORMS: {uniformCount}, MAX UNIFORM NAME LENGTH: {maxNameLen}");
 
             for (uint i = 0; i < uniformCount; i++)
             {
@@ -150,9 +149,7 @@ public class Shader : GLResource
             }
 
             if (_debug)
-            {
                 Console.WriteLine("==================");
-            }
         }
 
         // delete the no longer useful individual shaders
@@ -378,9 +375,6 @@ public class Shader : GLResource
     {
         var loc = gl.GetUniformLocation(shaderProgram, uName);
         if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-
-        if (_debug)
-            Console.WriteLine($"Shader.SetUniform(string, Texture): gl.GetUniformLocation({shaderProgram}, \"{uName}\") RETURNED {loc}");
 
         int texUnit = textureLocs.IndexOf((uint)loc);
         if (texUnit < 0) throw new Exception("The uniform type is not a sampler");
