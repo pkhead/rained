@@ -135,7 +135,7 @@ static class LevelSerialization
                 loadSuccess = false;
                 if (!unknownMats.Contains(defaultMat))
                     unknownMats.Add(defaultMat);
-                RainEd.Logger.Warning("Unrecognized material '{Name}'", defaultMat);
+                Log.Warning("Unrecognized material '{Name}'", defaultMat);
             }
         }
 
@@ -173,7 +173,7 @@ static class LevelSerialization
                             else
                             {
                                 // unrecognized material
-                                RainEd.Logger.Warning("Material \"{Name}\" does not exist", data);
+                                Log.Warning("Material \"{Name}\" does not exist", data);
                                 loadSuccess = false;
                                 if (!unknownMats.Contains(data))
                                     unknownMats.Add(data);
@@ -202,7 +202,7 @@ static class LevelSerialization
                             if (!RainEd.Instance.TileDatabase.HasTile(name))
                             {
                                 // unrecognized tile
-                                RainEd.Logger.Warning("Unrecognized tile '{Name}'", name);
+                                Log.Warning("Unrecognized tile '{Name}'", name);
                                 loadSuccess = false;
                                 if (!unknownTiles.Contains(name))
                                     unknownTiles.Add(name);
@@ -213,7 +213,7 @@ static class LevelSerialization
                                 ref var cell = ref level.Layers[z,x,y]; 
                                 cell.TileHead = tile;
 
-                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2)
+                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2 && data.values[2] as string != "NONE")
                                 {
                                     var chainPos = (Vector2) data.values[2];
                                     level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
@@ -244,7 +244,7 @@ static class LevelSerialization
                 if (!RainEd.Instance.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
                 {
                     // unrecognized effect
-                    RainEd.Logger.Warning("Unrecognized effect '{Name}'", nameStr);
+                    Log.Warning("Unrecognized effect '{Name}'", nameStr);
                     loadSuccess = false;
                     if (!unknownEffects.Contains(nameStr))
                         unknownEffects.Add(nameStr);
@@ -348,7 +348,7 @@ static class LevelSerialization
                                     int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
                                     if (cfgIndex == -1)
                                     {
-                                        RainEd.Logger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
+                                        Log.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                     }
                                     else
                                     {
@@ -433,7 +433,7 @@ static class LevelSerialization
             // wtf??
             if (img.Width == 0 && img.Height == 0)
             {
-                RainEd.Logger.Warning("Invalid lightmap image, loaded fallback");
+                Log.Warning("Invalid lightmap image, loaded fallback");
             }
             else
             {
@@ -469,7 +469,7 @@ static class LevelSerialization
                 if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
                 {
                     // unrecognized prop
-                    RainEd.Logger.Warning("Unrecognized prop '{Name}'", name);
+                    Log.Warning("Unrecognized prop '{Name}'", name);
                     loadSuccess = false;
                     if (!unknownProps.Contains(name))
                         unknownProps.Add(name);
@@ -546,7 +546,7 @@ static class LevelSerialization
                         }
                         else
                         {
-                            RainEd.Logger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
+                            Log.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
                         }
                     }
 
@@ -558,7 +558,7 @@ static class LevelSerialization
                         }
                         else
                         {
-                            RainEd.Logger.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
+                            Log.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
                         }
                     }
                 }
@@ -678,12 +678,21 @@ static class LevelSerialization
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
 
-                        if (level.TryGetChainData(l, x, y, out var chainEndPos))
+                        if (cell.TileHead.Tags.Contains("Chain Holder"))
                         {
+                            string chainData;
+                            if (level.TryGetChainData(l, x, y, out var chainEndPos))
+                            {
+                                chainData = $"point({chainEndPos.X + 1}, {chainEndPos.Y + 1})";
+                            }
+                            else
+                            {
+                                chainData = "\"NONE\"";
+                            }
+
                             output.AppendFormat(
-                                "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", point({3}, {4})]]",
-                                group, sub, name,
-                                chainEndPos.X + 1, chainEndPos.Y + 1
+                                "[#tp: \"tileHead\", #Data: [point({0}, {1}), \"{2}\", {3}]]",
+                                group, sub, name, chainData
                             );
                         }
                         else

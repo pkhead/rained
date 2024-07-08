@@ -523,7 +523,7 @@ class PropDatabase
     {
         if (allProps.ContainsKey(prop.Name))
         {
-            RainEd.Logger.Warning("Already added prop {PropName}", prop.Name);
+            Log.Warning("Already added prop {PropName}", prop.Name);
         }
 
         allProps[prop.Name] = prop;
@@ -565,13 +565,12 @@ class PropDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.List header)
                 {
-                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     continue;
                 }
 
                 currentCategory = new PropCategory(catIndex++, (string) header.values[0], (Lingo.Color) header.values[1]);
                 Categories.Add(currentCategory);
-                RainEd.Logger.Information("Register prop category {PropCategory}", currentCategory.Name);
             }
 
             // read prop
@@ -590,7 +589,7 @@ class PropDatabase
                 catch (Exception e)
                 {
                     var name = propData is null ? "Unknown Prop" : (string) propData.fields["nm"];
-                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
+                    Log.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }
@@ -605,7 +604,6 @@ class PropDatabase
             IsTileCategory = true
         };
         Categories.Add(currentCategory);
-        RainEd.Logger.Information("Register prop category Tiles as props 1");
 
         int tileIndex = 0;
         foreach (var category in tileDatabase.Categories)
@@ -631,13 +629,11 @@ class PropDatabase
                         IsTileCategory = true
                     };
                     Categories.Add(currentCategory);
-                    RainEd.Logger.Information("Register prop category {CategoryName}", currentCategory.Name);
                 }
             }
 
             if (tilePropCategory.Props.Count > 0)
             {
-                RainEd.Logger.Information("Register tile prop category {CategoryName}", tilePropCategory.Name);
                 TileCategories.Add(tilePropCategory);
             }
         }
@@ -645,7 +641,7 @@ class PropDatabase
 
     private void InitExtraProps()
     {
-        RainEd.Logger.Information("Initialize rope-type props...");
+        Log.Information("Initialize rope-type props...");
 
         using StringReader reader = new(ExtraPropsInit);
         var lingoParser = new Lingo.LingoParser();
@@ -672,7 +668,7 @@ class PropDatabase
             }
         }
 
-        RainEd.Logger.Information("Done initializing rope and long props");
+        Log.Information("Done initializing rope and long props");
     }
 
     private void InitCustomColors()

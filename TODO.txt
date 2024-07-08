@@ -1,9 +1,16 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
+- chain holder undo/redo is broken
 
 Overall:
 - dissolve material/tile separation
-- prop selection box is affected by bfTiles (don't do this, also make optional from preferences)
+- be able to view shortcut geo outside of the geometry editor
+- does update checker notif window timing work?
+- auto-updater
+- logging
+  - button to show latest log file
+  - log window shows rained logs
+- prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
 - autotiles
@@ -28,7 +35,6 @@ Glib:
 - shader class should keep a list of texture slots. when Use() is called, re-set the texture units based on this list.
 
 Geometry Editor:
-- fill
 - select and copy/paste
 - show tool preview over mouse
 - select and move geometry (make in conjunction with copy/paste)

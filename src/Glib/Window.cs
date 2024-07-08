@@ -57,8 +57,15 @@ public class Window : IDisposable
                     return Vector2.One;
                 }
                 
-                PlatformSpecific.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
-                return new Vector2(xScale, yScale);
+                try
+                {
+                    MoreGlfw.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
+                    return new Vector2(xScale, yScale);
+                }
+                catch (DllNotFoundException)
+                {
+                    return Vector2.One;
+                }
             }
         }
     }
@@ -94,6 +101,8 @@ public class Window : IDisposable
     public float MouseY { get => _mousePos.Y; }
     public float MouseWheel { get => inputContext.Mice[0].ScrollWheels[0].Y; }
 
+    private bool setupGlErrorCallback = false;
+
     public Vector2 MousePosition {
         get => _mousePos;
         set
@@ -116,6 +125,7 @@ public class Window : IDisposable
     {
         window = options.CreateSilkWindow();
         setupImGui = options.SetupImGui;
+        setupGlErrorCallback = options.SetupGlErrorCallback;
 
         window.Load += OnLoad;
         window.Update += OnUpdate;
@@ -137,9 +147,17 @@ public class Window : IDisposable
 
             if (glfwWindow is not null)
             {
+                MoreGlfw.InitializeDllImportResolver();
+
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
-                PlatformSpecific.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+
+                try
+                {
+                    MoreGlfw.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+                }
+                catch (DllNotFoundException)
+                {}
             }
         }
         
@@ -164,7 +182,7 @@ public class Window : IDisposable
             mouse.MouseUp += OnMouseUp;
         }
 
-        _renderContext = new RenderContext(window);
+        _renderContext = new RenderContext(window, setupGlErrorCallback);
 
         if (setupImGui)
         {
@@ -301,7 +319,7 @@ public class Window : IDisposable
     }
 
     private delegate void GlfwContentScaleChanged(nint window, float xscale, float yscale);
-    private GlfwContentScaleChanged _glfwContentScaleChangedCallback;
+    private GlfwContentScaleChanged? _glfwContentScaleChangedCallback = null;
 
     public void Initialize()
     {

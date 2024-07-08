@@ -418,7 +418,7 @@ static class AssetManagerGUI
 
                 else if (mergeTask.IsCanceled)
                 {
-                    RainEd.Logger.Information("Merge was canceled");
+                    Log.Information("Merge was canceled");
                     
                     ImGui.CloseCurrentPopup();
                     mergeTask = null;
@@ -442,7 +442,7 @@ static class AssetManagerGUI
         if (mergeTask is not null) return;
         if (string.IsNullOrEmpty(path)) return;
 
-        RainEd.Logger.Information("Import Init.txt file '{Path}'", path);
+        Log.Information("Import Init.txt file '{Path}'", path);
 
         // reload asset list in case user modified
         // (also makes it less bug-prone)
@@ -496,7 +496,7 @@ static class AssetManagerGUI
         }
         catch (Exception e)
         {
-            RainEd.Logger.Error(e.ToString());
+            Log.Error(e.ToString());
             errorMsg = "Malformed Init.txt file in the new data folder";
 
             RainEd.Instance.AssetDataPath = oldPath;

@@ -221,7 +221,7 @@ partial class FileBrowser
         }
         catch (Exception e)
         {
-            LogError("Could not get drive info:\n{Exception}", e.ToString());
+            Log.Error("Could not get drive info:\n{Exception}", e.ToString());
         }
     }
 
@@ -242,7 +242,7 @@ partial class FileBrowser
         {
             openErrorPopup = true;
             errorMsg = "Directory does not exist";
-            LogError("Directory {Path} does not exist", path);
+            Log.Error("Directory {Path} does not exist", path);
 
             return false;
         }
@@ -466,7 +466,7 @@ partial class FileBrowser
                             }
                             catch (Exception e)
                             {
-                                LogError("Could not create directory!\n" + e);
+                                Log.Error("Could not create directory!\n" + e);
                                 
                                 errorMsg = e.Message;
                                 ImGui.OpenPopup("Error");
@@ -920,22 +920,6 @@ partial class FileBrowser
                 forwardStack.Clear();
                 selected = -1;
             }
-        }
-    }
-
-    private void LogInfo(string s, params string[] args)
-    {
-        if (RainEd.Instance is not null)
-        {
-            RainEd.Logger.Information(s, args);
-        }
-    }
-
-    private void LogError(string s, params string[] args)
-    {
-        if (RainEd.Instance is not null)
-        {
-            RainEd.Logger.Error(s, args);
         }
     }
 

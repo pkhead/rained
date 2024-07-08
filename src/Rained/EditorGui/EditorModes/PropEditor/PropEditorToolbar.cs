@@ -348,7 +348,7 @@ partial class PropEditor : IEditorMode
         // push rope transform if simulation had just ended
         if (wasRopeSimulationActive && !isRopeSimulationActive)
         {
-            RainEd.Logger.Information("End rope simulation");
+            Log.Information("End rope simulation");
             changeRecorder.PushTransform();
         }
     }
@@ -851,7 +851,7 @@ partial class PropEditor : IEditorMode
                                 if (!wasRopeSimulationActive)
                                 {
                                     changeRecorder.BeginTransform();
-                                    RainEd.Logger.Information("Begin rope simulation");
+                                    Log.Information("Begin rope simulation");
                                 }
 
                                 foreach (var prop in selectedProps)

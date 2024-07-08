@@ -73,7 +73,7 @@ static class EditorWindow
     private static string notification = "";
     private static float notificationTime = 0f;
     private static float notifFlash = 0f;
-    private static int timerDelay = 2;
+    private static int timerDelay = 10;
 
     private static DrizzleRenderWindow? drizzleRenderWindow = null;
     private static LevelResizeWindow? levelResizeWin = null;
@@ -307,6 +307,11 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("Help"))
             {
+                if (ImGui.MenuItem("Guide..."))
+                {
+                    GuideViewerWindow.IsWindowOpen = true;
+                }
+
                 if (ImGui.MenuItem("About..."))
                 {
                     AboutWindow.IsWindowOpen = true;
@@ -329,9 +334,9 @@ static class EditorWindow
         {
             PromptUnsavedChanges(() =>
             {
-                RainEd.Logger.Information("Load default level...");
+                Log.Information("Load default level...");
                 RainEd.Instance.LoadDefaultLevel();
-                RainEd.Logger.Information("Done!");
+                Log.Information("Done!");
             });
         }
 
@@ -425,6 +430,7 @@ static class EditorWindow
         PaletteWindow.ShowWindow();
         LuaInterface.ShowLogs();
         EmergencySaveWindow.ShowWindow();
+        GuideViewerWindow.ShowWindow();
     }
 
     /// <summary>

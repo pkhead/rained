@@ -419,7 +419,7 @@ static class Raylib
         }
         catch (ShaderCompilationException e)
         {
-            RainEd.RainEd.Logger.Error(e.ToString());
+            RainEd.Log.Error(e.ToString());
             return new Shader();
         }
     }
@@ -439,7 +439,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            RainEd.RainEd.Logger.Error(e.ToString());
+            RainEd.Log.Error(e.ToString());
             return new Shader();
         }
         
@@ -640,7 +640,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            RainEd.RainEd.Logger.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
+            RainEd.Log.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
             obj.image = null;
         }
 
@@ -706,7 +706,7 @@ static class Raylib
             catch (Exception e)
             {
                 if (RainEd.RainEd.Instance is not null)
-                    RainEd.RainEd.Logger.Error("Error exporting image: {Exception}", e.ToString());
+                    RainEd.Log.Error("Error exporting image: {Exception}", e.ToString());
                 
                 return false;
             }
@@ -857,7 +857,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            RainEd.RainEd.Logger.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
+            RainEd.Log.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
             return new Texture2D()
             {
                 ID = null

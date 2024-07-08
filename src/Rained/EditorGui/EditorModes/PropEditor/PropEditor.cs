@@ -112,7 +112,7 @@ partial class PropEditor : IEditorMode
                 break;
 
             default:
-                RainEd.Logger.Error("Invalid prop snap '{PropSnap}' in preferences.json", RainEd.Instance.Preferences.PropSnap);
+                Log.Error("Invalid prop snap '{PropSnap}' in preferences.json", RainEd.Instance.Preferences.PropSnap);
                 break;
         }
     }
@@ -135,7 +135,7 @@ partial class PropEditor : IEditorMode
         else if (snappingMode == 2)
             prefs.PropSnap = "1x";
         else
-            RainEd.Logger.Error("Invalid prop snap mode {SnapMode}", snappingMode);
+            Log.Error("Invalid prop snap mode {SnapMode}", snappingMode);
     }
 
     public void Unload()

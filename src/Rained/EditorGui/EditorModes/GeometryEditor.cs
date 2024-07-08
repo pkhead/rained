@@ -146,7 +146,7 @@ class GeometryEditor : IEditorMode
                 break;
             
             default:
-                RainEd.Logger.Error("Invalid layer view mode '{ViewMode}' in preferences.json", RainEd.Instance.Preferences.GeometryViewMode);
+                Log.Error("Invalid layer view mode '{ViewMode}' in preferences.json", RainEd.Instance.Preferences.GeometryViewMode);
                 break;
         }
     }
@@ -220,7 +220,7 @@ class GeometryEditor : IEditorMode
                 break;
 
             default:
-                RainEd.Logger.Error("Invalid LayerViewMode {EnumID}", (int) layerViewMode);
+                Log.Error("Invalid LayerViewMode {EnumID}", (int) layerViewMode);
                 break;
         }
     }
@@ -1004,7 +1004,7 @@ class GeometryEditor : IEditorMode
         {
             if (fillStack.Count > 100000)
             {
-                RainEd.Logger.Error("Flood fill stack overflow!");
+                Log.Error("Flood fill stack overflow!");
                 EditorWindow.ShowNotification("Stack overflow!");
                 break;
             }
@@ -1101,7 +1101,7 @@ class GeometryEditor : IEditorMode
     {
         if (rectRt - rectLf != rectBt - rectTp)
         {
-            RainEd.Logger.Error("Slope mode rect fill is not square!");
+            Log.Error("Slope mode rect fill is not square!");
             return;
         }
 

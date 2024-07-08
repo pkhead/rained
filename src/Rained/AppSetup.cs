@@ -38,6 +38,15 @@ class AppSetup
     {
         assetDataPath = null;
 
+        if (Boot.WindowScale == 1.0f)
+        {
+            Fonts.SetFont("ProggyClean");
+        }
+        else
+        {
+            Fonts.SetFont("ProggyVector-Regular");
+        }
+
         while (true)
         {
             if (Raylib.WindowShouldClose())

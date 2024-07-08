@@ -103,7 +103,7 @@ class RenderPreviewImages : IDisposable
         lastHeight = newHeight;
         oldPixelFormat = format;
 
-        RainEd.Logger.Debug("Resize/reformat images");
+        Log.Debug("Resize/reformat images");
 
         for (int i = 0; i < 30; i++)
         {
@@ -202,7 +202,7 @@ class DrizzleRender : IDisposable
                 }
                 else
                 {
-                    RainEd.Logger.Information("Initializing Zygote runtime...");
+                    Log.Information("Initializing Zygote runtime...");
 
                     LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
                     LingoRuntime.CastPath = Path.Combine(Boot.AppDataPath, "assets", "internal") + Path.DirectorySeparatorChar;
@@ -221,7 +221,7 @@ class DrizzleRender : IDisposable
                 }
 
                 Queue.Enqueue(new MessageLevelLoading());
-                RainEd.Logger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
+                Log.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
                 
                 EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
 
@@ -239,7 +239,7 @@ class DrizzleRender : IDisposable
                     }
                     Queue.Enqueue(new MessageRenderGeometryStarted());
 
-                    RainEd.Logger.Information("RENDER: Exporting Geometry...");
+                    Log.Information("RENDER: Exporting Geometry...");
                     movie.newmakelevel(movie.gLoadedName);
                 }
                 else
@@ -257,16 +257,16 @@ class DrizzleRender : IDisposable
                     }
                     Queue.Enqueue(new MessageRenderStarted());
 
-                    RainEd.Logger.Information("RENDER: Begin");
+                    Log.Information("RENDER: Begin");
                     Renderer.DoRender();
                 }
 
-                RainEd.Logger.Information("Render successful!");
+                Log.Information("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
             }
             catch (RenderCancelledException)
             {
-                RainEd.Logger.Information("Render was cancelled");
+                Log.Information("Render was cancelled");
                 Queue.Enqueue(new MessageRenderCancelled());
             }
             catch (Exception e)
@@ -360,7 +360,7 @@ class DrizzleRender : IDisposable
 
     private void StatusChanged(RenderStatus status)
     {
-        RainEd.Logger.Debug("Status changed");
+        Log.Debug("Status changed");
 
         var stageEnum = status.Stage.Stage;
 
@@ -480,7 +480,7 @@ class DrizzleRender : IDisposable
                 
                 case MessageRenderFinished:
                     state = RenderState.Finished;
-                    RainEd.Logger.Debug("Close render thread");
+                    Log.Debug("Close render thread");
                     progress = 1f;
                     DisplayString = "";
                     thread.Join();
@@ -499,7 +499,7 @@ class DrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFailed msgFail:
-                    RainEd.Logger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
+                    Log.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
                     thread.Join();
                     state = RenderState.Errored;
                     break;
@@ -524,7 +524,7 @@ class DrizzleRender : IDisposable
     {
         if (PreviewImages is null) return;
 
-        RainEd.Logger.Verbose("Receive preview");
+        Log.Verbose("Receive preview");
         
         lastRenderPreview = renderPreview;
         PreviewUpdated?.Invoke();
@@ -588,7 +588,7 @@ class DrizzleRender : IDisposable
     {
         if (srcImg.Width != dstImg.Width || srcImg.Height != dstImg.Height)
         {
-            RainEd.Logger.Debug("Mismatched image sizes");
+            Log.Debug("Mismatched image sizes");
             return;
         }
         

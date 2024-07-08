@@ -94,8 +94,7 @@ class UserPreferences
                     break;
 
                 default:
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("Invalid CameraBorderMode '{Value}'", value);
+                    Log.Error("Invalid CameraBorderMode '{Value}'", value);
                     
                     CameraBorderMode = CameraBorderModeOption.Both;
                     break;
@@ -139,8 +138,7 @@ class UserPreferences
                     break;
                 
                 default:
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("Invalid CameraBorderMode '{value}'", value);
+                    Log.Error("Invalid CameraBorderMode '{value}'", value);
                     
                     AutotileMouseMode = AutotileMouseModeOptions.Hold;
                     break;
@@ -175,7 +173,7 @@ class UserPreferences
     public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColor(value); }
 
     public string Theme { get; set; }
-    public string Font { get; set; } = "ProggyVector-Regular";
+    public string Font { get; set; }
     public float ContentScale { get; set; }
     public bool ImGuiMultiViewport { get; set; }
     
@@ -212,6 +210,7 @@ class UserPreferences
         OptimizedTilePreviews = true;
 
         ContentScale = Boot.Window is null ? 1.0f : Boot.WindowScale;
+        Font = (ContentScale == 1.0f) ? "ProggyClean" : "ProggyVector-Regular";
         Theme = "Dark";
         if (Boot.Window is not null)
         {
@@ -310,7 +309,7 @@ class UserPreferences
         }
         catch (Exception e)
         {
-            RainEd.Logger.Error("Could not apply theme!\n{Error}", e);
+            Log.Error("Could not apply theme!\n{Error}", e);
             EditorWindow.ShowNotification("Could not apply theme");
         }
     }

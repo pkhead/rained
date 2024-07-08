@@ -244,7 +244,7 @@ class BrowserLevelPreview : FileBrowserPreview
                 }
                 else if (geoLoadTask.IsFaulted)
                 {
-                    if (RainEd.Instance is not null) RainEd.Logger.Error("Could not build level preview:{ErrorMessage}", geoLoadTask.Exception);
+                    if (RainEd.Instance is not null) Log.Error("Could not build level preview:{ErrorMessage}", geoLoadTask.Exception);
                 }
 
                 geoLoadTask.Dispose();
@@ -317,7 +317,7 @@ class BrowserLevelPreview : FileBrowserPreview
 
     public override void Dispose()
     {
-        RainEd.Logger.Information("Unload preview");
+        Log.Information("Unload preview");
 
         if (geoLoadTask is not null && !geoLoadTask.IsCompleted)
         {

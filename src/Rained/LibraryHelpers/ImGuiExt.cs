@@ -260,4 +260,49 @@ static class ImGuiExt
             color: new Glib.Color(color.X, color.Y, color.Z, color.W)
         );
     }
+
+    // they added link text in a more recent version of imgui... interesting
+    public static void LinkText(string id, string link)
+    {
+        string display;
+        if (id[0] == '#')
+        {
+            display = link;
+        }
+        else
+        {
+            display = id;
+        }
+        
+        var cursorPos = ImGui.GetCursorPos();
+        var cursorScreenPos = ImGui.GetCursorScreenPos();
+        var textSize = ImGui.CalcTextSize(display);
+
+        // link interactive
+        if (ImGui.InvisibleButton(id, textSize))
+        {
+            if (!RainEd.Platform.OpenURL(link))
+            {
+                RainEd.Log.Error("Could not open URL on user platform.");
+            }
+        }
+
+        // draw link text
+        ImGui.SetCursorPos(cursorPos);
+        Vector4 textColor;
+        if (ImGui.IsItemHovered() || ImGui.IsItemActive())
+        {
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonActive];
+        }
+        else
+        {
+            textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.ButtonHovered];
+        }
+        
+        ImGui.TextColored(textColor, display);
+
+        // underline
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddLine(cursorScreenPos + textSize * new Vector2(0f, 1f), cursorScreenPos + textSize, ImGui.ColorConvertFloat4ToU32(textColor));
+    }
 }

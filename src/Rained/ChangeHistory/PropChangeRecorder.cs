@@ -218,7 +218,7 @@ class PropChangeRecorder
 
         if (level.Props.Count != oldTransforms.Count)
         {
-            RainEd.Logger.Error("Props changed between BeginTransform and PushTransform of PropChangeRecorder");
+            Log.Error("Props changed between BeginTransform and PushTransform of PropChangeRecorder");
             return;
         }
 

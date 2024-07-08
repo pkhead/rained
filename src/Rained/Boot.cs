@@ -5,6 +5,8 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
+using Serilog;
+using Glib;
 
 namespace RainEd
 {
@@ -33,6 +35,8 @@ namespace RainEd
         // window scale for dpi
         public static float WindowScale { get; set; } = 1.0f;
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
+
+        private static Serilog.Core.Logger? _logger = null;
 
         private static void Main(string[] args)
         {
@@ -90,6 +94,37 @@ namespace RainEd
             
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;
+
+            // setup serilog
+            {
+                Directory.CreateDirectory(Path.Combine(AppDataPath, "logs"));
+
+                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
+                #if DEBUG
+                logToStdout = true;
+                #endif
+
+                var logLatest = Path.Combine(AppDataPath, "logs", "latest.log.txt");
+                if (File.Exists(logLatest))
+                    File.Delete(logLatest);
+
+                var loggerConfig = new LoggerConfiguration()
+                #if DEBUG
+                .MinimumLevel.Debug()
+                #endif
+                .WriteTo.File(
+                    Path.Combine(AppDataPath, "logs", "log.txt"),
+                    rollingInterval: RollingInterval.Hour,
+                    retainedFileCountLimit: 10
+                )
+                .WriteTo.File(logLatest, retainedFileCountLimit: 1);
+
+                if (logToStdout)
+                    loggerConfig = loggerConfig.WriteTo.Console();
+
+                _logger = loggerConfig.CreateLogger();
+                Serilog.Log.Logger = _logger;
+            }
             
             // create splash screen window to display while editor is loading
             if (!bootOptions.NoSplashScreen)
@@ -102,6 +137,15 @@ namespace RainEd
                     Title = "Loading Rained...",
                     VSync = false
                 };
+
+                winOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
+                winOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
+
+                if (bootOptions.GlDebug)
+                {
+                    winOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+                    winOptions.SetupGlErrorCallback = true;
+                }
 
                 splashScreenWindow = new Glib.Window(winOptions);
                 splashScreenWindow.Initialize();
@@ -133,13 +177,15 @@ namespace RainEd
                 windowOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
                 windowOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
 
-#if DEBUG
-                windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
-#endif
+                if (bootOptions.GlDebug)
+                {
+                    windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
+                    windowOptions.SetupGlErrorCallback = true;
+                }
 
                 // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
-
+                
                 window.ImGuiConfigure += () =>
                 {
                     WindowScale = window.ContentScale.Y;
@@ -170,17 +216,24 @@ namespace RainEd
                     Fonts.ReloadFonts();
                 };
 
+                window.Load += () =>
+                {
+                    if (bootOptions.GlDebug)
+                    {
+                        Log.Information("Initialize OpenGL debug context");
+                        window.RenderContext!.SetupErrorCallback((string msg, DebugSeverity severity) =>
+                        {
+                            if (severity != DebugSeverity.Notification)
+                            {
+                                Log.Error("GL error ({severity}): {Error}", severity, msg);
+                            }
+                        });
+                    }
+                };
+
                 window.Initialize();
                 float curWindowScale = WindowScale;
                 Raylib.InitWindow(window);
-
-#if DEBUG
-                window.RenderContext!.SetupErrorCallback((string msg) =>
-                {
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("GL error: {Error}", msg);
-                });
-#endif
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
@@ -279,7 +332,7 @@ namespace RainEd
                         Glib.GLResource.UnloadGCQueue();
                     }
 
-                    RainEd.Logger.Information("Shutting down Rained...");
+                    Log.Information("Shutting down Rained...");
                     app.Shutdown();
                 }
 #if EXCEPTION_CATCHING
@@ -291,7 +344,7 @@ namespace RainEd
                     }
                     catch (Exception saveError)
                     {
-                        RainEd.Logger.Error("Failed to make an emergency level save.\n{Message}", saveError);
+                        Log.Error("Failed to make an emergency level save.\n{Message}", saveError);
                     }
 
                     NotifyError(e);
@@ -310,6 +363,7 @@ namespace RainEd
             
             //Raylib.CloseWindow();
             splashScreenWindow?.Close();
+            _logger.Dispose();
         }
 
         public static void DisplayError(string windowTitle, string windowContents)
@@ -362,10 +416,7 @@ namespace RainEd
 
         private static void NotifyError(Exception e)
         {
-            if (RainEd.Instance is not null)
-            {
-                RainEd.Logger.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
-            }
+            Log.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
 
             Environment.ExitCode = 1;
 

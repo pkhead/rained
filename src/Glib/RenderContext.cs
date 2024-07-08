@@ -3,6 +3,7 @@ namespace Glib;
 using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 public enum BatchDrawMode
 {
@@ -35,6 +36,14 @@ public enum Feature
     CullFace,
     WireframeRendering
 }
+
+public enum DebugSeverity
+{
+    Notification,
+    Low,
+    Medium,
+    High
+};
 
 public class RenderContext : IDisposable
 {
@@ -102,9 +111,39 @@ public class RenderContext : IDisposable
         }
     }
 
-    internal unsafe RenderContext(IWindow window)
+    public readonly string GpuVendor;
+    public readonly string GpuRenderer;
+    private static bool debugOutputEnabled = false;
+
+    private static void DefaultErrorCallback(string msg, DebugSeverity severity)
+    {
+        Console.WriteLine($"GL message (Severity: {severity}): {msg}");
+    }
+
+    internal unsafe RenderContext(IWindow window, bool glDebug)
     {
         gl = GL.GetApi(window);
+
+        unsafe
+        {
+            byte* vendorStr = gl.GetString(GLEnum.Vendor);
+            byte* rendererStr = gl.GetString(GLEnum.Renderer);
+            GpuVendor = Marshal.PtrToStringAnsi((nint) vendorStr) ?? "[unknown]";
+            GpuRenderer = Marshal.PtrToStringAnsi((nint) rendererStr) ?? "[unknown]";
+        }
+
+        Console.WriteLine("GL_VENDOR: " + GpuVendor);
+        Console.WriteLine("GL_RENDERER: " + GpuRenderer);
+
+        if (glDebug)
+        {
+            Shader._debug = true;
+            glErrorCallback = DefaultErrorCallback;
+            debugOutputEnabled = true;
+            gl.Enable(EnableCap.DebugOutput);
+            gl.DebugMessageCallback(ErrorCallbackHandler, null);
+        }
+
         //gl.Enable(EnableCap.CullFace);
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -1088,7 +1127,7 @@ public class RenderContext : IDisposable
         return new BatchDrawHandle(mode, this);
     }
 
-    private Action<string>? glErrorCallback = null;
+    private Action<string, DebugSeverity>? glErrorCallback = null;
 
     private unsafe void ErrorCallbackHandler(
         GLEnum source,
@@ -1099,14 +1138,28 @@ public class RenderContext : IDisposable
         nint message,
         nint userParam)
     {
+        var sev = severity switch
+        {
+            GLEnum.DebugSeverityNotification => DebugSeverity.Notification,
+            GLEnum.DebugSeverityLow => DebugSeverity.Low,
+            GLEnum.DebugSeverityMedium => DebugSeverity.Medium,
+            GLEnum.DebugSeverityHigh => DebugSeverity.High,
+            _ => DebugSeverity.Notification
+        };
+
         var errorStr = System.Text.Encoding.UTF8.GetString((byte*) message, length);
-        glErrorCallback!(errorStr);
+        glErrorCallback!(errorStr, sev);
     }
 
-    public unsafe void SetupErrorCallback(Action<string> proc)
+    public unsafe void SetupErrorCallback(Action<string, DebugSeverity> proc)
     {
         glErrorCallback = proc;
-        gl.Enable(EnableCap.DebugOutput);
-        gl.DebugMessageCallback(ErrorCallbackHandler, null);
+
+        if (!debugOutputEnabled)
+        {
+            debugOutputEnabled = true;
+            gl.Enable(EnableCap.DebugOutput);
+            gl.DebugMessageCallback(ErrorCallbackHandler, null);
+        }
     }
 }
