@@ -639,7 +639,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
     /// <param name="geometry">If the autotiler should modify geometry.</param>
     public void Finish(int layer, bool force, bool geometry)
     {
-        RainEd.Logger.Information("Run autotile {Name}", autotile.Name);
+        Log.Information("Run autotile {Name}", autotile.Name);
             
         if (previewSegments.Count > 0)
         {

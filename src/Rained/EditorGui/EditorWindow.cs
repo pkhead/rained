@@ -334,9 +334,9 @@ static class EditorWindow
         {
             PromptUnsavedChanges(() =>
             {
-                RainEd.Logger.Information("Load default level...");
+                Log.Information("Load default level...");
                 RainEd.Instance.LoadDefaultLevel();
-                RainEd.Logger.Information("Done!");
+                Log.Information("Done!");
             });
         }
 

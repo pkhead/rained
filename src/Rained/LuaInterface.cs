@@ -1086,19 +1086,19 @@ static class LuaInterface
 
     public static void LogInfo(string msg)
     {
-        RainEd.Logger.Information("[LUA] " + msg);
+        Serilog.Log.Information("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Info, msg));
     }
 
     public static void LogWarning(string msg)
     {
-        RainEd.Logger.Warning("[LUA] " + msg);
+        Serilog.Log.Warning("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Warning, msg));
     }
 
     public static void LogError(string msg)
     {
-        RainEd.Logger.Error("[LUA] " + msg);
+        Serilog.Log.Error("[LUA] " + msg);
         Log.Add(new LogEntry(LogLevel.Error, msg));
     }
 

@@ -405,7 +405,7 @@ class StandardPathAutotile : Autotile
         // not found, append lines
         if (location == -1)
         {
-            RainEd.Logger.Information("Append autotile {Header}", header);
+            Log.Information("Append autotile {Header}", header);
 
             lines.Add("");
             lines.Add(header);
@@ -433,7 +433,7 @@ class StandardPathAutotile : Autotile
         // was found, overwrite lines
         else
         {
-            RainEd.Logger.Information("Overwrite autotile {Header}", header);
+            Log.Information("Overwrite autotile {Header}", header);
 
             //lines[location+1]  = "thickness=" + PathThickness.ToString(CultureInfo.InvariantCulture);
             //lines[location+2]  = "length=" + SegmentLength.ToString(CultureInfo.InvariantCulture);
@@ -475,7 +475,7 @@ class StandardPathAutotile : Autotile
         // delete if found
         if (location >= 0)
         {
-            RainEd.Logger.Information("Delete autotile {Header}", header);
+            Log.Information("Delete autotile {Header}", header);
 
             lines.RemoveRange(location, 18);
 
@@ -506,7 +506,7 @@ class StandardPathAutotile : Autotile
         if (location >= 0)
         {
             lines[location] = newCategory == "Misc" ? $"[{newName}]" : $"[{newName}:{newCategory}]";
-            RainEd.Logger.Information("Rename autotile {Old} to {New}", header, lines[location]);
+            Log.Information("Rename autotile {Old} to {New}", header, lines[location]);
         }
     }
 }

@@ -166,7 +166,7 @@ class TileDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.List header)
                 {
-                    RainEd.Logger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     return;
                 }
 
@@ -178,7 +178,7 @@ class TileDatabase
                 groupIndex++;
                 Categories.Add(curGroup);
                 
-                RainEd.Logger.Information("Register tile category {GroupName}", curGroup.Name);
+                Log.Information("Register tile category {GroupName}", curGroup.Name);
             }
             else
             {
@@ -238,7 +238,7 @@ class TileDatabase
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    RainEd.Logger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
+                    Log.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }

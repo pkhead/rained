@@ -283,7 +283,7 @@ static class ImGuiExt
         {
             if (!RainEd.Platform.OpenURL(link))
             {
-                RainEd.RainEd.Logger.Error("Could not open URL on user platform.");
+                RainEd.Log.Error("Could not open URL on user platform.");
             }
         }
 

@@ -318,7 +318,7 @@ partial class Level
         }
         else
         {
-            RainEd.Logger.Information("Removed detached tile body");
+            Log.Information("Removed detached tile body");
 
             cell.TileLayer = -1;
             cell.TileRootX = -1;

@@ -26,8 +26,6 @@ sealed class RainEd
     public static RainEd Instance = null!;
 
     public bool Running = true; // if false, Boot.cs will close the window
-    private readonly Logger _logger;
-    public static Logger Logger { get => Instance._logger; }
 
     public static Glib.Window Window => Boot.Window;
     public static Glib.RenderContext RenderContext => Boot.Window.RenderContext!;
@@ -100,28 +98,9 @@ sealed class RainEd
         
         Instance = this;
 
-        // create serilog logger
-        Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
-
-        bool logToStdout = Boot.Options.ConsoleAttached || Boot.Options.LogToStdout;
-#if DEBUG
-        logToStdout = true;
-#endif
-
-        var loggerConfig = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#endif
-            .WriteTo.File(Path.Combine(Boot.AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Day);
-
-        if (logToStdout)
-            loggerConfig = loggerConfig.WriteTo.Console();
-
-        _logger = loggerConfig.CreateLogger();
-
-        Logger.Information("========================");
-        Logger.Information("Rained {Version} started", Version);
-        Logger.Information("App data located in {AppDataPath}", Boot.AppDataPath);
+        Log.Information("========================");
+        Log.Information("Rained {Version} started", Version);
+        Log.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
         // load user preferences
         KeyShortcuts.InitShortcuts();
@@ -136,7 +115,7 @@ sealed class RainEd
             }
             catch (Exception e)
             {
-                Logger.Error("Failed to load user preferences!\n{ErrorMessage}", e);
+                Log.Error("Failed to load user preferences!\n{ErrorMessage}", e);
                 Preferences = new UserPreferences();
                 EditorWindow.ShowNotification("Failed to load preferences");
             }
@@ -195,11 +174,11 @@ sealed class RainEd
             AssetGraphics = new AssetGraphicsProvider();
             
             initPhase = "materials";
-            Logger.Information("Initializing materials database...");
+            Log.Information("Initializing materials database...");
             MaterialDatabase = new Tiles.MaterialDatabase();
 
             initPhase = "tiles";
-            Logger.Information("Initializing tile database...");
+            Log.Information("Initializing tile database...");
             TileDatabase = new Tiles.TileDatabase();
 
             // init autotile catalog
@@ -222,24 +201,24 @@ sealed class RainEd
                     displayMsg += "\n" + stackTrace;
                 }
 
-                _logger.Error(displayMsg);
+                Log.Error(displayMsg);
                 Boot.DisplayError("Could not start", displayMsg);
                 throw new RainEdStartupException();
             }
             
             initPhase = "effects";
-            Logger.Information("Initializing effects database...");
+            Log.Information("Initializing effects database...");
             EffectsDatabase = new EffectsDatabase();
 
             initPhase = "light brushes";
-            Logger.Information("Initializing light brush database...");
+            Log.Information("Initializing light brush database...");
             LightBrushDatabase = new Light.LightBrushDatabase();
 
             initPhase = "props";
-            Logger.Information("Initializing prop database...");
+            Log.Information("Initializing prop database...");
             PropDatabase = new Props.PropDatabase(TileDatabase);
 
-            Logger.Information("----- ASSET INIT DONE! -----\n\n\n");
+            Log.Information("----- ASSET INIT DONE! -----");
         }
         #if !DEBUG
         catch (Exception e)
@@ -258,15 +237,15 @@ sealed class RainEd
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
-        Logger.Information("Initializing change history...");
+        Log.Information("Initializing change history...");
         changeHistory = new ChangeHistory.ChangeHistory();
 
-        Logger.Information("Creating level view...");
+        Log.Information("Creating level view...");
         levelView = new LevelView();
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
-            Logger.Information("Initializing Zygote runtime...");
+            Log.Information("Initializing Zygote runtime...");
             Drizzle.DrizzleRender.InitStaticRuntime();
         }
 
@@ -284,7 +263,7 @@ sealed class RainEd
         // level boot load
         if (levelPath.Length > 0)
         {
-            Logger.Information("Boot load " + levelPath);
+            Log.Information("Boot load " + levelPath);
             LoadLevel(levelPath);
         }
         else
@@ -308,8 +287,8 @@ sealed class RainEd
 
             if (LatestVersionInfo is not null)
             {
-                Logger.Information("Version check successful!");
-                Logger.Information(LatestVersionInfo.VersionName);
+                Log.Information("Version check successful!");
+                Log.Information(LatestVersionInfo.VersionName);
 
                 if (LatestVersionInfo.VersionName != Version)
                 {
@@ -318,16 +297,16 @@ sealed class RainEd
             }
             else
             {
-                Logger.Information("Version check was disabled");
+                Log.Information("Version check was disabled");
             }
         }
         else if (versionCheckTask.IsFaulted)
         {
-            Logger.Error("Version check faulted...");
-            Logger.Error(versionCheckTask.Exception.ToString());
+            Log.Error("Version check faulted...");
+            Log.Error(versionCheckTask.Exception.ToString());
         }
 
-        Logger.Information("Boot successful!");
+        Log.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
     }
 
@@ -365,7 +344,7 @@ sealed class RainEd
 
         if (!success)
         {
-            Logger.Error("Could not show path '{Path}'", path);
+            Log.Error("Could not show path '{Path}'", path);
             EditorWindow.ShowNotification("Could not open the system file browser");
         }
     }
@@ -386,7 +365,7 @@ sealed class RainEd
     {
         if (!string.IsNullOrEmpty(path))
         {
-            Logger.Information("Loading level {Path}...", path);
+            Log.Information("Loading level {Path}...", path);
 
             levelView.UnloadView();
 
@@ -402,7 +381,7 @@ sealed class RainEd
                     currentFilePath = path;
                     UpdateTitle();
 
-                    Logger.Information("Done!");
+                    Log.Information("Done!");
                 }
                 else
                 {
@@ -417,7 +396,7 @@ sealed class RainEd
             }
             catch (Exception e)
             {
-                Logger.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
+                Log.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
                 EditorWindow.ShowNotification("Error while loading level");
             }
 
@@ -435,7 +414,7 @@ sealed class RainEd
     /// <returns>True if the save was successful, false if not.</returns>
     public bool SaveLevel(string path)
     {
-        Logger.Information("Saving level to {Path}...", path);
+        Log.Information("Saving level to {Path}...", path);
 
         levelView.FlushDirty();
 
@@ -447,7 +426,7 @@ sealed class RainEd
             currentFilePath = path;
             UpdateTitle();
             changeHistory.MarkUpToDate();
-            Logger.Information("Done!");
+            Log.Information("Done!");
             EditorWindow.ShowNotification("Saved!");
             AddToRecentFiles(currentFilePath);
 
@@ -467,7 +446,7 @@ sealed class RainEd
         }
         catch (Exception e)
         {
-            Logger.Error("Could not write level file:\n{ErrorMessage}", e);
+            Log.Error("Could not write level file:\n{ErrorMessage}", e);
             EditorWindow.ShowNotification("Could not write level file");
         }
 
@@ -526,7 +505,7 @@ sealed class RainEd
             {
                 if (!Platform.TrashFile(file))
                 {
-                    Logger.Warning("TrashFile is not supported, resorted to permanent deletion.");
+                    Log.Warning("TrashFile is not supported, resorted to permanent deletion.");
                     File.Delete(file);
                 }
             }
@@ -550,7 +529,7 @@ sealed class RainEd
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
         if (newWidth == level.Width && newHeight == level.Height) return;
-        Logger.Information("Resizing level...");
+        Log.Information("Resizing level...");
 
         levelView.FlushDirty();
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
@@ -559,7 +538,7 @@ sealed class RainEd
         levelView.Renderer.ReloadLevel();
         levelView.ViewOffset += dstOrigin * Level.TileSize;
 
-        Logger.Information("Done!");
+        Log.Information("Done!");
     }
 
     private void ReloadLevel()

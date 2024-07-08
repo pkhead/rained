@@ -107,7 +107,7 @@ record CategoryList
 
         if (!File.Exists(path))
         {
-            RainEd.Logger.Error("{Path} not found!", path);
+            Log.Error("{Path} not found!", path);
             Lines = [];
             return;
         }
@@ -279,7 +279,7 @@ record CategoryList
             // (LOOKING AT YOU, "INSIDE HUGE PIPE HORIZONTAL" DEFINED IN BOTH MISC AND LB INTAKE SYSTEM.)
             bool? autoOverwrite = null;
 
-            RainEd.Logger.Information("Merge {Path}", otherPath);
+            Log.Information("Merge {Path}", otherPath);
             var parentDir = Path.Combine(FilePath, "..");
             var otherDir = Path.Combine(otherPath, "..");
 
@@ -332,7 +332,7 @@ record CategoryList
                         }
                         else
                         {
-                            RainEd.Logger.Information("Ignore malformed category header at '{Line}'", line);
+                            Log.Information("Ignore malformed category header at '{Line}'", line);
                         }
                     }
                     else
@@ -400,7 +400,7 @@ record CategoryList
                             // (IM TALKING ABOUT YOU INSIDE HUGE PIPE HORIZINTAL WHICH IS IN BOTH MISC AND LB INTAKE SYSTEM)
                             if (initItems.Count > 1 || initItems[0].Category != targetCategory)
                             {
-                                RainEd.Logger.Information("Merge conflict with asset '{Name}'", init.Name);
+                                Log.Information("Merge conflict with asset '{Name}'", init.Name);
                                 
                                 // there will be an extra checkbox which will insert the new init
                                 // into a new line
@@ -418,14 +418,14 @@ record CategoryList
                                 {
                                     if (prompt.CheckboxValues[i])
                                     {
-                                        RainEd.Logger.Information("Overwrite def in '{Category}'", initItems[0].Category);
+                                        Log.Information("Overwrite def in '{Category}'", initItems[0].Category);
                                         ReplaceInit(initItems[i], init);
                                     }
                                 }
 
                                 if (prompt.CheckboxValues[^1])
                                 {
-                                    RainEd.Logger.Information("Add to '{Category}'", targetCategory);
+                                    Log.Information("Add to '{Category}'", targetCategory);
 
                                     doInsert = true;
                                     expectGraphics = false;
@@ -475,14 +475,14 @@ record CategoryList
                                 if (doOverwrite)
                                 {
                                     // go ahead and overwrite
-                                    RainEd.Logger.Information("Overwrite tile '{TileName}'", init.Name);
+                                    Log.Information("Overwrite tile '{TileName}'", init.Name);
                                     ReplaceInit(initItems[0], init);
                                     
                                     graphicsManager.CopyGraphics(init, otherDir, parentDir, false);
                                 }
                                 else
                                 {
-                                    RainEd.Logger.Information("Ignore tile '{TileName}'", init.Name);
+                                    Log.Information("Ignore tile '{TileName}'", init.Name);
                                 }
                             }
                         }
@@ -541,13 +541,13 @@ record CategoryList
                 }
             }
 
-            RainEd.Logger.Information("Writing merge result to {Path}...", FilePath);
+            Log.Information("Writing merge result to {Path}...", FilePath);
             WriteToFile();
-            RainEd.Logger.Information("Merge successful!");
+            Log.Information("Merge successful!");
         }
         catch (Exception e)
         {
-            RainEd.Logger.Error("Error while merging:\n{Error}", e);
+            Log.Error("Error while merging:\n{Error}", e);
             throw;
         }
     }
@@ -572,7 +572,7 @@ class AssetManager
             if (expect || File.Exists(pngPath))
             {
                 // copy graphics
-                RainEd.Logger.Information("Copy {ImageName}", pngName);
+                Log.Information("Copy {ImageName}", pngName);
                 
                 var graphicsData = File.ReadAllBytes(pngPath);
                 File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
@@ -585,7 +585,7 @@ class AssetManager
 
             if (File.Exists(filePath))
             {
-                RainEd.Logger.Information("Delete {FilePath}", filePath);
+                Log.Information("Delete {FilePath}", filePath);
                 File.Delete(filePath);
             }
         }
@@ -611,7 +611,7 @@ class AssetManager
                 if (File.Exists(pngPath))
                 {
                     // copy graphics
-                    RainEd.Logger.Information("Copy {ImageName}", pngName);
+                    Log.Information("Copy {ImageName}", pngName);
                     
                     var graphicsData = File.ReadAllBytes(pngPath);
                     File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
@@ -627,7 +627,7 @@ class AssetManager
                 
                 if (File.Exists(filePath))
                 {
-                    RainEd.Logger.Information("Delete {FilePath}", filePath);
+                    Log.Information("Delete {FilePath}", filePath);
                     File.Delete(filePath);
                 }
             }

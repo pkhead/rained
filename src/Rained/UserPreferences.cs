@@ -94,8 +94,7 @@ class UserPreferences
                     break;
 
                 default:
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("Invalid CameraBorderMode '{Value}'", value);
+                    Log.Error("Invalid CameraBorderMode '{Value}'", value);
                     
                     CameraBorderMode = CameraBorderModeOption.Both;
                     break;
@@ -139,8 +138,7 @@ class UserPreferences
                     break;
                 
                 default:
-                    if (RainEd.Instance is not null)
-                        RainEd.Logger.Error("Invalid CameraBorderMode '{value}'", value);
+                    Log.Error("Invalid CameraBorderMode '{value}'", value);
                     
                     AutotileMouseMode = AutotileMouseModeOptions.Hold;
                     break;
@@ -311,7 +309,7 @@ class UserPreferences
         }
         catch (Exception e)
         {
-            RainEd.Logger.Error("Could not apply theme!\n{Error}", e);
+            Log.Error("Could not apply theme!\n{Error}", e);
             EditorWindow.ShowNotification("Could not apply theme");
         }
     }

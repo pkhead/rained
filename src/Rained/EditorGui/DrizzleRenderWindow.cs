@@ -93,7 +93,7 @@ class DrizzleRenderWindow : IDisposable
         }
         catch (Exception e)
         {
-            RainEd.Logger.Error("Error occured when initializing render:\n{ErrorMessage}", e);
+            Log.Error("Error occured when initializing render:\n{ErrorMessage}", e);
         }
 
         layerPreviewShader = RlManaged.Shader.LoadFromMemory(null, LayerPreviewShaderSource);
@@ -293,7 +293,7 @@ class DrizzleRenderWindow : IDisposable
                     if (previewLayers is null)
                         throw new NullReferenceException("previewLayers is null");
 
-                    RainEd.Logger.Information("update preview");
+                    Log.Information("update preview");
                     var stopwatch = new Stopwatch();
                     stopwatch.Start();
 
@@ -302,7 +302,7 @@ class DrizzleRenderWindow : IDisposable
                     drizzleRenderer.UpdatePreviewImages();
 
                     stopwatch.Stop();
-                    RainEd.Logger.Debug("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    Log.Debug("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                     stopwatch.Restart();
 
                     // update preview images
@@ -316,7 +316,7 @@ class DrizzleRenderWindow : IDisposable
                     UpdateComposite();
 
                     stopwatch.Stop();
-                    RainEd.Logger.Debug("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                    Log.Debug("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 int cWidth = previewComposite.Texture.Width;

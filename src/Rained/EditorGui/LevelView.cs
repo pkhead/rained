@@ -226,7 +226,7 @@ class LevelView
         {
             if (queuedEditMode != selectedMode)
             {
-                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[queuedEditMode].Name);
+                Log.Information("Switch to {Editor} editor", editorModes[queuedEditMode].Name);
                 editorModes[selectedMode].Unload();
                 selectedMode = queuedEditMode;
                 editorModes[selectedMode].Load();
@@ -304,7 +304,7 @@ class LevelView
             // change edit mode if requested
             if (newEditMode != selectedMode)
             {
-                RainEd.Logger.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
+                Log.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
                 editorModes[selectedMode].Unload();
                 selectedMode = newEditMode;
                 editorModes[selectedMode].Load();

@@ -156,7 +156,7 @@ static class GuideViewerWindow
                     {
                         if (!Platform.OpenURL(link))
                         {
-                            RainEd.Logger.Error("Could not open URL on platform");
+                            Log.Error("Could not open URL on platform");
                         }
                     }
                 }

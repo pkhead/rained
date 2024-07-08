@@ -5,6 +5,7 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
+using Serilog;
 using Glib;
 
 namespace RainEd
@@ -91,6 +92,28 @@ namespace RainEd
             
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;
+
+            // setup serilog
+            {
+                Directory.CreateDirectory(Path.Combine(AppDataPath, "logs"));
+
+                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
+                #if DEBUG
+                logToStdout = true;
+                #endif
+
+                var loggerConfig = new LoggerConfiguration()
+                #if DEBUG
+                .MinimumLevel.Debug()
+                #endif
+                .WriteTo.File(Path.Combine(AppDataPath, "logs", "log.txt"), rollingInterval: RollingInterval.Hour);
+
+                if (logToStdout)
+                    loggerConfig = loggerConfig.WriteTo.Console();
+
+                var logger = loggerConfig.CreateLogger();
+                Serilog.Log.Logger = logger;
+            }
             
             // create splash screen window to display while editor is loading
             if (!bootOptions.NoSplashScreen)
@@ -185,17 +208,12 @@ namespace RainEd
                 {
                     if (bootOptions.GlDebug)
                     {
-                        Console.WriteLine("Initialize OpenGL debug context");
+                        Log.Information("Initialize OpenGL debug context");
                         window.RenderContext!.SetupErrorCallback((string msg, DebugSeverity severity) =>
                         {
                             if (severity != DebugSeverity.Notification)
                             {
-                                if (RainEd.Instance is not null)
-                                    RainEd.Logger.Error("GL error ({severity}): {Error}", severity, msg);
-                                else
-                                {
-                                    Console.WriteLine($"GL error ({severity}): {msg}");
-                                }
+                                Log.Error("GL error ({severity}): {Error}", severity, msg);
                             }
                         });
                     }
@@ -302,7 +320,7 @@ namespace RainEd
                         Glib.GLResource.UnloadGCQueue();
                     }
 
-                    RainEd.Logger.Information("Shutting down Rained...");
+                    Log.Information("Shutting down Rained...");
                     app.Shutdown();
                 }
 #if EXCEPTION_CATCHING
@@ -314,7 +332,7 @@ namespace RainEd
                     }
                     catch (Exception saveError)
                     {
-                        RainEd.Logger.Error("Failed to make an emergency level save.\n{Message}", saveError);
+                        Log.Error("Failed to make an emergency level save.\n{Message}", saveError);
                     }
 
                     NotifyError(e);
@@ -385,10 +403,7 @@ namespace RainEd
 
         private static void NotifyError(Exception e)
         {
-            if (RainEd.Instance is not null)
-            {
-                RainEd.Logger.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
-            }
+            Log.Fatal("FATAL EXCEPTION.\n{ErrorMessage}", e);
 
             Environment.ExitCode = 1;
 

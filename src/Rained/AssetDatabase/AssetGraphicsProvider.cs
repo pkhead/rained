@@ -60,7 +60,7 @@ class AssetGraphicsProvider
         }
         else
         {
-            RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
+            Log.Warning($"Image {texturePath} is invalid or missing!");
         }
 
         propTexCache.Add(assetName, texture);
@@ -109,7 +109,7 @@ class AssetGraphicsProvider
         }
         else
         {
-            RainEd.Logger.Warning($"Image {texturePath} is invalid or missing!");
+            Log.Warning($"Image {texturePath} is invalid or missing!");
         }
 
         tileTexCache.Add(assetName, texture);
@@ -191,7 +191,7 @@ class AssetGraphicsProvider
         else
         {
             // tile graphics could not be loaded
-            RainEd.Logger.Warning($"Preview image {graphicsPath} is invalid or missing!");
+            Log.Warning($"Preview image {graphicsPath} is invalid or missing!");
             outTexture = null;
         }
 

@@ -80,7 +80,7 @@ class LightMap : IDisposable
 
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
-            RainEd.Logger.Information("Cropped light map. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
+            Log.Information("Cropped light map. To fix, add a black pixel to the top-left and bottom-right pixels of the image.");
             EditorWindow.ShowNotification("Cropped light map");
         }
 

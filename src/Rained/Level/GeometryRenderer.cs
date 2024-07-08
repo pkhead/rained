@@ -336,7 +336,7 @@ class EditorGeometryRenderer
     public void ReloadGeometryMesh()
     {
         if (dirtyChunks.Count == 0) return;
-        RainEd.Logger.Debug("Remesh geometry chunks");
+        Log.Debug("Remesh geometry chunks");
 
         foreach (var chunkPos in dirtyChunks)
         {

@@ -107,7 +107,7 @@ class AutotileCatalog
                 !tileDict.TryGetValue("capDown", out string? capDown)
             )
             {
-                RainEd.Logger.Error("Standard autotile {AutotileName} does not have a complete definition!", autotileName);
+                Log.Error("Standard autotile {AutotileName} does not have a complete definition!", autotileName);
             }
             else
             {
