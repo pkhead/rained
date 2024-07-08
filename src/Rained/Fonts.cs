@@ -43,13 +43,13 @@ static class Fonts
             loadedFontList.Add(font);
         }
 
-        for (int i = 0; i < io.Fonts.ConfigData.Size; i++)
+        /*for (int i = 0; i < io.Fonts.ConfigData.Size; i++)
         {
             io.Fonts.ConfigData[i].OversampleH = 2;
             io.Fonts.ConfigData[i].OversampleV = 2;
             io.Fonts.ConfigData[i].PixelSnapH = true;
             io.Fonts.ConfigData[i].RasterizerDensity = Boot.WindowScale;
-        }
+        }*/
 
         loadedFonts = [..loadedFontList];
 

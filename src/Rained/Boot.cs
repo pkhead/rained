@@ -197,7 +197,13 @@ namespace RainEd
                     io.KeyRepeatDelay = 0.5f;
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-                    io.Fonts.FontBuilderFlags = (uint) (ImGuiFreeTypeBuilderFlags.MonoHinting);
+
+                    unsafe
+                    {
+                        io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
+                    }
+
+                    //io.Fonts.FontBuilderFlags = (uint) (ImGuiFreeTypeBuilderFlags.MonoHinting);
 
                     // this is the easiest way i figured to access preferences.json before
                     // RainEd initialization, but it does result in preferences.json being
