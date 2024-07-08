@@ -11,7 +11,7 @@ Don't hestiate to report any bugs, complaints, and suggestions by creating an is
 **NOTE**: On Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 
 ## Important!!
-Currently, v2.0.0 and any version after that may be prone to just not launch depending on your graphics card. I am trying to fix this, but it is difficult considering the fact that it works perfectly fine on mine. If Rained doesn't launch for you, please send a screenshot to me of the error window (if it appears) as well as the contents of `logs/latest.log.txt`, and also the console output of `Rained.Console.exe --gl-debug` as well, if you know command prompt basics.
+Currently, v2.0.0 and any version after that may be prone to just not launch depending on your graphics card/OpenGL driver. I am trying to fix this, but it is difficult considering the fact that it works perfectly fine on mine. If Rained doesn't launch for you, please send a screenshot to me of the error window (if it appears) as well as the contents of the "latest.log.txt" file in the logs folder, and also the console output of `Rained.Console.exe --gl-debug` as well, if you know command prompt basics.
 
 In the meanwhile, if it doesn't work for you, you can use b1.5.3 until I fix my graphics code.
 

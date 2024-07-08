@@ -217,7 +217,7 @@ sealed class RainEd
         #if !DEBUG
         catch (Exception e)
         {
-            _logger.Error(e.ToString());
+            Log.Error(e.ToString());
 
             if (e is RainEdStartupException)
                 throw;
