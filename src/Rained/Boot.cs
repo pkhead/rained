@@ -198,9 +198,16 @@ namespace RainEd
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
-                    unsafe
+                    try
                     {
-                        io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
+                        unsafe
+                        {
+                            io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("FreeType setup failed: {Exception}", e);
                     }
 
                     // this is the easiest way i figured to access preferences.json before
