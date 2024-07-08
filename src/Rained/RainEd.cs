@@ -1,11 +1,5 @@
 using Raylib_cs;
-
-using System.Numerics;
 using ImGuiNET;
-using Serilog;
-using System.Runtime.InteropServices;
-using Serilog.Core;
-using System.Diagnostics;
 using NLua.Exceptions;
 using RainEd.Autotiles;
 

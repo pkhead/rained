@@ -177,8 +177,6 @@ class TileDatabase
 
                 groupIndex++;
                 Categories.Add(curGroup);
-                
-                Log.Information("Register tile category {GroupName}", curGroup.Name);
             }
             else
             {

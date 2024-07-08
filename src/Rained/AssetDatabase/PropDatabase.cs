@@ -571,7 +571,6 @@ class PropDatabase
 
                 currentCategory = new PropCategory(catIndex++, (string) header.values[0], (Lingo.Color) header.values[1]);
                 Categories.Add(currentCategory);
-                Log.Information("Register prop category {PropCategory}", currentCategory.Name);
             }
 
             // read prop
@@ -605,7 +604,6 @@ class PropDatabase
             IsTileCategory = true
         };
         Categories.Add(currentCategory);
-        Log.Information("Register prop category Tiles as props 1");
 
         int tileIndex = 0;
         foreach (var category in tileDatabase.Categories)
@@ -631,13 +629,11 @@ class PropDatabase
                         IsTileCategory = true
                     };
                     Categories.Add(currentCategory);
-                    Log.Information("Register prop category {CategoryName}", currentCategory.Name);
                 }
             }
 
             if (tilePropCategory.Props.Count > 0)
             {
-                Log.Information("Register tile prop category {CategoryName}", tilePropCategory.Name);
                 TileCategories.Add(tilePropCategory);
             }
         }
