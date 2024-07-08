@@ -123,15 +123,15 @@ public class Shader : GLResource
 
             Console.WriteLine($"UNIFORMS: {uniformCount}, MAX UNIFORM NAME LENGTH: {maxNameLen}");
 
-            uint j = 0;
             for (uint i = 0; i < uniformCount; i++)
             {
                 gl.GetActiveUniform(shaderProgram, i, out uint len, out int size, out UniformType type, nameArr);
+                var uniformLoc = (uint) gl.GetUniformLocation(shaderProgram, nameArr);
                 
                 if (_debug)
                 {
                     string name = System.Text.Encoding.UTF8.GetString(nameArr[..(int)len]);
-                    Console.WriteLine($"{j}: name: {name}, type: {type}, size: {size}");
+                    Console.WriteLine($"index {i}: loc: {uniformLoc}, name: {name}, type: {type}, size: {size}");
                 }
 
                 switch (type)
@@ -144,11 +144,9 @@ public class Shader : GLResource
                             Console.WriteLine($"   TEXTURE UNIT = {textureLocs.Count}");
                         }
 
-                        textureLocs.Add(j);
+                        textureLocs.Add(uniformLoc);
                         break;
                 }
-
-                j += (uint)size;
             }
 
             if (_debug)
