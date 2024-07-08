@@ -6,6 +6,16 @@ Another Rain World level editor.
 Please note that the "main" branch is ahead of the latest release. If you want to access the repository
 at the time of a certain release, use the Git tags system.
 
+Don't hestiate to report any bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in either the main Rain World Discord server or one of both Rain World modding servers. I also accept DMs, but as I don't get pinged for DM requests, it would take a while for me to respond.
+
+**NOTE**: On Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+
+## Important!!
+Currently, v2.0.0 and any version after that may be prone to just not launch depending on your graphics card. I am trying to fix this, but it is difficult considering the fact that it works perfectly fine on mine. If Rained doesn't launch for you, please send a screenshot to me of the error window (if it appears) as well as the contents of `logs/latest.log.txt`, and also the console output of `Rained.Console.exe --gl-debug` as well, if you know command prompt basics.
+
+In the meanwhile, if it doesn't work for you, you can use b1.5.3 until I fix my graphics code.
+
+
 ## Features
 - Ease of use (hopefully)
 - Undo/redo everything
@@ -17,8 +27,6 @@ at the time of a certain release, use the Git tags system.
 Read [this document](dist/README.md) for information on how to use Rained.
 
 ## Building
-**NOTE**: On Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
-
 ### .NET CLI
 Clone with Git:
 ```bash
