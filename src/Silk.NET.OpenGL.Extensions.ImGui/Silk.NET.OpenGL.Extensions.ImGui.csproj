@@ -29,5 +29,9 @@
     
     <ItemGroup>
         <Content Include="../ImGui.NET/deps/cimgui/win-x64/*" DestinationFolder="runtimes/win-x64/native" CopyToOutputDirectory="PreserveNewest" />
-      </ItemGroup>
+        <Content Include="../ImGui.NET/deps/cimgui/win-x86/*" DestinationFolder="runtimes/win-x86/native" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/win-arm64/*" DestinationFolder="runtimes/win-arm64/native" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/osx/*" DestinationFolder="runtimes/osx/native" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../ImGui.NET/deps/cimgui/linux-x64/*" DestinationFolder="runtimes/linux-x64/native" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>
