@@ -63,6 +63,13 @@ public class Texture : GLResource
         texture = gl.GenTexture();
         gl.BindTexture(GLEnum.Texture2D, texture);
 
+        int defaultFilter = (int)GLEnum.Linear;
+        int defaultWrapMode = (int)GLEnum.ClampToEdge;
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
+
         unsafe
         {
             gl.TexImage2D(
@@ -77,13 +84,6 @@ public class Texture : GLResource
                 pixels: null
             );
         }
-
-        int defaultFilter = (int)GLEnum.Linear;
-        int defaultWrapMode = (int)GLEnum.ClampToEdge;
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
     }
 
     internal Texture(GL gl, int width, int height, PixelFormat format) :
@@ -116,6 +116,13 @@ public class Texture : GLResource
         texture = gl.GenTexture();
         gl.BindTexture(GLEnum.Texture2D, texture);
 
+        int defaultFilter = (int)GLEnum.Linear;
+        int defaultWrapMode = (int)GLEnum.ClampToEdge;
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
+        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
+
         unsafe
         {
             // just use NativeMemory here i guess, it is a very large array and i know the
@@ -144,13 +151,6 @@ public class Texture : GLResource
         }
 
         if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
-
-        int defaultFilter = (int)GLEnum.Linear;
-        int defaultWrapMode = (int)GLEnum.ClampToEdge;
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
     }
 
     protected override void FreeResources(bool disposing)
