@@ -138,10 +138,7 @@ public class RenderContext : IDisposable
         if (glDebug)
         {
             Shader._debug = true;
-            glErrorCallback = DefaultErrorCallback;
-            debugOutputEnabled = true;
-            gl.Enable(EnableCap.DebugOutput);
-            gl.DebugMessageCallback(ErrorCallbackHandler, null);
+            SetupErrorCallback(DefaultErrorCallback);
         }
 
         //gl.Enable(EnableCap.CullFace);
@@ -1153,6 +1150,13 @@ public class RenderContext : IDisposable
 
     public unsafe void SetupErrorCallback(Action<string, DebugSeverity> proc)
     {
+        // need to query for extension as we are using opengl 3.3
+        if (!gl.IsExtensionPresent("GL_KHR_debug"))
+        {
+            proc("Unable to setup error callback: GL_KHR_debug extension is not present!", DebugSeverity.High);
+            return;
+        }
+
         glErrorCallback = proc;
 
         if (!debugOutputEnabled)

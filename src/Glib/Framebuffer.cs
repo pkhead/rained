@@ -152,7 +152,7 @@ public class Framebuffer : GLResource
                 
                 case AttachmentPoint.Depth:
                     attachEnum = GLEnum.DepthAttachment;
-                    format = GLEnum.DepthComponent24;
+                    format = GLEnum.DepthComponent;
                     break;
 
                 case AttachmentPoint.Stencil:
