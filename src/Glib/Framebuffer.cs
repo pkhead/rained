@@ -152,7 +152,7 @@ public class Framebuffer : GLResource
                 
                 case AttachmentPoint.Depth:
                     attachEnum = GLEnum.DepthAttachment;
-                    format = GLEnum.DepthComponent;
+                    format = GLEnum.DepthComponent24;
                     break;
 
                 case AttachmentPoint.Stencil:
@@ -187,9 +187,10 @@ public class Framebuffer : GLResource
             }
         }
 
-        if (gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != GLEnum.FramebufferComplete)
+        var status = gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+        if (status != GLEnum.FramebufferComplete)
         {
-            throw new Exception("Framebuffer is not complete!");
+            throw new Exception("Framebuffer is not complete! Status: " + status);
         }
 
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
