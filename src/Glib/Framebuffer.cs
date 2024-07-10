@@ -181,6 +181,7 @@ public class Framebuffer : GLResource
                 var rbo = gl.GenRenderbuffer();
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, rbo);
                 gl.RenderbufferStorage(GLEnum.Renderbuffer, format, (uint)Width, (uint)Height);
+                gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachEnum, GLEnum.Renderbuffer, rbo);
                 renderBuffers[rbIndex++] = rbo;
             }
