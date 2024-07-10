@@ -139,7 +139,6 @@ static class GuideViewerWindow
                             ImGui.PopID();
                         }
                     }
-                    ImGui.PopID();
 
                     // draw words after the link buttons
                     foreach (var w in words)
