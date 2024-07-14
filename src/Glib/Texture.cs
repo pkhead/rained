@@ -1,5 +1,4 @@
-using System.Runtime.InteropServices;
-using Silk.NET.OpenGL;
+using Bgfx_cs;
 
 namespace Glib;
 
@@ -7,190 +6,97 @@ public enum TextureFilterMode
 {
     Nearest,
     Linear,
-    NearestMipmapNearest,
-    LinearMipmapNearest,
-    NearestMipmapLinear,
-    LinearMipmapLinear
 }
 
 public enum TextureWrapMode
 {
-    ClampToEdge,
-    ClampToBorder,
-    MirroredRepeat,
+    Clamp,
     Repeat
 }
 
-public class Texture : GLResource
+public class Texture : BgfxResource
 {
-    private uint texture;
-    private readonly GL gl;
+    private Bgfx.TextureHandle _handle;
 
     public readonly int Width;
     public readonly int Height;
+    public readonly Glib.PixelFormat PixelFormat;
 
-    public uint TextureHandle { get => texture; }
+    internal Bgfx.TextureHandle Handle => _handle;
 
-    private static GLEnum GLWrapMode(TextureWrapMode v)
-        => v switch
+    public TextureFilterMode MinFilterMode = TextureFilterMode.Linear;
+    public TextureFilterMode MagFilterMode = TextureFilterMode.Linear;
+    public TextureFilterMode FilterMode {
+        set
         {
-            TextureWrapMode.ClampToEdge => GLEnum.ClampToEdge,
-            TextureWrapMode.ClampToBorder => GLEnum.ClampToBorder,
-            TextureWrapMode.MirroredRepeat => GLEnum.MirroredRepeat,
-            TextureWrapMode.Repeat => GLEnum.Repeat,
-            _ => throw new ArgumentOutOfRangeException(nameof(v))
-        };
-
-    private static GLEnum GLFilterMode(TextureFilterMode v)
-        => v switch
-        {
-            TextureFilterMode.Nearest => GLEnum.Nearest,
-            TextureFilterMode.Linear => GLEnum.Linear,
-            TextureFilterMode.NearestMipmapNearest => GLEnum.NearestMipmapNearest,
-            TextureFilterMode.LinearMipmapNearest => GLEnum.LinearMipmapNearest,
-            TextureFilterMode.NearestMipmapLinear => GLEnum.NearestMipmapLinear,
-            TextureFilterMode.LinearMipmapLinear => GLEnum.LinearMipmapLinear,
-            _ => throw new ArgumentOutOfRangeException(nameof(v))
-        };
-    
-    internal Texture(GL gl, int width, int height, GLEnum format)
-    {
-        this.gl = gl;
-
-        Width = width;
-        Height = height;
-
-        texture = gl.GenTexture();
-        gl.BindTexture(GLEnum.Texture2D, texture);
-
-        int defaultFilter = (int)GLEnum.Linear;
-        int defaultWrapMode = (int)GLEnum.ClampToEdge;
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
-
-        unsafe
-        {
-            gl.TexImage2D(
-                target: GLEnum.Texture2D,
-                level: 0,
-                internalformat: (int)format,
-                width: (uint)width,
-                height: (uint)height,
-                border: 0,
-                format: format,
-                type: GLEnum.UnsignedByte,
-                pixels: null
-            );
+            MinFilterMode = value;
+            MagFilterMode = value;
         }
     }
+    public TextureWrapMode WrapMode = TextureWrapMode.Clamp;
 
-    internal Texture(GL gl, int width, int height, PixelFormat format) :
-        this(gl, width, height, format switch
-        {
-            PixelFormat.Grayscale => GLEnum.Red,
-            PixelFormat.GrayscaleAlpha => GLEnum.RG,
-            PixelFormat.RGB => GLEnum.Rgb,
-            PixelFormat.RGBA => GLEnum.Rgba,
-            _ => throw new ArgumentOutOfRangeException(nameof(format))
-        })
-    {}
-
-    internal Texture(GL gl, Image image, bool mipmaps = false)
+    private unsafe void CreateTexture(PixelFormat format)
     {
-        this.gl = gl;
-
-        Width = image.Width;
-        Height = image.Height;
-
-        var fmt = image.PixelFormat switch
+        var bgfxFormat = format switch
         {
-            PixelFormat.Grayscale => GLEnum.Red,
-            PixelFormat.GrayscaleAlpha => GLEnum.RG,
-            PixelFormat.RGB => GLEnum.Rgb,
-            PixelFormat.RGBA => GLEnum.Rgba,
-            _ => throw new ArgumentOutOfRangeException(nameof(image))
+            PixelFormat.Grayscale => Bgfx.TextureFormat.R8U,
+            PixelFormat.GrayscaleAlpha => Bgfx.TextureFormat.RG8,
+            PixelFormat.RGB => Bgfx.TextureFormat.RGB8,
+            PixelFormat.RGBA => Bgfx.TextureFormat.RGBA8,
+            _ => throw new ArgumentOutOfRangeException(nameof(format))
         };
 
-        texture = gl.GenTexture();
-        gl.BindTexture(GLEnum.Texture2D, texture);
+        var flags = Bgfx.SamplerFlags.UClamp |
+                    Bgfx.SamplerFlags.VClamp |
+                    Bgfx.SamplerFlags.MinAnisotropic |
+                    Bgfx.SamplerFlags.MagAnisotropic;
 
-        int defaultFilter = (int)GLEnum.Linear;
-        int defaultWrapMode = (int)GLEnum.ClampToEdge;
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref defaultFilter);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, ref defaultWrapMode);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapT, ref defaultWrapMode);
-
-        unsafe
+        if (Width < 0 || Height < 0 || Width > ushort.MaxValue || Height > ushort.MaxValue || Bgfx.is_texture_valid(0, false, 1, bgfxFormat, (ulong) flags))
         {
-            // just use NativeMemory here i guess, it is a very large array and i know the
-            // exact lifetime of the object. probably more performant to do this than putting it
-            // in managed memory?
-
-            nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
-            void* pixelBuf = NativeMemory.Alloc(bufLen);
-            var span = new Span<byte>(pixelBuf, (int)bufLen);
-
-            image.CopyPixelDataTo(span);
-            
-            gl.TexImage2D(
-                target: GLEnum.Texture2D,
-                level: 0,
-                internalformat: (int)InternalFormat.Rgba,
-                width: (uint)image.Width,
-                height: (uint)image.Height,
-                border: 0,
-                format: fmt,
-                type: GLEnum.UnsignedByte,
-                pixels: pixelBuf
-            );
-
-            NativeMemory.Free(pixelBuf);
+            _handle = Bgfx.create_texture_2d((ushort)Width, (ushort)Height, false, 1, bgfxFormat, (ulong)flags, null);
         }
+        else
+        {
+            throw new UnsupportedOperationException($"Could not create texture of size ({Width}, {Height}) and format {format}");
+        }
+    }
+    
+    internal unsafe Texture(int width, int height, PixelFormat format)
+    {
+        Width = width;
+        Height = height;
+        PixelFormat = format;
+        CreateTexture(format);
+    }
 
-        if (mipmaps) gl.GenerateMipmap(GLEnum.Texture2D);
+    private unsafe Bgfx.Memory* GetImageData(Image image)
+    {
+        if (image.PixelFormat != PixelFormat)
+            throw new ArgumentException($"Mismatched pixel formats: expected {PixelFormat}, got {image.PixelFormat}");
+        
+        Bgfx.Memory* alloc = Bgfx.alloc((uint)(image.Width * image.Height * image.BytesPerPixel));
+        image.CopyPixelDataTo(new Span<byte>(alloc->data, (int)alloc->size));
+
+        return alloc;
+    }
+
+    internal unsafe Texture(Image image)
+    {
+        Width = image.Width;
+        Height = image.Height;
+        PixelFormat = image.PixelFormat;
+
+        CreateTexture(image.PixelFormat);
+        var alloc = GetImageData(image);
+        Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
 
     protected override void FreeResources(bool disposing)
     {
-        if (disposing)
-        {
-            gl.DeleteTexture(texture);
-        }
-        else
-        {
-            QueueFreeHandle(gl.DeleteTexture, texture);
-        }
-
-        texture = 0;
+        Bgfx.destroy_texture(_handle);
     }
 
-    public unsafe void SetWrapMode(TextureWrapMode s, TextureWrapMode t)
-    {
-        gl.BindTexture(GLEnum.Texture2D, texture);
-        int _s = (int)GLWrapMode(s);
-        int _t = (int)GLWrapMode(t);
-
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, &_s);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureWrapS, &_t);
-    }
-
-    public unsafe void SetFilterMode(TextureFilterMode minFilter, TextureFilterMode magFilter)
-    {
-        gl.BindTexture(GLEnum.Texture2D, texture);
-        int _min = (int)GLFilterMode(minFilter);
-        int _mag = (int)GLFilterMode(magFilter);
-
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMinFilter, &_min);
-        gl.TexParameterI(GLEnum.Texture2D, GLEnum.TextureMagFilter, &_mag);
-    }
-
-    public void SetFilterMode(TextureFilterMode filter)
-        => SetFilterMode(filter, filter);
-
-    public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)
+    /*public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)
     {
         var format = pixelFormat switch
         {
@@ -211,73 +117,48 @@ public class Texture : GLResource
         }
 
         return new Image(pixels, Width, Height, pixelFormat);
-    }
+    }*/
 
     /// <summary>
     /// Update the whole texture with an image.
     /// The given image must have the same dimensions as the texture.
     /// </summary>
     /// <param name="image">The image to update the texture with.</param>
-    /// <exception cref="Exception">Thrown if the image does not have the same dimensions as the texture.</exception>
+    /// <exception cref="ArgumentException">Thrown if the image does not have the same dimensions and pixel format as the texture.</exception>
     public unsafe void UpdateFromImage(Image image)
     {
         if (image.Width != Width || image.Height != Height)
         {
-            throw new Exception("Image dimensions must match texture dimensions");
+            throw new ArgumentException("Image dimensions must match texture dimensions", nameof(image));
         }
 
-        var fmt = image.PixelFormat switch
-        {
-            PixelFormat.Grayscale => GLEnum.Red,
-            PixelFormat.GrayscaleAlpha => GLEnum.RG,
-            PixelFormat.RGB => GLEnum.Rgb,
-            PixelFormat.RGBA => GLEnum.Rgba,
-            _ => throw new ArgumentOutOfRangeException(nameof(image))
-        };
-
-        gl.BindTexture(GLEnum.Texture2D, texture);
-
-        nuint bufLen = (nuint)(image.Width * image.Height * image.BytesPerPixel);
-        void* pixelBuf = NativeMemory.Alloc(bufLen);
-        var span = new Span<byte>(pixelBuf, (int)bufLen);
-        image.CopyPixelDataTo(span);
-
-        gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)image.Width, (uint)image.Height, fmt, GLEnum.UnsignedByte, pixelBuf);
-
-        NativeMemory.Free(pixelBuf);
+        var alloc = GetImageData(image);
+        Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
 
     /// <summary>
-    /// Update the whole texture with an image given by a byte array.
-    /// The dimensions of the image will be interpreted as the dimensions of the texture.
+    /// Update the whole texture with an image given by a byte array. <br /><br />
+    /// The dimensions and pixel format of the data will be interpreted as those of the texture.
     /// </summary>
     /// <param name="pixels">The image pixels to update the texture with.</param>
-    /// <param name="format">The pixel format that the span will be interpreted as.</param> 
-    public unsafe void UpdateFromImage(ReadOnlySpan<byte> pixels, PixelFormat format)
+    /// <exception cref="ArgumentException">Thrown if the pixel data length is not the same as the texture's buffer size.</exception> 
+    public unsafe void UpdateFromImage(ReadOnlySpan<byte> pixels)
     {
-        var glFmt = format switch
+        var bytesPerPixel = PixelFormat switch
         {
-            PixelFormat.Grayscale => GLEnum.Red,
-            PixelFormat.GrayscaleAlpha => GLEnum.RG,
-            PixelFormat.RGB => GLEnum.Rgb,
-            PixelFormat.RGBA => GLEnum.Rgba,
-            _ => throw new ArgumentOutOfRangeException(nameof(format))
+            PixelFormat.Grayscale => 1,
+            PixelFormat.GrayscaleAlpha => 2,
+            PixelFormat.RGB => 3,
+            PixelFormat.RGBA => 4,
+            _ => throw new Exception("Texture.PixelFormat is somehow invalid")
         };
 
-        gl.BindTexture(GLEnum.Texture2D, texture);
-        
-        fixed (byte* ptr = pixels)
-        {
-            gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)Width, (uint)Height, glFmt, GLEnum.UnsignedByte, ptr);
-        }
-    }
+        var size = Width * Height * bytesPerPixel;
+        if (pixels.Length != size)
+            throw new ArgumentException("Mismatched pixel buffer sizes");
 
-    internal void Activate(uint unit)
-    {
-        if (unit >= 16)
-            throw new ArgumentOutOfRangeException(nameof(unit), "The given unit index must be less than 16");
-        
-        gl.ActiveTexture((GLEnum)((int)GLEnum.Texture0 + unit));
-        gl.BindTexture(GLEnum.Texture2D, texture);
+        var alloc = Bgfx.alloc((uint)size);
+        pixels.CopyTo(new Span<byte>(alloc->data, (int)alloc->size));
+        Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
 }

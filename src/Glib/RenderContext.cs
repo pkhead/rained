@@ -1,7 +1,7 @@
 namespace Glib;
 
+using Bgfx_cs;
 using Silk.NET.Windowing;
-using Silk.NET.OpenGL;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -47,7 +47,6 @@ public enum DebugSeverity
 
 public class RenderContext : IDisposable
 {
-    internal readonly GL gl;
     private bool _disposed = false;
 
     // batch variables
@@ -99,7 +98,8 @@ public class RenderContext : IDisposable
     private Vector2 UV = Vector2.Zero;
     public TextureFilterMode DefaultTextureMagFilter = TextureFilterMode.Linear;
     public TextureFilterMode DefaultTextureMinFilter = TextureFilterMode.Linear;
-    private PrimitiveType drawMode;
+    private MeshPrimitiveType drawMode;
+    
     public Shader? Shader {
         get => shaderValue;
         set

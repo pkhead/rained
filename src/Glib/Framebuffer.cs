@@ -1,5 +1,3 @@
-using Silk.NET.OpenGL;
-
 namespace Glib;
 
 public enum AttachmentPoint

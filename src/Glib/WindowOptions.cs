@@ -79,8 +79,6 @@ public struct WindowOptions
     /// </summary>
     public bool SetupGlErrorCallback = false;
 
-    public GraphicsAPI API = GraphicsAPI.Default;
-
     public WindowOptions() {}
 
     internal readonly IWindow CreateSilkWindow()
@@ -98,12 +96,14 @@ public struct WindowOptions
         // is created, and then show the window.
         bool centerOnCreation = X is null || Y is null;
 
-        opts.API = API;
+        opts.API = GraphicsAPI.None; // we are using bgfx
+        opts.IsContextControlDisabled = true;
+        opts.ShouldSwapAutomatically = false;
         opts.UpdatesPerSecond = RefreshRate;
         opts.FramesPerSecond =  RefreshRate;
         opts.Position = new(posX, posY);
         opts.Size = new(Width, Height);
-        opts.VSync = VSync;
+        opts.VSync = false;
         opts.Title = Title;
         opts.IsVisible = Visible && !centerOnCreation;
         opts.IsEventDriven = IsEventDriven;

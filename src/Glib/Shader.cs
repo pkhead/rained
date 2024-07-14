@@ -1,51 +1,22 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Silk.NET.OpenGL;
+using Bgfx_cs;
 
 namespace Glib;
 
 [Serializable]
-public class ShaderCompilationException : Exception
+public class ShaderCreationException : Exception
 {
-    public ShaderCompilationException() { }
-    public ShaderCompilationException(string message) : base(message) { }
-    public ShaderCompilationException(string message, System.Exception inner) : base(message, inner) { }
+    public ShaderCreationException() { }
+    public ShaderCreationException(string message) : base(message) { }
+    public ShaderCreationException(string message, System.Exception inner) : base(message, inner) { }
 }
 
-public class Shader : GLResource
+public class Shader : BgfxResource
 {
-    private const string DefaultVertexSource = @"
-    #version 330 core
-    layout (location = 0) in vec3 glib_aPos;
-    layout (location = 1) in vec2 glib_aTexCoord;
-    layout (location = 2) in vec4 glib_aColor;
-
-    out vec2 glib_texCoord;
-    out vec4 glib_color;
-
-    uniform mat4 glib_uMatrix;
-    
-    void main() {
-        gl_Position = glib_uMatrix * vec4(glib_aPos.xyz, 1.0);
-        glib_texCoord = glib_aTexCoord;
-        glib_color = glib_aColor;
-    }
-    ";
-
-    private const string DefaultFragmentSource = @"
-    #version 330 core
-
-    in vec2 glib_texCoord;
-    in vec4 glib_color;
-    out vec4 glib_fragColor;
-
-    uniform sampler2D glib_uTexture; 
-    uniform vec4 glib_uColor;
-    
-    void main() {
-        glib_fragColor = texture(glib_uTexture, glib_texCoord) * glib_color * glib_uColor;
-    }
-    ";
+    private const string DefaultVertexName = "default_vs";
+    private const string DefaultFragmentName = "default_fs";
 
     /// <summary>
     /// The name of the texture uniform set by Glib.
@@ -62,244 +33,180 @@ public class Shader : GLResource
     /// </summary>
     public const string MatrixUniform = "glib_uMatrix";
 
-    private readonly uint shaderProgram;
-    private readonly GL gl;
+    private readonly Bgfx.ProgramHandle programHandle;
 
     internal static bool _debug = false;
-    
-    private List<uint> textureLocs = [];
 
-    internal Shader(GL gl, string? vsSource = null, string? fsSource = null)
+    private readonly Dictionary<string, (Bgfx.UniformHandle handle, Bgfx.UniformType type)> _uniformHandles = [];
+    private static Dictionary<string, (Bgfx.UniformHandle handle, Bgfx.UniformType type)> _globalUniformHandles = [];
+
+    private List<string> _textureUnits = [];
+    private Texture[] _boundTextures;
+
+    internal unsafe Shader(string? vsName = null, string? fsName = null)
     {
-        this.gl = gl;
-
-        // create vertex shader
-        var vShader = gl.CreateShader(GLEnum.VertexShader);
-        gl.ShaderSource(vShader, vsSource ?? DefaultVertexSource);
-        gl.CompileShader(vShader);
-
-        // check for compilation error
-        if (gl.GetShader(vShader, GLEnum.CompileStatus) == 0)
+        var vsh = LoadShader(vsName ?? DefaultVertexName);
+        var fsh = LoadShader(fsName ?? DefaultFragmentName);
+        programHandle = Bgfx.create_program(vsh, fsh, true);
+        if (!programHandle.Valid)
         {
-            string infoLog = gl.GetShaderInfoLog(vShader);
-            throw new ShaderCompilationException(infoLog);
+            throw new ShaderCreationException("Could not create program");
         }
 
-        // create fragment shader
-        var fShader = gl.CreateShader(GLEnum.FragmentShader);
-        gl.ShaderSource(fShader, fsSource ?? DefaultFragmentSource);
-        gl.CompileShader(fShader);
+        var uniformHandles = stackalloc Bgfx.UniformHandle[64];
+        Bgfx.UniformInfo uniformInfo = new();
+        int uniformCount;
 
-        // check for compilation error
-        if (gl.GetShader(fShader, GLEnum.CompileStatus) == 0)
+        // get uniform handles
+        uniformCount = Bgfx.get_shader_uniforms(vsh, uniformHandles, 64);
+        for (int i = 0; i < uniformCount; i++)
         {
-            string infoLog = gl.GetShaderInfoLog(fShader);
-            throw new ShaderCompilationException(infoLog);
-        }
+            var handle = uniformHandles[i];
+            Bgfx.get_uniform_info(handle, &uniformInfo);
 
-        // combining the shaders under one program
-        shaderProgram = gl.CreateProgram();
-        gl.AttachShader(shaderProgram, vShader);
-        gl.AttachShader(shaderProgram, fShader);
-        gl.LinkProgram(shaderProgram);
+            var uName = Marshal.PtrToStringAnsi((nint)uniformInfo.name)!;
+            _uniformHandles[uName] = (handle, uniformInfo.type);
 
-        // check for link error
-        if (gl.GetProgram(shaderProgram, GLEnum.LinkStatus) == 0)
-        {
-            throw new ShaderCompilationException(gl.GetProgramInfoLog(shaderProgram));
-        }
-
-        // get uniform data
-        unsafe
-        {
-            if (_debug)
-                Console.WriteLine($"== SHADER ID: {shaderProgram} ==");
-
-            int uniformCount = gl.GetProgram(shaderProgram, GLEnum.ActiveUniforms);
-            var maxNameLen = gl.GetProgram(shaderProgram, GLEnum.ActiveUniformMaxLength);
-            Span<byte> nameArr = stackalloc byte[maxNameLen];
-
-            if (_debug)
-                Console.WriteLine($"UNIFORMS: {uniformCount}, MAX UNIFORM NAME LENGTH: {maxNameLen}");
-
-            for (uint i = 0; i < uniformCount; i++)
+            if (uniformInfo.type == Bgfx.UniformType.Sampler)
             {
-                gl.GetActiveUniform(shaderProgram, i, out uint len, out int size, out UniformType type, nameArr);
-                var uniformLoc = (uint) gl.GetUniformLocation(shaderProgram, nameArr);
-                
-                if (_debug)
-                {
-                    string name = System.Text.Encoding.UTF8.GetString(nameArr[..(int)len]);
-                    Console.WriteLine($"index {i}: loc: {uniformLoc}, name: {name}, type: {type}, size: {size}");
-                }
-
-                switch (type)
-                {
-                    case UniformType.Sampler1D:
-                    case UniformType.Sampler2D:
-                    case UniformType.Sampler3D:
-                        if (_debug)
-                        {
-                            Console.WriteLine($"   TEXTURE UNIT = {textureLocs.Count}");
-                        }
-
-                        textureLocs.Add(uniformLoc);
-                        break;
-                }
+                _textureUnits.Add(uName);
             }
-
-            if (_debug)
-                Console.WriteLine("==================");
         }
 
-        // delete the no longer useful individual shaders
-        gl.DetachShader(shaderProgram, vShader);
-        gl.DetachShader(shaderProgram, fShader);
-        gl.DeleteShader(vShader);
-        gl.DeleteShader(fShader);
+        _boundTextures = new Texture[_textureUnits.Count];
     }
 
     protected override void FreeResources(bool disposing)
     {
-        QueueFreeHandle(gl.DeleteProgram, shaderProgram);
+        foreach (var v in _uniformHandles.Values)
+        {
+            Bgfx.destroy_uniform(v.handle);
+        }
+
+        Bgfx.destroy_program(programHandle);
     }
 
-    internal void Use(GL gl) {
-        gl.UseProgram(shaderProgram);
+    private static unsafe Bgfx.ShaderHandle LoadShader(string name)
+    {
+        string shaderClass = Bgfx.get_renderer_type() switch
+        {
+            Bgfx.RendererType.Noop or Bgfx.RendererType.Direct3D11 or Bgfx.RendererType.Direct3D12 => "d3d",
+            Bgfx.RendererType.OpenGL => "glsl",
+            Bgfx.RendererType.Vulkan => "spirv",
+            _ => throw new ShaderCreationException($"No precompiled shaders for renderer {Bgfx.get_renderer_name(Bgfx.get_renderer_type())}!")
+        };
+
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var stream = assembly.GetManifestResourceStream(shaderClass + "/" + name)
+            ?? throw new ShaderCreationException($"Shader {shaderClass}/{name} does not exist");
+        
+        using var memStream = new MemoryStream();
+        stream.CopyTo(memStream);
+        var shaderSrc = memStream.ToArray() ?? throw new ShaderCreationException($"Could not read {shaderClass}/{name}");
+
+        return Bgfx.create_shader(BgfxUtil.Load<byte>(shaderSrc));
     }
 
     public bool HasUniform(string uName)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        return loc >= 0;
+        return _uniformHandles.ContainsKey(uName);
     }
 
-    private int GetUniformLocation(string uName)
+    private static void SetupPredefinedUniforms()
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
-        return loc;
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public void SetUniform(string uName, float value)
-    {
-        gl.Uniform1(GetUniformLocation(uName), value);
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public void SetUniform(string uName, int value)
-    {
-        gl.Uniform1(GetUniformLocation(uName), value);
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public void SetUniform(string uName, ReadOnlySpan<int> values)
-    {
-        gl.Uniform1(GetUniformLocation(uName), values);
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public void SetUniform(string uName, Vector2 value)
-    {
-        gl.Uniform2(GetUniformLocation(uName), value);
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector2> values)
-    {
-        fixed (float* floats = MemoryMarshal.Cast<Vector2, float>(values))
+        static void Add(string name, Bgfx.UniformType type, ushort len)
         {
-            gl.Uniform2(GetUniformLocation(uName), (uint)values.Length, floats);
+            _globalUniformHandles.Add(name, (Bgfx.create_uniform(name, type, len), type));
         }
+
+        Add("u_viewRect", Bgfx.UniformType.Vec4, 1);
+        Add("u_viewTexel", Bgfx.UniformType.Vec4, 1);
+        Add("u_view", Bgfx.UniformType.Mat4, 1);
+        Add("u_invView", Bgfx.UniformType.Mat4, 1);
+        Add("u_proj", Bgfx.UniformType.Mat4, 1);
+        Add("u_invProj", Bgfx.UniformType.Mat4, 1);
+        Add("u_viewProj", Bgfx.UniformType.Mat4, 1);
+        Add("u_invViewProj", Bgfx.UniformType.Mat4, 1);
+        // Add("u_model", Bgfx.UniformType.Mat4, BGFX_CONFIG_MAX_BONES);
+        Add("u_modelView", Bgfx.UniformType.Mat4, 1);
+        Add("u_modelViewProj", Bgfx.UniformType.Mat4, 1);
+        Add("u_alphaRef", Bgfx.UniformType.Vec4, 1); // yzw is just padding...
     }
 
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public void SetUniform(string uName, Vector3 value)
+    private (Bgfx.UniformHandle handle, Bgfx.UniformType type) GetUniformHandle(string uName)
     {
-        gl.Uniform3(GetUniformLocation(uName), value);
-    }
-
-    /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
-    /// </summary>
-    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector3> values)
-    {
-        fixed (float* floats = MemoryMarshal.Cast<Vector3, float>(values))
+        if (!_uniformHandles.TryGetValue(uName, out var v))
         {
-            gl.Uniform3(GetUniformLocation(uName), (uint)values.Length, floats);
+            if (_globalUniformHandles.TryGetValue(uName, out var gv))
+            {
+                return gv;
+            }
+
+            throw new ArgumentException($"Uniform '{uName}' does not exist!", nameof(uName));
         }
+        
+        return v;
+    }
+
+    private Bgfx.UniformHandle GetUniformHandle(string uName, string inputType, Bgfx.UniformType expectedType)
+    {
+        var (handle, type) = GetUniformHandle(uName);
+
+        if (type != expectedType)
+            throw new ArgumentException($"{type} is incompatible with the uniform type {inputType}");
+        
+        return handle;
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public void SetUniform(string uName, Vector4 value)
+    public unsafe void SetUniform(string uName, float value)
     {
-        gl.Uniform4(GetUniformLocation(uName), value);
+        Vector4 v = new(value, 0f, 0f, 0f);
+        Bgfx.set_uniform(GetUniformHandle(uName, "float", Bgfx.UniformType.Vec4), &v, 1);
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, ReadOnlySpan<Vector4> values)
+    public unsafe void SetUniform(string uName, Vector2 value)
     {
-        fixed (float* floats = MemoryMarshal.Cast<Vector4, float>(values))
-        {
-            gl.Uniform4(GetUniformLocation(uName), (uint)values.Length, floats);
-        }
+        Vector4 v = new(value.X, value.Y, 0f, 0f);
+        Bgfx.set_uniform(GetUniformHandle(uName, "Vector2", Bgfx.UniformType.Vec4), &v, 1);
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public void SetUniform(string uName, Color value)
+    public unsafe void SetUniform(string uName, Vector3 value)
     {
-        gl.Uniform4(GetUniformLocation(uName), value.R, value.G, value.B, value.A);
+        Vector4 v = new(value.X, value.Y, value.Z, 0f);
+        Bgfx.set_uniform(GetUniformHandle(uName, "Vector3", Bgfx.UniformType.Vec4), &v, 1);
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, ReadOnlySpan<Color> values)
+    public unsafe void SetUniform(string uName, Vector4 value)
     {
-        fixed (float* floats = MemoryMarshal.Cast<Color, float>(values))
-        {
-            gl.Uniform4(GetUniformLocation(uName), (uint)values.Length, floats);
-        }
+        Bgfx.set_uniform(GetUniformHandle(uName, "Vector4", Bgfx.UniformType.Vec4), &value, 1);
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public void SetUniform(string uName, Matrix4x4 matrix)
+    public unsafe void SetUniform(string uName, Color value)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        Bgfx.set_uniform(GetUniformHandle(uName, "Color", Bgfx.UniformType.Vec4), &value, 1);
+    }
+
+    /// <summary>
+    /// Set the value of the shader's uniform.
+    /// </summary>
+    public unsafe void SetUniform(string uName, Matrix4x4 matrix)
+    {
+        var handle = GetUniformHandle(uName, "Matrix4x4", Bgfx.UniformType.Mat4);
 
         Span<float> flat =
         [
@@ -321,65 +228,142 @@ public class Shader : GLResource
             matrix.M44,
         ];
         
-        gl.UniformMatrix4(loc, false, flat);
+        fixed (float* data = flat)
+        {
+            Bgfx.set_uniform(handle, data, 16);
+        }
     }
 
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public void SetUniform(string uName, Matrix2x2 matrix)
+    public unsafe void SetUniform(string uName, Matrix2x2 matrix)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        var (handle, type) = GetUniformHandle(uName);
 
-        Span<float> flat = [
-            matrix.M11,
-            matrix.M12,
-            matrix.M21,
-            matrix.M22
-        ];
+        if (type == Bgfx.UniformType.Mat3)
+        {
+            Span<float> flat = [
+                matrix.M11,
+                matrix.M12,
+                0f,
 
-        gl.UniformMatrix2(loc, false, flat);
+                matrix.M21,
+                matrix.M22,
+                0f,
+
+                0f, 0f, 1f
+            ];
+
+            fixed (float* data = flat)
+            {
+                Bgfx.set_uniform(handle, data, 1);
+            }
+        }
+        else if (type == Bgfx.UniformType.Mat4)
+        {
+            Span<float> flat = [
+                matrix.M11,
+                matrix.M12,
+                0f, 0f,
+
+                matrix.M21,
+                matrix.M22,
+                0f, 0f,
+
+                0f, 0f, 1f, 0f,
+                0f, 0f, 0f, 1f
+            ];
+
+            fixed (float* data = flat)
+            {
+                Bgfx.set_uniform(handle, data, 1);
+            }
+        }
+        else
+        {
+            throw new ArgumentException($"Matrix2x2 is incompatible with the uniform type {type}");
+        }
     }
     
     /// <summary>
-    /// Set the value of the shader's uniform. This is only valid for the shader
-    /// if it is currently active.
+    /// Set the value of the shader's uniform.
     /// </summary>
-    public void SetUniform(string uName, Matrix3x3 matrix)
+    public unsafe void SetUniform(string uName, Matrix3x3 matrix)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        var (handle, type) = GetUniformHandle(uName);
 
-        Span<float> flat = [
-            matrix.M11,
-            matrix.M12,
-            matrix.M13,
-            matrix.M21,
-            matrix.M22,
-            matrix.M23,
-            matrix.M31,
-            matrix.M32,
-            matrix.M33
-        ];
+        if (type == Bgfx.UniformType.Mat3)
+        {
+            Span<float> flat = [
+                matrix.M11,
+                matrix.M12,
+                matrix.M13,
 
-        gl.UniformMatrix3(loc, false, flat);
+                matrix.M21,
+                matrix.M22,
+                matrix.M23,
+
+                matrix.M31,
+                matrix.M32,
+                matrix.M33
+            ];
+
+            fixed (float* data = flat)
+            {
+                Bgfx.set_uniform(handle, data, 1);
+            }
+        }
+        else if (type == Bgfx.UniformType.Mat4)
+        {
+            Span<float> flat = [
+                matrix.M11,
+                matrix.M12,
+                matrix.M13,
+                0f,
+
+                matrix.M21,
+                matrix.M22,
+                matrix.M23,
+                0f,
+
+                matrix.M31,
+                matrix.M32,
+                matrix.M33,
+                0f,
+
+                0f, 0f, 0f, 1f
+            ];
+
+            fixed (float* data = flat)
+            {
+                Bgfx.set_uniform(handle, data, 1);
+            }
+        }
+        else
+        {
+            throw new ArgumentException($"Matrix3x3 is incompatible with the uniform type {type}");
+        }
     }
 
     /// <summary>
     /// Set the value of the shader's uniform. This is only valid for the shader
     /// if it is currently active.
     /// </summary>
-    public void SetUniform(string uName, Texture texture)
+    public unsafe void SetUniform(string uName, Texture texture)
     {
-        var loc = gl.GetUniformLocation(shaderProgram, uName);
-        if (loc < 0) throw new Exception($"Uniform '{uName}' does not exist!");
+        var _ = GetUniformHandle(uName, "Texture", Bgfx.UniformType.Sampler); // just need the type check
+        var unit = _textureUnits.IndexOf(uName);
+        Debug.Assert(unit >= 0);
+        _boundTextures[unit] = texture;
+    }
 
-        int texUnit = textureLocs.IndexOf((uint)loc);
-        if (texUnit < 0) throw new Exception("The uniform type is not a sampler");
-
-        texture.Activate((uint)texUnit);
-        gl.Uniform1(loc, texUnit);
+    internal void BindTextures(Texture placeholderTexture)
+    {
+        for (int i = 0; i < _textureUnits.Count; i++)
+        {
+            var handle = GetUniformHandle(_textureUnits[i], "Texture", Bgfx.UniformType.Sampler);
+            Bgfx.set_texture((byte)i, handle, (_boundTextures[i] ?? placeholderTexture).Handle, ushort.MaxValue);
+        }
     }
 }

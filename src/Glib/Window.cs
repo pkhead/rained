@@ -4,7 +4,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Silk.NET.Input;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
 
 public enum MouseButton
@@ -115,9 +114,9 @@ public class Window : IDisposable
     private RenderContext? _renderContext = null;
     public RenderContext? RenderContext { get => _renderContext; }
 
-    private ImGuiController? imGuiController = null;
+    //private ImGuiController? imGuiController = null;
     private bool setupImGui;
-    public ImGuiController? ImGuiController => imGuiController;
+    //public ImGuiController? ImGuiController => imGuiController;
 
     private double lastTime = 0.0;
 
@@ -186,12 +185,12 @@ public class Window : IDisposable
 
         if (setupImGui)
         {
-            imGuiController = new ImGuiController(
+            /*imGuiController = new ImGuiController(
                 gl: _renderContext.gl,
                 view: window,
                 input: input,
                 onConfigureIO: OnConfigureImGuiIO
-            );
+            );*/
         }
 
         Load?.Invoke();
@@ -282,7 +281,6 @@ public class Window : IDisposable
 
     private void OnUpdate(double dt)
     {
-        GLResource.UnloadGCQueue();
         Update?.Invoke((float)dt);
     }
 
@@ -402,8 +400,7 @@ public class Window : IDisposable
     public void Dispose()
     {
         Closing?.Invoke();
-        GLResource.UnloadGCQueue();
-        imGuiController?.Dispose();
+        //imGuiController?.Dispose();
         _renderContext!.Dispose();
         window.Dispose();
         GC.SuppressFinalize(this);
