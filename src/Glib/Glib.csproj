@@ -20,4 +20,11 @@
     <ProjectReference Include="../Bgfx/Bgfx.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+      <EmbeddedResource Include="../../shaders/build/$(RuntimeIdentifier)/**/*.bin">
+        <LogicalName>Glib.shaders.$([System.IO.Directory]::GetParent('%(FullPath)').Name).%(FileName)</LogicalName>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

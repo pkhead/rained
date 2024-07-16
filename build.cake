@@ -3,13 +3,122 @@
 */
 #addin nuget:?package=SharpZipLib
 #addin nuget:?package=Cake.Compression
+using System.IO;
+using Path = System.IO.Path;
 
 var target = Argument("Target", "Package");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 
 var buildDir = "build_" + os;
 
+bool IsUpToDate(string dstFile, params string[] deps)
+{
+    var dstWriteTime = System.IO.File.GetLastWriteTime(dstFile);
+
+    foreach (var dep in deps)
+    {
+        if (System.IO.File.GetLastWriteTime(dep) > dstWriteTime)
+            return false;
+    }
+
+    return true;
+}
+
+void Exec(string procName, System.Collections.Generic.IEnumerable<string> args)
+{
+    Verbose(procName + " " + string.Join(' ', args));
+    using var proc = StartAndReturnProcess(procName, new ProcessSettings()
+    {
+        Arguments = ProcessArgumentBuilder.FromStringsQuoted(args)
+    });
+    proc.WaitForExit();
+
+    var code = proc.GetExitCode();
+    if (code != 0)
+        throw new Exception($"{procName} returned {code}");
+}
+
+enum ShaderType { Vertex, Fragment }
+
+Task("Build Shaders")
+    .Does(() =>
+{
+    string shaderc = EnvironmentVariable<string>("BGFX_SHADERC", "shaderc");
+
+    bool hasShaderC = false;
+    try
+    {
+        Exec(shaderc, ["-v"]);
+        hasShaderC = true;
+    }
+    catch
+    {
+        hasShaderC = false;
+    }
+
+    if (!hasShaderC)
+    {
+        Information("Could not find shaderc! Make sure it is in your PATH or your BGFX_SHADERC environment variable is set.");
+        Information("Shader compilation is skipped.");
+        return;
+    }
+    
+    string platform = "windows";
+    if (os == "win-x64" || os == "win-x86" || os == "win-arm64") platform = "windows";
+    else if (os == "linux-x64" || os == "linux-x86" || os == "linux-arm64") platform = "linux";
+    else if (os == "osx" || os == "osx-arm64" || os == "os-x64") platform = "osx";
+    else
+    {
+        Error($"Unknown runtime {os} when building shaders. Fall back to windows.");
+    }
+
+    // shaderc --varyingdef shadersrc/varying.def.sc -i shadersrc -f shadersrc/vs.sc -o shaders/vs.glsl --type vertex --platform windows -p 150
+    var shaderBuildDir = Path.Combine("shaders","build",os);
+    EnsureDirectoryExists(shaderBuildDir);
+    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"glsl"));
+    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
+    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"spirv"));
+
+    void CompileShader(string srcFile, string dstFile, string shaderTypeStr, string shaderTarget)
+    {
+        if (!IsUpToDate(dstFile, srcFile, "shaders/bgfx_shader.sh", "shaders/varying.def.sc"))
+        {
+            Information($"Compile shader '{srcFile}' to '{dstFile}'");
+            Exec(shaderc, [
+                "--varyingdef", "shaders/varying.def.sc",
+                "-i shaders",
+                "-f", srcFile,
+                "-o", dstFile,
+                "--type", shaderTypeStr,
+                "--platform", platform,
+                "-p", shaderTarget
+            ]);
+        }
+    }
+
+    void ShaderSource(string fileName, ShaderType shaderType)
+    {
+        string shaderTypeStr = shaderType switch
+        {
+            ShaderType.Vertex => "vertex",
+            ShaderType.Fragment => "fragment",
+            _ => throw new ArgumentOutOfRangeException(nameof(shaderType))
+        };
+
+        string name = Path.GetFileNameWithoutExtension(fileName);
+        string srcFile = Path.Combine("shaders", fileName);
+
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), shaderTypeStr, "150");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), shaderTypeStr, "s_5_0");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), shaderTypeStr, "spirv");
+    }
+
+    ShaderSource("default_vs.sc", ShaderType.Vertex);
+    ShaderSource("default_fs.sc", ShaderType.Fragment);
+});
+
 Task("DotNetPublish")
+    .IsDependentOn("Build Shaders")
     .Does(() =>
 {
     EnsureDirectoryExists(buildDir);

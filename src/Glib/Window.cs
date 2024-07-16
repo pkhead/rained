@@ -181,7 +181,7 @@ public class Window : IDisposable
             mouse.MouseUp += OnMouseUp;
         }
 
-        _renderContext = new RenderContext(window, setupGlErrorCallback);
+        _renderContext = new RenderContext(window);
 
         if (setupImGui)
         {
@@ -290,14 +290,13 @@ public class Window : IDisposable
         // pixel space
         var winSize = window.Size;
         
-        _renderContext!.Begin(Width, Height);
+        _renderContext!.Begin(window.FramebufferSize.X, window.FramebufferSize.Y);
         Draw?.Invoke((float)dt, _renderContext!);
         _renderContext!.End();
     }
 
     private void OnFramebufferResize(Vector2D<int> newSize)
     {
-        _renderContext!.Resize((uint)newSize.X, (uint)newSize.Y);
         Resize?.Invoke(newSize.X, newSize.Y);
     }
 

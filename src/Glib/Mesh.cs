@@ -119,7 +119,9 @@ public struct MeshConfiguration
         return this;
     }
 
-    public readonly Mesh Create(RenderContext rctx) => rctx.CreateMesh(this);
+    public readonly Mesh Create(RenderContext rctx, int vtxCount) => Mesh.Create(this, vtxCount);
+    public readonly Mesh Create(RenderContext rctx, Span<short> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
+    public readonly Mesh Create(RenderContext rctx, Span<int> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
 }
 
 public class Mesh : BgfxResource
@@ -169,7 +171,16 @@ public class Mesh : BgfxResource
         }
     }
 
-    internal unsafe Mesh(MeshConfiguration config, int vertexCount, int indexCount = 0)
+    /// <summary>
+    /// Creates a mesh given a configuration as well as the number of
+    /// vertices and indices to allocate.<br/><br/>
+    /// The static method Mesh.Create is an alternative constructor.
+    /// </summary>
+    /// <param name="config">The MeshConfiguration</param>
+    /// <param name="vertexCount">The number of vertices to allocate</param>
+    /// <param name="indexCount">The number of indices to allocate. Unused if config.Indexed is false</param>
+    /// <exception cref="UnsupportedOperationException">Thrown if MeshConfiguration requires 32-bit indices, but the renderer does not support it.</exception>
+    public unsafe Mesh(MeshConfiguration config, int vertexCount, int indexCount = 0)
     {
         _config = config.Clone();
 
@@ -242,13 +253,37 @@ public class Mesh : BgfxResource
         }
     }
 
+    public static Mesh Create(MeshConfiguration config, int vertexCount)
+    {
+        if (config.Indexed) throw new ArgumentException("MeshConfiguration specifies an indexed mesh, but indices array was not given.");
+        return new(config, vertexCount);
+    }
+
+    public static Mesh Create(MeshConfiguration config, ReadOnlySpan<short> indices, int vertexCount)
+    {
+        if (!config.Indexed || config.Use32BitIndices) throw new ArgumentException("Incompatible index options for MeshConfiguration");
+        var mesh = new Mesh(config, vertexCount, indices.Length);
+        mesh.GetIndexBufferSpan(out Span<short> data);
+        indices.CopyTo(data);
+        return mesh;
+    }
+
+    public static Mesh Create(MeshConfiguration config, ReadOnlySpan<int> indices, int vertexCount)
+    {
+        if (!config.Indexed || !config.Use32BitIndices) throw new ArgumentException("Incompatible index options for MeshConfiguration");
+        var mesh = new Mesh(config, vertexCount, indices.Length);
+        mesh.GetIndexBufferSpan(out Span<int> data);
+        indices.CopyTo(data);
+        return mesh;
+    }
+
     /// <summary>
     /// Get the index buffer span.<br/><br/>
     /// Valid only if the mesh is indexed, uses 16-bit indices, and buffer usage isn't static and Upload hasn't been called yet.
     /// </summary>
     /// <param name="data">The buffer span.</param>
     /// <returns>True if successful, false if not.</returns>
-    public bool GetIndexBufferSpan(out ReadOnlySpan<short> output)
+    public bool GetIndexBufferSpan(out Span<short> output)
     {
         output = null;
 
@@ -269,7 +304,7 @@ public class Mesh : BgfxResource
     /// </summary>
     /// <param name="data">The buffer span.</param>
     /// <returns>True if successful, false if not.</returns>
-    public bool GetIndexBufferSpan(out ReadOnlySpan<int> output)
+    public bool GetIndexBufferSpan(out Span<int> output)
     {
         output = null;
 

@@ -21,17 +21,17 @@ public class Shader : BgfxResource
     /// <summary>
     /// The name of the texture uniform set by Glib.
     /// </summary>
-    public const string TextureUniform = "glib_uTexture";
+    public const string TextureUniform = "glib_texture";
 
     /// <summary>
     /// The name of the color uniform set by Glib.
     /// </summary>
-    public const string ColorUniform = "glib_uColor";
+    public const string ColorUniform = "glib_color";
 
     /// <summary>
     /// The name of the matrix uniform set by Glib.
     /// </summary>
-    public const string MatrixUniform = "glib_uMatrix";
+    public const string MatrixUniform = "glib_matrix";
 
     private readonly Bgfx.ProgramHandle programHandle;
 
@@ -54,24 +54,33 @@ public class Shader : BgfxResource
         }
 
         var uniformHandles = stackalloc Bgfx.UniformHandle[64];
-        Bgfx.UniformInfo uniformInfo = new();
         int uniformCount;
 
-        // get uniform handles
-        uniformCount = Bgfx.get_shader_uniforms(vsh, uniformHandles, 64);
-        for (int i = 0; i < uniformCount; i++)
+        void ParseUniformHandles()
         {
-            var handle = uniformHandles[i];
-            Bgfx.get_uniform_info(handle, &uniformInfo);
-
-            var uName = Marshal.PtrToStringAnsi((nint)uniformInfo.name)!;
-            _uniformHandles[uName] = (handle, uniformInfo.type);
-
-            if (uniformInfo.type == Bgfx.UniformType.Sampler)
+            Bgfx.UniformInfo uniformInfo = new();
+            for (int i = 0; i < uniformCount; i++)
             {
-                _textureUnits.Add(uName);
+                var handle = uniformHandles[i];
+                Bgfx.get_uniform_info(handle, &uniformInfo);
+
+                var uName = Marshal.PtrToStringAnsi((nint)uniformInfo.name)!;
+                _uniformHandles[uName] = (handle, uniformInfo.type);
+                Console.WriteLine(uName);
+
+                if (uniformInfo.type == Bgfx.UniformType.Sampler)
+                {
+                    _textureUnits.Add(uName);
+                }
             }
         }
+
+        // get uniform handles
+        Console.WriteLine("New shader");
+        uniformCount = Bgfx.get_shader_uniforms(vsh, uniformHandles, 64);
+        ParseUniformHandles();
+        uniformCount = Bgfx.get_shader_uniforms(fsh, uniformHandles, 64);
+        ParseUniformHandles();
 
         _boundTextures = new Texture[_textureUnits.Count];
     }
@@ -96,13 +105,14 @@ public class Shader : BgfxResource
             _ => throw new ShaderCreationException($"No precompiled shaders for renderer {Bgfx.get_renderer_name(Bgfx.get_renderer_type())}!")
         };
 
-        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-        var stream = assembly.GetManifestResourceStream(shaderClass + "/" + name)
-            ?? throw new ShaderCreationException($"Shader {shaderClass}/{name} does not exist");
+        var assembly = typeof(Shader).Assembly;
+        var shaderResourceName = $"Glib.shaders.{shaderClass}.{name}";
+        var stream = assembly.GetManifestResourceStream(shaderResourceName)
+            ?? throw new ShaderCreationException($"Shader {shaderResourceName} does not exist");
         
         using var memStream = new MemoryStream();
         stream.CopyTo(memStream);
-        var shaderSrc = memStream.ToArray() ?? throw new ShaderCreationException($"Could not read {shaderClass}/{name}");
+        var shaderSrc = memStream.ToArray() ?? throw new ShaderCreationException($"Could not read {shaderResourceName}");
 
         return Bgfx.create_shader(BgfxUtil.Load<byte>(shaderSrc));
     }
@@ -358,12 +368,14 @@ public class Shader : BgfxResource
         _boundTextures[unit] = texture;
     }
 
-    internal void BindTextures(Texture placeholderTexture)
+    internal Bgfx.ProgramHandle Activate(Texture placeholderTexture)
     {
         for (int i = 0; i < _textureUnits.Count; i++)
         {
             var handle = GetUniformHandle(_textureUnits[i], "Texture", Bgfx.UniformType.Sampler);
             Bgfx.set_texture((byte)i, handle, (_boundTextures[i] ?? placeholderTexture).Handle, ushort.MaxValue);
         }
+
+        return programHandle;
     }
 }
