@@ -6,6 +6,7 @@ Overall:
 - dissolve material/tile separation
 - be able to view shortcut geo outside of the geometry editor
 - does update checker notif window timing work?
+- shortcut to toggle tile graphics (suggested: ctrl+shift+t)
 - auto-updater
 - logging
   - button to show latest log file
