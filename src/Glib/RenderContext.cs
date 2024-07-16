@@ -93,9 +93,11 @@ public class RenderContext : IDisposable
 
     internal unsafe RenderContext(IWindow window)
     {
-        _cbInterface = new CallbackInterface();
-        _cbInterface.Log = (string msg) => Console.WriteLine(msg);
-        _cbInterface.Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) => Console.WriteLine(msg);
+        _cbInterface = new CallbackInterface()
+        {
+            Log = (string msg) => Console.WriteLine(msg),
+            Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) => Console.WriteLine(msg)
+        };
 
         ScreenWidth = window.FramebufferSize.X;
         ScreenHeight = window.FramebufferSize.Y;
@@ -136,12 +138,18 @@ public class RenderContext : IDisposable
         _drawBatch = new DrawBatch();
     }
 
-    public void SetViewport(int width, int height)
+    public unsafe void SetViewport(int width, int height)
     {
         Bgfx.set_view_rect(curViewId, 0, 0, (ushort)width, (ushort)height);
         BaseTransform =
             Matrix4x4.CreateScale(new Vector3(1f / width * 2f, -1f / height * 2f, 1f)) *
             Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
+
+        fixed (Matrix4x4* viewMat = &BaseTransform)
+        {
+            Matrix4x4 projMatrix = Matrix4x4.Identity;
+            Bgfx.set_view_transform(curViewId, viewMat, &projMatrix);
+        }
     }
 
     public void Begin(int width, int height)
@@ -157,12 +165,19 @@ public class RenderContext : IDisposable
             bgCol = a | (b << 8) | (g << 16) | (r << 24);
         }
 
-        ScreenWidth = width;
-        ScreenHeight = height;
+        if (width != ScreenWidth || height != ScreenHeight)
+        {
+            Bgfx.reset((uint)width, (uint)height, (uint)Bgfx.ResetFlags.Vsync, Bgfx.TextureFormat.Count);
+            ScreenWidth = width;
+            ScreenHeight = height;
+        }
 
-        SetViewport(width, height);
+        SetViewport(ScreenWidth, ScreenHeight);
         Bgfx.set_view_clear(curViewId, (ushort)(Bgfx.ClearFlags.Color | Bgfx.ClearFlags.Depth), bgCol, 1f, 0);
         Bgfx.touch(curViewId); // ensure this view will be cleared even if no draw calls are submitted to it
+
+        transformStack.Clear();
+        TransformMatrix = Matrix4x4.Identity;
 
         shaderValue = null;
         defaultShader.SetUniform(Shader.TextureUniform, WhiteTexture);
@@ -172,12 +187,88 @@ public class RenderContext : IDisposable
         //lastTexture = whiteTexture;
     }
 
+    private static Bgfx.StateFlags BgfxStateBlendFuncSeparate(Bgfx.StateFlags srcRgb, Bgfx.StateFlags dstRgb, Bgfx.StateFlags srcA, Bgfx.StateFlags dstA)
+    {
+        return (Bgfx.StateFlags)(0
+            | ( ( (ulong)(srcRgb)|( (ulong)(dstRgb)<<4) )   )
+            | ( ( (ulong)(srcA  )|( (ulong)(dstA  )<<4) )<<8)
+        );
+    }
+
+    private static Bgfx.StateFlags BgfxStateBlendFunc(Bgfx.StateFlags src, Bgfx.StateFlags dst)
+    {
+        return BgfxStateBlendFuncSeparate(src, dst, src, dst);
+    }
+
+    public unsafe void Draw(Mesh mesh)
+    {
+        var shader = shaderValue ?? defaultShader;
+        var programHandle = shader.Activate(WhiteTexture);
+        Bgfx.StateFlags state = Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
+        state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+        state |= mesh.Activate();
+        Bgfx.set_state((ulong)state, 0);
+
+        fixed (Matrix4x4* transform = &TransformMatrix)
+            Bgfx.set_transform(transform, 1);
+
+        Bgfx.submit(0, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+    }
+
     public void End()
     {
         Bgfx.frame(false);
         //_drawBatch.Draw();
         //InternalSetTexture(null);
     }
+
+    public void PushTransform()
+    {
+        transformStack.Push(TransformMatrix);
+    }
+
+    public void PopTransform()
+    {
+        if (transformStack.Count == 0)
+        TransformMatrix = transformStack.Pop();
+    }
+
+    public void Translate(float x, float y, float z)
+    {
+        TransformMatrix = Matrix4x4.CreateTranslation(x, y, z) * TransformMatrix;
+    }
+
+    public void Translate(Vector3 translation)
+    {
+        TransformMatrix = Matrix4x4.CreateTranslation(translation) * TransformMatrix;
+    }
+
+    public void Scale(float x, float y, float z)
+    {
+        TransformMatrix = Matrix4x4.CreateScale(x, y, z) * TransformMatrix;
+    }
+
+    public void Scale(Vector3 scale)
+    {
+        TransformMatrix = Matrix4x4.CreateScale(scale) * TransformMatrix;
+    }
+
+    public void RotateX(float rad)
+    {
+        TransformMatrix = Matrix4x4.CreateRotationX(rad) * TransformMatrix;
+    }
+
+    public void RotateY(float rad)
+    {
+        TransformMatrix = Matrix4x4.CreateRotationY(rad) * TransformMatrix;
+    }
+
+    public void RotateZ(float rad)
+    {
+        TransformMatrix = Matrix4x4.CreateRotationZ(rad) * TransformMatrix;
+    }
+
+    public void Rotate(float rad) => RotateZ(rad);
 
     /*public Mesh CreateMesh(MeshConfiguration config, int vertexCount)
     {

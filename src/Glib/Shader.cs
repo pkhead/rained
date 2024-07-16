@@ -95,6 +95,14 @@ public class Shader : BgfxResource
         Bgfx.destroy_program(programHandle);
     }
 
+    /// <summary>
+    /// Create a shader from named resources.
+    /// </summary>
+    /// <param name="vsName">The name of the vertex shader, or null to use the default one.</param>
+    /// <param name="fsName">The name of the fragment shader, or null to use the default one.</param>
+    /// <returns>A shader.</returns>
+    public static Shader Create(string? vsName = null, string? fsName = null) => new(vsName, fsName);
+
     private static unsafe Bgfx.ShaderHandle LoadShader(string name)
     {
         string shaderClass = Bgfx.get_renderer_type() switch
@@ -373,7 +381,28 @@ public class Shader : BgfxResource
         for (int i = 0; i < _textureUnits.Count; i++)
         {
             var handle = GetUniformHandle(_textureUnits[i], "Texture", Bgfx.UniformType.Sampler);
-            Bgfx.set_texture((byte)i, handle, (_boundTextures[i] ?? placeholderTexture).Handle, ushort.MaxValue);
+            var texture = _boundTextures[i] ?? placeholderTexture;
+            if (!texture.Handle.Valid)
+            {
+                Console.WriteLine("WARNING: Texture handle was invalid!");
+                texture = placeholderTexture;
+            }
+
+            var texFlags = Bgfx.SamplerFlags.None;
+
+            if (texture.MinFilterMode == TextureFilterMode.Linear) texFlags |= Bgfx.SamplerFlags.MinAnisotropic;
+            if (texture.MinFilterMode == TextureFilterMode.Nearest) texFlags |= Bgfx.SamplerFlags.MinPoint;
+
+            if (texture.MagFilterMode == TextureFilterMode.Linear) texFlags |= Bgfx.SamplerFlags.MagAnisotropic;
+            if (texture.MagFilterMode == TextureFilterMode.Nearest) texFlags |= Bgfx.SamplerFlags.MagPoint;
+
+            if (texture.WrapModeU == TextureWrapMode.Clamp) texFlags |= Bgfx.SamplerFlags.UClamp;
+            if (texture.WrapModeU == TextureWrapMode.Mirror) texFlags |= Bgfx.SamplerFlags.UMirror;
+
+            if (texture.WrapModeV == TextureWrapMode.Clamp) texFlags |= Bgfx.SamplerFlags.VClamp;
+            if (texture.WrapModeV == TextureWrapMode.Mirror) texFlags |= Bgfx.SamplerFlags.VMirror;
+
+            Bgfx.set_texture((byte)i, handle, texture.Handle, (ushort)texFlags);
         }
 
         return programHandle;

@@ -21,7 +21,6 @@ public enum MeshPrimitiveType
     LineStrip,
     Lines,
     TriangleStrip,
-    TriangleFan,
     Triangles
 }
 
@@ -119,9 +118,9 @@ public struct MeshConfiguration
         return this;
     }
 
-    public readonly Mesh Create(RenderContext rctx, int vtxCount) => Mesh.Create(this, vtxCount);
-    public readonly Mesh Create(RenderContext rctx, Span<short> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
-    public readonly Mesh Create(RenderContext rctx, Span<int> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
+    public readonly Mesh Create(int vtxCount) => Mesh.Create(this, vtxCount);
+    public readonly Mesh CreateIndexed(Span<short> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
+    public readonly Mesh CreateIndexed32(Span<int> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
 }
 
 public class Mesh : BgfxResource
@@ -133,10 +132,9 @@ public class Mesh : BgfxResource
     private readonly int[] bufferDataIndices;
 
     private readonly MeshConfiguration _config;
-    private uint elemCount = 0;
-    private readonly MeshPrimitiveType primitiveType;
+    private readonly MeshPrimitiveType primitiveType = MeshPrimitiveType.Triangles;
     private bool ready = false;
-    private uint _elemCount = uint.MaxValue;
+    private uint[] _elemCounts;
 
     public bool IsReady => ready;
 
@@ -193,6 +191,7 @@ public class Mesh : BgfxResource
         int floatBufCount = 0;
         bufferIndices = new int[_config.Buffers.Count];
         bufferDataIndices = new int[_config.Buffers.Count];
+        _elemCounts = new uint[_config.Buffers.Count];
 
         for (int i = 0; i < _config.Buffers.Count; i++)
         {
@@ -217,6 +216,7 @@ public class Mesh : BgfxResource
         {
             var bufConfig = _config.Buffers[i];
             byte numElements = (byte) GetElementCount(bufConfig.Type);
+            _elemCounts[i] = (uint)vertexCount;
 
             if (bufConfig.Type == DataType.Int)
             {
@@ -326,8 +326,8 @@ public class Mesh : BgfxResource
     /// </summary>
     /// <param name="bufferIndex">The buffer index</param>
     /// <param name="span">The data span</param>
-    /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception> 
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
     public void GetBufferData(int bufferIndex, out Span<short> span)
     {
@@ -345,7 +345,69 @@ public class Mesh : BgfxResource
         _dirtyBuffers.Add(bufferIndex);
     }
 
-    private bool GetFloatSpan<T>(int bufferIndex, int elemCount, out Span<T> output) where T : unmanaged
+    /// <summary>
+    /// Set the data for a given int buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a short buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<short> input)
+    {
+        if (bufferIndex < 0 || bufferIndex >= bufferDataIndices.Length)
+            throw new ArgumentOutOfRangeException(nameof(bufferIndex));
+
+        var type = _config.Buffers[bufferIndex].Type;
+        if (type != DataType.Int)
+            throw new InvalidOperationException($"Attempt to set a Span<short> for buffer data, but the buffer type is {type}");
+        
+        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
+            throw new InvalidOperationException("Cannot use SetBufferData on a static buffer after the mesh has been uploaded");
+        
+        var data = intBufferData[bufferDataIndices[bufferIndex]];
+        if (_config.Buffers[bufferIndex].Usage == MeshBufferUsage.Dynamic && input.Length != data.Length)
+            throw new ArgumentException("Span size must match that of the underlying dynamic buffer");
+
+        if (input.Length == data.Length)
+        {
+            input.CopyTo(data);
+        }
+        else
+        {
+            intBufferData[bufferDataIndices[bufferIndex]] = new short[input.Length];
+            input.CopyTo(intBufferData[bufferDataIndices[bufferIndex]]);
+            _elemCounts[bufferIndex] = (uint)input.Length;
+        }
+
+        _dirtyBuffers.Add(bufferIndex);
+    }
+
+    private void GetFloatSpan<T>(int bufferIndex, int elemCount, out Span<T> output) where T : unmanaged
+    {
+        if (bufferIndex < 0 || bufferIndex >= bufferDataIndices.Length)
+            throw new ArgumentOutOfRangeException(nameof(bufferIndex));
+
+        var type = _config.Buffers[bufferIndex].Type;
+        if (type == DataType.Int)
+            throw new ArgumentException($"Attempt to get a Span<{typeof(T).Name}> for buffer data, but the buffer type is Int", nameof(output));
+        
+        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
+            throw new InvalidOperationException("Cannot retrieve data for a static buffer after Mesh.Upload()");
+        
+        var buf = floatBufferData[bufferDataIndices[bufferIndex]];
+        if (buf.Length % elemCount != 0)
+            throw new ArgumentException("Mismatched span component sizes");
+        
+        output = MemoryMarshal.Cast<float, T>(buf);
+        _dirtyBuffers.Add(bufferIndex);
+    }
+
+    private void SetFloatSpan<T>(int bufferIndex, int elemCount, ReadOnlySpan<T> input) where T : unmanaged
     {
         if (bufferIndex < 0 || bufferIndex >= bufferDataIndices.Length)
             throw new ArgumentOutOfRangeException(nameof(bufferIndex));
@@ -355,18 +417,26 @@ public class Mesh : BgfxResource
             throw new InvalidOperationException($"Attempt to get a Span<{typeof(T).Name}> for buffer data, but the buffer type is Int");
         
         if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Cannot retrieve data for a static buffer after Mesh.Upload()");
+            throw new InvalidOperationException("Cannot use SetBufferData on a static buffer after the mesh has been uploaded");
         
-        var buf = floatBufferData[bufferDataIndices[bufferIndex]];
-        if (buf.Length % elemCount != 0)
+        var data = floatBufferData[bufferDataIndices[bufferIndex]];
+        if (_config.Buffers[bufferIndex].Usage == MeshBufferUsage.Dynamic && input.Length * elemCount != data.Length)
+            throw new ArgumentException("Span size must match that of the underlying dynamic buffer");
+
+        var span = MemoryMarshal.Cast<T, float>(input);
+
+        if (span.Length == data.Length)
         {
-            output = null;
-            return false;
+            span.CopyTo(data);
         }
-        
-        output = MemoryMarshal.Cast<float, T>(buf);
+        else
+        {
+            floatBufferData[bufferDataIndices[bufferIndex]] = new float[span.Length];
+            span.CopyTo(floatBufferData[bufferDataIndices[bufferIndex]]);
+            _elemCounts[bufferIndex] = (uint)(span.Length / GetElementCount(_config.Buffers[bufferIndex].Type));
+        }
+
         _dirtyBuffers.Add(bufferIndex);
-        return true;
     }
 
     /// <summary>
@@ -378,8 +448,9 @@ public class Mesh : BgfxResource
     /// <param name="span">The data span</param>
     /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
-    public bool GetBufferData(int bufferIndex, out Span<float> span) => GetFloatSpan(bufferIndex, 1, out span);
+    public void GetBufferData(int bufferIndex, out Span<float> span) => GetFloatSpan(bufferIndex, 1, out span);
 
     /// <summary>
     /// Get the buffer of a dynamic or transient buffer as a Vector2 span.<br/><br/>
@@ -390,8 +461,9 @@ public class Mesh : BgfxResource
     /// <param name="span">The data span</param>
     /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
-    public bool GetBufferData(int bufferIndex, out Span<Vector2> span) => GetFloatSpan(bufferIndex, 1, out span);
+    public void GetBufferData(int bufferIndex, out Span<Vector2> span) => GetFloatSpan(bufferIndex, 1, out span);
 
     /// <summary>
     /// Get the buffer of a dynamic or transient buffer as a Vector3 span.<br/><br/>
@@ -402,8 +474,9 @@ public class Mesh : BgfxResource
     /// <param name="span">The data span</param>
     /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
-    public bool GetBufferData(int bufferIndex, out Span<Vector3> span) => GetFloatSpan(bufferIndex, 1, out span);
+    public void GetBufferData(int bufferIndex, out Span<Vector3> span) => GetFloatSpan(bufferIndex, 1, out span);
 
     /// <summary>
     /// Get the buffer of a dynamic or transient buffer as a Vector4 span.<br/><br/>
@@ -414,8 +487,9 @@ public class Mesh : BgfxResource
     /// <param name="span">The data span</param>
     /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
-    public bool GetBufferData(int bufferIndex, out Span<Vector4> span) => GetFloatSpan(bufferIndex, 1, out span);
+    public void GetBufferData(int bufferIndex, out Span<Vector4> span) => GetFloatSpan(bufferIndex, 1, out span);
 
     /// <summary>
     /// Get the buffer of a dynamic or transient buffer as a Color span.<br/><br/>
@@ -426,140 +500,79 @@ public class Mesh : BgfxResource
     /// <param name="span">The data span</param>
     /// <returns>False if the buffer could not be interpreted as the span type. True otherwise.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if the given bufferIndex does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the output span component size does not match that of the underlying buffer.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the buffer type is incompatible, or if the buffer cannot be accessed.</exception>
-    public bool GetBufferData(int bufferIndex, out Span<Color> span) => GetFloatSpan(bufferIndex, 1, out span);
+    public void GetBufferData(int bufferIndex, out Span<Color> span) => GetFloatSpan(bufferIndex, 1, out span);
 
-    /*private void SetFloatSpan<T>(int bufferIndex, int elemCount, Span<T> input) where T : unmanaged
-    {
-        if (bufferIndex < 0 || bufferIndex >= bufferDataIndices.Length)
-            throw new ArgumentOutOfRangeException(nameof(bufferIndex));
-
-        var type = _config.Buffers[bufferIndex].Type;
-        if (type == DataType.Int)
-            throw new InvalidOperationException($"Attempt to get a Span<{typeof(T).Name}> for buffer data, but the buffer type is Int");
-        
-        if (_config.Buffers[bufferIndex].Usage != MeshBufferUsage.Transient)
-            throw new InvalidOperationException("Cannot use SetBufferData on a non-transient buffer");
-
-        var span = MemoryMarshal.Cast<T, float>(input);
-    }*/
-
-    /*public void SetBufferData(int bufferIndex, ReadOnlySpan<short> data)
-    {
-        if (_config.Buffers[bufferIndex].Type != DataType.Int)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var intArr = new short[data.Length];
-        data.CopyTo(intArr);
-        intBufferData[bufferIndices[bufferIndex]] = intArr;
-        _updatedBuffers.Add(bufferIndex);
-    }
-
-    public void SetBufferData(int bufferIndex, ReadOnlySpan<float> data)
-    {
-        if (_config.Buffers[bufferIndex].Type != DataType.Float)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var floatArr = new float[data.Length];
-        data.CopyTo(floatArr);
-        floatBufferData[bufferIndices[bufferIndex]] = floatArr;
-        _updatedBuffers.Add(bufferIndex);
-    }
-
-    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector2> data)
-    {
-        if (_config.Buffers[bufferIndex].Type != DataType.Vector2)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var floatArr = new float[data.Length * 2];
-        floatBufferData[bufferIndices[bufferIndex]] = floatArr;
-
-        int j = 0;
-        for (int i = 0; i < data.Length; i++)
-        {
-            floatArr[j++] = data[i].X;
-            floatArr[j++] = data[i].Y;
-        }
-
-        _updatedBuffers.Add(bufferIndex);
-    }
-
-    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector3> data)
-    {
-        if (_config.Buffers[bufferIndex].Type != DataType.Vector3)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var floatArr = new float[data.Length * 3];
-        floatBufferData[bufferIndices[bufferIndex]] = floatArr;
-
-        int j = 0;
-        for (int i = 0; i < data.Length; i++)
-        {
-            floatArr[j++] = data[i].X;
-            floatArr[j++] = data[i].Y;
-            floatArr[j++] = data[i].Z;
-        }
-
-        _updatedBuffers.Add(bufferIndex);
-    }
-
-    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector4> data)
-    {
-        if (_config.Buffers[bufferIndex].Type is not DataType.Vector4 or DataType.Color)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var floatArr = new float[data.Length * 4];
-        floatBufferData[bufferIndices[bufferIndex]] = floatArr;
-
-        int j = 0;
-        for (int i = 0; i < data.Length; i++)
-        {
-            floatArr[j++] = data[i].X;
-            floatArr[j++] = data[i].Y;
-            floatArr[j++] = data[i].Z;
-            floatArr[j++] = data[i].W;
-        }
-
-        _updatedBuffers.Add(bufferIndex);
-    }
-
-    public void SetBufferData(int bufferIndex, ReadOnlySpan<Color> data)
-    {
-        if (_config.Buffers[bufferIndex].Type != DataType.Vector4 && _config.Buffers[bufferIndex].Type != DataType.Color)
-            throw new ArgumentException("The given data is not compatible with the buffer type", nameof(data));
-        
-        if (ready && _config.Buffers[bufferIndex].Usage == MeshBufferUsage.Static)
-            throw new InvalidOperationException("Attempt to change data of a static buffer");
-        
-        var floatArr = new float[data.Length * 4];
-        floatBufferData[bufferIndices[bufferIndex]] = floatArr;
-
-        int j = 0;
-        for (int i = 0; i < data.Length; i++)
-        {
-            floatArr[j++] = data[i].R;
-            floatArr[j++] = data[i].G;
-            floatArr[j++] = data[i].B;
-            floatArr[j++] = data[i].A;
-        }
-
-        _updatedBuffers.Add(bufferIndex);
-    }*/
+    /// <summary>
+    /// Set the data for a given float buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a float buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<float> span) => SetFloatSpan(bufferIndex, 1, span);
+    
+    /// <summary>
+    /// Set the data for a given float buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a float buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector2> span) => SetFloatSpan(bufferIndex, 2, span);
+    
+    /// <summary>
+    /// Set the data for a given float buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a float buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector3> span) => SetFloatSpan(bufferIndex, 3, span);
+    
+    /// <summary>
+    /// Set the data for a given float buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a float buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<Vector4> span) => SetFloatSpan(bufferIndex, 4, span);
+    
+    /// <summary>
+    /// Set the data for a given float buffer.
+    /// <br/><br/>
+    /// This cannot be called if the given buffer has static usage and Upload() had already been called,
+    /// since the buffer will then be inaccessible. When called on a dynamic buffer, the input size must
+    /// match the size of the underlying buffer. Transient buffers have no restrictions.
+    /// </summary>
+    /// <param name="bufferIndex">The buffer index</param>
+    /// <param name="span">The data span</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer at given bufferIndex does not exist.</exception> 
+    /// <exception cref="ArgumentException">Thrown if the input span component size does not match that of the underlying dynamic buffer.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer is not a float buffer or if the buffer could not be accessed.</exception>
+    public void SetBufferData(int bufferIndex, ReadOnlySpan<Color> span) => SetFloatSpan(bufferIndex, 4, span);
 
     public static int GetElementCount(DataType type)
     {
@@ -580,7 +593,7 @@ public class Mesh : BgfxResource
     public unsafe void Upload()
     {
         // check that each buffer has the same amount of elements
-        elemCount = uint.MaxValue;
+        /*elemCount = uint.MaxValue;
         for (int i = 0; i < _config.Buffers.Count; i++)
         {
             var bufConfig = _config.Buffers[i];
@@ -603,7 +616,7 @@ public class Mesh : BgfxResource
         if (ready && elemCount != _elemCount)
             throw new InvalidOperationException("Buffer size is not allowed to change");
         
-        _elemCount = elemCount;
+        _elemCount = elemCount;*/
 
         // set buffer data
         for (int i = 0; i < _config.Buffers.Count; i++)
@@ -644,7 +657,10 @@ public class Mesh : BgfxResource
 
                     // it is impossible to update a static buffer after creation,
                     // so there is no need to retain the data
-                    intBufferData[bufferDataIndices[i]] = null!;
+                    if (bufConfig.Type == DataType.Int)
+                        intBufferData[bufferDataIndices[i]] = null!;
+                    else
+                        floatBufferData[bufferDataIndices[i]] = null!;
                 }
                 else if (bufConfig.Usage == MeshBufferUsage.Dynamic)
                 {
@@ -694,7 +710,7 @@ public class Mesh : BgfxResource
         _dirtyBuffers.Clear();
     }
 
-    internal unsafe void Activate()
+    internal unsafe Bgfx.StateFlags Activate()
     {
         if (!ready)
             throw new Exception("Attempt to draw a Mesh that has not been uploaded.");
@@ -705,15 +721,15 @@ public class Mesh : BgfxResource
             var bufConfig = _config.Buffers[i];
             
             if (bufConfig.Usage == MeshBufferUsage.Static)
-                Bgfx.set_vertex_buffer((byte)i, staticBuffers[bufferIndices[i]], 0, _elemCount);
+                Bgfx.set_vertex_buffer((byte)i, staticBuffers[bufferIndices[i]], 0, _elemCounts[i]);
             else if (bufConfig.Usage == MeshBufferUsage.Dynamic)
-                Bgfx.set_dynamic_vertex_buffer((byte)i, dynamicBuffers[bufferIndices[i]], 0, _elemCount);
+                Bgfx.set_dynamic_vertex_buffer((byte)i, dynamicBuffers[bufferIndices[i]], 0, _elemCounts[i]);
             else if (bufConfig.Usage == MeshBufferUsage.Transient)
             {
                 var tvb = new Bgfx.TransientVertexBuffer();
                 fixed (Bgfx.VertexLayout* layout = &vertexLayouts[i])
                 {
-                    Bgfx.alloc_transient_vertex_buffer(&tvb, _elemCount, layout);
+                    Bgfx.alloc_transient_vertex_buffer(&tvb, _elemCounts[i], layout);
                 }
 
                 var tvbDataSpan = new Span<byte>(tvb.data, (int)tvb.size);
@@ -728,7 +744,7 @@ public class Mesh : BgfxResource
                     MemoryMarshal.Cast<float, byte>(data).CopyTo(tvbDataSpan);
                 }
 
-                Bgfx.set_transient_vertex_buffer((byte)i, &tvb, 0, _elemCount);
+                Bgfx.set_transient_vertex_buffer((byte)i, &tvb, 0, _elemCounts[i]);
             }
             else throw new Exception("Unreachable code");
         }
@@ -761,6 +777,16 @@ public class Mesh : BgfxResource
             }
             else throw new Exception("Unreachable code");
         }
+        
+        return primitiveType switch
+        {
+            MeshPrimitiveType.Points => Bgfx.StateFlags.PtPoints,
+            MeshPrimitiveType.LineStrip => Bgfx.StateFlags.PtLinestrip,
+            MeshPrimitiveType.Lines => Bgfx.StateFlags.PtLines,
+            MeshPrimitiveType.TriangleStrip => Bgfx.StateFlags.PtTristrip,
+            MeshPrimitiveType.Triangles => Bgfx.StateFlags.None,
+            _ => throw new Exception("Invalid MeshPrimitiveType")
+        };
     }
 
     protected override void FreeResources(bool disposing)
@@ -793,27 +819,58 @@ public class StandardMesh : Mesh
         DataType.Color,   // colors
     ], false);*/
     private static readonly MeshConfiguration Config = new MeshConfiguration()
-        .AddBuffer(MeshBufferTarget.Position, DataType.Float, MeshBufferUsage.Static)
-        .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Float, MeshBufferUsage.Static)
-        .AddBuffer(MeshBufferTarget.Color0, DataType.Float, MeshBufferUsage.Static);
+        .AddBuffer(MeshBufferTarget.Position, DataType.Vector3, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Vector2, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.Color0, DataType.Color, MeshBufferUsage.Static);
 
-    private static readonly MeshConfiguration ConfigIndexed = new MeshConfiguration()
+    private static readonly MeshConfiguration ConfigIndexed16 = new MeshConfiguration()
         .SetIndexed(true, false)
-        .AddBuffer(MeshBufferTarget.Position, DataType.Float, MeshBufferUsage.Static)
-        .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Float, MeshBufferUsage.Static)
-        .AddBuffer(MeshBufferTarget.Color0, DataType.Float, MeshBufferUsage.Static);
+        .AddBuffer(MeshBufferTarget.Position, DataType.Vector3, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Vector2, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.Color0, DataType.Color, MeshBufferUsage.Static);
+    
+    private static readonly MeshConfiguration ConfigIndexed32 = new MeshConfiguration()
+        .SetIndexed(true, true)
+        .AddBuffer(MeshBufferTarget.Position, DataType.Vector3, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Vector2, MeshBufferUsage.Static)
+        .AddBuffer(MeshBufferTarget.Color0, DataType.Color, MeshBufferUsage.Static);
 
     internal StandardMesh(int vertexCount) : base(Config, vertexCount)
     {}
-    internal StandardMesh(int vertexCount, int indexCount) : base(ConfigIndexed, vertexCount, indexCount)
+    internal StandardMesh(int vertexCount, int indexCount, bool index32) : base(index32 ? ConfigIndexed32 : ConfigIndexed16, vertexCount, indexCount)
     {}
 
-    public bool GetVertexData(out Span<Vector3> vertices)
+    public void GetVertexData(out Span<Vector3> vertices)
         => GetBufferData(0, out vertices);
 
-    public bool GetTexCoordData(out Span<Vector2> uvs)
+    public void GetTexCoordData(out Span<Vector2> uvs)
         => GetBufferData(1, out uvs);
     
-    public bool GetColorData(out Span<Color> colors)
+    public void GetColorData(out Span<Color> colors)
         => GetBufferData(2, out colors);
+    
+    public void SetVertexData(ReadOnlySpan<Vector3> vertices)
+        => SetBufferData(0, vertices);
+
+    public void SetTexCoordData(ReadOnlySpan<Vector2> uvs)
+        => SetBufferData(1, uvs);
+    
+    public void SetColorData(ReadOnlySpan<Color> colors)
+        => SetBufferData(2, colors);
+    
+    public static StandardMesh Create(int vertexCount) => new(vertexCount);
+    public static StandardMesh CreateIndexed(ReadOnlySpan<short> indices, int vertexCount)
+    {
+        var mesh = new StandardMesh(vertexCount, indices.Length, false);
+        mesh.GetIndexBufferSpan(out Span<short> indexSpan);
+        indices.CopyTo(indexSpan);
+        return mesh;
+    }
+    public static StandardMesh CreateIndexed32(ReadOnlySpan<int> indices, int vertexCount)
+    {
+        var mesh = new StandardMesh(vertexCount, indices.Length, true);
+        mesh.GetIndexBufferSpan(out Span<int> indexSpan);
+        indices.CopyTo(indexSpan);
+        return mesh;
+    }
 }

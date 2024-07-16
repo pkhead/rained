@@ -11,7 +11,7 @@ public enum TextureFilterMode
 public enum TextureWrapMode
 {
     Clamp,
-    Repeat
+    Mirror,
 }
 
 public class Texture : BgfxResource
@@ -24,8 +24,10 @@ public class Texture : BgfxResource
 
     internal Bgfx.TextureHandle Handle => _handle;
 
-    public TextureFilterMode MinFilterMode = TextureFilterMode.Linear;
-    public TextureFilterMode MagFilterMode = TextureFilterMode.Linear;
+    private static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
+
+    public TextureFilterMode MinFilterMode = DefaultFilterMode;
+    public TextureFilterMode MagFilterMode = DefaultFilterMode;
     public TextureFilterMode FilterMode {
         set
         {
@@ -33,7 +35,16 @@ public class Texture : BgfxResource
             MagFilterMode = value;
         }
     }
-    public TextureWrapMode WrapMode = TextureWrapMode.Clamp;
+    public TextureWrapMode WrapModeU = TextureWrapMode.Clamp;
+    public TextureWrapMode WrapModeV = TextureWrapMode.Clamp;
+    public TextureWrapMode WrapModeUV
+    {
+        set
+        {
+            WrapModeU = value;
+            WrapModeV = value;
+        }
+    }
 
     private unsafe void CreateTexture(PixelFormat format)
     {
@@ -91,9 +102,37 @@ public class Texture : BgfxResource
         Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
 
+    /// <summary>
+    /// Create an uninitialized texture.
+    /// </summary>
+    /// <param name="width">The width of the texture.</param>
+    /// <param name="height">The height of the texture.</param>
+    /// <param name="format">The pixel format of the texture.</param>
+    /// <returns>A new, uninitialized texture.</returns>
+    public static Texture Create(int width, int height, PixelFormat format) => new(width, height, format);
+
+    /// <summary>
+    /// Create a texture from an Image.
+    /// </summary>
+    /// <param name="image">The image to source from.</param>
+    /// <returns>A new texture.</returns>
+    public static Texture LoadFromImage(Image image) => new(image);
+
+    /// <summary>
+    /// Load an image from a file path and use it to a create a texture.
+    /// </summary>
+    /// <param name="filePath">The path to the image.</param>
+    /// <returns>A new texture.</returns>
+    public static Texture LoadFromFile(string filePath, PixelFormat format = PixelFormat.RGBA)
+    {
+        using var img = Image.FromFile(filePath, format);
+        return new Texture(img);
+    }
+
     protected override void FreeResources(bool disposing)
     {
         Bgfx.destroy_texture(_handle);
+        _handle.idx = ushort.MaxValue;
     }
 
     /*public unsafe Image ToImage(PixelFormat pixelFormat = PixelFormat.RGBA)
