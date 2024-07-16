@@ -382,7 +382,8 @@ public class Shader : BgfxResource
         {
             var handle = GetUniformHandle(_textureUnits[i], "Texture", Bgfx.UniformType.Sampler);
             var texture = _boundTextures[i] ?? placeholderTexture;
-            if (!texture.Handle.Valid)
+            var texHandle = texture.Use();
+            if (!texHandle.Valid)
             {
                 Console.WriteLine("WARNING: Texture handle was invalid!");
                 texture = placeholderTexture;
@@ -402,7 +403,7 @@ public class Shader : BgfxResource
             if (texture.WrapModeV == TextureWrapMode.Clamp) texFlags |= Bgfx.SamplerFlags.VClamp;
             if (texture.WrapModeV == TextureWrapMode.Mirror) texFlags |= Bgfx.SamplerFlags.VMirror;
 
-            Bgfx.set_texture((byte)i, handle, texture.Handle, (ushort)texFlags);
+            Bgfx.set_texture((byte)i, handle, texHandle, (ushort)texFlags);
         }
 
         return programHandle;

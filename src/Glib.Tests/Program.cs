@@ -20,6 +20,10 @@ namespace GlibTests
             var window = new Glib.Window(options);
             window.Initialize();
             var rctx = window.RenderContext!;
+
+            if (!rctx.CanUseMultipleWindows()) throw new Exception("no swapchain support");
+            if (!rctx.CanReadBackFramebufferAttachments()) throw new Exception("no readback support");
+            
             rctx.BackgroundColor = new Glib.Color(0.5f, 0.5f, 0.5f, 1f);
 
             ReadOnlySpan<Vector3> vertices = [

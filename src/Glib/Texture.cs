@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Bgfx_cs;
 
 namespace Glib;
@@ -20,9 +21,10 @@ public class Texture : BgfxResource
 
     public readonly int Width;
     public readonly int Height;
-    public readonly Glib.PixelFormat PixelFormat;
+    public readonly Glib.PixelFormat? PixelFormat;
+    protected Bgfx.TextureFormat BgfxTextureFormat { get; private set; }
 
-    internal Bgfx.TextureHandle Handle => _handle;
+    protected Bgfx.TextureHandle Handle => _handle;
 
     public static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
 
@@ -48,12 +50,12 @@ public class Texture : BgfxResource
 
     private unsafe void CreateTexture(PixelFormat format)
     {
-        var bgfxFormat = format switch
+        BgfxTextureFormat = format switch
         {
-            PixelFormat.Grayscale => Bgfx.TextureFormat.R8U,
-            PixelFormat.GrayscaleAlpha => Bgfx.TextureFormat.RG8,
-            PixelFormat.RGB => Bgfx.TextureFormat.RGB8,
-            PixelFormat.RGBA => Bgfx.TextureFormat.RGBA8,
+            Glib.PixelFormat.Grayscale => Bgfx.TextureFormat.R8,
+            Glib.PixelFormat.GrayscaleAlpha => Bgfx.TextureFormat.RG8,
+            Glib.PixelFormat.RGB => Bgfx.TextureFormat.RGB8,
+            Glib.PixelFormat.RGBA => Bgfx.TextureFormat.RGBA8,
             _ => throw new ArgumentOutOfRangeException(nameof(format))
         };
 
@@ -62,13 +64,13 @@ public class Texture : BgfxResource
                     Bgfx.SamplerFlags.MinAnisotropic |
                     Bgfx.SamplerFlags.MagAnisotropic;
 
-        if (Width < 0 || Height < 0 || Width > ushort.MaxValue || Height > ushort.MaxValue || Bgfx.is_texture_valid(0, false, 1, bgfxFormat, (ulong) flags))
+        if (Width < 0 || Height < 0 || Width > ushort.MaxValue || Height > ushort.MaxValue || Bgfx.is_texture_valid(0, false, 1, BgfxTextureFormat, (ulong) flags))
         {
-            _handle = Bgfx.create_texture_2d((ushort)Width, (ushort)Height, false, 1, bgfxFormat, (ulong)flags, null);
+            _handle = Bgfx.create_texture_2d((ushort)Width, (ushort)Height, false, 1, BgfxTextureFormat, (ulong)flags, null);
         }
         else
         {
-            throw new UnsupportedOperationException($"Could not create texture of size ({Width}, {Height}) and format {format}");
+            throw new UnsupportedRendererOperationException($"Could not create texture of size ({Width}, {Height}) and format {format}");
         }
     }
     
@@ -78,6 +80,14 @@ public class Texture : BgfxResource
         Height = height;
         PixelFormat = format;
         CreateTexture(format);
+    }
+
+    internal unsafe Texture(int width, int height, PixelFormat? format, Bgfx.TextureHandle handle)
+    {
+        Width = width;
+        Height = height;
+        PixelFormat = format;
+        _handle = handle;
     }
 
     private unsafe Bgfx.Memory* GetImageData(Image image)
@@ -123,7 +133,7 @@ public class Texture : BgfxResource
     /// </summary>
     /// <param name="filePath">The path to the image.</param>
     /// <returns>A new texture.</returns>
-    public static Texture LoadFromFile(string filePath, PixelFormat format = PixelFormat.RGBA)
+    public static Texture LoadFromFile(string filePath, PixelFormat format = Glib.PixelFormat.RGBA)
     {
         using var img = Image.FromFile(filePath, format);
         return new Texture(img);
@@ -166,6 +176,8 @@ public class Texture : BgfxResource
     /// <exception cref="ArgumentException">Thrown if the image does not have the same dimensions and pixel format as the texture.</exception>
     public unsafe void UpdateFromImage(Image image)
     {
+        if (PixelFormat is null) throw new InvalidOperationException("Texture cannot be modified");
+        
         if (image.Width != Width || image.Height != Height)
         {
             throw new ArgumentException("Image dimensions must match texture dimensions", nameof(image));
@@ -183,12 +195,14 @@ public class Texture : BgfxResource
     /// <exception cref="ArgumentException">Thrown if the pixel data length is not the same as the texture's buffer size.</exception> 
     public unsafe void UpdateFromImage(ReadOnlySpan<byte> pixels)
     {
+        if (PixelFormat is null) throw new InvalidOperationException("Texture cannot be modified");
+
         var bytesPerPixel = PixelFormat switch
         {
-            PixelFormat.Grayscale => 1,
-            PixelFormat.GrayscaleAlpha => 2,
-            PixelFormat.RGB => 3,
-            PixelFormat.RGBA => 4,
+            Glib.PixelFormat.Grayscale => 1,
+            Glib.PixelFormat.GrayscaleAlpha => 2,
+            Glib.PixelFormat.RGB => 3,
+            Glib.PixelFormat.RGBA => 4,
             _ => throw new Exception("Texture.PixelFormat is somehow invalid")
         };
 
@@ -200,4 +214,85 @@ public class Texture : BgfxResource
         pixels.CopyTo(new Span<byte>(alloc->data, (int)alloc->size));
         Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
+
+    internal virtual Bgfx.TextureHandle Use()
+    {
+        return _handle;
+    }
+}
+
+/// <summary>
+/// A texture that is attached to a framebuffer.
+/// </summary>
+public class FramebufferTexture : Texture
+{
+    private Framebuffer _framebuffer;
+
+    internal unsafe FramebufferTexture(
+        Framebuffer attached,
+        int width, int height,
+        Bgfx.TextureFormat textureFormat,
+        Bgfx.TextureHandle handle
+    ) : base(width, height, GetPixelFormatFromTexture(textureFormat), handle)
+    {
+        _framebuffer = attached;
+    }
+
+    private static Glib.PixelFormat? GetPixelFormatFromTexture(Bgfx.TextureFormat fmt)
+    {
+        return fmt switch
+        {
+            Bgfx.TextureFormat.RGBA8 => Glib.PixelFormat.RGBA,
+            Bgfx.TextureFormat.RGB8 => Glib.PixelFormat.RGB,
+            Bgfx.TextureFormat.RG8 => Glib.PixelFormat.GrayscaleAlpha,
+            Bgfx.TextureFormat.R8 => Glib.PixelFormat.Grayscale,
+            _ => null
+        };
+    }
+
+    internal override Bgfx.TextureHandle Use()
+    {
+        Console.WriteLine("Used fbo");
+        RenderContext.Instance!.AddViewDependency(_framebuffer);
+        return base.Use();
+    }
+}
+
+/// <summary>
+/// A texture whose data can be read back from the GPU.
+/// This is only created by framebuffers.
+/// </summary>
+public class ReadableFramebufferTexture : FramebufferTexture
+{
+    internal ReadableFramebufferTexture(Framebuffer fb, int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
+        : base(fb, width, height, fmt, handle)
+    {}
+
+    /*public unsafe Image GetImage()
+    {
+        if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
+
+        byte* mem = null;
+
+        try
+        {
+            Bgfx.TextureInfo texInfo = new();
+            Bgfx.calc_texture_size(&texInfo, (ushort)Width, (ushort)Height, 0, false, false, 1, BgfxTextureFormat);
+            mem = (byte*) NativeMemory.Alloc((nuint)texInfo.storageSize);
+            Bgfx.read_texture(Handle, mem, 0);
+
+            if (BgfxTextureFormat == Bgfx.TextureFormat.RGBA8)
+            {
+            }
+            else
+            {
+                throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
+            }
+        }
+        finally
+        {
+            if (mem != null)
+                NativeMemory.Free(mem);
+        }
+    }*/
 }

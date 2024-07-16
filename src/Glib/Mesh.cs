@@ -177,14 +177,14 @@ public class Mesh : BgfxResource
     /// <param name="config">The MeshConfiguration</param>
     /// <param name="vertexCount">The number of vertices to allocate</param>
     /// <param name="indexCount">The number of indices to allocate. Unused if config.Indexed is false</param>
-    /// <exception cref="UnsupportedOperationException">Thrown if MeshConfiguration requires 32-bit indices, but the renderer does not support it.</exception>
+    /// <exception cref="UnsupportedRendererOperationException">Thrown if MeshConfiguration requires 32-bit indices, but the renderer does not support it.</exception>
     public unsafe Mesh(MeshConfiguration config, int vertexCount, int indexCount = 0)
     {
         _config = config.Clone();
 
         if (_config.Use32BitIndices && !Are32BitIndicesSupported)
         {
-            throw new UnsupportedOperationException("32-bit indices are not supported");
+            throw new UnsupportedRendererOperationException("32-bit indices are not supported");
         }
         
         int intBufCount = 0;

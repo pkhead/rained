@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Bgfx_cs;
@@ -44,8 +45,10 @@ public enum DebugSeverity
     High
 };
 
-public class RenderContext : IDisposable
+public sealed class RenderContext : IDisposable
 {
+    internal static RenderContext? Instance { get; private set; } = null;
+
     private bool _disposed = false;
 
     public int ScreenWidth { get; private set; }
@@ -60,9 +63,18 @@ public class RenderContext : IDisposable
     private readonly Shader defaultShader;
 
     private readonly Stack<Matrix4x4> transformStack = [];
-    //private readonly Stack<Framebuffer> framebufferStack = [];
-    //private Framebuffer? curFramebuffer = null;
+    private readonly Stack<Framebuffer> framebufferStack = [];
+    private Framebuffer? curFramebuffer = null;
+
+    private class ViewGraphNode(Framebuffer? fb)
+    {
+        public Framebuffer? framebuffer = fb; // a Framebuffer value of null represents the window framebuffer
+        public List<ViewGraphNode> children = [];
+    }
+
     private ushort curViewId = 0;
+    private List<ViewGraphNode> _viewData = [];
+    private ViewGraphNode _curView = null!;
 
     internal Matrix4x4 BaseTransform = Matrix4x4.Identity;
     public Matrix4x4 TransformMatrix { get => _drawBatch.TransformMatrix; set => _drawBatch.TransformMatrix = value; }
@@ -87,6 +99,13 @@ public class RenderContext : IDisposable
 
     internal unsafe RenderContext(IWindow window)
     {
+        if (Instance is not null)
+        {
+            throw new NotImplementedException("Multi-window not implemented yet");
+        }
+
+        Instance = this;
+
         _cbInterface = new CallbackInterface()
         {
             Log = (string msg) => Console.WriteLine(msg),
@@ -132,9 +151,22 @@ public class RenderContext : IDisposable
         TransformMatrix = Matrix4x4.Identity;
     }
 
+    public unsafe bool CanUseMultipleWindows()
+    {
+        var caps = Bgfx.get_caps();
+        return (caps->supported & (ulong)Bgfx.CapsFlags.SwapChain) != 0;
+    }
+
+    public unsafe bool CanReadBackFramebufferAttachments()
+    {
+        var caps = Bgfx.get_caps();
+        return (caps->supported & (ulong)Bgfx.CapsFlags.TextureReadBack) != 0;
+    }
+
     public void Dispose()
     {
         _drawBatch.Dispose();
+        BgfxResource.DisposeRemaining();
         Bgfx.shutdown();
         _cbInterface.Dispose();
         GC.SuppressFinalize(this);
@@ -154,18 +186,20 @@ public class RenderContext : IDisposable
         }
     }
 
+    private uint ColorToUint(Color color)
+    {
+        var r = (uint)(Math.Clamp(BackgroundColor.R, 0f, 1f) * 255f);
+        var g = (uint)(Math.Clamp(BackgroundColor.G, 0f, 1f) * 255f);
+        var b = (uint)(Math.Clamp(BackgroundColor.B, 0f, 1f) * 255f);
+        var a = (uint)(Math.Clamp(BackgroundColor.A, 0f, 1f) * 255f);
+        return a | (b << 8) | (g << 16) | (r << 24);
+    }
+
     internal void Begin(int width, int height)
     {
         curViewId = 0;
 
-        uint bgCol;
-        {
-            var r = (uint)(Math.Clamp(BackgroundColor.R, 0f, 1f) * 255f);
-            var g = (uint)(Math.Clamp(BackgroundColor.G, 0f, 1f) * 255f);
-            var b = (uint)(Math.Clamp(BackgroundColor.B, 0f, 1f) * 255f);
-            var a = (uint)(Math.Clamp(BackgroundColor.A, 0f, 1f) * 255f);
-            bgCol = a | (b << 8) | (g << 16) | (r << 24);
-        }
+        uint bgCol = ColorToUint(BackgroundColor);
 
         if (width != ScreenWidth || height != ScreenHeight)
         {
@@ -174,9 +208,14 @@ public class RenderContext : IDisposable
             ScreenHeight = height;
         }
 
+        _viewData.Clear();
         SetViewport(ScreenWidth, ScreenHeight);
+        Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
         Bgfx.set_view_clear(curViewId, (ushort)(Bgfx.ClearFlags.Color | Bgfx.ClearFlags.Depth), bgCol, 1f, 0);
         Bgfx.touch(curViewId); // ensure this view will be cleared even if no draw calls are submitted to it
+
+        _curView = new ViewGraphNode(null);
+        _viewData.Add(_curView);
 
         transformStack.Clear();
         TransformMatrix = Matrix4x4.Identity;
@@ -212,7 +251,7 @@ public class RenderContext : IDisposable
         
         if (shader.HasUniform(Shader.ColorUniform))
             shader.SetUniform(Shader.ColorUniform, DrawColor);
-        
+                
         var programHandle = shader.Activate(WhiteTexture);
         Bgfx.StateFlags state = Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
         state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
@@ -227,29 +266,75 @@ public class RenderContext : IDisposable
 
     public void Draw(Mesh mesh) => Draw(mesh, WhiteTexture);
 
-    private unsafe void BatchDrawCallback(Bgfx.StateFlags flags)
+    internal void AddViewDependency(Framebuffer framebuffer)
     {
-        var shader = Shader ?? defaultShader;
-        flags |= Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
-        flags |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
-        Bgfx.set_state((ulong)flags, 0);
-
-        if (shader.HasUniform(Shader.TextureUniform))
-            shader.SetUniform(Shader.TextureUniform, _drawBatch.Texture ?? WhiteTexture);
-
-        if (shader.HasUniform(Shader.ColorUniform))
-            shader.SetUniform(Shader.ColorUniform, Color.White);
+        var childView = _viewData.Find(x => x.framebuffer == framebuffer)
+            ?? throw new Exception("Cannot use framebuffer before rendering to it");
         
-        Matrix4x4 mat = Matrix4x4.Identity;
-        Bgfx.set_transform(&mat, 1);
+        if (!_curView.children.Contains(childView))
+        {
+            _curView.children.Add(childView);
+        }
+    }
 
-        Bgfx.submit(curViewId, shader.Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
+    public void PushFramebuffer(Framebuffer framebuffer)
+    {
+        if (curFramebuffer is not null)
+            framebufferStack.Push(curFramebuffer);
+
+        _drawBatch.Draw();
+        curFramebuffer = framebuffer;
+
+        SetViewport(framebuffer.Width, framebuffer.Height);
+
+        var viewId = _viewData.FindIndex(x => x.framebuffer == framebuffer);
+        if (viewId == -1)
+        {
+            viewId = _viewData.Count;
+            _viewData.Add(new ViewGraphNode(framebuffer));
+            Bgfx.set_view_frame_buffer((ushort)viewId, framebuffer.Handle);
+            Bgfx.set_view_mode((ushort)viewId, Bgfx.ViewMode.Sequential);
+
+            var clearFlags = Bgfx.ClearFlags.None;
+            if (framebuffer.clearFlags.HasFlag(ClearFlags.Color)) clearFlags |= Bgfx.ClearFlags.Color;
+            if (framebuffer.clearFlags.HasFlag(ClearFlags.Depth)) clearFlags |= Bgfx.ClearFlags.Depth;
+            if (framebuffer.clearFlags.HasFlag(ClearFlags.Stencil)) clearFlags |= Bgfx.ClearFlags.Stencil;
+
+            Bgfx.set_view_clear((ushort)viewId, (ushort)clearFlags, ColorToUint(framebuffer.clearColor), 1f, 0);
+            Bgfx.touch((ushort)viewId);
+        }
+
+        curViewId = (ushort)viewId;
+    }
+
+    public Framebuffer? PopFramebuffer()
+    {
+        _drawBatch.Draw();
+        if (framebufferStack.TryPop(out Framebuffer? framebuffer))
+        {
+            SetViewport(framebuffer.Width, framebuffer.Height);
+
+            var viewId = _viewData.FindIndex(x => x.framebuffer == framebuffer);
+            Debug.Assert(viewId >= 0);
+            curViewId = (ushort)viewId;
+        }
+        else
+        {
+            SetViewport(ScreenWidth, ScreenHeight);
+            curViewId = 0;
+        }
+        
+        curFramebuffer = framebuffer;
+        return curFramebuffer;
     }
 
     internal void End()
     {
         _drawBatch.Draw();
+
+        // create view order from framebuffer graph
         Bgfx.frame(false);
+        BgfxResource.Housekeeping();
     }
 
     #region Transform
@@ -313,6 +398,25 @@ public class RenderContext : IDisposable
     #endregion
 
     #region Shapes
+
+    private unsafe void BatchDrawCallback(Bgfx.StateFlags flags)
+    {
+        var shader = Shader ?? defaultShader;
+        flags |= Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
+        flags |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+        Bgfx.set_state((ulong)flags, 0);
+
+        if (shader.HasUniform(Shader.TextureUniform))
+            shader.SetUniform(Shader.TextureUniform, _drawBatch.Texture ?? WhiteTexture);
+
+        if (shader.HasUniform(Shader.ColorUniform))
+            shader.SetUniform(Shader.ColorUniform, Color.White);
+        
+        Matrix4x4 mat = Matrix4x4.Identity;
+        Bgfx.set_transform(&mat, 1);
+
+        Bgfx.submit(curViewId, shader.Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
+    }
 
     public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
     {

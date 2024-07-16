@@ -4,12 +4,15 @@ using System.Numerics;
 
 namespace Glib;
 
+/// <summary>
+/// The exception that is thrown when the current backend renderer does not support a given operation or resource configuration.
+/// </summary>
 [Serializable]
-public class UnsupportedOperationException : Exception
+public class UnsupportedRendererOperationException : Exception
 {
-    public UnsupportedOperationException() { }
-    public UnsupportedOperationException(string message) : base(message) { }
-    public UnsupportedOperationException(string message, Exception inner) : base(message, inner) { }
+    public UnsupportedRendererOperationException() { }
+    public UnsupportedRendererOperationException(string message) : base(message) { }
+    public UnsupportedRendererOperationException(string message, Exception inner) : base(message, inner) { }
 }
 
 public struct Color
