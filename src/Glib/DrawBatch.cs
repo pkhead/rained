@@ -1,5 +1,6 @@
 using Bgfx_cs;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Glib;
 
@@ -8,54 +9,97 @@ namespace Glib;
 /// </summary>
 internal class DrawBatch : BgfxResource
 {
-    private const uint VertexDataSize = 8;
+    private const uint VertexDataSize = 9;
     private const uint MaxVertices = 4096;
     
     private readonly float[] batchData;
     private int vertexCount;
     private Bgfx.VertexLayout _vertexLayout;
 
-    public Color DrawColor;
+    private MeshPrimitiveType _drawMode;
+    public Color DrawColor = Color.White;
+    public Vector2 UV = Vector2.Zero;
+    public Matrix4x4 TransformMatrix;
+    
+    private Texture? _texture;
+    public Texture? Texture
+    {
+        get => _texture;
+        set
+        {
+            if (_texture == value) return;
+            Draw();
+            _texture = value;
+        }
+    }
 
-    private Texture curTexture = null!;
-    private Texture lastTexture = null!;
+    private Shader? _shader;
+    public Shader? Shader
+    {
+        get => _shader;
+        set
+        {
+            if (_shader == value) return;
+            Draw();
+            _shader = value;
+        }
+    }
 
-    public unsafe DrawBatch()
+    public Action<Bgfx.StateFlags> DrawCallback { get; set; }
+
+    public unsafe DrawBatch(Action<Bgfx.StateFlags> drawCallback)
     {
         batchData = new float[MaxVertices * VertexDataSize];
         vertexCount = 0;
+        _texture = null!;
+        DrawCallback = drawCallback;
 
         var layout = new Bgfx.VertexLayout();
         Bgfx.vertex_layout_begin(&layout, Bgfx.RendererType.Noop);
-        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Position, 2, Bgfx.AttribType.Float, false, false);
-        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Color0, 4, Bgfx.AttribType.Float, false, false);
+        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Position, 3, Bgfx.AttribType.Float, false, false);
         Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.TexCoord0, 2, Bgfx.AttribType.Float, false, false);
+        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Color0, 4, Bgfx.AttribType.Float, false, false);
         Bgfx.vertex_layout_end(&layout);
         _vertexLayout = layout;
     }
 
-    public void NewFrame(Texture initialTex)
+    public unsafe void NewFrame(Texture initialTex)
     {
         vertexCount = 0;
-        curTexture = initialTex;
-        lastTexture = initialTex;
+        _texture = initialTex;
+        _shader = null;
+
+        DrawColor = Color.White;
+        UV = Vector2.Zero;
     }
 
-    /*public unsafe void Draw()
+    public unsafe void Draw()
     {
         if (vertexCount == 0) return;
 
-        var tvb = new Bgfx.TransientVertexBuffer();
+        Bgfx.TransientVertexBuffer vertexBuf;
         fixed (Bgfx.VertexLayout* layout = &_vertexLayout)
+            Bgfx.alloc_transient_vertex_buffer(&vertexBuf, (uint)vertexCount, layout);
+
+        fixed (float* data = batchData)
         {
-            Bgfx.alloc_transient_vertex_buffer(&tvb, (uint)vertexCount, layout);
+            Buffer.MemoryCopy(data, vertexBuf.data, vertexBuf.size, vertexCount * VertexDataSize * sizeof(float));
         }
 
-        batchData.CopyTo(new Span<float>(tvb.data, (int)tvb.size / sizeof(float)));
-        Bgfx.set_transient_vertex_buffer(0, &tvb, 0, (uint)vertexCount);
-        vertexCount = 0;
+        Bgfx.set_transient_vertex_buffer(0, &vertexBuf, 0, (uint)vertexCount);
 
-        _drawCallback();
+        var state = _drawMode switch
+        {
+            MeshPrimitiveType.Points => Bgfx.StateFlags.PtPoints,
+            MeshPrimitiveType.Lines => Bgfx.StateFlags.PtLines,
+            MeshPrimitiveType.LineStrip => Bgfx.StateFlags.PtLinestrip,
+            MeshPrimitiveType.Triangles => Bgfx.StateFlags.None,
+            MeshPrimitiveType.TriangleStrip => Bgfx.StateFlags.PtTristrip,
+            _ => throw new Exception("Invalid MeshPrimitiveType")
+        };
+
+        DrawCallback(state);
+        vertexCount = 0;
     }
 
     private void CheckCapacity(uint newVertices)
@@ -71,12 +115,29 @@ internal class DrawBatch : BgfxResource
         CheckCapacity(requiredCapacity);
 
         // flush batch on texture/draw mode change
-        if (curTexture != lastTexture || drawMode != newDrawMode)
+        if (_drawMode != newDrawMode)
         {
-            DrawBatch();
-            lastTexture = curTexture;
-            drawMode = newDrawMode;
+            Draw();
+            _drawMode = newDrawMode;
         }
+    }
+
+    private void PushVertex(float x, float y)
+    {
+        var vec = Vector4.Transform(new Vector4(x, y, 0f, 1f), TransformMatrix);
+
+        uint i = (uint)vertexCount * VertexDataSize;
+        batchData[i++] = vec.X / vec.W;
+        batchData[i++] = vec.Y / vec.W;
+        batchData[i++] = vec.Z / vec.W;
+        batchData[i++] = UV.X;
+        batchData[i++] = UV.Y;
+        batchData[i++] = DrawColor.R;
+        batchData[i++] = DrawColor.G;
+        batchData[i++] = DrawColor.B;
+        batchData[i++] = DrawColor.A;
+
+        vertexCount++;
     }
 
     public struct BatchDrawHandle : IDisposable
@@ -117,7 +178,7 @@ internal class DrawBatch : BgfxResource
             {
                 case BatchDrawMode.Triangles:
                 {
-                    _batch.BeginBatchDraw(3, MeshPrimitiveType.Triangles);
+                    _batch.BeginDraw(3, MeshPrimitiveType.Triangles);
                     for (int i = 0; i < 3; i++)
                     {
                         _batch.DrawColor = colors[i];
@@ -129,7 +190,7 @@ internal class DrawBatch : BgfxResource
 
                 case BatchDrawMode.Quads:
                 {
-                    _batch.BeginBatchDraw(6, MeshPrimitiveType.Triangles);
+                    _batch.BeginDraw(6, MeshPrimitiveType.Triangles);
 
                     // first triangle
                     _batch.DrawColor = colors[0];
@@ -159,7 +220,7 @@ internal class DrawBatch : BgfxResource
 
                 case BatchDrawMode.Lines:
                 {
-                    _batch.BeginBatchDraw(2, MeshPrimitiveType.Lines);
+                    _batch.BeginDraw(2, MeshPrimitiveType.Lines);
 
                     _batch.DrawColor = colors[0];
                     _batch.UV = uvs[0];
@@ -208,10 +269,15 @@ internal class DrawBatch : BgfxResource
         }
 
         public void Dispose() => End();
-    }*/
+    }
+
+    public BatchDrawHandle BeginBatchDraw(BatchDrawMode mode, Texture? tex = null)
+    {
+        Texture = tex;
+        return new BatchDrawHandle(mode, this);
+    }
 
     protected override void FreeResources(bool disposing)
     {
-        throw new NotImplementedException();
     }
 }

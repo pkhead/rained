@@ -58,7 +58,6 @@ public class RenderContext : IDisposable
     public Texture WhiteTexture { get; private set; }
 
     private readonly Shader defaultShader;
-    private Shader? shaderValue;
 
     private readonly Stack<Matrix4x4> transformStack = [];
     //private readonly Stack<Framebuffer> framebufferStack = [];
@@ -66,25 +65,20 @@ public class RenderContext : IDisposable
     private ushort curViewId = 0;
 
     internal Matrix4x4 BaseTransform = Matrix4x4.Identity;
-    public Matrix4x4 TransformMatrix;
+    public Matrix4x4 TransformMatrix { get => _drawBatch.TransformMatrix; set => _drawBatch.TransformMatrix = value; }
     public Color BackgroundColor = Color.Black;
-    public Color DrawColor = Color.White;
-    public float LineWidth = 1.0f;
+    public ref Color DrawColor => ref _drawBatch.DrawColor;
+    public Shader? Shader { get => _drawBatch.Shader; set => _drawBatch.Shader = value; }
 
-    public TextureFilterMode DefaultTextureMagFilter = TextureFilterMode.Linear;
-    public TextureFilterMode DefaultTextureMinFilter = TextureFilterMode.Linear;
+    /// <summary>
+    /// If Glib should use GL_LINES primitives for drawing lines.
+    /// When enabled, the LineWidth field will not be respected, and all
+    /// lines will be drawn with a width of 1
+    /// </summary>
+    public bool UseGlLines = true;
+    public float LineWidth = 1f;
 
-    private DrawBatch _drawBatch;
-
-    public Shader? Shader {
-        get => shaderValue;
-        set
-        {
-            if (shaderValue == value) return;
-            //_drawBatch.Draw();
-            shaderValue = value;
-        }
-    }
+    private readonly DrawBatch _drawBatch;
 
     public readonly string GpuVendor;
     public readonly string GpuRenderer;
@@ -133,12 +127,20 @@ public class RenderContext : IDisposable
         }
 
         defaultShader = new Shader();
+         _drawBatch = new DrawBatch(BatchDrawCallback);
         WhiteTexture = new Texture(Image.FromColor(1, 1, Color.White));
         TransformMatrix = Matrix4x4.Identity;
-        _drawBatch = new DrawBatch();
     }
 
-    public unsafe void SetViewport(int width, int height)
+    public void Dispose()
+    {
+        _drawBatch.Dispose();
+        Bgfx.shutdown();
+        _cbInterface.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    internal unsafe void SetViewport(int width, int height)
     {
         Bgfx.set_view_rect(curViewId, 0, 0, (ushort)width, (ushort)height);
         BaseTransform =
@@ -152,7 +154,7 @@ public class RenderContext : IDisposable
         }
     }
 
-    public void Begin(int width, int height)
+    internal void Begin(int width, int height)
     {
         curViewId = 0;
 
@@ -179,7 +181,6 @@ public class RenderContext : IDisposable
         transformStack.Clear();
         TransformMatrix = Matrix4x4.Identity;
 
-        shaderValue = null;
         defaultShader.SetUniform(Shader.TextureUniform, WhiteTexture);
         defaultShader.SetUniform(Shader.ColorUniform, Color.White);
         _drawBatch.NewFrame(WhiteTexture);
@@ -200,28 +201,58 @@ public class RenderContext : IDisposable
         return BgfxStateBlendFuncSeparate(src, dst, src, dst);
     }
 
-    public unsafe void Draw(Mesh mesh)
+    public unsafe void Draw(Mesh mesh, Texture texture)
     {
-        var shader = shaderValue ?? defaultShader;
+        _drawBatch.Draw();
+
+        var shader = Shader ?? defaultShader;
+
+        if (shader.HasUniform(Shader.TextureUniform))
+            shader.SetUniform(Shader.TextureUniform, texture);
+        
+        if (shader.HasUniform(Shader.ColorUniform))
+            shader.SetUniform(Shader.ColorUniform, DrawColor);
+        
         var programHandle = shader.Activate(WhiteTexture);
         Bgfx.StateFlags state = Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
         state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
         state |= mesh.Activate();
         Bgfx.set_state((ulong)state, 0);
 
-        fixed (Matrix4x4* transform = &TransformMatrix)
-            Bgfx.set_transform(transform, 1);
+        Matrix4x4 transformMat = TransformMatrix;
+        Bgfx.set_transform(&transformMat, 1);
 
-        Bgfx.submit(0, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+        Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
     }
 
-    public void End()
+    public void Draw(Mesh mesh) => Draw(mesh, WhiteTexture);
+
+    private unsafe void BatchDrawCallback(Bgfx.StateFlags flags)
     {
-        Bgfx.frame(false);
-        //_drawBatch.Draw();
-        //InternalSetTexture(null);
+        var shader = Shader ?? defaultShader;
+        flags |= Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.CullCw | Bgfx.StateFlags.Msaa;
+        flags |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+        Bgfx.set_state((ulong)flags, 0);
+
+        if (shader.HasUniform(Shader.TextureUniform))
+            shader.SetUniform(Shader.TextureUniform, _drawBatch.Texture ?? WhiteTexture);
+
+        if (shader.HasUniform(Shader.ColorUniform))
+            shader.SetUniform(Shader.ColorUniform, Color.White);
+        
+        Matrix4x4 mat = Matrix4x4.Identity;
+        Bgfx.set_transform(&mat, 1);
+
+        Bgfx.submit(curViewId, shader.Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
     }
 
+    internal void End()
+    {
+        _drawBatch.Draw();
+        Bgfx.frame(false);
+    }
+
+    #region Transform
     public void PushTransform()
     {
         transformStack.Push(TransformMatrix);
@@ -229,11 +260,11 @@ public class RenderContext : IDisposable
 
     public void PopTransform()
     {
-        if (transformStack.Count == 0)
+        if (transformStack.Count == 0) return;
         TransformMatrix = transformStack.Pop();
     }
 
-    public void Translate(float x, float y, float z)
+    public void Translate(float x, float y, float z = 0f)
     {
         TransformMatrix = Matrix4x4.CreateTranslation(x, y, z) * TransformMatrix;
     }
@@ -243,7 +274,12 @@ public class RenderContext : IDisposable
         TransformMatrix = Matrix4x4.CreateTranslation(translation) * TransformMatrix;
     }
 
-    public void Scale(float x, float y, float z)
+    public void Translate(Vector2 translation)
+    {
+        TransformMatrix = Matrix4x4.CreateTranslation(translation.X, translation.Y, 0f) * TransformMatrix;
+    }
+
+    public void Scale(float x, float y, float z = 1f)
     {
         TransformMatrix = Matrix4x4.CreateScale(x, y, z) * TransformMatrix;
     }
@@ -251,6 +287,11 @@ public class RenderContext : IDisposable
     public void Scale(Vector3 scale)
     {
         TransformMatrix = Matrix4x4.CreateScale(scale) * TransformMatrix;
+    }
+
+    public void Scale(Vector2 scale)
+    {
+        TransformMatrix = Matrix4x4.CreateScale(scale.X, scale.Y, 1f) * TransformMatrix;
     }
 
     public void RotateX(float rad)
@@ -269,6 +310,218 @@ public class RenderContext : IDisposable
     }
 
     public void Rotate(float rad) => RotateZ(rad);
+    #endregion
+
+    #region Shapes
+
+    public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
+    {
+        using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Triangles);
+        draw.Vertex(x0, y0);
+        draw.Vertex(x1, y1);
+        draw.Vertex(x2, y2);
+    }
+
+    public void DrawTriangle(Vector2 a, Vector2 b, Vector2 c)
+    {
+        using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Triangles);
+        draw.Vertex(a);
+        draw.Vertex(b);
+        draw.Vertex(c);
+    }
+
+    public void DrawRectangle(float x, float y, float w, float h)
+    {
+        using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Quads);
+        draw.Vertex(x, y);
+        draw.Vertex(x, y+h);
+        draw.Vertex(x+w, y+h);
+        draw.Vertex(x+w, y);
+    }
+
+    public void DrawRectangle(Vector2 origin, Vector2 size) => DrawRectangle(origin.X, origin.Y, size.X, size.Y);
+    public void DrawRectangle(Rectangle rectangle) => DrawRectangle(rectangle.Left, rectangle.Top, rectangle.Width, rectangle.Height);
+
+    public void DrawLine(float x0, float y0, float x1, float y1)
+    {
+        if (UseGlLines)
+        {
+            using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Lines);
+            draw.Vertex(x0, y0);
+            draw.Vertex(x1, y1);
+        }
+        else
+        {
+            var dx = x1 - x0;
+            var dy = y1 - y0;
+            if (dx == 0f && dy == 0f) return;
+
+            var dist = MathF.Sqrt(dx*dx + dy*dy);
+
+            var perpX = dy / dist * LineWidth / 2f;
+            var perpY = -dx / dist * LineWidth / 2f;
+
+            using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Triangles);
+            draw.Vertex(x0 + perpX, y0 + perpY);
+            draw.Vertex(x0 - perpX, y0 - perpY);
+            draw.Vertex(x1 - perpX, y1 - perpY);
+            draw.Vertex(x1 + perpX, y1 + perpY);
+            draw.Vertex(x0 + perpX, y0 + perpY);
+            draw.Vertex(x1 - perpX, y1 - perpY);
+        }
+    }
+
+    public void DrawLine(Vector2 a, Vector2 b) => DrawLine(a.X, a.Y, b.X, b.Y);
+
+    public void DrawRectangleLines(float x, float y, float w, float h)
+    {
+        if (UseGlLines)
+        {
+            using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Lines);
+
+            draw.Vertex(x, y);
+            draw.Vertex(x, y + h);
+
+            draw.Vertex(x, y + h);
+            draw.Vertex(x + w, y + h);
+
+            draw.Vertex(x + w, y + h);
+            draw.Vertex(x + w, y);
+
+            draw.Vertex(x + w, y);
+            draw.Vertex(x, y);
+        }
+        else
+        {
+            DrawRectangle(x, y, w, LineWidth); // top side
+            DrawRectangle(x, y+LineWidth, LineWidth, h-LineWidth); // left side
+            DrawRectangle(x, y+h-LineWidth, w-LineWidth, LineWidth); // bottom side
+            DrawRectangle(x+w-LineWidth, y+LineWidth, LineWidth, h-LineWidth); // right side
+        }
+    }
+
+    private const float SmoothCircleErrorRate = 0.5f;
+    public void DrawCircleSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
+    {
+        // copied from raylib code
+        if (radius <= 0f) radius = 0.1f; // Avoid div by zero
+
+        // expects (endAngle > startAngle)
+        // if not, swap
+        if (endAngle < startAngle)
+        {
+            (endAngle, startAngle) = (startAngle, endAngle);
+        }
+
+        int minSegments = (int)MathF.Ceiling((endAngle - startAngle) / (MathF.PI / 2f));
+        if (segments < minSegments)
+        {
+            // calc the max angle between segments based on the error rate (usually 0.5f)
+            float th = MathF.Acos(2f * MathF.Pow(1f - SmoothCircleErrorRate/radius, 2f) - 1f);
+            segments = (int)((endAngle - startAngle) * MathF.Ceiling(2f * MathF.PI / th) / (2f * MathF.PI));
+            if (segments <= 0) segments = minSegments;
+        }
+
+        float stepLength = (float)(endAngle - startAngle) / segments;
+        float angle = startAngle;
+
+        using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Quads);
+
+        // NOTE: Every QUAD actually represents two segments
+        for (int i = 0; i < segments / 2; i++)
+        {
+            draw.Vertex(x0, y0);
+            draw.Vertex(x0 + MathF.Cos(angle + stepLength * 2f) * radius, y0 + MathF.Sin(angle + stepLength * 2f) * radius);
+            draw.Vertex(x0 + MathF.Cos(angle + stepLength) * radius, y0 + MathF.Sin(angle + stepLength) * radius);
+            draw.Vertex(x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius);
+            angle += 2f * stepLength;
+        }
+
+        // NOTE: In case number of segments is odd, we add one last piece to the cake
+        if ((((uint)segments)%2) == 1)
+        {
+            draw.Vertex(x0, y0);
+            draw.Vertex(x0 + MathF.Cos(angle + stepLength) * radius, y0 + MathF.Sin(angle + stepLength) * radius);
+            draw.Vertex(x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius);
+            draw.Vertex(x0, y0);
+        }
+
+        /*for (int i = 0; i < segments; i++)
+        {
+            BeginBatchDraw(3);
+            PushVertex(x0, y0);
+            PushVertex(x0 + MathF.Cos(angle + stepLength) * radius, y0 + MathF.Sin(angle + stepLength) * radius);
+            PushVertex(x0 + MathF.Cos(angle) * radius, y0  + MathF.Sin(angle) * radius);
+            angle += stepLength;
+        }*/
+    }
+
+    public void DrawRingSector(float x0, float y0, float radius, float startAngle, float endAngle, int segments)
+    {
+        // copied from raylib code
+        if (radius <= 0f) radius = 0.1f; // Avoid div by zero
+
+        // expects (endAngle > startAngle)
+        // if not, swap
+        if (endAngle < startAngle)
+        {
+            (endAngle, startAngle) = (startAngle, endAngle);
+        }
+
+        int minSegments = (int)MathF.Ceiling((endAngle - startAngle) / (MathF.PI / 2f));
+        if (segments < minSegments)
+        {
+            // calc the max angle between segments based on the error rate (usually 0.5f)
+            float th = MathF.Acos(2f * MathF.Pow(1f - SmoothCircleErrorRate/radius, 2f) - 1f);
+            segments = (int)((endAngle - startAngle) * MathF.Ceiling(2f * MathF.PI / th) / (2f * MathF.PI));
+            if (segments <= 0) segments = minSegments;
+        }
+
+        float stepLength = (float)(endAngle - startAngle) / segments;
+        float angle = startAngle;
+
+        // cap line
+        /*DrawLine(
+            x0, y0,
+            x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius
+        );*/
+
+        for (int i = 0; i < segments; i++)
+        {
+            DrawLine(
+                x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius,
+                x0 + MathF.Cos(angle+stepLength) * radius, y0 + MathF.Sin(angle+stepLength) * radius
+            );
+
+            angle += stepLength;
+        }
+
+        // cap line
+        /*DrawLine(
+            x0, y0,
+            x0 + MathF.Cos(angle) * radius, y0 + MathF.Sin(angle) * radius
+        );*/
+    }
+
+    public void DrawCircleSector(Vector2 center, float radius, float startAngle, float endAngle, int segments)
+        => DrawCircleSector(center.X, center.Y, radius, startAngle, endAngle, segments);
+    
+    public void DrawCircle(float x, float y, float radius, int segments = 36)
+        => DrawCircleSector(x, y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public void DrawCircle(Vector2 center, float radius, int segments = 36)
+        => DrawCircleSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
+
+    public void DrawRingSector(Vector2 center, float radius, float startAngle, float endAngle, int segments)
+        => DrawRingSector(center.X, center.Y, radius, startAngle, endAngle, segments);
+    
+    public void DrawRing(float x, float y, float radius, int segments = 36)
+        => DrawRingSector(x, y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public void DrawRing(Vector2 center, float radius, int segments = 36)
+        => DrawRingSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
+
+    #endregion
 
     /*public Mesh CreateMesh(MeshConfiguration config, int vertexCount)
     {
@@ -313,11 +566,4 @@ public class RenderContext : IDisposable
         Bgfx.set_state((ulong)Bgfx.StateFlags.Default, 0);
         Bgfx.submit(curViewId, (shaderValue ?? defaultShader).Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
     }*/
-
-    public void Dispose()
-    {
-        Bgfx.shutdown();
-        _cbInterface.Dispose();
-        GC.SuppressFinalize(this);
-    }
 }

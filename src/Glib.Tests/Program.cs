@@ -23,15 +23,15 @@ namespace GlibTests
             rctx.BackgroundColor = new Glib.Color(0.5f, 0.5f, 0.5f, 1f);
 
             ReadOnlySpan<Vector3> vertices = [
-                new Vector3(0f, 0f, 0f),
-                new Vector3(0f, 200f, 0f),
-                new Vector3(200f, 200f, 0f),
-                new Vector3(200f, 0f, 0f),
+                200f * new Vector3(-0.5f, -0.5f, 0f),
+                200f * new Vector3(-0.5f, 0.5f, 0f),
+                200f * new Vector3(0.5f, 0.5f, 0f),
+                200f * new Vector3(0.5f, -0.5f, 0f),
             ];
 
             ReadOnlySpan<Glib.Color> colors = [
-                Glib.Color.White,
-                Glib.Color.White,
+                Glib.Color.Red,
+                Glib.Color.Red,
                 Glib.Color.White,
                 Glib.Color.White
             ];
@@ -49,21 +49,47 @@ namespace GlibTests
             mesh.SetTexCoordData(uvs);
             mesh.Upload();
 
+            Glib.Texture.DefaultFilterMode = Glib.TextureFilterMode.Nearest;
+
             var shader = Glib.Shader.Create();
             var texture = Glib.Texture.LoadFromFile("assets/icon128.png");
 
-            shader.SetUniform("glib_texture", texture);
+            rctx.UseGlLines = true;
+            rctx.LineWidth = 3f;
             
             while (!window.IsClosing)
             {
                 window.PollEvents();
                 window.BeginRender();
 
+                // draw rotating white square
+                rctx.PushTransform();
+                rctx.Translate(50f, 50f);
+                rctx.Rotate((float)window.Time);
+                rctx.DrawRectangle(-20f, -20f, 40f, 40f);
+                rctx.PopTransform();
+
+                // draw textured mesh
                 rctx.Shader = shader;
                 rctx.PushTransform();
-                rctx.Translate(window.MouseX, window.MouseY, 0f);
-                rctx.Draw(mesh);
+                rctx.Translate(window.MouseX + 8, window.MouseY + 8);
+                rctx.DrawColor = new Glib.Color(0f, 0f, 0f, 0.5f);
+                rctx.Draw(mesh, texture);
+                rctx.Translate(-8, -8);
+                rctx.DrawColor = Glib.Color.White;
+                rctx.Draw(mesh, texture);
                 rctx.PopTransform();
+
+                // draw another rotating white square
+                rctx.PushTransform();
+                rctx.Translate(90f, 90f);
+                rctx.Rotate((float)window.Time);
+                rctx.DrawColor = Glib.Color.Red;
+                rctx.DrawRectangleLines(-20f, -20f, 40f, 40f);
+                rctx.PopTransform();
+
+                rctx.DrawColor = Glib.Color.Blue;
+                rctx.DrawRing(window.MousePosition, 20f);
 
                 window.EndRender();
                 window.SwapBuffers();

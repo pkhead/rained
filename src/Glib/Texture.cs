@@ -24,7 +24,7 @@ public class Texture : BgfxResource
 
     internal Bgfx.TextureHandle Handle => _handle;
 
-    private static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
+    public static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
 
     public TextureFilterMode MinFilterMode = DefaultFilterMode;
     public TextureFilterMode MagFilterMode = DefaultFilterMode;
