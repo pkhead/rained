@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using Glib;
-using ImGuiNET;
 using Key = Glib.Key;
 
 // NEED ADD SCISSCOR!!
@@ -169,9 +168,9 @@ namespace GlibTests
                 renderContext.DrawColor = Glib.Color.White;
                 
                 dynamicMesh ??= new Glib.MeshConfiguration()
-                    .AddBuffer(MeshBufferTarget.Position, DataType.Vector3, MeshBufferUsage.Dynamic)
-                    .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Vector2, MeshBufferUsage.Dynamic)
-                    .AddBuffer(MeshBufferTarget.Color0, DataType.Color, MeshBufferUsage.Dynamic)
+                    .AddBuffer(MeshBufferTarget.Position, DataType.Float, 3, MeshBufferUsage.Dynamic)
+                    .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Float, 2, MeshBufferUsage.Dynamic)
+                    .AddBuffer(MeshBufferTarget.Color0, DataType.Float, 4, MeshBufferUsage.Dynamic)
                     .Create(6);
 
                 var a = (float) window.Time;

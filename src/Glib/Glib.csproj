@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Silk.NET.OpenGL.Extensions.ImGui/Silk.NET.OpenGL.Extensions.ImGui.csproj" />
     <ProjectReference Include="../Bgfx/Bgfx.csproj" />
   </ItemGroup>
 

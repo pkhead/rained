@@ -33,6 +33,8 @@ public class Window : IDisposable
 
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
+    public int PixelWidth { get => window.FramebufferSize.X; }
+    public int PixelHeight { get => window.FramebufferSize.Y; }
     public double Time { get => window.Time; }
     public bool Visible { get => window.IsVisible; set => window.IsVisible = value; }
     public bool IsClosing { get => window.IsClosing; set => window.IsClosing = value; }
@@ -98,7 +100,13 @@ public class Window : IDisposable
 
     public float MouseX { get => _mousePos.X; }
     public float MouseY { get => _mousePos.Y; }
-    public float MouseWheel { get => inputContext.Mice[0].ScrollWheels[0].Y; }
+    public Vector2 MouseWheel {
+        get
+        {
+            var wheel = inputContext.Mice[0].ScrollWheels[0];
+            return new Vector2(wheel.X, wheel.Y);
+        }
+    }
 
     private bool setupGlErrorCallback = false;
 

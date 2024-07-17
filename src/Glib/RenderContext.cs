@@ -36,9 +36,8 @@ public enum RenderFlags : int
 {
     None = 0,
     Blend = 1,
-    ScissorTest = 2,
-    DepthTest = 4,
-    WireframeRendering = 8
+    DepthTest = 2,
+    WireframeRendering = 4
 }
 
 public enum DebugSeverity
@@ -95,6 +94,9 @@ public sealed class RenderContext : IDisposable
     public float LineWidth = 1f;
     public RenderFlags Flags = RenderFlags.Blend;
     public CullMode CullMode = CullMode.None;
+
+    private int _scissorX, _scissorY, _scissorW, _scissorH;
+    private bool _scissorEnabled = false;
 
     private readonly DrawBatch _drawBatch;
 
@@ -249,12 +251,52 @@ public sealed class RenderContext : IDisposable
 
     private Bgfx.StateFlags SetupState()
     {
+        if (_scissorEnabled)
+        {
+            Bgfx.set_scissor((ushort)_scissorX, (ushort)_scissorY, (ushort)_scissorW, (ushort)_scissorH);
+        }
+
         var state = Bgfx.StateFlags.None;
         state |= Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.Msaa;
         if (Flags.HasFlag(RenderFlags.Blend)) state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+        if (Flags.HasFlag(RenderFlags.DepthTest)) state |= Bgfx.StateFlags.DepthTestLess;
         if (CullMode == CullMode.Clockwise) state |= Bgfx.StateFlags.CullCw;
         else if (CullMode == CullMode.Counterclockwise) state |= Bgfx.StateFlags.CullCcw;
         return state;
+    }
+
+    public void SetScissorBox(int x, int y, int w, int h)
+    {
+        _scissorEnabled = true;
+        _scissorX = x;
+        _scissorY = y;
+        _scissorW = w;
+        _scissorH = h;
+    }
+
+    public bool GetScissor(out int x, out int y, out int w, out int h)
+    {
+        if (_scissorEnabled)
+        {
+            x = 0;
+            y = 0;
+            w = 0;
+            h = 0;
+        }
+        else
+        {
+            x = _scissorX;
+            y = _scissorY;
+            w = _scissorW;
+            h = _scissorH;
+        }
+
+        return _scissorEnabled;
+    }
+
+    public void ClearScissorBox()
+    {
+        _scissorEnabled = false;
     }
 
     public unsafe void Draw(Mesh mesh, Texture texture)
