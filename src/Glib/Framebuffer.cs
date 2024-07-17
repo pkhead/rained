@@ -75,14 +75,16 @@ public struct FramebufferConfiguration
                 new()
                 {
                     Attachment = AttachmentPoint.Color,
-                    Useable = true
+                    Useable = true,
+                    Readable = false,
                 },
 
                 // depth renderbuffer
                 new()
                 {
                     Attachment = AttachmentPoint.Depth,
-                    Useable = false
+                    Useable = false,
+                    Readable = false,
                 }
             ]
         };

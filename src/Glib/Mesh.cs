@@ -87,13 +87,7 @@ public struct MeshConfiguration
             .SetPrimitiveType(PrimitiveType);
     }
 
-    public MeshConfiguration(ReadOnlySpan<MeshBufferConfiguration> buffers, bool indexed)
-    {
-        Buffers = [..buffers];
-        Indexed = indexed;
-    }
-
-    public MeshConfiguration(List<MeshBufferConfiguration> buffers, bool indexed)
+    public MeshConfiguration(IEnumerable<MeshBufferConfiguration> buffers, bool indexed)
     {
         Buffers = [..buffers];
         Indexed = indexed;

@@ -59,7 +59,7 @@ Task("Build Shaders")
     if (!hasShaderC)
     {
         Information("Could not find shaderc! Make sure it is in your PATH or your BGFX_SHADERC environment variable is set.");
-        Information("Shader compilation is skipped.");
+        Information("Shader compilation skipped.");
         return;
     }
     
@@ -113,8 +113,20 @@ Task("Build Shaders")
         CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), shaderTypeStr, "spirv");
     }
 
-    ShaderSource("default_vs.sc", ShaderType.Vertex);
-    ShaderSource("default_fs.sc", ShaderType.Fragment);
+    foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
+    {
+        if (Path.GetExtension(fileName) != ".sc") continue;
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        if (name == "varying.def") continue;
+
+        string suffix = "[UNKNOWN]";
+        if (name.Length < 3 || ((suffix = name[^3..]) != "_vs" && suffix != "_fs"))
+            throw new Exception($"Shader source file {name}.sc must end in '_vs.sc' or '_fs.sc'.");
+        
+        if      (suffix == "_vs") ShaderSource(name + ".sc", ShaderType.Vertex);
+        else if (suffix == "_fs") ShaderSource(name + ".sc", ShaderType.Fragment);
+        else throw new Exception("Unreachable code");
+    }
 });
 
 Task("DotNetPublish")
