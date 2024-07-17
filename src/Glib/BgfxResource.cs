@@ -33,12 +33,10 @@ public abstract class BgfxResource : IDisposable
 
     internal static void DisposeRemaining()
     {
+        Housekeeping();
+
         foreach (var resource in _allResources)
             resource.Dispose();
-        
-        _mutex.WaitOne();
-        _disposedResources.Clear();
-        _mutex.ReleaseMutex();
     }
 
     /// <summary>

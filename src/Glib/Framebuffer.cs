@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Bgfx_cs;
 namespace Glib;
 
@@ -112,7 +113,7 @@ public class Framebuffer : BgfxResource
         clearFlags = config.ClearFlags;
         clearColor = config.ClearColor;
 
-        var attachments = stackalloc Bgfx.Attachment[config.Attachments.Count];
+        var attachments = new Bgfx.Attachment[config.Attachments.Count];
         _attachmentTexs = new FramebufferTexture[config.Attachments.Count];
 
         for (int i = 0; i < config.Attachments.Count; i++)
@@ -128,8 +129,9 @@ public class Framebuffer : BgfxResource
             };
 
             var texFlags = canUse ? Bgfx.TextureFlags.Rt : Bgfx.TextureFlags.RtWriteOnly;
+            var samplerFlags = Bgfx.SamplerFlags.UClamp | Bgfx.SamplerFlags.VClamp | Bgfx.SamplerFlags.MinAnisotropic | Bgfx.SamplerFlags.MagAnisotropic;
             
-            if (!Bgfx.is_texture_valid(0, false, 1, texFormat, (ulong)texFlags))
+            if (!Bgfx.is_texture_valid(0, false, 1, texFormat, (ulong)texFlags | (ulong)samplerFlags))
             {
                 throw new UnsupportedRendererOperationException("Could not create framebuffer attachment");
             }
@@ -138,7 +140,7 @@ public class Framebuffer : BgfxResource
                 (ushort)Width, (ushort)Height,
                 false, 1,
                 texFormat,
-                (ulong)texFlags,
+                (ulong)texFlags | (ulong)samplerFlags,
                 null
             );
             if (!handle.Valid)
@@ -148,9 +150,9 @@ public class Framebuffer : BgfxResource
             Bgfx.attachment_init(
                 &attachment,
                 handle,
-                canUse ? Bgfx.Access.ReadWrite : Bgfx.Access.Write,
+                canUse ? Bgfx.Access.Write : Bgfx.Access.Read,
                 0, 1, 0,
-                (byte)Bgfx.ResolveFlags.None
+                (byte)Bgfx.ResolveFlags.AutoGenMips
             );
 
             attachments[i] = attachment;
@@ -175,12 +177,15 @@ public class Framebuffer : BgfxResource
             }
         }
 
-        if (!Bgfx.is_frame_buffer_valid((byte)config.Attachments.Count, attachments))
-            throw new UnsupportedRendererOperationException("Framebuffer configuration is invalid");        
+        fixed (Bgfx.Attachment* ptr = attachments)
+        {
+            if (!Bgfx.is_frame_buffer_valid((byte)config.Attachments.Count, ptr))
+                throw new UnsupportedRendererOperationException("Framebuffer configuration is invalid");        
 
-        fbo = Bgfx.create_frame_buffer_from_attachment((byte)config.Attachments.Count, attachments, false);
-        if (!fbo.Valid)
-            throw new UnsupportedRendererOperationException("Framebiffer is invalid");
+            fbo = Bgfx.create_frame_buffer_from_attachment((byte)config.Attachments.Count, ptr, false);
+            if (!fbo.Valid)
+                throw new UnsupportedRendererOperationException("Framebiffer is invalid");
+        }
     }
 
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);
@@ -206,6 +211,9 @@ public class Framebuffer : BgfxResource
     public Texture GetTexture(int slot)
     {
         if (slot < 0 || slot >= _attachmentTexs.Length) throw new ArgumentException("The attachment does not exist");
+        var a = _attachmentTexs[slot].Handle.idx;
+        var b = Bgfx.get_texture(fbo, (byte)slot).idx;
+        Debug.Assert(a == b);
         return _attachmentTexs[slot];
     }
 }

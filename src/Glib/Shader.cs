@@ -65,12 +65,15 @@ public class Shader : BgfxResource
                 Bgfx.get_uniform_info(handle, &uniformInfo);
 
                 var uName = Marshal.PtrToStringAnsi((nint)uniformInfo.name)!;
-                _uniformHandles[uName] = (handle, uniformInfo.type);
-                Console.WriteLine(uName);
-
-                if (uniformInfo.type == Bgfx.UniformType.Sampler)
+                if (!_uniformHandles.ContainsKey(uName))
                 {
-                    _textureUnits.Add(uName);
+                    _uniformHandles[uName] = (handle, uniformInfo.type);
+                    Console.WriteLine(uName);
+
+                    if (uniformInfo.type == Bgfx.UniformType.Sampler)
+                    {
+                        _textureUnits.Add(uName);
+                    }
                 }
             }
         }
@@ -122,7 +125,9 @@ public class Shader : BgfxResource
         stream.CopyTo(memStream);
         var shaderSrc = memStream.ToArray() ?? throw new ShaderCreationException($"Could not read {shaderResourceName}");
 
-        return Bgfx.create_shader(BgfxUtil.Load<byte>(shaderSrc));
+        var shader = Bgfx.create_shader(BgfxUtil.Load<byte>(shaderSrc));
+        Bgfx.set_shader_name(shader, name, name.Length);
+        return shader;
     }
 
     public bool HasUniform(string uName)

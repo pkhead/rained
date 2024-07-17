@@ -7,7 +7,7 @@ namespace Glib;
 /// <summary>
 /// Class used to handle shape drawing
 /// </summary>
-internal class DrawBatch : BgfxResource
+internal class DrawBatch
 {
     private const uint VertexDataSize = 9;
     private const uint MaxVertices = 4096;
@@ -275,9 +275,5 @@ internal class DrawBatch : BgfxResource
     {
         Texture = tex;
         return new BatchDrawHandle(mode, this);
-    }
-
-    protected override void FreeResources(bool disposing)
-    {
     }
 }

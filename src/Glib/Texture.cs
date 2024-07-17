@@ -25,7 +25,7 @@ public class Texture : BgfxResource
     public readonly Glib.PixelFormat? PixelFormat;
     protected Bgfx.TextureFormat BgfxTextureFormat { get; private set; }
 
-    protected Bgfx.TextureHandle Handle => _handle;
+    internal Bgfx.TextureHandle Handle => _handle;
 
     public static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
 
@@ -253,7 +253,6 @@ public class FramebufferTexture : Texture
 
     internal override Bgfx.TextureHandle Use()
     {
-        Console.WriteLine("Used fbo");
         RenderContext.Instance!.AddViewDependency(_framebuffer);
         return base.Use();
     }
