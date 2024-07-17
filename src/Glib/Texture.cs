@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Bgfx_cs;
 
@@ -126,14 +127,14 @@ public class Texture : BgfxResource
     /// </summary>
     /// <param name="image">The image to source from.</param>
     /// <returns>A new texture.</returns>
-    public static Texture LoadFromImage(Image image) => new(image);
+    public static Texture Load(Image image) => new(image);
 
     /// <summary>
     /// Load an image from a file path and use it to a create a texture.
     /// </summary>
     /// <param name="filePath">The path to the image.</param>
     /// <returns>A new texture.</returns>
-    public static Texture LoadFromFile(string filePath, PixelFormat format = Glib.PixelFormat.RGBA)
+    public static Texture Load(string filePath, PixelFormat format = Glib.PixelFormat.RGBA)
     {
         using var img = Image.FromFile(filePath, format);
         return new Texture(img);
@@ -264,9 +265,34 @@ public class FramebufferTexture : Texture
 /// </summary>
 public class ReadableFramebufferTexture : FramebufferTexture
 {
-    internal ReadableFramebufferTexture(Framebuffer fb, int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
+    private Bgfx.TextureHandle _blitDest;
+
+    internal unsafe ReadableFramebufferTexture(Framebuffer fb, int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
         : base(fb, width, height, fmt, handle)
-    {}
+    {
+        var flags = Bgfx.TextureFlags.BlitDst | Bgfx.TextureFlags.ReadBack;
+        if (!Bgfx.is_texture_valid(0, false, 1, fmt, (ulong)flags))
+        {
+            throw new UnsupportedRendererOperationException("Could not create ReadableFramebufferTexture");
+        }
+
+        _blitDest = Bgfx.create_texture_2d(
+            _width: (ushort)Width,
+            _height: (ushort)Height,
+            _hasMips: false,
+            _numLayers: 1,
+            _format: fmt,
+            _flags: (ulong)flags,
+            _mem: null
+        );
+        Debug.Assert(_blitDest.Valid);
+    }
+
+    protected override void FreeResources(bool disposing)
+    {
+        base.FreeResources(disposing);
+        Bgfx.destroy_texture(_blitDest);
+    }
 
     /*public unsafe Image GetImage()
     {

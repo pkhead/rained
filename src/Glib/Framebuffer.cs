@@ -14,10 +14,14 @@ public struct AttachmentConfig
     public AttachmentPoint Attachment = AttachmentPoint.Color;
 
     /// <summary>
-    /// True if this attachment can be readable
-    /// as a texture.
+    /// True if shaders can read from this texture.
     /// </summary>
-    public bool CanRead = true;
+    public bool Useable = true;
+
+    /// <summary>
+    /// True if the texture data can be read to the CPU.
+    /// </summary>
+    public bool Readable = false;
 
     public AttachmentConfig() {}
 }
@@ -71,14 +75,14 @@ public struct FramebufferConfiguration
                 new()
                 {
                     Attachment = AttachmentPoint.Color,
-                    CanRead = true
+                    Useable = true
                 },
 
                 // depth renderbuffer
                 new()
                 {
                     Attachment = AttachmentPoint.Depth,
-                    CanRead = false
+                    Useable = false
                 }
             ]
         };
@@ -112,7 +116,7 @@ public class Framebuffer : BgfxResource
         for (int i = 0; i < config.Attachments.Count; i++)
         {
             var attachConfig = config.Attachments[i];
-            var canRead = attachConfig.CanRead;
+            var canUse = attachConfig.Useable;
 
             var texFormat = attachConfig.Attachment switch
             {
@@ -121,11 +125,18 @@ public class Framebuffer : BgfxResource
                 _ => throw new ArgumentException("Invalid AttachmentPoint enum", nameof(config))
             };
 
+            var texFlags = canUse ? Bgfx.TextureFlags.Rt : Bgfx.TextureFlags.RtWriteOnly;
+            
+            if (!Bgfx.is_texture_valid(0, false, 1, texFormat, (ulong)texFlags))
+            {
+                throw new UnsupportedRendererOperationException("Could not create framebuffer attachment");
+            }
+
             var handle = Bgfx.create_texture_2d(
                 (ushort)Width, (ushort)Height,
                 false, 1,
                 texFormat,
-                (ulong)(canRead ? (Bgfx.TextureFlags.Rt | Bgfx.TextureFlags.ReadBack) : Bgfx.TextureFlags.RtWriteOnly),
+                (ulong)texFlags,
                 null
             );
             if (!handle.Valid)
@@ -135,14 +146,14 @@ public class Framebuffer : BgfxResource
             Bgfx.attachment_init(
                 &attachment,
                 handle,
-                canRead ? Bgfx.Access.ReadWrite : Bgfx.Access.Write,
+                canUse ? Bgfx.Access.ReadWrite : Bgfx.Access.Write,
                 0, 1, 0,
                 (byte)Bgfx.ResolveFlags.None
             );
 
             attachments[i] = attachment;
 
-            if (attachConfig.Attachment == AttachmentPoint.Color && canRead)
+            if (attachConfig.Attachment == AttachmentPoint.Color && attachConfig.Readable)
             {
                 _attachmentTexs[i] = new ReadableFramebufferTexture(
                     this,

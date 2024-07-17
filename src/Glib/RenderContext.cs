@@ -160,7 +160,7 @@ public sealed class RenderContext : IDisposable
     public unsafe bool CanReadBackFramebufferAttachments()
     {
         var caps = Bgfx.get_caps();
-        return (caps->supported & (ulong)Bgfx.CapsFlags.TextureReadBack) != 0;
+        return (caps->supported & (ulong)(Bgfx.CapsFlags.TextureReadBack | Bgfx.CapsFlags.TextureBlit)) != 0;
     }
 
     public void Dispose()
@@ -240,6 +240,8 @@ public sealed class RenderContext : IDisposable
         return BgfxStateBlendFuncSeparate(src, dst, src, dst);
     }
 
+    public void DrawBatch() => _drawBatch.Draw();
+
     public unsafe void Draw(Mesh mesh, Texture texture)
     {
         _drawBatch.Draw();
@@ -265,6 +267,40 @@ public sealed class RenderContext : IDisposable
     }
 
     public void Draw(Mesh mesh) => Draw(mesh, WhiteTexture);
+
+    public void DrawTexture(Texture texture, Rectangle srcRect, Rectangle dstRect)
+    {
+        using var draw = _drawBatch.BeginBatchDraw(BatchDrawMode.Quads, texture);
+        var texW = texture.Width;
+        var texH = texture.Height;
+
+        draw.TexCoord(srcRect.Left / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Left, srcRect.Top);
+
+        draw.TexCoord(srcRect.Left / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Left, srcRect.Bottom);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Right, srcRect.Bottom);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Right, srcRect.Top);
+    }
+
+    public void DrawTexture(Texture texture, Rectangle rect)
+        => DrawTexture(texture, rect, new Glib.Rectangle(0f, 0f, texture.Width, texture.Height));
+
+    public void DrawTexture(Texture texture, Vector2 pos, Vector2 size)
+        => DrawTexture(texture, new Rectangle(pos, size), new Rectangle(0f, 0f, texture.Width, texture.Height));
+    
+    public void DrawTexture(Texture texture, Vector2 pos)
+        => DrawTexture(texture, new Rectangle(pos.X, pos.Y, texture.Width, texture.Height), new Rectangle(0f, 0f, texture.Width, texture.Height));
+    
+    public void DrawTexture(Texture texture, float x, float y)
+        => DrawTexture(texture, new Vector2(x, y));
+    
+    public void DrawTexture(Texture texture)
+        => DrawTexture(texture, new Vector2(0f, 0f));
 
     internal void AddViewDependency(Framebuffer framebuffer)
     {
