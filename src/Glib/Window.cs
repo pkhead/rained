@@ -13,6 +13,28 @@ public enum MouseButton
     Middle = 2
 }
 
+public enum MouseCursorIcon
+{
+    Default,
+    Arrow,
+    IBeam,
+    ResizeAll,
+    VResize,
+    HResize,
+    NeswResize,
+    NwseResize,
+    Hand,
+    NotAllowed,
+    Hidden,
+}
+
+public enum MouseMode
+{
+    Normal,
+    Hidden,
+    Disabled
+}
+
 public enum WindowTheme
 {
     Default,
@@ -77,8 +99,86 @@ public class Window : IDisposable
     /// </summary>
     public WindowTheme Theme { get; private set; } = WindowTheme.Default;
 
+    /// <summary>
+    /// The mouse cursor icon
+    /// </summary>
+    public MouseCursorIcon CursorIcon
+    {
+        get
+        {
+            return inputContext.Mice[0].Cursor.StandardCursor switch
+            {
+                StandardCursor.Default => MouseCursorIcon.Default,
+                StandardCursor.Arrow => MouseCursorIcon.Arrow,
+                StandardCursor.IBeam => MouseCursorIcon.IBeam,
+                StandardCursor.Hand => MouseCursorIcon.Hand,
+                StandardCursor.HResize => MouseCursorIcon.HResize,
+                StandardCursor.VResize => MouseCursorIcon.VResize,
+                StandardCursor.NwseResize => MouseCursorIcon.NwseResize,
+                StandardCursor.NeswResize => MouseCursorIcon.NeswResize,
+                StandardCursor.ResizeAll => MouseCursorIcon.ResizeAll,
+                StandardCursor.NotAllowed => MouseCursorIcon.NotAllowed,
+                _ => throw new Exception("Invalid Silk StandardCursor enum")
+            };
+        }
+
+        set
+        {
+            var newCursor = value switch
+            {
+                MouseCursorIcon.Default => StandardCursor.Default,
+                MouseCursorIcon.Arrow => StandardCursor.Arrow,
+                MouseCursorIcon.IBeam => StandardCursor.IBeam,
+                MouseCursorIcon.Hand => StandardCursor.Hand,
+                MouseCursorIcon.HResize => StandardCursor.HResize,
+                MouseCursorIcon.VResize => StandardCursor.VResize,
+                MouseCursorIcon.NwseResize => StandardCursor.NwseResize,
+                MouseCursorIcon.NeswResize => StandardCursor.NeswResize,
+                MouseCursorIcon.ResizeAll => StandardCursor.ResizeAll,
+                MouseCursorIcon.NotAllowed => StandardCursor.NotAllowed,
+                _ => throw new ArgumentException("Invalid MouseCursorIcon enum", nameof(value))
+            };
+
+            //cursor.StandardCursor = newCursor;
+
+            // some sort of silk.NET bug..
+            var cursor = inputContext.Mice[0].Cursor;
+            var cursorType = cursor.GetType();
+            var stdCursorFld = cursorType.GetField("_standardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            var updateStdCursorMethod = cursorType.GetMethod("UpdateStandardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+
+            stdCursorFld.SetValue(cursor, newCursor);
+            updateStdCursorMethod.Invoke(cursor, null);
+        }
+    }
+
+    public MouseMode MouseMode
+    {
+        get
+        {
+            return inputContext.Mice[0].Cursor.CursorMode switch
+            {
+                CursorMode.Normal => MouseMode.Normal,
+                CursorMode.Hidden => MouseMode.Hidden,
+                CursorMode.Disabled => MouseMode.Disabled,
+                CursorMode.Raw => MouseMode.Disabled,
+                _ => throw new Exception("Invalid Silk CursorMode enum")
+            };
+        }
+
+        set
+        {
+            inputContext.Mice[0].Cursor.CursorMode = value switch
+            {
+                MouseMode.Normal => CursorMode.Normal,
+                MouseMode.Hidden => CursorMode.Hidden,
+                MouseMode.Disabled => CursorMode.Disabled,
+                _ => throw new ArgumentException("Invalid MouseMode enum", nameof(value))
+            };
+        }
+    }
+
     public event Action? Load;
-    public event Action? ImGuiConfigure;
     public event Action<float>? Update;
     public event Action<float, RenderContext>? Draw;
     public event Action<int, int>? Resize;
@@ -122,16 +222,11 @@ public class Window : IDisposable
     private RenderContext? _renderContext = null;
     public RenderContext? RenderContext { get => _renderContext; }
 
-    //private ImGuiController? imGuiController = null;
-    private bool setupImGui;
-    //public ImGuiController? ImGuiController => imGuiController;
-
     private double lastTime = 0.0;
 
     public Window(WindowOptions options)
     {
         window = options.CreateSilkWindow();
-        setupImGui = options.SetupImGui;
         setupGlErrorCallback = options.SetupGlErrorCallback;
 
         window.Load += OnLoad;
@@ -190,25 +285,9 @@ public class Window : IDisposable
         }
 
         _renderContext = new RenderContext(window);
-
-        if (setupImGui)
-        {
-            /*imGuiController = new ImGuiController(
-                gl: _renderContext.gl,
-                view: window,
-                input: input,
-                onConfigureIO: OnConfigureImGuiIO
-            );*/
-        }
-
         Load?.Invoke();
 
         lastTime = window.Time;
-    }
-
-    private void OnConfigureImGuiIO()
-    {
-        ImGuiConfigure?.Invoke();
     }
 
     private void OnKeyChar(IKeyboard keyboard, char @char)
@@ -407,7 +486,6 @@ public class Window : IDisposable
     public void Dispose()
     {
         Closing?.Invoke();
-        //imGuiController?.Dispose();
         _renderContext!.Dispose();
         window.Dispose();
         GC.SuppressFinalize(this);

@@ -136,10 +136,11 @@ public class MeshConfiguration
         Indexed = indexed;
     }
 
-    public MeshConfiguration SetIndexed(bool indexed, bool int32)
+    public MeshConfiguration SetIndexed(bool int32, MeshBufferUsage usage = MeshBufferUsage.Static)
     {
-        Indexed = indexed;
+        Indexed = true;
         Use32BitIndices = int32;
+        IndexBufferUsage = usage;
         return this;
     }
 
@@ -167,6 +168,7 @@ public class MeshConfiguration
     }
 
     public Mesh Create(int vtxCount) => Mesh.Create(this, vtxCount);
+    public Mesh Create(int vtxCount, int idxCount) => new Mesh(this, vtxCount, idxCount);
     public Mesh CreateIndexed(Span<ushort> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
     public Mesh CreateIndexed32(Span<uint> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
 }
@@ -179,10 +181,14 @@ public class Mesh : BgfxResource
 
     private readonly MeshConfiguration _config;
     private uint[] _elemCounts;
+    private (uint start, uint length)[] _bufferIndexSettings;
+    private (uint start, uint length) _indexIndexSettings; // lol
+    private bool _reset = true;
     private uint[] _attrSizes;
 
     private readonly List<Bgfx.VertexBufferHandle> staticBuffers = [];
     private readonly List<Bgfx.DynamicVertexBufferHandle> dynamicBuffers = [];
+    private readonly List<Bgfx.TransientVertexBuffer> transientBuffers = [];    
 
     // given an index to a buffer, stores the index of the buffer in its respective list
     // transient buffer handles don't need to be retained, so there is no list for them.
@@ -191,6 +197,7 @@ public class Mesh : BgfxResource
 
     private Bgfx.IndexBufferHandle? staticIndexBuffer;
     private Bgfx.DynamicIndexBufferHandle? dynamicIndexBuffer;
+    private Bgfx.TransientIndexBuffer? transientIndexBuffer;
 
     private static bool? _index32Supported = null;
 
@@ -231,10 +238,12 @@ public class Mesh : BgfxResource
 
         bufferData = new byte[_config.Buffers.Count][];
         _elemCounts = new uint[_config.Buffers.Count];
+        _bufferIndexSettings = new (uint, uint)[_config.Buffers.Count];
         _attrSizes = new uint[_config.Buffers.Count];
         bufferIndices = new int[_config.Buffers.Count];
         vertexLayouts = new Bgfx.VertexLayout[_config.Buffers.Count];
 
+        int transientBufIndex = 0;
         for (int i = 0; i < _config.Buffers.Count; i++)
         {
             var bufConfig = _config.Buffers[i];
@@ -274,9 +283,13 @@ public class Mesh : BgfxResource
             vertexLayouts[i] = layout;
 
             _elemCounts[i] = (uint)vertexCount;
+            _bufferIndexSettings[i] = (0, (uint)vertexCount);
             _attrSizes[i] = attrSize;
             bufferData[i] = new byte[vertexCount * attrSize];
             bufferIndices[i] = -1;
+
+            if (bufConfig.Usage == MeshBufferUsage.Transient)
+                bufferIndices[i] = transientBufIndex++;
         }
 
         if (_config.Indexed)
@@ -290,6 +303,8 @@ public class Mesh : BgfxResource
                 indexBufferData16 = new ushort[indexCount];
             }
         }
+
+        _indexIndexSettings = (0, (uint)indexCount);
     }
 
     public static Mesh Create(MeshConfiguration config, int vertexCount)
@@ -350,6 +365,54 @@ public class Mesh : BgfxResource
             throw new InvalidOperationException("Cannot retrieve data for a static buffer after it has been uploaded.");
         
         output = indexBufferData32!;
+    }
+
+    /// <summary>
+    /// Set the 16-bit index buffer.<br/><br/>
+    /// Valid only if the mesh is indexed, uses 16-bit indices, and buffer usage isn't static and the buffer hasn't been uploaded yet.
+    /// </summary>
+    /// <param name="data">The buffer span.</param>
+    /// <exception cref="InvalidOperationException">The buffer is inaccessible or it uses an incompatible element type.</exception>
+    /// <exception cref="ArgumentException">The input data size does not match the size of the underlying already-uploaded dynamic buffer.</exception>
+    public void SetIndexBuffer(ReadOnlySpan<ushort> input)
+    {
+        if (_config.IndexBufferUsage != MeshBufferUsage.Transient || input.Length == indexBufferData16!.Length)
+        {
+            GetIndexBufferSpan(out Span<ushort> span);
+            if (_config.IndexBufferUsage == MeshBufferUsage.Dynamic && dynamicIndexBuffer is not null && input.Length != indexBufferData16!.Length)
+                throw new ArgumentException("Span size must match that of the underlying dynamic buffer");
+            
+            input.CopyTo(span);
+        }
+        else // resize, if transient buffer
+        {
+            indexBufferData16 = new ushort[input.Length];
+            input.CopyTo(indexBufferData16);
+        }
+    }
+
+    /// <summary>
+    /// Set the 32-bit index buffer.<br/><br/>
+    /// Valid only if the mesh is indexed, uses 32-bit indices, and buffer usage isn't static and the buffer hasn't been uploaded yet.
+    /// </summary>
+    /// <param name="data">The buffer span.</param>
+    /// <exception cref="InvalidOperationException">The buffer is inaccessible or it uses an incompatible element type.</exception>
+    /// <exception cref="ArgumentException">The input data size does not match the size of the underlying already-uploaded dynamic buffer.</exception>
+    public void SetIndexBuffer(ReadOnlySpan<uint> input)
+    {
+        if (_config.IndexBufferUsage != MeshBufferUsage.Transient || input.Length == indexBufferData32!.Length)
+        {
+            GetIndexBufferSpan(out Span<uint> span);
+            if (_config.IndexBufferUsage == MeshBufferUsage.Dynamic && dynamicIndexBuffer is not null && input.Length != indexBufferData32!.Length)
+                throw new ArgumentException("Span size must match that of the underlying dynamic buffer");
+            
+            input.CopyTo(span);
+        }
+        else // resize, if transient buffer
+        {
+            indexBufferData32 = new uint[input.Length];
+            input.CopyTo(indexBufferData32);
+        }
     }
 
     /// <summary>
@@ -531,32 +594,47 @@ public class Mesh : BgfxResource
         // check if all buffers has been uploaded
         for (int i = 0; i < bufferIndices.Length; i++)
         {
-            if (bufferIndices[i] == -1)
+            if (_config.Buffers[i].Usage != MeshBufferUsage.Transient && bufferIndices[i] == -1)
                 throw new InvalidOperationException("Attempt to draw a Mesh that has not been fully uploaded.");
         }
-        
+
         // activate vertex buffers
         for (int i = 0; i < _config.Buffers.Count; i++)
         {
             var bufConfig = _config.Buffers[i];
+            var (start, length) = _bufferIndexSettings[i];
+            Debug.Assert(start >= 0 && start < _elemCounts[i]);
+            Debug.Assert(length >= 0 && (start + length) <= _elemCounts[i]);
             
             if (bufConfig.Usage == MeshBufferUsage.Static)
-                Bgfx.set_vertex_buffer((byte)i, staticBuffers[bufferIndices[i]], 0, _elemCounts[i]);
+                Bgfx.set_vertex_buffer((byte)i, staticBuffers[bufferIndices[i]], start, length);
             else if (bufConfig.Usage == MeshBufferUsage.Dynamic)
-                Bgfx.set_dynamic_vertex_buffer((byte)i, dynamicBuffers[bufferIndices[i]], 0, _elemCounts[i]);
+                Bgfx.set_dynamic_vertex_buffer((byte)i, dynamicBuffers[bufferIndices[i]], start, length);
             else if (bufConfig.Usage == MeshBufferUsage.Transient)
             {
-                var tvb = new Bgfx.TransientVertexBuffer();
-                fixed (Bgfx.VertexLayout* layout = &vertexLayouts[i])
+                Bgfx.TransientVertexBuffer tvb;
+
+                if (!_reset)
                 {
-                    Bgfx.alloc_transient_vertex_buffer(&tvb, _elemCounts[i], layout);
+                    tvb = transientBuffers[bufferIndices[i]];
+                    Bgfx.set_transient_vertex_buffer((byte)i, &tvb, start, length);
+                }
+                else
+                {
+                    tvb = new Bgfx.TransientVertexBuffer();
+                    fixed (Bgfx.VertexLayout* layout = &vertexLayouts[i])
+                    {
+                        Bgfx.alloc_transient_vertex_buffer(&tvb, _elemCounts[i], layout);
+                    }
+
+                    Debug.Assert(bufferData[i].Length == tvb.size);
+                    var tvbDataSpan = new Span<byte>(tvb.data, (int)tvb.size);
+                    bufferData[i].CopyTo(tvbDataSpan);
+
+                    Bgfx.set_transient_vertex_buffer((byte)i, &tvb, start, length);
                 }
 
-                Debug.Assert(bufferData[i].Length == tvb.size);
-                var tvbDataSpan = new Span<byte>(tvb.data, (int)tvb.size);
-                bufferData[i].CopyTo(tvbDataSpan);
-
-                Bgfx.set_transient_vertex_buffer((byte)i, &tvb, 0, _elemCounts[i]);
+                transientBuffers.Add(tvb);
             }
             else throw new Exception("Unreachable code");
         }
@@ -565,6 +643,10 @@ public class Mesh : BgfxResource
         if (_config.Indexed)
         {
             int count = _config.Use32BitIndices ? indexBufferData32!.Length : indexBufferData16!.Length;
+
+            var (start, length) = _indexIndexSettings;
+            Debug.Assert(start >= 0 && start < count);
+            Debug.Assert(length >= 0 && (start + length) <= count);
             
             if (_config.IndexBufferUsage == MeshBufferUsage.Static)
                 Bgfx.set_index_buffer(staticIndexBuffer!.Value, 0, (uint)count);
@@ -572,25 +654,39 @@ public class Mesh : BgfxResource
                 Bgfx.set_dynamic_index_buffer(dynamicIndexBuffer!.Value, 0, (uint)count);
             else if (_config.IndexBufferUsage == MeshBufferUsage.Transient)
             {
-                var tib = new Bgfx.TransientIndexBuffer();
-                Bgfx.alloc_transient_index_buffer(&tib, (uint)count, _config.Use32BitIndices);
+                Bgfx.TransientIndexBuffer tib;
 
-                var tibDataSpan = new Span<byte>(tib.data, (int)tib.size);
-                if (_config.Use32BitIndices)
+                if (!_reset)
                 {
-                    Debug.Assert(indexBufferData32!.Length * 4 == tib.size);
-                    MemoryMarshal.Cast<uint, byte>(indexBufferData32).CopyTo(tibDataSpan);
+                    tib = transientIndexBuffer ?? throw new Exception("TransientIndexBuffer is null, but reset == false");
+                    Bgfx.set_transient_index_buffer(&tib, start, length);
                 }
                 else
                 {
-                    Debug.Assert(indexBufferData16!.Length * 2 == tib.size);
-                    MemoryMarshal.Cast<ushort, byte>(indexBufferData16).CopyTo(tibDataSpan);
+                    tib = new Bgfx.TransientIndexBuffer();
+                    Bgfx.alloc_transient_index_buffer(&tib, (uint)count, _config.Use32BitIndices);
+
+                    var tibDataSpan = new Span<byte>(tib.data, (int)tib.size);
+                    if (_config.Use32BitIndices)
+                    {
+                        Debug.Assert(indexBufferData32!.Length * 4 == tib.size);
+                        MemoryMarshal.Cast<uint, byte>(indexBufferData32).CopyTo(tibDataSpan);
+                    }
+                    else
+                    {
+                        Debug.Assert(indexBufferData16!.Length * 2 == tib.size);
+                        MemoryMarshal.Cast<ushort, byte>(indexBufferData16).CopyTo(tibDataSpan);
+                    }
+
+                    Bgfx.set_transient_index_buffer(&tib, start, length);
                 }
 
-                Bgfx.set_transient_index_buffer(&tib, 0, (uint)count);
+                transientIndexBuffer = tib;
             }
             else throw new Exception("Unreachable code");
         }
+
+        _reset = false;
         
         return _config.PrimitiveType switch
         {
@@ -602,6 +698,75 @@ public class Mesh : BgfxResource
             _ => throw new Exception("Invalid MeshPrimitiveType")
         };
     }
+
+    internal void ResetSliceSettings()
+    {
+        transientIndexBuffer = null;
+        transientBuffers.Clear();
+        for (int i = 0; i < _config.Buffers.Count; i++)
+        {
+            _bufferIndexSettings[i] = (0, _elemCounts[i]);
+        }
+
+        _indexIndexSettings = (0, 0);
+        if (_config.Indexed)
+        {
+            if (indexBufferData16 is not null)
+                _indexIndexSettings = (0, (uint)indexBufferData16.Length);
+            else if (indexBufferData32 is not null)
+                _indexIndexSettings = (0, (uint)indexBufferData32.Length);
+            else
+                throw new Exception("reset: (_config.Indexed == true), yet indexBufferData32 or indexBufferData16 is null");
+        }
+
+        _reset = true;
+    }
+
+    internal void SetBufferDrawSlice(int bufferIndex, uint startVertex, uint vertexCount)
+    {
+        if (bufferIndex < 0 || bufferIndex >= _bufferIndexSettings.Length)
+            throw new ArgumentException("The buffer at the given index does not exist", nameof(bufferIndex));
+        
+        // bounds check
+        if (!((startVertex >= 0 && startVertex < _elemCounts[bufferIndex]) ||
+            (vertexCount >= 0 && (startVertex + vertexCount) <= _elemCounts[bufferIndex]))
+        ) throw new ArgumentOutOfRangeException($"Requested slice does not fit in the required range [0, {_elemCounts[bufferIndex]})");
+
+        _bufferIndexSettings[bufferIndex] = (startVertex, vertexCount);
+    }
+
+    internal void SetIndexBufferDrawSlice(uint startVertex, uint vertexCount)
+    {
+        if (!_config.Indexed) throw new InvalidOperationException("The mesh is not indexed");
+
+        // bounds check
+        uint maxSize;
+        if (indexBufferData16 is not null)      maxSize = (uint)indexBufferData16.Length;
+        else if (indexBufferData32 is not null) maxSize = (uint)indexBufferData32.Length;
+        else throw new Exception("This branch is supposed to be unreachable");
+
+        if (!((startVertex >= 0 && startVertex < maxSize) &&
+            (vertexCount >= 0 && (startVertex + vertexCount) <= maxSize))
+        ) throw new ArgumentOutOfRangeException($"Requested slice does not fit in the required range [0, {maxSize})");
+
+        _indexIndexSettings = (startVertex, vertexCount);
+    }
+
+    internal void SetIndexBufferDrawSlice(uint startIndex)
+    {
+        if (!_config.Indexed) throw new InvalidOperationException("The mesh is not indexed");
+
+        // bounds check
+        uint maxSize;
+        if (indexBufferData16 is not null)      maxSize = (uint)indexBufferData16.Length;
+        else if (indexBufferData32 is not null) maxSize = (uint)indexBufferData32.Length;
+        else throw new Exception("This branch is supposed to be unreachable");
+
+        if (startIndex < 0 && startIndex >= maxSize)
+            throw new ArgumentOutOfRangeException($"Requested slice does not fit in the required range [0, {maxSize})");
+
+        _indexIndexSettings = (startIndex, maxSize - startIndex);
+    } 
 
     protected override void FreeResources(bool disposing)
     {
@@ -633,13 +798,13 @@ public class StandardMesh : Mesh
         .AddBuffer(MeshBufferTarget.Color0, DataType.Float, 4, MeshBufferUsage.Static);
 
     private static readonly MeshConfiguration ConfigIndexed16 = new MeshConfiguration()
-        .SetIndexed(true, false)
+        .SetIndexed(false, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.Position, DataType.Float, 3, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Float, 2, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.Color0, DataType.Float, 4, MeshBufferUsage.Static);
     
     private static readonly MeshConfiguration ConfigIndexed32 = new MeshConfiguration()
-        .SetIndexed(true, true)
+        .SetIndexed(true, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.Position, DataType.Float, 3, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.TexCoord0, DataType.Float, 2, MeshBufferUsage.Static)
         .AddBuffer(MeshBufferTarget.Color0, DataType.Float, 4, MeshBufferUsage.Static);

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Glib\Glib.csproj" />
+    <ProjectReference Include="..\Glib.ImGui\Glib.ImGui.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

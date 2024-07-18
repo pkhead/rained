@@ -79,13 +79,13 @@ Task("Build Shaders")
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"spirv"));
 
-    void CompileShader(string srcFile, string dstFile, string shaderTypeStr, string shaderTarget)
+    void CompileShader(string srcFile, string dstFile, string shaderTypeStr, string shaderTarget, string def)
     {
-        if (!IsUpToDate(dstFile, srcFile, "shaders/bgfx_shader.sh", "shaders/varying.def.sc"))
+        if (!IsUpToDate(dstFile, srcFile, "shaders/bgfx_shader.sh", def))
         {
             Information($"Compile shader '{srcFile}' to '{dstFile}'");
             Exec(shaderc, [
-                "--varyingdef", "shaders/varying.def.sc",
+                "--varyingdef", def,
                 "-i shaders",
                 "-f", srcFile,
                 "-o", dstFile,
@@ -96,7 +96,7 @@ Task("Build Shaders")
         }
     }
 
-    void ShaderSource(string fileName, ShaderType shaderType)
+    void ShaderSource(string fileName, ShaderType shaderType, string def = "shaders/varying.def.sc")
     {
         string shaderTypeStr = shaderType switch
         {
@@ -108,16 +108,27 @@ Task("Build Shaders")
         string name = Path.GetFileNameWithoutExtension(fileName);
         string srcFile = Path.Combine("shaders", fileName);
 
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), shaderTypeStr, "150");
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), shaderTypeStr, "s_5_0");
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), shaderTypeStr, "spirv");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), shaderTypeStr, "150", def);
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), shaderTypeStr, "s_5_0", def);
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), shaderTypeStr, "spirv", def);
     }
+
+    // ok i know that hardcoding the imgui shaders in the build system like this is pretty stupid
+    // i'm doing this since i'm not sure how a good system for supporting multiple varying.def.sc files,
+    // and i don't feel like making my own preprocessor or something to detect which file to use.
+    // so whatever
+    ShaderSource("imgui_vs.sc", ShaderType.Vertex, "shaders/imgui_varying.def.sc");
+    ShaderSource("imgui_fs.sc", ShaderType.Fragment, "shaders/imgui_varying.def.sc");
 
     foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
     {
         if (Path.GetExtension(fileName) != ".sc") continue;
         var name = Path.GetFileNameWithoutExtension(fileName);
         if (name == "varying.def") continue;
+
+        // oh my god
+        if (name == "imgui_varying.def") continue;
+        if (name == "imgui_fs" || name == "imgui_vs") continue;
 
         string suffix = "[UNKNOWN]";
         if (name.Length < 3 || ((suffix = name[^3..]) != "_vs" && suffix != "_fs"))

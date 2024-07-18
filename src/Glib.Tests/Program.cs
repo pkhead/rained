@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 using Glib;
+using Glib.ImGui;
+using ImGuiNET;
 using Key = Glib.Key;
 
 // NEED ADD SCISSCOR!!
@@ -9,6 +11,7 @@ namespace GlibTests
     class Program
     {
         private static Glib.Window window = null!;
+        private static ImGuiController imGuiController = null!;
         private static Glib.StandardMesh mesh = null!;
         private static Glib.Mesh dynamicMesh = null!;
         private static Glib.Texture texture = null!;
@@ -61,6 +64,7 @@ namespace GlibTests
             }
 
             // dispose resources after run is done
+            imGuiController.Dispose();
             mesh.Dispose();
             window.Dispose();
         }
@@ -68,6 +72,8 @@ namespace GlibTests
         private static void OnLoad()
         {
             Console.WriteLine("Load!");
+            imGuiController = new ImGuiController(window);
+
             var ctx = window.RenderContext!;
 
             texture = Glib.Texture.Load("assets/icon48.png");
@@ -231,15 +237,20 @@ namespace GlibTests
                 renderContext.Shader = null;
             }
 
-            //ImGui.ShowDemoWindow();
+            ImGui.ShowDemoWindow();
 
-            renderContext.DrawBatch();
-            //window.ImGuiController!.Render();
+            if (ImGui.Begin("Test"))
+            {
+                ImGui.Image(imGuiController.UseTexture(rainedLogo), new Vector2(rainedLogo.Width, rainedLogo.Height));
+                ImGui.Image(imGuiController.UseTexture(texture), new Vector2(texture.Width, texture.Height));
+            } ImGui.End();
+            
+            imGuiController.Render();
         }
 
         private static void OnUpdate(float dt)
         {
-            //window.ImGuiController!.Update(dt);
+            imGuiController.Update(dt);
 
             sqX = window.MouseX;
             sqY = window.MouseY;

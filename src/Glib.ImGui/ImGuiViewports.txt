@@ -1,26 +1,12 @@
 using System.Collections.Generic;
 using ImGuiNET;
+using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Silk.NET.Input;
-
-#if GLES
-using Silk.NET.OpenGLES;
-#elif GL
-using System;
-using Silk.NET.OpenGL;
-#elif LEGACY
-using Silk.NET.OpenGL.Legacy;
-#endif
 using Silk.NET.Windowing;
 
-#if GL
-namespace Silk.NET.OpenGL.Extensions.ImGui
-#elif GLES
-namespace Silk.NET.OpenGLES.Extensions.ImGui
-#elif LEGACY
-namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
-#endif
+namespace GlibImGui
 {
     // fucking hell
     // oh wow they're all inline in the imgui.h code. great.
@@ -72,13 +58,13 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
 
     class ImGuiViewports : IDisposable
     {
-        private readonly IWindow mainWindow;
+        private readonly Glib.Window mainWindow;
 
         private ImGuiController controller;
 
         private Delegate[] _delegates = new Delegate[20];
 
-        public unsafe ImGuiViewports(ImGuiController controller, GL mainRenderer, IWindow mainWindow)
+        public unsafe ImGuiViewports(ImGuiController controller, Glib.Window mainWindow)
         {
             this.mainWindow = mainWindow;
             this.controller = controller;
@@ -141,10 +127,10 @@ namespace Silk.NET.OpenGL.Legacy.Extensions.ImGui
         }
 
         private int nextWindowId = 1;
-        private readonly Dictionary<int, IWindow> activeWindows = [];
-        private readonly Dictionary<IWindow, GL> renderers = [];
+        private readonly Dictionary<int, Glib.Window> activeWindows = [];
+        //private readonly Dictionary<IWindow, GL> renderers = [];
 
-        public unsafe void RegisterWindow(ImGuiViewport* viewport, IWindow window)
+        public unsafe void RegisterWindow(ImGuiViewport* viewport, Glib.Window window)
         {
             var id = nextWindowId++;
             viewport->PlatformHandle = (void*) id;

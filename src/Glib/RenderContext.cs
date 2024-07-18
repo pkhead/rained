@@ -299,6 +299,13 @@ public sealed class RenderContext : IDisposable
         _scissorEnabled = false;
     }
 
+    /// <summary>
+    /// Draw a mesh.
+    /// <br/><br/>
+    /// Uses the full contents of each buffer.
+    /// </summary>
+    /// <param name="mesh">The mesh to draw</param>
+    /// <param name="texture">The texture to bind to glib_texture in the active shader when drawing.</param>
     public unsafe void Draw(Mesh mesh, Texture texture)
     {
         _drawBatch.Draw();
@@ -313,6 +320,7 @@ public sealed class RenderContext : IDisposable
                 
         var programHandle = shader.Activate(WhiteTexture);
         
+        mesh.ResetSliceSettings();
         var state = SetupState() | mesh.Activate();
         Bgfx.set_state((ulong)state, 0);
 
@@ -322,7 +330,114 @@ public sealed class RenderContext : IDisposable
         Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
     }
 
+    /// <summary>
+    /// Draw a mesh.
+    /// <br/><br/>
+    /// Uses the full contents of each buffer.
+    /// </summary>
+    /// <param name="mesh">The mesh to draw</param>
     public void Draw(Mesh mesh) => Draw(mesh, WhiteTexture);
+
+    public record ActiveMeshHandle : IDisposable
+    {
+        public Mesh Mesh;
+        public RenderContext RenderContext;
+
+        public ActiveMeshHandle(Mesh mesh, RenderContext rctx)
+        {
+            Mesh = mesh;
+            RenderContext = rctx;
+            Mesh.ResetSliceSettings();
+        }
+
+        /// <summary>
+        /// Set the slice of the buffer drawn.
+        /// </summary>
+        /// <param name="bufferIndex">The index of the buffer to configure.</param>
+        /// <param name="startVertex">The index of the starting vertex.</param>
+        /// <param name="vertexCount">The number of vertices to draw.</param>
+        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex and vertexCount parameters are out of bounds.</exception>
+        public void SetBufferDrawSlice(int bufferIndex, uint startVertex, uint vertexCount)
+        {
+            Mesh.SetBufferDrawSlice(bufferIndex, startVertex, vertexCount);
+        }
+
+        /// <summary>
+        /// Set the slice of the index buffer that is drawn.
+        /// </summary>
+        /// <param name="startVertex">The index of the starting vertex.</param>
+        /// <param name="vertexCount">The number of vertices to draw.</param>
+        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex and vertexCount parameters are out of bounds.</exception>
+        public void SetIndexBufferDrawSlice(uint startVertex, uint vertexCount)
+        {
+            Mesh.SetIndexBufferDrawSlice(startVertex, vertexCount);
+        }
+
+        /// <summary>
+        /// Set the slice of the index buffer that is drawn.
+        /// </summary>
+        /// <param name="startVertex">The index of the starting vertex.</param>
+        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex.</exception>
+        public void SetIndexBufferDrawSlice(uint startVertex)
+        {
+            Mesh.SetIndexBufferDrawSlice(startVertex);
+        }
+
+        /// <summary>
+        /// Draw a mesh.
+        /// <br/><br/>
+        /// Uses a specified portion of each buffer.
+        /// </summary>
+        /// <param name="mesh">The mesh to draw</param>
+        /// <param name="texture">The texture to bind to glib_texture in the active shader when drawing.</param>
+        public unsafe void Draw(Texture texture)
+        {
+            var rctx = this.RenderContext;
+            rctx._drawBatch.Draw();
+
+            var shader = rctx.Shader ?? rctx.defaultShader;
+
+            if (shader.HasUniform(Shader.TextureUniform))
+                shader.SetUniform(Shader.TextureUniform, texture);
+            
+            if (shader.HasUniform(Shader.ColorUniform))
+                shader.SetUniform(Shader.ColorUniform, rctx.DrawColor);
+                    
+            var programHandle = shader.Activate(rctx.WhiteTexture);
+            
+            var state = rctx.SetupState() | Mesh.Activate();
+            Bgfx.set_state((ulong)state, 0);
+
+            Matrix4x4 transformMat = rctx.TransformMatrix;
+            Bgfx.set_transform(&transformMat, 1);
+
+            Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+        }
+
+        /// <summary>
+        /// Draw a mesh.
+        /// <br/><br/>
+        /// Uses a specified portion of each buffer.
+        /// </summary>
+        /// <param name="mesh">The mesh to draw</param>
+        public void Draw() => Draw(RenderContext.WhiteTexture);
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+        }
+    }
+
+    /// <summary>
+    /// Draw a mesh, retaining its buffer state. Used to draw a mesh
+    /// using a portion of its buffers one or more times.
+    /// </summary>
+    /// <param name="mesh">The mesh to draw</param>
+    public ActiveMeshHandle UseMesh(Mesh mesh)
+        => new(mesh, this);
 
     public void DrawTexture(Texture texture, Rectangle srcRect, Rectangle dstRect)
     {

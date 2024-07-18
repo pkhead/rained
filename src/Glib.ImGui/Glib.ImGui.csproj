@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0</TargetFrameworks>
+        <OutputType>Library</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>12</LangVersion>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="ImGui.NET" Version="1.90.6.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="../Glib/Glib.csproj" />
+    </ItemGroup>
+</Project>

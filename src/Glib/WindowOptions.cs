@@ -67,12 +67,6 @@ public struct WindowOptions
     public int RefreshRate = 0;
 
     /// <summary>
-    /// True if the window should set up an ImGui controller
-    /// on load. This is false by default.
-    /// </summary>
-    public bool SetupImGui = false;
-
-    /// <summary>
     /// True if the window should set up the a default OpenGL debug error callback
     /// as soon as possible. If set to true, any OpenGL debug messages will be printed
     /// to Console.Out.
