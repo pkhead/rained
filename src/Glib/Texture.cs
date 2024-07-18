@@ -216,30 +216,7 @@ public class Texture : BgfxResource
         Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
     }
 
-    internal virtual Bgfx.TextureHandle Use()
-    {
-        return _handle;
-    }
-}
-
-/// <summary>
-/// A texture that is attached to a framebuffer.
-/// </summary>
-public class FramebufferTexture : Texture
-{
-    private Framebuffer _framebuffer;
-
-    internal unsafe FramebufferTexture(
-        Framebuffer attached,
-        int width, int height,
-        Bgfx.TextureFormat textureFormat,
-        Bgfx.TextureHandle handle
-    ) : base(width, height, GetPixelFormatFromTexture(textureFormat), handle)
-    {
-        _framebuffer = attached;
-    }
-
-    private static Glib.PixelFormat? GetPixelFormatFromTexture(Bgfx.TextureFormat fmt)
+    internal static Glib.PixelFormat? GetPixelFormatFromTexture(Bgfx.TextureFormat fmt)
     {
         return fmt switch
         {
@@ -250,24 +227,18 @@ public class FramebufferTexture : Texture
             _ => null
         };
     }
-
-    internal override Bgfx.TextureHandle Use()
-    {
-        RenderContext.Instance!.AddViewDependency(_framebuffer);
-        return base.Use();
-    }
 }
 
 /// <summary>
 /// A texture whose data can be read back from the GPU.
 /// This is only created by framebuffers.
 /// </summary>
-public class ReadableFramebufferTexture : FramebufferTexture
+public class ReadableTexture : Texture
 {
     private Bgfx.TextureHandle _blitDest;
 
-    internal unsafe ReadableFramebufferTexture(Framebuffer fb, int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
-        : base(fb, width, height, fmt, handle)
+    internal unsafe ReadableTexture(int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
+        : base(width, height, Texture.GetPixelFormatFromTexture(fmt), handle)
     {
         var flags = Bgfx.TextureFlags.BlitDst | Bgfx.TextureFlags.ReadBack;
         if (!Bgfx.is_texture_valid(0, false, 1, fmt, (ulong)flags))

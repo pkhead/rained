@@ -108,7 +108,6 @@ namespace GlibTests
 
             // setup framebuffer
             framebuffer = Glib.FramebufferConfiguration.Standard(300, 300)
-                .Clear(Glib.ClearFlags.Color, Glib.Color.Transparent)
                 .Create();
         }
 
@@ -221,6 +220,7 @@ namespace GlibTests
             {
                 renderContext.DrawColor = Glib.Color.White;
                 renderContext.PushFramebuffer(framebuffer);
+                renderContext.Clear(ClearFlags.Color | ClearFlags.Depth, Color.Transparent);
                 renderContext.DrawTexture(rainedLogo);
                 renderContext.DrawRectangle(window.MouseX, window.MouseY, 40f, 40f);
                 renderContext.PopFramebuffer();

@@ -33,9 +33,6 @@ public struct FramebufferConfiguration
     public int Height;
     public List<AttachmentConfig> Attachments;
 
-    public ClearFlags ClearFlags = ClearFlags.Color | ClearFlags.Depth;
-    public Color ClearColor = Color.Black;
-
     public FramebufferConfiguration()
     {
         Width = 800;
@@ -53,13 +50,6 @@ public struct FramebufferConfiguration
     public readonly FramebufferConfiguration AddAttachment(AttachmentConfig config)
     {
         Attachments.Add(config);
-        return this;
-    }
-
-    public FramebufferConfiguration Clear(ClearFlags flags, Color clearColor)
-    {
-        ClearFlags = flags;
-        ClearColor = clearColor;
         return this;
     }
 
@@ -95,14 +85,9 @@ public struct FramebufferConfiguration
 public class Framebuffer : BgfxResource
 {
     public readonly int Width, Height;
-    internal readonly ClearFlags clearFlags;
-    internal readonly Color clearColor;
 
     private Bgfx.FrameBufferHandle fbo;
-    private readonly FramebufferTexture[] _attachmentTexs;
-    /*private readonly int[] textureIndices;
-    private readonly Bgfx.TextureHandle[] textures;
-    private readonly uint[] renderBuffers;*/
+    private readonly Texture[] _attachmentTexs;
 
     internal Bgfx.FrameBufferHandle Handle => fbo;
 
@@ -110,11 +95,9 @@ public class Framebuffer : BgfxResource
     {
         Width = config.Width;
         Height = config.Height;
-        clearFlags = config.ClearFlags;
-        clearColor = config.ClearColor;
 
         var attachments = new Bgfx.Attachment[config.Attachments.Count];
-        _attachmentTexs = new FramebufferTexture[config.Attachments.Count];
+        _attachmentTexs = new Texture[config.Attachments.Count];
 
         for (int i = 0; i < config.Attachments.Count; i++)
         {
@@ -159,8 +142,7 @@ public class Framebuffer : BgfxResource
 
             if (attachConfig.Attachment == AttachmentPoint.Color && attachConfig.Readable)
             {
-                _attachmentTexs[i] = new ReadableFramebufferTexture(
-                    this,
+                _attachmentTexs[i] = new ReadableTexture(
                     Width, Height,
                     texFormat,
                     handle
@@ -168,10 +150,9 @@ public class Framebuffer : BgfxResource
             }
             else
             {
-                _attachmentTexs[i] = new FramebufferTexture(
-                    this,
+                _attachmentTexs[i] = new Texture(
                     Width, Height,
-                    texFormat,
+                    Texture.GetPixelFormatFromTexture(texFormat),
                     handle
                 );
             }

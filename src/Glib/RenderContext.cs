@@ -69,16 +69,8 @@ public sealed class RenderContext : IDisposable
     private readonly Stack<Framebuffer> framebufferStack = [];
     private Framebuffer? curFramebuffer = null;
 
-    private class ViewGraphNode(Framebuffer? fb)
-    {
-        public Framebuffer? framebuffer = fb; // a Framebuffer value of null represents the window framebuffer
-        public List<ViewGraphNode> children = [];
-    }
-
     private ushort curViewId = 0;
-    private List<ViewGraphNode> _viewData = [];
-    private ViewGraphNode _curView = null!;
-    private List<ushort> _viewOrder = [];
+    private bool _viewHasSubmission = false;
 
     public Matrix4x4 TransformMatrix { get => _drawBatch.TransformMatrix; set => _drawBatch.TransformMatrix = value; }
     public Color BackgroundColor = Color.Black;
@@ -215,14 +207,11 @@ public sealed class RenderContext : IDisposable
             ScreenHeight = height;
         }
 
-        _viewData.Clear();
         SetViewport(ScreenWidth, ScreenHeight);
         Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
         Bgfx.set_view_clear(curViewId, (ushort)(Bgfx.ClearFlags.Color | Bgfx.ClearFlags.Depth), bgCol, 1f, 0);
         Bgfx.touch(curViewId); // ensure this view will be cleared even if no draw calls are submitted to it
-
-        _curView = new ViewGraphNode(null);
-        _viewData.Add(_curView);
+        _viewHasSubmission = true;
 
         transformStack.Clear();
         TransformMatrix = Matrix4x4.Identity;
@@ -327,6 +316,7 @@ public sealed class RenderContext : IDisposable
         Matrix4x4 transformMat = TransformMatrix;
         Bgfx.set_transform(&transformMat, 1);
 
+        _viewHasSubmission = true;
         Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
     }
 
@@ -414,6 +404,7 @@ public sealed class RenderContext : IDisposable
             Matrix4x4 transformMat = rctx.TransformMatrix;
             Bgfx.set_transform(&transformMat, 1);
 
+            rctx._viewHasSubmission = true;
             Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
         }
 
@@ -472,98 +463,100 @@ public sealed class RenderContext : IDisposable
     
     public void DrawTexture(Texture texture)
         => DrawTexture(texture, new Vector2(0f, 0f));
-
-    internal void AddViewDependency(Framebuffer framebuffer)
+    
+    public void Clear(ClearFlags clearFlags, Color clearColor)
     {
-        var childView = _viewData.Find(x => x.framebuffer == framebuffer)
-            ?? throw new Exception("Cannot use framebuffer before rendering to it");
-        
-        if (!_curView.children.Contains(childView))
+        var bclearFlags = Bgfx.ClearFlags.None;
+        if (clearFlags.HasFlag(ClearFlags.Color)) bclearFlags |= Bgfx.ClearFlags.Color;
+        if (clearFlags.HasFlag(ClearFlags.Depth)) bclearFlags |= Bgfx.ClearFlags.Depth;
+        if (clearFlags.HasFlag(ClearFlags.Stencil)) bclearFlags |= Bgfx.ClearFlags.Stencil;
+
+        var colorUint = ColorToUint(clearColor);
+
+        // if the view already has submissions, then it is required to enter a new one
+        // otherwise, we can stay in the same one
+        if (_viewHasSubmission)
         {
-            _curView.children.Add(childView);
+            _viewHasSubmission = false;
+            curViewId++;
+
+            if (curFramebuffer is not null) Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
+            Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
+
+            if (curFramebuffer is not null)
+                SetViewport(curFramebuffer.Width, curFramebuffer.Height);
+            else
+                SetViewport(ScreenWidth, ScreenHeight);
         }
+
+        Bgfx.set_view_clear(curViewId, (ushort)bclearFlags, colorUint, 1f, 0);
     }
+
+    public void Clear() => Clear(ClearFlags.Color | ClearFlags.Depth | ClearFlags.Stencil, BackgroundColor);
 
     public void PushFramebuffer(Framebuffer framebuffer)
     {
+        var lastFb = curFramebuffer;
+
         if (curFramebuffer is not null)
             framebufferStack.Push(curFramebuffer);
 
         _drawBatch.Draw();
         curFramebuffer = framebuffer;
 
-        var viewId = _viewData.FindIndex(x => x.framebuffer == framebuffer);
-        if (viewId == -1)
+        // change to a new pass if the framebuffer is different
+        if (curFramebuffer != lastFb)
         {
-            viewId = _viewData.Count;
-            _viewData.Add(new ViewGraphNode(framebuffer));
+            if (!_viewHasSubmission) Bgfx.touch(curViewId);
+
+            curViewId++;
+            _viewHasSubmission = false;
             
-            curViewId = (ushort)viewId;
-            Bgfx.set_view_frame_buffer(curViewId, framebuffer.Handle);
+            Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
             Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
-
-            var clearFlags = Bgfx.ClearFlags.None;
-            if (framebuffer.clearFlags.HasFlag(ClearFlags.Color)) clearFlags |= Bgfx.ClearFlags.Color;
-            if (framebuffer.clearFlags.HasFlag(ClearFlags.Depth)) clearFlags |= Bgfx.ClearFlags.Depth;
-            if (framebuffer.clearFlags.HasFlag(ClearFlags.Stencil)) clearFlags |= Bgfx.ClearFlags.Stencil;
-
-            var colorUint = ColorToUint(framebuffer.clearColor);
-            Bgfx.set_view_clear(curViewId, (ushort)clearFlags, colorUint, 1f, 0);
-            SetViewport(framebuffer.Width, framebuffer.Height);
-            Bgfx.touch(curViewId);
+            Bgfx.set_view_clear(curViewId, (ushort)Bgfx.ClearFlags.None, 0, 1f, 0);
+            SetViewport(curFramebuffer.Width, curFramebuffer.Height);
         }
-
-        curViewId = (ushort)viewId;
     }
 
     public Framebuffer? PopFramebuffer()
     {
         _drawBatch.Draw();
+        if (!_viewHasSubmission) Bgfx.touch(curViewId);
+
+        int newWidth, newHeight;
+        var lastFb = curFramebuffer;
+
         if (framebufferStack.TryPop(out Framebuffer? framebuffer))
         {
-            var viewId = _viewData.FindIndex(x => x.framebuffer == framebuffer);
-            Debug.Assert(viewId >= 0);
-            curViewId = (ushort)viewId;
-            //SetViewport(framebuffer.Width, framebuffer.Height);
+            newWidth = framebuffer.Width;
+            newHeight = framebuffer.Height;
         }
         else
         {
-            curViewId = 0;
-            //SetViewport(ScreenWidth, ScreenHeight);
+            newWidth = ScreenWidth;
+            newHeight = ScreenHeight;
+        }
+
+        // if framebuffer has changed, a new view is required
+        if (curFramebuffer != framebuffer)
+        {
+            curFramebuffer = framebuffer;
+            curViewId++;
+
+            if (curFramebuffer is not null) Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
+            Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
+            Bgfx.set_view_clear(curViewId, (ushort)Bgfx.ClearFlags.None, 0, 1f, 0);
+            SetViewport(newWidth, newHeight);
         }
         
-        curFramebuffer = framebuffer;
         return curFramebuffer;
     }
 
     internal void End()
     {
         _drawBatch.Draw();
-        
-        // create view order from framebuffer graph
-        _viewOrder.Clear();
-
-        void RegisterNode(ViewGraphNode node)
-        {
-            var viewId = _viewData.IndexOf(node);
-            if (viewId < 0) throw new Exception("Could not find view id of node");
-
-            foreach (var child in node.children)
-                RegisterNode(child);
-            _viewOrder.Add((ushort) viewId);
-        }
-
-        RegisterNode(_viewData[0]);
-
-        unsafe
-        {
-            ushort* viewOrder = stackalloc ushort[_viewOrder.Count];
-            for (int i = 0; i < _viewOrder.Count; i++)
-                viewOrder[i] = _viewOrder[i];
-        
-            Bgfx.set_view_order(0, (ushort)_viewOrder.Count, viewOrder);
-        }
-
+        if (!_viewHasSubmission) Bgfx.touch(curViewId);
         Bgfx.frame(false);
         BgfxResource.Housekeeping();
     }
@@ -645,6 +638,7 @@ public sealed class RenderContext : IDisposable
         Matrix4x4 mat = Matrix4x4.Identity;
         Bgfx.set_transform(&mat, 1);
 
+        _viewHasSubmission = true;
         Bgfx.submit(curViewId, shader.Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
     }
 

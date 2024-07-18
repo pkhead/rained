@@ -387,7 +387,7 @@ public class Shader : BgfxResource
         {
             var handle = GetUniformHandle(_textureUnits[i], "Texture", Bgfx.UniformType.Sampler);
             var texture = _boundTextures[i] ?? placeholderTexture;
-            var texHandle = texture.Use();
+            var texHandle = texture.Handle;
             if (!texHandle.Valid)
             {
                 Console.WriteLine("WARNING: Texture handle was invalid!");
