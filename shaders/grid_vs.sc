@@ -3,5 +3,7 @@ $input a_position
 
 void main()
 {
-    gl_Position = mul(u_modelViewProj, vec4(a_position.xyz, 1.0));
+    vec4 pos = mul(u_modelViewProj, vec4(a_position.xyz, 1.0));
+    pos.xy = (round(pos.xy * u_viewRect.zw) + vec2(0.5, 0.5)) / u_viewRect.zw;
+    gl_Position = pos;
 }
