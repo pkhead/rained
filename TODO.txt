@@ -5,6 +5,7 @@ Bugs:
 - fix double resource disposal on window close
 
 Overall:
+- user able to configure vsync/refresh rate and rendering backend
 - dissolve material/tile separation
 - be able to view shortcut geo outside of the geometry editor
 - does update checker notif window timing work?
