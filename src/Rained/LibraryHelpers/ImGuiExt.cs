@@ -3,6 +3,7 @@ using System.Numerics;
 using Glib;
 using Raylib_cs;
 using System.Runtime.InteropServices;
+using RainEd;
 namespace ImGuiNET;
 
 static class ImGuiExt
@@ -140,9 +141,11 @@ static class ImGuiExt
         return false;
     }
 
+    private static nint TextureID(Texture texture) => Boot.ImGuiController!.UseTexture(texture);
+
     public static void Image(Texture texture, Glib.Color color)
     {
-        ImGui.Image((nint) texture.TextureHandle, new Vector2(texture.Width, texture.Height), Vector2.Zero, Vector2.One, (Vector4) color);
+        ImGui.Image(TextureID(texture), new Vector2(texture.Width, texture.Height), Vector2.Zero, Vector2.One, (Vector4) color);
     }
 
     public static void Image(Texture texture)
@@ -162,14 +165,14 @@ static class ImGuiExt
 
     public static void ImageSize(Texture texture, float width, float height)
     {
-        ImGui.Image((nint) texture.TextureHandle, new Vector2(width, height), Vector2.Zero, Vector2.One);
+        ImGui.Image(TextureID(texture), new Vector2(width, height), Vector2.Zero, Vector2.One);
     }
 
     public static void ImageRect(Texture texture, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
     {
         var texSize = new Vector2(texture.Width, texture.Height);
         ImGui.Image(
-            (nint) texture.TextureHandle,
+            TextureID(texture),
             new Vector2(width, height),
             srcRec.Position / texSize,
             (srcRec.Position + srcRec.Size) / texSize,
@@ -200,7 +203,7 @@ static class ImGuiExt
     public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
     {
         var tex = framebuffer.GetTexture(slot);
-        ImGui.Image((nint)tex.TextureHandle, new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f)); 
+        ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f)); 
     }
 
     public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
@@ -208,7 +211,7 @@ static class ImGuiExt
         var texSize = new Vector2(tex.Width, tex.Height);
         return ImGui.ImageButton(
             str_id: id,
-            user_texture_id: (nint)tex.TextureHandle,
+            user_texture_id: TextureID(tex),
             image_size: new Vector2(width, height),
             uv0: srcRec.Position / texSize,
             uv1: (srcRec.Position + srcRec.Size) / texSize,

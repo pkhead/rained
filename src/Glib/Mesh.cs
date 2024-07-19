@@ -173,7 +173,7 @@ public class MeshConfiguration
     public Mesh CreateIndexed32(Span<uint> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
 }
 
-public class Mesh : BgfxResource
+public class Mesh : Resource
 {   
     private readonly byte[][] bufferData;
     private ushort[]? indexBufferData16 = null;
@@ -376,6 +376,8 @@ public class Mesh : BgfxResource
     /// <exception cref="ArgumentException">The input data size does not match the size of the underlying already-uploaded dynamic buffer.</exception>
     public void SetIndexBuffer(ReadOnlySpan<ushort> input)
     {
+        if (!_config.Indexed) throw new InvalidOperationException("The mesh is not indexed");
+
         if (_config.IndexBufferUsage != MeshBufferUsage.Transient || input.Length == indexBufferData16!.Length)
         {
             GetIndexBufferSpan(out Span<ushort> span);
@@ -400,6 +402,8 @@ public class Mesh : BgfxResource
     /// <exception cref="ArgumentException">The input data size does not match the size of the underlying already-uploaded dynamic buffer.</exception>
     public void SetIndexBuffer(ReadOnlySpan<uint> input)
     {
+        if (!_config.Indexed) throw new InvalidOperationException("The mesh is not indexed");
+
         if (_config.IndexBufferUsage != MeshBufferUsage.Transient || input.Length == indexBufferData32!.Length)
         {
             GetIndexBufferSpan(out Span<uint> span);
@@ -483,10 +487,35 @@ public class Mesh : BgfxResource
     }
 
     /// <summary>
+    /// Returns the number of vertices that are in a buffer.
+    /// </summary>
+    /// <param name="bufferIndex">The index of the buffer</param>
+    /// <returns>The number of vertices in a buffer.</returns>
+    /// <exception cref="ArgumentException">Thrown if the buffer at the given index does not exist.</exception>
+    public uint GetBufferVertexCount(int bufferIndex)
+    {
+        if (bufferIndex < 0 || bufferIndex >= _elemCounts.Length)
+            throw new ArgumentException("The buffer at the given index does not exist", nameof(bufferIndex));
+        
+        return _elemCounts[bufferIndex];
+    }
+
+    /// <summary>
+    /// Returns the length of the index buffer
+    /// </summary>
+    /// <returns>The length of the index buffer.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the mesh is not indexed.</exception>   
+    public uint GetIndexVertexCount()
+    {
+        if (!_config.Indexed) throw new InvalidOperationException("The mesh is not indexed");
+        return (uint)(indexBufferData16?.Length ?? indexBufferData32!.Length);
+    }
+
+    /// <summary>
     /// Upload buffer data to the GPU. Can be called again for the same buffer if it is a dynamic buffer.
     /// Calling it on transient buffers has no effect, as they are updated on each draw call.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if the buffer data could not be reuploaded.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the buffer data could not be uploaded.</exception>
     public unsafe void Upload(int bufferIndex)
     {
         // set buffer data
@@ -496,14 +525,14 @@ public class Mesh : BgfxResource
         if (bufConfig.Usage == MeshBufferUsage.Transient) return;
 
         Bgfx.Memory* alloc;
-        uint vertexCount;
+        uint vertexCount = _elemCounts[bufferIndex];
+        if (vertexCount == 0) throw new InvalidOperationException("Cannot upload empty buffer");
 
         var buf = bufferData[bufferIndex] ?? throw new InvalidOperationException("Could not access buffer data for " + bufferIndex);
         alloc = BgfxUtil.Load<byte>(buf);
 
         Debug.Assert(buf.Length % _attrSizes[bufferIndex] == 0);
         Debug.Assert(_elemCounts[bufferIndex] == (buf.Length / _attrSizes[bufferIndex]));
-        vertexCount = _elemCounts[bufferIndex];
 
         fixed (Bgfx.VertexLayout* layout = &vertexLayouts[bufferIndex])
         {
@@ -550,8 +579,10 @@ public class Mesh : BgfxResource
             if ((_config.Use32BitIndices && indexBufferData32 == null) || (!_config.Use32BitIndices && indexBufferData16 == null))
                 throw new NullReferenceException("Index data was not set");
             
-            var alloc = _config.Use32BitIndices ? BgfxUtil.Load<uint>(indexBufferData32) : BgfxUtil.Load<ushort>(indexBufferData16);
             var count = _config.Use32BitIndices ? indexBufferData32!.Length : indexBufferData16!.Length;
+            if (count == 0) throw new InvalidOperationException("Cannot upload empty buffer");
+
+            var alloc = _config.Use32BitIndices ? BgfxUtil.Load<uint>(indexBufferData32) : BgfxUtil.Load<ushort>(indexBufferData16);
             var flags = Bgfx.BufferFlags.None;
             if (_config.Use32BitIndices) flags |= Bgfx.BufferFlags.Index32;
 

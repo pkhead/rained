@@ -1,19 +1,19 @@
 namespace Glib;
 
-public abstract class BgfxResource : IDisposable
+public abstract class Resource : IDisposable
 {
-    private static List<BgfxResource> _allResources = [];
-    private static Queue<BgfxResource> _disposedResources = [];
+    private static List<Resource> _allResources = [];
+    private static Queue<Resource> _disposedResources = [];
     private static Mutex _mutex = new();
 
     private bool _disposed = false;
 
-    protected BgfxResource()
+    protected Resource()
     {
         _allResources.Add(this);
     }
 
-    ~BgfxResource() => Dispose(false);
+    ~Resource() => Dispose(false);
 
     public void Dispose()
     {

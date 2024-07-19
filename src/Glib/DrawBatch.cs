@@ -110,7 +110,7 @@ internal class DrawBatch
         }
     }
 
-    private void BeginDraw(uint requiredCapacity, MeshPrimitiveType newDrawMode = MeshPrimitiveType.Triangles)
+    internal void BeginDraw(uint requiredCapacity, MeshPrimitiveType newDrawMode = MeshPrimitiveType.Triangles)
     {
         CheckCapacity(requiredCapacity);
 
@@ -122,7 +122,7 @@ internal class DrawBatch
         }
     }
 
-    private void PushVertex(float x, float y)
+    internal void PushVertex(float x, float y)
     {
         var vec = Vector4.Transform(new Vector4(x, y, 0f, 1f), TransformMatrix);
 
@@ -140,140 +140,140 @@ internal class DrawBatch
         vertexCount++;
     }
 
-    public struct BatchDrawHandle : IDisposable
-    {
-        private readonly static Vector2[] verts = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero];
-        private readonly static Vector2[] uvs = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero,];
-        private readonly static Color[] colors = [Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent];
-
-        private DrawBatch _batch;
-        private int vertIndex = 0;
-        private readonly BatchDrawMode mode;
-        private Vector2 uv;
-        private Color color;
-
-        internal BatchDrawHandle(BatchDrawMode mode, DrawBatch batch)
-        {
-            this.mode = mode;
-            this._batch = batch;
-
-            uv = Vector2.Zero;
-            color = batch.DrawColor;
-        }
-
-        private readonly bool IsFull()
-        {
-            return mode switch
-            {
-                BatchDrawMode.Lines => vertIndex >= 2,
-                BatchDrawMode.Triangles => vertIndex >= 3,
-                BatchDrawMode.Quads => vertIndex >= 4,
-                _ => false,
-            };
-        }
-
-        public void Flush()
-        {
-            switch (mode)
-            {
-                case BatchDrawMode.Triangles:
-                {
-                    _batch.BeginDraw(3, MeshPrimitiveType.Triangles);
-                    for (int i = 0; i < 3; i++)
-                    {
-                        _batch.DrawColor = colors[i];
-                        _batch.UV = uvs[i];
-                        _batch.PushVertex(verts[i].X, verts[i].Y);
-                    }
-                    break;
-                }
-
-                case BatchDrawMode.Quads:
-                {
-                    _batch.BeginDraw(6, MeshPrimitiveType.Triangles);
-
-                    // first triangle
-                    _batch.DrawColor = colors[0];
-                    _batch.UV = uvs[0];
-                    _batch.PushVertex(verts[0].X, verts[0].Y);
-
-                    _batch.DrawColor = colors[1];
-                    _batch.UV = uvs[1];
-                    _batch.PushVertex(verts[1].X, verts[1].Y);
-
-                    _batch.DrawColor = colors[2];
-                    _batch.UV = uvs[2];
-                    _batch.PushVertex(verts[2].X, verts[2].Y);
-
-                    // second triangle
-                    _batch.PushVertex(verts[2].X, verts[2].Y);
-
-                    _batch.DrawColor = colors[3];
-                    _batch.UV = uvs[3];
-                    _batch.PushVertex(verts[3].X, verts[3].Y);
-
-                    _batch.DrawColor = colors[0];
-                    _batch.UV = uvs[0];
-                    _batch.PushVertex(verts[0].X, verts[0].Y);
-                    break;
-                }
-
-                case BatchDrawMode.Lines:
-                {
-                    _batch.BeginDraw(2, MeshPrimitiveType.Lines);
-
-                    _batch.DrawColor = colors[0];
-                    _batch.UV = uvs[0];
-                    _batch.PushVertex(verts[0].X, verts[0].Y);
-
-                    _batch.DrawColor = colors[1];
-                    _batch.UV = uvs[1];
-                    _batch.PushVertex(verts[1].X, verts[1].Y);
-                    break;
-                }
-            }
-
-            vertIndex = 0;
-        }
-
-        public void Vertex(Vector2 v)
-            => Vertex(v.X, v.Y);
-
-        public void Vertex(float x, float y)
-        {
-            if (IsFull()) Flush();
-            uvs[vertIndex] = uv;
-            colors[vertIndex] = color;
-            verts[vertIndex] = new Vector2(x, y);
-            vertIndex++;
-        }
-
-        public void TexCoord(float u, float v)
-        {
-            uv = new Vector2(u, v);
-        }
-
-        public void TexCoord(Vector2 uv)
-        {
-            this.uv = uv;
-        }
-
-        public void Color(Color color)
-        {
-            this.color = color;
-        }
-
-        public void End()
-        {
-            if (IsFull()) Flush();
-        }
-
-        public void Dispose() => End();
-    }
-
     public BatchDrawHandle BeginBatchDraw(BatchDrawMode mode, Texture? tex = null)
     {
         Texture = tex;
         return new BatchDrawHandle(mode, this);
     }
+}
+
+public struct BatchDrawHandle : IDisposable
+{
+    private readonly static Vector2[] verts = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero];
+    private readonly static Vector2[] uvs = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero,];
+    private readonly static Color[] colors = [Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent];
+
+    private DrawBatch _batch;
+    private int vertIndex = 0;
+    private readonly BatchDrawMode mode;
+    private Vector2 uv;
+    private Color color;
+
+    internal BatchDrawHandle(BatchDrawMode mode, DrawBatch batch)
+    {
+        this.mode = mode;
+        this._batch = batch;
+
+        uv = Vector2.Zero;
+        color = batch.DrawColor;
+    }
+
+    private readonly bool IsFull()
+    {
+        return mode switch
+        {
+            BatchDrawMode.Lines => vertIndex >= 2,
+            BatchDrawMode.Triangles => vertIndex >= 3,
+            BatchDrawMode.Quads => vertIndex >= 4,
+            _ => false,
+        };
+    }
+
+    public void Flush()
+    {
+        switch (mode)
+        {
+            case BatchDrawMode.Triangles:
+            {
+                _batch.BeginDraw(3, MeshPrimitiveType.Triangles);
+                for (int i = 0; i < 3; i++)
+                {
+                    _batch.DrawColor = colors[i];
+                    _batch.UV = uvs[i];
+                    _batch.PushVertex(verts[i].X, verts[i].Y);
+                }
+                break;
+            }
+
+            case BatchDrawMode.Quads:
+            {
+                _batch.BeginDraw(6, MeshPrimitiveType.Triangles);
+
+                // first triangle
+                _batch.DrawColor = colors[0];
+                _batch.UV = uvs[0];
+                _batch.PushVertex(verts[0].X, verts[0].Y);
+
+                _batch.DrawColor = colors[1];
+                _batch.UV = uvs[1];
+                _batch.PushVertex(verts[1].X, verts[1].Y);
+
+                _batch.DrawColor = colors[2];
+                _batch.UV = uvs[2];
+                _batch.PushVertex(verts[2].X, verts[2].Y);
+
+                // second triangle
+                _batch.PushVertex(verts[2].X, verts[2].Y);
+
+                _batch.DrawColor = colors[3];
+                _batch.UV = uvs[3];
+                _batch.PushVertex(verts[3].X, verts[3].Y);
+
+                _batch.DrawColor = colors[0];
+                _batch.UV = uvs[0];
+                _batch.PushVertex(verts[0].X, verts[0].Y);
+                break;
+            }
+
+            case BatchDrawMode.Lines:
+            {
+                _batch.BeginDraw(2, MeshPrimitiveType.Lines);
+
+                _batch.DrawColor = colors[0];
+                _batch.UV = uvs[0];
+                _batch.PushVertex(verts[0].X, verts[0].Y);
+
+                _batch.DrawColor = colors[1];
+                _batch.UV = uvs[1];
+                _batch.PushVertex(verts[1].X, verts[1].Y);
+                break;
+            }
+        }
+
+        vertIndex = 0;
+    }
+
+    public void Vertex(Vector2 v)
+        => Vertex(v.X, v.Y);
+
+    public void Vertex(float x, float y)
+    {
+        if (IsFull()) Flush();
+        uvs[vertIndex] = uv;
+        colors[vertIndex] = color;
+        verts[vertIndex] = new Vector2(x, y);
+        vertIndex++;
+    }
+
+    public void TexCoord(float u, float v)
+    {
+        uv = new Vector2(u, v);
+    }
+
+    public void TexCoord(Vector2 uv)
+    {
+        this.uv = uv;
+    }
+
+    public void Color(Color color)
+    {
+        this.color = color;
+    }
+
+    public void End()
+    {
+        if (IsFull()) Flush();
+    }
+
+    public void Dispose() => End();
 }

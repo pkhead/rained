@@ -56,7 +56,7 @@ class AppSetup
 
             Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            Raylib.GlibWindow.ImGuiController!.Update(Raylib.GetFrameTime());
+            Boot.ImGuiController!.Update(Raylib.GetFrameTime());
 
             ImGuiExt.EnsurePopupIsOpen("Configure Data");
             ImGuiExt.CenterNextWindow(ImGuiCond.Always);
@@ -134,7 +134,7 @@ class AppSetup
                 ImGui.EndPopup();
             }
 
-            Raylib.GlibWindow.ImGuiController!.Render();
+            Boot.ImGuiController!.Render();
 
             if (callbackRes is not null)
             {

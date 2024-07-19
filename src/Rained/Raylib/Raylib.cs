@@ -217,8 +217,7 @@ static class Raylib
         };
         
         lastFrame = window.Time;
-        window.RenderContext!.DefaultTextureMinFilter = TextureFilterMode.Nearest;
-        window.RenderContext!.DefaultTextureMagFilter = TextureFilterMode.Nearest;
+        Texture.DefaultFilterMode = TextureFilterMode.Nearest;
     }
 
     /// <summary>
@@ -381,7 +380,7 @@ static class Raylib
 
     public static float GetMouseWheelMove()
     {
-        return window.MouseWheel;
+        return window.MouseWheel.Y;
     }
 
     public static void HideCursor()
@@ -407,17 +406,17 @@ static class Raylib
         return Random.Shared.Next(min, max+1);
     }
 
-    public static Shader LoadShaderFromMemory(string? vsCode, string? fsCode)
+    public static Shader LoadShaderFromMemory(string? vsName, string? fsName)
     {
         try
         {
-            var shader = window.RenderContext!.CreateShader(vsCode, fsCode);
+            var shader = Glib.Shader.Create(vsName, fsName);
             return new Shader()
             {
                 ID = shader
             };
         }
-        catch (ShaderCompilationException e)
+        catch (ShaderCreationException e)
         {
             RainEd.Log.Error(e.ToString());
             return new Shader();
@@ -512,14 +511,12 @@ static class Raylib
 
     public static void BeginScissorMode(int x, int y, int width, int height)
     {
-        window.RenderContext!.SetEnabled(Feature.ScissorTest, true);
-        window.RenderContext!.SetScissorBounds(x, y, width, height);
+        window.RenderContext!.SetScissorBox(x, y, width, height);
     }
 
     public static void EndScissorMode()
     {
-        window.RenderContext!.ResetScissorBounds();
-        window.RenderContext!.SetEnabled(Feature.ScissorTest, false);
+        window.RenderContext!.ClearScissorBox();
     }
     #endregion
 
@@ -652,13 +649,13 @@ static class Raylib
         image.image?.Dispose();
     }
 
-    public static Image LoadImageFromTexture(Texture2D tex)
+    /*public static Image LoadImageFromTexture(Texture2D tex)
     {
         return new Image()
         {
             image = tex.ID!.ToImage()
         };
-    }
+    }*/
 
     public static Image ImageCopy(Image src)
     {
@@ -849,7 +846,7 @@ static class Raylib
     {
         try
         {
-            Glib.Texture? texture = window.RenderContext!.LoadTexture(fileName);
+            Glib.Texture? texture = Glib.Texture.Load(fileName);
             return new Texture2D()
             {
                 ID = texture
@@ -869,7 +866,7 @@ static class Raylib
     {
         return new Texture2D()
         {
-            ID = window.RenderContext!.CreateTexture(image.image!)
+            ID = Glib.Texture.Load(image.image!)
         };
     }
 
@@ -877,7 +874,26 @@ static class Raylib
     {
         return new RenderTexture2D()
         {
-            ID = window.RenderContext!.CreateFramebuffer(FramebufferConfiguration.Standard(width, height))
+            ID = new FramebufferConfiguration(width, height)
+            {
+                Attachments = [
+                    // color texture
+                    new()
+                    {
+                        Attachment = AttachmentPoint.Color,
+                        Useable = true,
+                        Readable = true
+                    },
+
+                    // depth renderbuffer
+                    new()
+                    {
+                        Attachment = AttachmentPoint.Depth,
+                        Useable = false,
+                        Readable = false
+                    }
+                ]
+            }.Create()
         };
     }
 
@@ -914,10 +930,10 @@ static class Raylib
         window.RenderContext!.PushTransform();
         window.RenderContext!.Translate(dest.X, dest.Y, 0f);
         window.RenderContext!.Rotate(rotation * DEG2RAD);
-        window.RenderContext!.Draw(
-            tex: texture.ID!,
-            src: new Glib.Rectangle(source.X, source.Y, source.Width, source.Height),
-            dst: new Glib.Rectangle(-origin.X, -origin.Y, dest.Width, dest.Height)
+        window.RenderContext!.DrawTexture(
+            texture: texture.ID!,
+            srcRect: new Glib.Rectangle(source.X, source.Y, source.Width, source.Height),
+            dstRect: new Glib.Rectangle(-origin.X, -origin.Y, dest.Width, dest.Height)
         );
         window.RenderContext!.PopTransform();
     }

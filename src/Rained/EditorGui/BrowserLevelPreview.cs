@@ -237,10 +237,12 @@ class BrowserLevelPreview : FileBrowserPreview
                     levelWidth = meshData.Width;
                     levelHeight = meshData.Height;
 
-                    geoMesh = RainEd.RenderContext!.CreateMesh();
-                    geoMesh.SetVertices(meshData.Vertices);
-                    geoMesh.SetColors(meshData.Colors);
-                    geoMesh.Upload();
+                    geoMesh = Glib.StandardMesh.Create(meshData.Vertices.Length);
+                    geoMesh.SetVertexData(meshData.Vertices);
+                    geoMesh.SetColorData(meshData.Colors);
+
+                    if (geoMesh.GetBufferVertexCount(0) > 0)
+                        geoMesh.Upload();
                 }
                 else if (geoLoadTask.IsFaulted)
                 {
@@ -275,16 +277,17 @@ class BrowserLevelPreview : FileBrowserPreview
                 {
                     Raylib.ClearBackground(Color.Blank);
 
-                    //RainEd.RenderContext!.DrawBatch();
-
                     Rlgl.PushMatrix();
                     Rlgl.Scalef(viewScale, viewScale, 1f);
                     Rlgl.Translatef(-viewPan.X, -viewPan.Y, 0f);
 
                     Raylib.DrawRectangle(0, 0, levelWidth, levelHeight, new Color(127, 127, 127, 255));
-                    //RainEd.RenderContext!.DrawBatch();
-                    RainEd.RenderContext.DrawColor = Glib.Color.White;
-                    RainEd.RenderContext!.Draw(geoMesh);
+
+                    if (geoMesh.GetBufferVertexCount(0) > 0)
+                    {
+                        RainEd.RenderContext.DrawColor = Glib.Color.White;
+                        RainEd.RenderContext!.Draw(geoMesh);
+                    }
 
                     Rlgl.PopMatrix();
                 }

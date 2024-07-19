@@ -57,7 +57,7 @@ class EditorGeometryRenderer
     
     private readonly List<Vector3> verticesBuf = [];
     private readonly List<Glib.Color> colorsBuf = [];
-    private readonly List<int> indicesBuf = [];
+    private readonly List<uint> indicesBuf = [];
 
     public EditorGeometryRenderer(LevelEditRender renderer)
     {
@@ -91,7 +91,7 @@ class EditorGeometryRenderer
     }
 
     // build the mesh for the sub-rectangle of a layer
-    private void MeshGeometry(Glib.StandardMesh geoMesh, int layer, int subL, int subT, int subR, int subB)
+    private void MeshGeometry(out Glib.StandardMesh? geoMesh, int layer, int subL, int subT, int subR, int subB)
     {
         var vertices = verticesBuf;
         var colors = colorsBuf;
@@ -101,7 +101,7 @@ class EditorGeometryRenderer
         colors.Clear();
         indices.Clear();
 
-        int meshIndex = 0;
+        uint meshIndex = 0;
 
         void drawRect(float x, float y, float w, float h, Glib.Color color)
         {
@@ -327,10 +327,17 @@ class EditorGeometryRenderer
             }
         }
 
-        geoMesh.SetVertices(vertices.ToArray());
-        geoMesh.SetColors(colors.ToArray());
-        geoMesh.SetIndexBufferData([..indices]);
-        geoMesh.Upload();
+        if (indices.Count == 0)
+        {
+            geoMesh = null;
+        }
+        else
+        {
+            geoMesh = Glib.StandardMesh.CreateIndexed32([..indices], vertices.Count);
+            geoMesh.SetVertexData([..vertices]);
+            geoMesh.SetColorData([..colors]);
+            geoMesh.Upload();
+        }
     }
 
     public void ReloadGeometryMesh()
@@ -340,12 +347,10 @@ class EditorGeometryRenderer
         foreach (var chunkPos in dirtyChunks)
         {
             ref Glib.StandardMesh? chunk = ref chunkLayers[chunkPos.X, chunkPos.Y, chunkPos.Layer];
-
             chunk?.Dispose();
-            chunk = RainEd.RenderContext.CreateMesh(true);
 
             MeshGeometry(
-                geoMesh: chunk,
+                geoMesh: out chunk,
                 layer: chunkPos.Layer,
                 subL: chunkPos.X * ChunkWidth,
                 subT: chunkPos.Y * ChunkHeight,
@@ -371,7 +376,7 @@ class EditorGeometryRenderer
             for (int y = Math.Max(viewT, 0); y < Math.Min(viewB, chunkRowCount); y++)
             {
                 var mesh = chunkLayers[x,y,layer];
-                if (mesh is not null)
+                if (mesh is not null && mesh.GetIndexVertexCount() > 0)
                 {
                     RainEd.RenderContext.Draw(mesh);
                 }

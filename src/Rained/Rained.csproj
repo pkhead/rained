@@ -29,9 +29,14 @@
 
   <ItemGroup>
     <ProjectReference Include="../Glib/Glib.csproj" />
+    <ProjectReference Include="../Glib.ImGui/Glib.ImGui.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Ported/Drizzle.Ported.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <Content Include="../Bgfx/runtimes/**/*" TargetPath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -19,11 +19,11 @@ namespace RlManaged
 {
     abstract class RlObject : IDisposable
     {
-        protected abstract Glib.GLResource? GetGLResource();
+        protected abstract Glib.Resource? GetGlibResource();
 
         public void Dispose()
         {
-            GetGLResource()?.Dispose();
+            GetGlibResource()?.Dispose();
             GC.SuppressFinalize(this);
         }
     }
@@ -31,7 +31,7 @@ namespace RlManaged
     class RenderTexture2D : RlObject
     {
         private Raylib_cs.RenderTexture2D raw;
-        protected override Glib.GLResource? GetGLResource() => raw.ID;
+        protected override Glib.Resource? GetGlibResource() => raw.ID;
 
         private RenderTexture2D(Raylib_cs.RenderTexture2D raw) : base()
         {
@@ -103,8 +103,8 @@ namespace RlManaged
         public static Image Load(string fileName)
             => new(Raylib.LoadImage(fileName));
 
-        public static Image LoadFromTexture(Raylib_cs.Texture2D texture)
-            => new (Raylib.LoadImageFromTexture(texture));
+        //public static Image LoadFromTexture(Raylib_cs.Texture2D texture)
+        //    => new (Raylib.LoadImageFromTexture(texture));
         
         public static Image GenColor(int width, int height, Raylib_cs.Color color)
             => new(Raylib.GenImageColor(width, height, color));
@@ -144,7 +144,7 @@ namespace RlManaged
     {
         private Raylib_cs.Texture2D raw;
         public Glib.Texture GlibTexture => raw.ID!;
-        protected override Glib.GLResource? GetGLResource() => raw.ID;
+        protected override Glib.Resource? GetGlibResource() => raw.ID;
         
         public int Width { get => raw.ID!.Width; }
         public int Height { get => raw.ID!.Height; }
@@ -167,7 +167,7 @@ namespace RlManaged
     {
         private Raylib_cs.Shader raw;
         public Glib.Shader GlibShader => raw.ID!;
-        protected override Glib.GLResource? GetGLResource() => raw.ID;
+        protected override Glib.Resource? GetGlibResource() => raw.ID;
         
         private Shader(Raylib_cs.Shader src)
         {

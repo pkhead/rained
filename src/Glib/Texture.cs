@@ -16,7 +16,7 @@ public enum TextureWrapMode
     Mirror,
 }
 
-public class Texture : BgfxResource
+public class Texture : Resource
 {
     private Bgfx.TextureHandle _handle;
 
@@ -83,12 +83,13 @@ public class Texture : BgfxResource
         CreateTexture(format);
     }
 
-    internal unsafe Texture(int width, int height, PixelFormat? format, Bgfx.TextureHandle handle)
+    internal unsafe Texture(int width, int height, Bgfx.TextureFormat format, Bgfx.TextureHandle handle)
     {
         Width = width;
         Height = height;
-        PixelFormat = format;
+        PixelFormat = GetPixelFormatFromTexture(format);
         _handle = handle;
+        BgfxTextureFormat = format;
     }
 
     private unsafe Bgfx.Memory* GetImageData(Image image)
@@ -180,9 +181,10 @@ public class Texture : BgfxResource
         if (PixelFormat is null) throw new InvalidOperationException("Texture cannot be modified");
         
         if (image.Width != Width || image.Height != Height)
-        {
             throw new ArgumentException("Image dimensions must match texture dimensions", nameof(image));
-        }
+
+        if (image.PixelFormat != PixelFormat)
+            throw new ArgumentException("Mismatched pixel formats", nameof(image));
 
         var alloc = GetImageData(image);
         Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
@@ -238,7 +240,7 @@ public class ReadableTexture : Texture
     private Bgfx.TextureHandle _blitDest;
 
     internal unsafe ReadableTexture(int width, int height, Bgfx.TextureFormat fmt, Bgfx.TextureHandle handle)
-        : base(width, height, Texture.GetPixelFormatFromTexture(fmt), handle)
+        : base(width, height, fmt, handle)
     {
         var flags = Bgfx.TextureFlags.BlitDst | Bgfx.TextureFlags.ReadBack;
         if (!Bgfx.is_texture_valid(0, false, 1, fmt, (ulong)flags))
@@ -251,7 +253,7 @@ public class ReadableTexture : Texture
             _height: (ushort)Height,
             _hasMips: false,
             _numLayers: 1,
-            _format: fmt,
+            _format: BgfxTextureFormat,
             _flags: (ulong)flags,
             _mem: null
         );
@@ -262,6 +264,66 @@ public class ReadableTexture : Texture
     {
         base.FreeResources(disposing);
         Bgfx.destroy_texture(_blitDest);
+    }
+
+    public unsafe Image GetImageSync()
+    {
+        if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
+
+        byte* mem = null;
+
+        try
+        {
+            Bgfx.blit(
+                _id: RenderContext.Instance!.CurrentBgfxViewId,
+                _dst: _blitDest,
+                _dstMip: 0,
+                _dstX: 0,
+                _dstY: 0,
+                _dstZ: 0,
+                _src: Handle,
+                _srcMip: 0,
+                _srcX: 0,
+                _srcY: 0,
+                _srcZ: 0,
+                _width: (ushort)Width,
+                _height: (ushort)Height,
+                _depth: 0
+            );
+
+            Bgfx.TextureInfo texInfo = new();
+            Bgfx.calc_texture_size(&texInfo, (ushort)Width, (ushort)Height, 0, false, false, 1, BgfxTextureFormat);
+            mem = (byte*) NativeMemory.Alloc((nuint)texInfo.storageSize);
+
+            var endFrame = Bgfx.read_texture(_blitDest, mem, 0);
+            while (RenderContext.Instance!.Frame < endFrame)
+                RenderContext.Instance.Frame = Bgfx.frame(false);
+
+            var pixelSpan = new ReadOnlySpan<byte>(mem, (int)texInfo.storageSize);
+            if (BgfxTextureFormat is Bgfx.TextureFormat.RGBA8 or Bgfx.TextureFormat.RGBA8I or Bgfx.TextureFormat.RGBA8U or Bgfx.TextureFormat.RGBA8S)
+            {
+                Debug.Assert(texInfo.storageSize == Width * Height * 4);
+                return new Image(pixelSpan, Width, Height, Glib.PixelFormat.RGBA);
+            }
+            else if (BgfxTextureFormat is Bgfx.TextureFormat.R8 or Bgfx.TextureFormat.R8I or Bgfx.TextureFormat.R8U or Bgfx.TextureFormat.R8S)
+            {
+                Debug.Assert(texInfo.storageSize == Width * Height);
+                return new Image(pixelSpan, Width, Height, Glib.PixelFormat.Grayscale);
+            }
+            {
+                throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
+            }
+        }
+        finally
+        {
+            if (mem != null)
+                NativeMemory.Free(mem);
+        }
+    }
+
+    public Task<Image> GetImage()
+    {
+        throw new NotImplementedException();
     }
 
     /*public unsafe Image GetImage()

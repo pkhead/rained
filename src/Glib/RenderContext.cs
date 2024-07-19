@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Bgfx_cs;
@@ -70,12 +69,14 @@ public sealed class RenderContext : IDisposable
     private Framebuffer? curFramebuffer = null;
 
     private ushort curViewId = 0;
+    internal ushort CurrentBgfxViewId => curViewId;
     private bool _viewHasSubmission = false;
 
     public Matrix4x4 TransformMatrix { get => _drawBatch.TransformMatrix; set => _drawBatch.TransformMatrix = value; }
     public Color BackgroundColor = Color.Black;
     public ref Color DrawColor => ref _drawBatch.DrawColor;
     public Shader? Shader { get => _drawBatch.Shader; set => _drawBatch.Shader = value; }
+    public uint Frame { get; internal set; } = 0;
 
     /// <summary>
     /// If Glib should use GL_LINES primitives for drawing lines.
@@ -168,7 +169,7 @@ public sealed class RenderContext : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        BgfxResource.DisposeRemaining();
+        Resource.DisposeRemaining();
         Bgfx.shutdown();
         _cbInterface.Dispose();
         GC.SuppressFinalize(this);
@@ -493,6 +494,7 @@ public sealed class RenderContext : IDisposable
     }
 
     public void Clear() => Clear(ClearFlags.Color | ClearFlags.Depth | ClearFlags.Stencil, BackgroundColor);
+    public void Clear(Color clearColor) => Clear(ClearFlags.Color | ClearFlags.Depth | ClearFlags.Stencil, clearColor);
 
     public void PushFramebuffer(Framebuffer framebuffer)
     {
@@ -557,11 +559,17 @@ public sealed class RenderContext : IDisposable
     {
         _drawBatch.Draw();
         if (!_viewHasSubmission) Bgfx.touch(curViewId);
-        Bgfx.frame(false);
-        BgfxResource.Housekeeping();
+        Frame = Bgfx.frame(false);
+        Resource.Housekeeping();
     }
 
     #region Transform
+
+    public void ResetTransform()
+    {
+        TransformMatrix = Matrix4x4.Identity;
+    }
+    
     public void PushTransform()
     {
         transformStack.Push(TransformMatrix);
@@ -848,50 +856,9 @@ public sealed class RenderContext : IDisposable
     
     public void DrawRing(Vector2 center, float radius, int segments = 36)
         => DrawRingSector(center.X, center.Y, radius, 0f, 2f * MathF.PI, segments);
+    
+    public BatchDrawHandle BeginBatchDraw(BatchDrawMode mode, Texture? tex = null) =>
+        _drawBatch.BeginBatchDraw(mode, tex);
 
     #endregion
-
-    /*public Mesh CreateMesh(MeshConfiguration config, int vertexCount)
-    {
-        if (config.Indexed) throw new Exception("Missing index count");
-        return new(config, vertexCount);
-    }
-    
-    public Mesh CreateMesh(MeshConfiguration config, ReadOnlySpan<short> indices, int vertexCount)
-    {
-        if (!config.Indexed || config.Use32BitIndices) throw new Exception("Incompatible index options for MeshConfiguration");
-        var mesh = new Mesh(config, vertexCount, indices.Length);
-        mesh.GetIndexBufferSpan(out Span<short> data);
-        indices.CopyTo(data);
-        return mesh;
-    }
-
-    public Mesh CreateMesh(MeshConfiguration config, ReadOnlySpan<int> indices, int vertexCount)
-    {
-        if (!config.Indexed || !config.Use32BitIndices) throw new Exception("Incompatible index options for MeshConfiguration");
-        var mesh = new Mesh(config, vertexCount, indices.Length);
-        mesh.GetIndexBufferSpan(out Span<int> data);
-        indices.CopyTo(data);
-        return mesh;
-    }
-
-    public Texture CreateTexture(Image image)
-        => new(image);
-    
-    public Texture CreateTexture(int width, int height, PixelFormat format)
-        => new(width, height, format)*/
-
-    /*public unsafe void Draw(Mesh mesh)
-    {
-        _drawBatch.Draw();
-
-        fixed (Matrix4x4* mat = &TransformMatrix)
-        {
-            Bgfx.set_transform(mat, 1);
-        }
-
-        mesh.Activate();
-        Bgfx.set_state((ulong)Bgfx.StateFlags.Default, 0);
-        Bgfx.submit(curViewId, (shaderValue ?? defaultShader).Activate(WhiteTexture), 0, (byte)Bgfx.DiscardFlags.All);
-    }*/
 }

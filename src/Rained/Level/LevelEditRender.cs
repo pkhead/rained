@@ -86,7 +86,7 @@ class LevelEditRender : IDisposable
 
         // create palette texture
         // (Glib.PixelFormat.RGB does not work for some reason)
-        paletteTexture = RainEd.RenderContext!.CreateTexture(30, 3, Glib.PixelFormat.RGBA);
+        paletteTexture = Glib.Texture.Create(30, 3, Glib.PixelFormat.RGBA);
         _paletteImgBuf = Glib.Image.FromColor(30, 3, Glib.Color.Black, Glib.PixelFormat.RGBA);
 
         geoRenderer = new EditorGeometryRenderer(this);
@@ -520,7 +520,7 @@ class LevelEditRender : IDisposable
         int srcDepth = srcLayer * 10;
 
         var rctx = RainEd.RenderContext;
-        rctx.SetEnabled(Glib.Feature.CullFace, false);
+        rctx.CullMode = Glib.CullMode.None;
 
         bool renderPalette;
 
@@ -694,7 +694,7 @@ class LevelEditRender : IDisposable
             }
 
             rctx.Shader = null;
-            rctx.SetEnabled(Glib.Feature.CullFace, false);
+            rctx.CullMode = Glib.CullMode.None;
 
             // render segments of rope-type props
             if (prop.Rope is not null)
@@ -727,25 +727,22 @@ class LevelEditRender : IDisposable
         // recreate grid mesh if it needs updating
         if (gridMajor is null || gridMinor is null || Level.Width != gridWidth || Level.Height != gridHeight)
         {
-            var meshConfig = new Glib.MeshConfiguration([Glib.DataType.Vector3], true)
-            {
-                PrimitiveType = Glib.MeshPrimitiveType.Lines
-            };
+            var meshConfig = new Glib.MeshConfiguration()
+                .AddBuffer(Glib.MeshBufferTarget.Position, Glib.DataType.Float, 3, Glib.MeshBufferUsage.Static)
+                .SetIndexed(true)
+                .SetPrimitiveType(Glib.MeshPrimitiveType.Lines);
 
             gridWidth = Level.Width;
             gridHeight = Level.Height;
 
             gridMajor?.Dispose();
             gridMinor?.Dispose();
-            
-            gridMajor = rctx.CreateMesh(meshConfig);
-            gridMinor = rctx.CreateMesh(meshConfig);
-            
+                        
             // create minor grid lines
             var vertices = new List<Vector3>();
-            var indices = new List<int>();
+            var indices = new List<uint>();
 
-            int meshIndex = 0;
+            uint meshIndex = 0;
             for (int x = 0; x < gridWidth; x++)
             {
                 for (int y = 0; y < gridHeight; y++)
@@ -763,9 +760,10 @@ class LevelEditRender : IDisposable
                 }
             }
 
+            gridMinor = Glib.Mesh.Create(meshConfig, [..indices], vertices.Count);
             gridMinor.SetBufferData(0, [..vertices]);
-            gridMinor.SetIndexBufferData([..indices]);
-            gridMinor.Upload();
+            if (indices.Count > 0)
+                gridMinor.Upload();
 
             // create major grid lines
             vertices.Clear();
@@ -789,9 +787,10 @@ class LevelEditRender : IDisposable
                 }
             }
 
+            gridMajor = Glib.Mesh.Create(meshConfig, [..indices], vertices.Count);
             gridMajor.SetBufferData(0, [..vertices]);
-            gridMajor.SetIndexBufferData([..indices]);
-            gridMajor.Upload();
+            if (indices.Count > 0)
+                gridMajor.Upload();
         }
 
         // draw the meshes
@@ -800,8 +799,8 @@ class LevelEditRender : IDisposable
         var opacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
         rctx.Shader = Shaders.GridShader.GlibShader;
         rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * (50f/255f));
-        rctx.Draw(gridMinor);
-        rctx.Draw(gridMajor);
+        if (gridMinor.GetIndexVertexCount() > 0) rctx.Draw(gridMinor);
+        if (gridMajor.GetIndexVertexCount() > 0) rctx.Draw(gridMajor);
         rctx.Shader = null;
     }
 

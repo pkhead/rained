@@ -28,6 +28,7 @@ namespace RainEd
 
         private static Glib.Window window = null!;
         public static Glib.Window Window => window;
+        public static Glib.ImGui.ImGuiController? ImGuiController { get; private set; }
 
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
@@ -127,7 +128,7 @@ namespace RainEd
             }
             
             // create splash screen window to display while editor is loading
-            if (!bootOptions.NoSplashScreen)
+            if (false && !bootOptions.NoSplashScreen)
             {
                 var winOptions = new Glib.WindowOptions()
                 {
@@ -138,25 +139,16 @@ namespace RainEd
                     VSync = false
                 };
 
-                winOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
-                winOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
-
-                if (bootOptions.GlDebug)
-                {
-                    winOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
-                    winOptions.SetupGlErrorCallback = true;
-                }
-
                 splashScreenWindow = new Glib.Window(winOptions);
                 splashScreenWindow.Initialize();
 
                 var rctx = splashScreenWindow.RenderContext!;
-                var texture = rctx.LoadTexture(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
 
                 splashScreenWindow.BeginRender();
 
                 rctx.Clear(Glib.Color.Black);
-                rctx.Draw(texture);
+                rctx.DrawTexture(texture);
                 
                 splashScreenWindow.EndRender();
                 splashScreenWindow.SwapBuffers();
@@ -170,23 +162,13 @@ namespace RainEd
                     Border = Glib.WindowBorder.Resizable,
                     Title = "Rained",
                     Visible = false,
-                    VSync = true,
-                    SetupImGui = true
+                    VSync = true
                 };
-
-                windowOptions.API.Version = new Silk.NET.Windowing.APIVersion(3, 3);
-                windowOptions.API.Profile = Silk.NET.Windowing.ContextProfile.Core;
-
-                if (bootOptions.GlDebug)
-                {
-                    windowOptions.API.Flags |= Silk.NET.Windowing.ContextFlags.Debug;
-                    windowOptions.SetupGlErrorCallback = true;
-                }
 
                 // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
                 
-                window.ImGuiConfigure += () =>
+                void ImGuiConfigure()
                 {
                     WindowScale = window.ContentScale.Y;
 
@@ -217,7 +199,7 @@ namespace RainEd
 
                 window.Load += () =>
                 {
-                    if (bootOptions.GlDebug)
+                    /*if (bootOptions.GlDebug)
                     {
                         Log.Information("Initialize OpenGL debug context");
                         window.RenderContext!.SetupErrorCallback((string msg, DebugSeverity severity) =>
@@ -227,7 +209,9 @@ namespace RainEd
                                 Log.Error("GL error ({severity}): {Error}", severity, msg);
                             }
                         });
-                    }
+                    }*/
+
+                    ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
                 window.Initialize();
@@ -307,11 +291,11 @@ namespace RainEd
                         {
                             curWindowScale = WindowScale;
                             Fonts.ReloadFonts();
-                            window.ImGuiController!.RecreateFontDeviceTexture();
+                            ImGuiController!.RecreateFontDeviceTexture();
                         }
 
                         Raylib.BeginDrawing();
-                        window.ImGuiController!.Update(Raylib.GetFrameTime());
+                        ImGuiController!.Update(Raylib.GetFrameTime());
                         app.Draw(Raylib.GetFrameTime());
 
                         // save style sizes and scale to dpi before rendering
@@ -321,14 +305,12 @@ namespace RainEd
                         {
                             ImGuiStyle styleCopy = *ImGui.GetStyle().NativePtr;
                             ImGui.GetStyle().ScaleAllSizes(curWindowScale);
-                            window.ImGuiController!.Render();
+                            ImGuiController!.Render();
                             *ImGui.GetStyle().NativePtr = styleCopy;
                         }
                         
                         
                         Raylib.EndDrawing();
-
-                        Glib.GLResource.UnloadGCQueue();
                     }
 
                     Log.Information("Shutting down Rained...");
@@ -349,6 +331,7 @@ namespace RainEd
                     NotifyError(e);
                 }
 #endif
+                ImGuiController?.Dispose();
                 window.Dispose();
                 //rlImGui.Shutdown();
 
@@ -386,7 +369,7 @@ namespace RainEd
                     Raylib.BeginDrawing();
                     Raylib.ClearBackground(Raylib_cs.Color.Black);
 
-                    window.ImGuiController!.Update(Raylib.GetFrameTime());
+                    ImGuiController!.Update(Raylib.GetFrameTime());
 
                     var windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings;
 
@@ -401,7 +384,7 @@ namespace RainEd
                         ImGui.PopTextWrapPos();
                     } ImGui.End();
 
-                    window.ImGuiController!.Render();
+                    ImGuiController!.Render();
                     Raylib.EndDrawing();
                 }
 

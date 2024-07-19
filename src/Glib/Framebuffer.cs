@@ -82,7 +82,7 @@ public struct FramebufferConfiguration
     }
 }
 
-public class Framebuffer : BgfxResource
+public class Framebuffer : Resource
 {
     public readonly int Width, Height;
 
@@ -152,7 +152,7 @@ public class Framebuffer : BgfxResource
             {
                 _attachmentTexs[i] = new Texture(
                     Width, Height,
-                    Texture.GetPixelFormatFromTexture(texFormat),
+                    texFormat,
                     handle
                 );
             }

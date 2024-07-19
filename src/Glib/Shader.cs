@@ -13,7 +13,7 @@ public class ShaderCreationException : Exception
     public ShaderCreationException(string message, System.Exception inner) : base(message, inner) { }
 }
 
-public class Shader : BgfxResource
+public class Shader : Resource
 {
     private const string DefaultVertexName = "default_vs";
     private const string DefaultFragmentName = "default_fs";
@@ -104,6 +104,7 @@ public class Shader : BgfxResource
     /// <param name="vsName">The name of the vertex shader, or null to use the default one.</param>
     /// <param name="fsName">The name of the fragment shader, or null to use the default one.</param>
     /// <returns>A shader.</returns>
+    /// <exception cref="ShaderCreationException">Thrown if the shader could not be created.</exception>
     public static Shader Create(string? vsName = null, string? fsName = null) => new(vsName, fsName);
 
     private static unsafe Bgfx.ShaderHandle LoadShader(string name)

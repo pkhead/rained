@@ -372,11 +372,12 @@ class DrizzleRenderWindow : IDisposable
         }
 
         Glib.Texture gtex;
+        Glib.PixelFormat desiredPixelFormat = img.Format == Drizzle.PixelFormat.L1 ? Glib.PixelFormat.Grayscale : Glib.PixelFormat.RGBA;
 
-        if (tex == null || img.Width != tex.Width || img.Height != tex.Height)
+        if (tex == null || tex.GlibTexture.PixelFormat != desiredPixelFormat || img.Width != tex.Width || img.Height != tex.Height)
         {
             tex?.Dispose();
-            gtex = RainEd.RenderContext.CreateTexture(img.Width, img.Height, Glib.PixelFormat.RGBA);
+            gtex = Glib.Texture.Create(img.Width, img.Height, desiredPixelFormat);
             tex = new RlManaged.Texture2D(new Texture2D() { ID = gtex });
         }
         else
@@ -391,12 +392,12 @@ class DrizzleRenderWindow : IDisposable
                 convertedBitmap = new byte[img.Width * img.Height];
             
             ConvertBitmap(img.Pixels, convertedBitmap);
-            gtex.UpdateFromImage(convertedBitmap, Glib.PixelFormat.Grayscale);
+            gtex.UpdateFromImage(convertedBitmap);
         }
         else
         {
             // bgra -> rgba conversion is done in the shader
-            gtex.UpdateFromImage(img.Pixels, Glib.PixelFormat.RGBA);
+            gtex.UpdateFromImage(img.Pixels);
         }
     }
 

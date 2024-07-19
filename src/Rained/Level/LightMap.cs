@@ -177,7 +177,11 @@ class LightMap : IDisposable
 
     public RlManaged.Image GetImage()
     {
-        var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
+        //var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
+        if (lightmapRt.Texture.ID is not Glib.ReadableTexture tex) throw new Exception("Lightmap texture is not a ReadableTexture");
+        var gimg = tex.GetImageSync();
+
+        var img = new RlManaged.Image(new Image { image = gimg });
         Raylib.ImageFlipVertical(img);
         
         return img;

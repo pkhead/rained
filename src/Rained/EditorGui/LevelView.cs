@@ -379,7 +379,15 @@ class LevelView
         // blend into the imgui background when rendered.
         // Good thing I downloaded renderdoc, otherwise there was no way
         // I would've figured that was the problem!
-        RainEd.RenderContext.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+        
+        // glSrcRGB: Silk.NET.OpenGL.BlendingFactor.SrcAlpha
+        // glDstRGB: Silk.NET.OpenGL.BlendingFactor.OneMinusSrcAlpha
+        // glSrcAlpha: 1
+        // glDstAlpha: Silk.NET.OpenGL.BlendingFactor.OneMinusSrcAlpha
+        // glEqRGB: Silk.NET.OpenGL.BlendEquationModeEXT.FuncAdd
+        // glEqAlpha: Silk.NET.OpenGL.BlendEquationModeEXT.FuncAdd
+        // TODO: blending
+        //RainEd.RenderContext.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
 
         // drwa resize preview
@@ -420,7 +428,7 @@ class LevelView
             );
         }
 
-        RainEd.RenderContext.SetBlendMode(Glib.BlendMode.Normal);
+        //RainEd.RenderContext.SetBlendMode(Glib.BlendMode.Normal);
 
         // view controls
         if (canvasWidget.IsHovered)
