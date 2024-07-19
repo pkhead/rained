@@ -322,10 +322,10 @@ namespace Glib.ImGui
 
             if (keyMap.TryGetValue(k, out ImGuiKey imKey))
             {
-                io.AddKeyEvent(ImGuiKey.ModCtrl, _window.IsKeyPressed(Glib.Key.ControlLeft) || _window.IsKeyPressed(Glib.Key.ControlRight));
-                io.AddKeyEvent(ImGuiKey.ModAlt, _window.IsKeyPressed(Glib.Key.AltLeft) || _window.IsKeyPressed(Glib.Key.AltRight));
-                io.AddKeyEvent(ImGuiKey.ModShift, _window.IsKeyPressed(Glib.Key.ShiftLeft) || _window.IsKeyPressed(Glib.Key.ShiftRight));
-                io.AddKeyEvent(ImGuiKey.ModSuper, _window.IsKeyPressed(Glib.Key.SuperLeft) || _window.IsKeyPressed(Glib.Key.SuperRight));
+                io.AddKeyEvent(ImGuiKey.ModCtrl, _window.IsKeyDown(Glib.Key.ControlLeft) || _window.IsKeyDown(Glib.Key.ControlRight));
+                io.AddKeyEvent(ImGuiKey.ModAlt, _window.IsKeyDown(Glib.Key.AltLeft) || _window.IsKeyDown(Glib.Key.AltRight));
+                io.AddKeyEvent(ImGuiKey.ModShift, _window.IsKeyDown(Glib.Key.ShiftLeft) || _window.IsKeyDown(Glib.Key.ShiftRight));
+                io.AddKeyEvent(ImGuiKey.ModSuper, _window.IsKeyDown(Glib.Key.SuperLeft) || _window.IsKeyDown(Glib.Key.SuperRight));
 
                 io.AddKeyEvent(imKey, down);
             }

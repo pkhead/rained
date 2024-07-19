@@ -4,8 +4,7 @@ Bugs:
 - bevel shader doesn't work under opengl
 - uniform query doesn't work?
 - fix blending (need separate blend facotrs)
-- ctrl button does not work
-- do popup modals have the background grayed out?
+- popup modals don't have the background grayed out?
 
 Overall:
 - dissolve material/tile separation
