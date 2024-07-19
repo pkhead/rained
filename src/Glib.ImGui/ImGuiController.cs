@@ -471,9 +471,11 @@ namespace Glib.ImGui
             // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
             var rctx = _window.RenderContext!;
             
-            rctx.Flags = Glib.RenderFlags.Blend;
+            rctx.Flags = RenderFlags.None;
             rctx.Shader = null; // default shader is good enough for our purposes
-            rctx.DrawColor = Glib.Color.White;
+            rctx.DrawColor = Color.White;
+            rctx.CullMode = CullMode.None;
+            rctx.BlendMode = BlendMode.Normal;
 
             float L = drawDataPtr.DisplayPos.X;
             float R = drawDataPtr.DisplayPos.X + drawDataPtr.DisplaySize.X;
@@ -514,6 +516,7 @@ namespace Glib.ImGui
             var lastFlags = rctx.Flags;
             var lastDrawColor = rctx.DrawColor;
             var lastCullMode = rctx.CullMode;
+            var lastBlendMode = rctx.BlendMode;
 
             SetupRenderState(drawDataPtr, framebufferWidth, framebufferHeight);
 
@@ -580,6 +583,7 @@ namespace Glib.ImGui
             rctx.Flags = lastFlags;
             rctx.DrawColor = lastDrawColor;
             rctx.CullMode = lastCullMode;
+            rctx.BlendMode = lastBlendMode;
         }
 
         private void CreateDeviceResources()

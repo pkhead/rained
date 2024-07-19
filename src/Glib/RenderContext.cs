@@ -17,8 +17,16 @@ public enum ClearFlags
 
 public enum BlendMode
 {
+    None,
     Normal,
-    Add
+
+    /// <summary>
+    /// Not a standard mode, but I don't feel the need to expose
+    /// the entirety of the blending configuration only for me to
+    /// ultimately use only two of them.
+    /// </summary>
+        
+    CorrectedFramebufferNormal
 }
 
 /// <summary>
@@ -34,9 +42,8 @@ public enum CullMode {
 public enum RenderFlags : int
 {
     None = 0,
-    Blend = 1,
-    DepthTest = 2,
-    WireframeRendering = 4
+    DepthTest = 1,
+    WireframeRendering = 2
 }
 
 public enum DebugSeverity
@@ -86,8 +93,9 @@ public sealed class RenderContext : IDisposable
     /// </summary>
     public bool UseGlLines = true;
     public float LineWidth = 1f;
-    public RenderFlags Flags = RenderFlags.Blend;
-    public CullMode CullMode = CullMode.None;
+    private RenderFlags _flags = RenderFlags.None;
+    private CullMode _cullMode = CullMode.Clockwise;
+    private BlendMode _blendMode = BlendMode.Normal;
 
     private int _scissorX, _scissorY, _scissorW, _scissorH;
     private bool _scissorEnabled = false;
@@ -109,6 +117,36 @@ public sealed class RenderContext : IDisposable
                 var caps = Bgfx.get_caps();
                 return caps->originBottomLeft != 0;
             }
+        }
+    }
+
+    public RenderFlags Flags
+    {
+        get => _flags;
+        set
+        {
+            if (_flags != value) _drawBatch.Draw();
+            _flags = value;
+        }
+    }
+
+    public CullMode CullMode
+    {
+        get => _cullMode;
+        set
+        {
+            if (_cullMode != value) _drawBatch.Draw();
+            _cullMode = value;
+        }
+    }
+
+    public BlendMode BlendMode
+    {
+        get => _blendMode;
+        set
+        {
+            if (_blendMode != value) _drawBatch.Draw();
+            _blendMode = value;
         }
     }
 
@@ -246,6 +284,11 @@ public sealed class RenderContext : IDisposable
         );
     }
 
+    private static Bgfx.StateFlags BgfxBlendEquationSeparate(Bgfx.StateFlags equationRGB, Bgfx.StateFlags equationA)
+    {
+        return (Bgfx.StateFlags)(( (ulong)(equationRGB)|( (ulong)(equationA)<<3) ));
+    }
+
     private static Bgfx.StateFlags BgfxStateBlendFunc(Bgfx.StateFlags src, Bgfx.StateFlags dst)
     {
         return BgfxStateBlendFuncSeparate(src, dst, src, dst);
@@ -262,7 +305,17 @@ public sealed class RenderContext : IDisposable
 
         var state = Bgfx.StateFlags.None;
         state |= Bgfx.StateFlags.WriteRgb | Bgfx.StateFlags.WriteA | Bgfx.StateFlags.Msaa;
-        if (Flags.HasFlag(RenderFlags.Blend)) state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+        switch (BlendMode)
+        {
+            case BlendMode.Normal:
+                state |= BgfxStateBlendFunc(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha);
+                break;
+            
+            case BlendMode.CorrectedFramebufferNormal:
+                state |= BgfxStateBlendFuncSeparate(Bgfx.StateFlags.BlendSrcAlpha, Bgfx.StateFlags.BlendInvSrcAlpha, Bgfx.StateFlags.BlendOne, Bgfx.StateFlags.BlendInvSrcAlpha);
+                state |= BgfxBlendEquationSeparate(Bgfx.StateFlags.BlendEquationAdd, Bgfx.StateFlags.BlendEquationAdd);
+                break;
+        }
         if (Flags.HasFlag(RenderFlags.DepthTest)) state |= Bgfx.StateFlags.DepthTestLess;
         if (CullMode == CullMode.Clockwise) state |= Bgfx.StateFlags.CullCw;
         else if (CullMode == CullMode.Counterclockwise) state |= Bgfx.StateFlags.CullCcw;

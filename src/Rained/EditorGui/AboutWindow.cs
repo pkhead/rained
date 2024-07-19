@@ -51,7 +51,6 @@ static class AboutWindow
         {
             rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
 
-            // TODO: os/runtime information
             ImGui.SameLine(Math.Max(0f, (ImGui.GetWindowWidth() - rainedLogo.Width) / 2.0f));
             ImGuiExt.Image(rainedLogo);
             

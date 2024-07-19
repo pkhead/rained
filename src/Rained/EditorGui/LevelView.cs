@@ -387,6 +387,7 @@ class LevelView
         // glEqRGB: Silk.NET.OpenGL.BlendEquationModeEXT.FuncAdd
         // glEqAlpha: Silk.NET.OpenGL.BlendEquationModeEXT.FuncAdd
         // TODO: blending
+        RainEd.RenderContext!.BlendMode = Glib.BlendMode.CorrectedFramebufferNormal;
         //RainEd.RenderContext.SetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
         editorModes[selectedMode].DrawViewport(canvasWidget.RenderTexture, layerRenderTextures);
 
@@ -428,7 +429,7 @@ class LevelView
             );
         }
 
-        //RainEd.RenderContext.SetBlendMode(Glib.BlendMode.Normal);
+        RainEd.RenderContext.BlendMode = Glib.BlendMode.Normal;
 
         // view controls
         if (canvasWidget.IsHovered)

@@ -1,7 +1,7 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
 - chain holder undo/redo is broken
-- fix blending (need separate blend facotrs)
+- Multi-Windowing
 - popup modals don't have the background grayed out?
 
 Overall:
