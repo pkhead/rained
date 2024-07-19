@@ -4,7 +4,7 @@ Bugs:
 - Multi-Windowing
 - about window "graphics card" shows renderer name instead of device name
 - fix double resource disposal on window close
-- mysterious unerasable rectangle in the light editor
+- bgfx credits
 - opengl render preview was gray once... can't repro. now it just crashes. might be some memory error.
   - also, investigate using bgfx::makeRef to optimize preview updating
 - vsync/refresh rate option default is "automatic" mode: locks to screen refresh rate, vsync if fullscreen or refresh rate unknown

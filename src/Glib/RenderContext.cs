@@ -178,7 +178,11 @@ public sealed class RenderContext : IDisposable
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
 
-        init.type = Bgfx.RendererType.OpenGL;
+#if DEBUG
+        init.type = Bgfx.RendererType.Direct3D11;
+#else
+        init.type = Bgfx.RendererType.Count;
+#endif
         init.callback = _cbInterface.Pointer;
 
         var nativeHandles = window.Native!.Win32!;
