@@ -98,6 +98,19 @@ public sealed class RenderContext : IDisposable
 
     private CallbackInterface _cbInterface;
 
+    // Wtf
+    public bool OriginBottomLeft
+    {
+        get
+        {
+            unsafe
+            {
+                var caps = Bgfx.get_caps();
+                return caps->originBottomLeft != 0;
+            }
+        }
+    }
+
     internal unsafe RenderContext(IWindow window)
     {
         if (Instance is not null)
@@ -119,7 +132,7 @@ public sealed class RenderContext : IDisposable
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
 
-        init.type = Bgfx.RendererType.OpenGL;
+        init.type = Bgfx.RendererType.Count;
         init.callback = _cbInterface.Pointer;
 
         var nativeHandles = window.Native!.Win32!;

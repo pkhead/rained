@@ -203,7 +203,12 @@ static class ImGuiExt
     public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
     {
         var tex = framebuffer.GetTexture(slot);
-        ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f)); 
+
+        // determine if vertical flip is necessary
+        if (RainEd.RainEd.RenderContext!.OriginBottomLeft)
+            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f));
+        else
+            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height));
     }
 
     public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)

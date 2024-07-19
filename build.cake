@@ -80,9 +80,11 @@ Task("Build Shaders")
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"spirv"));
 
+    string[] allHeaderFiles;
+
     void CompileShader(string srcFile, string dstFile, string def, string shaderTypeStr, string shaderTarget)
     {
-        if (!IsUpToDate(dstFile, srcFile, "shaders/bgfx_shader.sh", def))
+        if (!IsUpToDate(dstFile, [srcFile, def, ..allHeaderFiles]))
         {
             Information($"Compile shader '{srcFile}' to '{dstFile}' with {def}");
             Exec(shaderc, [
@@ -119,6 +121,17 @@ Task("Build Shaders")
         CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), def, shaderTypeStr, "s_5_0");
         CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), def, shaderTypeStr, "spirv");
     }
+
+    // first, collect all shader file files are they may depend on them
+    // obviously an imperfect system, ideally i would scan the file for all #includes i suppose...
+    // or just explicitly write dependencies here like a makefile, but i don't want to do that.
+    List<string> headerFiles = [];
+    foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
+    {
+        if (Path.GetExtension(fileName) != ".sh") continue;
+        headerFiles.Add(fileName);
+    }
+    allHeaderFiles = [..headerFiles];
 
     foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
     {

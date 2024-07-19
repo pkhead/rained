@@ -8,14 +8,19 @@ static class RlExt
     public static void DrawRenderTextureV(RenderTexture2D target, Vector2 pos, Color tint)
     {
         var tex = target.Texture;
-        Raylib.DrawTexturePro(
-            texture: target.Texture,
-            source: new Rectangle(0f, tex.Height, tex.Width, -tex.Height),
-            dest: new Rectangle(pos, tex.Width, tex.Height),
-            origin: Vector2.Zero,
-            rotation: 0f,
-            tint: tint
-        );
+
+        // determine if vertical flip is necessary
+        if (RainEd.RainEd.RenderContext!.OriginBottomLeft)
+            Raylib.DrawTexturePro(
+                texture: target.Texture,
+                source: new Rectangle(0f, tex.Height, tex.Width, -tex.Height),
+                dest: new Rectangle(pos, tex.Width, tex.Height),
+                origin: Vector2.Zero,
+                rotation: 0f,
+                tint: tint
+            );
+        else
+            Raylib.DrawTextureV(tex, pos, tint);
     }
     
     public static void DrawRenderTexture(RenderTexture2D target, int posX, int posY, Color tint)

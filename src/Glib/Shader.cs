@@ -43,6 +43,11 @@ public class Shader : Resource
     private List<string> _textureUnits = [];
     private Texture[] _boundTextures;
 
+    static Shader()
+    {
+        SetupPredefinedUniforms();
+    }
+
     internal unsafe Shader(string? vsName = null, string? fsName = null)
     {
         var vsh = LoadShader(vsName ?? DefaultVertexName);

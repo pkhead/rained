@@ -45,14 +45,14 @@ static class Shaders
 
     public static void LoadShaders()
     {
-        EffectsMatrixShader = RlManaged.Shader.LoadFromMemory(null, EffectsMatrixShaderSource);
-        BevelTreatmentShader = RlManaged.Shader.LoadFromMemory(null, BevelTreatmentShaderSrc);
-        SoftPropShader = RlManaged.Shader.LoadFromMemory(null, SoftPropShaderSrc);
-        PropShader = RlManaged.Shader.LoadFromMemory(null, PropShaderSrc);
-        TileShader = RlManaged.Shader.LoadFromMemory(null, TileShaderSrc);
-        PaletteShader = RlManaged.Shader.LoadFromMemory(null, PaletteShaderSrc);
-        LevelLightShader = RlManaged.Shader.LoadFromMemory(null, LevelLightShaderSrc);
-        GridShader = RlManaged.Shader.LoadFromMemory(GridVertexShaderSource, GridFragmentShaderSource);
+        EffectsMatrixShader = RlManaged.Shader.LoadFromMemory(null, "effect_matrix_fs");
+        BevelTreatmentShader = RlManaged.Shader.LoadFromMemory(null, "bevel_fs");
+        SoftPropShader = RlManaged.Shader.LoadFromMemory(null, "softprop_fs");
+        PropShader = RlManaged.Shader.LoadFromMemory(null, "prop_fade_fs");
+        TileShader = RlManaged.Shader.LoadFromMemory(null, "tile_fs");
+        PaletteShader = RlManaged.Shader.LoadFromMemory(null, "palette_fs");
+        LevelLightShader = RlManaged.Shader.LoadFromMemory(null, "level_light_fs");
+        GridShader = RlManaged.Shader.LoadFromMemory("grid_vs", "grid_fs");
     }
 
     private const string EffectsMatrixShaderSource = @"

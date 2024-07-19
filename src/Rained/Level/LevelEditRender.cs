@@ -624,8 +624,8 @@ class LevelEditRender : IDisposable
                 {
                     if (rctx.Shader.HasUniform("paletteTex"))
                         rctx.Shader.SetUniform("paletteTex", paletteTexture);
-                    if (rctx.Shader.HasUniform("textureSize"))
-                        rctx.Shader.SetUniform("textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
+                    if (rctx.Shader.HasUniform("u_textureSize"))
+                        rctx.Shader.SetUniform("u_textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
                     
                     if (rctx.Shader.HasUniform("bevelSize"))
                     {
@@ -644,7 +644,7 @@ class LevelEditRender : IDisposable
                     {
                         var right = Vector2.Normalize(quad[1] - quad[0]);
                         var up = Vector2.Normalize(quad[3] - quad[0]);
-                        rctx.Shader.SetUniform("propRotation", new Glib.Matrix2x2(right.X, right.Y, up.X, up.Y));
+                        rctx.Shader.SetUniform("propRotation", new Vector4(right.X, right.Y, up.X, up.Y));
                     }
 
                     rctx.DrawBatch(); // force flush batch, as uniform changes aren't detected
