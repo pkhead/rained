@@ -2,10 +2,16 @@ $input v_texcoord0, v_color0
 #include <bgfx_shader.sh>
 #include <palette.sh>
 
-uniform vec2 u_textureSize;
-uniform vec4 propRotation;
-uniform vec3 lightDirection;
-uniform float bevelSize;
+uniform vec4 v4_textureSize;
+uniform vec4 v4_propRotation;
+uniform vec4 v4_lightDirection;
+uniform vec4 v4_bevelData;
+
+#undef textureSize;
+#define u_textureSize v4_textureSize.xy
+#define propRotation v4_propRotation
+#define lightDirection v4_lightDirection.xyz
+#define bevelSize v4_bevelData.x
 
 void main()
 {

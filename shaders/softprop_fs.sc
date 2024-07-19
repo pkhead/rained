@@ -2,13 +2,19 @@ $input v_texcoord0, v_color0
 #include <bgfx_shader.sh>
 #include <palette.sh>
 
-uniform vec2 u_textureSize;
-uniform vec4 propRotation;
-uniform vec3 lightDirection;
-uniform float contourExponent;
-uniform float highlightThreshold;
-uniform float shadowThreshold;
-uniform float propDepth;
+uniform vec4 v4_textureSize;
+uniform vec4 v4_propRotation;
+uniform vec4 v4_lightDirection;
+uniform vec4 v4_softPropShadeInfo;
+
+#undef textureSize
+#define textureSize v4_textureSize.xy
+#define propRotation v4_propRotation
+#define lightDirection v4_lightDirection.xyz
+#define contourExponent v4_softPropShadeInfo.x
+#define highlightThreshold v4_softPropShadeInfo.y
+#define shadowThreshold v4_softPropShadeInfo.z
+#define propDepth v4_softPropShadeInfo.w
 
 void main()
 {
@@ -17,16 +23,16 @@ void main()
     
     // get x partial derivative
     float row[3];
-    row[0] = texture2D(glib_texture, v_texcoord0 - vec2(1.0, 0.0) / u_textureSize).g;
+    row[0] = texture2D(glib_texture, v_texcoord0 - vec2(1.0, 0.0) / textureSize).g;
     row[1] = center;
-    row[2] = texture2D(glib_texture, v_texcoord0 + vec2(1.0, 0.0) / u_textureSize).g;
-    float slopeX = (row[2] - row[0]) / (3.0 / u_textureSize.x);
+    row[2] = texture2D(glib_texture, v_texcoord0 + vec2(1.0, 0.0) / textureSize).g;
+    float slopeX = (row[2] - row[0]) / (3.0 / textureSize.x);
 
     // get y partial derivative
-    row[0] = texture2D(glib_texture, v_texcoord0 - vec2(0.0, 1.0) / u_textureSize).g;
+    row[0] = texture2D(glib_texture, v_texcoord0 - vec2(0.0, 1.0) / textureSize).g;
     row[1] = center;
-    row[2] = texture2D(glib_texture, v_texcoord0 + vec2(0.0, 1.0) / u_textureSize).g;
-    float slopeY = (row[2] - row[0]) / (3.0 / u_textureSize.y);
+    row[2] = texture2D(glib_texture, v_texcoord0 + vec2(0.0, 1.0) / textureSize).g;
+    float slopeY = (row[2] - row[0]) / (3.0 / textureSize.y);
 
     // calculate curve normal
     vec3 normal = cross( normalize(vec3(propRotation.xy, slopeX)), normalize(vec3(propRotation.zw, slopeY)) );

@@ -38,15 +38,9 @@ public class Shader : Resource
     internal static bool _debug = false;
 
     private readonly Dictionary<string, (Bgfx.UniformHandle handle, Bgfx.UniformType type)> _uniformHandles = [];
-    private static Dictionary<string, (Bgfx.UniformHandle handle, Bgfx.UniformType type)> _globalUniformHandles = [];
 
     private List<string> _textureUnits = [];
     private Texture[] _boundTextures;
-
-    static Shader()
-    {
-        SetupPredefinedUniforms();
-    }
 
     internal unsafe Shader(string? vsName = null, string? fsName = null)
     {
@@ -141,36 +135,10 @@ public class Shader : Resource
         return _uniformHandles.ContainsKey(uName);
     }
 
-    private static void SetupPredefinedUniforms()
-    {
-        static void Add(string name, Bgfx.UniformType type, ushort len)
-        {
-            _globalUniformHandles.Add(name, (Bgfx.create_uniform(name, type, len), type));
-        }
-
-        Add("u_viewRect", Bgfx.UniformType.Vec4, 1);
-        Add("u_viewTexel", Bgfx.UniformType.Vec4, 1);
-        Add("u_view", Bgfx.UniformType.Mat4, 1);
-        Add("u_invView", Bgfx.UniformType.Mat4, 1);
-        Add("u_proj", Bgfx.UniformType.Mat4, 1);
-        Add("u_invProj", Bgfx.UniformType.Mat4, 1);
-        Add("u_viewProj", Bgfx.UniformType.Mat4, 1);
-        Add("u_invViewProj", Bgfx.UniformType.Mat4, 1);
-        // Add("u_model", Bgfx.UniformType.Mat4, BGFX_CONFIG_MAX_BONES);
-        Add("u_modelView", Bgfx.UniformType.Mat4, 1);
-        Add("u_modelViewProj", Bgfx.UniformType.Mat4, 1);
-        Add("u_alphaRef", Bgfx.UniformType.Vec4, 1); // yzw is just padding...
-    }
-
     private (Bgfx.UniformHandle handle, Bgfx.UniformType type) GetUniformHandle(string uName)
     {
         if (!_uniformHandles.TryGetValue(uName, out var v))
         {
-            if (_globalUniformHandles.TryGetValue(uName, out var gv))
-            {
-                return gv;
-            }
-
             throw new ArgumentException($"Uniform '{uName}' does not exist!", nameof(uName));
         }
         
@@ -189,6 +157,7 @@ public class Shader : Resource
 
     /// <summary>
     /// Set the value of the shader's uniform.
+    /// Submits vec4(value, 0.0, 0.0, 0.0)
     /// </summary>
     public unsafe void SetUniform(string uName, float value)
     {
@@ -198,6 +167,7 @@ public class Shader : Resource
 
     /// <summary>
     /// Set the value of the shader's uniform.
+    /// Submits vec4(value.X, value.Y, 0.0, 0.0)
     /// </summary>
     public unsafe void SetUniform(string uName, Vector2 value)
     {
@@ -207,6 +177,7 @@ public class Shader : Resource
 
     /// <summary>
     /// Set the value of the shader's uniform.
+    /// Submits vec4(value.X, value.Y, value.Z, 0.0)
     /// </summary>
     public unsafe void SetUniform(string uName, Vector3 value)
     {

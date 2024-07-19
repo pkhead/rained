@@ -603,12 +603,16 @@ class LevelEditRender : IDisposable
                         rctx.Shader = Shaders.SoftPropShader.GlibShader;
 
                         var softProp = prop.PropInit.SoftPropRender.Value;
-                        rctx.Shader.SetUniform("contourExponent", softProp.ContourExponent);
-                        rctx.Shader.SetUniform("propDepth", prop.CustomDepth);
 
                         // i don't really know how these options work...
-                        rctx.Shader.SetUniform("highlightThreshold", 0.666f);
-                        rctx.Shader.SetUniform("shadowThreshold", 0.333f);
+                        float highlightThreshold = 0.666f;
+                        float shadowThreshold = 0.333f;
+                        rctx.Shader.SetUniform("v4_softPropShadeInfo", new Vector4(
+                            softProp.ContourExponent,
+                            highlightThreshold,
+                            shadowThreshold,
+                            prop.CustomDepth
+                        ));
                     }
                     else
                     {
@@ -624,27 +628,27 @@ class LevelEditRender : IDisposable
                 {
                     if (rctx.Shader.HasUniform("paletteTex"))
                         rctx.Shader.SetUniform("paletteTex", paletteTexture);
-                    if (rctx.Shader.HasUniform("u_textureSize"))
-                        rctx.Shader.SetUniform("u_textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
+                    if (rctx.Shader.HasUniform("v4_textureSize"))
+                        rctx.Shader.SetUniform("v4_textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
                     
-                    if (rctx.Shader.HasUniform("bevelSize"))
+                    if (rctx.Shader.HasUniform("v4_bevelData"))
                     {
-                        rctx.Shader.SetUniform("bevelSize", prop.PropInit.Bevel);
+                        rctx.Shader.SetUniform("v4_bevelData", prop.PropInit.Bevel);
                     }
                     
-                    if (rctx.Shader.HasUniform("lightDirection"))
+                    if (rctx.Shader.HasUniform("v4_lightDirection"))
                     {
                         var correctedAngle = Level.LightAngle + MathF.PI / 2f;
                         var lightDist = 1f - Level.LightDistance / 10f;
                         var lightZ = lightDist * (3.0f - 0.5f) + 0.5f; // an approximation
-                        rctx.Shader.SetUniform("lightDirection", new Vector3(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle), lightZ));
+                        rctx.Shader.SetUniform("v4_lightDirection", new Vector3(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle), lightZ));
                     }
                     
-                    if (rctx.Shader.HasUniform("propRotation"))
+                    if (rctx.Shader.HasUniform("v4_propRotation"))
                     {
                         var right = Vector2.Normalize(quad[1] - quad[0]);
                         var up = Vector2.Normalize(quad[3] - quad[0]);
-                        rctx.Shader.SetUniform("propRotation", new Vector4(right.X, right.Y, up.X, up.Y));
+                        rctx.Shader.SetUniform("v4_propRotation", new Vector4(right.X, right.Y, up.X, up.Y));
                     }
 
                     rctx.DrawBatch(); // force flush batch, as uniform changes aren't detected
