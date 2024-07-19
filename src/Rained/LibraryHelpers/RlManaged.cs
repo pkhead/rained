@@ -174,8 +174,8 @@ namespace RlManaged
             raw = src;
         }
 
-        public static Shader LoadFromMemory(string? vsCode, string? fsCode)
-            => new(Raylib.LoadShaderFromMemory(vsCode, fsCode));
+        //public static Shader LoadFromMemory(string? vsCode, string? fsCode)
+        //    => new(Raylib.LoadShaderFromMemory(vsCode, fsCode));
         
         public static Shader Load(string? vsFileName, string? fsFileName)
             => new(Raylib.LoadShader(vsFileName, fsFileName));

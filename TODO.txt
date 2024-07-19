@@ -2,7 +2,12 @@ Bugs:
 - client code mouse position doesn't work with multi-viewport
 - chain holder undo/redo is broken
 - Multi-Windowing
+- use async light map fetch
+- about window "graphics card" shows renderer name instead of device name
 - fix double resource disposal on window close
+- mysterious unerasable rectangle in the light editor
+- opengl render preview was gray once... can't repro. now it just crashes. might be some memory error.
+- vsync/refresh rate option default is "automatic" mode: locks to screen refresh rate, vsync if fullscreen or refresh rate unknown
 
 Overall:
 - user able to configure vsync/refresh rate and rendering backend
@@ -34,9 +39,6 @@ Overall:
 - option to use "legacy" shortcut icons
 - put asterik in window title for unsaved levels
 - ability to have more than one level loaded at once
-
-Glib:
-- shader class should keep a list of texture slots. when Use() is called, re-set the texture units based on this list.
 
 Geometry Editor:
 - select and copy/paste

@@ -219,6 +219,8 @@ public class Window : IDisposable
         }    
     }
 
+    public bool Vsync { get; private set; }
+
     private RenderContext? _renderContext = null;
     public RenderContext? RenderContext { get => _renderContext; }
 
@@ -229,6 +231,7 @@ public class Window : IDisposable
         window = options.CreateSilkWindow();
         setupGlErrorCallback = options.SetupGlErrorCallback;
 
+        Vsync = options.VSync;
         window.Load += OnLoad;
         window.Update += OnUpdate;
         window.Render += OnRender;

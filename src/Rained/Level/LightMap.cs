@@ -131,6 +131,7 @@ class LightMap : IDisposable
             dstOriginX, dstOriginY,
             Color.White
         );
+
         Raylib.ImageFlipVertical(lightMapImage);
 
         // get light map as a texture
@@ -182,7 +183,9 @@ class LightMap : IDisposable
         var gimg = tex.GetImageSync();
 
         var img = new RlManaged.Image(new Image { image = gimg });
-        Raylib.ImageFlipVertical(img);
+
+        if (RainEd.RenderContext.OriginBottomLeft)
+            Raylib.ImageFlipVertical(img);
         
         return img;
     }

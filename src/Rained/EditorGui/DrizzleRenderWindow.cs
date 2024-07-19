@@ -19,54 +19,6 @@ class DrizzleRenderWindow : IDisposable
     private readonly RlManaged.RenderTexture2D previewComposite;
     private bool needUpdateTextures = false;
 
-    private const string LayerPreviewShaderSource = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 glib_fragColor;
-
-        void main()
-        {
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
-            vec3 correctColor = texelColor.bgr;
-            
-            glib_fragColor = vec4(
-                mix(correctColor, vec3(1.0), glib_color.r * 0.8),
-                1.0 - float(isWhite)
-            ) * glib_uColor;
-        }    
-    ";
-
-    private const string LayerPreviewLightShaderSource = @"
-        #version 330
-
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
-
-        uniform sampler2D glib_uTexture;
-        uniform vec4 glib_uColor;
-
-        out vec4 glib_fragColor;
-
-        void main()
-        {
-            vec4 texelColor = texture(glib_uTexture, glib_texCoord);
-            bool isWhite = texelColor.r == 1.0;
-            vec3 correctColor = texelColor.bgr;
-            
-            glib_fragColor = vec4(
-                vec3(1.0, 0.0, 0.0),
-                1.0 - float(isWhite)
-            ) * glib_uColor;
-        }    
-    ";
-
     private readonly RlManaged.Shader layerPreviewShader;
     private readonly RlManaged.Shader layerPreviewLightShader;
 
@@ -96,8 +48,8 @@ class DrizzleRenderWindow : IDisposable
             Log.Error("Error occured when initializing render:\n{ErrorMessage}", e);
         }
 
-        layerPreviewShader = RlManaged.Shader.LoadFromMemory(null, LayerPreviewShaderSource);
-        layerPreviewLightShader = RlManaged.Shader.LoadFromMemory(null, LayerPreviewLightShaderSource);
+        layerPreviewShader = Shaders.RenderPreviewLayerShader;
+        layerPreviewLightShader = Shaders.RenderPreviewLightShader;
 
         previewComposite = RlManaged.RenderTexture2D.Load(
             (int)Camera.WidescreenSize.X * 20,
@@ -419,6 +371,11 @@ class DrizzleRenderWindow : IDisposable
             }
 
             Raylib.BeginShaderMode(shader);
+
+            if (RainEd.RenderContext.OriginBottomLeft)
+                shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(1f, 1f, 0f, 0f));
+            else
+                shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(-1f, -1f, 1f, 1f));
 
             for (int i = 29; i >= 0; i--)
             {

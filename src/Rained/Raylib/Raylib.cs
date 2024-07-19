@@ -406,7 +406,7 @@ static class Raylib
         return Random.Shared.Next(min, max+1);
     }
 
-    public static Shader LoadShaderFromMemory(string? vsName, string? fsName)
+    /*public static Shader LoadShaderFromMemory(string? vsName, string? fsName)
     {
         try
         {
@@ -421,28 +421,23 @@ static class Raylib
             RainEd.Log.Error(e.ToString());
             return new Shader();
         }
-    }
+    }*/
 
-    public static Shader LoadShader(string? vsPath, string? fsPath)
+    public static Shader LoadShader(string? vsName, string? fsName)
     {
-        string? vsCode = null;
-        string? fsCode = null;
-
         try
         {
-            if (vsPath is not null)
-                vsCode = File.ReadAllText(vsPath);
-
-            if (fsPath is not null)
-                fsCode = File.ReadAllText(fsPath);
+            var shader = Glib.Shader.Create(vsName, fsName);
+            return new Shader()
+            {
+                ID = shader
+            };
         }
-        catch (Exception e)
+        catch (ShaderCreationException e)
         {
             RainEd.Log.Error(e.ToString());
             return new Shader();
         }
-        
-        return LoadShaderFromMemory(vsCode, fsCode);
     }
 
     #endregion

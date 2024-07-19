@@ -43,16 +43,28 @@ static class Shaders
     /// </summary>
     public static RlManaged.Shader GridShader { get; private set; } = null!;
 
+    /// <summary>
+    /// The shader for rendering a BGRA sublayer of the render preview.
+    /// </summary>
+    public static RlManaged.Shader RenderPreviewLayerShader { get; private set; } = null!;
+
+    /// <summary>
+    /// The shader for rendering a grayscale sublayer of the light render preview.
+    /// </summary>
+    public static RlManaged.Shader RenderPreviewLightShader { get; private set; } = null!;
+
     public static void LoadShaders()
     {
-        EffectsMatrixShader = RlManaged.Shader.LoadFromMemory(null, "effect_matrix_fs");
-        BevelTreatmentShader = RlManaged.Shader.LoadFromMemory(null, "bevel_fs");
-        SoftPropShader = RlManaged.Shader.LoadFromMemory(null, "softprop_fs");
-        PropShader = RlManaged.Shader.LoadFromMemory(null, "prop_fade_fs");
-        TileShader = RlManaged.Shader.LoadFromMemory(null, "tile_fs");
-        PaletteShader = RlManaged.Shader.LoadFromMemory(null, "palette_fs");
-        LevelLightShader = RlManaged.Shader.LoadFromMemory(null, "level_light_fs");
-        GridShader = RlManaged.Shader.LoadFromMemory("grid_vs", "grid_fs");
+        EffectsMatrixShader = RlManaged.Shader.Load(null, "effect_matrix_fs");
+        BevelTreatmentShader = RlManaged.Shader.Load(null, "bevel_fs");
+        SoftPropShader = RlManaged.Shader.Load(null, "softprop_fs");
+        PropShader = RlManaged.Shader.Load(null, "prop_fade_fs");
+        TileShader = RlManaged.Shader.Load(null, "tile_fs");
+        PaletteShader = RlManaged.Shader.Load(null, "palette_fs");
+        LevelLightShader = RlManaged.Shader.Load(null, "level_light_fs");
+        GridShader = RlManaged.Shader.Load("grid_vs", "grid_fs");
+        RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview_fs");
+        RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview_fs");
     }
 
     private const string EffectsMatrixShaderSource = @"

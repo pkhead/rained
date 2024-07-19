@@ -150,6 +150,8 @@ public sealed class RenderContext : IDisposable
         }
     }
 
+    public static bool VSync { get; set; } = true;
+
     internal unsafe RenderContext(IWindow window)
     {
         if (Instance is not null)
@@ -171,7 +173,7 @@ public sealed class RenderContext : IDisposable
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
 
-        init.type = Bgfx.RendererType.Count;
+        init.type = Bgfx.RendererType.OpenGL;
         init.callback = _cbInterface.Pointer;
 
         var nativeHandles = window.Native!.Win32!;
@@ -179,7 +181,7 @@ public sealed class RenderContext : IDisposable
         init.platformData.type = Bgfx.NativeWindowHandleType.Default;
         init.resolution.width = (uint) window.FramebufferSize.X;
         init.resolution.height = (uint) window.FramebufferSize.Y;
-        init.resolution.reset = (uint) Bgfx.ResetFlags.Vsync;
+        init.resolution.reset = (uint) (VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None);
         if (!Bgfx.init(&init))
         {
             throw new Exception("Could not initialize bgfx");
@@ -255,7 +257,7 @@ public sealed class RenderContext : IDisposable
 
         if (width != ScreenWidth || height != ScreenHeight)
         {
-            Bgfx.reset((uint)width, (uint)height, (uint)Bgfx.ResetFlags.Vsync, Bgfx.TextureFormat.Count);
+            Bgfx.reset((uint)width, (uint)height, (uint)(VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
             ScreenWidth = width;
             ScreenHeight = height;
         }
