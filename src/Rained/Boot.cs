@@ -126,33 +126,6 @@ namespace RainEd
                 _logger = loggerConfig.CreateLogger();
                 Serilog.Log.Logger = _logger;
             }
-            
-            // create splash screen window to display while editor is loading
-            if (false && !bootOptions.NoSplashScreen)
-            {
-                var winOptions = new Glib.WindowOptions()
-                {
-                    Width = 523,
-                    Height = 307,
-                    Border = Glib.WindowBorder.Hidden,
-                    Title = "Loading Rained...",
-                    VSync = false
-                };
-
-                splashScreenWindow = new Glib.Window(winOptions);
-                splashScreenWindow.Initialize();
-
-                var rctx = splashScreenWindow.RenderContext!;
-                var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
-
-                splashScreenWindow.BeginRender();
-
-                rctx.Clear(Glib.Color.Black);
-                rctx.DrawTexture(texture);
-                
-                splashScreenWindow.EndRender();
-                splashScreenWindow.SwapBuffers();
-            }
 
             {
                 var windowOptions = new Glib.WindowOptions()
@@ -161,13 +134,13 @@ namespace RainEd
                     Height = DefaultWindowHeight,
                     Border = Glib.WindowBorder.Resizable,
                     Title = "Rained",
-                    Visible = false,
-                    VSync = true
+                    Visible = false
                 };
 
-                // get available fonts for imgui
                 window = new Glib.Window(windowOptions);
+                RenderContext renderContext = null!;
                 
+                // get available fonts for imgui
                 void ImGuiConfigure()
                 {
                     WindowScale = window.ContentScale.Y;
@@ -210,13 +183,40 @@ namespace RainEd
                             }
                         });
                     }*/
-
+                    renderContext = RenderContext.Init(window, true);
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
                 window.Initialize();
                 float curWindowScale = WindowScale;
                 Raylib.InitWindow(window);
+
+                // create splash screen window to display while editor is loading
+                if (renderContext.CanUseMultipleWindows() && !bootOptions.NoSplashScreen)
+                {
+                    var winOptions = new Glib.WindowOptions()
+                    {
+                        Width = 523,
+                        Height = 307,
+                        Border = Glib.WindowBorder.Hidden,
+                        Title = "Loading Rained..."
+                    };
+
+                    splashScreenWindow = new Glib.Window(winOptions);
+                    splashScreenWindow.Initialize();
+
+                    //var rctx = splashScreenWindow.RenderContext!;
+                    var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+
+                    renderContext.AddWindow(splashScreenWindow);
+                    renderContext.Begin();
+                    renderContext.PushWindowFramebuffer(splashScreenWindow);
+                    renderContext.Clear(Glib.Color.Black);
+                    renderContext.DrawTexture(texture);
+                    
+                    renderContext.End();
+                    //splashScreenWindow.SwapBuffers();
+                }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);

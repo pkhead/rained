@@ -180,7 +180,7 @@ public class Window : IDisposable
 
     public event Action? Load;
     public event Action<float>? Update;
-    public event Action<float, RenderContext>? Draw;
+    public event Action<float>? Draw;
     public event Action<int, int>? Resize;
     public event Action? Closing;
     public event Action<Vector2>? ContentScaleChanged;
@@ -219,11 +219,6 @@ public class Window : IDisposable
         }    
     }
 
-    public bool Vsync { get; private set; }
-
-    private RenderContext? _renderContext = null;
-    public RenderContext? RenderContext { get => _renderContext; }
-
     private double lastTime = 0.0;
 
     public Window(WindowOptions options)
@@ -231,7 +226,7 @@ public class Window : IDisposable
         window = options.CreateSilkWindow();
         setupGlErrorCallback = options.SetupGlErrorCallback;
 
-        Vsync = options.VSync;
+        //Vsync = options.VSync;
         window.Load += OnLoad;
         window.Update += OnUpdate;
         window.Render += OnRender;
@@ -286,8 +281,7 @@ public class Window : IDisposable
             mouse.MouseDown += OnMouseDown;
             mouse.MouseUp += OnMouseUp;
         }
-
-        _renderContext = new RenderContext(window);
+        
         Load?.Invoke();
 
         lastTime = window.Time;
@@ -380,9 +374,9 @@ public class Window : IDisposable
         // pixel space
         var winSize = window.Size;
         
-        _renderContext!.Begin(window.FramebufferSize.X, window.FramebufferSize.Y);
-        Draw?.Invoke((float)dt, _renderContext!);
-        _renderContext!.End();
+        //_renderContext!.Begin(window.FramebufferSize.X, window.FramebufferSize.Y);
+        Draw?.Invoke((float)dt);
+        //_renderContext!.End();
     }
 
     private void OnFramebufferResize(Vector2D<int> newSize)
@@ -444,12 +438,12 @@ public class Window : IDisposable
 
     public void DoRender()
     {
-        _renderContext!.Begin(Width, Height);
+        //_renderContext!.Begin(Width, Height);
         window.DoRender();
-        _renderContext!.End();
+        //_renderContext!.End();
     }
 
-    public void BeginRender()
+    /*public void BeginRender()
     {
         _renderContext!.Begin(Width, Height);
     }
@@ -457,7 +451,7 @@ public class Window : IDisposable
     public void EndRender()
     {
         _renderContext!.End();
-    }
+    }*/
 
     public void SetIcon(ReadOnlySpan<Image> icons)
     {
@@ -489,7 +483,7 @@ public class Window : IDisposable
     public void Dispose()
     {
         Closing?.Invoke();
-        _renderContext!.Dispose();
+        //_renderContext!.Dispose();
         window.Dispose();
         GC.SuppressFinalize(this);
     }

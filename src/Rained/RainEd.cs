@@ -22,7 +22,7 @@ sealed class RainEd
     public bool Running = true; // if false, Boot.cs will close the window
 
     public static Glib.Window Window => Boot.Window;
-    public static Glib.RenderContext RenderContext => Boot.Window.RenderContext!;
+    public static Glib.RenderContext RenderContext => Glib.RenderContext.Instance!;
 
     private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;

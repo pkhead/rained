@@ -29,7 +29,7 @@ static class RlExt
     // Not supported by Raylib
     public static void DrawRectangleLinesRec(Rectangle rect, Color color)
     {
-        var ctx = Raylib.GlibWindow.RenderContext!;
+        var ctx = Glib.RenderContext.Instance!;
         ctx.UseGlLines = true;
         ctx.DrawColor = Raylib.ToGlibColor(color);
         ctx.DrawRectangleLines(rect.X, rect.Y, rect.Width, rect.Height);

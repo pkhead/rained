@@ -169,6 +169,18 @@ public class Framebuffer : Resource
         }
     }
 
+    internal unsafe Framebuffer(Window window)
+    {
+        RenderContext.GetHandles(window.SilkWindow, out nint nwh, out _, out _);
+        fbo = Bgfx.create_frame_buffer_from_nwh((void*)nwh, (ushort)window.PixelWidth, (ushort)window.PixelHeight, Bgfx.TextureFormat.RGBA8, Bgfx.TextureFormat.D16);
+        if (!fbo.Valid)
+            throw new Exception("Could not create framebuffer from window");
+        
+        _attachmentTexs = [];
+        Width = window.PixelWidth;
+        Height = window.PixelHeight;
+    }
+
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);
     public static Framebuffer Create(int width, int height) => new(FramebufferConfiguration.Standard(width, height));
 

@@ -56,7 +56,7 @@ public enum DebugSeverity
 
 public sealed class RenderContext : IDisposable
 {
-    internal static RenderContext? Instance { get; private set; } = null;
+    public static RenderContext? Instance { get; private set; } = null;
 
     private bool _disposed = false;
 
@@ -106,6 +106,8 @@ public sealed class RenderContext : IDisposable
     public readonly string GpuRenderer;
 
     private CallbackInterface _cbInterface;
+    private Window _mainWindow;
+    private List<(Window window, Framebuffer framebuffer)> _windows = [];
 
     // Wtf
     public bool OriginBottomLeft
@@ -153,14 +155,54 @@ public sealed class RenderContext : IDisposable
     public static bool VSync { get; set; } = true;
     private List<(uint frameEnd, TaskCompletionSource tcs)> _waitingRequests = [];
 
-    internal unsafe RenderContext(IWindow window)
+    internal static void GetHandles(IWindow silkWindow, out nint nwh, out nint ndt, out Bgfx.NativeWindowHandleType type)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var nativeHandles = silkWindow.Native!.Win32!;
+            nwh = nativeHandles.Value.Hwnd;
+            ndt = 0;
+            type = Bgfx.NativeWindowHandleType.Default;
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var waylandHandles = silkWindow.Native!.Wayland;
+            if (waylandHandles is not null)
+            {
+                nwh = waylandHandles.Value.Surface;
+                ndt = waylandHandles.Value.Display;
+                type = Bgfx.NativeWindowHandleType.Wayland;
+            }
+            else
+            {
+                var x11Handles = silkWindow.Native!.X11;
+                nwh = (nint) x11Handles!.Value.Window;
+                ndt = x11Handles!.Value.Display;
+                type = Bgfx.NativeWindowHandleType.Default;
+            }
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var winHandle = silkWindow.Native!.Cocoa;
+            nwh = winHandle!.Value;
+            ndt = 0;
+            type = Bgfx.NativeWindowHandleType.Default;
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Could not access window handles");
+        }
+    }
+
+    private unsafe RenderContext(Window mainWindow)
     {
         if (Instance is not null)
         {
-            throw new NotImplementedException("Multi-window not implemented yet");
+            throw new NotImplementedException("No more than one main window allowed");
         }
 
         Instance = this;
+        _mainWindow = mainWindow;
 
         _cbInterface = new CallbackInterface()
         {
@@ -172,8 +214,8 @@ public sealed class RenderContext : IDisposable
             }
         };
 
-        ScreenWidth = window.FramebufferSize.X;
-        ScreenHeight = window.FramebufferSize.Y;
+        ScreenWidth = mainWindow.PixelWidth;
+        ScreenHeight = mainWindow.PixelHeight;
 
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
@@ -185,12 +227,18 @@ public sealed class RenderContext : IDisposable
 #endif
         init.callback = _cbInterface.Pointer;
 
-        var nativeHandles = window.Native!.Win32!;
-        init.platformData.nwh = (void*) nativeHandles.Value.Hwnd;
-        init.platformData.type = Bgfx.NativeWindowHandleType.Default;
-        init.resolution.width = (uint) window.FramebufferSize.X;
-        init.resolution.height = (uint) window.FramebufferSize.Y;
-        init.resolution.reset = (uint) ((VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None) | Bgfx.ResetFlags.FlipAfterRender);
+        GetHandles(mainWindow.SilkWindow, out nint nwh, out nint ndt, out var windowType);
+
+        init.platformData.nwh = (void*) nwh;
+        init.platformData.type = windowType;
+        if (ndt != 0)
+        {
+            init.platformData.ndt = (void*) ndt;
+        }
+
+        init.resolution.width = (uint) mainWindow.PixelWidth;
+        init.resolution.height = (uint) mainWindow.PixelHeight;
+        init.resolution.reset = (uint) (VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None);
         if (!Bgfx.init(&init))
         {
             throw new Exception("Could not initialize bgfx");
@@ -225,6 +273,40 @@ public sealed class RenderContext : IDisposable
     {
         var caps = Bgfx.get_caps();
         return (caps->supported & (ulong)(Bgfx.CapsFlags.TextureReadBack | Bgfx.CapsFlags.TextureBlit)) != 0;
+    }
+
+    /// <summary>
+    /// Initialize the global render context.
+    /// </summary>
+    /// <param name="mainWindow">The main window of the render context.</param>
+    /// <param name="vsync">Whether or not Vsync should be enabled.</param>
+    /// <returns>The singleton RenderContext</returns>
+    public static RenderContext Init(Window mainWindow, bool? vsync = null)
+    {
+        var rctx = new RenderContext(mainWindow);
+        VSync = vsync ?? VSync;
+        return rctx;
+    }
+
+    public void AddWindow(Window window)
+    {
+        if (_windows.Find(x => x.window == window).window is not null)
+        {
+            throw new ArgumentException("Window was already added", nameof(window));
+        }
+        var fb = new Framebuffer(window);
+        _windows.Add((window, fb));
+    }
+
+    public bool RemoveWindow(Window window)
+    {
+        var idx = _windows.FindIndex(x => x.window == window);
+        if (idx < 0) return false;
+
+        var (_, fb) = _windows[idx];
+        fb.Dispose();
+        _windows.RemoveAt(idx);
+        return true;
     }
 
     public void Dispose()
@@ -267,8 +349,11 @@ public sealed class RenderContext : IDisposable
         return a | (b << 8) | (g << 16) | (r << 24);
     }
 
-    internal void Begin(int width, int height)
+    public void Begin()
     {
+        int width = _mainWindow.PixelWidth;
+        int height = _mainWindow.PixelHeight;
+
         curViewId = 0;
 
         uint bgCol = ColorToUint(BackgroundColor);
@@ -278,6 +363,18 @@ public sealed class RenderContext : IDisposable
             Bgfx.reset((uint)width, (uint)height, (uint)(VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
             ScreenWidth = width;
             ScreenHeight = height;
+        }
+
+        // update window sizes
+        for (int i = 0; i < _windows.Count; i++)
+        {
+            var (win, fb) = _windows[i];
+            if (win.PixelWidth != fb.Width || win.PixelHeight != fb.Height)
+            {
+                System.Diagnostics.Debug.WriteLine($"Window {i} was resized");
+                fb.Dispose();
+                _windows[i] = (win, new Framebuffer(win));
+            }
         }
 
         SetViewport(ScreenWidth, ScreenHeight);
@@ -641,6 +738,12 @@ public sealed class RenderContext : IDisposable
         }
     }
 
+    public void PushWindowFramebuffer(Window window)
+    {
+        var (_, fb) = _windows.Find(x => x.window == window);
+        PushFramebuffer(fb);
+    }
+
     public Framebuffer? PopFramebuffer()
     {
         _drawBatch.Draw();
@@ -676,7 +779,7 @@ public sealed class RenderContext : IDisposable
         return curFramebuffer;
     }
 
-    internal void End()
+    public void End()
     {
         _drawBatch.Draw();
         //if (!_viewHasSubmission) Bgfx.touch(curViewId);

@@ -4,26 +4,26 @@ static class Rlgl
 {
     public static void PushMatrix()
     {
-        Raylib.GlibWindow.RenderContext!.PushTransform();
+        Glib.RenderContext.Instance!.PushTransform();
     }
 
     public static void PopMatrix()
     {
-        Raylib.GlibWindow.RenderContext!.PopTransform();
+        Glib.RenderContext.Instance!.PopTransform();
     }
 
     public static void LoadIdentity()
     {
-        Raylib.GlibWindow.RenderContext!.ResetTransform();
+        Glib.RenderContext.Instance!.ResetTransform();
     }
 
     public static void Scalef(float x, float y, float z)
     {
-        Raylib.GlibWindow.RenderContext!.Scale(x, y, z);
+        Glib.RenderContext.Instance!.Scale(x, y, z);
     }
 
     public static void Translatef(float x, float y, float z)
     {
-        Raylib.GlibWindow.RenderContext!.Translate(x, y, z);
+        Glib.RenderContext.Instance!.Translate(x, y, z);
     }
 }

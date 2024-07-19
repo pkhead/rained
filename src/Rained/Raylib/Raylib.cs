@@ -445,8 +445,8 @@ static class Raylib
     #region Drawing
     public static void ClearBackground(Color color)
     {
-        window.RenderContext!.BackgroundColor = Glib.Color.FromRGBA(color.R, color.G, color.B, color.A);
-        window.RenderContext!.Clear();
+        RenderContext.Instance!.BackgroundColor = Glib.Color.FromRGBA(color.R, color.G, color.B, color.A);
+        RenderContext.Instance!.Clear();
     }
 
     public static void BeginDrawing()
@@ -474,40 +474,39 @@ static class Raylib
             lastMousePos = new Vector2(window.MouseX, window.MouseY);
         }
 
-        window.BeginRender();
+        RenderContext.Instance!.Begin();
     }
 
     public static void EndDrawing()
     {
-        window.EndRender();
-        window.SwapBuffers();
+        RenderContext.Instance!.End();
     }
 
     public static void BeginTextureMode(RenderTexture2D rtex)
     {
-        window.RenderContext!.PopFramebuffer();
-        window.RenderContext!.PushFramebuffer(rtex.ID!);
+        RenderContext.Instance!.PopFramebuffer();
+        RenderContext.Instance!.PushFramebuffer(rtex.ID!);
     }
 
     public static void EndTextureMode()
     {
-        window.RenderContext!.PopFramebuffer();
+        RenderContext.Instance!.PopFramebuffer();
     }
 
     public static void BeginShaderMode(Shader shader)
     {
-        window.RenderContext!.Shader = shader.ID;
+        RenderContext.Instance!.Shader = shader.ID;
     }
 
     public static void EndShaderMode()
     {
-        window.RenderContext!.Shader = null;
+        RenderContext.Instance!.Shader = null;
     }
 
     public static void BeginScissorMode(int x, int y, int width, int height)
     {
-        int w = window.RenderContext!.Framebuffer?.Width ?? window.RenderContext!.ScreenWidth;
-        int h = window.RenderContext!.Framebuffer?.Height ?? window.RenderContext!.ScreenHeight;
+        int w = RenderContext.Instance!.Framebuffer?.Width ?? RenderContext.Instance!.ScreenWidth;
+        int h = RenderContext.Instance!.Framebuffer?.Height ?? RenderContext.Instance!.ScreenHeight;
 
         int right = x + width;
         int bot = y + height;
@@ -516,29 +515,29 @@ static class Raylib
         right = Math.Clamp(right, 0, w);
         bot = Math.Clamp(bot, 0, h);
 
-        window.RenderContext!.SetScissorBox(x, y, right - x, bot - y);
+        RenderContext.Instance!.SetScissorBox(x, y, right - x, bot - y);
     }
 
     public static void EndScissorMode()
     {
-        window.RenderContext!.ClearScissorBox();
+        RenderContext.Instance!.ClearScissorBox();
     }
     #endregion
 
     #region rshapes
     public static void DrawLineEx(Vector2 startPos, Vector2 endPos, float thick, Color color)
     {
-        window.RenderContext!.LineWidth = thick;
-        window.RenderContext!.UseGlLines = false;
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawLine(startPos, endPos);
+        RenderContext.Instance!.LineWidth = thick;
+        RenderContext.Instance!.UseGlLines = false;
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawLine(startPos, endPos);
     }
 
     public static void DrawLineV(Vector2 startPos, Vector2 endPos, Color color)
     {
-        window.RenderContext!.UseGlLines = true;
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawLine(startPos, endPos);
+        RenderContext.Instance!.UseGlLines = true;
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawLine(startPos, endPos);
     }
 
     public static void DrawLine(int startPosX, int startPosY, int endPosX, int endPosY, Color color)
@@ -548,8 +547,8 @@ static class Raylib
 
     public static void DrawCircleV(Vector2 center, float radius, Color color)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawCircle(center.X, center.Y, radius);
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawCircle(center.X, center.Y, radius);
     }
 
     public static void DrawCircle(int centerX, int centerY, float radius, Color color)
@@ -559,10 +558,10 @@ static class Raylib
 
     public static void DrawCircleLinesV(Vector2 center, float radius, Color color)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.LineWidth = 1f;
-        window.RenderContext!.UseGlLines = true;
-        window.RenderContext!.DrawRing(center, radius);
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.LineWidth = 1f;
+        RenderContext.Instance!.UseGlLines = true;
+        RenderContext.Instance!.DrawRing(center, radius);
     }
 
     public static void DrawCircleLines(int centerX, int centerY, float radius, Color color)
@@ -572,18 +571,18 @@ static class Raylib
 
     public static void DrawRectanglePro(Rectangle rec, Vector2 origin, float rotation, Color color)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.PushTransform();
-        window.RenderContext!.Translate(rec.X, rec.Y, 0f);
-        window.RenderContext!.Rotate(rotation * DEG2RAD);
-        window.RenderContext!.DrawRectangle(-origin.X, -origin.Y, rec.Width, rec.Height);
-        window.RenderContext!.PopTransform();
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.PushTransform();
+        RenderContext.Instance!.Translate(rec.X, rec.Y, 0f);
+        RenderContext.Instance!.Rotate(rotation * DEG2RAD);
+        RenderContext.Instance!.DrawRectangle(-origin.X, -origin.Y, rec.Width, rec.Height);
+        RenderContext.Instance!.PopTransform();
     }
 
     public static void DrawRectangleRec(Rectangle rec, Color color)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawRectangle(rec.X, rec.Y, rec.Width, rec.Height);
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawRectangle(rec.X, rec.Y, rec.Width, rec.Height);
     }
 
     public static void DrawRectangleV(Vector2 position, Vector2 size, Color color)
@@ -598,33 +597,33 @@ static class Raylib
 
     public static void DrawRectangleLinesEx(Rectangle rec, float lineThick, Color color)
     {
-        window.RenderContext!.LineWidth = lineThick;
-        window.RenderContext!.UseGlLines = false;
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawRectangleLines(rec.X, rec.Y, rec.Width, rec.Height);
+        RenderContext.Instance!.LineWidth = lineThick;
+        RenderContext.Instance!.UseGlLines = false;
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawRectangleLines(rec.X, rec.Y, rec.Width, rec.Height);
     }
 
     public static void DrawRectangleLines(int posX, int posY, int width, int height, Color color)
     {
-        window.RenderContext!.UseGlLines = true;
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawRectangleLines(posX, posY, width, height);
+        RenderContext.Instance!.UseGlLines = true;
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawRectangleLines(posX, posY, width, height);
     }
 
     public static void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawTriangle(v1, v2, v3);
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawTriangle(v1, v2, v3);
     }
 
     public static void DrawTriangleLines(Vector2 v1, Vector2 v2, Vector2 v3, Color color)
     {
-        window.RenderContext!.UseGlLines = true;
+        RenderContext.Instance!.UseGlLines = true;
 
-        window.RenderContext!.DrawColor = ToGlibColor(color);
-        window.RenderContext!.DrawLine(v1, v2);
-        window.RenderContext!.DrawLine(v2, v3);
-        window.RenderContext!.DrawLine(v3, v1);
+        RenderContext.Instance!.DrawColor = ToGlibColor(color);
+        RenderContext.Instance!.DrawLine(v1, v2);
+        RenderContext.Instance!.DrawLine(v2, v3);
+        RenderContext.Instance!.DrawLine(v3, v1);
     }
     #endregion
 
@@ -926,21 +925,21 @@ static class Raylib
 
     public static void DrawTexturePro(Texture2D texture, Rectangle source, Rectangle dest, Vector2 origin, float rotation, Color tint)
     {
-        window.RenderContext!.DrawColor = ToGlibColor(tint);
-        /*window.RenderContext!.Draw(
+        RenderContext.Instance!.DrawColor = ToGlibColor(tint);
+        /*RenderContext.Instance!.Draw(
             tex: texture.ID!,
             src: new Glib.Rectangle(source.X, source.Y, source.Width, source.Height),
             dst: new Glib.Rectangle(dest.X, dest.Y, dest.Width, dest.Height)
         );*/
-        window.RenderContext!.PushTransform();
-        window.RenderContext!.Translate(dest.X, dest.Y, 0f);
-        window.RenderContext!.Rotate(rotation * DEG2RAD);
-        window.RenderContext!.DrawTexture(
+        RenderContext.Instance!.PushTransform();
+        RenderContext.Instance!.Translate(dest.X, dest.Y, 0f);
+        RenderContext.Instance!.Rotate(rotation * DEG2RAD);
+        RenderContext.Instance!.DrawTexture(
             texture: texture.ID!,
             srcRect: new Glib.Rectangle(source.X, source.Y, source.Width, source.Height),
             dstRect: new Glib.Rectangle(-origin.X, -origin.Y, dest.Width, dest.Height)
         );
-        window.RenderContext!.PopTransform();
+        RenderContext.Instance!.PopTransform();
     }
 
     public static void DrawTextureRec(Texture2D texture, Rectangle source, Vector2 position, Color tint)

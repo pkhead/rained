@@ -96,7 +96,7 @@ namespace Glib.ImGui
         private void Init(Glib.Window window)
         {
             _window = window;
-            _rctx = window.RenderContext!;
+            _rctx = RenderContext.Instance!;
             _windowWidth = window.Width;
             _windowHeight = window.Height;
 
@@ -469,7 +469,7 @@ namespace Glib.ImGui
         private unsafe void SetupRenderState(ImDrawDataPtr drawDataPtr, int framebufferWidth, int framebufferHeight)
         {
             // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
-            var rctx = _window.RenderContext!;
+            var rctx = RenderContext.Instance!;
             
             rctx.Flags = RenderFlags.None;
             rctx.Shader = null; // default shader is good enough for our purposes
@@ -507,7 +507,7 @@ namespace Glib.ImGui
             if (framebufferWidth <= 0 || framebufferHeight <= 0)
                 return;
             
-            var rctx = _window.RenderContext!;
+            var rctx = RenderContext.Instance!;
 
             // Backup GL state
             var lastProgram = rctx.Shader;
