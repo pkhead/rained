@@ -300,7 +300,22 @@ public sealed class RenderContext : IDisposable
     {
         if (_scissorEnabled)
         {
-            Bgfx.set_scissor((ushort)_scissorX, (ushort)_scissorY, (ushort)_scissorW, (ushort)_scissorH);
+            int x = _scissorX;
+            int y = _scissorY;
+            int w = Framebuffer?.Width ?? ScreenWidth;
+            int h = Framebuffer?.Height ?? ScreenHeight;
+
+            int right = _scissorX + _scissorW;
+            int bot = _scissorY + _scissorH;
+            x = Math.Clamp(x, 0, w);
+            y = Math.Clamp(y, 0, h);
+            right = Math.Clamp(right, 0, w);
+            bot = Math.Clamp(bot, 0, h);
+
+            if (right - x <= 0 || bot - y <= 0)
+                Bgfx.set_scissor(0, 0, 0, 0);
+            else
+                Bgfx.set_scissor((ushort)x, (ushort)y, (ushort)(right - x), (ushort)(bot - y));
         }
 
         var state = Bgfx.StateFlags.None;

@@ -557,7 +557,7 @@ namespace Glib.ImGui
                         if (clipRect.X < framebufferWidth && clipRect.Y < framebufferHeight && clipRect.Z >= 0.0f && clipRect.W >= 0.0f)
                         {
                             // Apply scissor/clipping rectangle
-                            rctx.SetScissorBox((int) clipRect.X, (int) (clipRect.Y), (int) (clipRect.Z - clipRect.X), (int) (clipRect.W - clipRect.Y));
+                            rctx.SetScissorBox((int) clipRect.X, (int) clipRect.Y, (int) (clipRect.Z - clipRect.X), (int) (clipRect.W - clipRect.Y));
 
                             // Bind texture, Draw
                             activeMesh.SetIndexBufferDrawSlice(cmdPtr.IdxOffset, cmdPtr.ElemCount);

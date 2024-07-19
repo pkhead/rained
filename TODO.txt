@@ -2,7 +2,7 @@ Bugs:
 - client code mouse position doesn't work with multi-viewport
 - chain holder undo/redo is broken
 - Multi-Windowing
-- popup modals don't have the background grayed out?
+- fix double resource disposal on window close
 
 Overall:
 - dissolve material/tile separation
