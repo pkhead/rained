@@ -1,7 +1,7 @@
 Bugs:
 - client code mouse position doesn't work with multi-viewport
 - chain holder undo/redo is broken
-- Multi-Windowing
+- reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - about window "graphics card" shows renderer name instead of device name
 - fix double resource disposal on window close
 - bgfx credits
