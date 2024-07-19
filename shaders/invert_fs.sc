@@ -1,3 +1,4 @@
+//!imgui_varying.def.sc
 $input v_texcoord0, v_color0
 #include <bgfx_shader.sh>
 

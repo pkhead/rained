@@ -4,6 +4,7 @@
 #addin nuget:?package=SharpZipLib
 #addin nuget:?package=Cake.Compression
 using System.IO;
+using System.Linq;
 using Path = System.IO.Path;
 
 var target = Argument("Target", "Package");
@@ -79,11 +80,11 @@ Task("Build Shaders")
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"spirv"));
 
-    void CompileShader(string srcFile, string dstFile, string shaderTypeStr, string shaderTarget, string def)
+    void CompileShader(string srcFile, string dstFile, string def, string shaderTypeStr, string shaderTarget)
     {
         if (!IsUpToDate(dstFile, srcFile, "shaders/bgfx_shader.sh", def))
         {
-            Information($"Compile shader '{srcFile}' to '{dstFile}'");
+            Information($"Compile shader '{srcFile}' to '{dstFile}' with {def}");
             Exec(shaderc, [
                 "--varyingdef", def,
                 "-i shaders",
@@ -96,7 +97,7 @@ Task("Build Shaders")
         }
     }
 
-    void ShaderSource(string fileName, ShaderType shaderType, string def = "shaders/varying.def.sc")
+    void ShaderSource(string fileName, ShaderType shaderType)
     {
         string shaderTypeStr = shaderType switch
         {
@@ -108,27 +109,22 @@ Task("Build Shaders")
         string name = Path.GetFileNameWithoutExtension(fileName);
         string srcFile = Path.Combine("shaders", fileName);
 
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), shaderTypeStr, "150", def);
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), shaderTypeStr, "s_5_0", def);
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), shaderTypeStr, "spirv", def);
-    }
+        string def = "shaders/varying.def.sc";
 
-    // ok i know that hardcoding the imgui shaders in the build system like this is pretty stupid
-    // i'm doing this since i'm not sure how a good system for supporting multiple varying.def.sc files,
-    // and i don't feel like making my own preprocessor or something to detect which file to use.
-    // so whatever
-    ShaderSource("imgui_vs.sc", ShaderType.Vertex, "shaders/imgui_varying.def.sc");
-    ShaderSource("imgui_fs.sc", ShaderType.Fragment, "shaders/imgui_varying.def.sc");
+        string shebang = System.IO.File.ReadLines(srcFile).First();
+        if (shebang.Length > 3 && shebang[0..3] == "//!")
+            def = "shaders/" + shebang[3..];
+
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), def, shaderTypeStr, "150");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), def, shaderTypeStr, "s_5_0");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), def, shaderTypeStr, "spirv");
+    }
 
     foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
     {
         if (Path.GetExtension(fileName) != ".sc") continue;
         var name = Path.GetFileNameWithoutExtension(fileName);
-        if (name == "varying.def") continue;
-
-        // oh my god
-        if (name == "imgui_varying.def") continue;
-        if (name == "imgui_fs" || name == "imgui_vs") continue;
+        if (name.Length >= 4 && name[^4..] == ".def") continue;
 
         string suffix = "[UNKNOWN]";
         if (name.Length < 3 || ((suffix = name[^3..]) != "_vs" && suffix != "_fs"))
@@ -138,6 +134,13 @@ Task("Build Shaders")
         else if (suffix == "_fs") ShaderSource(name + ".sc", ShaderType.Fragment);
         else throw new Exception("Unreachable code");
     }
+});
+
+Task("Build")
+    .IsDependentOn("Build Shaders")
+    .Does(() =>
+{
+    DotNetBuild("src/Rained/Rained.csproj"); 
 });
 
 Task("DotNetPublish")
