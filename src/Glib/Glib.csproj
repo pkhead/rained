@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-      <EmbeddedResource Include="../../shaders/build/$(RuntimeIdentifier)/**/*.bin">
+      <EmbeddedResource Include="../../shaders/build/**/*.bin">
         <LogicalName>Glib.shaders.$([System.IO.Directory]::GetParent('%(FullPath)').Name).%(FileName)</LogicalName>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>

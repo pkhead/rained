@@ -7,7 +7,6 @@ uniform vec4 v4_propRotation;
 uniform vec4 v4_lightDirection;
 uniform vec4 v4_bevelData;
 
-#undef textureSize;
 #define u_textureSize v4_textureSize.xy
 #define propRotation v4_propRotation
 #define lightDirection v4_lightDirection.xyz

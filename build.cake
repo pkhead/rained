@@ -64,17 +64,17 @@ Task("Build Shaders")
         return;
     }
     
-    string platform = "windows";
+    /*string platform = "windows";
     if (os == "win-x64" || os == "win-x86" || os == "win-arm64") platform = "windows";
     else if (os == "linux-x64" || os == "linux-x86" || os == "linux-arm64") platform = "linux";
     else if (os == "osx" || os == "osx-arm64" || os == "os-x64") platform = "osx";
     else
     {
         Error($"Unknown runtime {os} when building shaders. Fall back to windows.");
-    }
+    }*/
 
     // shaderc --varyingdef shadersrc/varying.def.sc -i shadersrc -f shadersrc/vs.sc -o shaders/vs.glsl --type vertex --platform windows -p 150
-    var shaderBuildDir = Path.Combine("shaders","build",os);
+    var shaderBuildDir = Path.Combine("shaders","build");
     EnsureDirectoryExists(shaderBuildDir);
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"glsl"));
     EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
@@ -93,7 +93,7 @@ Task("Build Shaders")
                 "-f", srcFile,
                 "-o", dstFile,
                 "--type", shaderTypeStr,
-                "--platform", platform,
+                //"--platform", platform,
                 "-p", shaderTarget
             ]);
         }
