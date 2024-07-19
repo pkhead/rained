@@ -511,7 +511,17 @@ static class Raylib
 
     public static void BeginScissorMode(int x, int y, int width, int height)
     {
-        window.RenderContext!.SetScissorBox(x, y, width, height);
+        int w = window.RenderContext!.Framebuffer?.Width ?? window.RenderContext!.ScreenWidth;
+        int h = window.RenderContext!.Framebuffer?.Height ?? window.RenderContext!.ScreenHeight;
+
+        int right = x + width;
+        int bot = y + height;
+        x = Math.Clamp(x, 0, w);
+        y = Math.Clamp(y, 0, h);
+        right = Math.Clamp(right, 0, w);
+        bot = Math.Clamp(bot, 0, h);
+
+        window.RenderContext!.SetScissorBox(x, y, right - x, bot - y);
     }
 
     public static void EndScissorMode()

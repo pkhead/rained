@@ -67,6 +67,7 @@ public sealed class RenderContext : IDisposable
     private readonly Stack<Matrix4x4> transformStack = [];
     private readonly Stack<Framebuffer> framebufferStack = [];
     private Framebuffer? curFramebuffer = null;
+    public Framebuffer? Framebuffer => curFramebuffer;
 
     private ushort curViewId = 0;
     internal ushort CurrentBgfxViewId => curViewId;
@@ -270,6 +271,7 @@ public sealed class RenderContext : IDisposable
 
     public void SetScissorBox(int x, int y, int w, int h)
     {
+        _drawBatch.Draw();
         _scissorEnabled = true;
         _scissorX = x;
         _scissorY = y;
@@ -299,6 +301,7 @@ public sealed class RenderContext : IDisposable
 
     public void ClearScissorBox()
     {
+        _drawBatch.Draw();
         _scissorEnabled = false;
     }
 
