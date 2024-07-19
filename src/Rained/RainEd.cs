@@ -66,6 +66,12 @@ sealed class RainEd
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
+    /// <summary>
+    /// This is true whenever Rained is in a temporary state where level editing
+    /// should be locked (i.e., when saving, loading, or resizing the level)
+    /// </summary>
+    public bool IsLevelLocked { get; private set; }
+
     public readonly RlManaged.Texture2D PlaceholderTexture;
 
     /// <summary>
@@ -405,10 +411,10 @@ sealed class RainEd
     /// Save the level to the given path.
     /// </summary>
     /// <param name="path"></param>
-    /// <returns>True if the save was successful, false if not.</returns>
-    public bool SaveLevel(string path)
+    public async Task SaveLevel(string path)
     {
         Log.Information("Saving level to {Path}...", path);
+        IsLevelLocked = true;
 
         levelView.FlushDirty();
 
@@ -416,35 +422,43 @@ sealed class RainEd
         {
             string oldFilePath = currentFilePath;
 
-            LevelSerialization.Save(path);
-            currentFilePath = path;
-            UpdateTitle();
-            changeHistory.MarkUpToDate();
-            Log.Information("Done!");
-            EditorWindow.ShowNotification("Saved!");
-            AddToRecentFiles(currentFilePath);
-
-            // if the old level was an emergency save and the user
-            // saved it to a non-emergency save file, delete the
-            // old file as it is no longer necessary.
-            var oldParentFolder = Path.GetDirectoryName(oldFilePath);
-            var newParentFolder = Path.GetDirectoryName(currentFilePath);
-
-            if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
+            LevelSerialization.SaveLevelTextFile(path);
+            await LevelSerialization.SaveLevelLightMapAsync(path);
+            
+            DeferToNextFrame(() =>
             {
-                File.Delete(oldFilePath);
-                File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
-            }
+                currentFilePath = path;
+                UpdateTitle();
+                changeHistory.MarkUpToDate();
+                Log.Information("Done!");
+                EditorWindow.ShowNotification("Saved!");
+                AddToRecentFiles(currentFilePath);
 
-            return true;
+                // if the old level was an emergency save and the user
+                // saved it to a non-emergency save file, delete the
+                // old file as it is no longer necessary.
+                var oldParentFolder = Path.GetDirectoryName(oldFilePath);
+                var newParentFolder = Path.GetDirectoryName(currentFilePath);
+
+                if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
+                {
+                    File.Delete(oldFilePath);
+                    File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
+                }
+
+                IsLevelLocked = false;
+            });
         }
         catch (Exception e)
         {
             Log.Error("Could not write level file:\n{ErrorMessage}", e);
-            EditorWindow.ShowNotification("Could not write level file");
+            DeferToNextFrame(() =>
+            {
+                EditorWindow.ShowNotification("Could not write level file");
+                IsLevelLocked = false;
+            });
+            throw;
         }
-
-        return false;
     }
 
     /// <summary>
@@ -468,7 +482,9 @@ sealed class RainEd
             fileName = Path.GetFileNameWithoutExtension(fileName);
         }
 
-        LevelSerialization.Save(Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt"));
+        var emSavFileName = Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt");
+        LevelSerialization.SaveLevelTextFile(emSavFileName);
+        LevelSerialization.SaveLevelLightMap(emSavFileName);
     }
 
     public static string[] DetectEmergencySaves()
@@ -520,19 +536,24 @@ sealed class RainEd
         }
     }
 
-    public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
+    public async void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
         if (newWidth == level.Width && newHeight == level.Height) return;
         Log.Information("Resizing level...");
+        IsLevelLocked = true;
 
         levelView.FlushDirty();
-        var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
-        levelView.ReloadLevel();
-        changeHistory.Clear();
-        levelView.Renderer.ReloadLevel();
-        levelView.ViewOffset += dstOrigin * Level.TileSize;
+        var dstOrigin = await level.ResizeAsync(newWidth, newHeight, anchorX, anchorY);
+        DeferToNextFrame(() =>
+        {
+            levelView.ReloadLevel();
+            changeHistory.Clear();
+            levelView.Renderer.ReloadLevel();
+            levelView.ViewOffset += dstOrigin * Level.TileSize;
 
-        Log.Information("Done!");
+            Log.Information("Done!");
+            IsLevelLocked = false;
+        });
     }
 
     private void ReloadLevel()
@@ -593,6 +614,7 @@ sealed class RainEd
         }
     }
 
+    private readonly Mutex _deferredActionsMutex = new();
     private readonly List<Action> deferredActions = [];
 
     /// <summary>
@@ -605,7 +627,9 @@ sealed class RainEd
     /// <param name="action">The action to run on the next frame.</param> 
     public void DeferToNextFrame(Action action)
     {
+        _deferredActionsMutex.WaitOne();
         deferredActions.Add(action);
+        _deferredActionsMutex.ReleaseMutex();
     }
     
     public void Draw(float dt)

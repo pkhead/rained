@@ -594,7 +594,7 @@ static class LevelSerialization
         "Color1", "Color2", "Dead"
     };
 
-    public static void Save(string path)
+    public static void SaveLevelTextFile(string path)
     {
         // open text file
         var outputTxtFile = new StreamWriter(path);
@@ -1067,8 +1067,23 @@ static class LevelSerialization
         // finish writing to txt file
         outputTxtFile.Write(output);
         outputTxtFile.Close();
+    }
 
-        // write light image
+    public async static Task SaveLevelLightMapAsync(string path)
+    {
+        var level = RainEd.Instance.Level;
+
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        using var lightMapImg = await level.LightMap.GetImageAsync();
+        lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
+        lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
+        Raylib.ExportImage(lightMapImg, lightPath);
+    }
+
+    public static void SaveLevelLightMap(string path)
+    {
+        var level = RainEd.Instance.Level;
+
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         using var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel

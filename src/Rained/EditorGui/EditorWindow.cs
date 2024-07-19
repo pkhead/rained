@@ -97,6 +97,7 @@ static class EditorWindow
     private static Action? promptCallback;
     private static bool promptUnsavedChanges;
     private static bool promptUnsavedChangesCancelable;
+    private static Task? _saveTask = null;
 
     public static void PromptUnsavedChanges(Action callback, bool canCancel = true)
     {
@@ -412,10 +413,7 @@ static class EditorWindow
     {
         if (!string.IsNullOrEmpty(path))
         {
-            if (RainEd.Instance.SaveLevel(path))
-            {
-                promptCallback?.Invoke();
-            }
+            _saveTask = RainEd.Instance.SaveLevel(path);
         }
 
         promptCallback = null;
@@ -451,6 +449,16 @@ static class EditorWindow
 
     public static void Render()
     {
+        if (_saveTask is not null && _saveTask.IsCompleted)
+        {
+            if (_saveTask.IsCompletedSuccessfully)
+            {
+                promptCallback?.Invoke();
+            }
+
+            promptCallback = null;
+        }
+        
         DrawMenuBar();
         HandleShortcuts();
         

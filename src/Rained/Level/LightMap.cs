@@ -111,7 +111,7 @@ class LightMap : IDisposable
         lightmapRt = null!;
     }
 
-    public void Resize(int newWidth, int newHeight, int dstOriginX, int dstOriginY)
+    public async Task ResizeAsync(int newWidth, int newHeight, int dstOriginX, int dstOriginY)
     {
         // convert from cell to lightmap coordinates
         newWidth = newWidth * 20 + 300;
@@ -119,7 +119,7 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        using var lightMapImage = GetImage();
+        using var lightMapImage = await GetImageAsync();
         
         // vertical flip dest rect (idk why i need to do this it worked before)
         //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
@@ -180,7 +180,21 @@ class LightMap : IDisposable
     {
         //var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
         if (lightmapRt.Texture.ID is not Glib.ReadableTexture tex) throw new Exception("Lightmap texture is not a ReadableTexture");
-        var gimg = tex.GetImageSync();
+        var gimg = tex.GetImage();
+
+        var img = new RlManaged.Image(new Image { image = gimg });
+
+        if (RainEd.RenderContext.OriginBottomLeft)
+            Raylib.ImageFlipVertical(img);
+        
+        return img;
+    }
+
+    public async Task<RlManaged.Image> GetImageAsync()
+    {
+        //var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
+        if (lightmapRt.Texture.ID is not Glib.ReadableTexture tex) throw new Exception("Lightmap texture is not a ReadableTexture");
+        var gimg = await tex.GetImageAsync();
 
         var img = new RlManaged.Image(new Image { image = gimg });
 

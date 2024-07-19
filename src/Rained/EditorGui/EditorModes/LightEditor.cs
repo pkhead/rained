@@ -21,7 +21,8 @@ class LightEditor : IEditorMode
     private Vector2 savedMouseGp = new();
     private Vector2 savedMousePos = new();
 
-    private ChangeHistory.LightChangeRecorder changeRecorder = null!;
+    private ChangeHistory.LightChangeRecorder? changeRecorder = null;
+    private Task<RlManaged.Image>? _fetchLightImg = null;
 
     public LightEditor(LevelView window)
     {
@@ -31,33 +32,33 @@ class LightEditor : IEditorMode
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
             changeRecorder?.Dispose();
-            changeRecorder = new ChangeHistory.LightChangeRecorder();
-            changeRecorder.UpdateParametersSnapshot();
+            changeRecorder = null;
+            _fetchLightImg = Task.Run(RainEd.Instance.Level.LightMap.GetImageAsync);
         };
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
-            changeRecorder.UpdateParametersSnapshot();
+            changeRecorder?.UpdateParametersSnapshot();
         };
     }
 
     public void ReloadLevel()
     {   
         changeRecorder?.Dispose();
-        changeRecorder = new ChangeHistory.LightChangeRecorder();
-        changeRecorder.UpdateParametersSnapshot();
+        changeRecorder = null;
+        _fetchLightImg = Task.Run(RainEd.Instance.Level.LightMap.GetImageAsync);
     }
 
     public void Load()
     {
-        changeRecorder.ClearStrokeData();
+        changeRecorder?.ClearStrokeData();
     }
 
     public void Unload()
     {
         if (isChangingParameters)
         {
-            changeRecorder.PushParameterChanges();
+            changeRecorder?.PushParameterChanges();
             isChangingParameters = false;
         }
 
@@ -84,6 +85,8 @@ class LightEditor : IEditorMode
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
+            if (changeRecorder is null) ImGui.BeginDisabled();
+
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 
             ImGui.SliderAngle("Light Angle", ref level.LightAngle, 0f, 360f, "%.1f deg");
@@ -141,6 +144,8 @@ class LightEditor : IEditorMode
                 }
                 ImGui.NewLine();
             }
+
+            if (changeRecorder is null) ImGui.EndDisabled();
         } ImGui.End();
 
         if (ImGui.Begin("Brush", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -257,6 +262,7 @@ class LightEditor : IEditorMode
         }
 
         // when shift is held, WASD changes light parameters
+        if (changeRecorder is not null)
         {
             var lightAngleChange = 0f;
             var lightDistChange = 0f;
@@ -303,7 +309,7 @@ class LightEditor : IEditorMode
 
         if (wasParamChanging && !isChangingParameters)
         {
-            changeRecorder.PushParameterChanges();
+            changeRecorder!.PushParameterChanges();
         }
     }
 
@@ -329,6 +335,16 @@ class LightEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
+        if (_fetchLightImg is not null)
+        {
+            if (_fetchLightImg.IsCompleted)
+            {
+                changeRecorder = new ChangeHistory.LightChangeRecorder(_fetchLightImg.Result);
+                changeRecorder.UpdateParametersSnapshot();
+                _fetchLightImg = null;
+            }
+        }
+
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
 
@@ -403,7 +419,7 @@ class LightEditor : IEditorMode
         );*/
 
         // Render mouse cursor
-        if (window.IsViewportHovered)
+        if (window.IsViewportHovered && changeRecorder is not null)
         {
             var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
             var mpos = window.MouseCellFloat;
@@ -506,7 +522,7 @@ class LightEditor : IEditorMode
         // record stroke data at the end of the stroke
         if (wasDrawing && !isDrawing)
         {
-            changeRecorder.EndStroke();
+            changeRecorder!.EndStroke();
         }
 
         // handle cursor lock when transforming brush

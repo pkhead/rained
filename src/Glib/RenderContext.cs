@@ -151,6 +151,7 @@ public sealed class RenderContext : IDisposable
     }
 
     public static bool VSync { get; set; } = true;
+    private List<(uint frameEnd, TaskCompletionSource tcs)> _waitingRequests = [];
 
     internal unsafe RenderContext(IWindow window)
     {
@@ -181,7 +182,7 @@ public sealed class RenderContext : IDisposable
         init.platformData.type = Bgfx.NativeWindowHandleType.Default;
         init.resolution.width = (uint) window.FramebufferSize.X;
         init.resolution.height = (uint) window.FramebufferSize.Y;
-        init.resolution.reset = (uint) (VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None);
+        init.resolution.reset = (uint) ((VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None) | Bgfx.ResetFlags.FlipAfterRender);
         if (!Bgfx.init(&init))
         {
             throw new Exception("Could not initialize bgfx");
@@ -222,6 +223,15 @@ public sealed class RenderContext : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        for (int i = _waitingRequests.Count - 1; i >= 0; i--)
+        {
+            if (_waitingRequests[i].frameEnd == Frame)
+            {
+                _waitingRequests[i].tcs.SetCanceled();
+                _waitingRequests.RemoveAt(i);
+            }
+        }
 
         Resource.DisposeRemaining();
         Bgfx.shutdown();
@@ -276,6 +286,15 @@ public sealed class RenderContext : IDisposable
         _drawBatch.NewFrame(WhiteTexture);
         //curTexture = whiteTexture;
         //lastTexture = whiteTexture;
+
+        for (int i = _waitingRequests.Count - 1; i >= 0; i--)
+        {
+            if (_waitingRequests[i].frameEnd == Frame)
+            {
+                _waitingRequests[i].tcs.SetResult();
+                _waitingRequests.RemoveAt(i);
+            }
+        }
     }
 
     private static Bgfx.StateFlags BgfxStateBlendFuncSeparate(Bgfx.StateFlags srcRgb, Bgfx.StateFlags dstRgb, Bgfx.StateFlags srcA, Bgfx.StateFlags dstA)
@@ -647,6 +666,13 @@ public sealed class RenderContext : IDisposable
         if (!_viewHasSubmission) Bgfx.touch(curViewId);
         Frame = Bgfx.frame(false);
         Resource.Housekeeping();
+    }
+
+    internal Task WaitUntilFrame(uint frameNum)
+    {
+        var tcs = new TaskCompletionSource();
+        _waitingRequests.Add((frameNum, tcs));
+        return tcs.Task;
     }
 
     #region Transform

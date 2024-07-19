@@ -77,11 +77,9 @@ class LightChangeRecorder : IDisposable
     
     private float oldAngle, oldDist;
 
-    public LightChangeRecorder()
+    public LightChangeRecorder(RlManaged.Image lightMapImg)
     {
-        var lightMapImg = RainEd.Instance.Level.LightMap.GetImage();
         origLightmap = RlManaged.Texture2D.LoadFromImage(lightMapImg);
-        lightMapImg.Dispose();
     }
 
     public void Dispose()

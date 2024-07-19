@@ -266,7 +266,7 @@ public class ReadableTexture : Texture
         Bgfx.destroy_texture(_blitDest);
     }
 
-    public unsafe Image GetImageSync()
+    public unsafe Image GetImage()
     {
         if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
 
@@ -321,9 +321,100 @@ public class ReadableTexture : Texture
         }
     }
 
-    public Task<Image> GetImage()
+    private unsafe Image RetrieveImage(byte* mem, Bgfx.TextureInfo* texInfo)
     {
-        throw new NotImplementedException();
+        var pixelSpan = new ReadOnlySpan<byte>((void*)mem, (int)texInfo->storageSize);
+
+        if (BgfxTextureFormat is Bgfx.TextureFormat.RGBA8 or Bgfx.TextureFormat.RGBA8I or Bgfx.TextureFormat.RGBA8U or Bgfx.TextureFormat.RGBA8S)
+        {
+            Debug.Assert(texInfo->storageSize == Width * Height * 4);
+            return new Image(pixelSpan, Width, Height, Glib.PixelFormat.RGBA);
+        }
+        else if (BgfxTextureFormat is Bgfx.TextureFormat.R8 or Bgfx.TextureFormat.R8I or Bgfx.TextureFormat.R8U or Bgfx.TextureFormat.R8S)
+        {
+            Debug.Assert(texInfo->storageSize == Width * Height);
+            return new Image(pixelSpan, Width, Height, Glib.PixelFormat.Grayscale);
+        }
+        {
+            throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
+        }
+    }
+
+    public async Task<Image> GetImageAsync()
+    {
+        if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
+
+        nint mem = 0;
+        nint texInfoAlloc = 0;
+
+        try
+        {
+            Bgfx.blit(
+                _id: RenderContext.Instance!.CurrentBgfxViewId,
+                _dst: _blitDest,
+                _dstMip: 0,
+                _dstX: 0,
+                _dstY: 0,
+                _dstZ: 0,
+                _src: Handle,
+                _srcMip: 0,
+                _srcX: 0,
+                _srcY: 0,
+                _srcZ: 0,
+                _width: (ushort)Width,
+                _height: (ushort)Height,
+                _depth: 0
+            );
+
+            uint endFrame = 0;
+
+            unsafe
+            {
+                texInfoAlloc = (nint) NativeMemory.AllocZeroed((nuint) sizeof(Bgfx.TextureInfo));
+                Bgfx.TextureInfo* texInfo = (Bgfx.TextureInfo*) texInfoAlloc;
+                Bgfx.calc_texture_size(texInfo, (ushort)Width, (ushort)Height, 0, false, false, 1, BgfxTextureFormat);
+                mem = (nint) NativeMemory.Alloc(texInfo->storageSize);
+                endFrame = Bgfx.read_texture(_blitDest, (void*)mem, 0);
+            }
+
+            await RenderContext.Instance!.WaitUntilFrame(endFrame);
+
+            unsafe
+            {
+                return RetrieveImage((byte*)mem, (Bgfx.TextureInfo*)texInfoAlloc);
+            }
+
+            /*unsafe
+            {
+                Bgfx.TextureInfo* texInfo = (Bgfx.TextureInfo*) texInfoAlloc;
+                var pixelSpan = new ReadOnlySpan<byte>((void*)mem, (int)texInfo->storageSize);
+
+                if (BgfxTextureFormat is Bgfx.TextureFormat.RGBA8 or Bgfx.TextureFormat.RGBA8I or Bgfx.TextureFormat.RGBA8U or Bgfx.TextureFormat.RGBA8S)
+                {
+                    Debug.Assert(texInfo.storageSize == Width * Height * 4);
+                    return new Image(pixelSpan, Width, Height, Glib.PixelFormat.RGBA);
+                }
+                else if (BgfxTextureFormat is Bgfx.TextureFormat.R8 or Bgfx.TextureFormat.R8I or Bgfx.TextureFormat.R8U or Bgfx.TextureFormat.R8S)
+                {
+                    Debug.Assert(texInfo.storageSize == Width * Height);
+                    return new Image(pixelSpan, Width, Height, Glib.PixelFormat.Grayscale);
+                }
+                {
+                    throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
+                }
+            }*/
+        }
+        finally
+        {
+            unsafe
+            {
+                if (mem != 0)
+                    NativeMemory.Free((void*) mem);
+
+                if (texInfoAlloc != 0)
+                    NativeMemory.Free((void*) texInfoAlloc);
+            }
+        }
     }
 
     /*public unsafe Image GetImage()

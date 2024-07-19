@@ -436,7 +436,7 @@ partial class Level
         Props.Sort(new PropDepthSorter());
     }
     
-    public Vector2 Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
+    public async Task<Vector2> ResizeAsync(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
     {
         if (newWidth == _width && newHeight == _height) return Vector2.Zero;
 
@@ -459,8 +459,7 @@ partial class Level
                     // copy the cell data from the old level
                     if (IsInBounds(oldX, oldY))
                     {
-                        ref var oldCell = ref oldLayers[l,oldX,oldY];
-                        Layers[l,x,y] = oldCell;
+                        var oldCell = oldLayers[l,oldX,oldY];
 
                         // completely remove any tiles where the tile head
                         // is now out of bounds
@@ -483,6 +482,8 @@ partial class Level
                                 Layers[l,x,y].TileRootY = rootY;
                             }
                         }
+
+                        Layers[l,x,y] = oldCell;
                     }
 
                     // this cell is not in the bounds of the old level,
@@ -497,12 +498,6 @@ partial class Level
                 }
             }
         }
-
-        // resize light map
-        LightMap.Resize(
-            newWidth, newHeight,
-            dstOriginX, dstOriginY
-        );
 
         // resize effect matrices
         foreach (var effect in Effects)
@@ -551,6 +546,12 @@ partial class Level
                 }
             }
         }
+
+        // resize light map
+        await LightMap.ResizeAsync(
+            newWidth, newHeight,
+            dstOriginX, dstOriginY
+        );
 
         _width = newWidth;
         _height = newHeight;
