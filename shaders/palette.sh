@@ -23,8 +23,8 @@ vec3 getShadeColor(float index)
 
 bool isTransparent(vec2 coords)
 {
-    bool inBounds = coords.x >= 0.0 && coords.x <= 1.0 && coords.y >= 0.0 && coords.y <= 1.0;
+    bool inBounds = abs(coords.x - 0.5f) <= 0.5f && abs(coords.y - 0.5f) <= 0.5f;
     vec4 texelColor = texture2D(glib_texture, coords);
-    return (texelColor.rgb == vec3(1.0, 1.0, 1.0) || texelColor.a == 0.0) || !inBounds;
+    return length(texelColor.rgb - vec3(1.0, 1.0, 1.0)) < 0.05 || texelColor.a == 0.0 || !inBounds;
 }
 #endif // PALETTE_SH_HEADER_GUARD
