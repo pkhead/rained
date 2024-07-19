@@ -424,39 +424,35 @@ sealed class RainEd
 
             LevelSerialization.SaveLevelTextFile(path);
             await LevelSerialization.SaveLevelLightMapAsync(path);
-            
-            DeferToNextFrame(() =>
+            await ContinueOnNextFrame();
+
+            currentFilePath = path;
+            UpdateTitle();
+            changeHistory.MarkUpToDate();
+            Log.Information("Done!");
+            EditorWindow.ShowNotification("Saved!");
+            AddToRecentFiles(currentFilePath);
+
+            // if the old level was an emergency save and the user
+            // saved it to a non-emergency save file, delete the
+            // old file as it is no longer necessary.
+            var oldParentFolder = Path.GetDirectoryName(oldFilePath);
+            var newParentFolder = Path.GetDirectoryName(currentFilePath);
+
+            if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
             {
-                currentFilePath = path;
-                UpdateTitle();
-                changeHistory.MarkUpToDate();
-                Log.Information("Done!");
-                EditorWindow.ShowNotification("Saved!");
-                AddToRecentFiles(currentFilePath);
+                File.Delete(oldFilePath);
+                File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
+            }
 
-                // if the old level was an emergency save and the user
-                // saved it to a non-emergency save file, delete the
-                // old file as it is no longer necessary.
-                var oldParentFolder = Path.GetDirectoryName(oldFilePath);
-                var newParentFolder = Path.GetDirectoryName(currentFilePath);
-
-                if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
-                {
-                    File.Delete(oldFilePath);
-                    File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
-                }
-
-                IsLevelLocked = false;
-            });
+            IsLevelLocked = false;
         }
         catch (Exception e)
         {
             Log.Error("Could not write level file:\n{ErrorMessage}", e);
-            DeferToNextFrame(() =>
-            {
-                EditorWindow.ShowNotification("Could not write level file");
-                IsLevelLocked = false;
-            });
+            await ContinueOnNextFrame();
+            EditorWindow.ShowNotification("Could not write level file");
+            IsLevelLocked = false;
             throw;
         }
     }
@@ -544,16 +540,15 @@ sealed class RainEd
 
         levelView.FlushDirty();
         var dstOrigin = await level.ResizeAsync(newWidth, newHeight, anchorX, anchorY);
-        DeferToNextFrame(() =>
-        {
-            levelView.ReloadLevel();
-            changeHistory.Clear();
-            levelView.Renderer.ReloadLevel();
-            levelView.ViewOffset += dstOrigin * Level.TileSize;
+        await ContinueOnNextFrame();
 
-            Log.Information("Done!");
-            IsLevelLocked = false;
-        });
+        levelView.ReloadLevel();
+        changeHistory.Clear();
+        levelView.Renderer.ReloadLevel();
+        levelView.ViewOffset += dstOrigin * Level.TileSize;
+
+        Log.Information("Done!");
+        IsLevelLocked = false;
     }
 
     private void ReloadLevel()
@@ -614,8 +609,10 @@ sealed class RainEd
         }
     }
 
-    private readonly Mutex _deferredActionsMutex = new();
     private readonly List<Action> deferredActions = [];
+
+    private readonly Mutex _tcsMutex = new();
+    private readonly List<TaskCompletionSource> _tasksToRunOnNextFrame = [];
 
     /// <summary>
     /// Run an action on the next frame. <br /><br />
@@ -627,9 +624,17 @@ sealed class RainEd
     /// <param name="action">The action to run on the next frame.</param> 
     public void DeferToNextFrame(Action action)
     {
-        _deferredActionsMutex.WaitOne();
         deferredActions.Add(action);
-        _deferredActionsMutex.ReleaseMutex();
+    }
+
+    public Task ContinueOnNextFrame()
+    {
+        var tcs = new TaskCompletionSource();
+        _tcsMutex.WaitOne();
+        _tasksToRunOnNextFrame.Add(tcs);
+        _tcsMutex.ReleaseMutex();
+
+        return tcs.Task;
     }
     
     public void Draw(float dt)
@@ -639,7 +644,16 @@ sealed class RainEd
         
         foreach (var f in deferredActions) f();
         deferredActions.Clear();
-        
+
+        {
+            _tcsMutex.WaitOne();
+            List<TaskCompletionSource> tasks = [.._tasksToRunOnNextFrame];
+            _tasksToRunOnNextFrame.Clear();
+            _tcsMutex.ReleaseMutex();
+
+            foreach (var t in tasks) t.SetResult();
+        }
+
         EditorWindow.UpdateMouseState();
         
         Raylib.ClearBackground(Color.DarkGray);

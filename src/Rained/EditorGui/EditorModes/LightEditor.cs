@@ -33,7 +33,7 @@ class LightEditor : IEditorMode
         {
             changeRecorder?.Dispose();
             changeRecorder = null;
-            _fetchLightImg = Task.Run(RainEd.Instance.Level.LightMap.GetImageAsync);
+            _fetchLightImg = RainEd.Instance.Level.LightMap.GetImageAsync();
         };
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
@@ -46,7 +46,7 @@ class LightEditor : IEditorMode
     {   
         changeRecorder?.Dispose();
         changeRecorder = null;
-        _fetchLightImg = Task.Run(RainEd.Instance.Level.LightMap.GetImageAsync);
+        _fetchLightImg = RainEd.Instance.Level.LightMap.GetImageAsync();
     }
 
     public void Load()
@@ -91,11 +91,11 @@ class LightEditor : IEditorMode
 
             ImGui.SliderAngle("Light Angle", ref level.LightAngle, 0f, 360f, "%.1f deg");
             if (ImGui.IsItemDeactivatedAfterEdit())
-                changeRecorder.PushParameterChanges();
+                changeRecorder?.PushParameterChanges();
             
             ImGui.SliderFloat("Light Distance", ref level.LightDistance, 1f, Level.MaxLightDistance, "%.3f", ImGuiSliderFlags.AlwaysClamp);
             if (ImGui.IsItemDeactivatedAfterEdit())
-                changeRecorder.PushParameterChanges();
+                changeRecorder?.PushParameterChanges();
             
             ImGui.PopItemWidth();
 

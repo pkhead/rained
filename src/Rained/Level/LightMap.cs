@@ -62,10 +62,9 @@ class LightMap : IDisposable
         height = levelHeight * 20 + 300;
 
         // create light map render texture
+        using var image = Glib.Image.FromColor(width, height, Glib.Color.Black);
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
-        Raylib.BeginTextureMode(lightmapRt);
-        Raylib.ClearBackground(Color.White);
-        Raylib.EndTextureMode();
+        lightmapRt.Texture.ID!.UpdateFromImage(image);
     }
 
     public LightMap(int levelWidth, int levelHeight, Image lightMapImage)
@@ -119,10 +118,13 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        using var lightMapImage = await GetImageAsync();
+        var lightMapImage = await GetImageAsync();
         
         // vertical flip dest rect (idk why i need to do this it worked before)
         //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
+
+        // put into a render texture
+        await RainEd.Instance.ContinueOnNextFrame();
 
         // resize light map image
         Raylib.ImageResizeCanvas(
@@ -137,9 +139,9 @@ class LightMap : IDisposable
         // get light map as a texture
         var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
 
-        // put into a render texture
         lightmapRt.Dispose();
         lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
+
         Raylib.BeginTextureMode(lightmapRt);
         Raylib.ClearBackground(Color.Black);
 
@@ -153,6 +155,7 @@ class LightMap : IDisposable
         );
 
         Raylib.EndTextureMode();
+        lightMapImage.Dispose();
 
         width = newWidth;
         height = newHeight;

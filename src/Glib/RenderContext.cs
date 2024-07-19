@@ -165,7 +165,11 @@ public sealed class RenderContext : IDisposable
         _cbInterface = new CallbackInterface()
         {
             Log = (string msg) => Console.WriteLine(msg),
-            Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) => Console.WriteLine(msg)
+
+            Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) =>
+            {
+                Console.WriteLine($"BGFX: FATAL: {filePath}:{line} ({code}): {msg}");
+            }
         };
 
         ScreenWidth = window.FramebufferSize.X;
@@ -289,7 +293,7 @@ public sealed class RenderContext : IDisposable
 
         for (int i = _waitingRequests.Count - 1; i >= 0; i--)
         {
-            if (_waitingRequests[i].frameEnd == Frame)
+            if (Frame >= _waitingRequests[i].frameEnd)
             {
                 _waitingRequests[i].tcs.SetResult();
                 _waitingRequests.RemoveAt(i);
@@ -586,7 +590,7 @@ public sealed class RenderContext : IDisposable
             _viewHasSubmission = false;
             curViewId++;
 
-            if (curFramebuffer is not null) Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
+            Bgfx.set_view_frame_buffer(curViewId, curFramebuffer?.Handle ?? new Bgfx.FrameBufferHandle { idx = ushort.MaxValue });
             Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
 
             if (curFramebuffer is not null)
@@ -596,6 +600,11 @@ public sealed class RenderContext : IDisposable
         }
 
         Bgfx.set_view_clear(curViewId, (ushort)bclearFlags, colorUint, 1f, 0);
+        if (_viewHasSubmission)
+        {
+            Bgfx.touch(curViewId);
+            _viewHasSubmission = true;
+        }
     }
 
     public void Clear() => Clear(ClearFlags.Color | ClearFlags.Depth | ClearFlags.Stencil, BackgroundColor);
@@ -614,10 +623,12 @@ public sealed class RenderContext : IDisposable
         // change to a new pass if the framebuffer is different
         if (curFramebuffer != lastFb)
         {
-            if (!_viewHasSubmission) Bgfx.touch(curViewId);
-
+            //if (!_viewHasSubmission) Bgfx.touch(curViewId);
+            if (_viewHasSubmission)
+            {
+                _viewHasSubmission = false;
+            }
             curViewId++;
-            _viewHasSubmission = false;
             
             Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
             Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
@@ -629,7 +640,7 @@ public sealed class RenderContext : IDisposable
     public Framebuffer? PopFramebuffer()
     {
         _drawBatch.Draw();
-        if (!_viewHasSubmission) Bgfx.touch(curViewId);
+        //if (!_viewHasSubmission) Bgfx.touch(curViewId);
 
         int newWidth, newHeight;
         var lastFb = curFramebuffer;
@@ -649,9 +660,10 @@ public sealed class RenderContext : IDisposable
         if (curFramebuffer != framebuffer)
         {
             curFramebuffer = framebuffer;
+            _viewHasSubmission = false;
             curViewId++;
 
-            if (curFramebuffer is not null) Bgfx.set_view_frame_buffer(curViewId, curFramebuffer.Handle);
+            Bgfx.set_view_frame_buffer(curViewId, curFramebuffer?.Handle ?? new Bgfx.FrameBufferHandle { idx = ushort.MaxValue });
             Bgfx.set_view_mode(curViewId, Bgfx.ViewMode.Sequential);
             Bgfx.set_view_clear(curViewId, (ushort)Bgfx.ClearFlags.None, 0, 1f, 0);
             SetViewport(newWidth, newHeight);
@@ -663,7 +675,7 @@ public sealed class RenderContext : IDisposable
     internal void End()
     {
         _drawBatch.Draw();
-        if (!_viewHasSubmission) Bgfx.touch(curViewId);
+        //if (!_viewHasSubmission) Bgfx.touch(curViewId);
         Frame = Bgfx.frame(false);
         Resource.Housekeeping();
     }
