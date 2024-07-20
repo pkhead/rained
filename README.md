@@ -10,6 +10,12 @@ Don't hestiate to report any bugs, complaints, and suggestions by creating an is
 
 **NOTE**: On Windows, Rained requires the Microsoft Visual Studio C++ runtime package to run. Thus, if Rained fails to open a window on launch, it's probably because you have it missing. The package can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 
+## Important!!
+Currently, v2.0.0 and any version after that may be prone to just not launch depending on your graphics card/OpenGL driver. I am trying to fix this, but it is difficult considering the fact that it works perfectly fine on mine. If Rained doesn't launch for you, please send a screenshot to me of the error window (if it appears) as well as the contents of the "latest.log.txt" file in the logs folder, and also the console output of `Rained.Console.exe --gl-debug` as well, if you know command prompt basics.
+
+In the meanwhile, if it doesn't work for you, you can use b1.5.3 until I fix my graphics code.
+
+
 ## Features
 - Ease of use (hopefully)
 - Undo/redo everything
@@ -40,18 +46,6 @@ dotnet build
 dotnet run --project src/Rained/Rained.csproj
 ```
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
-
-## Shaders
-Shader compilation requires the shaderc tool from the [bgfx](https://github.com/bkaradzic/bgfx) library. You will either need it on your PATH
-or you will need an environment variable named BGFX_SHADERC set to the shaderc executable.
-
-Once you have it set up, run the following commands to build shaders:
-```bash
-dotnet tool restore # run on first time
-dotnet cake --target="Build Shaders"
-```
-
-This process isn't required to build Rained, as the shaderc build output is saved in the repository. However, this process is required if you want to modify the shader code.
 
 ## Contributing
 Report bugs and other complaints by creating an issue or pinging @chromosoze on a Rain World modding Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
