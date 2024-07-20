@@ -21,6 +21,7 @@ class DrizzleRenderWindow : IDisposable
 
     private readonly RlManaged.Shader layerPreviewShader;
     private readonly RlManaged.Shader layerPreviewLightShader;
+    private int _updateProgress = -1; 
 
     private Stopwatch elapsedStopwatch = new();
 
@@ -58,9 +59,9 @@ class DrizzleRenderWindow : IDisposable
 
         if (!onlyGeo)
         {
-            Raylib.BeginTextureMode(previewComposite);
-            Raylib.ClearBackground(Color.White);
-            Raylib.EndTextureMode();
+            var tex = previewComposite.Texture;
+            using var img = Glib.Image.FromColor(tex.Width, tex.Height, Glib.Color.White, Glib.PixelFormat.RGBA);
+            tex.ID!.UpdateFromImage(img);
         }
     }
 
@@ -240,35 +241,45 @@ class DrizzleRenderWindow : IDisposable
                 
                 // update the preview texture
                 var previewImages = drizzleRenderer!.PreviewImages;
-                if (needUpdateTextures && previewImages is not null)
+
+                if (previewImages is not null && (needUpdateTextures || _updateProgress != -1))
                 {
-                    if (previewLayers is null)
-                        throw new NullReferenceException("previewLayers is null");
-
-                    Log.Information("update preview");
-                    var stopwatch = new Stopwatch();
-                    stopwatch.Start();
-
-                    needUpdateTextures = false;
-
-                    drizzleRenderer.UpdatePreviewImages();
-
-                    stopwatch.Stop();
-                    Log.Debug("Fetch preview images in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
-                    stopwatch.Restart();
-
-                    // update preview images
-                    for (int i = 0; i < 30; i++)
+                    if (_updateProgress == -1)
                     {
-                        var img = previewImages.Layers[i];
-                        UpdateTexture(img, ref previewLayers[i]);
-                    }
-                    UpdateTexture(previewImages.BlackOut1, ref previewBlackout1);
-                    UpdateTexture(previewImages.BlackOut2, ref previewBlackout2);
-                    UpdateComposite();
+                        Log.Debug("Update");
+                        drizzleRenderer!.UpdatePreviewImages();
+                        _updateProgress = 0;
+                        needUpdateTextures = false;
 
-                    stopwatch.Stop();
-                    Log.Debug("Update preview texture in {Time} ms", stopwatch.Elapsed.TotalMilliseconds);
+                        for (int i = 0; i < 30; i++)
+                            AllocTexture(previewImages.Layers[i], ref previewLayers![i]);
+                        AllocTexture(previewImages.BlackOut1, ref previewBlackout1);
+                        AllocTexture(previewImages.BlackOut2, ref previewBlackout2);
+                    }
+
+                    if (_updateProgress >= 0)
+                    {
+                        // update two sublayers per frame
+                        for (int i = 0; i < 2; i++)
+                        {
+                            AllocTexture(previewImages.Layers[i], ref previewLayers![i]);
+                            UpdateTexture(previewImages.Layers[_updateProgress], previewLayers![_updateProgress]!.GlibTexture);
+                            _updateProgress++;
+
+                            UpdateComposite();
+                            if (_updateProgress >= 30)
+                            {
+                                if (previewImages.BlackOut1 is not null && previewBlackout1 is not null)
+                                    UpdateTexture(previewImages.BlackOut1, previewBlackout1.GlibTexture);
+                                
+                                if (previewImages.BlackOut2 is not null && previewBlackout2 is not null)
+                                    UpdateTexture(previewImages.BlackOut2, previewBlackout2.GlibTexture);
+
+                                _updateProgress = -1;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 int cWidth = previewComposite.Texture.Width;
@@ -276,7 +287,9 @@ class DrizzleRenderWindow : IDisposable
                 ImGuiExt.ImageRect(
                     previewComposite.Texture,
                     (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
-                    new Rectangle(0, cHeight, cWidth, -cHeight)
+                    RainEd.RenderContext.OriginBottomLeft ?
+                        new Rectangle(0, cHeight, cWidth, -cHeight) :
+                        new Rectangle(0f, 0f, cWidth, cHeight)
                 );
                 ImGui.EndGroup();
             }
@@ -314,7 +327,7 @@ class DrizzleRenderWindow : IDisposable
         }
     }
 
-    private void UpdateTexture(Drizzle.RenderImage? img, ref RlManaged.Texture2D? tex)
+    private static void AllocTexture(Drizzle.RenderImage? img, ref RlManaged.Texture2D? tex)
     {
         if (img == null)
         {
@@ -329,27 +342,40 @@ class DrizzleRenderWindow : IDisposable
         if (tex == null || tex.GlibTexture.PixelFormat != desiredPixelFormat || img.Width != tex.Width || img.Height != tex.Height)
         {
             tex?.Dispose();
-            gtex = Glib.Texture.Create(img.Width, img.Height, desiredPixelFormat);
+            using var gimg = Glib.Image.FromColor(img.Width, img.Height, Glib.Color.White, desiredPixelFormat);
+            gtex = Glib.Texture.Load(gimg);
             tex = new RlManaged.Texture2D(new Texture2D() { ID = gtex });
         }
         else
         {
             gtex = ((Texture2D)tex).ID!;
         }
+    }
 
-        // convert 1-bit-per-pixel image to an 8-bit-per-pixel image
-        if (img.Format == Drizzle.PixelFormat.L1)
+    private void UpdateTexture(Drizzle.RenderImage img, Glib.Texture gtex)
+    {
+        if (img.Pixels is not null)
         {
-            if (convertedBitmap is null || convertedBitmap.Length != img.Width * img.Height)
-                convertedBitmap = new byte[img.Width * img.Height];
-            
-            ConvertBitmap(img.Pixels, convertedBitmap);
-            gtex.UpdateFromImage(convertedBitmap);
-        }
-        else
-        {
-            // bgra -> rgba conversion is done in the shader
-            gtex.UpdateFromImage(img.Pixels);
+            // convert 1-bit-per-pixel image to an 8-bit-per-pixel image
+            if (img.Format == Drizzle.PixelFormat.L1)
+            {
+                var srcPixels = img.Pixels!;
+
+                int grayscalePixSize = img.Width * img.Height + 32; // add 32 bytes of padding, just in case
+                if (convertedBitmap is null || convertedBitmap.Length != img.Width * img.Height + grayscalePixSize)
+                    convertedBitmap = new byte[img.Width * img.Height + grayscalePixSize];
+                
+                ConvertBitmap(srcPixels, convertedBitmap);
+                gtex.UpdateFromImage(new ReadOnlySpan<byte>(convertedBitmap, 0, img.Width * img.Height));
+            }
+            else
+            {
+                // bgra -> rgba conversion is done in the shader                
+                //await Task.Run(() =>
+                //{
+                    gtex.UpdateFromImage(new ReadOnlySpan<byte>(img.Pixels, 0, img.Width * img.Height * 4));
+                //});
+            }
         }
     }
 
@@ -372,10 +398,7 @@ class DrizzleRenderWindow : IDisposable
 
             Raylib.BeginShaderMode(shader);
 
-            if (RainEd.RenderContext.OriginBottomLeft)
-                shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(1f, 1f, 0f, 0f));
-            else
-                shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(-1f, -1f, 1f, 1f));
+            shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(1f, 1f, 0f, 0f));
 
             for (int i = 29; i >= 0; i--)
             {

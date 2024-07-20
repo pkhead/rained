@@ -211,11 +211,41 @@ public class Texture : Resource
 
         var size = Width * Height * bytesPerPixel;
         if (pixels.Length != size)
-            throw new ArgumentException("Mismatched pixel buffer sizes");
+            throw new ArgumentException("Mismatched pixel buffer sizes");        
 
-        var alloc = Bgfx.alloc((uint)size);
-        pixels.CopyTo(new Span<byte>(alloc->data, (int)alloc->size));
-        Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
+        //var alloc = Bgfx.alloc((uint)size);
+        fixed (byte* data = pixels)
+        {
+            var alloc = Bgfx.copy(data, (uint)(pixels.Length * sizeof(byte)));
+            Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, alloc, ushort.MaxValue);
+        }
+    }
+
+    /// <summary>
+    /// Update the whole texture with a pre-allocated Bgfx memory handle.<br /><br />
+    /// The dimensions and pixel format of the data will be interpreted as those of the texture.
+    /// </summary>
+    /// <param name="mem"></param>
+    /// <exception cref="ArgumentException">Thrown if the memory allocation byte size does not match the texture byte size.</exception>
+    public unsafe void UpdateFromMemory(Bgfx.Memory* mem)
+    {
+        var bytesPerPixel = PixelFormat switch
+        {
+            Glib.PixelFormat.Grayscale => 1,
+            Glib.PixelFormat.GrayscaleAlpha => 2,
+            Glib.PixelFormat.RGB => 3,
+            Glib.PixelFormat.RGBA => 4,
+            _ => 0
+        };
+
+        if (bytesPerPixel > 0)
+        {
+            var size = Width * Height * bytesPerPixel;
+            if (mem->size != size)
+                throw new ArgumentException("Mismatched pixel buffer sizes");
+        }
+        
+        Bgfx.update_texture_2d(_handle, 0, 0, 0, 0, (ushort)Width, (ushort)Height, mem, ushort.MaxValue);
     }
 
     internal static Glib.PixelFormat? GetPixelFormatFromTexture(Bgfx.TextureFormat fmt)

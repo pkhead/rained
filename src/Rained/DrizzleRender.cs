@@ -44,7 +44,7 @@ class RenderImage : IDisposable
 {
     public readonly int Width;
     public readonly int Height;
-    public readonly byte[] Pixels;
+    public byte[]? Pixels;
     public readonly PixelFormat Format;
     
     public RenderImage(int width, int height, PixelFormat format)
@@ -52,14 +52,15 @@ class RenderImage : IDisposable
         Width = width;
         Height = height;
         Format = format;
+        Pixels = null;
 
-        Pixels = format switch
+        /*Pixels = format switch
         {
             PixelFormat.Bgra32 => new byte[width * height * 4],
             PixelFormat.L1 => new byte[(int)Math.Ceiling(width * height / 8.0)],
             _ => throw new ArgumentOutOfRangeException(nameof(format)),
         };
-        Array.Clear(Pixels);
+        Array.Clear(Pixels);*/
     }
 
     // dispose does nothing, but use it anyway.
@@ -608,10 +609,12 @@ class DrizzleRender : IDisposable
             throw new Exception("Unknown image color depth " + srcImg.Depth);
         }
 
-        Debug.Assert(srcImg.ImageBufferNoPadding.Length >= dstImg.Pixels.Length);
+        dstImg.Pixels = srcImg.ImageBuffer;
+
+        //Debug.Assert(srcImg.ImageBufferNoPadding.Length >= dstImg.Pixels.Length);
 
         // copy the memory
-        Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.Pixels, 0, dstImg.Pixels.Length);
+        //Buffer.BlockCopy(srcImg.ImageBuffer, 0, dstImg.Pixels, 0, dstImg.Pixels.Length);
     }
 
     /// <summary>
