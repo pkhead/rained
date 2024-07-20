@@ -220,6 +220,7 @@ namespace RainEd
                     renderContext.PushWindowFramebuffer(splashScreenWindow);
                     renderContext.Clear(Glib.Color.Black);
                     renderContext.DrawTexture(texture);
+                    renderContext.PopFramebuffer();
                     
                     renderContext.End();
                     //splashScreenWindow.SwapBuffers();

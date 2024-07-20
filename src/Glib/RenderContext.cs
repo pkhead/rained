@@ -382,6 +382,7 @@ public sealed class RenderContext : IDisposable
         int height = _mainWindow.PixelHeight;
 
         curViewId = 0;
+        curFramebuffer = null;
 
         uint bgCol = ColorToUint(BackgroundColor);
 
