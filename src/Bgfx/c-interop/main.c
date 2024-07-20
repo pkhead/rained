@@ -6,7 +6,13 @@
 #include <stddef.h>
 #include <bgfx.h>
 
+#if defined(_MSC_VER)
 #define DLL_EXPORT __declspec(dllexport)
+#elif defined(__GNUC__)
+#define DLL_EXPORT __attribute__((visibility("default")))
+#else
+#define DLL_EXPORT
+#endif
 
 typedef void (*log_function_t)(const char* string);
 typedef void (*fatal_function_t)(const char* file_path, uint16_t line, bgfx_fatal_t code, const char* string);
@@ -29,7 +35,7 @@ void cb_trace_vargs(bgfx_callback_interface_t* _this, const char* _filePath, uin
     callback_interface_t* interface = (callback_interface_t*) _this;
 
     char buf[256];
-    vsprintf_s(buf, 256, _format, _argList);
+    vsnprintf(buf, 256, _format, _argList);
     interface->log_func(buf);
 }
 

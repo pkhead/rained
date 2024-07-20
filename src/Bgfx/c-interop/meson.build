@@ -10,9 +10,16 @@ incdirs = [
     get_option('bx_include')
 ]
 
+c_args = []
+
+compiler = meson.get_compiler('c')
+if compiler.get_id() == 'msvc'
+  c_args = ['/Zc:preprocessor']
+endif
+
 shared_library(
     'bgfx_interop',
     sources: sources,
     include_directories: incdirs,
-    c_args: ['/Zc:preprocessor']
+    c_args: c_args
 )
