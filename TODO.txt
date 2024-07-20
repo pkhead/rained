@@ -7,6 +7,7 @@ Bugs:
   (DebugCheck): Setting invalid uniform (handle  11)
   Invalid handle. submit handle: 19 (max 512)   (repeated many times, as this error doesn't cause a crash)
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess
+- joarsSHRoomProjectFile, in editor tests
 
 Overall:
 - dissolve material/tile separation
