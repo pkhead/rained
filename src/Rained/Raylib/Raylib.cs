@@ -1,5 +1,5 @@
 using Glib;
-using SixLabors.ImageSharp.Processing;
+using System.Diagnostics;
 using System.Numerics;
 namespace Raylib_cs;
 
@@ -10,20 +10,19 @@ namespace Raylib_cs;
 * Instead of replacing every Raylib call with an equivalent Glib call (which would be very
 * time-consuming and boring), I decided to just reimplement relevant Raylib functions
 * over Glib. It also allows compatibility with older versions of code without having to
-* re-write it for Glib.
+* re-write it for Glib, an important point due to the fact that I have two old branches
+* for features I want to add but don't actually want to work on...
 *
-* Meshes and models aren't reimplemented, in part because I didn't really like the system
-* (I wasn't doing 3D with them), and in part because I only used meshes once in the code for
-* geometry rendering (at that point).
+* Meshes and models aren't reimplemented, mainly because I don't like Raylib's system for it.
+* I'm not doing 3D rendering, after all.
 *
 * Another thing that I didn't bother matching up -- shader variable names. Here is a mapping from
 * Raylib names to Glib names
 *
-*   in vec2 fragTexCoord => in vec2 glib_texCoord
-*   in vec4 fragColor => in vec4 glib_color
-*   uniform sampler2D uTexture => uniform sampler2D glib_uTexture
-*   uniform vec4 colDiffuse => uniform vec4 glib_uColor
-*   uniform mat4 mvp => uniform mat4 glib_uMatrix
+*   in vec2 fragTexCoord => $input v_texcoord0
+*   in vec4 fragColor => $input v_color0
+*   uniform sampler2D uTexture => uniform sampler2D glib_texture
+*   uniform vec4 colDiffuse => uniform vec4 glib_color
 */
 
 static class Raylib
@@ -41,6 +40,10 @@ static class Raylib
 
     private static double lastFrame = 0.0;
     private static double frameTime = 0.0;
+    private static double targetFrameLength = 0.0;
+    private static Stopwatch frameStopwatch = new();
+    private static RainEd.Platform.SleepHandler? sleepHandle;
+
     private static Vector2? lastMousePos = null;
     private static Vector2 mouseDelta = Vector2.Zero;
     private static bool windowShouldClose = false;
@@ -225,6 +228,8 @@ static class Raylib
     /// </summary>
     public static void CloseWindow()
     {
+        sleepHandle?.Dispose();
+        sleepHandle = null;
         window.Dispose();
     }
 
@@ -265,7 +270,14 @@ static class Raylib
 
     public static void SetTargetFPS(int targetFps)
     {
-        // no-op
+        if (targetFps == 0)
+        {
+            targetFrameLength = 0.0;
+        }
+        else
+        {
+            targetFrameLength = 1.0 / targetFps;
+        }
     }
 
     public static float GetFrameTime()
@@ -453,6 +465,7 @@ static class Raylib
     {
         frameTime = window.Time - lastFrame;
         lastFrame = window.Time;
+        frameStopwatch.Restart();
 
         for (int i = 0; i < 3; i++)
         {
@@ -480,6 +493,29 @@ static class Raylib
     public static void EndDrawing()
     {
         RenderContext.Instance!.End();
+
+        if (!RenderContext.VSync)
+        {
+            long targetFrameLenMs = (long)(targetFrameLength * 1000.0);
+            var ms = frameStopwatch.ElapsedMilliseconds;
+            if (ms < targetFrameLenMs)
+            {
+                sleepHandle ??= new RainEd.Platform.SleepHandler();
+                var waitInMs = (int)(targetFrameLenMs - frameStopwatch.ElapsedMilliseconds) - 1;
+                if (waitInMs > 0) sleepHandle.Wait(waitInMs / 1000.0);
+                while (frameStopwatch.ElapsedMilliseconds < targetFrameLenMs)
+                {}
+                frameStopwatch.Stop();
+            }
+        }
+
+        /*frameStopwatch.Stop();
+        double frameLen = frameStopwatch.ElapsedMilliseconds / 1000.0;
+
+        if (frameLen < targetFrameLength)
+        {
+            Thread.Sleep((int)((targetFrameLength - frameLen) * 1000.0));
+        }*/
     }
 
     public static void BeginTextureMode(RenderTexture2D rtex)

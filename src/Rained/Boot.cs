@@ -183,7 +183,7 @@ namespace RainEd
                             }
                         });
                     }*/
-                    renderContext = RenderContext.Init(window, true);
+                    renderContext = RenderContext.Init(window, false);
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
@@ -244,12 +244,12 @@ namespace RainEd
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
                     window.Visible = true;
-                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    CloseSplashScreenWindow();
                     
                     var appSetup = new AppSetup();
                     if (!appSetup.Start(out assetDataPath))
                     {
-                        window.Dispose();
+                        Raylib.CloseWindow();
                         return;
                     }
                 }
@@ -273,7 +273,7 @@ namespace RainEd
                 }
 #endif
                 Window.Visible = true;
-                if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                CloseSplashScreenWindow();
 
                 isAppReady = true;
                 
@@ -282,6 +282,8 @@ namespace RainEd
 #endif
                 {
                     Fonts.SetFont(app.Preferences.Font);
+                    var refreshRate = window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
+                    Raylib.SetTargetFPS(refreshRate);
 
                     while (app.Running)
                     {
@@ -309,7 +311,6 @@ namespace RainEd
                             *ImGui.GetStyle().NativePtr = styleCopy;
                         }
                         
-                        
                         Raylib.EndDrawing();
                     }
 
@@ -332,20 +333,24 @@ namespace RainEd
                 }
 #endif
                 ImGuiController?.Dispose();
-                window.Dispose();
-                //rlImGui.Shutdown();
-
-                //foreach (var img in windowIcons)
-                //    Raylib.UnloadImage(img);
+                Raylib.CloseWindow();
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            //RlManaged.RlObject.UnloadGCQueue();
             
-            //Raylib.CloseWindow();
-            splashScreenWindow?.Close();
+            Raylib.CloseWindow();
             _logger.Dispose();
+        }
+
+        private static void CloseSplashScreenWindow()
+        {
+            if (splashScreenWindow is not null)
+            {
+                RenderContext.Instance!.RemoveWindow(splashScreenWindow);
+                splashScreenWindow.Dispose();
+                splashScreenWindow = null;
+            }
         }
 
         public static void DisplayError(string windowTitle, string windowContents)
@@ -359,7 +364,7 @@ namespace RainEd
                 if (!isAppReady)
                 {
                     window.Visible = true;
-                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    CloseSplashScreenWindow();
                 }
 
                 ImGui.StyleColorsDark();

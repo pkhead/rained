@@ -44,6 +44,7 @@ public enum WindowTheme
 
 public class Window : IDisposable
 {
+    private bool _disposed = false;
     private readonly IWindow window;
     private IInputContext inputContext = null!;
 
@@ -482,6 +483,9 @@ public class Window : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        
         Closing?.Invoke();
         //_renderContext!.Dispose();
         window.Dispose();
