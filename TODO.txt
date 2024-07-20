@@ -6,12 +6,13 @@ Bugs:
 - about window "graphics card" shows renderer name instead of device name
 - fix double resource disposal on window close
 - bgfx credits
-- opengl render preview was gray once... can't repro. now it just crashes. might be some memory error.
-  - also, investigate using bgfx::makeRef to optimize preview updating
-- vsync/refresh rate option default is "automatic" mode: locks to screen refresh rate, vsync if fullscreen or refresh rate unknown
+- render preview sometimes crashes
+  (DebugCheck): Setting invalid uniform (handle  11)
+  Invalid handle. submit handle: 19 (max 512)   (repeated many times, as this error doesn't cause a crash)
 
 Overall:
 - user able to configure vsync/refresh rate and rendering backend
+  - vsync/refresh rate option default is "automatic" mode: locks to screen refresh rate, vsync if fullscreen or refresh rate unknown
 - dissolve material/tile separation
 - be able to view shortcut geo outside of the geometry editor
 - does update checker notif window timing work?

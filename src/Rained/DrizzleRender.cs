@@ -361,8 +361,6 @@ class DrizzleRender : IDisposable
 
     private void StatusChanged(RenderStatus status)
     {
-        Log.Debug("Status changed");
-
         var stageEnum = status.Stage.Stage;
 
         camsDone = status.CountCamerasDone;

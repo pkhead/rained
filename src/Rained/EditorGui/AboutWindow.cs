@@ -75,7 +75,7 @@ static class AboutWindow
                 ImGui.BulletText(".NET: " + sysInfo.FrameworkName);
                 ImGui.BulletText("OS: " + sysInfo.OsName);
                 ImGui.BulletText("Architecture: " + sysInfo.Arch);
-                ImGui.BulletText("Graphics Card: " + sysInfo.GraphicsRenderer);
+                ImGui.BulletText("Renderer: " + sysInfo.GraphicsRenderer);
             }
             
             ImGui.SeparatorText("Libraries");
