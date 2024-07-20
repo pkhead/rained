@@ -235,111 +235,115 @@ class LevelView
             queuedEditMode = -1;
         }
         
-        if (IsWindowOpen && ImGui.Begin("Level"))
+        if (IsWindowOpen)
         {
-            var newEditMode = selectedMode;
-
-            // edit mode
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Edit Mode");
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 8f);
-            if (ImGui.BeginCombo("##EditMode", editorModes[selectedMode].Name))
+            if (ImGui.Begin("Level"))
             {
-                for (int i = 0; i < editorModes.Count; i++)
+                var newEditMode = selectedMode;
+
+                // edit mode
+                ImGui.AlignTextToFramePadding();
+                ImGui.Text("Edit Mode");
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 8f);
+                if (ImGui.BeginCombo("##EditMode", editorModes[selectedMode].Name))
                 {
-                    var isSelected = i == selectedMode;
-                    if (ImGui.Selectable(editorModes[i].Name, isSelected))
+                    for (int i = 0; i < editorModes.Count; i++)
                     {
-                        newEditMode = i;
+                        var isSelected = i == selectedMode;
+                        if (ImGui.Selectable(editorModes[i].Name, isSelected))
+                        {
+                            newEditMode = i;
+                        }
+
+                        if (isSelected)
+                            ImGui.SetItemDefaultFocus();
                     }
 
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
+                    ImGui.EndCombo();
                 }
 
-                ImGui.EndCombo();
-            }
-
-            ImGui.SameLine();
-            ImGui.TextUnformatted(StatusText);
-            StatusText = string.Empty;
-            WriteStatus($"Zoom: {Math.Floor(viewZoom * 100f)}%");
-            WriteStatus($"Mouse: ({MouseCx}, {MouseCy})");
-            //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
+                ImGui.SameLine();
+                ImGui.TextUnformatted(StatusText);
+                StatusText = string.Empty;
+                WriteStatus($"Zoom: {Math.Floor(viewZoom * 100f)}%");
+                WriteStatus($"Mouse: ({MouseCx}, {MouseCy})");
+                //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
 
 
-            if (!ImGui.GetIO().WantTextInput)
-            {
-                // scroll keybinds
-                var moveX = (EditorWindow.IsKeyDown(ImGuiKey.RightArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.LeftArrow)?1:0);
-                var moveY = (EditorWindow.IsKeyDown(ImGuiKey.DownArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.UpArrow)?1:0);
-                var moveSpeed = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
-                viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
-                viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
-
-                // edit mode keybinds
-                if (EditorWindow.IsKeyPressed(ImGuiKey._1))
-                    newEditMode = (int) EditModeEnum.Environment;
-                
-                if (EditorWindow.IsKeyPressed(ImGuiKey._2))
-                    newEditMode = (int) EditModeEnum.Geometry;
-                
-                if (EditorWindow.IsKeyPressed(ImGuiKey._3))
-                    newEditMode = (int) EditModeEnum.Tile;
-                
-                if (EditorWindow.IsKeyPressed(ImGuiKey._4))
-                    newEditMode = (int) EditModeEnum.Camera;
-                
-                if (EditorWindow.IsKeyPressed(ImGuiKey._5))
-                    newEditMode = (int) EditModeEnum.Light;
-                
-                if (EditorWindow.IsKeyPressed(ImGuiKey._6))
-                    newEditMode = (int) EditModeEnum.Effect;
-
-                if (EditorWindow.IsKeyPressed(ImGuiKey._7))
-                    newEditMode = (int) EditModeEnum.Prop;
-            }
-
-            // change edit mode if requested
-            if (newEditMode != selectedMode)
-            {
-                Log.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
-                editorModes[selectedMode].Unload();
-                selectedMode = newEditMode;
-                editorModes[selectedMode].Load();
-            }
-
-            // canvas widget
-            {
-                var regionMax = ImGui.GetWindowContentRegionMax();
-                var regionMin = ImGui.GetCursorPos();
-
-                int canvasW = (int)(regionMax.X - regionMin.X);
-                int canvasH = (int)(regionMax.Y - regionMin.Y);
-
-                canvasWidget.Resize(canvasW, canvasH);
-
-                for (int i = 0; i < 3; i++)
+                if (!ImGui.GetIO().WantTextInput)
                 {
-                    ref var renderTex = ref layerRenderTextures[i];
+                    // scroll keybinds
+                    var moveX = (EditorWindow.IsKeyDown(ImGuiKey.RightArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.LeftArrow)?1:0);
+                    var moveY = (EditorWindow.IsKeyDown(ImGuiKey.DownArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.UpArrow)?1:0);
+                    var moveSpeed = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
+                    viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
+                    viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
 
-                    if (renderTex.Texture.Width != canvasW || renderTex.Texture.Height != canvasH)
+                    // edit mode keybinds
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._1))
+                        newEditMode = (int) EditModeEnum.Environment;
+                    
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._2))
+                        newEditMode = (int) EditModeEnum.Geometry;
+                    
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._3))
+                        newEditMode = (int) EditModeEnum.Tile;
+                    
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._4))
+                        newEditMode = (int) EditModeEnum.Camera;
+                    
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._5))
+                        newEditMode = (int) EditModeEnum.Light;
+                    
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._6))
+                        newEditMode = (int) EditModeEnum.Effect;
+
+                    if (EditorWindow.IsKeyPressed(ImGuiKey._7))
+                        newEditMode = (int) EditModeEnum.Prop;
+                }
+
+                // change edit mode if requested
+                if (newEditMode != selectedMode)
+                {
+                    Log.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
+                    editorModes[selectedMode].Unload();
+                    selectedMode = newEditMode;
+                    editorModes[selectedMode].Load();
+                }
+
+                // canvas widget
+                {
+                    var regionMax = ImGui.GetWindowContentRegionMax();
+                    var regionMin = ImGui.GetCursorPos();
+
+                    int canvasW = (int)(regionMax.X - regionMin.X);
+                    int canvasH = (int)(regionMax.Y - regionMin.Y);
+
+                    canvasWidget.Resize(canvasW, canvasH);
+
+                    for (int i = 0; i < 3; i++)
                     {
-                        renderTex.Dispose();
-                        renderTex = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
-                    }
-                }
-                
-                if (!RainEd.Instance.IsLevelLocked)
-                {
-                    Raylib.BeginTextureMode(canvasWidget.RenderTexture);
-                    DrawCanvas();
-                    Raylib.EndTextureMode();
-                }
+                        ref var renderTex = ref layerRenderTextures[i];
 
-                canvasWidget.Draw();
+                        if (renderTex.Texture.Width != canvasW || renderTex.Texture.Height != canvasH)
+                        {
+                            renderTex.Dispose();
+                            renderTex = RlManaged.RenderTexture2D.Load(canvasW, canvasH);
+                        }
+                    }
+                    
+                    if (!RainEd.Instance.IsLevelLocked)
+                    {
+                        Raylib.BeginTextureMode(canvasWidget.RenderTexture);
+                        DrawCanvas();
+                        Raylib.EndTextureMode();
+                    }
+
+                    canvasWidget.Draw();
+                }
             }
+            ImGui.End();
         }
         
         editorModes[selectedMode].DrawToolbar();

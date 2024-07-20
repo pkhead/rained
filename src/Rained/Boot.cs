@@ -151,8 +151,19 @@ namespace RainEd
                     io.KeyRepeatDelay = 0.5f;
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-
-                    // get available fonts for imgui
+                    
+                    try
+                    {
+                        unsafe
+                        {
+                            io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("FreeType setup failed: {Exception}", e);
+                    }
+                    
                     Fonts.UpdateAvailableFonts();
                     Fonts.ReloadFonts();
                 };

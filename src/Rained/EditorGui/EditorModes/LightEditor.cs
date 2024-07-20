@@ -100,6 +100,8 @@ class LightEditor : IEditorMode
             ImGui.PopItemWidth();
 
             // draw light angle ring
+            var avail = ImGui.GetContentRegionAvail();
+            if (avail.X != 0) // this happens when the window first appears
             {
                 ImGui.NewLine();
 
@@ -113,7 +115,7 @@ class LightEditor : IEditorMode
 
                 var color = ImGui.ColorConvertFloat4ToU32( ImGui.GetStyle().Colors[(int) ImGuiCol.Text] );
 
-                var circleCenter = screenCursor + new Vector2(ImGui.GetContentRegionAvail().X / 2f, maxRadius);
+                var circleCenter = screenCursor + new Vector2(avail.X / 2f, maxRadius);
                 drawList.AddCircle(circleCenter, centerRadius, color); // draw center circle
                 drawList.AddCircle(circleCenter, radius, color); // draw distance circle
                 
@@ -126,7 +128,7 @@ class LightEditor : IEditorMode
                     color
                 );
 
-                ImGui.InvisibleButton("LightRing", new Vector2(ImGui.GetContentRegionAvail().X, maxRadius * 2f));
+                ImGui.InvisibleButton("LightRing", new Vector2(avail.X, maxRadius * 2f));
                 if (ImGui.IsItemActive())
                 {
                     isChangingParameters = true;

@@ -372,8 +372,9 @@ partial class TileEditor : IEditorMode
                 }
 
                 forceSelection = null;
+                ImGui.EndTabBar();
             }
-        }
+        } ImGui.End();
         
         // shift+tab to switch between tabs
         if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
