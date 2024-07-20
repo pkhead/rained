@@ -331,12 +331,12 @@ class LevelView
                     }
                 }
                 
-                //if (!RainEd.Instance.IsLevelLocked)
-                //{
+                if (!RainEd.Instance.IsLevelLocked)
+                {
                     Raylib.BeginTextureMode(canvasWidget.RenderTexture);
                     DrawCanvas();
                     Raylib.EndTextureMode();
-                //}
+                }
 
                 canvasWidget.Draw();
             }
