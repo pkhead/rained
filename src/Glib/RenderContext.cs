@@ -360,6 +360,8 @@ public sealed class RenderContext : IDisposable
 
         if (width != ScreenWidth || height != ScreenHeight)
         {
+            System.Diagnostics.Debug.WriteLine("Bgfx.reset");
+
             Bgfx.reset((uint)width, (uint)height, (uint)(VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
             ScreenWidth = width;
             ScreenHeight = height;
@@ -517,18 +519,25 @@ public sealed class RenderContext : IDisposable
         
         if (shader.HasUniform(Shader.ColorUniform))
             shader.SetUniform(Shader.ColorUniform, DrawColor);
-                
-        var programHandle = shader.Activate(WhiteTexture);
-        
-        mesh.ResetSliceSettings();
-        var state = SetupState() | mesh.Activate();
-        Bgfx.set_state((ulong)state, 0);
 
-        Matrix4x4 transformMat = TransformMatrix;
-        Bgfx.set_transform(&transformMat, 1);
+        try
+        {        
+            var programHandle = shader.Activate(WhiteTexture);
+            
+            mesh.ResetSliceSettings();
+            var state = SetupState() | mesh.Activate();
+            Bgfx.set_state((ulong)state, 0);
 
-        _viewHasSubmission = true;
-        Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            Matrix4x4 transformMat = TransformMatrix;
+            Bgfx.set_transform(&transformMat, 1);
+
+            _viewHasSubmission = true;
+            Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+        }
+        catch (InsufficientBufferSpaceException)
+        {
+            Bgfx.discard((byte)Bgfx.DiscardFlags.All);
+        }
     }
 
     /// <summary>
@@ -609,14 +618,21 @@ public sealed class RenderContext : IDisposable
                     
             var programHandle = shader.Activate(rctx.WhiteTexture);
             
-            var state = rctx.SetupState() | Mesh.Activate();
-            Bgfx.set_state((ulong)state, 0);
+            try
+            {
+                var state = rctx.SetupState() | Mesh.Activate();
+                Bgfx.set_state((ulong)state, 0);
 
-            Matrix4x4 transformMat = rctx.TransformMatrix;
-            Bgfx.set_transform(&transformMat, 1);
+                Matrix4x4 transformMat = rctx.TransformMatrix;
+                Bgfx.set_transform(&transformMat, 1);
 
-            rctx._viewHasSubmission = true;
-            Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+                rctx._viewHasSubmission = true;
+                Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            }
+            catch (InsufficientBufferSpaceException)
+            {
+                Bgfx.discard((byte)Bgfx.DiscardFlags.All);
+            }
         }
 
         /// <summary>
