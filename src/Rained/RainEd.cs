@@ -15,7 +15,7 @@ public class RainEdStartupException : Exception
 
 sealed class RainEd
 {
-    public const string Version = "v2.0.3";
+    public const string Version = "v2.0.4";
 
     public static RainEd Instance = null!;
 
