@@ -494,7 +494,7 @@ static class Raylib
     {
         RenderContext.Instance!.End();
 
-        if (!RenderContext.VSync)
+        if (!RenderContext.Instance!.VSync)
         {
             long targetFrameLenMs = (long)(targetFrameLength * 1000.0);
             var ms = frameStopwatch.ElapsedMilliseconds;

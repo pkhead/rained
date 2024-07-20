@@ -176,7 +176,34 @@ class UserPreferences
     public string Font { get; set; }
     public float ContentScale { get; set; }
     public bool ImGuiMultiViewport { get; set; }
-    
+    public bool Vsync { get; set; } = false;
+    public int RefreshRate { get; set; } = 0;
+
+    public Glib.RendererType Renderer = Glib.RendererType.Automatic;
+
+    [JsonPropertyName("renderer")]
+    public string RendererString
+    {
+        get => Renderer switch
+        {
+            Glib.RendererType.Direct3D11 => "Direct3D 11",
+            Glib.RendererType.Direct3D12 => "Direct3D 12",
+            Glib.RendererType.OpenGL => "OpenGL",
+            Glib.RendererType.Vulkan => "Vulkan",
+            Glib.RendererType.Metal => "Metal",
+            _ => ""
+        };
+        set => Renderer = value switch
+        {
+            "Direct3D 11" => Glib.RendererType.Direct3D11,
+            "Direct3D 12" => Glib.RendererType.Direct3D12,
+            "OpenGL" => Glib.RendererType.OpenGL,
+            "Vulkan" => Glib.RendererType.Vulkan,
+            "Metal" => Glib.RendererType.Metal,
+            _ => Glib.RendererType.Automatic
+        };
+    }
+
     public Dictionary<string, string> Shortcuts { get; set; }
     public List<string> RecentFiles { get; set; }
 

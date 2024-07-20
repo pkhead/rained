@@ -139,8 +139,7 @@ namespace RainEd
 
                 window = new Glib.Window(windowOptions);
                 RenderContext renderContext = null!;
-                
-                // get available fonts for imgui
+
                 void ImGuiConfigure()
                 {
                     WindowScale = window.ContentScale.Y;
@@ -153,19 +152,7 @@ namespace RainEd
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
-                    // this is the easiest way i figured to access preferences.json before
-                    // RainEd initialization, but it does result in preferences.json being
-                    // loaded twice 
-                    var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
-                    if (File.Exists(prefsFile))
-                    {
-                        var prefs = UserPreferences.LoadFromFile(prefsFile);
-                        if (prefs.ImGuiMultiViewport)
-                        {
-                            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
-                        }
-                    }
-
+                    // get available fonts for imgui
                     Fonts.UpdateAvailableFonts();
                     Fonts.ReloadFonts();
                 };
@@ -183,7 +170,16 @@ namespace RainEd
                             }
                         });
                     }*/
-                    renderContext = RenderContext.Init(window, false);
+                    UserPreferences? prefs = null;
+                    {
+                        var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
+                        if (File.Exists(prefsFile))
+                        {
+                            prefs = UserPreferences.LoadFromFile(prefsFile);
+                        }
+                    }
+
+                    renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
@@ -282,8 +278,18 @@ namespace RainEd
 #endif
                 {
                     Fonts.SetFont(app.Preferences.Font);
+
+                    // set initial target fps
                     var refreshRate = window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
-                    Raylib.SetTargetFPS(refreshRate);
+                    if (app.Preferences.RefreshRate == 0)
+                        app.Preferences.RefreshRate = refreshRate;
+                    Raylib.SetTargetFPS(app.Preferences.RefreshRate);
+
+                    // save renderer pref
+                    if (app.Preferences.Renderer == RendererType.Automatic)
+                    {
+                        app.Preferences.Renderer = RenderContext.Instance!.GpuRendererType;
+                    }
 
                     while (app.Running)
                     {

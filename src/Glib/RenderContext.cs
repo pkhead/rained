@@ -54,6 +54,16 @@ public enum DebugSeverity
     High
 };
 
+public enum RendererType
+{
+    Automatic,
+    Direct3D11,
+    Direct3D12,
+    OpenGL,
+    Vulkan,
+    Metal
+}
+
 public sealed class RenderContext : IDisposable
 {
     public static RenderContext? Instance { get; private set; } = null;
@@ -104,6 +114,7 @@ public sealed class RenderContext : IDisposable
 
     public readonly string GpuVendor;
     public readonly string GpuRenderer;
+    public readonly RendererType GpuRendererType;
 
     private CallbackInterface _cbInterface;
     private Window _mainWindow;
@@ -152,7 +163,8 @@ public sealed class RenderContext : IDisposable
         }
     }
 
-    public static bool VSync { get; set; } = true;
+    public bool VSync { get; set; } = true;
+    private bool _vsync;
     private List<(uint frameEnd, TaskCompletionSource tcs)> _waitingRequests = [];
 
     internal static void GetHandles(IWindow silkWindow, out nint nwh, out nint ndt, out Bgfx.NativeWindowHandleType type)
@@ -194,12 +206,15 @@ public sealed class RenderContext : IDisposable
         }
     }
 
-    private unsafe RenderContext(Window mainWindow)
+    private unsafe RenderContext(Window mainWindow, bool vsync, RendererType renderType)
     {
         if (Instance is not null)
         {
             throw new NotImplementedException("No more than one main window allowed");
         }
+
+        VSync = vsync;
+        _vsync = vsync;
 
         Instance = this;
         _mainWindow = mainWindow;
@@ -220,11 +235,14 @@ public sealed class RenderContext : IDisposable
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
 
-#if DEBUG
-        init.type = Bgfx.RendererType.Direct3D11;
-#else
-        init.type = Bgfx.RendererType.Count;
-#endif
+        init.type = renderType switch
+        {
+            RendererType.Direct3D11 => Bgfx.RendererType.Direct3D11,
+            RendererType.Direct3D12 => Bgfx.RendererType.Direct3D12,
+            RendererType.OpenGL => Bgfx.RendererType.OpenGL,
+            RendererType.Vulkan => Bgfx.RendererType.Vulkan,
+            _ => Bgfx.RendererType.Count
+        };
         init.callback = _cbInterface.Pointer;
 
         GetHandles(mainWindow.SilkWindow, out nint nwh, out nint ndt, out var windowType);
@@ -251,6 +269,16 @@ public sealed class RenderContext : IDisposable
 
             var caps = Bgfx.get_caps();
             GpuVendor = ((Bgfx.PciIdFlags)caps->vendorId).ToString();
+
+            GpuRendererType = rendererId switch
+            {
+                Bgfx.RendererType.Direct3D11 => RendererType.Direct3D11,
+                Bgfx.RendererType.Direct3D12 => RendererType.Direct3D12,
+                Bgfx.RendererType.OpenGL => RendererType.OpenGL,
+                Bgfx.RendererType.Vulkan => RendererType.Vulkan,
+                Bgfx.RendererType.Metal => RendererType.Metal,
+                _ => RendererType.Automatic
+            };
 
             var swapChainSupported = (caps->supported & (ulong)Bgfx.CapsFlags.SwapChain) != 0;
             Console.WriteLine("renderer: " + GpuRenderer);
@@ -280,12 +308,11 @@ public sealed class RenderContext : IDisposable
     /// </summary>
     /// <param name="mainWindow">The main window of the render context.</param>
     /// <param name="vsync">Whether or not Vsync should be enabled.</param>
+    /// <param name="renderer">Desired renderer type</param>
     /// <returns>The singleton RenderContext</returns>
-    public static RenderContext Init(Window mainWindow, bool? vsync = null)
+    public static RenderContext Init(Window mainWindow, bool vsync = true, RendererType renderer = RendererType.Automatic)
     {
-        var rctx = new RenderContext(mainWindow);
-        VSync = vsync ?? VSync;
-        return rctx;
+        return new RenderContext(mainWindow, vsync, renderer);
     }
 
     public void AddWindow(Window window)
@@ -358,13 +385,24 @@ public sealed class RenderContext : IDisposable
 
         uint bgCol = ColorToUint(BackgroundColor);
 
+        bool reset = false;
         if (width != ScreenWidth || height != ScreenHeight)
         {
-            System.Diagnostics.Debug.WriteLine("Bgfx.reset");
-
-            Bgfx.reset((uint)width, (uint)height, (uint)(VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
+            reset = true;
             ScreenWidth = width;
             ScreenHeight = height;
+        }
+
+        if (_vsync != VSync)
+        {
+            reset = true;
+            _vsync = VSync;
+        }
+
+        if (reset)
+        {
+            System.Diagnostics.Debug.WriteLine("Bgfx.reset");
+            Bgfx.reset((uint)ScreenWidth, (uint)ScreenHeight, (uint)(_vsync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
         }
 
         // update window sizes
