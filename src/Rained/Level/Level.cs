@@ -387,9 +387,13 @@ partial class Level
         {
             return cell.TileHead;
         }
-        else
+        else if (IsInBounds(cell.TileRootX, cell.TileRootY))
         {
             return Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead;
+        }
+        else
+        {
+            return null;
         }
     }
 

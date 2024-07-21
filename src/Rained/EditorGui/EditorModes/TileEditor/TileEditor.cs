@@ -42,6 +42,13 @@ partial class TileEditor : IEditorMode
     private int lastPlaceY = -1;
     private int lastPlaceL = -1;
 
+
+    // this bool makes it so only one item (material, tile) can be removed
+    // while the momuse is hovered over the same cell
+    private bool removedOnSameCell = false;
+    private int lastMouseX = -1;
+    private int lastMouseY = -1;
+
     // rect fill start
     private CellPosition rectStart;
 
@@ -57,6 +64,7 @@ partial class TileEditor : IEditorMode
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
             chainHolderMode = false;
+            removedOnSameCell = false;
         };
     }
 
@@ -214,6 +222,13 @@ partial class TileEditor : IEditorMode
         levelRender.RenderGrid();
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
+
+        if (lastMouseX != window.MouseCx || lastMouseY != window.MouseCy)
+        {
+            lastMouseX = window.MouseCx;
+            lastMouseY = window.MouseCy;
+            removedOnSameCell = false;
+        }
         
         modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
         forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
@@ -330,7 +345,7 @@ partial class TileEditor : IEditorMode
                         tileX = mouseCell.TileRootX;
                         tileY = mouseCell.TileRootY;
 
-                        if (level.Layers[tileLayer, tileX, tileY].TileHead is null)
+                        if (!level.IsInBounds(tileX, tileY) || level.Layers[tileLayer, tileX, tileY].TileHead is null)
                             ImGui.SetTooltip("Detached tile body");
                     }
 
@@ -380,10 +395,13 @@ partial class TileEditor : IEditorMode
                     }
 
                     // remove tile on right click
-                    if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
+                    if (!removedOnSameCell && isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                     {
                         if (selectionMode == SelectionMode.Tiles || (selectionMode == SelectionMode.Materials && !disallowMatOverwrite))
+                        {
+                            removedOnSameCell = true;
                             level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
+                        }
                     }
                 }
             }
@@ -575,7 +593,7 @@ partial class TileEditor : IEditorMode
                     placeMode = 2;
             }
             
-            if (placeMode != 0)
+            if (placeMode != 0 && (placeMode == 1 || !removedOnSameCell))
             {
                 // place or remove materials inside cursor
                 for (int x = cursorLeft; x <= window.MouseCx + materialBrushSize / 2; x++)
@@ -611,6 +629,7 @@ partial class TileEditor : IEditorMode
                                 }
 
                                 cell.Material = 0;
+                                removedOnSameCell = true;
                             }
                         }
                     }
@@ -860,12 +879,13 @@ partial class TileEditor : IEditorMode
             }
 
             // remove material under mouse cursor
-            if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && level.IsInBounds(window.MouseCx, window.MouseCy))
+            if (!removedOnSameCell && isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && level.IsInBounds(window.MouseCx, window.MouseCy))
             {
                 ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
                 if (!cell.HasTile() && !disallowMatOverwrite)
                 {
                     cell.Material = 0;
+                    removedOnSameCell = true;
                 }
             }
         }
