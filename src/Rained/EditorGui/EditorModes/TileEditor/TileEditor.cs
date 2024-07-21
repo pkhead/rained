@@ -795,10 +795,11 @@ partial class TileEditor : IEditorMode
                 new Vector2(selectedTile.Width, selectedTile.Height) * Level.TileSize
             );
 
-            var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(selectedTile);
-            if (previewTexture is not null)
+            var tileTexFound = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(selectedTile, out var previewTexture, out var previewRect);
+            if (tileTexFound)
             {
-                srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
+                //srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
+                srcRect = previewRect!.Value;
             }
             else
             {

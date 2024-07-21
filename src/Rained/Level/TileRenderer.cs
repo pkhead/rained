@@ -147,7 +147,7 @@ class TileRenderer
                     rectPos.Y + rectSize.Y > viewT
                 )
                 {
-                    var previewTexture = gfxProvider.GetTilePreviewTexture(init);
+                    var previewTextureFound = gfxProvider.GetTilePreviewTexture(init, out var previewTexture, out var previewSrcRect);
                     var col = previewTexture is null ? Color.White : init.Category.Color;
                     var drawColor = new Color(col.R, col.G, col.B, alpha);
 
@@ -204,9 +204,10 @@ class TileRenderer
                                     (cell.TileRootX == tileRender.X && cell.TileRootY == tileRender.Y && cell.TileLayer == tileRender.Layer)
                                 )
                                 {
+                                    var srcRect = previewSrcRect!.Value;
                                     Raylib.DrawTexturePro(
                                         previewTexture,
-                                        new Rectangle(x * 16f, y * 16f, 16f, 16f),
+                                        new Rectangle(srcRect.X + x * 16f, srcRect.Y + y * 16f, 16f, 16f),
                                         new Rectangle(gx * Level.TileSize, gy * Level.TileSize, Level.TileSize, Level.TileSize),
                                         Vector2.Zero,
                                         0f,
@@ -290,11 +291,11 @@ class TileRenderer
 
                     var tileLeft = tx - tile.CenterX;
                     var tileTop = ty - tile.CenterY;
-                    var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
+                    RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var previewRect);
                     var col = previewTexture is null ? Color.White : tile.Category.Color;
 
                     var srcRect = previewTexture is not null
-                        ? new Rectangle((x - tileLeft) * 16, (y - tileTop) * 16, 16, 16)
+                        ? new Rectangle(previewRect!.Value.X + (x - tileLeft) * 16, previewRect!.Value.Y + (y - tileTop) * 16, 16, 16)
                         : new Rectangle((x - tileLeft) * 2, (y - tileTop) * 2, 2, 2); 
 
                     Raylib.DrawTexturePro(

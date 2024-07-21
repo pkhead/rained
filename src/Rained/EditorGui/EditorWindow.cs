@@ -429,6 +429,8 @@ static class EditorWindow
         LuaInterface.ShowLogs();
         EmergencySaveWindow.ShowWindow();
         GuideViewerWindow.ShowWindow();
+
+        RainEd.Instance.AssetGraphics.Test();
     }
 
     /// <summary>

@@ -258,9 +258,9 @@ partial class TileEditor : IEditorMode
                             {
                                 ImGui.BeginTooltip();
 
-                                var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
-                                if (previewTexture is not null)
-                                    ImGuiExt.Image(previewTexture, tile.Category.Color);
+                                var previewTexFound = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var previewRect);
+                                if (previewTexFound && previewTexture is not null && previewRect is not null)
+                                    ImGuiExt.ImageRect(previewTexture!, previewRect!.Value!.Width, previewRect.Value.Height!, previewRect.Value, tile.Category.Color);
                                 else
                                     ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
 

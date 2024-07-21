@@ -1,13 +1,52 @@
 namespace RainEd;
+
+using ImGuiNET;
 using Raylib_cs;
 
 class AssetGraphicsProvider
 {
     private readonly Dictionary<string, RlManaged.Texture2D?> tileTexCache = [];
     private readonly Dictionary<string, RlManaged.Texture2D?> propTexCache = [];
+    private readonly Dictionary<string, RlManaged.Image> _loadedTilePreviews = [];
 
     // tile previews are separate images...
-    private readonly Dictionary<string, RlManaged.Texture2D?> previewTexCache = [];
+    //private readonly Dictionary<string, RlManaged.Texture2D?> previewTexCache = [];
+
+    private const int AtlasTextureWidth = 1024;
+    private const int AtlasTextureHeight = 1024;
+    private const int MaxRectsPerAtlas = 1024;
+
+    struct PackingRectangle(uint x, uint y, uint w, uint h, int id)
+    {
+        public uint X = x;
+        public uint Y = y;
+        public uint Width = w;
+        public uint Height = h;
+        public int ID = id;
+    }
+
+    private class TilePreviewAtlas
+    {
+        public RlManaged.Texture2D texture;
+        public PackingRectangle[] rectangles;
+        public List<string> tiles = [];
+        public int rectangleCount;
+
+        public uint curX = 0;
+        public uint curY = 0;
+        public uint rowHeight = 0;
+
+        public TilePreviewAtlas()
+        {
+            using var img = RlManaged.Image.GenColor(AtlasTextureWidth, AtlasTextureHeight, Color.Blank);
+            texture = RlManaged.Texture2D.LoadFromImage(img);
+            rectangleCount = 0;
+            rectangles = new PackingRectangle[MaxRectsPerAtlas];
+        }
+    }
+
+    private readonly List<TilePreviewAtlas> _tilePreviewAtlases = [];
+    private readonly Dictionary<string, (int atlasIndex, int rectId)> _tilePreviewRects = [];
 
     // Does Path.Combine(directory, query)
     // On Linux, it does extra processing to account for the fact that
@@ -116,18 +155,90 @@ class AssetGraphicsProvider
         return texture;
     }
 
+    private void AddTilePreview(string tileName)
+    {
+        if (_tilePreviewAtlases.Count == 0)
+        {
+            _tilePreviewAtlases.Add(new TilePreviewAtlas());
+        }
+
+        var atlas = _tilePreviewAtlases[^1];
+        if (atlas.rectangleCount >= MaxRectsPerAtlas)
+        {
+            atlas = new TilePreviewAtlas();
+            _tilePreviewAtlases.Add(atlas);
+        }
+
+        var image = _loadedTilePreviews[tileName];
+
+        var newRect = new PackingRectangle(
+            0, 0,
+            (uint)image.Width + 2, (uint)image.Height + 2,
+            id: atlas.rectangleCount
+        );
+
+        // ran out of space on this row, move to the next one
+        if (atlas.curX + newRect.Width >= AtlasTextureWidth)
+        {
+            atlas.curX = 0;
+            atlas.curY += atlas.rowHeight;
+            atlas.rowHeight = 0;
+        }
+
+        // ran out of space for the entire atlas texture, create another one
+        if (atlas.curY + newRect.Height >= AtlasTextureHeight)
+        {
+            atlas = new TilePreviewAtlas();
+            _tilePreviewAtlases.Add(atlas);
+            newRect.ID = atlas.rectangleCount;
+        }
+        
+        newRect.X = atlas.curX;
+        newRect.Y = atlas.curY;
+        atlas.rectangles[atlas.rectangleCount] = newRect;
+        atlas.rectangleCount++;
+
+        atlas.curX += newRect.Width;
+        atlas.rowHeight = Math.Max(atlas.rowHeight, newRect.Height);
+
+        /*var activeRectangles = new Span<PackingRectangle>(atlas.rectangles, 0, atlas.rectangleCount);
+        RectanglePacker.Pack(
+            activeRectangles, out var _,
+            maxBoundsWidth: AtlasTextureWidth, maxBoundsHeight: AtlasTextureHeight
+        );*/
+
+        _tilePreviewRects.Add(tileName, (_tilePreviewAtlases.Count - 1, atlas.rectangleCount - 1));
+        atlas.tiles.Add(tileName);
+
+        // update atlas image
+        //atlas.idIndices = new int[atlas.rectangleCount];
+        
+        var tileImg = _loadedTilePreviews[atlas.tiles[newRect.ID]];
+
+        System.Diagnostics.Debug.Assert(newRect.Width - 2 == tileImg.Width && newRect.Height - 2 == tileImg.Height);
+        
+        //Raylib.UpdateTexture(atlas.texture, tileImg);
+        atlas.texture.GlibTexture.UpdateFromImage(((Image)tileImg).image!, newRect.X + 1, newRect.Y + 1);
+    }
+
     /// <summary>
     /// Obtain the texture of a tile's preview texture. May be cached.
     /// </summary>
     /// <param name="tile">The tile whose data is used to obtain the preview texture.</param>
-    /// <returns>The tile preview texture, or null if the graphics file was invalid or not found.</returns>
-    public RlManaged.Texture2D? GetTilePreviewTexture(Tiles.Tile tile)
-    {
+    /// <param name="texture">The texture to use to draw the tile.</param>
+    /// <param name="rect">The UV rectangle</param>
+    /// <returns>False if the graphics file was invalid or not found, otherwise true.</returns>
+    public bool GetTilePreviewTexture(Tiles.Tile tile, out RlManaged.Texture2D? texture, out Rectangle? rect)
+    {        
         // if texture already exists in cache,
         // return that instead of processing it again
-        if (previewTexCache.TryGetValue(tile.Name, out RlManaged.Texture2D? outTexture))
+        if (_tilePreviewRects.TryGetValue(tile.Name, out var cacheData))
         {
-            return outTexture;
+            var atlas = _tilePreviewAtlases[cacheData.atlasIndex];
+            texture = atlas.texture;
+            var packRect = atlas.rectangles[cacheData.rectId];
+            rect = new Rectangle(packRect.X + 1, packRect.Y + 1, packRect.Width - 2, packRect.Height - 2);
+            return true;
         }
 
         var graphicsPath = GetFilePath(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics"), tile.Name + ".png");
@@ -156,7 +267,7 @@ class AssetGraphicsProvider
             if (previewRect.Y + previewRect.Height > fullImage.Height)
                 previewRect.Height = fullImage.Height - previewRect.Y;
 
-            using var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
+            var previewImage = RlManaged.Image.GenColor(tile.Width * 16, tile.Height * 16, Color.White);
             previewImage.Format(PixelFormat.UncompressedR8G8B8A8);
 
             if (previewRect.Height > 0) // thanks, huge tnak.
@@ -186,17 +297,29 @@ class AssetGraphicsProvider
                 }
             }
 
-            outTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+            //outTexture = RlManaged.Texture2D.LoadFromImage(previewImage);
+            _loadedTilePreviews.Add(tile.Name, previewImage);
+            AddTilePreview(tile.Name);
+
+            cacheData = _tilePreviewRects[tile.Name];
+            var atlas = _tilePreviewAtlases[cacheData.atlasIndex];
+            texture = atlas.texture;
+            var packRect = atlas.rectangles[cacheData.rectId];
+            rect = new Rectangle(packRect.X + 1, packRect.Y + 1, packRect.Width - 2, packRect.Height - 2);
+            return true;
         }
         else
         {
             // tile graphics could not be loaded
             Log.Warning($"Preview image {graphicsPath} is invalid or missing!");
-            outTexture = null;
+
+            texture = null;
+            rect = null;
+            return false;
         }
 
-        previewTexCache.Add(tile.Name, outTexture);
-        return outTexture;
+        //previewTexCache.Add(tile.Name, outTexture);
+        //return outTexture;
     }
 
     /// <summary>
@@ -285,5 +408,16 @@ class AssetGraphicsProvider
             Raylib.ImageCrop(ref sourceImage.Ref(), new Rectangle(imgMinX, imgMinY, width, height));
             return true;
         }
+    }
+
+    public void Test()
+    {
+        if (ImGui.Begin("Test window", ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            for (int i = 0; i < _tilePreviewAtlases.Count; i++)
+            {
+                ImGuiExt.ImageSize(_tilePreviewAtlases[i].texture, AtlasTextureWidth, AtlasTextureHeight);
+            }
+        } ImGui.End();
     }
 }
