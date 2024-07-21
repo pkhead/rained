@@ -756,7 +756,7 @@ public sealed class RenderContext : IDisposable
         }
 
         Bgfx.set_view_clear(curViewId, (ushort)bclearFlags, colorUint, 1f, 0);
-        if (_viewHasSubmission)
+        if (!_viewHasSubmission)
         {
             Bgfx.touch(curViewId);
             _viewHasSubmission = true;
