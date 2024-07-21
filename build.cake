@@ -153,10 +153,11 @@ Task("Build")
     .IsDependentOn("Build Shaders")
     .Does(() =>
 {
-    DotNetBuild("src/Rained/Rained.csproj", new DotNetBuildSettings
-    {
-        Configuration = Argument("Configuration", "Debug")
-    });
+    var buildSettings = new DotNetBuildSettings();
+    var config = Argument("Configuration", "Debug");
+    if (config != "Debug") buildSettings.Configuration = config;
+
+    DotNetBuild("src/Rained/Rained.csproj", buildSettings);
 });
 
 Task("DotNetPublish")
