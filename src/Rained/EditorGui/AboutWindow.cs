@@ -104,6 +104,11 @@ static class AboutWindow
             ImGuiExt.LinkText("bgfx", "https://github.com/bkaradzic/bgfx");
             ImGui.SameLine();
             ImGui.Text("(c) 2020-2024 Branimir Karadzic - BSD 2-Clause License");
+
+            ImGui.Bullet();
+            ImGuiExt.LinkText("RectpackSharp", "https://github.com/ThomasMiz/RectpackSharp");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2020 ThomasMiz - MIT License");
             
             ImGui.EndPopup();
         }
