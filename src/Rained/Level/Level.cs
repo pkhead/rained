@@ -464,6 +464,7 @@ partial class Level
                     if (IsInBounds(oldX, oldY))
                     {
                         var oldCell = oldLayers[l,oldX,oldY];
+                        Layers[l,x,y] = oldCell;
 
                         // completely remove any tiles where the tile head
                         // is now out of bounds
@@ -486,8 +487,6 @@ partial class Level
                                 Layers[l,x,y].TileRootY = rootY;
                             }
                         }
-
-                        Layers[l,x,y] = oldCell;
                     }
 
                     // this cell is not in the bounds of the old level,
