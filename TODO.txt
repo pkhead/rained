@@ -6,6 +6,7 @@ Bugs:
 - reported crash in asset manager due to queues or something
 - fix double resource disposal on window close
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
+- add tile and can't remove it until you move your mouse
 
 Overall:
 - dissolve material/tile separation
