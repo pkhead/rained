@@ -91,7 +91,7 @@ internal class DrawBatch
         {
             if (Bgfx.get_avail_transient_vertex_buffer((uint)vertexCount, layout) < vertexCount)
             {
-                System.Diagnostics.Debug.WriteLine("Not enough transient vertex buffer space for the draw batch");
+                RenderContext.LogError("Not enough transient vertex buffer space for the draw batch");
                 vertexCount = 0;
                 indexCount = 0;
                 CurrentIndex = 0;
@@ -100,7 +100,7 @@ internal class DrawBatch
 
             if (Bgfx.get_avail_transient_index_buffer((uint)indexCount, true) < indexCount)
             {
-                System.Diagnostics.Debug.WriteLine("Not enough transient index buffer space for the draw batch");
+                RenderContext.LogError("Not enough transient index buffer space for the draw batch");
                 vertexCount = 0;
                 indexCount = 0;
                 CurrentIndex = 0;

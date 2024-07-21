@@ -665,7 +665,6 @@ public class Mesh : Resource
                     {
                         if (Bgfx.get_avail_transient_vertex_buffer(_elemCounts[i], layout) < _elemCounts[i])
                         {
-                            Debug.WriteLine("Not enough transient vertex buffer space for mesh render");
                             throw new InsufficientBufferSpaceException("Not enough transient vertex buffer space for mesh render");
                         }
 
@@ -710,7 +709,6 @@ public class Mesh : Resource
                 {
                     if (Bgfx.get_avail_transient_index_buffer((uint)count, _config.Use32BitIndices) < count)
                     {
-                        Debug.WriteLine("Not enough transient index buffer space for mesh render");
                         throw new InsufficientBufferSpaceException("Not enough transient vertex buffer space for mesh render");
                     }
 
@@ -821,8 +819,6 @@ public class Mesh : Resource
 
     protected override void FreeResources(bool disposing)
     {
-        Console.WriteLine("Free mesh handles");
-
         foreach (var buffer in staticBuffers)
         {
             Bgfx.destroy_vertex_buffer(buffer);

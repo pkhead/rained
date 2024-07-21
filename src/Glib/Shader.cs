@@ -67,7 +67,6 @@ public class Shader : Resource
                 if (!_uniformHandles.ContainsKey(uName))
                 {
                     _uniformHandles[uName] = (handle, uniformInfo.type);
-                    Console.WriteLine(uName);
 
                     if (uniformInfo.type == Bgfx.UniformType.Sampler)
                     {
@@ -78,7 +77,6 @@ public class Shader : Resource
         }
 
         // get uniform handles
-        Console.WriteLine("New shader");
         uniformCount = Bgfx.get_shader_uniforms(vsh, uniformHandles, 64);
         ParseUniformHandles();
         uniformCount = Bgfx.get_shader_uniforms(fsh, uniformHandles, 64);
@@ -367,7 +365,7 @@ public class Shader : Resource
             var texHandle = texture.Handle;
             if (!texHandle.Valid)
             {
-                Console.WriteLine("WARNING: Texture handle was invalid!");
+                RenderContext.Instance!.Log?.Invoke(LogLevel.Error, "Texture handle was invalid!");
                 texture = placeholderTexture;
             }
 

@@ -38,6 +38,13 @@ public enum CullMode {
     Counterclockwise,
 }
 
+public enum LogLevel
+{
+    Debug,
+    Information,
+    Error
+}
+
 [Flags]
 public enum RenderFlags : int
 {
@@ -95,6 +102,11 @@ public sealed class RenderContext : IDisposable
     public ref Color DrawColor => ref _drawBatch.DrawColor;
     public Shader? Shader { get => _drawBatch.Shader; set => _drawBatch.Shader = value; }
     public uint Frame { get; internal set; } = 0;
+
+    public Action<LogLevel, string>? Log;
+
+    internal static void LogInfo(string msg) => Instance!.Log?.Invoke(LogLevel.Information, msg);
+    internal static void LogError(string msg) => Instance!.Log?.Invoke(LogLevel.Error, msg);
 
     /// <summary>
     /// If Glib should use GL_LINES primitives for drawing lines.
@@ -221,11 +233,15 @@ public sealed class RenderContext : IDisposable
 
         _cbInterface = new CallbackInterface()
         {
-            Log = (string msg) => Console.WriteLine(msg),
+            Log = (string msg) =>
+            {
+                Log?.Invoke(LogLevel.Debug, msg);
+            },
 
             Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) =>
             {
-                Console.WriteLine($"BGFX: FATAL: {filePath}:{line} ({code}): {msg}");
+                var str = $"{filePath}:{line} ({code}): {msg}";
+                Log?.Invoke(LogLevel.Error, str);
             }
         };
 
@@ -279,10 +295,6 @@ public sealed class RenderContext : IDisposable
                 Bgfx.RendererType.Metal => RendererType.Metal,
                 _ => RendererType.Automatic
             };
-
-            var swapChainSupported = (caps->supported & (ulong)Bgfx.CapsFlags.SwapChain) != 0;
-            Console.WriteLine("renderer: " + GpuRenderer);
-            Console.WriteLine("swap chain supported: " + swapChainSupported);
         }
 
         defaultShader = new Shader();
@@ -402,7 +414,6 @@ public sealed class RenderContext : IDisposable
 
         if (reset)
         {
-            System.Diagnostics.Debug.WriteLine("Bgfx.reset");
             Bgfx.reset((uint)ScreenWidth, (uint)ScreenHeight, (uint)(_vsync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
         }
 
@@ -412,7 +423,6 @@ public sealed class RenderContext : IDisposable
             var (win, fb) = _windows[i];
             if (win.PixelWidth != fb.Width || win.PixelHeight != fb.Height)
             {
-                System.Diagnostics.Debug.WriteLine($"Window {i} was resized");
                 fb.Dispose();
                 _windows[i] = (win, new Framebuffer(win));
             }
@@ -573,8 +583,9 @@ public sealed class RenderContext : IDisposable
             _viewHasSubmission = true;
             Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
         }
-        catch (InsufficientBufferSpaceException)
+        catch (InsufficientBufferSpaceException e)
         {
+            LogError(e.Message);
             Bgfx.discard((byte)Bgfx.DiscardFlags.All);
         }
     }
@@ -668,8 +679,9 @@ public sealed class RenderContext : IDisposable
                 rctx._viewHasSubmission = true;
                 Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
             }
-            catch (InsufficientBufferSpaceException)
+            catch (InsufficientBufferSpaceException e)
             {
+                LogError(e.Message);
                 Bgfx.discard((byte)Bgfx.DiscardFlags.All);
             }
         }

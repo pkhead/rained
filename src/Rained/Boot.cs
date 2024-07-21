@@ -191,6 +191,16 @@ namespace RainEd
                     }
 
                     renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
+                    renderContext.Log = (LogLevel logLevel, string msg) =>
+                    {
+                        if (logLevel == LogLevel.Debug)
+                            Log.Debug(msg);
+                        else if (logLevel == LogLevel.Information)
+                            Log.Information("GL: " + msg);
+                        else if (logLevel == LogLevel.Error)
+                            Log.Error("GL: " + msg);
+                    };
+
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 

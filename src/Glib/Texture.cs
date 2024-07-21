@@ -465,32 +465,4 @@ public class ReadableTexture : Texture
             }
         }
     }
-
-    /*public unsafe Image GetImage()
-    {
-        if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
-
-        byte* mem = null;
-
-        try
-        {
-            Bgfx.TextureInfo texInfo = new();
-            Bgfx.calc_texture_size(&texInfo, (ushort)Width, (ushort)Height, 0, false, false, 1, BgfxTextureFormat);
-            mem = (byte*) NativeMemory.Alloc((nuint)texInfo.storageSize);
-            Bgfx.read_texture(Handle, mem, 0);
-
-            if (BgfxTextureFormat == Bgfx.TextureFormat.RGBA8)
-            {
-            }
-            else
-            {
-                throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
-            }
-        }
-        finally
-        {
-            if (mem != null)
-                NativeMemory.Free(mem);
-        }
-    }*/
 }
