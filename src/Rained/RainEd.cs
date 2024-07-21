@@ -642,6 +642,8 @@ sealed class RainEd
         if (Raylib.WindowShouldClose())
             EditorWindow.PromptUnsavedChanges(() => Running = false);
         
+        AssetGraphics.Maintenance();
+        
         foreach (var f in deferredActions) f();
         deferredActions.Clear();
 

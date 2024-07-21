@@ -2,6 +2,7 @@ namespace RainEd;
 
 using ImGuiNET;
 using Raylib_cs;
+using RectpackSharp;
 
 class AssetGraphicsProvider
 {
@@ -12,29 +13,26 @@ class AssetGraphicsProvider
     // tile previews are separate images...
     //private readonly Dictionary<string, RlManaged.Texture2D?> previewTexCache = [];
 
-    private const int AtlasTextureWidth = 1024;
-    private const int AtlasTextureHeight = 1024;
-    private const int MaxRectsPerAtlas = 1024;
-
-    struct PackingRectangle(uint x, uint y, uint w, uint h, int id)
-    {
-        public uint X = x;
-        public uint Y = y;
-        public uint Width = w;
-        public uint Height = h;
-        public int ID = id;
-    }
+    private const int AtlasTextureWidth = 2048;
+    private const int AtlasTextureHeight = 2048;
+    private const int MaxRectsPerAtlas = 2048;
 
     private class TilePreviewAtlas
     {
         public RlManaged.Texture2D texture;
         public PackingRectangle[] rectangles;
         public List<string> tiles = [];
+        public int[] idIndices;
         public int rectangleCount;
 
         public uint curX = 0;
         public uint curY = 0;
         public uint rowHeight = 0;
+
+        public uint packWidth = 0;
+        public uint packHeight = 0;
+
+        public bool dirty = false;
 
         public TilePreviewAtlas()
         {
@@ -42,6 +40,7 @@ class AssetGraphicsProvider
             texture = RlManaged.Texture2D.LoadFromImage(img);
             rectangleCount = 0;
             rectangles = new PackingRectangle[MaxRectsPerAtlas];
+            idIndices = new int[MaxRectsPerAtlas];
         }
     }
 
@@ -155,6 +154,43 @@ class AssetGraphicsProvider
         return texture;
     }
 
+    private bool PackAtlas(TilePreviewAtlas atlas)
+    {
+        var activeRects = new Span<PackingRectangle>(atlas.rectangles, 0, atlas.rectangleCount);
+        RectanglePacker.Pack(activeRects, out PackingRectangle bounds, PackingHints.FindBest, maxBoundsWidth: AtlasTextureWidth, maxBoundsHeight: AtlasTextureHeight);
+
+        if (bounds.Width <= 0 || bounds.Height <= 0 || bounds.Width > AtlasTextureWidth || bounds.Height > AtlasTextureHeight)
+        {
+            return false;
+        }
+        else
+        {
+            atlas.packWidth = bounds.X + bounds.Width;
+            atlas.packHeight = bounds.Y + bounds.Height;
+            atlas.curX = atlas.packWidth;
+            atlas.curY = 0;
+            var tex = atlas.texture.GlibTexture;
+
+            {
+                using var resetImg = RlManaged.Image.GenColor(AtlasTextureWidth, AtlasTextureHeight, Color.Blank);
+                Raylib.UpdateTexture(atlas.texture, resetImg);
+            }
+            
+            for (int i = 0; i < activeRects.Length; i++)
+            {
+                ref var rect = ref activeRects[i];
+                atlas.idIndices[rect.Id] = i;
+
+                var tileName = atlas.tiles[rect.Id];
+                var tileImg = _loadedTilePreviews[tileName];
+                System.Diagnostics.Debug.Assert(rect.Width - 2 == tileImg.Width && rect.Height - 2 == tileImg.Height);
+                tex.UpdateFromImage(((Image)tileImg).image!, rect.X + 1, rect.Y + 1);
+            }
+
+            return true;
+        }
+    }
+
     private void AddTilePreview(string tileName)
     {
         if (_tilePreviewAtlases.Count == 0)
@@ -163,62 +199,89 @@ class AssetGraphicsProvider
         }
 
         var atlas = _tilePreviewAtlases[^1];
-        if (atlas.rectangleCount >= MaxRectsPerAtlas)
+        if (atlas.rectangleCount + 1 >= MaxRectsPerAtlas)
         {
             atlas = new TilePreviewAtlas();
             _tilePreviewAtlases.Add(atlas);
         }
 
-        var image = _loadedTilePreviews[tileName];
+        var tileImg = _loadedTilePreviews[tileName];
 
+        // perform a super simple addition of the the image into the texture.
+        // this doesn't do packing, it just adds it to the easiest to find empty space,
+        // since packing is only done once per frame
         var newRect = new PackingRectangle(
             0, 0,
-            (uint)image.Width + 2, (uint)image.Height + 2,
+            (uint)tileImg.Width + 2, (uint)tileImg.Height + 2,
             id: atlas.rectangleCount
         );
 
         // ran out of space on this row, move to the next one
-        if (atlas.curX + newRect.Width >= AtlasTextureWidth)
+        if (newRect.Width >= AtlasTextureWidth || newRect.Height >= AtlasTextureHeight)
         {
-            atlas.curX = 0;
-            atlas.curY += atlas.rowHeight;
-            atlas.rowHeight = 0;
+            throw new Exception($"Tiles whose dimensions are larger than ({AtlasTextureWidth}, {AtlasTextureHeight}) pixels are not supported");
         }
 
-        // ran out of space for the entire atlas texture, create another one
+        while (atlas.curX + newRect.Width >= AtlasTextureWidth)
+        {
+            atlas.curY += atlas.rowHeight;
+            atlas.rowHeight = newRect.Height;
+            atlas.curX = atlas.curY > atlas.packHeight ? 0 : atlas.packWidth;
+        }
+
+        // ran out of space for the entire atlas texture. try to call
+        // rect packer. if rect packer can't fit all the textures into the one atlas,
+        // create another atlas texture.
+        // this will make it so that previous draw calls referring to the atlas texture
+        // will be incorrect, but this condition does not happen often, and visual artifacts
+        // last only one frame, so i don't feel like it's worth it to fix it.
         if (atlas.curY + newRect.Height >= AtlasTextureHeight)
         {
-            atlas = new TilePreviewAtlas();
-            _tilePreviewAtlases.Add(atlas);
-            newRect.ID = atlas.rectangleCount;
+            newRect.X = 0;
+            newRect.Y = 0;
+            atlas.rectangles[atlas.rectangleCount] = newRect;
+            atlas.rectangleCount++;
+            atlas.tiles.Add(tileName);
+
+            if (PackAtlas(atlas))
+            {
+                // force-packing was successful
+                _tilePreviewRects.Add(tileName, (_tilePreviewAtlases.Count - 1, atlas.rectangleCount - 1));
+                atlas.tiles.Add(tileName);
+                return;
+
+                // return here, so the code that quickly adds the tile preview to the atlas image isn't called
+                // the preview was already added before packing
+            }
+            else
+            {
+                // space ran out, so we need a new texture atlas unfortunately
+                atlas.rectangleCount--;
+                atlas.tiles.RemoveAt(atlas.tiles.Count - 1);
+
+                atlas = new TilePreviewAtlas();
+                _tilePreviewAtlases.Add(atlas);
+                newRect.Id = atlas.rectangleCount;
+            }
         }
         
         newRect.X = atlas.curX;
         newRect.Y = atlas.curY;
+        atlas.dirty = true;
         atlas.rectangles[atlas.rectangleCount] = newRect;
         atlas.rectangleCount++;
 
         atlas.curX += newRect.Width;
         atlas.rowHeight = Math.Max(atlas.rowHeight, newRect.Height);
 
-        /*var activeRectangles = new Span<PackingRectangle>(atlas.rectangles, 0, atlas.rectangleCount);
-        RectanglePacker.Pack(
-            activeRectangles, out var _,
-            maxBoundsWidth: AtlasTextureWidth, maxBoundsHeight: AtlasTextureHeight
-        );*/
-
         _tilePreviewRects.Add(tileName, (_tilePreviewAtlases.Count - 1, atlas.rectangleCount - 1));
         atlas.tiles.Add(tileName);
 
-        // update atlas image
-        //atlas.idIndices = new int[atlas.rectangleCount];
-        
-        var tileImg = _loadedTilePreviews[atlas.tiles[newRect.ID]];
-
-        System.Diagnostics.Debug.Assert(newRect.Width - 2 == tileImg.Width && newRect.Height - 2 == tileImg.Height);
-        
-        //Raylib.UpdateTexture(atlas.texture, tileImg);
+        // update atlas texture        
+        System.Diagnostics.Debug.Assert(newRect.Width - 2 == tileImg.Width && newRect.Height - 2 == tileImg.Height);        
         atlas.texture.GlibTexture.UpdateFromImage(((Image)tileImg).image!, newRect.X + 1, newRect.Y + 1);
+
+        atlas.idIndices[newRect.Id] = atlas.rectangleCount - 1;
     }
 
     /// <summary>
@@ -236,7 +299,7 @@ class AssetGraphicsProvider
         {
             var atlas = _tilePreviewAtlases[cacheData.atlasIndex];
             texture = atlas.texture;
-            var packRect = atlas.rectangles[cacheData.rectId];
+            var packRect = atlas.rectangles[atlas.idIndices[cacheData.rectId]];
             rect = new Rectangle(packRect.X + 1, packRect.Y + 1, packRect.Width - 2, packRect.Height - 2);
             return true;
         }
@@ -304,7 +367,7 @@ class AssetGraphicsProvider
             cacheData = _tilePreviewRects[tile.Name];
             var atlas = _tilePreviewAtlases[cacheData.atlasIndex];
             texture = atlas.texture;
-            var packRect = atlas.rectangles[cacheData.rectId];
+            var packRect = atlas.rectangles[atlas.idIndices[cacheData.rectId]];
             rect = new Rectangle(packRect.X + 1, packRect.Y + 1, packRect.Width - 2, packRect.Height - 2);
             return true;
         }
@@ -407,6 +470,20 @@ class AssetGraphicsProvider
         {
             Raylib.ImageCrop(ref sourceImage.Ref(), new Rectangle(imgMinX, imgMinY, width, height));
             return true;
+        }
+    }
+
+    public void Maintenance()
+    {
+        foreach (var atlas in _tilePreviewAtlases)
+        {
+            if (atlas.dirty)
+            {
+                PackAtlas(atlas);
+                atlas.dirty = false;
+                atlas.curX = atlas.packWidth;
+                atlas.curY = 0;
+            }
         }
     }
 
