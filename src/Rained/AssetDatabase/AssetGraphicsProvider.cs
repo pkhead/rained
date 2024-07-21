@@ -247,7 +247,6 @@ class AssetGraphicsProvider
             {
                 // force-packing was successful
                 _tilePreviewRects.Add(tileName, (_tilePreviewAtlases.Count - 1, atlas.rectangleCount - 1));
-                atlas.tiles.Add(tileName);
                 return;
 
                 // return here, so the code that quickly adds the tile preview to the atlas image isn't called
@@ -297,6 +296,14 @@ class AssetGraphicsProvider
         // return that instead of processing it again
         if (_tilePreviewRects.TryGetValue(tile.Name, out var cacheData))
         {
+            // texture was already determined to not exist
+            if (cacheData.atlasIndex == -1)
+            {
+                texture = null;
+                rect = null;
+                return false;
+            }
+
             var atlas = _tilePreviewAtlases[cacheData.atlasIndex];
             texture = atlas.texture;
             var packRect = atlas.rectangles[atlas.idIndices[cacheData.rectId]];
@@ -376,13 +383,11 @@ class AssetGraphicsProvider
             // tile graphics could not be loaded
             Log.Warning($"Preview image {graphicsPath} is invalid or missing!");
 
+            _tilePreviewRects[tile.Name] = (-1, -1);
             texture = null;
             rect = null;
             return false;
         }
-
-        //previewTexCache.Add(tile.Name, outTexture);
-        //return outTexture;
     }
 
     /// <summary>
@@ -487,14 +492,12 @@ class AssetGraphicsProvider
         }
     }
 
-    public void Test()
+    /// <summary>
+    /// Clears the tile preview atlas(es).
+    /// </summary>
+    public void ClearTextureCache()
     {
-        if (ImGui.Begin("Test window", ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
-        {
-            for (int i = 0; i < _tilePreviewAtlases.Count; i++)
-            {
-                ImGuiExt.ImageSize(_tilePreviewAtlases[i].texture, AtlasTextureWidth, AtlasTextureHeight);
-            }
-        } ImGui.End();
+        _tilePreviewAtlases.Clear();
+        _tilePreviewRects.Clear();
     }
 }

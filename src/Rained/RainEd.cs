@@ -359,6 +359,8 @@ sealed class RainEd
 
         currentFilePath = string.Empty;
         UpdateTitle();
+
+        //AssetGraphics.ClearTextureCache();
     }
 
     public void LoadLevel(string path)
@@ -393,6 +395,8 @@ sealed class RainEd
                 // i think it may be useful to add it to the list
                 // even if the level failed to load due to unrecognized assets
                 AddToRecentFiles(path);
+
+                //AssetGraphics.ClearTextureCache();
             }
             catch (Exception e)
             {
