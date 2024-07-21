@@ -1,20 +1,24 @@
 # Rained Level Editor
-LICENSE.md contains licenses for the software dependencies I have used.
+Level editor for Rain World modding.
 
-Don't hestiate to report any bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in either the main Rain World Discord server or one of both Rain World modding servers. I also accept DMs, but as I don't get pinged for DM requests, it would take a while for me to respond.
+Don't hestiate to report any bugs, complaints, and suggestions by creating an issue on GitHub, or pinging @chromosoze in either the main Rain World Discord server or one of both Rain World modding servers. I also accept DMs, but as I don't get pinged for DM requests, it will take a while for me to notice. If you send a crash report, please send me the contents of logs/latest.log.txt before relaunching the program.
 
 Also, if you are on Windows and Rained fails to even open a window when launching it, it's probably because you are missing the Microsoft Visual Studio C++ runtime package, which is needed for its dependencies. It can be installed [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 
 Hope you enjoy!
 
 ## Updates
-Check https://github.com/pkhead/rained/releases for any new releases. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
+Rained should notify you of any new updates upon startup or in the Help > About window. You can disable the update checker in the preferences window. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
 - config/
 - scripts/
 - Your Data folder, if present
 
-## Importing Custom Tiles, Props, or Materials
-You *can* do so by editing the Init.txt files manually and copying over the graphics and stuff... Or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first. I'll think of a way to change that...
+## Asset Management
+The release package does not contain Rain World levels and assets because the location of those files is configured on a first launch. This is so that users who have previously installed a Rain World level editor on their computer don't have to copy or symlink their old data.
+
+Upon first startup, Rained will ask you if you want to select an asset folder that already exists on your computer, or if you want to download all of the assets from the Internet. If you have never download a Rain World level editor on your computer before, select "Download Data". Otherwise, you may select "Choose Data Folder" to select the pre-existing folder on your computer containing Rain World level editor assets. The folder you choose must have a "Graphics", "Props", and "Levels" folder within. The "LevelEditorProjects" and "Materials" folders are optional.
+
+If you want to import custom tiles, props, or materials into Rained, you *can* do so by editing the Init.txt files manually and copying over the graphics and stuff, or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first.
 
 ## User Interface
 Here are some tips on using the GUI elements:
@@ -50,10 +54,10 @@ If you do not like the default keyboard shortcuts, feel free to complain to me. 
 accessible by going to the "File" menu, then clicking on "Preferences".
 
 ## Autosaving
-Rained does not have a system that auto-saves the level periodically. However, it does automatically save the current state
+Rained does not have a system that auto-saves the level periodically, like in RWE+. However, it does automatically save the current state
 of the level to a different file if it catches a fatal exception and crashes, which should be an adequate alleviator.
-I would recommend pressng Ctrl+S every minute anyway.
+I would recommend pressng Ctrl+S frequently anyway.
 
 ## Scripting
-Rained has a Lua scripting API, used for autotiling and level manipulation.
+Rained has a Lua scripting API, used for autotiling and basic level manipulation.
 For "documentation", check `scripts/init.lua`, `scripts/definition/rained.defs.lua`, and look at the built-in scripts as examples.
