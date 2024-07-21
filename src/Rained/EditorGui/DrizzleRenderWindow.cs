@@ -80,8 +80,6 @@ class DrizzleRenderWindow : IDisposable
 
         previewBlackout1?.Dispose();
         previewBlackout2?.Dispose();
-
-        layerPreviewShader.Dispose();
     }
 
     private void ShowControlButtons(ref bool doClose)
@@ -336,19 +334,14 @@ class DrizzleRenderWindow : IDisposable
             return;
         }
 
-        Glib.Texture gtex;
         Glib.PixelFormat desiredPixelFormat = img.Format == Drizzle.PixelFormat.L1 ? Glib.PixelFormat.Grayscale : Glib.PixelFormat.RGBA;
 
         if (tex == null || tex.GlibTexture.PixelFormat != desiredPixelFormat || img.Width != tex.Width || img.Height != tex.Height)
         {
             tex?.Dispose();
             using var gimg = Glib.Image.FromColor(img.Width, img.Height, Glib.Color.White, desiredPixelFormat);
-            gtex = Glib.Texture.Load(gimg);
+            var gtex = Glib.Texture.Load(gimg);
             tex = new RlManaged.Texture2D(new Texture2D() { ID = gtex });
-        }
-        else
-        {
-            gtex = ((Texture2D)tex).ID!;
         }
     }
 
@@ -397,8 +390,6 @@ class DrizzleRenderWindow : IDisposable
             }
 
             Raylib.BeginShaderMode(shader);
-
-            shader.GlibShader.SetUniform("v4_renderPreviewData", new Vector4(1f, 1f, 0f, 0f));
 
             for (int i = 29; i >= 0; i--)
             {

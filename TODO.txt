@@ -5,10 +5,7 @@ Bugs:
 - removing a tile also removes the material underneath it
 - reported crash in asset manager due to queues or something
 - fix double resource disposal on window close
-- render preview sometimes crashes
-  (DebugCheck): Setting invalid uniform (handle  11)
-  Invalid handle. submit handle: 19 (max 512)   (repeated many times, as this error doesn't cause a crash)
-- linux/vulkan resizing looks weird... also sometimes creates segfault i guess
+- linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 - file browser window is too big on high dpi
 
 Overall:

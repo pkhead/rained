@@ -4,14 +4,9 @@ $input v_texcoord0, v_color0
 uniform vec4 glib_color;
 SAMPLER2D(glib_texture, 0);
 
-uniform vec4 v4_renderPreviewData;
-
-#define texCoordScale v4_renderPreviewData.xy
-#define texCoordOffset v4_renderPreviewData.zw
-
 void main()
 {
-    vec4 texelColor = texture2D(glib_texture, v_texcoord0 * texCoordScale + texCoordOffset);
+    vec4 texelColor = texture2D(glib_texture, v_texcoord0);
     bool isWhite = texelColor.r == 1.0 && texelColor.g == 1.0 && texelColor.b == 1.0;
     vec3 correctColor = texelColor.bgr;
     
