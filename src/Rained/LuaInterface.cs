@@ -1169,6 +1169,8 @@ static class LuaInterface
                 // auto-scroll
                 if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
                     ImGui.SetScrollHereY(1f);
+                
+                ImGui.EndChild();
             }
         } ImGui.End();
     }

@@ -241,4 +241,75 @@ static partial class Platform
             return false;
         }
     }
+
+    public partial class SleepHandler : IDisposable
+    {
+        [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial nint CreateWaitableTimerW(nint lpTimerAttributes, [MarshalAs(UnmanagedType.Bool)] bool bManualReset, string? lpTimerName);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private unsafe static partial bool SetWaitableTimer(nint hTimer, long* pDueTime, int lPeriod, nint pfnCompletionRoutine, nint lpArgToCompletionRoutine, [MarshalAs(UnmanagedType.Bool)] bool fResume);
+
+        [LibraryImport("kernel32.dll")]
+        private static partial int WaitForSingleObject(nint hHandle, uint dwMilliseconds);
+
+        [LibraryImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CloseHandle(nint hObject);
+
+        [LibraryImport("winmm.dll")]
+        private static partial uint timeBeginPeriod(uint uPeriod);
+
+        [LibraryImport("winmm.dll")]
+        private static partial uint timeEndPeriod(uint uPeriod);
+        
+        private nint _handle;
+
+        public SleepHandler()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                _handle = CreateWaitableTimerW(0, true, null);
+                if (_handle == 0)
+                {
+                    throw new Exception("Could not create sleep handler");
+                }
+            }
+            else{
+                _handle = 0;
+            }
+        }
+
+        public unsafe void Wait(double seconds)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                bool period = timeBeginPeriod(2) == 0;
+
+                long dueTime = -(long)(seconds * 1e7);
+                if (!SetWaitableTimer(_handle, &dueTime, 0, 0, 0, false))
+                {
+                    throw new Exception("Could not wait sleep handler");
+                }
+
+                WaitForSingleObject(_handle, uint.MaxValue);
+                if (period) timeEndPeriod(2);
+            }
+            else
+            {
+                Thread.Sleep((int)(seconds / 1000.0));
+            }
+        }
+
+        public void Dispose()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                CloseHandle(_handle);
+            }
+            
+            GC.SuppressFinalize(this);
+        }
+    }
 }

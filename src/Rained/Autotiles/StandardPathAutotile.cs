@@ -1,4 +1,6 @@
 namespace RainEd.Autotiles;
+
+using System.Drawing;
 using System.Numerics;
 using ImGuiNET;
 
@@ -373,9 +375,9 @@ class StandardPathAutotile : Autotile
                 {
                     ImGui.BeginTooltip();
 
-                    var previewTexture = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile);
-                    if (previewTexture is not null)
-                        ImGuiExt.Image(previewTexture, tile.Category.Color);
+                    var found = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var rect);
+                    if (found && previewTexture is not null && rect is not null)
+                        ImGuiExt.ImageRect(previewTexture, rect.Value.Width, rect.Value.Height, rect.Value);
                     else
                         ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
 

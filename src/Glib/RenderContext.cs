@@ -38,6 +38,13 @@ public enum CullMode {
     Counterclockwise,
 }
 
+public enum LogLevel
+{
+    Debug,
+    Information,
+    Error
+}
+
 [Flags]
 public enum RenderFlags : int
 {
@@ -53,6 +60,16 @@ public enum DebugSeverity
     Medium,
     High
 };
+
+public enum RendererType
+{
+    Automatic,
+    Direct3D11,
+    Direct3D12,
+    OpenGL,
+    Vulkan,
+    Metal
+}
 
 public sealed class RenderContext : IDisposable
 {
@@ -86,6 +103,11 @@ public sealed class RenderContext : IDisposable
     public Shader? Shader { get => _drawBatch.Shader; set => _drawBatch.Shader = value; }
     public uint Frame { get; internal set; } = 0;
 
+    public Action<LogLevel, string>? Log;
+
+    internal static void LogInfo(string msg) => Instance!.Log?.Invoke(LogLevel.Information, msg);
+    internal static void LogError(string msg) => Instance!.Log?.Invoke(LogLevel.Error, msg);
+
     /// <summary>
     /// If Glib should use GL_LINES primitives for drawing lines.
     /// When enabled, the LineWidth field will not be respected, and all
@@ -104,6 +126,7 @@ public sealed class RenderContext : IDisposable
 
     public readonly string GpuVendor;
     public readonly string GpuRenderer;
+    public readonly RendererType GpuRendererType;
 
     private CallbackInterface _cbInterface;
     private Window _mainWindow;
@@ -152,7 +175,8 @@ public sealed class RenderContext : IDisposable
         }
     }
 
-    public static bool VSync { get; set; } = true;
+    public bool VSync { get; set; } = true;
+    private bool _vsync;
     private List<(uint frameEnd, TaskCompletionSource tcs)> _waitingRequests = [];
 
     internal static void GetHandles(IWindow silkWindow, out nint nwh, out nint ndt, out Bgfx.NativeWindowHandleType type)
@@ -194,23 +218,30 @@ public sealed class RenderContext : IDisposable
         }
     }
 
-    private unsafe RenderContext(Window mainWindow)
+    private unsafe RenderContext(Window mainWindow, bool vsync, RendererType renderType)
     {
         if (Instance is not null)
         {
             throw new NotImplementedException("No more than one main window allowed");
         }
 
+        VSync = vsync;
+        _vsync = vsync;
+
         Instance = this;
         _mainWindow = mainWindow;
 
         _cbInterface = new CallbackInterface()
         {
-            Log = (string msg) => Console.WriteLine(msg),
+            Log = (string msg) =>
+            {
+                Log?.Invoke(LogLevel.Debug, msg);
+            },
 
             Fatal = (string filePath, int line, Bgfx.Fatal code, string msg) =>
             {
-                Console.WriteLine($"BGFX: FATAL: {filePath}:{line} ({code}): {msg}");
+                var str = $"{filePath}:{line} ({code}): {msg}";
+                Log?.Invoke(LogLevel.Error, str);
             }
         };
 
@@ -220,11 +251,14 @@ public sealed class RenderContext : IDisposable
         var init = new Bgfx.Init();
         Bgfx.init_ctor(&init);
 
-#if DEBUG
-        init.type = Bgfx.RendererType.Direct3D11;
-#else
-        init.type = Bgfx.RendererType.Count;
-#endif
+        init.type = renderType switch
+        {
+            RendererType.Direct3D11 => Bgfx.RendererType.Direct3D11,
+            RendererType.Direct3D12 => Bgfx.RendererType.Direct3D12,
+            RendererType.OpenGL => Bgfx.RendererType.OpenGL,
+            RendererType.Vulkan => Bgfx.RendererType.Vulkan,
+            _ => Bgfx.RendererType.Count
+        };
         init.callback = _cbInterface.Pointer;
 
         GetHandles(mainWindow.SilkWindow, out nint nwh, out nint ndt, out var windowType);
@@ -252,9 +286,15 @@ public sealed class RenderContext : IDisposable
             var caps = Bgfx.get_caps();
             GpuVendor = ((Bgfx.PciIdFlags)caps->vendorId).ToString();
 
-            var swapChainSupported = (caps->supported & (ulong)Bgfx.CapsFlags.SwapChain) != 0;
-            Console.WriteLine("renderer: " + GpuRenderer);
-            Console.WriteLine("swap chain supported: " + swapChainSupported);
+            GpuRendererType = rendererId switch
+            {
+                Bgfx.RendererType.Direct3D11 => RendererType.Direct3D11,
+                Bgfx.RendererType.Direct3D12 => RendererType.Direct3D12,
+                Bgfx.RendererType.OpenGL => RendererType.OpenGL,
+                Bgfx.RendererType.Vulkan => RendererType.Vulkan,
+                Bgfx.RendererType.Metal => RendererType.Metal,
+                _ => RendererType.Automatic
+            };
         }
 
         defaultShader = new Shader();
@@ -280,12 +320,11 @@ public sealed class RenderContext : IDisposable
     /// </summary>
     /// <param name="mainWindow">The main window of the render context.</param>
     /// <param name="vsync">Whether or not Vsync should be enabled.</param>
+    /// <param name="renderer">Desired renderer type</param>
     /// <returns>The singleton RenderContext</returns>
-    public static RenderContext Init(Window mainWindow, bool? vsync = null)
+    public static RenderContext Init(Window mainWindow, bool vsync = true, RendererType renderer = RendererType.Automatic)
     {
-        var rctx = new RenderContext(mainWindow);
-        VSync = vsync ?? VSync;
-        return rctx;
+        return new RenderContext(mainWindow, vsync, renderer);
     }
 
     public void AddWindow(Window window)
@@ -355,14 +394,27 @@ public sealed class RenderContext : IDisposable
         int height = _mainWindow.PixelHeight;
 
         curViewId = 0;
+        curFramebuffer = null;
 
         uint bgCol = ColorToUint(BackgroundColor);
 
+        bool reset = false;
         if (width != ScreenWidth || height != ScreenHeight)
         {
-            Bgfx.reset((uint)width, (uint)height, (uint)(VSync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
+            reset = true;
             ScreenWidth = width;
             ScreenHeight = height;
+        }
+
+        if (_vsync != VSync)
+        {
+            reset = true;
+            _vsync = VSync;
+        }
+
+        if (reset)
+        {
+            Bgfx.reset((uint)ScreenWidth, (uint)ScreenHeight, (uint)(_vsync ? Bgfx.ResetFlags.Vsync : Bgfx.ResetFlags.None), Bgfx.TextureFormat.Count);
         }
 
         // update window sizes
@@ -371,7 +423,6 @@ public sealed class RenderContext : IDisposable
             var (win, fb) = _windows[i];
             if (win.PixelWidth != fb.Width || win.PixelHeight != fb.Height)
             {
-                System.Diagnostics.Debug.WriteLine($"Window {i} was resized");
                 fb.Dispose();
                 _windows[i] = (win, new Framebuffer(win));
             }
@@ -517,18 +568,26 @@ public sealed class RenderContext : IDisposable
         
         if (shader.HasUniform(Shader.ColorUniform))
             shader.SetUniform(Shader.ColorUniform, DrawColor);
-                
-        var programHandle = shader.Activate(WhiteTexture);
-        
-        mesh.ResetSliceSettings();
-        var state = SetupState() | mesh.Activate();
-        Bgfx.set_state((ulong)state, 0);
 
-        Matrix4x4 transformMat = TransformMatrix;
-        Bgfx.set_transform(&transformMat, 1);
+        try
+        {        
+            var programHandle = shader.Activate(WhiteTexture);
+            
+            mesh.ResetSliceSettings();
+            var state = SetupState() | mesh.Activate();
+            Bgfx.set_state((ulong)state, 0);
 
-        _viewHasSubmission = true;
-        Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            Matrix4x4 transformMat = TransformMatrix;
+            Bgfx.set_transform(&transformMat, 1);
+
+            _viewHasSubmission = true;
+            Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+        }
+        catch (InsufficientBufferSpaceException e)
+        {
+            LogError(e.Message);
+            Bgfx.discard((byte)Bgfx.DiscardFlags.All);
+        }
     }
 
     /// <summary>
@@ -609,14 +668,22 @@ public sealed class RenderContext : IDisposable
                     
             var programHandle = shader.Activate(rctx.WhiteTexture);
             
-            var state = rctx.SetupState() | Mesh.Activate();
-            Bgfx.set_state((ulong)state, 0);
+            try
+            {
+                var state = rctx.SetupState() | Mesh.Activate();
+                Bgfx.set_state((ulong)state, 0);
 
-            Matrix4x4 transformMat = rctx.TransformMatrix;
-            Bgfx.set_transform(&transformMat, 1);
+                Matrix4x4 transformMat = rctx.TransformMatrix;
+                Bgfx.set_transform(&transformMat, 1);
 
-            rctx._viewHasSubmission = true;
-            Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+                rctx._viewHasSubmission = true;
+                Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            }
+            catch (InsufficientBufferSpaceException e)
+            {
+                LogError(e.Message);
+                Bgfx.discard((byte)Bgfx.DiscardFlags.All);
+            }
         }
 
         /// <summary>
@@ -701,7 +768,7 @@ public sealed class RenderContext : IDisposable
         }
 
         Bgfx.set_view_clear(curViewId, (ushort)bclearFlags, colorUint, 1f, 0);
-        if (_viewHasSubmission)
+        if (!_viewHasSubmission)
         {
             Bgfx.touch(curViewId);
             _viewHasSubmission = true;

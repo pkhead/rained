@@ -72,6 +72,14 @@ public enum MeshBufferTarget
     TexCoord7 = 17,
 }
 
+[System.Serializable]
+internal class InsufficientBufferSpaceException : System.Exception
+{
+    public InsufficientBufferSpaceException() { }
+    public InsufficientBufferSpaceException(string message) : base(message) { }
+    public InsufficientBufferSpaceException(string message, System.Exception inner) : base(message, inner) { }
+}
+
 public record struct MeshVertexAttribute(MeshBufferTarget Target, DataType Type, uint Count, bool Normalized = false);
 
 public class MeshBufferConfiguration()
@@ -655,6 +663,11 @@ public class Mesh : Resource
                     tvb = new Bgfx.TransientVertexBuffer();
                     fixed (Bgfx.VertexLayout* layout = &vertexLayouts[i])
                     {
+                        if (Bgfx.get_avail_transient_vertex_buffer(_elemCounts[i], layout) < _elemCounts[i])
+                        {
+                            throw new InsufficientBufferSpaceException("Not enough transient vertex buffer space for mesh render");
+                        }
+
                         Bgfx.alloc_transient_vertex_buffer(&tvb, _elemCounts[i], layout);
                     }
 
@@ -694,6 +707,11 @@ public class Mesh : Resource
                 }
                 else
                 {
+                    if (Bgfx.get_avail_transient_index_buffer((uint)count, _config.Use32BitIndices) < count)
+                    {
+                        throw new InsufficientBufferSpaceException("Not enough transient vertex buffer space for mesh render");
+                    }
+
                     tib = new Bgfx.TransientIndexBuffer();
                     Bgfx.alloc_transient_index_buffer(&tib, (uint)count, _config.Use32BitIndices);
 
@@ -801,8 +819,6 @@ public class Mesh : Resource
 
     protected override void FreeResources(bool disposing)
     {
-        Console.WriteLine("Free mesh handles");
-
         foreach (var buffer in staticBuffers)
         {
             Bgfx.destroy_vertex_buffer(buffer);

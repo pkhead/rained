@@ -20,6 +20,7 @@ static class PreferencesWindow
     }
 
     private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle"];
+    private readonly static string[] RendererNames = ["Direct3D 11", "Direct3D 12", "OpenGL", "Vulkan"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
@@ -277,7 +278,7 @@ static class PreferencesWindow
             prefs.TileSpec2 = Vec3ToHexColor(tileSpec2Color);
         }
 
-        ImGui.SeparatorText("User Interface");
+        ImGui.SeparatorText("Display");
         {
             if (entered)
             {
@@ -338,6 +339,64 @@ static class PreferencesWindow
 
 
                 ImGui.PopItemWidth();
+            }
+
+            // renderer
+            {
+                var renderer = (int) prefs.Renderer;
+                bool recognized = renderer >= 1 && renderer - 1 < RendererNames.Length;
+                if (ImGui.BeginCombo("Renderer", recognized ? RendererNames[renderer-1] : ""))
+                {
+                    for (int i = 0; i < RendererNames.Length; i++)
+                    {
+                        bool isSelected = renderer - 1 == i;
+                        if (ImGui.Selectable(RendererNames[i], isSelected))
+                        {
+                            renderer = i + 1;
+                            prefs.Renderer = (Glib.RendererType)renderer;
+                        }
+
+                        if (isSelected)
+                            ImGui.SetItemDefaultFocus();
+                    }
+
+                    ImGui.EndCombo();
+                }
+
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                ImGui.SetItemTooltip(
+                    """
+                    The graphics backend to use. Note that, depending
+                    on your OS and driver/hardware availability, your
+                    choice may not be respected. In order to view the
+                    actual used renderer, go to Help > About...
+
+                    This option requires a restart in order to take
+                    effect.
+                    """
+                );
+            }
+
+            // Vsync
+            {
+                bool vsync = RainEd.RenderContext.VSync;
+                if (ImGui.Checkbox("Vsync", ref vsync))
+                    RainEd.RenderContext.VSync = vsync;
+                
+                if (!vsync)
+                {
+                    ImGui.SameLine();
+
+                    ImGui.SetNextItemWidth(ImGui.GetFontSize() * 8.0f);
+
+                    var refreshRate = prefs.RefreshRate;
+                    if (ImGui.SliderInt("Refresh rate", ref refreshRate, 30, 240))
+                    {
+                        prefs.RefreshRate = refreshRate;
+                        Raylib.SetTargetFPS(prefs.RefreshRate);
+                    }
+                }
             }
 
             ImGui.PopItemWidth();

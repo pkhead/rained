@@ -11,15 +11,20 @@ internal class DrawBatch
 {
     private const uint VertexDataSize = 9;
     private const uint MaxVertices = 4096;
+    private const uint MaxIndices = 4096;
     
     private readonly float[] batchData;
+    private readonly uint[] batchIndices;
     private int vertexCount;
+    private int indexCount;
     private Bgfx.VertexLayout _vertexLayout;
 
     private MeshPrimitiveType _drawMode;
     public Color DrawColor = Color.White;
     public Vector2 UV = Vector2.Zero;
     public Matrix4x4 TransformMatrix;
+
+    public int CurrentIndex = 0;
     
     private Texture? _texture;
     public Texture? Texture
@@ -50,7 +55,10 @@ internal class DrawBatch
     public unsafe DrawBatch(Action<Bgfx.StateFlags> drawCallback)
     {
         batchData = new float[MaxVertices * VertexDataSize];
+        batchIndices = new uint[MaxIndices];
         vertexCount = 0;
+        indexCount = 0;
+        CurrentIndex = 0;
         _texture = null!;
         DrawCallback = drawCallback;
 
@@ -78,15 +86,39 @@ internal class DrawBatch
         if (vertexCount == 0) return;
 
         Bgfx.TransientVertexBuffer vertexBuf;
+        Bgfx.TransientIndexBuffer indexBuf;
         fixed (Bgfx.VertexLayout* layout = &_vertexLayout)
-            Bgfx.alloc_transient_vertex_buffer(&vertexBuf, (uint)vertexCount, layout);
-
-        fixed (float* data = batchData)
         {
-            Buffer.MemoryCopy(data, vertexBuf.data, vertexBuf.size, vertexCount * VertexDataSize * sizeof(float));
+            if (Bgfx.get_avail_transient_vertex_buffer((uint)vertexCount, layout) < vertexCount)
+            {
+                RenderContext.LogError("Not enough transient vertex buffer space for the draw batch");
+                vertexCount = 0;
+                indexCount = 0;
+                CurrentIndex = 0;
+                return;
+            }
+
+            if (Bgfx.get_avail_transient_index_buffer((uint)indexCount, true) < indexCount)
+            {
+                RenderContext.LogError("Not enough transient index buffer space for the draw batch");
+                vertexCount = 0;
+                indexCount = 0;
+                CurrentIndex = 0;
+                return;
+            }
+
+            Bgfx.alloc_transient_vertex_buffer(&vertexBuf, (uint)vertexCount, layout);
+            Bgfx.alloc_transient_index_buffer(&indexBuf, (uint)indexCount, true);
         }
 
+        fixed (float* data = batchData)
+            Buffer.MemoryCopy(data, vertexBuf.data, vertexBuf.size, vertexCount * VertexDataSize * sizeof(float));
+
+        fixed (uint* data = batchIndices)
+            Buffer.MemoryCopy(data, indexBuf.data, indexBuf.size, indexCount * sizeof(uint));
+
         Bgfx.set_transient_vertex_buffer(0, &vertexBuf, 0, (uint)vertexCount);
+        Bgfx.set_transient_index_buffer(&indexBuf, 0, (uint)indexCount);
 
         var state = _drawMode switch
         {
@@ -100,19 +132,21 @@ internal class DrawBatch
 
         DrawCallback(state);
         vertexCount = 0;
+        indexCount = 0;
+        CurrentIndex = 0;
     }
 
-    private void CheckCapacity(uint newVertices)
+    private void CheckCapacity(uint newVertices, uint numIndices)
     {
-        if (vertexCount + newVertices >= MaxVertices)
+        if (vertexCount + newVertices >= MaxVertices || indexCount + numIndices >= MaxIndices)
         {
             Draw();
         }
     }
 
-    internal void BeginDraw(uint requiredCapacity, MeshPrimitiveType newDrawMode = MeshPrimitiveType.Triangles)
+    internal void BeginDraw(uint requiredCapacity, uint numIndices, MeshPrimitiveType newDrawMode = MeshPrimitiveType.Triangles)
     {
-        CheckCapacity(requiredCapacity);
+        CheckCapacity(requiredCapacity, numIndices);
 
         // flush batch on texture/draw mode change
         if (_drawMode != newDrawMode)
@@ -138,6 +172,11 @@ internal class DrawBatch
         batchData[i++] = DrawColor.A;
 
         vertexCount++;
+    }
+
+    internal void PushIndex(int idx)
+    {
+        batchIndices[indexCount++] = (uint)idx;
     }
 
     public BatchDrawHandle BeginBatchDraw(BatchDrawMode mode, Texture? tex = null)
@@ -185,21 +224,21 @@ public struct BatchDrawHandle : IDisposable
         {
             case BatchDrawMode.Triangles:
             {
-                _batch.BeginDraw(3, MeshPrimitiveType.Triangles);
+                _batch.BeginDraw(3, 3, MeshPrimitiveType.Triangles);
                 for (int i = 0; i < 3; i++)
                 {
                     _batch.DrawColor = colors[i];
                     _batch.UV = uvs[i];
                     _batch.PushVertex(verts[i].X, verts[i].Y);
+                    _batch.PushIndex(_batch.CurrentIndex++);
                 }
                 break;
             }
 
             case BatchDrawMode.Quads:
             {
-                _batch.BeginDraw(6, MeshPrimitiveType.Triangles);
+                _batch.BeginDraw(4, 6, MeshPrimitiveType.Triangles);
 
-                // first triangle
                 _batch.DrawColor = colors[0];
                 _batch.UV = uvs[0];
                 _batch.PushVertex(verts[0].X, verts[0].Y);
@@ -212,22 +251,24 @@ public struct BatchDrawHandle : IDisposable
                 _batch.UV = uvs[2];
                 _batch.PushVertex(verts[2].X, verts[2].Y);
 
-                // second triangle
-                _batch.PushVertex(verts[2].X, verts[2].Y);
-
                 _batch.DrawColor = colors[3];
                 _batch.UV = uvs[3];
                 _batch.PushVertex(verts[3].X, verts[3].Y);
 
-                _batch.DrawColor = colors[0];
-                _batch.UV = uvs[0];
-                _batch.PushVertex(verts[0].X, verts[0].Y);
+                int idx = _batch.CurrentIndex;
+                _batch.PushIndex(idx + 0);
+                _batch.PushIndex(idx + 1);
+                _batch.PushIndex(idx + 2);
+                _batch.PushIndex(idx + 2);
+                _batch.PushIndex(idx + 3);
+                _batch.PushIndex(idx + 0);
+                _batch.CurrentIndex += 4;
                 break;
             }
 
             case BatchDrawMode.Lines:
             {
-                _batch.BeginDraw(2, MeshPrimitiveType.Lines);
+                _batch.BeginDraw(2, 2, MeshPrimitiveType.Lines);
 
                 _batch.DrawColor = colors[0];
                 _batch.UV = uvs[0];
@@ -236,6 +277,9 @@ public struct BatchDrawHandle : IDisposable
                 _batch.DrawColor = colors[1];
                 _batch.UV = uvs[1];
                 _batch.PushVertex(verts[1].X, verts[1].Y);
+
+                _batch.PushIndex(_batch.CurrentIndex++);
+                _batch.PushIndex(_batch.CurrentIndex++);
                 break;
             }
         }

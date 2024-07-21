@@ -1,18 +1,14 @@
 Bugs:
-- client code mouse position doesn't work with multi-viewport
 - chain holder undo/redo is broken
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
-- about window "graphics card" shows renderer name instead of device name
 - fix double resource disposal on window close
-- bgfx credits
 - render preview sometimes crashes
   (DebugCheck): Setting invalid uniform (handle  11)
   Invalid handle. submit handle: 19 (max 512)   (repeated many times, as this error doesn't cause a crash)
+- linux/vulkan resizing looks weird... also sometimes creates segfault i guess
 
 Overall:
-- user able to configure vsync/refresh rate and rendering backend
-  - vsync/refresh rate option default is "automatic" mode: locks to screen refresh rate, vsync if fullscreen or refresh rate unknown
 - dissolve material/tile separation
 - be able to view shortcut geo outside of the geometry editor
 - does update checker notif window timing work?

@@ -8,10 +8,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.90.6.1" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="../Glib/Glib.csproj" />
+      <ProjectReference Include="../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj" />
     </ItemGroup>
 </Project>

@@ -139,8 +139,7 @@ namespace RainEd
 
                 window = new Glib.Window(windowOptions);
                 RenderContext renderContext = null!;
-                
-                // get available fonts for imgui
+
                 void ImGuiConfigure()
                 {
                     WindowScale = window.ContentScale.Y;
@@ -152,20 +151,19 @@ namespace RainEd
                     io.KeyRepeatDelay = 0.5f;
                     io.KeyRepeatRate = 0.03f;
                     io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-
-                    // this is the easiest way i figured to access preferences.json before
-                    // RainEd initialization, but it does result in preferences.json being
-                    // loaded twice 
-                    var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
-                    if (File.Exists(prefsFile))
+                    
+                    try
                     {
-                        var prefs = UserPreferences.LoadFromFile(prefsFile);
-                        if (prefs.ImGuiMultiViewport)
+                        unsafe
                         {
-                            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
+                            io.Fonts.NativePtr->FontBuilderIO = ImGuiNative.ImGuiFreeType_GetBuilderForFreeType();
                         }
                     }
-
+                    catch (Exception e)
+                    {
+                        Log.Error("FreeType setup failed: {Exception}", e);
+                    }
+                    
                     Fonts.UpdateAvailableFonts();
                     Fonts.ReloadFonts();
                 };
@@ -183,7 +181,26 @@ namespace RainEd
                             }
                         });
                     }*/
-                    renderContext = RenderContext.Init(window, true);
+                    UserPreferences? prefs = null;
+                    {
+                        var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
+                        if (File.Exists(prefsFile))
+                        {
+                            prefs = UserPreferences.LoadFromFile(prefsFile);
+                        }
+                    }
+
+                    renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
+                    renderContext.Log = (LogLevel logLevel, string msg) =>
+                    {
+                        if (logLevel == LogLevel.Debug)
+                            Log.Debug(msg);
+                        else if (logLevel == LogLevel.Information)
+                            Log.Information("GL: " + msg);
+                        else if (logLevel == LogLevel.Error)
+                            Log.Error("GL: " + msg);
+                    };
+
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
@@ -213,6 +230,7 @@ namespace RainEd
                     renderContext.PushWindowFramebuffer(splashScreenWindow);
                     renderContext.Clear(Glib.Color.Black);
                     renderContext.DrawTexture(texture);
+                    renderContext.PopFramebuffer();
                     
                     renderContext.End();
                     //splashScreenWindow.SwapBuffers();
@@ -244,12 +262,12 @@ namespace RainEd
                 if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
                 {
                     window.Visible = true;
-                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    CloseSplashScreenWindow();
                     
                     var appSetup = new AppSetup();
                     if (!appSetup.Start(out assetDataPath))
                     {
-                        window.Dispose();
+                        Raylib.CloseWindow();
                         return;
                     }
                 }
@@ -273,7 +291,7 @@ namespace RainEd
                 }
 #endif
                 Window.Visible = true;
-                if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                CloseSplashScreenWindow();
 
                 isAppReady = true;
                 
@@ -282,6 +300,18 @@ namespace RainEd
 #endif
                 {
                     Fonts.SetFont(app.Preferences.Font);
+
+                    // set initial target fps
+                    var refreshRate = window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
+                    if (app.Preferences.RefreshRate == 0)
+                        app.Preferences.RefreshRate = refreshRate;
+                    Raylib.SetTargetFPS(app.Preferences.RefreshRate);
+
+                    // save renderer pref
+                    if (app.Preferences.Renderer == RendererType.Automatic)
+                    {
+                        app.Preferences.Renderer = RenderContext.Instance!.GpuRendererType;
+                    }
 
                     while (app.Running)
                     {
@@ -309,7 +339,6 @@ namespace RainEd
                             *ImGui.GetStyle().NativePtr = styleCopy;
                         }
                         
-                        
                         Raylib.EndDrawing();
                     }
 
@@ -332,20 +361,24 @@ namespace RainEd
                 }
 #endif
                 ImGuiController?.Dispose();
-                window.Dispose();
-                //rlImGui.Shutdown();
-
-                //foreach (var img in windowIcons)
-                //    Raylib.UnloadImage(img);
+                Raylib.CloseWindow();
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            //RlManaged.RlObject.UnloadGCQueue();
             
-            //Raylib.CloseWindow();
-            splashScreenWindow?.Close();
+            Raylib.CloseWindow();
             _logger.Dispose();
+        }
+
+        private static void CloseSplashScreenWindow()
+        {
+            if (splashScreenWindow is not null)
+            {
+                RenderContext.Instance!.RemoveWindow(splashScreenWindow);
+                splashScreenWindow.Dispose();
+                splashScreenWindow = null;
+            }
         }
 
         public static void DisplayError(string windowTitle, string windowContents)
@@ -359,7 +392,7 @@ namespace RainEd
                 if (!isAppReady)
                 {
                     window.Visible = true;
-                    if (splashScreenWindow is not null) splashScreenWindow.Visible = false;
+                    CloseSplashScreenWindow();
                 }
 
                 ImGui.StyleColorsDark();

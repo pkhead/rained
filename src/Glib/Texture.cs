@@ -191,6 +191,25 @@ public class Texture : Resource
     }
 
     /// <summary>
+    /// Update a part of a texture with an image.
+    /// </summary>
+    /// <param name="image">The image to update the texture with.</param>
+    /// <exception cref="ArgumentException">Thrown if the image does not fit in the texture or does not have the same pixel format.</exception>
+    public unsafe void UpdateFromImage(Image image, uint dstX, uint dstY)
+    {
+        if (PixelFormat is null) throw new InvalidOperationException("Texture cannot be modified");
+        
+        if (dstX > ushort.MaxValue || dstY > ushort.MaxValue || dstX + image.Width >= Width || dstY + image.Height >= Height)
+            throw new ArgumentException("Image does not fit", nameof(image));
+
+        if (image.PixelFormat != PixelFormat)
+            throw new ArgumentException("Mismatched pixel formats", nameof(image));
+
+        var alloc = GetImageData(image);
+        Bgfx.update_texture_2d(_handle, 0, 0, (ushort)dstX, (ushort)dstY, (ushort)image.Width, (ushort)image.Height, alloc, ushort.MaxValue);
+    }
+
+    /// <summary>
     /// Update the whole texture with an image given by a byte array. <br /><br />
     /// The dimensions and pixel format of the data will be interpreted as those of the texture.
     /// </summary>
@@ -446,32 +465,4 @@ public class ReadableTexture : Texture
             }
         }
     }
-
-    /*public unsafe Image GetImage()
-    {
-        if (PixelFormat is null) throw new InvalidOperationException("The texture's pixel format is not readable from the CPU");
-
-        byte* mem = null;
-
-        try
-        {
-            Bgfx.TextureInfo texInfo = new();
-            Bgfx.calc_texture_size(&texInfo, (ushort)Width, (ushort)Height, 0, false, false, 1, BgfxTextureFormat);
-            mem = (byte*) NativeMemory.Alloc((nuint)texInfo.storageSize);
-            Bgfx.read_texture(Handle, mem, 0);
-
-            if (BgfxTextureFormat == Bgfx.TextureFormat.RGBA8)
-            {
-            }
-            else
-            {
-                throw new NotImplementedException($"Readback from {BgfxTextureFormat} format is not implemented");
-            }
-        }
-        finally
-        {
-            if (mem != null)
-                NativeMemory.Free(mem);
-        }
-    }*/
 }

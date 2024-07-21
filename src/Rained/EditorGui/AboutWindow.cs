@@ -99,6 +99,13 @@ static class AboutWindow
             ImGuiExt.LinkText("Silk.NET", "https://dotnet.github.io/Silk.NET");
             ImGui.SameLine();
             ImGui.Text("(c) 2021- .NET Foundation and Contributors - MIT License");
+
+            ImGui.Bullet();
+            ImGuiExt.LinkText("bgfx", "https://github.com/bkaradzic/bgfx");
+            ImGui.SameLine();
+            ImGui.Text("(c) 2020-2024 Branimir Karadzic - BSD 2-Clause License");
+            
+            ImGui.EndPopup();
         }
     }
 }

@@ -15,7 +15,7 @@ public class RainEdStartupException : Exception
 
 sealed class RainEd
 {
-    public const string Version = "v2.0.3";
+    public const string Version = "v2.0.4";
 
     public static RainEd Instance = null!;
 
@@ -359,6 +359,8 @@ sealed class RainEd
 
         currentFilePath = string.Empty;
         UpdateTitle();
+
+        //AssetGraphics.ClearTextureCache();
     }
 
     public void LoadLevel(string path)
@@ -393,6 +395,8 @@ sealed class RainEd
                 // i think it may be useful to add it to the list
                 // even if the level failed to load due to unrecognized assets
                 AddToRecentFiles(path);
+
+                //AssetGraphics.ClearTextureCache();
             }
             catch (Exception e)
             {
@@ -641,6 +645,8 @@ sealed class RainEd
     {
         if (Raylib.WindowShouldClose())
             EditorWindow.PromptUnsavedChanges(() => Running = false);
+        
+        AssetGraphics.Maintenance();
         
         foreach (var f in deferredActions) f();
         deferredActions.Clear();
