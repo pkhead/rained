@@ -6,7 +6,6 @@ Bugs:
 - reported crash in asset manager due to queues or something
 - fix double resource disposal on window close
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
-- file browser window is too big on high dpi
 
 Overall:
 - dissolve material/tile separation
@@ -32,8 +31,6 @@ Overall:
 - undo/redo for level resize
 - level resze drag
 - level resize change history
-- help pages/hints/tooltips/whatever
-- tile cat# and index# saving is probably incorrect
 - option to use "legacy" shortcut icons
 - put asterik in window title for unsaved levels
 - ability to have more than one level loaded at once
