@@ -360,8 +360,12 @@ partial class FileBrowser
             isOpen = true;
             ImGui.OpenPopup(winName + "###File Browser");
 
+            var windowSize = new Vector2(ImGui.GetTextLineHeight() * 80f, ImGui.GetTextLineHeight() * 40f);
+            windowSize.X = Math.Min(ImGui.GetMainViewport().WorkSize.X - 50f, windowSize.X);
+            windowSize.Y = Math.Min(ImGui.GetMainViewport().WorkSize.Y - 50f, windowSize.Y);
+
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-            ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 80f, ImGui.GetTextLineHeight() * 40f), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
         }
 
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
