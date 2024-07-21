@@ -542,27 +542,22 @@ class EffectsEditor : IEditorMode
 
                     if (strokeStart || new Vector2i(bcx, bcy) != lastBrushPos)
                     {
-                        Util.Bresenham(lastBrushPos.X, lastBrushPos.Y, bcx, bcy, (int origX, int origY) =>
+                        var origX = bcx;
+                        var origY = bcy;
+
+                        for (int x = bLeft; x <= bRight; x++)
                         {
-                            var bLeft = origX - bsize;
-                            var bTop = origY - bsize;
-                            var bRight = origX + bsize;
-                            var bBot = origY + bsize;
-
-                            for (int x = bLeft; x <= bRight; x++)
+                            for (int y = bTop; y <= bBot; y++)
                             {
-                                for (int y = bTop; y <= bBot; y++)
-                                {
-                                    if (!level.IsInBounds(x, y)) continue;
-                                    var brushP = GetBrushPower(origX, origY, bsize, x, y);
+                                if (!level.IsInBounds(x, y)) continue;
+                                var brushP = GetBrushPower(origX, origY, bsize, x, y);
 
-                                    if (brushP > 0f)
-                                    {
-                                        effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
-                                    }
+                                if (brushP > 0f)
+                                {
+                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
                                 }
                             }
-                        });
+                        }
 
                         lastBrushPos.X = bcx;
                         lastBrushPos.Y = bcy;
