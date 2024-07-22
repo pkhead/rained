@@ -186,7 +186,7 @@ internal class DrawBatch
     }
 }
 
-public struct BatchDrawHandle : IDisposable
+public class BatchDrawHandle : IDisposable
 {
     private readonly static Vector2[] verts = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero];
     private readonly static Vector2[] uvs = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero,];
@@ -207,7 +207,7 @@ public struct BatchDrawHandle : IDisposable
         color = batch.DrawColor;
     }
 
-    private readonly bool IsFull()
+    private bool IsFull()
     {
         return mode switch
         {

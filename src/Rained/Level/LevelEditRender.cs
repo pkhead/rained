@@ -537,6 +537,7 @@ class LevelEditRender : IDisposable
             renderPalette = false;
         }
 
+        Span<Vector2> transformQuads = stackalloc Vector2[4];
         foreach (var prop in Level.Props)
         {
             // cull prop if it is outside of the view bounds
@@ -678,21 +679,38 @@ class LevelEditRender : IDisposable
                     
                     using (var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture))
                     {
-                        // top-left
-                        batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                        batch.Vertex(quad[0].X * Level.TileSize, quad[0].Y * Level.TileSize);
+                        transformQuads[0] = quad[0] * Level.TileSize;
+                        transformQuads[1] = quad[1] * Level.TileSize;
+                        transformQuads[2] = quad[2] * Level.TileSize;
+                        transformQuads[3] = quad[3] * Level.TileSize;
 
-                        // bottom-left
-                        batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                        batch.Vertex(quad[3].X * Level.TileSize, quad[3].Y * Level.TileSize);
+                        if (prop.IsAffine)
+                        {
+                            // top-left
+                            batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                            batch.Vertex(transformQuads[0]);
 
-                        // bottom-right
-                        batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                        batch.Vertex(quad[2].X * Level.TileSize, quad[2].Y * Level.TileSize);
+                            // bottom-left
+                            batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                            batch.Vertex(transformQuads[3]);
 
-                        // top right
-                        batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                        batch.Vertex(quad[1].X * Level.TileSize, quad[1].Y * Level.TileSize);
+                            // bottom-right
+                            batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
+                            batch.Vertex(transformQuads[2]);
+
+                            // top right
+                            batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
+                            batch.Vertex(transformQuads[1]);
+                        }
+                        else
+                        {
+                            DrawDeformedMesh(batch, transformQuads, new Rectangle(
+                                srcRect.X / displayTexture.Width,
+                                srcRect.Y / displayTexture.Height,
+                                srcRect.Width / displayTexture.Width,
+                                srcRect.Height / displayTexture.Height)
+                            );
+                        };
                     }
                 }
             }
@@ -720,6 +738,43 @@ class LevelEditRender : IDisposable
         }
         
         rctx.Shader = null;
+    }
+
+    private static void DrawDeformedMesh(Glib.BatchDrawHandle batch, ReadOnlySpan<Vector2> quad, Rectangle uvRect)
+    {
+        const float uStep = 1.0f / 6.0f;
+        const float vStep = 1.0f / 6.0f;
+        float nextU;
+        float nextV;
+
+        for (float u = 0f; u < 1f; u += uStep)
+        {
+            nextU = Math.Min(u + uStep, 1f);
+
+            Vector2 uPos0 = Vector2.Lerp(quad[0], quad[1], u);
+            Vector2 uPos1 = Vector2.Lerp(quad[3], quad[2], u);
+            Vector2 nextUPos0 = Vector2.Lerp(quad[0], quad[1], nextU);
+            Vector2 nextUPos1 = Vector2.Lerp(quad[3], quad[2], nextU);
+
+            for (float v = 0f; v < 1f; v += vStep)
+            {
+                nextV = Math.Min(v + vStep, 1f);
+
+                Vector2 vPos0 = Vector2.Lerp(uPos0, uPos1, v);
+                Vector2 vPos1 = Vector2.Lerp(uPos0, uPos1, nextV);
+                Vector2 vPos2 = Vector2.Lerp(nextUPos0, nextUPos1, nextV);
+                Vector2 vPos3 = Vector2.Lerp(nextUPos0, nextUPos1, v);
+
+                batch.TexCoord(uvRect.Position + uvRect.Size * new Vector2(u, v));
+                batch.Vertex(vPos0);
+                batch.TexCoord(uvRect.Position + uvRect.Size * new Vector2(u, nextV));
+                batch.Vertex(vPos1);
+                batch.TexCoord(uvRect.Position + uvRect.Size * new Vector2(nextU, nextV));
+                batch.Vertex(vPos2);
+                batch.TexCoord(uvRect.Position + uvRect.Size * new Vector2(nextU, v));
+                batch.Vertex(vPos3);
+            }
+        }
     }
 
     public void RenderGrid()
