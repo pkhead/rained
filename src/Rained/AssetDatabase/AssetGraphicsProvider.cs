@@ -210,18 +210,20 @@ class AssetGraphicsProvider
         // perform a super simple addition of the the image into the texture.
         // this doesn't do packing, it just adds it to the easiest to find empty space,
         // since packing is only done once per frame
+        // also, does not mess up the UVs of other tile previews so graphics don't look
+        // messed up.
         var newRect = new PackingRectangle(
             0, 0,
             (uint)tileImg.Width + 2, (uint)tileImg.Height + 2,
             id: atlas.rectangleCount
         );
 
-        // ran out of space on this row, move to the next one
         if (newRect.Width >= AtlasTextureWidth || newRect.Height >= AtlasTextureHeight)
         {
-            throw new Exception($"Tiles whose dimensions are larger than ({AtlasTextureWidth}, {AtlasTextureHeight}) pixels are not supported");
+            throw new Exception($"Tiles whose preview texture dimensions are larger than ({AtlasTextureWidth}, {AtlasTextureHeight}) pixels are not supported");
         }
 
+        // ran out of space on this row, move to the next one
         while (atlas.curX + newRect.Width >= AtlasTextureWidth)
         {
             atlas.curY += atlas.rowHeight;
@@ -243,8 +245,11 @@ class AssetGraphicsProvider
             atlas.rectangleCount++;
             atlas.tiles.Add(tileName);
 
+            Log.Information("Preview atlas running out of space...");
+
             if (PackAtlas(atlas))
             {
+                Log.Information("Force-pack was successful!");
                 // force-packing was successful
                 _tilePreviewRects.Add(tileName, (_tilePreviewAtlases.Count - 1, atlas.rectangleCount - 1));
                 return;
@@ -254,6 +259,8 @@ class AssetGraphicsProvider
             }
             else
             {
+                Log.Information("Pack unsuccessful, created another texture atlas.");
+
                 // space ran out, so we need a new texture atlas unfortunately
                 atlas.rectangleCount--;
                 atlas.tiles.RemoveAt(atlas.tiles.Count - 1);
