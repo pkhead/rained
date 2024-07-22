@@ -201,6 +201,9 @@ namespace RainEd
                             Log.Error("GL: " + msg);
                     };
 
+                    Log.Information("GL renderer: {RendererName}", renderContext.GpuRenderer);
+                    Log.Information("GL vendor: {VendorName}", renderContext.GpuVendor);
+
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 
@@ -209,31 +212,37 @@ namespace RainEd
                 Raylib.InitWindow(window);
 
                 // create splash screen window to display while editor is loading
-                if (renderContext.CanUseMultipleWindows() && !bootOptions.NoSplashScreen)
+                if (!bootOptions.NoSplashScreen)
                 {
-                    var winOptions = new Glib.WindowOptions()
+                    if (renderContext.CanUseMultipleWindows())
                     {
-                        Width = 523,
-                        Height = 307,
-                        Border = Glib.WindowBorder.Hidden,
-                        Title = "Loading Rained..."
-                    };
+                        var winOptions = new Glib.WindowOptions()
+                        {
+                            Width = 523,
+                            Height = 307,
+                            Border = Glib.WindowBorder.Hidden,
+                            Title = "Loading Rained..."
+                        };
 
-                    splashScreenWindow = new Glib.Window(winOptions);
-                    splashScreenWindow.Initialize();
+                        splashScreenWindow = new Glib.Window(winOptions);
+                        splashScreenWindow.Initialize();
 
-                    //var rctx = splashScreenWindow.RenderContext!;
-                    var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                        //var rctx = splashScreenWindow.RenderContext!;
+                        var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
 
-                    renderContext.AddWindow(splashScreenWindow);
-                    renderContext.Begin();
-                    renderContext.PushWindowFramebuffer(splashScreenWindow);
-                    renderContext.Clear(Glib.Color.Black);
-                    renderContext.DrawTexture(texture);
-                    renderContext.PopFramebuffer();
-                    
-                    renderContext.End();
-                    //splashScreenWindow.SwapBuffers();
+                        renderContext.AddWindow(splashScreenWindow);
+                        renderContext.Begin();
+                        renderContext.PushWindowFramebuffer(splashScreenWindow);
+                        renderContext.Clear(Glib.Color.Black);
+                        renderContext.DrawTexture(texture);
+                        renderContext.PopFramebuffer();
+                        
+                        renderContext.End();
+                    }
+                    else
+                    {
+                        Log.Error("Could not create splash screen! GL renderer does not support swap chain");
+                    }
                 }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);

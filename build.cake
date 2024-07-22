@@ -118,7 +118,7 @@ Task("Build Shaders")
             def = "shaders/" + shebang[3..];
 
         CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), def, shaderTypeStr, "150");
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), def, shaderTypeStr, "s_5_0");
+        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), def, shaderTypeStr, "s_4_0");
         CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), def, shaderTypeStr, "spirv");
     }
 
