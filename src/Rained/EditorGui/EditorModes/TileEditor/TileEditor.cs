@@ -430,6 +430,7 @@ partial class TileEditor : IEditorMode
             lastPlaceX = -1;
             lastPlaceY = -1;
             lastPlaceL = -1;
+            removedOnSameCell = false;
         }
         
         Raylib.EndScissorMode();
