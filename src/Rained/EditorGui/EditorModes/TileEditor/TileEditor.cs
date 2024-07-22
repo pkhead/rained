@@ -819,10 +819,12 @@ partial class TileEditor : IEditorMode
             {
                 //srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 16, selectedTile.Height * 16));
                 srcRect = previewRect!.Value;
+                Raylib.EndShaderMode();
             }
             else
             {
                 srcRect = new Rectangle(Vector2.Zero, new Vector2(selectedTile.Width * 2, selectedTile.Height * 2));
+                Raylib.BeginShaderMode(Shaders.UvRepeatShader);
             }
 
             // draw tile preview
@@ -832,6 +834,8 @@ partial class TileEditor : IEditorMode
                 Vector2.Zero, 0f,
                 validationStatus == TilePlacementStatus.Success ? new Color(255, 255, 255, 200) : new Color(255, 0, 0, 200)
             );
+
+            Raylib.EndShaderMode();
 
             // place tile on click
             if (isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Left))

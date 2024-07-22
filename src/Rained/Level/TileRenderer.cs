@@ -154,14 +154,16 @@ class TileRenderer
                     // could not find the texture for the given tile
                     if (previewTexture is null)
                     {
-                        var srcRec = new Rectangle(0f, 0f, init.Width * 2f, init.Height * 2f);
+                        var srcRec = new Rectangle(-0f, -0f, init.Width * 2f, init.Height * 2f);
                         var dstRec = new Rectangle(
                             (tileRender.X - init.CenterX) * Level.TileSize,
                             (tileRender.Y - init.CenterY) * Level.TileSize,
                             init.Width * Level.TileSize,
                             init.Height * Level.TileSize
                         );
+                        Raylib.BeginShaderMode(Shaders.UvRepeatShader);
                         Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
+                        Raylib.EndShaderMode();
                         continue;
                     }
                     
@@ -189,7 +191,8 @@ class TileRenderer
                                 // probably caused from comms move level tool,
                                 // which does not correct tile pointers.
                                 // draws a red checkerboard
-                                if (!isTileRoot && cell.HasTile() && (!level.IsInBounds(cell.TileRootX, cell.TileRootY) ||
+                                if (!isTileRoot && cell.HasTile() && cell.TileHead is null &&
+                                    (!level.IsInBounds(cell.TileRootX, cell.TileRootY) ||
                                     level.Layers[cell.TileLayer, cell.TileRootX, cell.TileRootY].TileHead is null))
                                 {
                                     Raylib.DrawRectangleV(new Vector2(gx, gy) * Level.TileSize, Vector2.One * Level.TileSize, Color.Red);

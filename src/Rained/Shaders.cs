@@ -53,6 +53,12 @@ static class Shaders
     /// </summary>
     public static RlManaged.Shader RenderPreviewLightShader { get; private set; } = null!;
 
+    /// <summary>
+    /// Bgfx does not have a repeat sampling mode, so I have to reimplement
+    /// it in a shader.
+    /// </summary>
+    public static RlManaged.Shader UvRepeatShader { get; private set; } = null!;
+
     public static void LoadShaders()
     {
         EffectsMatrixShader = RlManaged.Shader.Load(null, "effect_matrix_fs");
@@ -65,6 +71,7 @@ static class Shaders
         GridShader = RlManaged.Shader.Load("grid_vs", "grid_fs");
         RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview_fs");
         RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview_fs");
+        UvRepeatShader = RlManaged.Shader.Load(null, "uv_repeat_fs");
     }
 
     private const string EffectsMatrixShaderSource = @"
