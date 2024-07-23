@@ -8,6 +8,7 @@ static class Fonts
 {
     private static string[] availableFontPaths = [];
     private static ImFontPtr[] loadedFonts = [];
+    private static ImFontPtr[] loadedBigFonts = [];
 
     public static ReadOnlySpan<string> AvailableFonts => availableFontPaths;
 
@@ -32,6 +33,7 @@ static class Fonts
         var oldFont = GetCurrentFont();
 
         List<ImFontPtr> loadedFontList = [];
+        List<ImFontPtr> loadedBigFontsList = [];
 
         var io = ImGui.GetIO();
 
@@ -39,8 +41,12 @@ static class Fonts
 
         foreach (var file in availableFontPaths)
         {
-            var font = io.Fonts.AddFontFromFileTTF(Path.Combine(FontDirectory, file + ".ttf"), 13f * Boot.WindowScale);
+            var fullFilePath = Path.Combine(FontDirectory, file + ".ttf");
+            var font = io.Fonts.AddFontFromFileTTF(fullFilePath, 13f * Boot.WindowScale);
             loadedFontList.Add(font);
+
+            var bigFont = io.Fonts.AddFontFromFileTTF(fullFilePath, 26f * Boot.WindowScale);
+            loadedBigFontsList.Add(bigFont);
         }
 
         /*for (int i = 0; i < io.Fonts.ConfigData.Size; i++)
@@ -52,6 +58,7 @@ static class Fonts
         }*/
 
         loadedFonts = [..loadedFontList];
+        loadedBigFonts = [..loadedBigFontsList];
 
         if (!string.IsNullOrEmpty(oldFont))
         {
@@ -94,5 +101,23 @@ static class Fonts
         }
 
         return string.Empty;
+    }
+
+    public static ImFontPtr? GetCurrentBigFont()
+    {
+        var io = ImGui.GetIO();
+
+        unsafe
+        {
+            for (int i = 0; i < loadedFonts.Length; i++)
+            {
+                if (loadedFonts[i].NativePtr == io.FontDefault.NativePtr)
+                {
+                    return loadedBigFonts[i];
+                }
+            }
+        }
+
+        return null;
     }
 }

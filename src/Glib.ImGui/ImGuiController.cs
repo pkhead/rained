@@ -20,6 +20,7 @@ namespace Glib.ImGui
         //private ImGuiViewports _viewports;
 
         private Glib.Texture _fontTexture;
+        public Glib.Texture FontTexture => _fontTexture;
         private Glib.Shader _shader;
         private Glib.Mesh _drawMesh;
         private List<Glib.Texture> _textures = [];
