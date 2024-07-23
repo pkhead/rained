@@ -438,6 +438,10 @@ static class PreferencesWindow
                 """
             );
 
+            bool showCameraNumbers = prefs.ShowCameraNumbers;
+            if (ImGui.Checkbox("Show camera numbers", ref showCameraNumbers))
+                prefs.ShowCameraNumbers = showCameraNumbers;
+
             //bool multiViewport = prefs.ImGuiMultiViewport;
             //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
             //    prefs.ImGuiMultiViewport = multiViewport;

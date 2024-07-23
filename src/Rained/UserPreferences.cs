@@ -55,6 +55,7 @@ class UserPreferences
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
+    public bool ShowCameraNumbers { get; set; } = false;
 
     //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.
     public bool HideScreenSize { get; set; }

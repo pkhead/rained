@@ -457,6 +457,7 @@ class CameraEditor : IEditorMode
         );
 
         // draw camera number
+        if (RainEd.Instance.Preferences.ShowCameraNumbers)
         {
             RainEd.RenderContext.DrawColor = Glib.Color.White;
             var text = (RainEd.Instance.Level.Cameras.IndexOf(camera) + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
