@@ -514,6 +514,7 @@ static class PreferencesWindow
         ImGui.Separator();
         ShortcutButton(KeyShortcut.ToggleViewGrid);
         ShortcutButton(KeyShortcut.ToggleViewTiles);
+        ShortcutButton(KeyShortcut.ToggleViewGraphics);
         ShortcutButton(KeyShortcut.ToggleViewProps);
         ShortcutButton(KeyShortcut.ToggleViewCameras);
 

@@ -259,11 +259,7 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
-                
-                if (ImGui.MenuItem("Tile Graphics", null, prefs.ViewPreviews))
-                {
-                    prefs.ViewPreviews = !prefs.ViewPreviews;
-                }
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
 
                 if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
                 {
@@ -406,6 +402,11 @@ static class EditorWindow
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewCameras))
         {
             renderer.ViewCameras = !renderer.ViewCameras;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGraphics))
+        {
+            prefs.ViewPreviews = !prefs.ViewPreviews;
         }
     }
 

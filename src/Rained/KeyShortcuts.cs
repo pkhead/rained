@@ -44,7 +44,7 @@ enum KeyShortcut : int
 
     // View settings shortcuts
     ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
-    ToggleViewCameras,
+    ToggleViewCameras, ToggleViewGraphics,
 
     /// <summary>
     /// Do not bind - this is just the number of shortcut IDs
@@ -370,5 +370,6 @@ static class KeyShortcuts
         Register("View Tiles", KeyShortcut.ToggleViewTiles, ImGuiKey.T, ImGuiModFlags.Ctrl);
         Register("View Props", KeyShortcut.ToggleViewProps, ImGuiKey.P, ImGuiModFlags.Ctrl);
         Register("View Camera Borders", KeyShortcut.ToggleViewCameras, ImGuiKey.M, ImGuiModFlags.Ctrl);
+        Register("View Tile Graphics", KeyShortcut.ToggleViewGraphics, ImGuiKey.T, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
     }
 }

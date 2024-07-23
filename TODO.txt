@@ -9,7 +9,6 @@ Bugs:
 v2.1.0:
 - favorite tiles and props
 - be able to view shortcut geo outside of the geometry editor
-- shortcut to toggle tile graphics (suggested: ctrl+shift+t)
 - option to use "legacy" shortcut icons
 
 Overall:
