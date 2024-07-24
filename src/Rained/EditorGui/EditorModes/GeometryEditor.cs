@@ -732,44 +732,66 @@ class GeometryEditor : IEditorMode
         Raylib.EndScissorMode();
     }
 
+    private int GetMirroredPositions(int tx, int ty, Span<(int x, int y)> positions)
+    {
+        int count = 1;
+        positions[0] = (tx, ty);
+
+        // mirror logic
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        {
+            positions[count++] = (mirrorOriginX * 2 - tx - 1, ty);
+            positions[count++] = (tx, mirrorOriginY * 2 - ty - 1);
+            positions[count++] = (mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1);
+        }
+        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
+        {
+            positions[count++] = (mirrorOriginX * 2 - tx - 1, ty);
+        }
+        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        {
+            positions[count++] = (tx, mirrorOriginY * 2 - ty - 1);
+        }
+
+        return count;
+    }
+
     private void Erase(int tx, int ty)
     {
         var level = RainEd.Instance.Level;
-        if (!level.IsInBounds(tx, ty)) return;
 
-        for (int l = 0; l < 3; l++)
+        Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
+        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
+
+        for (int i = 0; i < mirrorCount; i++)
         {
-            if (!layerMask[l]) continue;
+            var (x, y) = mirrorPositions[i];
+            if (!level.IsInBounds(x, y)) return;
 
-            ref var cell = ref level.Layers[l, tx, ty];
-            cell.Objects = 0;
+            for (int l = 0; l < 3; l++)
+            {
+                if (!layerMask[l]) continue;
 
-            if (cell.Geo == GeoType.ShortcutEntrance || selectedTool is Tool.Wall or Tool.Platform or Tool.Slope or Tool.Glass)
-                cell.Geo = GeoType.Air;
+                ref var cell = ref level.Layers[l, x, y];
+                cell.Objects = 0;
 
-            window.Renderer.InvalidateGeo(tx, ty, l);
+                if (cell.Geo == GeoType.ShortcutEntrance || selectedTool is Tool.Wall or Tool.Platform or Tool.Slope or Tool.Glass)
+                    cell.Geo = GeoType.Air;
+
+                window.Renderer.InvalidateGeo(x, y, l);
+            }
         }
     }
 
     private void ActivateTool(Tool tool, int tx, int ty, bool pressed)
     {
-        ActivateToolSingleTile(tool, tx, ty, pressed);
-        if (isToolRectActive) return;
+        Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
+        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
 
-        // mirror logic
-        if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
+        for (int i = 0; i < mirrorCount; i++)
         {
-            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, ty, pressed);
-            ActivateToolSingleTile(tool, tx, mirrorOriginY * 2 - ty - 1, pressed);
-            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1, pressed);
-        }
-        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
-        {
-            ActivateToolSingleTile(tool, mirrorOriginX * 2 - tx - 1, ty, pressed);
-        }
-        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
-        {
-            ActivateToolSingleTile(tool, tx, mirrorOriginY * 2 - ty - 1, pressed);
+            ActivateToolSingleTile(tool, mirrorPositions[i].x, mirrorPositions[i].y, pressed);
+            if (isToolRectActive) return;
         }
     }
 
