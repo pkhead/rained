@@ -744,7 +744,7 @@ class GeometryEditor : IEditorMode
             ref var cell = ref level.Layers[l, tx, ty];
             cell.Objects = 0;
 
-            if (cell.Geo == GeoType.ShortcutEntrance)
+            if (cell.Geo == GeoType.ShortcutEntrance || selectedTool is Tool.Wall or Tool.Platform or Tool.Slope or Tool.Glass)
                 cell.Geo = GeoType.Air;
 
             window.Renderer.InvalidateGeo(tx, ty, l);
