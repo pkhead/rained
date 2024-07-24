@@ -12,6 +12,7 @@ v2.1.0:
 - option to use "legacy" shortcut icons
 
 Overall:
+- optional download from solar's repo
 - dissolve material/tile separation
 - optimize tile deform rendering
 - does update checker notif window timing work?
