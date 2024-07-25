@@ -9,8 +9,12 @@ class LevelView
 
     private Vector2 viewOffset = new();
     private float viewZoom = 1f;
-    private int zoomSteps = 0;
+    private float zoomSteps = 0;
     private int workLayer = 0;
+
+    private const float ZoomFactorPerStep = 1.5f;
+    private const int MaxZoomSteps = 7;
+    private const int MinZoomSteps = -5;
 
     public float ViewZoom { get => viewZoom; }
     public int WorkLayer { get => workLayer; set => workLayer = value; }
@@ -266,8 +270,12 @@ class LevelView
                 ImGui.SameLine();
                 ImGui.TextUnformatted(StatusText);
                 StatusText = string.Empty;
-                WriteStatus($"Zoom: {Math.Floor(viewZoom * 100f)}%");
-                WriteStatus($"Mouse: ({MouseCx}, {MouseCy})");
+
+                {
+                    var zoomText = $"Zoom: {Math.Floor(viewZoom * 100f)}%";
+                    var mouseText = $"Mouse: ({MouseCx}, {MouseCy})";
+                    WriteStatus(zoomText.PadRight(12, ' ') + mouseText);
+                }
                 //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
 
 
@@ -471,10 +479,19 @@ class LevelView
                 wheelMove = -1f;
             }
 
-            var zoomFactor = 1.5;
-            if (wheelMove > 0f && zoomSteps < 5)
+            zoomSteps = Math.Clamp(zoomSteps + wheelMove, MinZoomSteps, MaxZoomSteps);
+
+            if (wheelMove != 0f)
             {
-                var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
+                var newZoom = MathF.Pow(ZoomFactorPerStep, zoomSteps);
+                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
+                viewZoom = newZoom; // to mitigate potential floating point error accumulation
+            }
+
+            /*if (wheelMove > 0f && zoomSteps < 7)
+            {
+                var newZoom = MathF.Pow(ZoomFactorPerStep, zoomSteps);
+                //var newZoom = Math.Round(viewZoom * zoomFactor * 1000.0) / 1000.0;
                 Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
                 zoomSteps++;
             }
@@ -483,7 +500,7 @@ class LevelView
                 var newZoom = Math.Round(viewZoom / zoomFactor * 1000.0) / 1000.0;
                 Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
                 zoomSteps--;
-            }
+            }*/
         }
 
         if (EditorWindow.IsPanning && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
