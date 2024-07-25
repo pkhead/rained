@@ -576,6 +576,8 @@ static class PreferencesWindow
 
         ImGui.SeparatorText("Props");
         ShortcutButton(KeyShortcut.ToggleVertexMode);
+        ShortcutButton(KeyShortcut.RopeSimulation);
+        ShortcutButton(KeyShortcut.ResetSimulation);
     }
 
     private static readonly List<string> availableThemes = [];

@@ -122,6 +122,7 @@ static partial class ShortcutsWindow
             ("[RemoveObject]", "Delete selected prop(s)"),
             ("[ToggleVertexMode]", "Toggle vertex mode"),
             ("[Duplicate]", "Duplicate selected prop(s)"),
+            ("[RopeSimulation]", "Simulate selected rope prop(s)")
         ]
     };
 

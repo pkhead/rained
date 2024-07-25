@@ -831,7 +831,7 @@ partial class PropEditor : IEditorMode
                         // rope simulation controls
                         if (affineProps)
                         {
-                            if (ImGui.Button("Reset Simulation"))
+                            if (ImGui.Button("Reset Simulation") || KeyShortcuts.Activated(KeyShortcut.ResetSimulation))
                             {
                                 changeRecorder.BeginTransform();
 
@@ -844,7 +844,7 @@ partial class PropEditor : IEditorMode
                             ImGui.SameLine();
                             ImGui.Button("Simulate");
 
-                            if (ImGui.IsItemActive())
+                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation))
                             {
                                 isRopeSimulationActive = true;
 
