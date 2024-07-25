@@ -60,16 +60,12 @@ class CameraEditor : IEditorMode
 
         if (ImGui.MenuItem("Prioritize Camera") && selectedCamera is not null)
         {
-            changeRecorder.BeginChange();
             RainEd.Instance.Level.PrioritizedCamera = selectedCamera;
-            changeRecorder.PushChange();
         }
 
         if (ImGui.MenuItem("Clear Priority"))
         {
-            changeRecorder.BeginChange();
             RainEd.Instance.Level.PrioritizedCamera = null;
-            changeRecorder.PushChange();
         }
     }
     
