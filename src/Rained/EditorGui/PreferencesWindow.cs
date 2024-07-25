@@ -468,6 +468,33 @@ static class PreferencesWindow
             if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
                 prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions) autotileMouseMode;
             
+            // prop selection layer filter
+            var propSelectionLayerFilter = (int) prefs.PropSelectionLayerFilter;
+            if (ImGui.Combo("Prop selection layer filter", ref propSelectionLayerFilter, "All\0Current\0In Front"))
+                prefs.PropSelectionLayerFilter = (UserPreferences.PropSelectionLayerFilterOption) propSelectionLayerFilter;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    This controls which layers you can select
+                    in the prop editor relative to the current
+                    view layer.
+                    
+                    - All: Will allow you to select props from
+                    any layer.
+                    - Current: Will only allow you to select
+                    props in the currently viewed layer.
+                    - In Front: Will only allow you to select
+                    props in the current layer as well as all
+                    layers behind it.
+                    """
+                );
+                ImGui.End();
+            }
+            
             ImGui.PopItemWidth();
         }
     }

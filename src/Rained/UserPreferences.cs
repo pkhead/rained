@@ -147,6 +147,45 @@ class UserPreferences
         }
     }
 
+    public enum PropSelectionLayerFilterOption
+    {
+        All, Current, InFront
+    }
+
+    public PropSelectionLayerFilterOption PropSelectionLayerFilter = PropSelectionLayerFilterOption.Current;
+
+    [JsonPropertyName("propSelectionLayerFilter")]
+    public string PropSelectionLayerFilterString {
+        get => PropSelectionLayerFilter switch
+        {
+            PropSelectionLayerFilterOption.All => "all",
+            PropSelectionLayerFilterOption.Current => "current",
+            PropSelectionLayerFilterOption.InFront => "inFront",
+            _ => throw new Exception("Invalid PropSelectionLayerFilterOption")
+        };
+        set
+        {
+            switch (value)
+            {
+                case "all":
+                    PropSelectionLayerFilter = PropSelectionLayerFilterOption.All;
+                    break;
+                
+                case "current":
+                    PropSelectionLayerFilter = PropSelectionLayerFilterOption.Current;
+                    break;
+
+                case "inFront":
+                    PropSelectionLayerFilter = PropSelectionLayerFilterOption.InFront;
+                    break;
+                
+                default:
+                    Log.Error("Invalid 'propSelecitonLayerFilter' option");
+                    break;
+            }
+        }
+    }
+
     public bool ShowPaletteWindow { get; set; }
     public bool UsePalette { get; set; }
     public int PaletteIndex { get; set; }

@@ -192,12 +192,46 @@ partial class PropEditor : IEditorMode
         return MathF.Round(number / snap) * snap;
     }
 
+    private static void GetSelectionLayerFilter(int layer, out int layerMin, out int layerMax)
+    {
+        var mode = RainEd.Instance.Preferences.PropSelectionLayerFilter;
+        switch (mode)
+        {
+            case UserPreferences.PropSelectionLayerFilterOption.All:
+                layerMin = 0;
+                layerMax = 2;
+                break;
+            
+            case UserPreferences.PropSelectionLayerFilterOption.Current:
+                layerMin = layer;
+                layerMax = layer;
+                break;
+            
+            case UserPreferences.PropSelectionLayerFilterOption.InFront:
+                layerMin = layer;
+                layerMax = 2;
+                break;
+            
+            default:
+                layerMin = layer;
+                layerMax = layer;
+                break;
+        }
+    }
+
+    private static bool IsSublayerWithinFilter(int depthOffset, int layerMin, int layerMax)
+    {
+        return depthOffset >= layerMin * 10 && depthOffset < (layerMax+1) * 10;
+    }
+
     private static Prop? GetPropAt(Vector2 point, int layer)
     {
+        GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
+        
         for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
         {
             var prop = RainEd.Instance.Level.Props[i];
-            if (prop.DepthOffset < layer * 10) continue;
+            if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
 
             var pts = prop.QuadPoints;
             if (
@@ -214,11 +248,12 @@ partial class PropEditor : IEditorMode
 
     private static Prop[] GetPropsAt(Vector2 point, int layer)
     {
+        GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
         var list = new List<Prop>();
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
-            if (prop.DepthOffset < layer * 10) continue;
+            if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
 
             var pts = prop.QuadPoints;
             if (
@@ -598,10 +633,12 @@ partial class PropEditor : IEditorMode
                     selectedProps.Add(prop);
             }
 
+            GetSelectionLayerFilter(window.WorkLayer, out int layerMin, out int layerMax);
+
             foreach (var prop in level.Props)
             {
                 if (selectedProps.Contains(prop)) continue;
-                if (prop.DepthOffset < window.WorkLayer * 10) continue;
+                if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
                 
                 var pc = GetPropCenter(prop);
                 if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
