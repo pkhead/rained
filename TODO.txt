@@ -7,11 +7,18 @@ Bugs:
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
 v2.1.0:
+- get the material previews from the one guy on discord
 - favorite tiles and props
 - be able to view shortcut geo outside of the geometry editor
 - option to use "legacy" shortcut icons
+- rope simulation keybind
+- allow numbers to skip in palettes
 
 Overall:
+- asset manager
+  - can rearrange the order of stuff in asset manager
+  - can change color in asset manager
+  - actually it's a big buggy when fully importing solars repo
 - optional download from solar's repo
 - dissolve material/tile separation
 - optimize tile deform rendering
