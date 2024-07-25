@@ -252,6 +252,10 @@ partial class TileEditor : IEditorMode
                     {
                         window.WriteStatus(tile.Name, 3);
                     }
+                    else
+                    {
+                        window.WriteStatus("Stray tile fragment", 3);
+                    }
                 }
                 else if (mouseCell.Material != 0)
                 {
@@ -345,8 +349,8 @@ partial class TileEditor : IEditorMode
                         tileX = mouseCell.TileRootX;
                         tileY = mouseCell.TileRootY;
 
-                        if (!level.IsInBounds(tileX, tileY) || level.Layers[tileLayer, tileX, tileY].TileHead is null)
-                            ImGui.SetTooltip("Detached tile body");
+                        //if (!level.IsInBounds(tileX, tileY) || level.Layers[tileLayer, tileX, tileY].TileHead is null)
+                        //    ImGui.SetTooltip("Detached tile body");
                     }
 
 
