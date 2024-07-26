@@ -365,7 +365,7 @@ public class Shader : Resource
             var texHandle = texture.Handle;
             if (!texHandle.Valid)
             {
-                RenderContext.Instance!.Log?.Invoke(LogLevel.Error, "Texture handle was invalid!");
+                RenderContext.LogError("Texture handle was invalid!");
                 texture = placeholderTexture;
             }
 

@@ -190,16 +190,16 @@ namespace RainEd
                         }
                     }
 
-                    renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
-                    renderContext.Log = (LogLevel logLevel, string msg) =>
+                    RenderContext.Log = (LogLevel logLevel, string msg) =>
                     {
                         if (logLevel == LogLevel.Debug)
-                            Log.Debug(msg);
+                            Log.Information(msg);
                         else if (logLevel == LogLevel.Information)
                             Log.Information("GL: " + msg);
                         else if (logLevel == LogLevel.Error)
                             Log.Error("GL: " + msg);
                     };
+                    renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
 
                     Log.Information("GL renderer: {RendererName}", renderContext.GpuRenderer);
                     Log.Information("GL vendor: {VendorName}", renderContext.GpuVendor);

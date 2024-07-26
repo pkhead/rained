@@ -103,10 +103,10 @@ public sealed class RenderContext : IDisposable
     public Shader? Shader { get => _drawBatch.Shader; set => _drawBatch.Shader = value; }
     public uint Frame { get; internal set; } = 0;
 
-    public Action<LogLevel, string>? Log;
+    public static Action<LogLevel, string>? Log;
 
-    internal static void LogInfo(string msg) => Instance!.Log?.Invoke(LogLevel.Information, msg);
-    internal static void LogError(string msg) => Instance!.Log?.Invoke(LogLevel.Error, msg);
+    internal static void LogInfo(string msg) => Log?.Invoke(LogLevel.Information, msg);
+    internal static void LogError(string msg) => Log?.Invoke(LogLevel.Error, msg);
 
     /// <summary>
     /// If Glib should use GL_LINES primitives for drawing lines.
