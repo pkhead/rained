@@ -17,6 +17,6 @@ namespace Bgfx_cs
 {
     public static partial class Bgfx
     {
-        const string DllName = "bgfx";
+        const string DllName = "bgfx_debug";
     }
 }
