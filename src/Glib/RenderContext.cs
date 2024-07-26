@@ -259,7 +259,7 @@ public sealed class RenderContext : IDisposable
             RendererType.Vulkan => Bgfx.RendererType.Vulkan,
             _ => Bgfx.RendererType.Count
         };
-        init.callback = _cbInterface.Pointer;
+        //init.callback = _cbInterface.Pointer;
 
         GetHandles(mainWindow.SilkWindow, out nint nwh, out nint ndt, out var windowType);
 
