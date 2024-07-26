@@ -127,6 +127,8 @@ class AppSetup
                                 ImGui.CloseCurrentPopup();
                                 missingDirs.Clear();
                             }
+
+                            ImGui.EndPopup();
                         }
                     }
                 }
