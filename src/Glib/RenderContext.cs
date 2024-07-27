@@ -128,7 +128,7 @@ public sealed class RenderContext : IDisposable
     public readonly string GpuRenderer;
     public readonly RendererType GpuRendererType;
 
-    private CallbackInterface _cbInterface;
+    //private CallbackInterface _cbInterface;
     private Window _mainWindow;
     private List<(Window window, Framebuffer framebuffer)> _windows = [];
 
@@ -231,7 +231,7 @@ public sealed class RenderContext : IDisposable
         Instance = this;
         _mainWindow = mainWindow;
 
-        _cbInterface = new CallbackInterface()
+        /*_cbInterface = new CallbackInterface()
         {
             Log = (string msg) =>
             {
@@ -243,7 +243,7 @@ public sealed class RenderContext : IDisposable
                 var str = $"{filePath}:{line} ({code}): {msg}";
                 Log?.Invoke(LogLevel.Error, str);
             }
-        };
+        };*/
 
         ScreenWidth = mainWindow.PixelWidth;
         ScreenHeight = mainWindow.PixelHeight;
@@ -364,7 +364,7 @@ public sealed class RenderContext : IDisposable
 
         Resource.DisposeRemaining();
         Bgfx.shutdown();
-        _cbInterface.Dispose();
+        //_cbInterface.Dispose();
         GC.SuppressFinalize(this);
     }
 
