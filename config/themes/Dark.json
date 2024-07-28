@@ -263,34 +263,46 @@
       0.98,
       0.95
     ],
-    "Tab": [
-      0.17999999,
-      0.34999996,
-      0.58000004,
-      0.862
-    ],
     "TabHovered": [
       0.26,
       0.59,
       0.98,
       0.8
     ],
-    "TabActive": [
+    "Tab": [
+      0.17999999,
+      0.34999996,
+      0.58000004,
+      0.862
+    ],
+    "TabSelected": [
       0.19999999,
       0.40999997,
       0.68,
       1
     ],
-    "TabUnfocused": [
+    "TabSelectedOverline": [
+      0.26,
+      0.59,
+      0.98,
+      1
+    ],
+    "TabDimmed": [
       0.068,
       0.10199998,
       0.14800003,
       0.9724
     ],
-    "TabUnfocusedActive": [
+    "TabDimmedSelected": [
       0.13599998,
       0.26199996,
       0.424,
+      1
+    ],
+    "TabDimmedSelectedOverline": [
+      0.5,
+      0.5,
+      0.5,
       1
     ],
     "DockingPreview": [
