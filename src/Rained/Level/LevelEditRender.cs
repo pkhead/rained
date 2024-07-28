@@ -1,5 +1,7 @@
 using Raylib_cs;
+using System.Globalization;
 using System.Numerics;
+using System.Text.RegularExpressions;
 
 namespace RainEd;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
@@ -72,19 +74,46 @@ class LevelEditRender : IDisposable
     public LevelEditRender()
     {
         editor = RainEd.Instance;
-        //ReloadGridTexture();
 
         // load palettes
         var palettes = new List<Palette>();
-        for (int i = 0;; i++)
+        foreach (var filePath in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "assets", "palettes")))
         {
-            var filePath = Path.Combine(Boot.AppDataPath, "assets", "palettes", "palette" + i + ".png");
-            if (!File.Exists(filePath)) break;
-            palettes.Add(new Palette(filePath));
+            var match = Regex.Match(Path.GetFileName(filePath), @"palette(\d+).png");
+            if (match is not null)
+            {
+                if (match.Groups.Count > 1 && int.TryParse(match.Groups[1].Value, CultureInfo.InvariantCulture, out int paletteNumber))
+                {
+                    Palette? palette = null;
+
+                    try
+                    {
+                        palette = new Palette(filePath);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Could not load palette {PaletteNumber}: {Exception}", paletteNumber, e);
+                    }
+
+                    if (palette is not null)
+                    {
+                        while (palettes.Count < paletteNumber) palettes.Add(new Palette());
+                        if (paletteNumber >= palettes.Count)
+                            palettes.Add(new Palette(filePath));
+                        else
+                            palettes[paletteNumber] = new Palette(filePath);
+                    }
+                }
+                else
+                {
+                    Log.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
+                }
+            }
         }
+        
         Palettes = [..palettes];
 
-        // create palette texture
+        // create palette texture which will be computed and sent to the palette shader
         // (Glib.PixelFormat.RGB does not work for some reason)
         paletteTexture = Glib.Texture.Create(30, 3, Glib.PixelFormat.RGBA);
         _paletteImgBuf = Glib.Image.FromColor(30, 3, Glib.Color.Black, Glib.PixelFormat.RGBA);

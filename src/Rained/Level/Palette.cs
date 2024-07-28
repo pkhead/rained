@@ -32,7 +32,35 @@ record Palette
     public ReadOnlySpan<PaletteShadeColors> SunPalette => sunPalette;
     public ReadOnlySpan<PaletteShadeColors> ShadowPalette => shadowPalette;
 
-    public Palette(string filePath)
+    public Palette()
+    {
+        SkyColor = Color.Black;
+        FogColor = Color.Black;
+        BlackColor = Color.Black;
+        ShortcutSymbolColor = Color.Black;
+
+        sunPalette = new PaletteShadeColors[30];
+        shadowPalette = new PaletteShadeColors[30];
+
+        for (int i = 0; i < 30; i++)
+        {
+            sunPalette[i] = new PaletteShadeColors()
+            {
+                Lit = Color.Black,
+                Neutral = Color.Black,
+                Shaded = Color.Black,
+            };
+
+            shadowPalette[i] = new PaletteShadeColors()
+            {
+                Lit = Color.Black,
+                Neutral = Color.Black,
+                Shaded = Color.Black,
+            };
+        }
+    }
+
+    public Palette(string filePath) : this()
     {
         using var img = RlManaged.Image.Load(filePath);
         if (!Raylib.IsImageReady(img))
