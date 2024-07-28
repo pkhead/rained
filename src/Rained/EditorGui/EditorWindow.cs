@@ -475,22 +475,26 @@ static class EditorWindow
         // not supposed to happen.
         if (drizzleRenderWindow is not null)
         {
+            RainEd.Instance.IsLevelLocked = true;
+            RainEd.Instance.NeedScreenRefresh();
+
             if (closeDrizzleRenderWindow)
             {
                 closeDrizzleRenderWindow = false;
                 drizzleRenderWindow.Dispose();
                 drizzleRenderWindow = null;
+                RainEd.Instance.IsLevelLocked = false;
+
+                // the whole render process allocates ~1 gb of memory
+                // so, try to free all that
+                GC.Collect(2, GCCollectionMode.Aggressive, true, true);
+                GC.WaitForFullGCComplete();
             }
             
             // if this returns true, the render window had closed
             else if (drizzleRenderWindow.DrawWindow())
             {
                 closeDrizzleRenderWindow = true;
-
-                // the whole render process allocates ~1 gb of memory
-                // so, try to free all that
-                GC.Collect(2, GCCollectionMode.Aggressive, true, true);
-                GC.WaitForFullGCComplete();
             }
         }
 

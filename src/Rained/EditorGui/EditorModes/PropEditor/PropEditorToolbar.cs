@@ -345,9 +345,13 @@ partial class PropEditor : IEditorMode
             RainEd.Instance.LevelView.WriteStatus("Shift - Vertex snap");
         }
 
-        // push rope transform if simulation had just ended
-        if (wasRopeSimulationActive && !isRopeSimulationActive)
+        if (isRopeSimulationActive)
         {
+            RainEd.Instance.NeedScreenRefresh();
+        }
+        else if (wasRopeSimulationActive)
+        {
+            // push rope transform if simulation had just ended
             Log.Information("End rope simulation");
             changeRecorder.PushTransform();
         }

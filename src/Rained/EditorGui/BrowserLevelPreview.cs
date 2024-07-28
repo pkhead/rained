@@ -91,6 +91,7 @@ class BrowserLevelPreview : FileBrowserPreview
             }
         }
 
+        RainEd.Instance.NeedScreenRefresh();
         return new MeshData(levelWidth, levelHeight, [..vertices], [..colors]);
     }
 

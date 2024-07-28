@@ -62,15 +62,19 @@ sealed class RainEd
     
     public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
 
+    // this is used to set window IsEventDriven to true
+    // when the user hasn't interacted with the window in a while
+    private float remainingActiveTime = 2f;
+    
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
     public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
     /// <summary>
     /// This is true whenever Rained is in a temporary state where level editing
-    /// should be locked (i.e., when saving, loading, or resizing the level)
+    /// should be locked (i.e., when saving, loading, resizing the level, or rendering)
     /// </summary>
-    public bool IsLevelLocked { get; private set; }
+    public bool IsLevelLocked { get; set; }
 
     public readonly RlManaged.Texture2D PlaceholderTexture;
 
@@ -308,6 +312,31 @@ sealed class RainEd
 
         Log.Information("Boot successful!");
         lastRopeUpdateTime = Raylib.GetTime();
+
+        Boot.Window.KeyDown += (Glib.Key _, int _) =>
+            NeedScreenRefresh();
+
+        Boot.Window.KeyUp += (Glib.Key _, int _) =>
+            NeedScreenRefresh();
+
+        Boot.Window.MouseDown += (Glib.MouseButton _) =>
+            NeedScreenRefresh();
+
+        Boot.Window.MouseUp += (Glib.MouseButton _) =>
+            NeedScreenRefresh();
+
+        Boot.Window.MouseMove += (float x, float y) =>
+            NeedScreenRefresh();
+    }
+
+    /// <summary>
+    /// Request the window to rerender even if the user hasn't sent any inputs.
+    /// </summary>
+    public void NeedScreenRefresh()
+    {
+        const float ActivityWaitTime = 2f;
+        remainingActiveTime = ActivityWaitTime;
+        Boot.Window.IsEventDriven = false;
     }
 
     public void Shutdown()
@@ -683,6 +712,15 @@ sealed class RainEd
         if (ShowDemoWindow)
         {
             ImGui.ShowDemoWindow(ref ShowDemoWindow);
+        }
+
+        if (remainingActiveTime > 0f)
+        {
+            remainingActiveTime -= dt;
+        }
+        else
+        {
+            Boot.Window.IsEventDriven = true;
         }
     }
 

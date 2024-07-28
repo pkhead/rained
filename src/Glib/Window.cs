@@ -63,6 +63,7 @@ public class Window : IDisposable
     public bool IsClosing { get => window.IsClosing; set => window.IsClosing = value; }
     public string Title { get => window.Title; set => window.Title = value; }
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
+    public bool IsEventDriven { get => window.IsEventDriven; set => window.IsEventDriven = value; }
 
     /// <summary>
     /// The content scale of the window. Only valid after Initialize has been called.

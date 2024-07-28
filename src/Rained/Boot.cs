@@ -134,7 +134,8 @@ namespace RainEd
                     Height = DefaultWindowHeight,
                     Border = Glib.WindowBorder.Resizable,
                     Title = "Rained",
-                    Visible = false
+                    Visible = false,
+                    IsEventDriven = false
                 };
 
                 window = new Glib.Window(windowOptions);
