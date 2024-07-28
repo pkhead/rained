@@ -41,7 +41,6 @@ static class PreferencesWindow
             justOpened = true;
             openPopupCmd = false;
             isWindowOpen = true;
-            ImGui.OpenPopup(WindowName);
 
             // center popup modal
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
@@ -53,53 +52,56 @@ static class PreferencesWindow
         bool showAssetsTab = false;
         bool showRenderSettingsTab = false;
 
-        if (ImGui.BeginPopupModal(WindowName, ref isWindowOpen))
+        if (isWindowOpen)
         {
-            var lastNavTab = selectedNavTab;
-
-            // show navigation sidebar
-            ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
+            if (ImGui.Begin(WindowName, ref isWindowOpen, ImGuiWindowFlags.NoDocking))
             {
-                for (int i = 0; i < NavTabs.Length; i++)
+                var lastNavTab = selectedNavTab;
+
+                // show navigation sidebar
+                ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
                 {
-                    if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
+                    for (int i = 0; i < NavTabs.Length; i++)
                     {
-                        selectedNavTab = (NavTabEnum)i;
+                        if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
+                        {
+                            selectedNavTab = (NavTabEnum)i;
+                        }
                     }
                 }
-            }
-            ImGui.EndChild();
+                ImGui.EndChild();
 
-            ImGui.SameLine();
-            ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
-            
-            switch (selectedNavTab)
-            {
-                case NavTabEnum.General:
-                    ShowGeneralTab(justOpened || lastNavTab != selectedNavTab);
-                    break;
-
-                case NavTabEnum.Shortcuts:
-                    ShowShortcutsTab();
-                    break;
-
-                case NavTabEnum.Theme:
-                    ShowThemeTab(justOpened || lastNavTab != selectedNavTab);
-                    break;
+                ImGui.SameLine();
+                ImGui.BeginChild("Controls", ImGui.GetContentRegionAvail());
                 
-                case NavTabEnum.Assets:
-                    AssetManagerGUI.Show();
-                    showAssetsTab = true;
-                    break;
-                
-                case NavTabEnum.Drizzle:
-                    ShowDrizzleTab();
-                    showRenderSettingsTab = true;
-                    break;
-            }
+                switch (selectedNavTab)
+                {
+                    case NavTabEnum.General:
+                        ShowGeneralTab(justOpened || lastNavTab != selectedNavTab);
+                        break;
 
-            ImGui.EndChild();
-            ImGui.EndPopup();
+                    case NavTabEnum.Shortcuts:
+                        ShowShortcutsTab();
+                        break;
+
+                    case NavTabEnum.Theme:
+                        ShowThemeTab(justOpened || lastNavTab != selectedNavTab);
+                        break;
+                    
+                    case NavTabEnum.Assets:
+                        AssetManagerGUI.Show();
+                        showAssetsTab = true;
+                        break;
+                    
+                    case NavTabEnum.Drizzle:
+                        ShowDrizzleTab();
+                        showRenderSettingsTab = true;
+                        break;
+                }
+
+                ImGui.EndChild();
+            }
+            ImGui.End();
         }
         else
         {
