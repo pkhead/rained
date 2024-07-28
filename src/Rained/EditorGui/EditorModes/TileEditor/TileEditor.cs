@@ -219,6 +219,34 @@ partial class TileEditor : IEditorMode
             Rlgl.PopMatrix();
         }
 
+        // determine if the user is hovering over a shortcut block
+        // if so, make the shortcuts more apparent
+        {
+            var shortcutAlpha = 127;
+
+            if (window.IsMouseInLevel())
+            {
+                var cell = level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
+                bool shortcut = cell.Geo == GeoType.ShortcutEntrance;
+
+                if (!shortcut)
+                {
+                    foreach (var obj in Level.ShortcutObjects)
+                    {
+                        if (cell.Has(obj))
+                        {
+                            shortcut = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shortcut) shortcutAlpha = 255;
+            }
+
+            levelRender.RenderShortcuts(new Color(255, 255, 255, shortcutAlpha));
+
+        }
         levelRender.RenderGrid();
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();

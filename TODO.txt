@@ -9,7 +9,6 @@ Bugs:
 
 v2.1.0:
 - get the material previews from the one guy on discord
-- be able to view shortcut geo outside of the geometry editor
 - option to use "legacy" shortcut icons
 - imgui seems to have added a new color for dock tabs
 - optional download from solar's repo

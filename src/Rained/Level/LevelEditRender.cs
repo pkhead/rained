@@ -26,14 +26,6 @@ class LevelEditRender : IDisposable
         { LevelObject.WormGrass,        new(1, 3) },
     };
 
-    // all objects associated with shortcuts
-    // (these are tracked because they will be rendered separately from other objects
-    // (i.e. without transparency regardless of the user's work layer)
-    private static readonly LevelObject[] ShortcutObjects = new[] {
-        LevelObject.Shortcut, LevelObject.CreatureDen, LevelObject.Entrance,
-        LevelObject.WhackAMoleHole, LevelObject.ScavengerHole, LevelObject.GarbageWorm,
-    };
-
     // shortcut objects that can be used to make a valid shortcut connection
     // seems to just be everything except a garbage worm spawn
     private static readonly LevelObject[] ConnectableShortcutObjects = new[] {
@@ -296,7 +288,7 @@ class LevelEditRender : IDisposable
                 for (int i = 1; i < 32; i++)
                 {
                     LevelObject objType = (LevelObject) (1 << (i-1));
-                    if (cell.Has(objType) && !ShortcutObjects.Contains(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
+                    if (cell.Has(objType) && !Level.ShortcutObjects.Contains(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
                             editor.LevelGraphicsTexture,
@@ -476,7 +468,7 @@ class LevelEditRender : IDisposable
                 }
 
                 // draw other objects
-                foreach (LevelObject objType in ShortcutObjects)
+                foreach (LevelObject objType in Level.ShortcutObjects)
                 {
                     if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {

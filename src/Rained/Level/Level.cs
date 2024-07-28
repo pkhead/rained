@@ -288,6 +288,14 @@ struct CellPosition(int x, int y, int layer)
 // more functions are defined in LevelTiles.cs
 partial class Level
 {
+    // all objects associated with shortcuts
+    // (these are tracked because they will be rendered separately from other objects
+    // (i.e. without transparency regardless of the user's work layer)
+    public static readonly LevelObject[] ShortcutObjects = [
+        LevelObject.Shortcut, LevelObject.CreatureDen, LevelObject.Entrance,
+        LevelObject.WhackAMoleHole, LevelObject.ScavengerHole, LevelObject.GarbageWorm,
+    ];
+    
     public LevelCell[,,] Layers;
     private int _width, _height;
     public int BufferTilesLeft, BufferTilesTop;
