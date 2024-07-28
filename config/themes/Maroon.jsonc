@@ -1,0 +1,413 @@
+// from https://github.com/pkhead/rained
+
+{
+  "WindowPadding": [
+    8,
+    8
+  ],
+  "FramePadding": [
+    4,
+    3
+  ],
+  "ItemSpacing": [
+    8,
+    4
+  ],
+  "ItemInnerSpacing": [
+    4,
+    4
+  ],
+  "TouchExtraPadding": [
+    0,
+    0
+  ],
+  "IndentSpacing": 21,
+  "ScrollbarSize": 14,
+  "GrabMinSize": 12,
+  "WindowBorderSize": 1,
+  "ChildBorderSize": 1,
+  "PopupBorderSize": 1,
+  "FrameBorderSize": 0,
+  "TabBorderSize": 0,
+  "TabBarBorderSize": 1,
+  "WindowRounding": 0,
+  "ChildRounding": 0,
+  "FrameRounding": 0,
+  "PopupRounding": 0,
+  "ScrollbarRounding": 9,
+  "GrabRounding": 0,
+  "TabRounding": 4,
+  "CellPadding": [
+    4,
+    2
+  ],
+  "TableAngledHeadersAngle": 35.000004,
+  "WindowTitleAlign": [
+    0,
+    0.5
+  ],
+  "WindowMenuButtonPosition": "left",
+  "ColorButtonPosition": "right",
+  "ButtonTextAlign": [
+    0.5,
+    0.5
+  ],
+  "SelectableTextAlign": [
+    0,
+    0
+  ],
+  "SeparatorTextBorderSize": 3,
+  "SeparatorTextAlign": [
+    0,
+    0.5
+  ],
+  "SeparatorTextPadding": [
+    20,
+    3
+  ],
+  "LogSliderDeadzone": 4,
+  "Colors": {
+    "Text": [
+      0.898039,
+      0.898039,
+      0.898039,
+      1
+    ],
+    "TextDisabled": [
+      0.6,
+      0.6,
+      0.6,
+      1
+    ],
+    "WindowBg": [
+      0,
+      0,
+      0,
+      0.847059
+    ],
+    "ChildBg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "PopupBg": [
+      0.137255,
+      0.109804,
+      0.109804,
+      0.917647
+    ],
+    "Border": [
+      0.498039,
+      0.498039,
+      0.498039,
+      0.498039
+    ],
+    "BorderShadow": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "FrameBg": [
+      0.427451,
+      0.427451,
+      0.427451,
+      0.388235
+    ],
+    "FrameBgHovered": [
+      0.698039,
+      0.407843,
+      0.407843,
+      0.4
+    ],
+    "FrameBgActive": [
+      0.74902,
+      0.478431,
+      0.478431,
+      0.686275
+    ],
+    "TitleBg": [
+      0.478431,
+      0.176471,
+      0.176471,
+      0.647059
+    ],
+    "TitleBgActive": [
+      0.517647,
+      0.117647,
+      0.117647,
+      0.866667
+    ],
+    "TitleBgCollapsed": [
+      0.8,
+      0.4,
+      0.4,
+      0.2
+    ],
+    "MenuBarBg": [
+      0,
+      0,
+      0,
+      0.8
+    ],
+    "ScrollbarBg": [
+      0.298039,
+      0.2,
+      0.2,
+      0.6
+    ],
+    "ScrollbarGrab": [
+      0.956863,
+      0.168627,
+      0.168627,
+      0.298039
+    ],
+    "ScrollbarGrabHovered": [
+      1,
+      0.066667,
+      0.066667,
+      0.4
+    ],
+    "ScrollbarGrabActive": [
+      1,
+      0.356863,
+      0.356863,
+      0.6
+    ],
+    "CheckMark": [
+      0.898039,
+      0.898039,
+      0.898039,
+      0.498039
+    ],
+    "SliderGrab": [
+      1,
+      1,
+      1,
+      0.298039
+    ],
+    "SliderGrabActive": [
+      0.8,
+      0.388235,
+      0.388235,
+      0.6
+    ],
+    "Button": [
+      0.709804,
+      0.176471,
+      0.176471,
+      0.619608
+    ],
+    "ButtonHovered": [
+      0.709804,
+      0.266667,
+      0.266667,
+      0.788235
+    ],
+    "ButtonActive": [
+      0.8,
+      0.458824,
+      0.458824,
+      1
+    ],
+    "Header": [
+      0.556863,
+      0.156863,
+      0.156863,
+      0.447059
+    ],
+    "HeaderHovered": [
+      0.529412,
+      0.109804,
+      0.109804,
+      1
+    ],
+    "HeaderActive": [
+      0.866667,
+      0.529412,
+      0.529412,
+      0.8
+    ],
+    "Separator": [
+      0.498039,
+      0.498039,
+      0.498039,
+      0.6
+    ],
+    "SeparatorHovered": [
+      0.6,
+      0.6,
+      0.698039,
+      1
+    ],
+    "SeparatorActive": [
+      0.698039,
+      0.698039,
+      0.898039,
+      1
+    ],
+    "ResizeGrip": [
+      1,
+      1,
+      1,
+      0.098039
+    ],
+    "ResizeGripHovered": [
+      0.776471,
+      0.819608,
+      1,
+      0.6
+    ],
+    "ResizeGripActive": [
+      0.776471,
+      0.819608,
+      1,
+      0.898039
+    ],
+    "TabHovered": [
+      0.678431,
+      0.207843,
+      0.207843,
+      0.8
+    ],
+    "Tab": [
+      0.466667,
+      0.117647,
+      0.117647,
+      0.788235
+    ],
+    "TabSelected": [
+      0.6784314,
+      0.20752017,
+      0.20752017,
+      1
+    ],
+    "TabSelectedOverline": [
+      0.9526066,
+      0.8352238,
+      0.8352238,
+      0.4
+    ],
+    "TabDimmed": [
+      0,
+      0,
+      0,
+      0.83137256
+    ],
+    "TabDimmedSelected": [
+      0,
+      0,
+      0,
+      0.83
+    ],
+    "TabDimmedSelectedOverline": [
+      0.55450237,
+      0.23126166,
+      0.23126166,
+      1
+    ],
+    "DockingPreview": [
+      0.898039,
+      0.4,
+      0.4,
+      0.309804
+    ],
+    "DockingEmptyBg": [
+      0.2,
+      0.2,
+      0.2,
+      1
+    ],
+    "PlotLines": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "PlotLinesHovered": [
+      0.898039,
+      0.698039,
+      0,
+      1
+    ],
+    "PlotHistogram": [
+      0.898039,
+      0.698039,
+      0,
+      1
+    ],
+    "PlotHistogramHovered": [
+      1,
+      0.6,
+      0,
+      1
+    ],
+    "TableHeaderBg": [
+      0.556863,
+      0.156863,
+      0.156863,
+      0.447059
+    ],
+    "TableBorderStrong": [
+      0.678431,
+      0.207843,
+      0.207843,
+      0.8
+    ],
+    "TableBorderLight": [
+      0.258824,
+      0.258824,
+      0.278431,
+      1
+    ],
+    "TableRowBg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "TableRowBgAlt": [
+      1,
+      1,
+      1,
+      0.066667
+    ],
+    "TextSelectedBg": [
+      1,
+      0,
+      0,
+      0.34902
+    ],
+    "DragDropTarget": [
+      1,
+      1,
+      0,
+      0.898039
+    ],
+    "NavHighlight": [
+      0.447059,
+      0.447059,
+      0.898039,
+      0.8
+    ],
+    "NavWindowingHighlight": [
+      1,
+      1,
+      1,
+      0.698039
+    ],
+    "NavWindowingDimBg": [
+      0.8,
+      0.8,
+      0.8,
+      0.2
+    ],
+    "ModalWindowDimBg": [
+      0.2,
+      0.2,
+      0.2,
+      0.34902
+    ]
+  }
+}
