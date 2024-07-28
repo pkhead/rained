@@ -10,7 +10,7 @@ Bugs:
 v2.1.0:
 - get the material previews from the one guy on discord
 - option to use "legacy" shortcut icons
-- imgui seems to have added a new color for dock tabs
+- make rained logo in about window match theme
 - optional download from solar's repo
 
 Overall:
