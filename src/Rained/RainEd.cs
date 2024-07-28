@@ -699,20 +699,13 @@ sealed class RainEd
         EditorWindow.Render();
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
-            ShowDemoWindow = !ShowDemoWindow;
+            DebugWindow.IsWindowOpen = !DebugWindow.IsWindowOpen;
         
 #if DEBUG
         if (ImGui.IsKeyPressed(ImGuiKey.F2))
             throw new Exception("Test Exception");
 #endif
-        // this is how imgui is documented
-        // you see what it can do and when i want to know how it does that,
-        // i ctrl+f imgui_demo.cpp.
-        // I guess it works?
-        if (ShowDemoWindow)
-        {
-            ImGui.ShowDemoWindow(ref ShowDemoWindow);
-        }
+        DebugWindow.ShowWindow();
 
         if (remainingActiveTime > 0f)
         {

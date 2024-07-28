@@ -47,6 +47,8 @@ class AssetGraphicsProvider
     private readonly List<TilePreviewAtlas> _tilePreviewAtlases = [];
     private readonly Dictionary<string, (int atlasIndex, int rectId)> _tilePreviewRects = [];
 
+    public IEnumerable<RlManaged.Texture2D> TilePreviewAtlases => _tilePreviewAtlases.Select(x => x.texture);
+
     // Does Path.Combine(directory, query)
     // On Linux, it does extra processing to account for the fact that
     // it uses a case-sensitive filesystem.
@@ -157,10 +159,21 @@ class AssetGraphicsProvider
     private bool PackAtlas(TilePreviewAtlas atlas)
     {
         var activeRects = new Span<PackingRectangle>(atlas.rectangles, 0, atlas.rectangleCount);
-        RectanglePacker.Pack(activeRects, out PackingRectangle bounds, PackingHints.FindBest, maxBoundsWidth: AtlasTextureWidth, maxBoundsHeight: AtlasTextureHeight);
+        PackingRectangle bounds;
+
+        try
+        {
+            RectanglePacker.Pack(activeRects, out bounds, PackingHints.FindBest, maxBoundsWidth: AtlasTextureWidth, maxBoundsHeight: AtlasTextureHeight);
+        }
+        catch
+        {
+            Log.Information("Atlas texture is out of space!");
+            return false;
+        }
 
         if (bounds.Width <= 0 || bounds.Height <= 0 || bounds.Width > AtlasTextureWidth || bounds.Height > AtlasTextureHeight)
         {
+            Log.Information("Atlas texture is out of space!");
             return false;
         }
         else

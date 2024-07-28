@@ -4,13 +4,11 @@ Bugs:
 - reported increased usage while computer is locked
 - reported crash in asset manager due to queues or something
 - asset manager merging is actually kind of buggy
-- Ridgeworks2 tiles can crash
 - fix double resource disposal on window close
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
 v2.1.0:
 - get the material previews from the one guy on discord
-- favorite tiles and props
 - be able to view shortcut geo outside of the geometry editor
 - option to use "legacy" shortcut icons
 - allow numbers to skip in palettes
@@ -18,6 +16,7 @@ v2.1.0:
 - optional download from solar's repo
 
 Overall:
+- favorite tiles and props
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
