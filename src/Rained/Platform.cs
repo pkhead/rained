@@ -298,7 +298,7 @@ static partial class Platform
             }
             else
             {
-                Thread.Sleep((int)(seconds / 1000.0));
+                Thread.Sleep((int)(seconds * 1000.0));
             }
         }
 
