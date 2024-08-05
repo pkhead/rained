@@ -10,7 +10,6 @@ Bugs:
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
 v2.1.0:
-- get the material previews from the one guy on discord
 - option to use "legacy" shortcut icons
 - optional download from solar's repo
 
