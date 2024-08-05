@@ -701,6 +701,13 @@ sealed class RainEd
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             DebugWindow.IsWindowOpen = !DebugWindow.IsWindowOpen;
         
+        // don't sleep rained if mouse is held down
+        // for example, the user may be holding down a +/- imgui input, and i'm not quite sure how to detect that.
+        if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
+        {
+            NeedScreenRefresh();
+        }
+        
 #if DEBUG
         if (ImGui.IsKeyPressed(ImGuiKey.F2))
             throw new Exception("Test Exception");
