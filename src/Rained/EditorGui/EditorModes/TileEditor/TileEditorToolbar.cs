@@ -15,6 +15,9 @@ partial class TileEditor : IEditorMode
     // available groups (available = passes search)
     private readonly List<int> matSearchResults = [];
     private readonly List<int> tileSearchResults = [];
+
+    private RlManaged.Texture2D? _loadedMatPreview = null;
+    private string _activeMatPreview = "";
     
     private void ProcessSearch()
     {
@@ -187,6 +190,24 @@ partial class TileEditor : IEditorMode
                             if (ImGui.Selectable(mat.Name, mat.ID == selectedMaterial))
                             {
                                 selectedMaterial = mat.ID;
+                            }
+
+                            // show material preview when hovered
+                            if (ImGui.IsItemHovered())
+                            {
+                                if (_activeMatPreview != mat.Name)
+                                {
+                                    _activeMatPreview = mat.Name;
+                                    _loadedMatPreview?.Dispose();
+                                    _loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", mat.Name + ".png"));
+                                }
+
+                                if (_loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(_loadedMatPreview))
+                                {
+                                    ImGui.BeginTooltip();
+                                    ImGuiExt.Image(_loadedMatPreview);
+                                    ImGui.EndTooltip();
+                                }
                             }
                         }
                         
