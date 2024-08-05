@@ -8,7 +8,8 @@ static class AboutWindow
     private const string WindowName = "About Rained";
     public static bool IsWindowOpen = false;
 
-    private static RlManaged.Texture2D? rainedLogo = null;
+    private static RlManaged.Texture2D? rainedLogo0 = null;
+    private static RlManaged.Texture2D? rainedLogo1 = null;
 
     record SystemInfo(string FrameworkName, string OsName, string Arch, string GraphicsVendor, string GraphicsRenderer);
     private static SystemInfo? systemInfo;
@@ -49,10 +50,17 @@ static class AboutWindow
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            rainedLogo ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo.png"));
+            rainedLogo0 ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo-colorless.png"));
+            rainedLogo1 ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo-color.png"));
 
-            ImGui.SameLine(Math.Max(0f, (ImGui.GetWindowWidth() - rainedLogo.Width) / 2.0f));
-            ImGuiExt.Image(rainedLogo);
+            ImGui.SameLine(Math.Max(0f, (ImGui.GetWindowWidth() - rainedLogo0.Width) / 2.0f));
+            
+            // draw rained logo, with the outline colored according to the theme 
+            var initCursor = ImGui.GetCursorPos();
+            var themeColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Button];
+            ImGuiExt.Image(rainedLogo0);
+            ImGui.SetCursorPos(initCursor);
+            ImGuiExt.Image(rainedLogo1.GlibTexture!, new Glib.Color(themeColor.X, themeColor.Y, themeColor.Z, themeColor.W));
             
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
