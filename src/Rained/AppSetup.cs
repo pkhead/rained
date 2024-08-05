@@ -9,6 +9,7 @@ using RainEd;
 using Raylib_cs;
 using System.Numerics;
 using System.IO.Compression;
+using System.Diagnostics;
 
 class AppSetup
 {
@@ -33,6 +34,25 @@ class AppSetup
 
     If you are unsure what to do, select "Download Data".
     """;
+
+    private enum SetupState
+    {
+        // where the user decides if they want to use a pre-exicsting RWLE install,
+        // or download data from the internet
+        SetupChoice,
+
+        // where the user configures the data download
+        // can do vanilla, or certain parts of solar's.
+        DownloadConfiguration,
+
+        // stuff is being downloaded from the internet.
+        Downloading,
+
+        // setup is done, now launching rained...
+        Finished
+    }
+
+    private SetupState setupState = SetupState.SetupChoice;
     
     public bool Start(out string? assetDataPath)
     {
@@ -60,106 +80,138 @@ class AppSetup
 
             ImGuiExt.EnsurePopupIsOpen("Configure Data");
             ImGuiExt.CenterNextWindow(ImGuiCond.Always);
+
+            bool exitAppSetup = false;
             
             if (ImGuiExt.BeginPopupModal("Configure Data", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove))
             {
-                // show launching screen
-                if (callbackRes is not null)
+                switch (setupState)
                 {
-                    ImGui.Text("Launching Rained...");
-                }
-
-                // show download screen
-                else if (downloadTask is not null)
-                {
-                    if (downloadStage == 1)
-                    {
-                        ImGui.Text("Downloading from\nhttps://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip...");
-                    }
-                    else if (downloadStage == 2)
-                    {
-                        ImGui.Text("Extracting...");
-                    }
-                    else
-                    {
-                        ImGui.Text("Starting...");
-                    }
-
-                    ImGui.ProgressBar(downloadProgress, new Vector2(ImGui.GetTextLineHeight() * 50.0f, 0.0f));
-                }
-                else
-                {
-                    ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 50.0f);
-                    ImGui.TextWrapped(StartupText);
-                    ImGui.PopTextWrapPos();
-
-                    ImGui.Separator();
-
-                    FileBrowser.Render(ref fileBrowser);
-
-                    if (ImGui.Button("Choose Data Folder"))
-                    {
-                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Directory, FileBrowserCallback, Boot.AppDataPath);
-                    }
-
-                    ImGui.SameLine();
-                    if (ImGui.Button("Download Data"))
-                    {
-                        downloadTask = DownloadData();
-                    }
-
-                    // show missing dirs popup
-                    if (missingDirs.Count > 0)
-                    {
-                        ImGuiExt.EnsurePopupIsOpen("Error");
-                        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-                        if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-                        {
-                            ImGui.Text("The given data folder is missing the following subdirectories:");
-                            foreach (var dir in missingDirs)
-                            {
-                                ImGui.BulletText(dir);
-                            }
-
-                            ImGui.Separator();
-                            if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
-                            {
-                                ImGui.CloseCurrentPopup();
-                                missingDirs.Clear();
-                            }
-
-                            ImGui.EndPopup();
-                        }
-                    }
+                    case SetupState.SetupChoice:
+                        ShowSetupChoice();
+                        break;
+                    
+                    case SetupState.DownloadConfiguration:
+                        ShowDownloadConfiguration();
+                        break;
+                    
+                    case SetupState.Downloading:
+                        ShowDownload();
+                        break;
+                    
+                    case SetupState.Finished:
+                        exitAppSetup = ShowFinished(out assetDataPath);
+                        break;
+                    
+                    default:
+                        throw new UnreachableException("Invalid setup state mode");
                 }
 
                 ImGui.EndPopup();
             }
 
             Boot.ImGuiController!.Render();
-
-            if (callbackRes is not null)
-            {
-                // wait a bit so that the Launching Rained... message can appear
-                callbackWait -= Raylib.GetFrameTime();
-                if (callbackWait <= 0f)
-                {
-                    assetDataPath = callbackRes;
-                    break;
-                }
-            }
-
-            // when download is complete, signal app launch
-            if (downloadTask is not null && downloadTask.IsCompletedSuccessfully)
-            {
-                downloadTask = null;
-                callbackRes = Path.Combine(Boot.AppDataPath, "Data");
-            }
-
             Raylib.EndDrawing();
+
+            if (exitAppSetup) break;
         }
 
         return true;
+    }
+
+    private void ShowSetupChoice()
+    {
+        ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 50.0f);
+        ImGui.TextWrapped(StartupText);
+        ImGui.PopTextWrapPos();
+
+        ImGui.Separator();
+
+        FileBrowser.Render(ref fileBrowser);
+
+        if (ImGui.Button("Choose Data Folder"))
+        {
+            fileBrowser = new FileBrowser(FileBrowser.OpenMode.Directory, FileBrowserCallback, Boot.AppDataPath);
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Download Data"))
+        {
+            setupState = SetupState.Downloading;
+            downloadTask = DownloadData();
+        }
+
+        // show missing dirs popup
+        if (missingDirs.Count > 0)
+        {
+            ImGuiExt.EnsurePopupIsOpen("Error");
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.Text("The given data folder is missing the following subdirectories:");
+                foreach (var dir in missingDirs)
+                {
+                    ImGui.BulletText(dir);
+                }
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                {
+                    ImGui.CloseCurrentPopup();
+                    missingDirs.Clear();
+                }
+
+                ImGui.EndPopup();
+            }
+        }
+    }
+
+    private void ShowDownloadConfiguration()
+    {
+
+    }
+
+    private void ShowDownload()
+    {
+        if (downloadStage == 1)
+        {
+            ImGui.Text("Downloading from\nhttps://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip...");
+        }
+        else if (downloadStage == 2)
+        {
+            ImGui.Text("Extracting...");
+        }
+        else
+        {
+            ImGui.Text("Starting...");
+        }
+
+        ImGui.ProgressBar(downloadProgress, new Vector2(ImGui.GetTextLineHeight() * 50.0f, 0.0f));
+
+        // when download is complete, signal app launch
+        if (downloadTask is not null && downloadTask.IsCompletedSuccessfully)
+        {
+            downloadTask = null;
+            callbackRes = Path.Combine(Boot.AppDataPath, "Data");
+            setupState = SetupState.Finished;
+        }
+    }
+
+    private bool ShowFinished(out string? assetDataPath)
+    {
+        Debug.Assert(callbackRes is not null);
+        ImGui.Text("Launching Rained...");
+
+        // wait a bit so that the Launching Rained... message can appear
+        callbackWait -= Raylib.GetFrameTime();
+        if (callbackWait <= 0f)
+        {
+            assetDataPath = callbackRes;
+            return true;
+        }
+
+        assetDataPath = null;
+        return false;
     }
 
     private void FileBrowserCallback(string? path)
@@ -181,7 +233,10 @@ class AppSetup
             }
 
             if (missingDirs.Count == 0)
+            {
                 callbackRes = path;
+                setupState = SetupState.Finished;
+            }
         }
     }
 
