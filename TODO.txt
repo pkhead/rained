@@ -10,15 +10,18 @@ Bugs:
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
 v2.1.0:
+- bgfx linux build
 - option to use "legacy" shortcut icons
 - optional download from solar's repo
+- fix save prompt when rendering
 
 Overall:
 - favorite tiles and props
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
-  - actually it's a big buggy when fully importing solars repo
+  - fix merging
+  - can select certain packs from solar repo?
 - dissolve material/tile separation
 - optimize tile deform rendering
 - does update checker notif window timing work?
