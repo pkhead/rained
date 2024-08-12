@@ -6,6 +6,9 @@ Another Rain World level editor. Read [this document](dist/README.md), which is 
 Please note that the "main" branch is ahead of the latest release. If you want to access the repository
 at the time of a certain release, use the Git tags system.
 
+## Important!!!
+Despite my attempt to fix it by switching to a different graphics library, Rained *still* doesn't launch on some computers, even with the Microsoft Visual C++ Redistributable package installed. I believe the occurrence of this happening is less likely than it was before, but it still happens. If you are affected, sorry for the inconvenience. I will try to get it fixed at some point but it is difficult because It Works on My Machine (TM), so I can't use any debugging tools.
+
 ## Features
 - Ease of use
 - Undo/redo everything
