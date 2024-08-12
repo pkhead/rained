@@ -10,7 +10,15 @@ class CameraEditor : IEditorMode
     public string Name { get => "Cameras"; }
     private readonly LevelView window;
 
-    private Camera? selectedCamera = null;
+    private List<Camera> selectedCameras; // all selected cameras
+
+    // index of item is the same as the index of the associated camera in the selectedCameras list 
+    private readonly List<Vector2> cameraOffsetsToDragPosition;
+    private Camera? activeCamera; // selected camera that was last clicked
+
+    // the selected camera whose corner is currently being hovered over.
+    Camera? cornerHoverCamera = null;
+
     private int selectedCorner = -1;
     private bool isDraggingCamera = false;
     private Vector2 dragTargetPos = new(); // unaffected by camera snapping
@@ -20,8 +28,12 @@ class CameraEditor : IEditorMode
 
     private ChangeHistory.CameraChangeRecorder changeRecorder;
 
-    public CameraEditor(LevelView window) {
+    public CameraEditor(LevelView window)
+    {
         this.window = window;
+        selectedCameras = [];
+        cameraOffsetsToDragPosition = [];
+        activeCamera = null;
         changeRecorder = new ChangeHistory.CameraChangeRecorder();
 
         RainEd.Instance.ChangeHistory.Cleared += () =>
@@ -32,9 +44,11 @@ class CameraEditor : IEditorMode
 
     public void Unload()
     {
-        selectedCamera = null;
+        selectedCameras.Clear();
+        activeCamera = null;
         isDraggingCamera = false;
         selectedCorner = -1;
+        cornerHoverCamera = null;
 
         changeRecorder.TryPushChange();
     }
@@ -43,14 +57,17 @@ class CameraEditor : IEditorMode
     {
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Camera");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Camera");
-        if (ImGui.MenuItem("Reset Camera Corners") && selectedCamera is not null)
+        if (ImGui.MenuItem("Reset Camera Corners") && selectedCameras.Count > 0)
         {
             changeRecorder.BeginChange();
 
-            for (int i = 0; i < 4; i++)
+            foreach (var camera in selectedCameras)
             {
-                selectedCamera.CornerAngles[i] = 0f;
-                selectedCamera.CornerOffsets[i] = 0f;
+                for (int i = 0; i < 4; i++)
+                {
+                    camera.CornerAngles[i] = 0f;
+                    camera.CornerOffsets[i] = 0f;
+                }
             }
 
             changeRecorder.PushChange();
@@ -58,10 +75,12 @@ class CameraEditor : IEditorMode
 
         ImGui.Separator();
 
-        if (ImGui.MenuItem("Prioritize Camera") && selectedCamera is not null)
+        ImGui.BeginDisabled(selectedCameras.Count != 1);
+        if (ImGui.MenuItem("Prioritize Camera"))
         {
-            RainEd.Instance.Level.PrioritizedCamera = selectedCamera;
+            RainEd.Instance.Level.PrioritizedCamera = selectedCameras[0];
         }
+        ImGui.EndDisabled();
 
         if (ImGui.MenuItem("Clear Priority"))
         {
@@ -71,10 +90,9 @@ class CameraEditor : IEditorMode
     
     public void DrawToolbar() {}
 
-    private void PickCameraAt(Vector2 mpos)
+    private Camera? PickCameraAt(Vector2 mpos)
     {
-        selectedCamera = null;
-        selectedCorner = -1;
+        Camera? selectedCamera = null;
 
         float minDist = float.PositiveInfinity;
 
@@ -101,6 +119,8 @@ class CameraEditor : IEditorMode
                 }
             }
         }
+
+        return selectedCamera;
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -168,15 +188,21 @@ class CameraEditor : IEditorMode
             {
                 // determine if mouse is close enough to one of its corners
                 selectedCorner = -1;
+                cornerHoverCamera = null;
 
-                if (selectedCamera is not null)
+                float minCornerDistSq = 0.5f / window.ViewZoom;
+                minCornerDistSq *= minCornerDistSq;
+                foreach (var cam in selectedCameras)
                 {
                     for (int c = 0; c < 4; c++)
                     {
-                        var cpos = selectedCamera.GetCornerPosition(c, true);
-                        if ((cpos - mpos).Length() < 0.5f / window.ViewZoom)
+                        var cpos = cam.GetCornerPosition(c, true);
+                        float distSq = (cpos - mpos).LengthSquared();
+                        if (distSq < minCornerDistSq)
                         {
+                            minCornerDistSq = distSq;
                             selectedCorner = c;
+                            cornerHoverCamera = cam;
                             break;
                         }
                     }
@@ -185,32 +211,70 @@ class CameraEditor : IEditorMode
                 // drag begin
                 if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) || (selectedCorner >= 0 && EditorWindow.IsMouseDown(ImGuiMouseButton.Left)))
                 {
-                    if (selectedCorner == -1)
-                    {
-                        PickCameraAt(dragBegin);
-                    }
+                    var pickedCam = PickCameraAt(dragBegin);
 
-                    if (selectedCamera is not null)
+                    if (selectedCorner == -1 && pickedCam is not null)
+                    {
+                        activeCamera = pickedCam;
+
+                        if (!selectedCameras.Contains(pickedCam))
+                        {
+                            selectedCameras = [pickedCam];
+                        }
+                        
+                        changeRecorder.BeginChange();
+                        isDraggingCamera = true;
+
+                        dragTargetPos = activeCamera.Position;
+                        cameraOffsetsToDragPosition.Clear();
+                        for (int i = 0; i < selectedCameras.Count; i++)
+                        {
+                            cameraOffsetsToDragPosition.Add(selectedCameras[i].Position - dragTargetPos);
+                        }
+                    }
+                    else if (selectedCorner >= 0)
                     {
                         changeRecorder.BeginChange();
                         isDraggingCamera = true;
-                        dragTargetPos = selectedCamera.Position;
                     }
                 }
 
                 // right-click to reset corner
-                if (selectedCorner >= 0 && selectedCamera is not null && EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
+                if (selectedCorner >= 0 && EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
                 {
                     changeRecorder.BeginChange();
-                    selectedCamera.CornerAngles[selectedCorner] = 0f;
-                    selectedCamera.CornerOffsets[selectedCorner] = 0f;
+                    cornerHoverCamera!.CornerAngles[selectedCorner] = 0f;
+                    cornerHoverCamera!.CornerOffsets[selectedCorner] = 0f;
                     changeRecorder.PushChange();
                 }
 
                 // mouse-pick select when lmb pressed
                 if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
                 {
-                    PickCameraAt(dragBegin);
+                    var cam = PickCameraAt(dragBegin);
+
+                    if (ImGui.IsKeyDown(ImGuiKey.ModShift))
+                    {
+                        if (cam is not null)
+                        {
+                            activeCamera = cam;
+
+                            // add camera when not already selected,
+                            // remove camera otherwise
+                            int camIndex = selectedCameras.IndexOf(cam);
+                            if (camIndex >= 0)
+                                selectedCameras.RemoveAt(camIndex);
+                            else
+                                selectedCameras.Add(cam);
+                        }
+                    }
+                    else
+                    {
+                        activeCamera = cam;
+                        selectedCameras.Clear();
+                        if (cam is not null)
+                            selectedCameras.Add(cam);
+                    }
                 }
             }
         }
@@ -228,12 +292,12 @@ class CameraEditor : IEditorMode
             // corner drag
             if (selectedCorner >= 0)
             {
-                var vecDiff = window.MouseCellFloat - selectedCamera!.GetCornerPosition(selectedCorner, false);
+                var vecDiff = window.MouseCellFloat - cornerHoverCamera!.GetCornerPosition(selectedCorner, false);
 
                 var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
                 var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
-                selectedCamera!.CornerAngles[selectedCorner] = angle;
-                selectedCamera!.CornerOffsets[selectedCorner] = offset / 4f;
+                cornerHoverCamera.CornerAngles[selectedCorner] = angle;
+                cornerHoverCamera.CornerOffsets[selectedCorner] = offset / 4f;
             }
 
             // camera drag
@@ -241,17 +305,17 @@ class CameraEditor : IEditorMode
             {
                 dragTargetPos += window.MouseCellFloat - lastMousePos;
 
-                // camera snap
+                // camera snap for the active camera
                 var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
                 var snapThreshold = 1.5f / window.ViewZoom;
 
                 float minDistX = float.PositiveInfinity;
                 float minDistY = float.PositiveInfinity;
 
-                selectedCamera!.Position = dragTargetPos;
+                activeCamera!.Position = dragTargetPos;
                 foreach (var camera in level.Cameras)
                 {
-                    if (selectedCamera == camera) continue;
+                    if (selectedCameras.Contains(camera)) continue;
 
                     var camCenter = camera.Position + Camera.WidescreenSize / 2f;
                     var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
@@ -260,14 +324,22 @@ class CameraEditor : IEditorMode
                     if (horizSnap && distX < snapThreshold && distX < minDistX)
                     {
                         minDistX = distX;
-                        selectedCamera!.Position.X = camera.Position.X;
+                        activeCamera.Position.X = camera.Position.X;
                     }
 
                     if (vertSnap && distY < snapThreshold && distY < minDistY)
                     {
                         minDistY = distY;
-                        selectedCamera!.Position.Y = camera.Position.Y;
+                        activeCamera.Position.Y = camera.Position.Y;
                     }
+                }
+
+                // maintain that all selected cameras have the same relative offset
+                // to the active camera, because the active camera is the one that
+                // gets snapped
+                for (int i = 0; i < selectedCameras.Count; i++)
+                {
+                    selectedCameras[i].Position = activeCamera.Position + cameraOffsetsToDragPosition[i];
                 }
             }
         }
@@ -282,31 +354,37 @@ class CameraEditor : IEditorMode
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
                 level.Cameras.Add(cam);
-                selectedCamera = cam;
+                selectedCameras = [cam];
+                activeCamera = cam;
                 selectedCorner =- 1;
                 changeRecorder.PushChange();
             }
 
-
-            if (selectedCamera is not null)
+            if (selectedCameras.Count > 0)
             {
-                // Ctrl+D to duplicate selected camera (duplicating camera corners) 
+                // Ctrl+D to duplicate selected cameras (duplicating camera corners) 
                 if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.D))
                 {
                     changeRecorder.BeginChange();
+                    List<Camera> newList = [];
+                    foreach (var srcCam in selectedCameras)
                     {
-                        var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
-                        level.Cameras.Add(cam);
+                        var newCam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
+                        level.Cameras.Add(newCam);
 
                         for (int i = 0; i < 4; i++)
                         {
-                            cam.CornerAngles[i] = selectedCamera.CornerAngles[i];
-                            cam.CornerOffsets[i] = selectedCamera.CornerOffsets[i];
+                            newCam.CornerAngles[i] = srcCam.CornerAngles[i];
+                            newCam.CornerOffsets[i] = srcCam.CornerOffsets[i];
                         }
 
-                        selectedCamera = cam;
-                        selectedCorner = -1;
+                        newList.Add(newCam);
+
+                        if (srcCam == activeCamera)
+                            activeCamera = newCam;
                     }
+                    selectedCorner = -1;
+                    selectedCameras = newList;
                     changeRecorder.PushChange();
                 }
                 
@@ -316,11 +394,15 @@ class CameraEditor : IEditorMode
                     if (level.Cameras.Count > 1)
                     {
                         changeRecorder.BeginChange();
-                        level.Cameras.Remove(selectedCamera);
-                        if (level.PrioritizedCamera == selectedCamera)
-                            level.PrioritizedCamera = null;
-                        selectedCamera = null;
+                        foreach (var cam in selectedCameras)
+                        {
+                            level.Cameras.Remove(cam);
+                            if (level.PrioritizedCamera == cam)
+                                level.PrioritizedCamera = null;
+                        }
                         changeRecorder.PushChange();
+                        selectedCameras.Clear();
+                        activeCamera = null;
                     }
                     else
                     {
@@ -333,7 +415,7 @@ class CameraEditor : IEditorMode
         // render cameras
         foreach (Camera camera in level.Cameras)
         {
-            RenderCamera(camera, selectedCamera == camera, selectedCorner);
+            RenderCamera(camera, selectedCameras.Contains(camera), camera == cornerHoverCamera ? selectedCorner : -1);
         }
 
         lastMousePos = window.MouseCellFloat;
