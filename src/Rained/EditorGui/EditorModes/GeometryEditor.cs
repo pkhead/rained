@@ -777,6 +777,8 @@ class GeometryEditor : IEditorMode
 
                 if (cell.Geo == GeoType.ShortcutEntrance || selectedTool is Tool.Wall or Tool.Platform or Tool.Slope or Tool.Glass)
                     cell.Geo = GeoType.Air;
+                else if (selectedTool is Tool.Air)
+                    cell.Geo = GeoType.Solid;
 
                 window.Renderer.InvalidateGeo(x, y, l);
             }
