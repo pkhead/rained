@@ -443,6 +443,25 @@ static class PreferencesWindow
             bool showCameraNumbers = prefs.ShowCameraNumbers;
             if (ImGui.Checkbox("Show camera numbers", ref showCameraNumbers))
                 prefs.ShowCameraNumbers = showCameraNumbers;
+            
+            bool doubleClickToCreateProp = prefs.DoubleClickToCreateProp;
+            if (ImGui.Checkbox("Double-click to create prop", ref doubleClickToCreateProp))
+                prefs.DoubleClickToCreateProp = doubleClickToCreateProp;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Enabling this brings back the old prop
+                    selection/creation controls, where double-
+                    clicking the left mouse button placed down
+                    a prop instead of a single right click.
+                    """
+                );
+                ImGui.EndTooltip();
+            }
 
             //bool multiViewport = prefs.ImGuiMultiViewport;
             //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))

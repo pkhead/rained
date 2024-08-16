@@ -744,6 +744,8 @@ partial class PropEditor : IEditorMode
 
     public void PropSelectUpdate()
     {
+        var prefs = RainEd.Instance.Preferences;
+
         if (window.IsViewportHovered)
         {
             // write selected tile
@@ -821,9 +823,23 @@ partial class PropEditor : IEditorMode
             // left double-click opens menu to select one of multiple props under the cursor
             // useful for when props overlap (which i assume is common)
             if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left)) isDoubleClick = true;
-            if (isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
+
+            // account for the preference to double click to create prop
+            bool showSelectionList, createProp;
+            if (prefs.DoubleClickToCreateProp)
             {
-                isDoubleClick = false;
+                createProp = isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging;
+                showSelectionList = EditorWindow.IsMouseClicked(ImGuiMouseButton.Right);
+            }
+            else
+            {
+                showSelectionList = isDoubleClick && EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging;
+                createProp = EditorWindow.IsMouseClicked(ImGuiMouseButton.Right);
+            }
+            
+            if (showSelectionList)
+            {
+                if (!prefs.DoubleClickToCreateProp) isDoubleClick = false;
 
                 propSelectionList = propsAtCursor;
                 
@@ -838,8 +854,10 @@ partial class PropEditor : IEditorMode
 
             // when C is pressed, create new selected prop
             // TODO: drag and drop from props list
-            if (KeyShortcuts.Activated(KeyShortcut.NewObject) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right))
+            if (KeyShortcuts.Activated(KeyShortcut.NewObject) || createProp)
             {
+                if (createProp && prefs.DoubleClickToCreateProp) isDoubleClick = false;
+
                 var createPos = window.MouseCellFloat;
                 
                 var snap = snappingMode / 2f;
