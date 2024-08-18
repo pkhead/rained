@@ -204,7 +204,7 @@ class GeometryEditor : IEditorMode
             
         }
 
-        window.WorkLayer = activeLayer;
+        window.WorkLayer = activeLayer == -1 ? 0 : activeLayer;
     }
 
     public void SavePreferences(UserPreferences prefs)
