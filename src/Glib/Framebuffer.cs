@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Bgfx_cs;
+using Silk.NET.OpenGLES;
 namespace Glib;
 
 public enum AttachmentPoint
@@ -20,9 +20,9 @@ public struct AttachmentConfig
     public bool Useable = true;
 
     /// <summary>
-    /// True if the texture data can be read to the CPU.
+    /// Color attachment index.
     /// </summary>
-    public bool Readable = false;
+    public uint Index = 0;
 
     public AttachmentConfig() {}
 }
@@ -67,7 +67,6 @@ public struct FramebufferConfiguration
                 {
                     Attachment = AttachmentPoint.Color,
                     Useable = true,
-                    Readable = false,
                 },
 
                 // depth renderbuffer
@@ -75,7 +74,6 @@ public struct FramebufferConfiguration
                 {
                     Attachment = AttachmentPoint.Depth,
                     Useable = false,
-                    Readable = false,
                 }
             ]
         };
@@ -86,99 +84,97 @@ public class Framebuffer : Resource
 {
     public readonly int Width, Height;
 
-    private Bgfx.FrameBufferHandle fbo;
-    private readonly Texture[] _attachmentTexs;
+    private readonly uint fbo;
+    private readonly Texture?[] _attachmentTexs;
 
-    internal Bgfx.FrameBufferHandle Handle => fbo;
+    internal uint Handle => fbo;
 
     internal unsafe Framebuffer(FramebufferConfiguration config)
     {
+        var gl = RenderContext.Gl;
+
+        var oldFb = (uint)gl.GetInteger(GetPName.DrawFramebufferBinding);
+
         Width = config.Width;
         Height = config.Height;
 
-        var attachments = new Bgfx.Attachment[config.Attachments.Count];
+        //var attachments = new Bgfx.Attachment[config.Attachments.Count];
         _attachmentTexs = new Texture[config.Attachments.Count];
+
+        fbo = gl.GenFramebuffer();
+        gl.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
 
         for (int i = 0; i < config.Attachments.Count; i++)
         {
             var attachConfig = config.Attachments[i];
-            var canUse = attachConfig.Useable;
 
-            var texFormat = attachConfig.Attachment switch
+            GLEnum texFormat, attachPoint;
+            switch (attachConfig.Attachment)
             {
-                AttachmentPoint.Color => Bgfx.TextureFormat.RGBA8,
-                AttachmentPoint.Depth => Bgfx.TextureFormat.D16,
-                _ => throw new ArgumentException("Invalid AttachmentPoint enum", nameof(config))
-            };
-
-            var texFlags = canUse ? Bgfx.TextureFlags.Rt : Bgfx.TextureFlags.RtWriteOnly;
-            var samplerFlags = Bgfx.SamplerFlags.UClamp | Bgfx.SamplerFlags.VClamp | Bgfx.SamplerFlags.MinAnisotropic | Bgfx.SamplerFlags.MagAnisotropic;
-            
-            if (!Bgfx.is_texture_valid(0, false, 1, texFormat, (ulong)texFlags | (ulong)samplerFlags))
-            {
-                throw new UnsupportedRendererOperationException("Could not create framebuffer attachment");
+                case AttachmentPoint.Color:
+                    if (attachConfig.Index >= 16)
+                        throw new ArgumentException("Color attachment index is out of range", nameof(config));
+                    texFormat = GLEnum.Rgba;
+                    attachPoint = (GLEnum)((int)GLEnum.ColorAttachment0 + attachConfig.Index);
+                    break;
+                
+                case AttachmentPoint.Depth:
+                    texFormat = GLEnum.DepthComponent16;
+                    attachPoint = GLEnum.DepthAttachment;
+                    break;
+                
+                default:
+                    throw new ArgumentException("Invalid AttachmentPoint enum", nameof(config));
             }
-
-            var handle = Bgfx.create_texture_2d(
-                (ushort)Width, (ushort)Height,
-                false, 1,
-                texFormat,
-                (ulong)texFlags | (ulong)samplerFlags,
-                null
-            );
-            if (!handle.Valid)
-                throw new UnsupportedRendererOperationException("Could not create framebuffer attachment");
-
-            Bgfx.Attachment attachment = new();
-            Bgfx.attachment_init(
-                &attachment,
-                handle,
-                canUse ? Bgfx.Access.Write : Bgfx.Access.Read,
-                0, 1, 0,
-                (byte)Bgfx.ResolveFlags.AutoGenMips
-            );
-
-            attachments[i] = attachment;
-
-            if (attachConfig.Attachment == AttachmentPoint.Color && attachConfig.Readable)
+            
+            if (attachConfig.Useable)
             {
-                _attachmentTexs[i] = new ReadableTexture(
-                    Width, Height,
-                    texFormat,
-                    handle
-                );
+                var handle = gl.GenTexture();
+                gl.BindTexture(GLEnum.Texture2D, handle);
+                gl.TexImage2D(GLEnum.Texture2D, 0, (int)texFormat, (uint)Width, (uint)Height, 0, texFormat, GLEnum.UnsignedByte, null);
+                
+                var wrapMode = (int)GLEnum.ClampToEdge;
+                var filterMode = (int)GLEnum.Linear;
+                gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapS, ref wrapMode);
+                gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapMode);
+                gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref filterMode);
+                gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref filterMode);
+
+                gl.FramebufferTexture2D(GLEnum.Framebuffer, attachPoint, GLEnum.Texture2D, handle, 0);
+
+                if (gl.GetError() != 0)
+                    throw new UnsupportedOperationException($"Could not create framebuffer");
+
+                if (attachConfig.Attachment == AttachmentPoint.Color)
+                {
+                    _attachmentTexs[i] = new ReadableTexture(Width, Height, texFormat, handle, this, attachConfig.Index);
+                }
+                else
+                {
+                    _attachmentTexs[i] = new Texture(Width, Height, texFormat, handle);
+                }
             }
             else
             {
-                _attachmentTexs[i] = new Texture(
-                    Width, Height,
-                    texFormat,
-                    handle
-                );
+                var handle = gl.GenRenderbuffer();
+                gl.BindRenderbuffer(GLEnum.Renderbuffer, handle);
+                gl.RenderbufferStorage(GLEnum.Renderbuffer, texFormat, (uint)Width, (uint)Height);
+
+                gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachPoint, GLEnum.Renderbuffer, handle);
+                gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
+
+                if (gl.GetError() != 0)
+                    throw new UnsupportedOperationException($"Could not create framebuffer");
             }
         }
 
-        fixed (Bgfx.Attachment* ptr = attachments)
+        var fbStatus = gl.CheckFramebufferStatus(GLEnum.Framebuffer);
+        if (fbStatus != GLEnum.FramebufferComplete)
         {
-            if (!Bgfx.is_frame_buffer_valid((byte)config.Attachments.Count, ptr))
-                throw new UnsupportedRendererOperationException("Framebuffer configuration is invalid");        
-
-            fbo = Bgfx.create_frame_buffer_from_attachment((byte)config.Attachments.Count, ptr, false);
-            if (!fbo.Valid)
-                throw new UnsupportedRendererOperationException("Framebiffer is invalid");
+            throw new UnsupportedOperationException($"Could not create framebuffer: {fbStatus}");
         }
-    }
 
-    internal unsafe Framebuffer(Window window)
-    {
-        RenderContext.GetHandles(window.SilkWindow, out nint nwh, out _, out _);
-        fbo = Bgfx.create_frame_buffer_from_nwh((void*)nwh, (ushort)window.PixelWidth, (ushort)window.PixelHeight, Bgfx.TextureFormat.RGBA8, Bgfx.TextureFormat.D16);
-        if (!fbo.Valid)
-            throw new Exception("Could not create framebuffer from window");
-        
-        _attachmentTexs = [];
-        Width = window.PixelWidth;
-        Height = window.PixelHeight;
+        gl.BindFramebuffer(GLEnum.Framebuffer, oldFb);
     }
 
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);
@@ -188,11 +184,11 @@ public class Framebuffer : Resource
     {
         for (int i = 0; i < _attachmentTexs.Length; i++)
         {
-            _attachmentTexs[i].Dispose();
+            _attachmentTexs[i]?.Dispose();
             _attachmentTexs[i] = null!;
         }
 
-        Bgfx.destroy_frame_buffer(fbo);
+        RenderContext.Gl.DeleteFramebuffer(fbo);
     }
 
     /// <summary>
@@ -200,13 +196,11 @@ public class Framebuffer : Resource
     /// </summary>
     /// <param name="slot"></param>
     /// <returns>The framebuffer texture attachment</returns>
-    /// <exception cref="ArgumentException">Thrown if the attachment at the slot does not exist.</exception>
+    /// <exception cref="ArgumentException">Thrown if the attachment at the slot does not exist or is a renderbuffer.</exception>
     public Texture GetTexture(int slot)
     {
         if (slot < 0 || slot >= _attachmentTexs.Length) throw new ArgumentException("The attachment does not exist");
-        var a = _attachmentTexs[slot].Handle.idx;
-        var b = Bgfx.get_texture(fbo, (byte)slot).idx;
-        Debug.Assert(a == b);
-        return _attachmentTexs[slot];
+        var tex = _attachmentTexs[slot] ?? throw new ArgumentException("The attachment is a renderbuffer");
+        return tex;
     }
 }

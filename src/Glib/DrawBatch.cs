@@ -1,6 +1,7 @@
-using Bgfx_cs;
+//using Bgfx_cs;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Silk.NET.OpenGLES;
 
 namespace Glib;
 
@@ -17,7 +18,10 @@ internal class DrawBatch
     private readonly uint[] batchIndices;
     private int vertexCount;
     private int indexCount;
-    private Bgfx.VertexLayout _vertexLayout;
+
+    private uint _vertexArray;
+    private uint _vtxBuffer;
+    private uint _idxBuffer;
 
     private MeshPrimitiveType _drawMode;
     public Color DrawColor = Color.White;
@@ -50,10 +54,12 @@ internal class DrawBatch
         }
     }
 
-    public Action<Bgfx.StateFlags> DrawCallback { get; set; }
+    public Action DrawCallback { get; set; }
 
-    public unsafe DrawBatch(Action<Bgfx.StateFlags> drawCallback)
+    public unsafe DrawBatch(Action drawCallback)
     {
+        var gl = RenderContext.Gl;
+
         batchData = new float[MaxVertices * VertexDataSize];
         batchIndices = new uint[MaxIndices];
         vertexCount = 0;
@@ -62,13 +68,32 @@ internal class DrawBatch
         _texture = null!;
         DrawCallback = drawCallback;
 
-        var layout = new Bgfx.VertexLayout();
-        Bgfx.vertex_layout_begin(&layout, Bgfx.RendererType.Noop);
-        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Position, 3, Bgfx.AttribType.Float, false, false);
-        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.TexCoord0, 2, Bgfx.AttribType.Float, false, false);
-        Bgfx.vertex_layout_add(&layout, Bgfx.Attrib.Color0, 4, Bgfx.AttribType.Float, false, false);
-        Bgfx.vertex_layout_end(&layout);
-        _vertexLayout = layout;
+        _vertexArray = gl.GenVertexArray();
+        gl.BindVertexArray(_vertexArray);
+
+        _vtxBuffer = gl.GenBuffer();
+        gl.BindBuffer(GLEnum.ArrayBuffer, _vtxBuffer);
+        gl.BufferData(GLEnum.ArrayBuffer, (nuint)batchData.Length * sizeof(float), null, GLEnum.StreamDraw);
+
+        _idxBuffer = gl.GenBuffer();
+        gl.BindBuffer(GLEnum.ElementArrayBuffer, _idxBuffer);
+        gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)batchIndices.Length * sizeof(uint), null, GLEnum.StreamDraw);
+
+        var byteStride = VertexDataSize * sizeof(float);
+        // glib_aPos
+        gl.VertexAttribPointer(0, 3, GLEnum.Float, false, byteStride, 0);
+        gl.EnableVertexAttribArray(0);
+
+        // glib_aTexCoord
+        gl.VertexAttribPointer(1, 2, GLEnum.Float, false, byteStride, 3*sizeof(float));
+        gl.EnableVertexAttribArray(1);
+
+        // glib_aColor
+        gl.VertexAttribPointer(2, 4, GLEnum.Float, false, byteStride, 5*sizeof(float));
+        gl.EnableVertexAttribArray(2);
+
+        if (gl.GetError() != 0)
+            throw new Exception("Could not create DrawBatch");
     }
 
     public unsafe void NewFrame(Texture initialTex)
@@ -85,52 +110,39 @@ internal class DrawBatch
     {
         if (vertexCount == 0) return;
 
-        Bgfx.TransientVertexBuffer vertexBuf;
-        Bgfx.TransientIndexBuffer indexBuf;
-        fixed (Bgfx.VertexLayout* layout = &_vertexLayout)
+        var gl = RenderContext.Gl;
+
+        // setup additional state
+        DrawCallback();
+
+        gl.BindVertexArray(_vertexArray);
+
+        // update vertex buffer
+        gl.BindBuffer(GLEnum.ArrayBuffer, _vtxBuffer);
+        fixed (float* data = batchData)
         {
-            if (Bgfx.get_avail_transient_vertex_buffer((uint)vertexCount, layout) < vertexCount)
-            {
-                RenderContext.LogError("Not enough transient vertex buffer space for the draw batch");
-                vertexCount = 0;
-                indexCount = 0;
-                CurrentIndex = 0;
-                return;
-            }
-
-            if (Bgfx.get_avail_transient_index_buffer((uint)indexCount, true) < indexCount)
-            {
-                RenderContext.LogError("Not enough transient index buffer space for the draw batch");
-                vertexCount = 0;
-                indexCount = 0;
-                CurrentIndex = 0;
-                return;
-            }
-
-            Bgfx.alloc_transient_vertex_buffer(&vertexBuf, (uint)vertexCount, layout);
-            Bgfx.alloc_transient_index_buffer(&indexBuf, (uint)indexCount, true);
+            gl.BufferSubData(GLEnum.ArrayBuffer, 0, (nuint)vertexCount * VertexDataSize * sizeof(float), data);
         }
 
-        fixed (float* data = batchData)
-            Buffer.MemoryCopy(data, vertexBuf.data, vertexBuf.size, vertexCount * VertexDataSize * sizeof(float));
-
+        // update index buffer
+        gl.BindBuffer(GLEnum.ElementArrayBuffer, _idxBuffer);
         fixed (uint* data = batchIndices)
-            Buffer.MemoryCopy(data, indexBuf.data, indexBuf.size, indexCount * sizeof(uint));
-
-        Bgfx.set_transient_vertex_buffer(0, &vertexBuf, 0, (uint)vertexCount);
-        Bgfx.set_transient_index_buffer(&indexBuf, 0, (uint)indexCount);
-
-        var state = _drawMode switch
         {
-            MeshPrimitiveType.Points => Bgfx.StateFlags.PtPoints,
-            MeshPrimitiveType.Lines => Bgfx.StateFlags.PtLines,
-            MeshPrimitiveType.LineStrip => Bgfx.StateFlags.PtLinestrip,
-            MeshPrimitiveType.Triangles => Bgfx.StateFlags.None,
-            MeshPrimitiveType.TriangleStrip => Bgfx.StateFlags.PtTristrip,
+            gl.BufferSubData(GLEnum.ElementArrayBuffer, 0, (nuint)indexCount * sizeof(uint), data);
+        }
+
+        // draw buffers
+        var mode = _drawMode switch
+        {
+            MeshPrimitiveType.Lines => GLEnum.Lines,
+            MeshPrimitiveType.LineStrip => GLEnum.LineStrip,
+            MeshPrimitiveType.Points => GLEnum.Points,
+            MeshPrimitiveType.Triangles => GLEnum.Triangles,
+            MeshPrimitiveType.TriangleStrip => GLEnum.TriangleStrip,
             _ => throw new Exception("Invalid MeshPrimitiveType")
         };
 
-        DrawCallback(state);
+        gl.DrawElements(mode, (uint)indexCount, DrawElementsType.UnsignedInt, (void*)0);
         vertexCount = 0;
         indexCount = 0;
         CurrentIndex = 0;

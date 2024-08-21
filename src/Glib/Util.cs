@@ -7,11 +7,11 @@ namespace Glib;
 /// The exception that is thrown when the current backend renderer does not support a given operation or resource configuration.
 /// </summary>
 [Serializable]
-public class UnsupportedRendererOperationException : Exception
+public class UnsupportedOperationException : Exception
 {
-    public UnsupportedRendererOperationException() { }
-    public UnsupportedRendererOperationException(string message) : base(message) { }
-    public UnsupportedRendererOperationException(string message, Exception inner) : base(message, inner) { }
+    public UnsupportedOperationException() { }
+    public UnsupportedOperationException(string message) : base(message) { }
+    public UnsupportedOperationException(string message, Exception inner) : base(message, inner) { }
 }
 
 public struct Color

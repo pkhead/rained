@@ -211,8 +211,6 @@ public class Window : IDisposable
         }
     }
 
-    private bool setupGlErrorCallback = false;
-
     public Vector2 MousePosition {
         get => _mousePos;
         set
@@ -227,7 +225,6 @@ public class Window : IDisposable
     public Window(WindowOptions options)
     {
         window = options.CreateSilkWindow();
-        setupGlErrorCallback = options.SetupGlErrorCallback;
 
         //Vsync = options.VSync;
         window.Load += OnLoad;

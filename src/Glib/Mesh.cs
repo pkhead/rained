@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Bgfx_cs;
 
 namespace Glib;
 
@@ -175,12 +174,13 @@ public class MeshConfiguration
         return this;
     }
 
-    public Mesh Create(int vtxCount) => Mesh.Create(this, vtxCount);
-    public Mesh Create(int vtxCount, int idxCount) => new Mesh(this, vtxCount, idxCount);
-    public Mesh CreateIndexed(Span<ushort> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
-    public Mesh CreateIndexed32(Span<uint> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
+    //public Mesh Create(int vtxCount) => Mesh.Create(this, vtxCount);
+    //public Mesh Create(int vtxCount, int idxCount) => new Mesh(this, vtxCount, idxCount);
+    //public Mesh CreateIndexed(Span<ushort> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
+    //public Mesh CreateIndexed32(Span<uint> indices, int vtxCount) => Mesh.Create(this, indices, vtxCount);
 }
 
+/*
 public class Mesh : Resource
 {   
     private readonly byte[][] bufferData;
@@ -897,3 +897,4 @@ public class StandardMesh : Mesh
         return mesh;
     }
 }
+*/

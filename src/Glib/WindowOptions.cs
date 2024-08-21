@@ -71,7 +71,7 @@ public struct WindowOptions
     /// as soon as possible. If set to true, any OpenGL debug messages will be printed
     /// to Console.Out.
     /// </summary>
-    public bool SetupGlErrorCallback = false;
+    public bool GlDebugContext = false;
 
     public WindowOptions() {}
 
@@ -82,14 +82,20 @@ public struct WindowOptions
         var posY = Y ?? 50;
         bool centerOnCreation = X is null || Y is null;
 
-        opts.API = new GraphicsAPI(ContextAPI.OpenGLES, ContextProfile.Core, ContextFlags.Default, new APIVersion(3, 0));
+        opts.API = new GraphicsAPI(
+            ContextAPI.OpenGLES,
+            ContextProfile.Core,
+            GlDebugContext ? ContextFlags.Debug : ContextFlags.Default,
+            new APIVersion(3, 0)
+        );
+
         opts.IsContextControlDisabled = true;
         opts.ShouldSwapAutomatically = false;
         opts.UpdatesPerSecond = RefreshRate;
         opts.FramesPerSecond =  RefreshRate;
         opts.Position = new(posX, posY);
         opts.Size = new(Width, Height);
-        opts.VSync = false;
+        opts.VSync = VSync;
         opts.Title = Title;
         opts.IsVisible = Visible && !centerOnCreation;
         opts.IsEventDriven = IsEventDriven;
