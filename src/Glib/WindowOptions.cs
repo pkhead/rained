@@ -80,17 +80,9 @@ public struct WindowOptions
         var opts = Silk.NET.Windowing.WindowOptions.Default;
         var posX = X ?? 50;
         var posY = Y ?? 50;
-        
-        // for some reason, Silk.NET does not allow the user to
-        // use the platform backend default position
-        // even though the comments for the Position property say
-        // that setting it to (-1, -1) will do that (it doesn't).
-        // so, i make it so that if X or Y is null, then it will
-        // force-hide the window initially, center the window once it
-        // is created, and then show the window.
         bool centerOnCreation = X is null || Y is null;
 
-        opts.API = GraphicsAPI.None; // we are using bgfx
+        opts.API = new GraphicsAPI(ContextAPI.OpenGLES, ContextProfile.Core, ContextFlags.Default, new APIVersion(3, 0));
         opts.IsContextControlDisabled = true;
         opts.ShouldSwapAutomatically = false;
         opts.UpdatesPerSecond = RefreshRate;
@@ -110,7 +102,6 @@ public struct WindowOptions
         };
 
         var win = Silk.NET.Windowing.Window.Create(opts);
-
         if (centerOnCreation)
         {
             bool vis = Visible;

@@ -2,6 +2,7 @@
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Silk.NET.GLFW;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
@@ -406,6 +407,8 @@ public class Window : IDisposable
 
     public void Initialize()
     {
+        var glfw = GlfwProvider.GLFW.Value;
+        glfw.WindowHint(WindowHintContextApi.ContextCreationApi, ContextApi.EglContextApi);
         window.Initialize();
     }
 

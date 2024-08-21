@@ -1,5 +1,0 @@
-# build output
-build
-
-# clangd cache
-.cache

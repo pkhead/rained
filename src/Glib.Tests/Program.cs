@@ -1,30 +1,13 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Glib;
-using Glib.ImGui;
-using ImGuiNET;
+using Silk.NET.OpenGLES;
 using Key = Glib.Key;
 
-// NEED ADD SCISSCOR!!
-
-namespace GlibTests
+namespace Glib.Tests
 {
     class Program
     {
         private static Glib.Window window = null!;
-        private static ImGuiController imGuiController = null!;
-        private static Glib.StandardMesh mesh = null!;
-        private static Glib.Mesh dynamicMesh = null!;
-        private static Glib.Texture texture = null!;
-        private static Glib.Texture rainedLogo = null!;
-        private static Glib.Shader testShader = null!;
-        private static Glib.Shader invertColorShader = null!;
-        private static Glib.Framebuffer framebuffer = null!;
-
-        private static int mode = 0;
-        private static float sqX = 0f;
-        private static float sqY = 0f;
-        private static float sqW = 100.0f;
-        private static float sqH = 100.0f;
 
         private static void Main(string[] args)
         {
@@ -34,7 +17,7 @@ namespace GlibTests
                 Width = 800,
                 Height = 600,
                 Title = "Silk.NET test",
-                RefreshRate = 10,
+                RefreshRate = 60,
                 IsEventDriven = false,
                 VSync = true
             };
@@ -48,70 +31,44 @@ namespace GlibTests
 
             // run the window
             window.Initialize();
-            if (!window.RenderContext!.CanReadBackFramebufferAttachments()) throw new Exception("cannot read back framebuffer attachments");
-            if (!window.RenderContext!.CanUseMultipleWindows()) throw new Exception("cannot use multiple windows");
+
+            //var rctx = new RenderContext(window);
+
+            var gl = window.SilkWindow.CreateOpenGLES();
+            var vendor = gl.GetStringS(StringName.Vendor);
+            var renderer = gl.GetStringS(StringName.Renderer);
+
+            Console.WriteLine(vendor);
+            Console.WriteLine(renderer);
 
             while (!window.IsClosing)
             {
                 window.PollEvents();
-                window.BeginRender();
+                gl.ClearColor(0.5f, 0.3f, 0.2f, 1.0f);
+                gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+                window.SwapBuffers();
+                /*window.BeginRender();
 
                 OnUpdate((float)window.DeltaTime);
                 OnRender((float)window.DeltaTime, window.RenderContext!);
 
                 window.EndRender();
-                window.SwapBuffers();
+                window.SwapBuffers();*/
             }
 
             // dispose resources after run is done
-            imGuiController.Dispose();
-            mesh.Dispose();
+            //imGuiController.Dispose();
+            //mesh.Dispose();
+            //rctx.Dispose();
             window.Dispose();
         }
 
         private static void OnLoad()
         {
             Console.WriteLine("Load!");
-            imGuiController = new ImGuiController(window);
-
-            var ctx = window.RenderContext!;
-
-            texture = Glib.Texture.Load("assets/icon48.png");
-            rainedLogo = Glib.Texture.Load("assets/rained-logo.png");
-            testShader = Glib.Shader.Create();
-            invertColorShader = Glib.Shader.Create(null, "invert_fs");
-
-            mesh = Glib.StandardMesh.CreateIndexed([0, 1, 2, 3, 0, 2], 4);
-
-            mesh.SetVertexData([
-                new(0f, 0f, 0f),
-                new(0, 50f, 0f),
-                new(50f, 50f, 0f),
-                new(50f, 0f, 0f)
-            ]);
-
-            mesh.SetColorData([
-                Glib.Color.Red,
-                Glib.Color.Green,
-                Glib.Color.Blue,
-                Glib.Color.White
-            ]);
-
-            mesh.SetTexCoordData([
-                new(0f, 1f),
-                new(0f, 0f),
-                new(1f, 0f),
-                new(1f, 1f)
-            ]);
-
-            mesh.Upload();
-
-            // setup framebuffer
-            framebuffer = Glib.FramebufferConfiguration.Standard(300, 300)
-                .Create();
         }
 
-        private static void OnRender(float dt, Glib.RenderContext renderContext)
+        /*private static void OnRender(float dt, Glib.RenderContext renderContext)
         {
             renderContext.LineWidth = 4f;
             renderContext.UseGlLines = false;
@@ -290,6 +247,6 @@ namespace GlibTests
             {
                 sqH += 60f * dt;
             }
-        }
+        }*/
     }
 }

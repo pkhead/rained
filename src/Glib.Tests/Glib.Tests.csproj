@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Glib\Glib.csproj" />
-    <ProjectReference Include="..\Glib.ImGui\Glib.ImGui.csproj" />
+    <!-- <ProjectReference Include="..\Glib.ImGui\Glib.ImGui.csproj" /> -->
   </ItemGroup>
 
   <PropertyGroup>
@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <Content Include="../Bgfx/runtimes/**/*" TargetPath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="../Glib/runtimes/**/*" TargetPath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

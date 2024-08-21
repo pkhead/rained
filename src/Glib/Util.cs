@@ -1,4 +1,3 @@
-using Bgfx_cs;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
@@ -109,29 +108,4 @@ public struct Rectangle
     public float Height { readonly get => Size.Y; set => Size.Y = value; }
     public readonly float Right => Position.X + Size.X;
     public readonly float Bottom => Position.Y + Size.Y;
-}
-
-internal static class BgfxUtil
-{
-    public static unsafe Bgfx.Memory* Load<T>(ReadOnlySpan<T> values) where T : unmanaged
-    {
-        fixed (T* src = values)
-        {
-            return Bgfx.copy(src, (uint)(values.Length * sizeof(T)));
-        }
-    }
-
-    public static unsafe Bgfx.Memory* LoadString(string str)
-    {
-        var mgBytes = System.Text.Encoding.UTF8.GetBytes(str);
-        var alloc = Bgfx.alloc((uint)mgBytes.Length + 1);
-
-        fixed (byte* bytes = mgBytes)
-        {
-            Buffer.MemoryCopy(bytes, alloc, mgBytes.Length, mgBytes.Length);
-            alloc->data[alloc->size - 1] = 0;
-        }
-
-        return alloc;
-    }
 }

@@ -1,2 +1,0 @@
-option('bgfx_include', type : 'string', description : 'Bgfx C99 include directory')
-option('bx_include', type : 'string', description : 'Bx include directory')
