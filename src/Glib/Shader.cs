@@ -210,7 +210,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, float value)
+    public void SetUniform(string uName, float value)
     {
         var gl = RenderContext.Gl;
         gl.Uniform1((int)GetUniformHandle(uName, "float", UniformType.Float), value);
@@ -219,7 +219,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, Vector2 value)
+    public void SetUniform(string uName, Vector2 value)
     {
         var gl = RenderContext.Gl;
         gl.Uniform2((int)GetUniformHandle(uName, "Vector2", UniformType.FloatVec2), value);
@@ -229,7 +229,7 @@ public class Shader : Resource
     /// Set the value of the shader's uniform.
     /// Submits vec4(value.X, value.Y, value.Z, 0.0)
     /// </summary>
-    public unsafe void SetUniform(string uName, Vector3 value)
+    public void SetUniform(string uName, Vector3 value)
     {
         var gl = RenderContext.Gl;
         gl.Uniform3((int)GetUniformHandle(uName, "Vector3", UniformType.FloatVec3), value);
@@ -238,7 +238,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, Vector4 value)
+    public void SetUniform(string uName, Vector4 value)
     {
         var gl = RenderContext.Gl;
         gl.Uniform4((int)GetUniformHandle(uName, "Vector4", UniformType.FloatVec4), value);
@@ -247,7 +247,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, Color value)
+    public void SetUniform(string uName, Color value)
     {
         var gl = RenderContext.Gl;
         gl.Uniform4((int)GetUniformHandle(uName, "Vector4", UniformType.FloatVec4), new Vector4(value.R, value.G, value.B, value.A));
@@ -287,7 +287,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, Matrix2x2 matrix)
+    public void SetUniform(string uName, Matrix2x2 matrix)
     {
         var gl = RenderContext.Gl;
         var (handle, type) = GetUniformHandle(uName);
@@ -334,7 +334,7 @@ public class Shader : Resource
     /// <summary>
     /// Set the value of the shader's uniform.
     /// </summary>
-    public unsafe void SetUniform(string uName, Matrix3x3 matrix)
+    public void SetUniform(string uName, Matrix3x3 matrix)
     {
         var gl = RenderContext.Gl;
         var (handle, type) = GetUniformHandle(uName);
@@ -390,7 +390,7 @@ public class Shader : Resource
     /// Set the value of the shader's uniform. This is only valid for the shader
     /// if it is currently active.
     /// </summary>
-    public unsafe void SetUniform(string uName, Texture texture)
+    public void SetUniform(string uName, Texture texture)
     {
         GetUniformHandle(uName, "Texture", UniformType.Sampler2D); // just need the type check
         var unit = _textureUnits.IndexOf(uName);

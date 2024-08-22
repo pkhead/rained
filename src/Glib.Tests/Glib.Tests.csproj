@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Glib\Glib.csproj" />
-    <!-- <ProjectReference Include="..\Glib.ImGui\Glib.ImGui.csproj" /> -->
+    <ProjectReference Include="..\Glib.ImGui\Glib.ImGui.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -15,6 +15,20 @@
 
   <ItemGroup>
       <Content Include="../Glib/runtimes/**/*" TargetPath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    Ideally, the publish check should be true if and only if a single-file
+    publish is being made. However, I don't think I can directly check
+    that; I'd need to make it a define. This .csproj always specifies a
+    single-file publish anyway so it's safe to just assume that.
+  -->
+  <ItemGroup Condition="$(_IsPublishing)==''">
+    <Content Include="../ImGui.NET/deps/cimgui/win-x64/*" TargetPath="runtimes/win-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../ImGui.NET/deps/cimgui/win-x86/*" TargetPath="runtimes/win-x86/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../ImGui.NET/deps/cimgui/win-arm64/*" TargetPath="runtimes/win-arm64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../ImGui.NET/deps/cimgui/osx/*" TargetPath="runtimes/osx/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../ImGui.NET/deps/cimgui/linux-x64/*" TargetPath="runtimes/linux-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

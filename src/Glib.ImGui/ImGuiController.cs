@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -70,7 +71,8 @@ namespace Glib.ImGui
 
             onConfigureIO?.Invoke();
 
-            io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+            if (Mesh.IsBaseVertexSupported)
+                io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             //io.BackendFlags |= ImGuiBackendFlags.PlatformHasViewports;
             //io.BackendFlags |= ImGuiBackendFlags.RendererHasViewports;
 
@@ -503,6 +505,8 @@ namespace Glib.ImGui
 
         internal unsafe void RenderImDrawData(ImDrawDataPtr drawDataPtr)
         {
+            Debug.Assert(drawDataPtr.Valid);
+            Debug.Assert(drawDataPtr.CmdListsCount == drawDataPtr.CmdLists.Size);
             int framebufferWidth = (int) (drawDataPtr.DisplaySize.X * drawDataPtr.FramebufferScale.X);
             int framebufferHeight = (int) (drawDataPtr.DisplaySize.Y * drawDataPtr.FramebufferScale.Y);
             if (framebufferWidth <= 0 || framebufferHeight <= 0)
@@ -536,6 +540,7 @@ namespace Glib.ImGui
                 
                 _drawMesh.SetBufferData(0, vtxData);
                 _drawMesh.SetIndexBuffer(idxData);
+                _drawMesh.Upload();
 
                 using var activeMesh = rctx.UseMesh(_drawMesh);
 
@@ -561,8 +566,7 @@ namespace Glib.ImGui
                             rctx.SetScissorBox((int) clipRect.X, (int) clipRect.Y, (int) (clipRect.Z - clipRect.X), (int) (clipRect.W - clipRect.Y));
 
                             // Bind texture, Draw
-                            activeMesh.SetIndexBufferDrawSlice(cmdPtr.IdxOffset, cmdPtr.ElemCount);
-                            activeMesh.SetBufferDrawSlice(0, cmdPtr.VtxOffset, (uint)cmdListPtr.VtxBuffer.Size);
+                            activeMesh.SetIndexedSlice(cmdPtr.IdxOffset, cmdPtr.VtxOffset, cmdPtr.ElemCount);
                             activeMesh.Draw(_textures[(int)cmdPtr.TextureId - 1]);
                         }
                     }
@@ -587,17 +591,58 @@ namespace Glib.ImGui
             rctx.BlendMode = lastBlendMode;
         }
 
+        private const string VShaderSrc =
+        """
+        #version 300 es
+        precision mediump float;
+
+        in vec2 a_pos;
+        in vec4 a_color0;
+        in vec2 a_texcoord0;
+
+        out vec2 v_texcoord0;
+        out vec4 v_color0;
+
+        uniform vec4 u_mvp;
+
+        void main()
+        {
+            gl_Position = u_mvp * vec4(a_pos.xy, 0.0, 1.0);
+            v_texcoord0 = a_texcoord0;
+            v_color0 = a_color0;
+        }
+        """;
+
+        private const string FShaderSrc =
+        """
+        #version 300 es
+        precision mediump float;
+        
+        in vec2 v_texcoord0;
+        in vec4 v_color0;
+        
+        uniform sampler2D u_texture0;
+        uniform vec4 u_color;
+
+        out vec4 fragColor;
+        
+        void main()
+        {
+            fragColor = texture(u_texture0, v_texcoord0) * v_color0 * u_color;
+        }
+        """;
+
         private void CreateDeviceResources()
         {
-            _shader = Glib.Shader.Create("imgui_vs", "imgui_fs");
+            _shader = Glib.Shader.Create(VShaderSrc, FShaderSrc);
 
             _drawMesh = new Glib.MeshConfiguration()
                 .AddBuffer(
                     new Glib.MeshBufferConfiguration()
                         .SetUsage(Glib.MeshBufferUsage.Transient)
-                        .LayoutAdd(Glib.MeshBufferTarget.Position, Glib.DataType.Float, 2)
-                        .LayoutAdd(Glib.MeshBufferTarget.TexCoord0, Glib.DataType.Float, 2)
-                        .LayoutAdd(Glib.MeshBufferTarget.Color0, Glib.DataType.Byte, 4, true)
+                        .LayoutAdd(Glib.AttributeName.Position, Glib.DataType.Float, 2)
+                        .LayoutAdd(Glib.AttributeName.TexCoord0, Glib.DataType.Float, 2)
+                        .LayoutAdd(Glib.AttributeName.Color0, Glib.DataType.Byte, 4, true)
                 )
                 .SetIndexed(false, Glib.MeshBufferUsage.Transient)
                 .Create(0, 0); // all buffers are transient

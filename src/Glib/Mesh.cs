@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Silk.NET.OpenGLES;
 
@@ -225,7 +226,7 @@ public class Mesh : Resource
     /// <summary>
     /// Returns true if the rendering backend supports 32-bit indices. False if not.
     /// </summary>
-    public static unsafe bool Are32BitIndicesSupported
+    public static bool Are32BitIndicesSupported
     {
         get => true;
     }
@@ -479,7 +480,7 @@ public class Mesh : Resource
             throw new InvalidOperationException("Cannot use SetBufferData on a static buffer after the mesh has been uploaded");
         
         var data = bufferData[bufferIndex];
-        var itemSize = Marshal.SizeOf<T>();
+        var itemSize = Unsafe.SizeOf<T>();
         if (_config.Buffers[bufferIndex].Usage == MeshBufferUsage.Dynamic && input.Length * itemSize != data.Length)
             throw new ArgumentException("Span size must match that of the underlying dynamic buffer");
 
@@ -534,9 +535,6 @@ public class Mesh : Resource
         var gl = RenderContext.Gl;
 
         var bufConfig = _config.Buffers[bufferIndex];
-
-        // transient buffer data will be created in the draw function
-        if (bufConfig.Usage == MeshBufferUsage.Transient) return;
 
         uint vertexCount = _elemCounts[bufferIndex];
         if (vertexCount == 0) throw new InvalidOperationException("Cannot upload empty buffer");
@@ -746,7 +744,7 @@ public class Mesh : Resource
 
         for (int i = 0; i < buffers.Length; i++)
         {
-            if (_config.Buffers[i].Usage != MeshBufferUsage.Transient && buffers[i] == 0)
+            if (buffers[i] == 0)
                 throw new InvalidOperationException("Attempt to draw a Mesh that has not been fully uploaded.");
             
             if (vertexCount == uint.MaxValue)
@@ -847,11 +845,13 @@ public class Mesh : Resource
                     }
                     else
                     {
-                        gl.BufferSubData(GLEnum.ArrayBuffer, 0, bufData);
+                        gl.BufferSubData(GLEnum.ElementArrayBuffer, 0, bufData);
                     }
                 }
             }
             //else throw new Exception("Unreachable code");
+
+            uint indexPtr = _baseIndex * (uint)(_config.Use32BitIndices ? sizeof(uint) : sizeof(ushort));
             
             if (IsBaseVertexSupported)
             {
@@ -859,7 +859,7 @@ public class Mesh : Resource
                     drawMode,
                     elemCount,
                     _config.Use32BitIndices ? DrawElementsType.UnsignedInt : DrawElementsType.UnsignedShort,
-                    (void*)_baseIndex,
+                    (void*)indexPtr,
                     (int)baseVertex
                 );
             }
@@ -869,7 +869,7 @@ public class Mesh : Resource
                     drawMode,
                     elemCount,
                     _config.Use32BitIndices ? DrawElementsType.UnsignedInt : DrawElementsType.UnsignedShort,
-                    (void*)_baseIndex
+                    (void*)indexPtr
                 );
             }
             else throw new UnsupportedOperationException("Rendering backend does not support base vertex offset.");

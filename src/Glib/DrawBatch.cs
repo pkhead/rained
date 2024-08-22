@@ -94,7 +94,7 @@ internal class DrawBatch
             throw new Exception("Could not create DrawBatch");
     }
 
-    public unsafe void NewFrame(Texture initialTex)
+    public void NewFrame(Texture initialTex)
     {
         vertexCount = 0;
         _texture = initialTex;

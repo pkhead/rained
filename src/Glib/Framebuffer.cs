@@ -93,7 +93,8 @@ public class Framebuffer : Resource
     {
         var gl = RenderContext.Gl;
 
-        var oldFb = (uint)gl.GetInteger(GetPName.DrawFramebufferBinding);
+        var oldDrawFb = (uint)gl.GetInteger(GetPName.DrawFramebufferBinding);
+        var oldReadFb = (uint)gl.GetInteger(GetPName.ReadFramebufferBinding);
 
         Width = config.Width;
         Height = config.Height;
@@ -174,7 +175,8 @@ public class Framebuffer : Resource
             throw new UnsupportedOperationException($"Could not create framebuffer: {fbStatus}");
         }
 
-        gl.BindFramebuffer(GLEnum.Framebuffer, oldFb);
+        gl.BindFramebuffer(GLEnum.DrawFramebuffer, oldDrawFb);
+        gl.BindFramebuffer(GLEnum.ReadFramebuffer, oldReadFb);
     }
 
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);

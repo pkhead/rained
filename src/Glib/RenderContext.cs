@@ -57,7 +57,7 @@ public sealed class RenderContext : IDisposable
     public static RenderContext? Instance { get; private set; } = null;
     private bool _disposed = false;
     internal readonly GL gl;
-    internal static GL Gl { get => Instance!.gl; }
+    internal static GL Gl { get => Instance?.gl ?? throw new InvalidOperationException("Attempt to use graphics library before initialization."); }
 
     public int ScreenWidth { get; private set; }
     public int ScreenHeight { get; private set; }
@@ -76,7 +76,7 @@ public sealed class RenderContext : IDisposable
     private Framebuffer? curFramebuffer = null;
     public Framebuffer? Framebuffer => curFramebuffer;
 
-    public Matrix4x4 TransformMatrix { get => _drawBatch.TransformMatrix; set => _drawBatch.TransformMatrix = value; }
+    public ref Matrix4x4 TransformMatrix => ref _drawBatch.TransformMatrix;
     public Color BackgroundColor = Color.Black;
     public ref Color DrawColor => ref _drawBatch.DrawColor;
     public Shader? Shader {
@@ -145,8 +145,6 @@ public sealed class RenderContext : IDisposable
             _blendMode = value;
         }
     }
-
-    private List<(uint frameEnd, TaskCompletionSource tcs)> _waitingRequests = [];
 
     private RenderContext(Window mainWindow)
     {
@@ -272,6 +270,13 @@ public sealed class RenderContext : IDisposable
         ScreenWidth = width;
         ScreenHeight = height;
 
+        _scissorEnabled = false;
+        _scissorX = 0;
+        _scissorY = 0;
+        _scissorW = ScreenWidth;
+        _scissorH = ScreenHeight;
+        gl.Disable(EnableCap.ScissorTest);
+
         SetViewport(ScreenWidth, ScreenHeight);
         gl.ClearColor(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, BackgroundColor.A);
         gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -285,15 +290,6 @@ public sealed class RenderContext : IDisposable
         _drawBatch.NewFrame(WhiteTexture);
         //curTexture = whiteTexture;
         //lastTexture = whiteTexture;
-
-        for (int i = _waitingRequests.Count - 1; i >= 0; i--)
-        {
-            if (Frame >= _waitingRequests[i].frameEnd)
-            {
-                _waitingRequests[i].tcs.SetResult();
-                _waitingRequests.RemoveAt(i);
-            }
-        }
     }
 
     public void End()
@@ -342,7 +338,7 @@ public sealed class RenderContext : IDisposable
             if (right - x <= 0 || bot - y <= 0)
                 gl.Scissor(0, 0, 0, 0);
             else
-                gl.Scissor(x, y, (uint)(right - x), (uint)(bot - y));
+                gl.Scissor(x, h - bot, (uint)(right - x), (uint)(bot - y));
         }
         else
         {
@@ -445,7 +441,8 @@ public sealed class RenderContext : IDisposable
             shader.SetUniform(Shader.MatrixUniform, TransformMatrix * _curMvp);
 
         try
-        {        
+        {
+            SetupState();
             shader.ActivateTextures(WhiteTexture);
             mesh.ResetSlice();
             mesh.Draw();
@@ -522,7 +519,8 @@ public sealed class RenderContext : IDisposable
                 shader.SetUniform(Shader.MatrixUniform, rctx.TransformMatrix * rctx._curMvp);
             
             try
-            {        
+            {
+                rctx.SetupState();
                 shader.ActivateTextures(rctx.WhiteTexture);
                 Mesh.Draw();
             }
@@ -652,13 +650,6 @@ public sealed class RenderContext : IDisposable
         SetViewport(newWidth, newHeight);
         
         return curFramebuffer;
-    }
-
-    internal Task WaitUntilFrame(uint frameNum)
-    {
-        var tcs = new TaskCompletionSource();
-        _waitingRequests.Add((frameNum, tcs));
-        return tcs.Task;
     }
 
     #region Transform

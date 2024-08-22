@@ -1,15 +1,17 @@
 using System.Numerics;
 using Glib;
+using Glib.ImGui;
+using ImGuiNET;
 using Key = Glib.Key;
 
-// SHADER PREPROCESSING!!
+// NEED ADD SCISSCOR!!
 
-namespace Glib.Tests
+namespace GlibTests
 {
     class Program
     {
         private static Glib.Window window = null!;
-        //private static ImGuiController imGuiController = null!;
+        private static ImGuiController imGuiController = null!;
         private static Glib.StandardMesh mesh = null!;
         private static Glib.Mesh dynamicMesh = null!;
         private static Glib.Texture texture = null!;
@@ -18,29 +20,28 @@ namespace Glib.Tests
         private static Glib.Shader invertColorShader = null!;
         private static Glib.Framebuffer framebuffer = null!;
 
-        private const string InvertShaderFsrc = @"#version 300 es
-        precision mediump float;
+        private static int mode = 0;
+        private static float sqX = 0f;
+        private static float sqY = 0f;
+        private static float sqW = 100.0f;
+        private static float sqH = 100.0f;
 
-        uniform vec4 u_color;
-        uniform sampler2D u_texture0;
+        private const string InvertFragmentSource = @"#version 300 es
+        precision mediump float;
 
         in vec2 v_texcoord0;
         in vec4 v_color0;
 
         out vec4 fragColor;
 
-        void main()
-        {
-            vec4 col = v_color0 * u_color * texture(u_texture0, v_texcoord0);
-            fragColor = vec4(vec3(1.0 - col.rgb), col.a);
+        uniform sampler2D u_texture0;
+        uniform vec4 u_color;
+        
+        void main() {
+            vec4 texel = texture(u_texture0, v_texcoord0);
+            fragColor = vec4(vec3(1.0) - texel.rgb, texel.a) * v_color0 * u_color;
         }
         ";
-
-        private static int mode = 0;
-        private static float sqX = 0f;
-        private static float sqY = 0f;
-        private static float sqW = 100.0f;
-        private static float sqH = 100.0f;
 
         private static void Main(string[] args)
         {
@@ -50,7 +51,6 @@ namespace Glib.Tests
                 Width = 800,
                 Height = 600,
                 Title = "Silk.NET test",
-                RefreshRate = 10,
                 IsEventDriven = false,
                 VSync = true,
                 GlDebugContext = true
@@ -64,33 +64,6 @@ namespace Glib.Tests
             //window.Closing += OnClose;
 
             // run the window
-            window.Initialize();
-            var rctx = RenderContext.Instance!;
-
-            while (!window.IsClosing)
-            {
-                window.PollEvents();
-                rctx.Begin();
-
-                OnUpdate((float)window.DeltaTime);
-                OnRender((float)window.DeltaTime, rctx);
-
-                rctx.End();
-                window.SwapBuffers();
-            }
-
-            // dispose resources after run is done
-            //imGuiController.Dispose();
-            //mesh.Dispose();
-            rctx.Dispose();
-            window.Dispose();
-        }
-
-        private static void OnLoad()
-        {
-            Console.WriteLine("Load!");
-            //imGuiController = new ImGuiController(window);
-
             RenderContext.Log += (LogLevel level, string msg) =>
             {
                 if (level == LogLevel.Debug)
@@ -100,15 +73,40 @@ namespace Glib.Tests
                 else if (level == LogLevel.Error)
                     Console.WriteLine("[ERR] " + msg);
             };
+            window.Initialize();
+
+            var ctx = RenderContext.Instance!;
+            imGuiController = new ImGuiController(window);
+
+            while (!window.IsClosing)
+            {
+                window.PollEvents();
+                ctx.Begin();
+
+                OnUpdate((float)window.DeltaTime);
+                OnRender((float)window.DeltaTime, ctx);
+
+                ctx.End();
+                window.SwapBuffers();
+            }
+
+            // dispose resources after run is done
+            imGuiController.Dispose();
+            //mesh.Dispose();
+            window.Dispose();
+        }
+
+        private static void OnLoad()
+        {
+            Console.WriteLine("Load!");
 
             var ctx = RenderContext.Init(window);
-
             ctx.CullMode = CullMode.None;
 
             texture = Glib.Texture.Load("assets/icon48.png");
             rainedLogo = Glib.Texture.Load("assets/rained-logo.png");
             testShader = Glib.Shader.Create();
-            invertColorShader = Glib.Shader.Create(null, InvertShaderFsrc);
+            invertColorShader = Glib.Shader.Create(null, InvertFragmentSource);
 
             mesh = Glib.StandardMesh.CreateIndexed([0, 1, 2, 3, 0, 2], 4);
 
@@ -265,12 +263,22 @@ namespace Glib.Tests
                 );
                 renderContext.Shader = null;
             }
+
+            ImGui.ShowDemoWindow();
+
+            if (ImGui.Begin("Test"))
+            {
+                ImGui.Image(imGuiController.UseTexture(rainedLogo), new Vector2(rainedLogo.Width, rainedLogo.Height));
+                ImGui.Image(imGuiController.UseTexture(texture), new Vector2(texture.Width, texture.Height));
+            } ImGui.End();
+            
+            imGuiController.Render();
         }
 
         private static void OnUpdate(float dt)
         {
-            //imGuiController.Update(dt);
-
+            imGuiController.Update(dt);
+            
             sqX = window.MouseX;
             sqY = window.MouseY;
 
