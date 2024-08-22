@@ -18,52 +18,52 @@ public class Shader : Resource
     private const string DefaultVertexSource = @"#version 300 es
     precision mediump float;
 
-    layout(location=0) in vec3 glib_aPos;
-    layout(location=1) in vec2 glib_aTexCoord;
-    layout(location=2) in vec4 glib_aColor;
+    in vec3 a_pos;
+    in vec2 a_texcoord0;
+    in vec4 a_color0;
 
-    out vec2 glib_texCoord;
-    out vec4 glib_color;
+    out vec2 v_texcoord0;
+    out vec4 v_color0;
 
-    uniform mat4 glib_uMvp;
+    uniform mat4 u_mvp;
     
     void main() {
-        gl_Position = glib_uMvp * vec4(glib_aPos.xyz, 1.0);
-        glib_texCoord = glib_aTexCoord;
-        glib_color = glib_aColor;
+        gl_Position = u_mvp * vec4(a_pos, 1.0);
+        v_texcoord0 = a_texcoord0;
+        v_color0 = a_color0;
     }
     ";
 
     private const string DefaultFragmentSource = @"#version 300 es
     precision mediump float;
 
-    in vec2 glib_texCoord;
-    in vec4 glib_color;
+    in vec2 v_texcoord0;
+    in vec4 v_color0;
 
-    out vec4 glib_fragColor;
+    out vec4 fragColor;
 
-    uniform sampler2D glib_uTexture;
-    uniform vec4 glib_uColor;
+    uniform sampler2D u_texture0;
+    uniform vec4 u_color;
     
     void main() {
-        glib_fragColor = texture(glib_uTexture, glib_texCoord) * glib_color * glib_uColor;
+        fragColor = texture(u_texture0, v_texcoord0) * v_color0 * u_color;
     }
     ";
 
     /// <summary>
-    /// The name of the texture uniform set by Glib.
+    /// The name of the default texture uniform.
     /// </summary>
-    public const string TextureUniform = "glib_uTexture";
+    public const string TextureUniform = "u_texture0";
 
     /// <summary>
-    /// The name of the color uniform set by Glib.
+    /// The name of the default color uniform.
     /// </summary>
-    public const string ColorUniform = "glib_uColor";
+    public const string ColorUniform = "u_color";
 
     /// <summary>
-    /// The name of the matrix uniform set by Glib.
+    /// The name of the model-view-projection matrix uniform.
     /// </summary>
-    public const string MatrixUniform = "glib_uMvp";
+    public const string MatrixUniform = "u_mvp";
 
     private readonly uint programHandle;
     internal uint Handle => programHandle;
@@ -73,6 +73,16 @@ public class Shader : Resource
     private readonly Dictionary<string, (uint loc, UniformType type)> _uniformLocs = [];
     private List<string> _textureUnits = [];
     private Texture[] _boundTextures;
+
+    private static uint? _max_attrib_index = null;
+
+    private static void BindAttribLocation(GL gl, uint program, uint index, string name)
+    {
+        _max_attrib_index ??= (uint)gl.GetInteger(GetPName.MaxVertexAttribs);
+        
+        if (index < _max_attrib_index)
+            gl.BindAttribLocation(program, index, name);        
+    }
 
     internal unsafe Shader(string? vsSource = null, string? fsSource = null)
     {
@@ -102,6 +112,25 @@ public class Shader : Resource
         programHandle = gl.CreateProgram();
         gl.AttachShader(programHandle, vsh);
         gl.AttachShader(programHandle, fsh);
+
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Position, "a_pos");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Normal, "a_normal");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Tangent, "a_tangent");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Bitangent, "a_bitangent");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Color0, "a_color0");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Color1, "a_color1");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Color2, "a_color2");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Color3, "a_color3");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Indices, "a_indices");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.Weight, "a_weight");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord0, "a_texcoord0");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord1, "a_texcoord1");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord2, "a_texcoord2");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord3, "a_texcoord3");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord4, "a_texcoord4");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord5, "a_texcoord5");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord6, "a_texcoord6");
+        BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord7, "a_texcoord7");
         gl.LinkProgram(programHandle);
 
         if (gl.GetProgram(programHandle, GLEnum.LinkStatus) == 0)

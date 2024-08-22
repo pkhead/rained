@@ -80,17 +80,15 @@ internal class DrawBatch
         gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)batchIndices.Length * sizeof(uint), null, GLEnum.StreamDraw);
 
         var byteStride = VertexDataSize * sizeof(float);
-        // glib_aPos
-        gl.VertexAttribPointer(0, 3, GLEnum.Float, false, byteStride, 0);
-        gl.EnableVertexAttribArray(0);
+        
+        gl.VertexAttribPointer((uint)AttributeName.Position, 3, GLEnum.Float, false, byteStride, 0);
+        gl.EnableVertexAttribArray((uint)AttributeName.Position);
 
-        // glib_aTexCoord
-        gl.VertexAttribPointer(1, 2, GLEnum.Float, false, byteStride, 3*sizeof(float));
-        gl.EnableVertexAttribArray(1);
+        gl.VertexAttribPointer((uint)AttributeName.TexCoord0, 2, GLEnum.Float, false, byteStride, 3*sizeof(float));
+        gl.EnableVertexAttribArray((uint)AttributeName.TexCoord0);
 
-        // glib_aColor
-        gl.VertexAttribPointer(2, 4, GLEnum.Float, false, byteStride, 5*sizeof(float));
-        gl.EnableVertexAttribArray(2);
+        gl.VertexAttribPointer((uint)AttributeName.Color0, 4, GLEnum.Float, false, byteStride, 5*sizeof(float));
+        gl.EnableVertexAttribArray((uint)AttributeName.Color0);
 
         if (gl.GetError() != 0)
             throw new Exception("Could not create DrawBatch");

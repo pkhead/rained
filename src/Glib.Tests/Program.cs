@@ -10,8 +10,8 @@ namespace Glib.Tests
     {
         private static Glib.Window window = null!;
         //private static ImGuiController imGuiController = null!;
-        //private static Glib.StandardMesh mesh = null!;
-        //private static Glib.Mesh dynamicMesh = null!;
+        private static Glib.StandardMesh mesh = null!;
+        private static Glib.Mesh dynamicMesh = null!;
         private static Glib.Texture texture = null!;
         private static Glib.Texture rainedLogo = null!;
         private static Glib.Shader testShader = null!;
@@ -21,18 +21,18 @@ namespace Glib.Tests
         private const string InvertShaderFsrc = @"#version 300 es
         precision mediump float;
 
-        uniform vec4 glib_uColor;
-        uniform sampler2D glib_uTexture;
+        uniform vec4 u_color;
+        uniform sampler2D u_texture0;
 
-        in vec2 glib_texCoord;
-        in vec4 glib_color;
+        in vec2 v_texcoord0;
+        in vec4 v_color0;
 
-        out vec4 glib_fragColor;
+        out vec4 fragColor;
 
         void main()
         {
-            vec4 col = glib_color * glib_uColor * texture(glib_uTexture, glib_texCoord);
-            glib_fragColor = vec4(vec3(1.0 - col.rgb), col.a);
+            vec4 col = v_color0 * u_color * texture(u_texture0, v_texcoord0);
+            fragColor = vec4(vec3(1.0 - col.rgb), col.a);
         }
         ";
 
@@ -91,14 +91,26 @@ namespace Glib.Tests
             Console.WriteLine("Load!");
             //imGuiController = new ImGuiController(window);
 
+            RenderContext.Log += (LogLevel level, string msg) =>
+            {
+                if (level == LogLevel.Debug)
+                    Console.WriteLine("[DBG] " + msg);
+                else if (level == LogLevel.Information)
+                    Console.WriteLine("[INF] " + msg);
+                else if (level == LogLevel.Error)
+                    Console.WriteLine("[ERR] " + msg);
+            };
+
             var ctx = RenderContext.Init(window);
+
+            ctx.CullMode = CullMode.None;
 
             texture = Glib.Texture.Load("assets/icon48.png");
             rainedLogo = Glib.Texture.Load("assets/rained-logo.png");
             testShader = Glib.Shader.Create();
             invertColorShader = Glib.Shader.Create(null, InvertShaderFsrc);
 
-            /*mesh = Glib.StandardMesh.CreateIndexed([0, 1, 2, 3, 0, 2], 4);
+            mesh = Glib.StandardMesh.CreateIndexed([0, 1, 2, 3, 0, 2], 4);
 
             mesh.SetVertexData([
                 new(0f, 0f, 0f),
@@ -121,29 +133,138 @@ namespace Glib.Tests
                 new(1f, 1f)
             ]);
 
-            mesh.Upload();*/
+            mesh.Upload();
 
             // setup framebuffer
             framebuffer = Glib.FramebufferConfiguration.Standard(300, 300)
                 .Create();
         }
 
-        private static void OnRender(float dt, Glib.RenderContext rctx)
+        private static void OnRender(float dt, Glib.RenderContext renderContext)
         {
-            rctx.LineWidth = 1f;
-            rctx.UseGlLines = true;
-            rctx.DrawRectangleLines(10.0f, 10.0f, 100.0f, 80.0f);
+            renderContext.LineWidth = 4f;
+            renderContext.UseGlLines = false;
 
-            rctx.LineWidth = 2f;
-            rctx.UseGlLines = false;
+            renderContext.DrawColor = Glib.Color.White;
+            renderContext.DrawTexture(texture, new Glib.Rectangle(0f, 0f, 200f, 100f));
 
-            rctx.DrawColor = Glib.Color.Red;
-            rctx.DrawRectangle(window.MouseX, window.MouseY, 50.0f, 50.0f);
-            rctx.DrawColor = Glib.Color.Green;
-            rctx.DrawRectangleLines(window.MouseX, window.MouseY, 50.0f, 50.0f);
+            bool all = mode == 9;
 
-            //renderContext.DrawColor = Glib.Color.White;
-            //renderContext.DrawTexture(texture, new Glib.Rectangle(0f, 0f, 200f, 100f));
+            // test rect
+            if (all || mode == 0)
+            {
+                renderContext.DrawColor = Glib.Color.FromRGBA(255, 127, 51, 255);
+                renderContext.DrawRectangle(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+
+                renderContext.PushTransform();
+                renderContext.Translate(sqX - 0, sqY - 0, 0f);
+                renderContext.Rotate((float)window.Time);
+                renderContext.DrawColor = Glib.Color.White;
+                renderContext.Draw(mesh);
+                renderContext.DrawColor = Glib.Color.Red;
+                renderContext.DrawTexture(texture);
+                renderContext.DrawColor = Glib.Color.Green;
+                //renderContext.Draw(mesh);
+                renderContext.DrawTexture(texture, texture.Width, 0f);
+                renderContext.PopTransform();
+
+                renderContext.DrawColor = Glib.Color.FromRGBA(255, 255, 255, 50);
+                renderContext.DrawRectangleLines(sqX - sqW / 2.0f, sqY - sqH / 2.0f, sqW, sqH);
+
+                renderContext.DrawColor = Glib.Color.Blue;
+                renderContext.DrawTriangle(0f, 0f, 0, 10f, 10f, 10f);
+            }
+            
+            // test line
+            if (all || mode == 1)
+            {
+                renderContext.DrawColor = Glib.Color.FromRGBA(255, 255, 255);
+                renderContext.DrawLine(window.Width / 2.0f, window.Height / 2.0f, sqX, sqY);
+            }
+
+            // test circle
+            if (all || mode == 2)
+            {
+                renderContext.DrawColor = Glib.Color.FromRGBA(255, 255, 255, 100);
+                renderContext.DrawCircle(window.MouseX, window.MouseY, sqH);
+            }
+
+            // test circle outline
+            if (all || mode == 3)
+            {
+                renderContext.DrawColor = Glib.Color.FromRGBA(255, 255, 255, 100);
+                renderContext.DrawRing(window.MouseX, window.MouseY, sqH);
+            }
+
+            // dynamic, non-indexed, textured mesh
+            if (all || mode == 4)
+            {
+                renderContext.DrawColor = Glib.Color.White;
+                
+                dynamicMesh ??= new Glib.MeshConfiguration()
+                    .AddBuffer(AttributeName.Position, DataType.Float, 3, MeshBufferUsage.Dynamic)
+                    .AddBuffer(AttributeName.TexCoord0, DataType.Float, 2, MeshBufferUsage.Dynamic)
+                    .AddBuffer(AttributeName.Color0, DataType.Float, 4, MeshBufferUsage.Dynamic)
+                    .Create(6);
+
+                var a = (float) window.Time;
+                dynamicMesh.SetBufferData(0, [
+                    new Vector3(MathF.Cos(a) * 20f, MathF.Sin(a) * 20f, 0),
+                    new Vector3(0f, 100f, 0f),
+                    new Vector3(MathF.Cos(a) * 5f, MathF.Sin(a) * 5f, 0f) + new Vector3(100f, 140f, 0f),
+
+                    new Vector3(MathF.Cos(a) * 5f, MathF.Sin(a) * 5f, 0f) + new Vector3(100f, 100f, 0f),
+                    new Vector3(MathF.Cos(a) * 20f, MathF.Sin(a) * 20f, 0),
+                    new Vector3(120f, 0, 0f),
+                ]);
+
+                dynamicMesh.SetBufferData(2, [
+                    Glib.Color.White, Glib.Color.White, Glib.Color.White,
+                    Glib.Color.White, Glib.Color.White, Glib.Color.White,
+                ]);
+
+                dynamicMesh.SetBufferData(1, [
+                    new Vector2(0, 0),
+                    new Vector2(0, 1),
+                    new Vector2(1, 1),
+
+                    new Vector2(1, 1),
+                    new Vector2(0, 0),
+                    new Vector2(1, 0),
+                ]);
+
+                dynamicMesh.Upload();
+
+                renderContext.Shader = testShader;
+                renderContext.PushTransform();
+                renderContext.Translate(window.MouseX, window.MouseY, 0f);
+                renderContext.Draw(dynamicMesh, rainedLogo);
+                renderContext.PopTransform();
+
+                renderContext.Shader = null;
+            }
+
+            // framebuffer test
+            if (all || mode == 5)
+            {
+                renderContext.DrawColor = Glib.Color.White;
+                renderContext.PushFramebuffer(framebuffer);
+                renderContext.Clear(ClearFlags.Color | ClearFlags.Depth, Color.Transparent);
+                renderContext.DrawTexture(rainedLogo);
+                renderContext.DrawRectangle(window.MouseX, window.MouseY, 40f, 40f);
+                renderContext.PopFramebuffer();
+
+                renderContext.Shader = invertColorShader;
+                var tex = framebuffer.GetTexture(0);
+                //invertColorShader.SetUniform("uColor", Color.White);
+                //invertColorShader.SetUniform("uTexture", tex);
+                renderContext.DrawTexture(
+                    tex,
+                    new Glib.Rectangle(0f, tex.Height, tex.Width, -tex.Height),
+                    new Glib.Rectangle(0f, 0f, window.Width, window.Height)
+                );
+                renderContext.Shader = null;
+            }
         }
 
         private static void OnUpdate(float dt)

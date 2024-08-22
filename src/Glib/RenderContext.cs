@@ -322,7 +322,7 @@ public sealed class RenderContext : IDisposable
 
     public void DrawBatch() => _drawBatch.Draw();
 
-    private void SetupState(out Shader shader)
+    private void SetupState()
     {
         if (_scissorEnabled)
         {
@@ -384,9 +384,6 @@ public sealed class RenderContext : IDisposable
             if (CullMode == CullMode.Clockwise) gl.CullFace(GLEnum.Back);
             else if (CullMode == CullMode.Counterclockwise) gl.CullFace(GLEnum.Front);
         }
-
-        shader = Shader ?? defaultShader;
-        shader.ActivateTextures(WhiteTexture);
     }
 
     public void SetScissorBox(int x, int y, int w, int h)
@@ -432,7 +429,7 @@ public sealed class RenderContext : IDisposable
     /// </summary>
     /// <param name="mesh">The mesh to draw</param>
     /// <param name="texture">The texture to bind to glib_texture in the active shader when drawing.</param>
-    /*public unsafe void Draw(Mesh mesh, Texture texture)
+    public unsafe void Draw(Mesh mesh, Texture texture)
     {
         _drawBatch.Draw();
 
@@ -443,25 +440,20 @@ public sealed class RenderContext : IDisposable
         
         if (shader.HasUniform(Shader.ColorUniform))
             shader.SetUniform(Shader.ColorUniform, DrawColor);
+        
+        if (shader.HasUniform(Shader.MatrixUniform))
+            shader.SetUniform(Shader.MatrixUniform, TransformMatrix * _curMvp);
 
         try
         {        
-            var programHandle = shader.Activate(WhiteTexture);
-            
-            mesh.ResetSliceSettings();
-            var state = SetupState() | mesh.Activate();
-            Bgfx.set_state((ulong)state, 0);
-
-            Matrix4x4 transformMat = TransformMatrix;
-            Bgfx.set_transform(&transformMat, 1);
-
-            _viewHasSubmission = true;
-            Bgfx.submit(curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            shader.ActivateTextures(WhiteTexture);
+            mesh.ResetSlice();
+            mesh.Draw();
         }
-        catch (InsufficientBufferSpaceException e)
+        catch (UnsupportedOperationException e)
         {
             LogError(e.Message);
-            Bgfx.discard((byte)Bgfx.DiscardFlags.All);
+            //Bgfx.discard((byte)Bgfx.DiscardFlags.All);
         }
     }
 
@@ -482,43 +474,28 @@ public sealed class RenderContext : IDisposable
         {
             Mesh = mesh;
             RenderContext = rctx;
-            Mesh.ResetSliceSettings();
+            Mesh.ResetSlice();
         }
 
         /// <summary>
-        /// Set the slice of the buffer drawn.
-        /// </summary>
-        /// <param name="bufferIndex">The index of the buffer to configure.</param>
-        /// <param name="startVertex">The index of the starting vertex.</param>
-        /// <param name="vertexCount">The number of vertices to draw.</param>
-        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex and vertexCount parameters are out of bounds.</exception>
-        public void SetBufferDrawSlice(int bufferIndex, uint startVertex, uint vertexCount)
-        {
-            Mesh.SetBufferDrawSlice(bufferIndex, startVertex, vertexCount);
-        }
-
-        /// <summary>
-        /// Set the slice of the index buffer that is drawn.
+        /// Set the slice of the buffers drawn for a non-indexed mesh.
         /// </summary>
         /// <param name="startVertex">The index of the starting vertex.</param>
         /// <param name="vertexCount">The number of vertices to draw.</param>
-        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex and vertexCount parameters are out of bounds.</exception>
-        public void SetIndexBufferDrawSlice(uint startVertex, uint vertexCount)
+        public void SetSlice(uint baseVertex, uint vertexCount)
         {
-            Mesh.SetIndexBufferDrawSlice(startVertex, vertexCount);
+            Mesh.SetSlice(baseVertex, vertexCount);
         }
 
         /// <summary>
-        /// Set the slice of the index buffer that is drawn.
+        /// Set the slice of the buffers drawn for an indexed mesh.
         /// </summary>
+        /// <param name="startIndex">The index of the starting index.</param>
         /// <param name="startVertex">The index of the starting vertex.</param>
-        /// <exception cref="ArgumentException">Thrown when the buffer at the given index does not exist.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the startVertex.</exception>
-        public void SetIndexBufferDrawSlice(uint startVertex)
+        /// <param name="vertexCount">The number of elements to draw.</param>
+        public void SetIndexedSlice(uint startIndex, uint baseVertex, uint elemCount)
         {
-            Mesh.SetIndexBufferDrawSlice(startVertex);
+            Mesh.SetIndexedSlice(startIndex, baseVertex, elemCount);
         }
 
         /// <summary>
@@ -530,7 +507,7 @@ public sealed class RenderContext : IDisposable
         /// <param name="texture">The texture to bind to glib_texture in the active shader when drawing.</param>
         public unsafe void Draw(Texture texture)
         {
-            var rctx = this.RenderContext;
+            var rctx = RenderContext;
             rctx._drawBatch.Draw();
 
             var shader = rctx.Shader ?? rctx.defaultShader;
@@ -540,24 +517,18 @@ public sealed class RenderContext : IDisposable
             
             if (shader.HasUniform(Shader.ColorUniform))
                 shader.SetUniform(Shader.ColorUniform, rctx.DrawColor);
-                    
-            var programHandle = shader.Activate(rctx.WhiteTexture);
+            
+            if (shader.HasUniform(Shader.MatrixUniform))
+                shader.SetUniform(Shader.MatrixUniform, rctx.TransformMatrix * rctx._curMvp);
             
             try
-            {
-                var state = rctx.SetupState() | Mesh.Activate();
-                Bgfx.set_state((ulong)state, 0);
-
-                Matrix4x4 transformMat = rctx.TransformMatrix;
-                Bgfx.set_transform(&transformMat, 1);
-
-                rctx._viewHasSubmission = true;
-                Bgfx.submit(rctx.curViewId, programHandle, 0, (byte)Bgfx.DiscardFlags.All);
+            {        
+                shader.ActivateTextures(rctx.WhiteTexture);
+                Mesh.Draw();
             }
-            catch (InsufficientBufferSpaceException e)
+            catch (UnsupportedOperationException e)
             {
                 LogError(e.Message);
-                Bgfx.discard((byte)Bgfx.DiscardFlags.All);
             }
         }
 
@@ -582,7 +553,6 @@ public sealed class RenderContext : IDisposable
     /// <param name="mesh">The mesh to draw</param>
     public ActiveMeshHandle UseMesh(Mesh mesh)
         => new(mesh, this);
-    */
 
     public void DrawTexture(Texture texture, Rectangle srcRect, Rectangle dstRect)
     {
@@ -652,7 +622,7 @@ public sealed class RenderContext : IDisposable
     /// Begin rendering to a window.
     /// </summary>
     /// <param name="window">The window to begin rendering to.</param>
-    public void RenderToWindow(Window window)
+    public void SetWindow(Window window)
     {
         if (!_windows.Contains(window)) throw new ArgumentException("Window was not registered with the RenderContext", nameof(window));
         window.MakeCurrent();
@@ -761,7 +731,8 @@ public sealed class RenderContext : IDisposable
 
     private unsafe void BatchDrawCallback()
     {
-        SetupState(out var shader);
+        SetupState();
+        var shader = Shader ?? defaultShader;
 
         if (shader.HasUniform(Shader.TextureUniform))
             shader.SetUniform(Shader.TextureUniform, _drawBatch.Texture ?? WhiteTexture);
@@ -771,6 +742,8 @@ public sealed class RenderContext : IDisposable
         
         if (shader.HasUniform(Shader.MatrixUniform))
             shader.SetUniform(Shader.MatrixUniform, _curMvp);
+        
+        shader.ActivateTextures(WhiteTexture);
     }
 
     public void DrawTriangle(float x0, float y0, float x1, float y1, float x2, float y2)
