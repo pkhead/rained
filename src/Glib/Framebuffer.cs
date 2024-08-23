@@ -180,7 +180,7 @@ public class Framebuffer : Resource
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);
     public static Framebuffer Create(int width, int height) => new(FramebufferConfiguration.Standard(width, height));
 
-    protected override void FreeResources(bool disposing)
+    protected override void FreeResources(RenderContext rctx)
     {
         for (int i = 0; i < _attachmentTexs.Length; i++)
         {
@@ -188,7 +188,7 @@ public class Framebuffer : Resource
             _attachmentTexs[i] = null!;
         }
 
-        RenderContext.Gl.DeleteFramebuffer(fbo);
+        rctx.gl.DeleteFramebuffer(fbo);
     }
 
     /// <summary>

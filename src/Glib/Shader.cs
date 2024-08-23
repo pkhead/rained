@@ -149,9 +149,9 @@ public class Shader : Resource
         GlUtil.CheckError(gl, "Error parsing shader uniforms");
     }
 
-    protected override void FreeResources(bool disposing)
+    protected override void FreeResources(RenderContext rctx)
     {
-        RenderContext.Gl.DeleteProgram(programHandle);
+        rctx.gl.DeleteProgram(programHandle);
     }
 
     /// <summary>

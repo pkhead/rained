@@ -56,6 +56,7 @@ public sealed class RenderContext : IDisposable
 {
     public static RenderContext? Instance { get; private set; } = null;
     private bool _disposed = false;
+    internal ResourceList resourceList;
     internal readonly GL gl;
     internal static GL Gl => Instance?.gl ?? throw new InvalidOperationException("Attempt to use graphics library before initialization.");
 
@@ -156,6 +157,7 @@ public sealed class RenderContext : IDisposable
     {
         Instance = this;
         
+        resourceList = new ResourceList();
         gl = mainWindow.SilkWindow.CreateOpenGLES();
         mainWindow.MakeCurrent();
         GpuVendor = gl.GetStringS(StringName.Vendor);
@@ -272,6 +274,7 @@ public sealed class RenderContext : IDisposable
         if (_disposed) return;
         _disposed = true;
         Shader.ClearShaderCache();
+        resourceList.DisposeRemaining();
         gl.Dispose();
         GC.SuppressFinalize(this);
         Instance = null;
@@ -321,7 +324,7 @@ public sealed class RenderContext : IDisposable
     {
         _drawBatch.Draw();
         Frame++;
-        Resource.Idle();
+        resourceList.Idle();
 
         while (true)
         {

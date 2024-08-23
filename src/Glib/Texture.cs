@@ -147,9 +147,9 @@ public class Texture : Resource
         return new Texture(img);
     }
 
-    protected override void FreeResources(bool disposing)
+    protected override void FreeResources(RenderContext rctx)
     {
-        RenderContext.Gl.DeleteTexture(_handle);
+        rctx.gl.DeleteTexture(_handle);
         _handle = 0;
     }
 

@@ -931,9 +931,9 @@ public class Mesh : Resource
         _vertexSlice = (start, elemCount);
     }
 
-    protected override void FreeResources(bool disposing)
+    protected override void FreeResources(RenderContext rctx)
     {
-        var gl = RenderContext.Gl;
+        var gl = rctx.gl;
 
         foreach (var buffer in buffers)
         {
