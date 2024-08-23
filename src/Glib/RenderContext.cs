@@ -158,6 +158,12 @@ public sealed class RenderContext : IDisposable
     /// </summary>
     public bool OriginBottomLeft => true;
 
+#if GLES
+    public string GraphicsAPI = "OpenGL ES 3.0";
+#else
+    public string GraphicsAPI => "OpenGL 3.3";
+#endif
+
     private RenderContext(Window mainWindow)
     {
         Instance = this;

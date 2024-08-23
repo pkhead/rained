@@ -11,7 +11,7 @@ static class AboutWindow
     private static RlManaged.Texture2D? rainedLogo0 = null;
     private static RlManaged.Texture2D? rainedLogo1 = null;
 
-    record SystemInfo(string FrameworkName, string OsName, string Arch, string GraphicsVendor, string GraphicsRenderer);
+    record SystemInfo(string FrameworkName, string OsName, string Arch, string GraphicsAPI, string GraphicsVendor, string GraphicsRenderer);
     private static SystemInfo? systemInfo;
 
     private static SystemInfo GetSystemInfo()
@@ -34,7 +34,7 @@ static class AboutWindow
         };
 
         var rctx = RainEd.RenderContext!;
-        systemInfo = new SystemInfo(frameworkName, osName, archName, rctx.GpuVendor, rctx.GpuRenderer);
+        systemInfo = new SystemInfo(frameworkName, osName, archName, rctx.GraphicsAPI, rctx.GpuVendor, rctx.GpuRenderer);
         return systemInfo;
     }
 
@@ -82,8 +82,14 @@ static class AboutWindow
                 var sysInfo = systemInfo ?? GetSystemInfo();
                 ImGui.BulletText(".NET: " + sysInfo.FrameworkName);
                 ImGui.BulletText("OS: " + sysInfo.OsName);
-                ImGui.BulletText("Architecture: " + sysInfo.Arch);
-                ImGui.BulletText("Renderer: " + sysInfo.GraphicsRenderer);
+                ImGui.BulletText("Arch: " + sysInfo.Arch);
+                ImGui.BulletText("Graphics API: " + sysInfo.GraphicsAPI);
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 40.0f);
+                ImGui.Bullet();
+                ImGui.TextWrapped("Gfx Vendor: " + sysInfo.GraphicsVendor);
+                ImGui.Bullet();
+                ImGui.TextWrapped("Gfx Driver: " + sysInfo.GraphicsRenderer);
+                ImGui.PopTextWrapPos();
             }
             
             ImGui.SeparatorText("Libraries");
