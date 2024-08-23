@@ -1,4 +1,5 @@
 using Glib;
+using RainEd;
 using System.Diagnostics;
 using System.Numerics;
 namespace Raylib_cs;
@@ -417,35 +418,35 @@ static class Raylib
     {
         return Random.Shared.Next(min, max+1);
     }
-
-    /*public static Shader LoadShaderFromMemory(string? vsName, string? fsName)
+    
+    public static Shader LoadShaderFromMemory(string? vsSource, string? fsSource)
     {
         try
         {
-            var shader = Glib.Shader.Create(vsName, fsName);
+            var shader = Glib.Shader.Create(vsSource, fsSource);
             return new Shader()
             {
                 ID = shader
             };
         }
-        catch (ShaderCreationException e)
+        catch (ShaderCompilationException e)
         {
             RainEd.Log.Error(e.ToString());
             return new Shader();
         }
-    }*/
+    }
 
     public static Shader LoadShader(string? vsName, string? fsName)
     {
         try
         {
-            var shader = Glib.Shader.Create(vsName, fsName);
+            var shader = Glib.Shader.Load(vsName, fsName);
             return new Shader()
             {
                 ID = shader
             };
         }
-        catch (ShaderCreationException e)
+        catch (ShaderCompilationException e)
         {
             RainEd.Log.Error(e.ToString());
             return new Shader();
@@ -493,8 +494,9 @@ static class Raylib
     public static void EndDrawing()
     {
         RenderContext.Instance!.End();
+        Boot.Window.SwapBuffers();
 
-        if (!RenderContext.Instance!.VSync)
+        if (!Boot.Window.VSync)
         {
             long targetFrameLenMs = (long)(targetFrameLength * 1000.0);
             var ms = frameStopwatch.ElapsedMilliseconds;
@@ -921,16 +923,14 @@ static class Raylib
                     new()
                     {
                         Attachment = AttachmentPoint.Color,
-                        Useable = true,
-                        Readable = true
+                        Useable = true
                     },
 
                     // depth renderbuffer
                     new()
                     {
                         Attachment = AttachmentPoint.Depth,
-                        Useable = false,
-                        Readable = false
+                        Useable = false
                     }
                 ]
             }.Create()

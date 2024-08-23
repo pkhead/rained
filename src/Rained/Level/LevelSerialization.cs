@@ -1069,17 +1069,6 @@ static class LevelSerialization
         outputTxtFile.Close();
     }
 
-    public async static Task SaveLevelLightMapAsync(string path)
-    {
-        var level = RainEd.Instance.Level;
-
-        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        using var lightMapImg = await level.LightMap.GetImageAsync();
-        lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
-        lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
-        Raylib.ExportImage(lightMapImg, lightPath);
-    }
-
     public static void SaveLevelLightMap(string path)
     {
         var level = RainEd.Instance.Level;

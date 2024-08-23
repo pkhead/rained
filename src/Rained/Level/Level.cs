@@ -448,7 +448,7 @@ partial class Level
         Props.Sort(new PropDepthSorter());
     }
     
-    public async Task<Vector2> ResizeAsync(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
+    public Vector2 Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
     {
         if (newWidth == _width && newHeight == _height) return Vector2.Zero;
 
@@ -558,8 +558,7 @@ partial class Level
             }
         }
 
-        // resize light map
-        await LightMap.ResizeAsync(
+        LightMap.Resize(
             newWidth, newHeight,
             dstOriginX, dstOriginY
         );

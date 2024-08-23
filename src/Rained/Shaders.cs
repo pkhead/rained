@@ -61,17 +61,17 @@ static class Shaders
 
     public static void LoadShaders()
     {
-        EffectsMatrixShader = RlManaged.Shader.Load(null, "effect_matrix_fs");
-        BevelTreatmentShader = RlManaged.Shader.Load(null, "bevel_fs");
-        SoftPropShader = RlManaged.Shader.Load(null, "softprop_fs");
-        PropShader = RlManaged.Shader.Load(null, "prop_fade_fs");
-        TileShader = RlManaged.Shader.Load(null, "tile_fs");
-        PaletteShader = RlManaged.Shader.Load(null, "palette_fs");
-        LevelLightShader = RlManaged.Shader.Load(null, "level_light_fs");
-        GridShader = RlManaged.Shader.Load("grid_vs", "grid_fs");
-        RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview_fs");
-        RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview_fs");
-        UvRepeatShader = RlManaged.Shader.Load(null, "uv_repeat_fs");
+        EffectsMatrixShader = RlManaged.Shader.Load(null, "effect_matrix.frag");
+        BevelTreatmentShader = RlManaged.Shader.Load(null, "bevel.frag");
+        SoftPropShader = RlManaged.Shader.Load(null, "softprop.frag");
+        PropShader = RlManaged.Shader.Load(null, "prop_fade.frag");
+        TileShader = RlManaged.Shader.Load(null, "tile.frag");
+        PaletteShader = RlManaged.Shader.Load(null, "palette.frag");
+        LevelLightShader = RlManaged.Shader.Load(null, "level_light.frag");
+        GridShader = RlManaged.Shader.Load("grid.vert", "grid.frag");
+        RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview.frag");
+        RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview.frag");
+        UvRepeatShader = RlManaged.Shader.Load(null, "uv_repeat.frag");
     }
 
     private const string EffectsMatrixShaderSource = @"

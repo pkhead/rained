@@ -22,7 +22,6 @@ class LightEditor : IEditorMode
     private Vector2 savedMousePos = new();
 
     private ChangeHistory.LightChangeRecorder? changeRecorder = null;
-    private Task<RlManaged.Image>? _fetchLightImg = null;
 
     public LightEditor(LevelView window)
     {
@@ -32,8 +31,8 @@ class LightEditor : IEditorMode
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
             changeRecorder?.Dispose();
-            changeRecorder = null;
-            _fetchLightImg = RainEd.Instance.Level.LightMap.GetImageAsync();
+            changeRecorder = new ChangeHistory.LightChangeRecorder(RainEd.Instance.Level.LightMap.GetImage());
+            changeRecorder.UpdateParametersSnapshot();
         };
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
@@ -45,8 +44,8 @@ class LightEditor : IEditorMode
     public void ReloadLevel()
     {   
         changeRecorder?.Dispose();
-        changeRecorder = null;
-        _fetchLightImg = RainEd.Instance.Level.LightMap.GetImageAsync();
+        changeRecorder = new ChangeHistory.LightChangeRecorder(RainEd.Instance.Level.LightMap.GetImage());
+        changeRecorder.UpdateParametersSnapshot();
     }
 
     public void Load()
@@ -337,16 +336,6 @@ class LightEditor : IEditorMode
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
-        if (_fetchLightImg is not null)
-        {
-            if (_fetchLightImg.IsCompleted)
-            {
-                changeRecorder = new ChangeHistory.LightChangeRecorder(_fetchLightImg.Result);
-                changeRecorder.UpdateParametersSnapshot();
-                _fetchLightImg = null;
-            }
-        }
-
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
 

@@ -135,7 +135,8 @@ namespace RainEd
                     Border = Glib.WindowBorder.Resizable,
                     Title = "Rained",
                     Visible = false,
-                    IsEventDriven = false
+                    IsEventDriven = false,
+                    GlDebugContext = true
                 };
 
                 window = new Glib.Window(windowOptions);
@@ -200,7 +201,7 @@ namespace RainEd
                         else if (logLevel == LogLevel.Error)
                             Log.Error("GL: " + msg);
                     };
-                    renderContext = RenderContext.Init(window, prefs?.Vsync ?? false, prefs?.Renderer ?? RendererType.Automatic);
+                    renderContext = RenderContext.Init(window);
 
                     Log.Information("GL renderer: {RendererName}", renderContext.GpuRenderer);
                     Log.Information("GL vendor: {VendorName}", renderContext.GpuVendor);
@@ -213,37 +214,32 @@ namespace RainEd
                 Raylib.InitWindow(window);
 
                 // create splash screen window to display while editor is loading
-                if (!bootOptions.NoSplashScreen)
+                //if (!bootOptions.NoSplashScreen)
+                if (false)
                 {
-                    if (renderContext.CanUseMultipleWindows())
+                    var winOptions = new Glib.WindowOptions()
                     {
-                        var winOptions = new Glib.WindowOptions()
-                        {
-                            Width = 523,
-                            Height = 307,
-                            Border = Glib.WindowBorder.Hidden,
-                            Title = "Loading Rained..."
-                        };
+                        Width = 523,
+                        Height = 307,
+                        Border = Glib.WindowBorder.Hidden,
+                        Title = "Loading Rained...",
+                        GlSharedContext = window
+                    };
 
-                        splashScreenWindow = new Glib.Window(winOptions);
-                        splashScreenWindow.Initialize();
+                    splashScreenWindow = new Glib.Window(winOptions);
+                    splashScreenWindow.Initialize();
 
-                        //var rctx = splashScreenWindow.RenderContext!;
-                        var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                    //var rctx = splashScreenWindow.RenderContext!;
+                    var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
 
-                        renderContext.AddWindow(splashScreenWindow);
-                        renderContext.Begin();
-                        renderContext.PushWindowFramebuffer(splashScreenWindow);
-                        renderContext.Clear(Glib.Color.Black);
-                        renderContext.DrawTexture(texture);
-                        renderContext.PopFramebuffer();
-                        
-                        renderContext.End();
-                    }
-                    else
-                    {
-                        Log.Error("Could not create splash screen! GL renderer does not support swap chain");
-                    }
+                    renderContext.AddWindow(splashScreenWindow);
+                    renderContext.Begin();
+                    renderContext.SetWindow(splashScreenWindow);
+                    renderContext.Clear(Glib.Color.Black);
+                    renderContext.DrawTexture(texture);
+                    
+                    renderContext.End();
+                    splashScreenWindow.SwapBuffers();
                 }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
@@ -316,12 +312,6 @@ namespace RainEd
                     if (app.Preferences.RefreshRate == 0)
                         app.Preferences.RefreshRate = refreshRate;
                     Raylib.SetTargetFPS(app.Preferences.RefreshRate);
-
-                    // save renderer pref
-                    if (app.Preferences.Renderer == RendererType.Automatic)
-                    {
-                        app.Preferences.Renderer = RenderContext.Instance!.GpuRendererType;
-                    }
 
                     while (app.Running)
                     {

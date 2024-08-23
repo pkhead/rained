@@ -343,48 +343,11 @@ static class PreferencesWindow
                 ImGui.PopItemWidth();
             }
 
-            // renderer
-            {
-                var renderer = (int) prefs.Renderer;
-                bool recognized = renderer >= 1 && renderer - 1 < RendererNames.Length;
-                if (ImGui.BeginCombo("Renderer", recognized ? RendererNames[renderer-1] : ""))
-                {
-                    for (int i = 0; i < RendererNames.Length; i++)
-                    {
-                        bool isSelected = renderer - 1 == i;
-                        if (ImGui.Selectable(RendererNames[i], isSelected))
-                        {
-                            renderer = i + 1;
-                            prefs.Renderer = (Glib.RendererType)renderer;
-                        }
-
-                        if (isSelected)
-                            ImGui.SetItemDefaultFocus();
-                    }
-
-                    ImGui.EndCombo();
-                }
-
-                ImGui.SameLine();
-                ImGui.TextDisabled("(?)");
-                ImGui.SetItemTooltip(
-                    """
-                    The graphics backend to use. Note that, depending
-                    on your OS and driver/hardware availability, your
-                    choice may not be respected. In order to view the
-                    actual used renderer, go to Help > About...
-
-                    This option requires a restart in order to take
-                    effect.
-                    """
-                );
-            }
-
             // Vsync
             {
-                bool vsync = RainEd.RenderContext.VSync;
+                bool vsync = Boot.Window.VSync;
                 if (ImGui.Checkbox("Vsync", ref vsync))
-                    RainEd.RenderContext.VSync = vsync;
+                    Boot.Window.VSync = vsync;
                 
                 if (!vsync)
                 {

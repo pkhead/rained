@@ -444,7 +444,7 @@ sealed class RainEd
     /// Save the level to the given path.
     /// </summary>
     /// <param name="path"></param>
-    public async Task SaveLevel(string path)
+    public void SaveLevel(string path)
     {
         Log.Information("Saving level to {Path}...", path);
         IsLevelLocked = true;
@@ -456,8 +456,7 @@ sealed class RainEd
             string oldFilePath = currentFilePath;
 
             LevelSerialization.SaveLevelTextFile(path);
-            await LevelSerialization.SaveLevelLightMapAsync(path);
-            await ContinueOnNextFrame();
+            LevelSerialization.SaveLevelLightMap(path);
 
             currentFilePath = path;
             UpdateTitle();
@@ -483,7 +482,6 @@ sealed class RainEd
         catch (Exception e)
         {
             Log.Error("Could not write level file:\n{ErrorMessage}", e);
-            await ContinueOnNextFrame();
             EditorWindow.ShowNotification("Could not write level file");
             IsLevelLocked = false;
             throw;
@@ -565,15 +563,14 @@ sealed class RainEd
         }
     }
 
-    public async void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
+    public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
         if (newWidth == level.Width && newHeight == level.Height) return;
         Log.Information("Resizing level...");
         IsLevelLocked = true;
 
         levelView.FlushDirty();
-        var dstOrigin = await level.ResizeAsync(newWidth, newHeight, anchorX, anchorY);
-        await ContinueOnNextFrame();
+        var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
 
         levelView.ReloadLevel();
         changeHistory.Clear();

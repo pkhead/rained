@@ -648,14 +648,14 @@ class LevelEditRender : IDisposable
 
                 if (rctx.Shader != Shaders.PropShader.GlibShader)
                 {
-                    if (rctx.Shader.HasUniform("paletteTex"))
-                        rctx.Shader.SetUniform("paletteTex", paletteTexture);
+                    if (rctx.Shader.HasUniform("u_paletteTex"))
+                        rctx.Shader.SetUniform("u_paletteTex", paletteTexture);
                     if (rctx.Shader.HasUniform("v4_textureSize"))
-                        rctx.Shader.SetUniform("v4_textureSize", new Vector2(displayTexture.Width, displayTexture.Height));
+                        rctx.Shader.SetUniform("v4_textureSize", new Vector4(displayTexture.Width, displayTexture.Height, 0f, 0f));
                     
                     if (rctx.Shader.HasUniform("v4_bevelData"))
                     {
-                        rctx.Shader.SetUniform("v4_bevelData", prop.PropInit.Bevel);
+                        rctx.Shader.SetUniform("v4_bevelData", new Vector4(prop.PropInit.Bevel, 0f, 0f, 0f));
                     }
                     
                     if (rctx.Shader.HasUniform("v4_lightDirection"))
@@ -663,7 +663,7 @@ class LevelEditRender : IDisposable
                         var correctedAngle = Level.LightAngle + MathF.PI / 2f;
                         var lightDist = 1f - Level.LightDistance / 10f;
                         var lightZ = lightDist * (3.0f - 0.5f) + 0.5f; // an approximation
-                        rctx.Shader.SetUniform("v4_lightDirection", new Vector3(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle), lightZ));
+                        rctx.Shader.SetUniform("v4_lightDirection", new Vector4(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle), lightZ, 0f));
                     }
                     
                     if (rctx.Shader.HasUniform("v4_propRotation"))
@@ -808,7 +808,7 @@ class LevelEditRender : IDisposable
         if (gridMajor is null || gridMinor is null || Level.Width != gridWidth || Level.Height != gridHeight)
         {
             var meshConfig = new Glib.MeshConfiguration()
-                .AddBuffer(Glib.MeshBufferTarget.Position, Glib.DataType.Float, 3, Glib.MeshBufferUsage.Static)
+                .AddBuffer(Glib.AttributeName.Position, Glib.DataType.Float, 3, Glib.MeshBufferUsage.Static)
                 .SetIndexed(true)
                 .SetPrimitiveType(Glib.MeshPrimitiveType.Lines);
 
@@ -989,7 +989,7 @@ class LevelEditRender : IDisposable
     {
         var shader = Shaders.PaletteShader;
         Raylib.BeginShaderMode(shader);
-        shader.GlibShader.SetUniform("paletteTex", paletteTexture);
+        shader.GlibShader.SetUniform("u_paletteTex", paletteTexture);
     }
 
     public void Dispose()
