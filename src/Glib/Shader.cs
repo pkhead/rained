@@ -121,6 +121,8 @@ public class Shader : Resource
             throw new ShaderCompilationException("Link error: " + infoLog);
         }
 
+        GlUtil.CheckError(gl, "Error creating program object");
+
         // get list of uniforms
         int uniformCount = gl.GetProgram(programHandle, GLEnum.ActiveUniforms);
         var maxNameLen = gl.GetProgram(programHandle, GLEnum.ActiveUniformMaxLength);
@@ -144,6 +146,7 @@ public class Shader : Resource
         }
 
         _boundTextures = new Texture[_textureUnits.Count];
+        GlUtil.CheckError(gl, "Error parsing shader uniforms");
     }
 
     protected override void FreeResources(bool disposing)
@@ -176,6 +179,8 @@ public class Shader : Resource
                 throw new ShaderCompilationException("Vertex shader failed to compile: " + infoLog);
             }
 
+            GlUtil.CheckError(RenderContext.Gl, "Error compiling vertex shader");
+
             fsh = gl.CreateShader(ShaderType.FragmentShader);
             gl.ShaderSource(fsh, fsSource ?? DefaultFragmentSource);
             gl.CompileShader(fsh);
@@ -184,6 +189,8 @@ public class Shader : Resource
                 var infoLog = gl.GetShaderInfoLog(fsh);
                 throw new ShaderCompilationException("Fragment shader failed to compile: " + infoLog);
             }
+
+            GlUtil.CheckError(RenderContext.Gl, "Error compiling fragment shader");
 
             return new Shader(vsh, fsh);
         }
@@ -262,6 +269,8 @@ public class Shader : Resource
                 throw new ShaderCompilationException("Vertex shader failed to compile: " + infoLog);
             }
 
+            GlUtil.CheckError(RenderContext.Gl, "Error compiling vertex shader");
+
             _shaderCache[vsName!] = vsh;
         }
 
@@ -278,6 +287,8 @@ public class Shader : Resource
                 gl.DeleteShader(fsh);
                 throw new ShaderCompilationException("Fragment shader failed to compile: " + infoLog);
             }
+
+            GlUtil.CheckError(RenderContext.Gl, "Error compiling fragment shader");
 
             _shaderCache[fsName!] = fsh;
         }
@@ -324,6 +335,7 @@ public class Shader : Resource
     {
         var gl = RenderContext.Gl;
         gl.Uniform1((int)GetUniformHandle(uName, "float", UniformType.Float), value);
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -333,6 +345,7 @@ public class Shader : Resource
     {
         var gl = RenderContext.Gl;
         gl.Uniform2((int)GetUniformHandle(uName, "Vector2", UniformType.FloatVec2), value);
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -343,6 +356,7 @@ public class Shader : Resource
     {
         var gl = RenderContext.Gl;
         gl.Uniform3((int)GetUniformHandle(uName, "Vector3", UniformType.FloatVec3), value);
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -352,6 +366,7 @@ public class Shader : Resource
     {
         var gl = RenderContext.Gl;
         gl.Uniform4((int)GetUniformHandle(uName, "Vector4", UniformType.FloatVec4), value);
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -361,6 +376,7 @@ public class Shader : Resource
     {
         var gl = RenderContext.Gl;
         gl.Uniform4((int)GetUniformHandle(uName, "Vector4", UniformType.FloatVec4), new Vector4(value.R, value.G, value.B, value.A));
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -392,6 +408,7 @@ public class Shader : Resource
         ];
         
         gl.UniformMatrix4(handle, false, flat);
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -439,6 +456,7 @@ public class Shader : Resource
         {
             throw new ArgumentException($"Matrix2x2 is incompatible with the uniform type {type}");
         }
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
     
     /// <summary>
@@ -494,6 +512,7 @@ public class Shader : Resource
         {
             throw new ArgumentException($"Matrix3x3 is incompatible with the uniform type {type}");
         }
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     /// <summary>
@@ -506,6 +525,7 @@ public class Shader : Resource
         var unit = _textureUnits.IndexOf(uName);
         Debug.Assert(unit >= 0);
         _boundTextures[unit] = texture;
+        GlUtil.CheckError(RenderContext.Gl, "Could not set uniform");
     }
 
     internal uint ActivateTextures(Texture placeholderTexture)
@@ -526,6 +546,8 @@ public class Shader : Resource
             gl.ActiveTexture((GLEnum)((int)GLEnum.Texture0 + i));
             texture.Bind(gl);
             gl.Uniform1((int)handle, i);
+
+            GlUtil.CheckError(RenderContext.Gl, "Error activating texture");
         }
 
         return programHandle;

@@ -57,7 +57,7 @@ public sealed class RenderContext : IDisposable
     public static RenderContext? Instance { get; private set; } = null;
     private bool _disposed = false;
     internal readonly GL gl;
-    internal static GL Gl { get => Instance?.gl ?? throw new InvalidOperationException("Attempt to use graphics library before initialization."); }
+    internal static GL Gl => Instance?.gl ?? throw new InvalidOperationException("Attempt to use graphics library before initialization.");
 
     public int ScreenWidth { get; private set; }
     public int ScreenHeight { get; private set; }
@@ -154,11 +154,10 @@ public sealed class RenderContext : IDisposable
 
     private RenderContext(Window mainWindow)
     {
-        if (Instance is not null)
-            throw new NotImplementedException("No more than one RenderContext allowed");
         Instance = this;
         
         gl = mainWindow.SilkWindow.CreateOpenGLES();
+        mainWindow.MakeCurrent();
         GpuVendor = gl.GetStringS(StringName.Vendor);
         GpuRenderer = gl.GetStringS(StringName.Renderer);
 
@@ -187,9 +186,20 @@ public sealed class RenderContext : IDisposable
         TransformMatrix = Matrix4x4.Identity;
     }
 
+    /// <summary>
+    /// Initialize a RenderContext for a window and make it current.
+    /// </summary>
+    /// <param name="mainWindow">The window to associate the RenderContext with.</param>
+    /// <returns>The newly created RenderContext.</returns>
     public static RenderContext Init(Window mainWindow)
     {
         return new RenderContext(mainWindow);
+    }
+
+    public void MakeCurrent()
+    {
+        _mainWindow.MakeCurrent();
+        Instance = this;
     }
 
     private unsafe void ErrorCallbackHandler(
@@ -270,6 +280,14 @@ public sealed class RenderContext : IDisposable
     public void Begin()
     {
         _mainWindow.SilkWindow.MakeCurrent();
+
+        while (true)
+        {
+            var err = gl.GetError();
+            if (err == GLEnum.NoError) break;
+            LogError($"Begin: Uncaught error: {err}");
+        }
+
         int width = _mainWindow.PixelWidth;
         int height = _mainWindow.PixelHeight;
         curFramebuffer = null;
@@ -295,8 +313,8 @@ public sealed class RenderContext : IDisposable
         defaultShader.SetUniform(Shader.TextureUniform, WhiteTexture);
         defaultShader.SetUniform(Shader.ColorUniform, Color.White);
         _drawBatch.NewFrame(WhiteTexture);
-        //curTexture = whiteTexture;
-        //lastTexture = whiteTexture;
+
+        GlUtil.CheckError(gl, "Error in RenderContext.Begin");
     }
 
     public void End()
@@ -309,7 +327,7 @@ public sealed class RenderContext : IDisposable
         {
             var err = gl.GetError();
             if (err == GLEnum.NoError) break;
-            LogError($"Uncaught GL error: {err}");
+            LogError($"Uncaught error: {err}");
         }
     }
 
@@ -387,6 +405,8 @@ public sealed class RenderContext : IDisposable
             if (CullMode == CullMode.Clockwise) gl.CullFace(GLEnum.Back);
             else if (CullMode == CullMode.Counterclockwise) gl.CullFace(GLEnum.Front);
         }
+
+        GlUtil.CheckError(gl, "Error in RenderContext.SetupState");
     }
 
     public void SetScissorBox(int x, int y, int w, int h)
@@ -459,6 +479,8 @@ public sealed class RenderContext : IDisposable
             LogError(e.Message);
             //Bgfx.discard((byte)Bgfx.DiscardFlags.All);
         }
+
+        GlUtil.CheckError(gl, "Error drawing mesh");
     }
 
     /// <summary>
@@ -535,6 +557,8 @@ public sealed class RenderContext : IDisposable
             {
                 LogError(e.Message);
             }
+
+            GlUtil.CheckError(rctx.gl, "Error drawing mesh");
         }
 
         /// <summary>
@@ -604,6 +628,7 @@ public sealed class RenderContext : IDisposable
         gl.ClearDepth(1f);
         gl.ClearStencil(0);
         gl.Clear(glClearMask);
+        GlUtil.CheckError(gl, "Error in RenderContext.Clear");
     }
 
     public void Clear() => Clear(ClearFlags.Color | ClearFlags.Depth | ClearFlags.Stencil, BackgroundColor);
@@ -621,16 +646,8 @@ public sealed class RenderContext : IDisposable
 
         gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, curFramebuffer.Handle);
         SetViewport(curFramebuffer.Width, curFramebuffer.Height);
-    }
 
-    /// <summary>
-    /// Begin rendering to a window.
-    /// </summary>
-    /// <param name="window">The window to begin rendering to.</param>
-    public void SetWindow(Window window)
-    {
-        if (!_windows.Contains(window)) throw new ArgumentException("Window was not registered with the RenderContext", nameof(window));
-        window.MakeCurrent();
+        GlUtil.CheckError(gl, "Error in RenderContext.PushFramebuffer");
     }
 
     public Framebuffer? PopFramebuffer()
@@ -656,6 +673,7 @@ public sealed class RenderContext : IDisposable
         gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, curFramebuffer?.Handle ?? 0);
         SetViewport(newWidth, newHeight);
         
+        GlUtil.CheckError(gl, "Error in RenderContext.PopFramebuffer");
         return curFramebuffer;
     }
 

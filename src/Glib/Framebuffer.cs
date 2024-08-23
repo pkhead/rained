@@ -133,6 +133,7 @@ public class Framebuffer : Resource
                 var handle = gl.GenTexture();
                 gl.BindTexture(GLEnum.Texture2D, handle);
                 gl.TexImage2D(GLEnum.Texture2D, 0, (int)texFormat, (uint)Width, (uint)Height, 0, texFormat, GLEnum.UnsignedByte, null);
+                GlUtil.CheckError(gl, "Could not create framebuffer texture attachment");
                 
                 var wrapMode = (int)GLEnum.ClampToEdge;
                 var filterMode = (int)GLEnum.Linear;
@@ -142,9 +143,7 @@ public class Framebuffer : Resource
                 gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref filterMode);
 
                 gl.FramebufferTexture2D(GLEnum.Framebuffer, attachPoint, GLEnum.Texture2D, handle, 0);
-
-                if (gl.GetError() != 0)
-                    throw new UnsupportedOperationException($"Could not create framebuffer");
+                GlUtil.CheckError(gl, "Could not create framebuffer texture attachment");
 
                 if (attachConfig.Attachment == AttachmentPoint.Color)
                 {
@@ -160,12 +159,11 @@ public class Framebuffer : Resource
                 var handle = gl.GenRenderbuffer();
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, handle);
                 gl.RenderbufferStorage(GLEnum.Renderbuffer, texFormat, (uint)Width, (uint)Height);
+                GlUtil.CheckError(gl, "Could not create framebuffer renderbuffer attachment");
 
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachPoint, GLEnum.Renderbuffer, handle);
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
-
-                if (gl.GetError() != 0)
-                    throw new UnsupportedOperationException($"Could not create framebuffer");
+                GlUtil.CheckError(gl, "Could not create framebuffer renderbuffer attachment");
             }
         }
 

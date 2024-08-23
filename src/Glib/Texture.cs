@@ -72,14 +72,11 @@ public class Texture : Resource
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapMode);
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref filterMode);
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref filterMode);
+        GlUtil.CheckError(gl, "Could not create texture");
         
         gl.TexImage2D(GLEnum.Texture2D, 0, (int)GlTextureFormat, (uint)Width, (uint)Height, 0, GlTextureFormat, GLEnum.UnsignedByte, data);
 
-        var err = gl.GetError();
-        if (err != 0)
-        {
-            throw new UnsupportedOperationException($"Could not create texture: {err}");
-        }
+        GlUtil.CheckError(gl, "Could not create texture");
     }
     
     internal unsafe Texture(int width, int height, PixelFormat format)
@@ -201,6 +198,7 @@ public class Texture : Resource
         gl.BindTexture(GLEnum.Texture2D, _handle);
         gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)Width, (uint)Height, GlTextureFormat, GLEnum.UnsignedByte, alloc);
         NativeMemory.Free(alloc);
+        GlUtil.CheckError(gl, "Could not update texture data");
     }
 
     /// <summary>
@@ -224,6 +222,7 @@ public class Texture : Resource
         gl.BindTexture(GLEnum.Texture2D, _handle);
         gl.TexSubImage2D(GLEnum.Texture2D, 0, (int)dstX, (int)dstY, (uint)image.Width, (uint)image.Height, GlTextureFormat, GLEnum.UnsignedByte, alloc);
         NativeMemory.Free(alloc);
+        GlUtil.CheckError(gl, "Could not update texture data");
     }
 
     /// <summary>
@@ -257,6 +256,8 @@ public class Texture : Resource
             gl.BindTexture(GLEnum.Texture2D, _handle);
             gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, (uint)Width, (uint)Height, GlTextureFormat, GLEnum.UnsignedByte, data);
         }
+
+        GlUtil.CheckError(gl, "Could not update texture data");
     }
 
     static GLEnum GLWrapMode(TextureWrapMode mode) => mode switch
@@ -290,6 +291,7 @@ public class Texture : Resource
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapModeV);
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref filterMin);
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref filterMag);
+        GlUtil.CheckError(gl, "Could not bind texture");
     }
 
     /// <summary>
@@ -356,10 +358,7 @@ public class ReadableTexture : Texture
         var oldFb = (uint)gl.GetInteger(GetPName.ReadFramebufferBinding);
         gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, _fb.Handle);
         gl.ReadBuffer((GLEnum)((int)GLEnum.ColorAttachment0 + _index));
-        if (gl.GetError() != 0)
-        {
-            throw new UnsupportedOperationException($"Could not read framebuffer attachment");
-        }
+        GlUtil.CheckError(gl, "Could not read framebuffer attachment");
 
         byte* mem = null;
 
@@ -368,12 +367,9 @@ public class ReadableTexture : Texture
             var storageSize = Width * Height * Image.GetBytesPerPixel(PixelFormat.Value);
             mem = (byte*) NativeMemory.Alloc((nuint)storageSize);
             gl.ReadPixels(0, 0, (uint)Width, (uint)Height, GlTextureFormat, GLEnum.UnsignedByte, mem);
-            gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, oldFb);
+            GlUtil.CheckError(gl, "Could not read framebuffer attachment");
 
-            if (gl.GetError() != 0)
-            {
-                throw new UnsupportedOperationException($"Could not read framebuffer attachment");
-            }
+            gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, oldFb);
 
             var pixelSpan = new ReadOnlySpan<byte>(mem, (int)storageSize);
             if (GlTextureFormat is GLEnum.Rgba)

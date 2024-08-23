@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using Silk.NET.OpenGLES;
 
 namespace Glib;
 
@@ -108,4 +109,16 @@ public struct Rectangle
     public float Height { readonly get => Size.Y; set => Size.Y = value; }
     public readonly float Right => Position.X + Size.X;
     public readonly float Bottom => Position.Y + Size.Y;
+}
+
+internal static class GlUtil
+{
+    public static void CheckError(GL gl, string msg)
+    {
+        GLEnum err;
+        if ((err = gl.GetError()) != 0)
+        {
+            RenderContext.LogError($"{msg} ({err})");
+        }
+    }
 }

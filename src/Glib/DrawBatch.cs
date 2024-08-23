@@ -74,10 +74,12 @@ internal class DrawBatch
         _vtxBuffer = gl.GenBuffer();
         gl.BindBuffer(GLEnum.ArrayBuffer, _vtxBuffer);
         gl.BufferData(GLEnum.ArrayBuffer, (nuint)batchData.Length * sizeof(float), null, GLEnum.StreamDraw);
+        GlUtil.CheckError(gl, "Could not create DrawBatch");
 
         _idxBuffer = gl.GenBuffer();
         gl.BindBuffer(GLEnum.ElementArrayBuffer, _idxBuffer);
         gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)batchIndices.Length * sizeof(uint), null, GLEnum.StreamDraw);
+        GlUtil.CheckError(gl, "Could not create DrawBatch");
 
         var byteStride = VertexDataSize * sizeof(float);
         
@@ -90,8 +92,7 @@ internal class DrawBatch
         gl.VertexAttribPointer((uint)AttributeName.Color0, 4, GLEnum.Float, false, byteStride, 5*sizeof(float));
         gl.EnableVertexAttribArray((uint)AttributeName.Color0);
 
-        if (gl.GetError() != 0)
-            throw new Exception("Could not create DrawBatch");
+        GlUtil.CheckError(gl, "Could not create DrawBatch");
     }
 
     public void NewFrame(Texture initialTex)

@@ -136,7 +136,7 @@ namespace RainEd
                     Title = "Rained",
                     Visible = false,
                     IsEventDriven = false,
-                    GlDebugContext = true
+                    //GlDebugContext = true
                 };
 
                 window = new Glib.Window(windowOptions);
@@ -214,32 +214,37 @@ namespace RainEd
                 Raylib.InitWindow(window);
 
                 // create splash screen window to display while editor is loading
-                //if (!bootOptions.NoSplashScreen)
-                if (false)
+                if (!bootOptions.NoSplashScreen)
                 {
                     var winOptions = new Glib.WindowOptions()
                     {
                         Width = 523,
                         Height = 307,
                         Border = Glib.WindowBorder.Hidden,
-                        Title = "Loading Rained...",
-                        GlSharedContext = window
+                        Title = "Loading Rained..."
                     };
 
                     splashScreenWindow = new Glib.Window(winOptions);
                     splashScreenWindow.Initialize();
 
+                    var splashScreenCtx = RenderContext.Init(splashScreenWindow);
+
                     //var rctx = splashScreenWindow.RenderContext!;
                     var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
 
-                    renderContext.AddWindow(splashScreenWindow);
-                    renderContext.Begin();
-                    renderContext.SetWindow(splashScreenWindow);
-                    renderContext.Clear(Glib.Color.Black);
-                    renderContext.DrawTexture(texture);
-                    
-                    renderContext.End();
+                    splashScreenCtx.Begin();
+                    splashScreenCtx.Clear(Glib.Color.Black);
+                    splashScreenCtx.DrawTexture(texture);
+                    splashScreenCtx.End();
+
+                    splashScreenWindow.MakeCurrent();
                     splashScreenWindow.SwapBuffers();
+
+                    texture.Dispose();
+                    splashScreenCtx.Dispose();
+
+                    renderContext.MakeCurrent();
+                    window.MakeCurrent();
                 }
 
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);

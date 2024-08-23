@@ -580,14 +580,17 @@ public class Mesh : Resource
                 gl.BufferData(GLEnum.ArrayBuffer, (nuint)bufferData[bufferIndex].Length, null, GLEnum.DynamicDraw);
                 if (gl.GetError() == GLEnum.OutOfMemory)
                     throw new InsufficientBufferSpaceException();
+                GlUtil.CheckError(gl, "Could not upload mesh buffer data");
             }
             else
             {
                 buffer = buffers[bufferIndex];
                 gl.BindBuffer(GLEnum.ArrayBuffer, buffer);
+                GlUtil.CheckError(gl, "Could not upload mesh buffer data");
             }
 
             gl.BufferSubData<byte>(GLEnum.ArrayBuffer, 0, bufferData[bufferIndex]);
+            GlUtil.CheckError(gl, "Could not upload mesh buffer data");
         }
         else if (bufConfig.Usage == MeshBufferUsage.Transient)
         {
@@ -602,6 +605,7 @@ public class Mesh : Resource
                 gl.BufferData(GLEnum.ArrayBuffer, (nuint)bufferData[bufferIndex].Length, null, GLEnum.StreamDraw);
                 if (gl.GetError() == GLEnum.OutOfMemory)
                     throw new InsufficientBufferSpaceException();
+                GlUtil.CheckError(gl, "Could not upload mesh buffer data");
                 _needResize[bufferIndex] = false;
             }
             else
@@ -648,6 +652,7 @@ public class Mesh : Resource
 
                 gl.VertexAttribPointer(attr.Index, (int)attr.Count, attribType, attr.Normalized, stride, (nint)offset);
                 gl.EnableVertexAttribArray(attr.Index);
+                GlUtil.CheckError(gl, "Could not upload mesh buffer data");
                 offset += attrSize;
             }
         }
@@ -687,6 +692,7 @@ public class Mesh : Resource
                 gl.BufferData(GLEnum.ElementArrayBuffer, indexBufferData, GLEnum.StaticDraw);
                 if (gl.GetError() == GLEnum.OutOfMemory)
                     throw new InsufficientBufferSpaceException();
+                GlUtil.CheckError(gl, "Could not upload mesh index buffer data");
             }
             else if (_config.IndexBufferUsage == MeshBufferUsage.Dynamic)
             {
@@ -697,9 +703,11 @@ public class Mesh : Resource
                     gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)indexBufferData.Length, null, GLEnum.DynamicDraw);
                     if (gl.GetError() == GLEnum.OutOfMemory)
                         throw new InsufficientBufferSpaceException();
+                    GlUtil.CheckError(gl, "Could not upload mesh index buffer data");
                 }
 
                 gl.BufferSubData(GLEnum.ElementArrayBuffer, 0, indexBufferData);
+                GlUtil.CheckError(gl, "Could not upload mesh index buffer data");
             }
             else if (_config.IndexBufferUsage == MeshBufferUsage.Transient)
             {
@@ -710,6 +718,7 @@ public class Mesh : Resource
                     gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)indexBufferData.Length, null, GLEnum.StreamDraw);
                     if (gl.GetError() == GLEnum.OutOfMemory)
                         throw new InsufficientBufferSpaceException();
+                    GlUtil.CheckError(gl, "Could not upload mesh index buffer data");
                 }
             }
             else throw new Exception("Unreachable code");
@@ -799,6 +808,8 @@ public class Mesh : Resource
                     {
                         gl.BufferSubData<byte>(GLEnum.ArrayBuffer, 0, bufferData[i]);
                     }
+
+                    GlUtil.CheckError(gl, "Could not upload mesh transient buffer data");
                 }
             }
             //else throw new Exception("Unreachable code");
@@ -847,6 +858,8 @@ public class Mesh : Resource
                     {
                         gl.BufferSubData(GLEnum.ElementArrayBuffer, 0, bufData);
                     }
+
+                    GlUtil.CheckError(gl, "Could not upload mesh transient index buffer data");
                 }
             }
             //else throw new Exception("Unreachable code");
@@ -874,12 +887,15 @@ public class Mesh : Resource
             }
             else throw new UnsupportedOperationException("Rendering backend does not support base vertex offset.");
 
+            GlUtil.CheckError(gl, "Could not draw indexed mesh");
+
             //Debug.Assert(start >= 0 && start < _elemCounts[i]);
             //Debug.Assert(length >= 0 && (start + length) <= _elemCounts[i]);
         }
         else
         {
             gl.DrawArrays(drawMode, (int)baseVertex, elemCount);
+            GlUtil.CheckError(gl, "Could not draw non-indexed mesh");
         }
 
         _reset = false;
