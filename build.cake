@@ -1,8 +1,8 @@
 /**
 * just a script to automate the publish process (cus i also need to copy assets and data and stuff)
 */
-#addin nuget:?package=SharpZipLib
-#addin nuget:?package=Cake.Compression
+#addin nuget:?package=SharpZipLib&version=1.4.2
+#addin nuget:?package=Cake.Compression&version=0.3.0
 using System.IO;
 using System.Linq;
 using Path = System.IO.Path;
