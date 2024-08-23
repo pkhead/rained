@@ -48,12 +48,11 @@
       <Content Include="../ImGui.NET/deps/cimgui/win-arm64/*" TargetPath="runtimes/win-arm64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
       <Content Include="../ImGui.NET/deps/cimgui/osx/*" TargetPath="runtimes/osx/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
       <Content Include="../ImGui.NET/deps/cimgui/linux-x64/*" TargetPath="runtimes/linux-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="../Bgfx/runtimes/**/*" TargetPath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_IsPublishing)!=''">
     <Content Include="../ImGui.NET/deps/cimgui/$(RuntimeIdentifier)/*" CopyToOutputDirectory="Always" />
-    <Content Include="../Bgfx/runtimes/$(RuntimeIdentifier)/native/*" CopyToOutputDirectory="Always" />
+    <Content Include="../Glib/angle/$(RuntimeIdentifier)/**/*" TargetPath="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
