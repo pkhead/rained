@@ -1,6 +1,6 @@
 #version 300 es
 precision mediump float;
-
+#line 1 0
 #line 1 1
 #ifndef PALETTE_INC
 #define PALETTE_INC
@@ -31,7 +31,7 @@ bool isTransparent(vec2 coords)
 }
 
 #endif // PALETTE_INC
-#line 5 0
+#line 2 0
 
 uniform vec4 u_color;
 

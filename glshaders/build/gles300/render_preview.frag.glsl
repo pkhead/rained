@@ -1,6 +1,6 @@
 #version 300 es
 precision mediump float;
-
+#line 1 0
 in vec2 v_texcoord0;
 in vec4 v_color0;
 

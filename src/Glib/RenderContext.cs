@@ -1,6 +1,11 @@
-using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
 using System.Numerics;
+#if GLES
+using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
+
 namespace Glib;
 
 public enum BatchDrawMode
@@ -158,7 +163,11 @@ public sealed class RenderContext : IDisposable
         Instance = this;
         
         resourceList = new ResourceList();
+#if GLES
         gl = mainWindow.SilkWindow.CreateOpenGLES();
+#else
+        gl = mainWindow.SilkWindow.CreateOpenGL();
+#endif
         mainWindow.MakeCurrent();
         GpuVendor = gl.GetStringS(StringName.Vendor);
         GpuRenderer = gl.GetStringS(StringName.Renderer);

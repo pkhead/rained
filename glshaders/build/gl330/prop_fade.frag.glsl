@@ -1,10 +1,8 @@
-#version 300 es
-
+#version 330 core
+#line 1 0
 // the shader used for prop rendering in the editor.
 // white pixels are transparent
 // the R color component controls transparency and the G color component controls white blend
-
-precision mediump float;
 
 in vec2 v_texcoord0;
 in vec4 v_color0;

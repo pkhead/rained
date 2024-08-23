@@ -591,50 +591,9 @@ namespace Glib.ImGui
             rctx.BlendMode = lastBlendMode;
         }
 
-        private const string VShaderSrc =
-        """
-        #version 300 es
-        precision mediump float;
-
-        in vec2 a_pos;
-        in vec4 a_color0;
-        in vec2 a_texcoord0;
-
-        out vec2 v_texcoord0;
-        out vec4 v_color0;
-
-        uniform vec4 u_mvp;
-
-        void main()
-        {
-            gl_Position = u_mvp * vec4(a_pos.xy, 0.0, 1.0);
-            v_texcoord0 = a_texcoord0;
-            v_color0 = a_color0;
-        }
-        """;
-
-        private const string FShaderSrc =
-        """
-        #version 300 es
-        precision mediump float;
-        
-        in vec2 v_texcoord0;
-        in vec4 v_color0;
-        
-        uniform sampler2D u_texture0;
-        uniform vec4 u_color;
-
-        out vec4 fragColor;
-        
-        void main()
-        {
-            fragColor = texture(u_texture0, v_texcoord0) * v_color0 * u_color;
-        }
-        """;
-
         private void CreateDeviceResources()
         {
-            _shader = Glib.Shader.Create(VShaderSrc, FShaderSrc);
+            _shader = Glib.Shader.Load("imgui.vert", "imgui.frag");
 
             _drawMesh = new Glib.MeshConfiguration()
                 .AddBuffer(

@@ -1,5 +1,9 @@
 using System.Diagnostics;
+#if GLES
 using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
 namespace Glib;
 
 public enum AttachmentPoint

@@ -1,6 +1,5 @@
-#version 300 es
-precision mediump float;
-
+#version 330 core
+#line 1 0
 in vec3 a_position;
 
 uniform mat4 u_mvp;

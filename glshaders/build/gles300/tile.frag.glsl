@@ -1,3 +1,6 @@
+#version 300 es
+precision mediump float;
+#line 1 0
 // shader used for tile rendering in the editor.
 // white pixels
 

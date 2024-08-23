@@ -42,20 +42,24 @@
     that; I'd need to make it a define. This .csproj always specifies a
     single-file publish anyway so it's safe to just assume that.
   -->
-  <ItemGroup Condition="$(_IsPublishing)==''">
-      <Content Include="../ImGui.NET/deps/cimgui/win-x64/*" TargetPath="runtimes/win-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="../ImGui.NET/deps/cimgui/win-x86/*" TargetPath="runtimes/win-x86/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="../ImGui.NET/deps/cimgui/win-arm64/*" TargetPath="runtimes/win-arm64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="../ImGui.NET/deps/cimgui/osx/*" TargetPath="runtimes/osx/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="../ImGui.NET/deps/cimgui/linux-x64/*" TargetPath="runtimes/linux-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="$(_IsPublishing)==''">
+      <ItemGroup>
+          <Content Include="../ImGui.NET/deps/cimgui/win-x64/*" TargetPath="runtimes/win-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+          <Content Include="../ImGui.NET/deps/cimgui/win-x86/*" TargetPath="runtimes/win-x86/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+          <Content Include="../ImGui.NET/deps/cimgui/win-arm64/*" TargetPath="runtimes/win-arm64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+          <Content Include="../ImGui.NET/deps/cimgui/osx/*" TargetPath="runtimes/osx/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+          <Content Include="../ImGui.NET/deps/cimgui/linux-x64/*" TargetPath="runtimes/linux-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Content Include="../ImGui.NET/deps/cimgui/$(RuntimeIdentifier)/*" CopyToOutputDirectory="Always" />
+      </ItemGroup>
 
-  <ItemGroup Condition="$(_IsPublishing)!=''">
-    <Content Include="../ImGui.NET/deps/cimgui/$(RuntimeIdentifier)/*" CopyToOutputDirectory="Always" />
-    <Content Include="../Glib/angle/$(RuntimeIdentifier)/**/*" TargetPath="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-  </ItemGroup>
-
-  <ItemGroup>
-  </ItemGroup>
-
+      <ItemGroup Condition="$(GL)=='ES'">
+          <Content Include="../Glib/angle/$(RuntimeIdentifier)/**/*" TargetPath="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 </Project>

@@ -1,4 +1,36 @@
-#include "palette.glsl"
+#version 330 core
+#line 1 0
+#line 1 1
+#ifndef PALETTE_INC
+#define PALETTE_INC
+
+uniform sampler2D u_texture0;
+uniform sampler2D u_paletteTex;
+
+vec3 getLitColor(float index)
+{
+    return texture(u_paletteTex, vec2((index+0.5) / 30.0, 0.5 / 3.0)).rgb;
+}
+
+vec3 getNeutralColor(float index)
+{
+    return texture(u_paletteTex, vec2((index+0.5) / 30.0, (1.0+0.5) / 3.0)).rgb;
+}
+
+vec3 getShadeColor(float index)
+{
+    return texture(u_paletteTex, vec2((index+0.5) / 30.0, (2.0+0.5) / 3.0)).rgb;
+}
+
+bool isTransparent(vec2 coords)
+{
+    bool inBounds = abs(coords.x - 0.5f) <= 0.5f && abs(coords.y - 0.5f) <= 0.5f;
+    vec4 texelColor = texture(u_texture0, coords);
+    return length(texelColor.rgb - vec3(1.0, 1.0, 1.0)) < 0.05 || texelColor.a == 0.0 || !inBounds;
+}
+
+#endif // PALETTE_INC
+#line 2 0
 
 uniform vec4 u_color;
 
@@ -25,7 +57,7 @@ void main()
 {
     if (isTransparent(v_texcoord0)) discard;
     float center = texture(u_texture0, v_texcoord0).g;
-    
+
     // get x partial derivative
     float row[3];
     row[0] = texture(u_texture0, v_texcoord0 - vec2(1.0, 0.0) / textureSize).g;
@@ -42,7 +74,7 @@ void main()
     // calculate curve normal
     vec3 normal = cross( normalize(vec3(propRotation.xy, slopeX)), normalize(vec3(propRotation.zw, slopeY)) );
     normal = normalize(normal);
-    
+
     // shadeValue is used to determine if this pixel is a shade, highlight, or neutral
     vec3 lightDir = normalize(lightDirection);
     float shadeValue =  max(0.0, dot(lightDir, normal));

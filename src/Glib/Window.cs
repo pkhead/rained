@@ -407,7 +407,11 @@ public class Window : IDisposable
     public void Initialize()
     {
         var glfw = GlfwProvider.GLFW.Value;
+
+        #if GLES
         glfw.WindowHint(WindowHintContextApi.ContextCreationApi, ContextApi.EglContextApi);
+        #endif
+        
         window.Initialize();
     }
 

@@ -9,21 +9,8 @@ using Path = System.IO.Path;
 
 var target = Argument("Target", "Package");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
-
 var buildDir = "build_" + os;
-
-bool IsUpToDate(string dstFile, params string[] deps)
-{
-    var dstWriteTime = System.IO.File.GetLastWriteTime(dstFile);
-
-    foreach (var dep in deps)
-    {
-        if (System.IO.File.GetLastWriteTime(dep) > dstWriteTime)
-            return false;
-    }
-
-    return true;
-}
+var useGles = os == "win-x64";
 
 List<string> ExecCapture(string procName, System.Collections.Generic.IEnumerable<string> args)
 {
@@ -101,7 +88,7 @@ Task("Build Shaders")
         return;
     }
 
-    string glslang = EnvironmentVariable<string>("GLSL_VALIDATOR", "glslang");
+    string glslang = EnvironmentVariable<string>("GLSL_VALIDATOR", "glslangValidator");
 
     bool hasGlslang = false;
     try
@@ -116,19 +103,31 @@ Task("Build Shaders")
 
     if (!hasGlslang)
     {
-        Information("Could not find glslang! Make sure it is in your PATH or the GLSL_VALIDATOR environment variable is set.");
+        Information("Could not find glslangValidator! Make sure it is in your PATH or the GLSL_VALIDATOR environment variable is set.");
         Information("Shader preprocessing/validation skipped.");
         return;
     }
 
-    Exec(pythonExec, ["shader-preprocessor.py"]);
+    var lang = useGles ? "gles300" : "gl330";
+    Exec(pythonExec, ["shader-preprocessor.py", lang]);
 });
 
 Task("Build")
     .IsDependentOn("Build Shaders")
     .Does(() =>
 {
-    var buildSettings = new DotNetBuildSettings();
+    DotNetMSBuildSettings msBuildSettings = new DotNetMSBuildSettings();
+    
+    if (useGles)
+        msBuildSettings.Properties.Add("GL", ["ES"]); // use ANGLE
+    else
+        msBuildSettings.Properties.Add("GL", ["Desktop"]); // use desktop GL
+
+    var buildSettings = new DotNetBuildSettings()
+    {
+        MSBuildSettings = msBuildSettings
+    };
+
     var config = Argument("Configuration", "Debug");
     if (config != "Debug") buildSettings.Configuration = config;
 
@@ -144,6 +143,11 @@ Task("DotNetPublish")
 
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
     buildSettings.Properties.Add("AppDataPath", ["Assembly"]);
+
+    if (useGles)
+        buildSettings.Properties.Add("GL", ["ES"]); // use ANGLE
+    else
+        buildSettings.Properties.Add("GL", ["Desktop"]); // use desktop GL
 
     DotNetPublish("src/Rained/Rained.csproj", new DotNetPublishSettings
     {

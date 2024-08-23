@@ -9,17 +9,36 @@
     <Version>2.1.0</Version>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Silk.NET.Input" Version="2.21.0" />
-    <PackageReference Include="Silk.NET.OpenGLES" Version="2.21.0" />
-    <PackageReference Include="Silk.NET.OpenGLES.Extensions.ANGLE" Version="2.21.0" />
-    <PackageReference Include="Silk.NET.Windowing" Version="2.21.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.9" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="$(GL)=='ES'">
+      <PropertyGroup Condition="$(GL)=='ES'">
+        <DefineConstants>GLES</DefineConstants>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <PackageReference Include="Silk.NET.OpenGLES" Version="2.21.0" />
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.ANGLE" Version="2.21.0" />
+
+        <EmbeddedResource Include="../../glshaders/build/gles300/*.glsl">
+          <LogicalName>Glib.shaders.%(FileName)</LogicalName>
+        </EmbeddedResource>
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Silk.NET.OpenGL" Version="2.21.0" />
+
+        <EmbeddedResource Include="../../glshaders/build/gl330/*.glsl">
+          <LogicalName>Glib.shaders.%(FileName)</LogicalName>
+        </EmbeddedResource>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <ItemGroup>
-    <EmbeddedResource Include="../../glshaders/build/*.glsl">
-      <LogicalName>Glib.shaders.%(FileName)</LogicalName>
-    </EmbeddedResource>
+    <PackageReference Include="Silk.NET.Input" Version="2.21.0" />
+    <PackageReference Include="Silk.NET.Windowing" Version="2.21.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.9" />
   </ItemGroup>
 </Project>

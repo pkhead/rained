@@ -1,3 +1,6 @@
+#version 300 es
+precision mediump float;
+#line 1 0
 // the shader used for prop rendering in the editor.
 // white pixels are transparent
 // the R color component controls transparency and the G color component controls white blend

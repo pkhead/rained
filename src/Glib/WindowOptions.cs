@@ -87,12 +87,21 @@ public struct WindowOptions
         var posY = Y ?? 50;
         bool centerOnCreation = X is null || Y is null;
 
+        #if GLES
         opts.API = new GraphicsAPI(
             ContextAPI.OpenGLES,
             ContextProfile.Core,
             GlDebugContext ? ContextFlags.Debug : ContextFlags.Default,
             new APIVersion(3, 0)
         );
+        #else
+        opts.API = new GraphicsAPI(
+            ContextAPI.OpenGL,
+            ContextProfile.Core,
+            GlDebugContext ? ContextFlags.Debug : ContextFlags.Default,
+            new APIVersion(3, 3)
+        );
+        #endif
 
         opts.IsContextControlDisabled = true;
         opts.ShouldSwapAutomatically = false;

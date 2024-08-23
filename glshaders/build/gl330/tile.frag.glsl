@@ -1,8 +1,7 @@
-#version 300 es
+#version 330 core
+#line 1 0
 // shader used for tile rendering in the editor.
 // white pixels
-
-precision mediump float;
 
 in vec2 v_texcoord0;
 in vec4 v_color0;

@@ -1,6 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+#if GLES
 using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
 
 namespace Glib;
 

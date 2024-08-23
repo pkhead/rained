@@ -1,3 +1,5 @@
+#version 330 core
+#line 1 0
 in vec2 v_texcoord0;
 in vec4 v_color0;
 
@@ -9,5 +11,10 @@ out vec4 fragColor;
 void main()
 {
     vec4 texelColor = texture(u_texture0, v_texcoord0);
-    fragColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), texelColor.r) * v_color0 * u_color;
+    bool isWhite = texelColor.r == 1.0;
+
+    fragColor = vec4(
+        vec3(1.0, 0.0, 0.0),
+        1.0 - float(isWhite)
+    ) * u_color;
 }

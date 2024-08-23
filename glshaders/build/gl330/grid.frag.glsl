@@ -1,3 +1,5 @@
+#version 330 core
+#line 1 0
 uniform vec4 u_color;
 uniform sampler2D u_texture0;
 

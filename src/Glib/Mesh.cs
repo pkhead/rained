@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if GLES
 using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
 
 namespace Glib;
 
@@ -237,7 +241,11 @@ public class Mesh : Resource
     /// </summary>
     public static bool IsBaseVertexSupported
     {
+#if GLES
         get => _baseVertexSupported ??= RenderContext.Gl.IsExtensionPresent("GL_EXT_draw_elements_base_vertex");
+#else
+        get => true;
+#endif
     }
 
     /// <summary>

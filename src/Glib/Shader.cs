@@ -1,7 +1,11 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
+#if GLES
 using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
 
 namespace Glib;
 
@@ -15,9 +19,14 @@ public class ShaderCompilationException : Exception
 
 public class Shader : Resource
 {
-    private const string DefaultVertexSource = @"#version 300 es
-    precision mediump float;
+#if GLES
+    private const string ShaderPrelude = "#version 300 es\nprecision mediump float;\n";
+#else
+    private const string ShaderPrelude = "#version 330 core\n";
+#endif
 
+    private const string DefaultVertexSource = ShaderPrelude +
+    """
     in vec3 a_pos;
     in vec2 a_texcoord0;
     in vec4 a_color0;
@@ -32,11 +41,10 @@ public class Shader : Resource
         v_texcoord0 = a_texcoord0;
         v_color0 = a_color0;
     }
-    ";
+    """;
 
-    private const string DefaultFragmentSource = @"#version 300 es
-    precision mediump float;
-
+    private const string DefaultFragmentSource = ShaderPrelude +
+    """
     in vec2 v_texcoord0;
     in vec4 v_color0;
 
@@ -48,7 +56,7 @@ public class Shader : Resource
     void main() {
         fragColor = texture(u_texture0, v_texcoord0) * v_color0 * u_color;
     }
-    ";
+    """;
 
     /// <summary>
     /// The name of the default texture uniform.
@@ -113,6 +121,8 @@ public class Shader : Resource
         BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord6, "a_texcoord6");
         BindAttribLocation(gl, programHandle, (uint)AttributeName.TexCoord7, "a_texcoord7");
         gl.LinkProgram(programHandle);
+
+        GlUtil.CheckError(gl, "Error creating program object");
 
         if (gl.GetProgram(programHandle, GLEnum.LinkStatus) == 0)
         {

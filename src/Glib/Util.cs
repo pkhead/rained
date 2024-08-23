@@ -1,6 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+#if GLES
 using Silk.NET.OpenGLES;
+#else
+using Silk.NET.OpenGL;
+#endif
 
 namespace Glib;
 

@@ -16,7 +16,7 @@ from os import path
 SHADER_DIR = 'glshaders'
 shader_dir = os.path.join(os.curdir, SHADER_DIR)
 
-GLSL_VALIDATOR = os.environ.get('GLSL_VALIDATOR', 'glslang')
+GLSL_VALIDATOR = os.environ.get('GLSL_VALIDATOR', 'glslangValidator')
 
 class ProcessData:
     def __init__(self):
@@ -45,8 +45,7 @@ def process_file(in_file_path, out_file, proc_data):
         else:
             proc_data.processed.append(in_abs_path)
         
-        if file_id != 0:
-            out_file.write("#line 1 " + str(file_id) + "\n")
+        out_file.write("#line 1 " + str(file_id) + "\n")
 
         for line in in_file:
             line_num += 1
@@ -95,7 +94,7 @@ def process_file(in_file_path, out_file, proc_data):
                 out_file.write(line + '\n')
 
 # start preprocessing and validation on a source file
-def validate_source(src_name, out_file_path):
+def validate_source(src_name, out_file_path, prefix):
     # generate preprocessor output
     proc_data = ProcessData()
 
@@ -110,6 +109,8 @@ def validate_source(src_name, out_file_path):
     success = True
 
     with open(out_file_path, 'w') as out_file:
+        out_file.write(prefix)
+
         try:
             process_file(src_name, out_file, proc_data)
         except CompilationException as e:
@@ -166,7 +167,16 @@ if __name__ == '__main__':
         description="GLSL shader validator and #include preprocessor. Requires glslang to function. You need glslang either in your PATH or as the value to an environment variable named GLSL_VALIDATOR."
     )
 
-    parser.parse_args()
+    parser.add_argument('shaderlang', metavar='L', help="the shader language to use {gl330, gles300}")
+    args = parser.parse_args()
+
+    if args.shaderlang == 'gl330':
+        prefix = '#version 330 core\n'
+    elif args.shaderlang == 'gles300':
+        prefix = "#version 300 es\nprecision mediump float;\n"
+    else:
+        print("shader-preprocessor.py: error: the given shader language must be gl330 or gles300")
+        sys.exit(1)
 
     exit_code = 0
 
@@ -182,13 +192,13 @@ if __name__ == '__main__':
                 sources.append(f)
 
     # ensure build directory exists
-    shader_build_dir = os.path.join(shader_dir, 'build')
+    shader_build_dir = os.path.join(shader_dir, 'build', args.shaderlang)
     os.makedirs(shader_build_dir, exist_ok=True)
 
     # process each source file
     for src_name in sources:
         out_file_path = os.path.join(shader_build_dir, src_name)
-        if not validate_source(src_name, out_file_path):
+        if not validate_source(src_name, out_file_path, prefix):
             os.remove(out_file_path)
             exit_code = 1
 
