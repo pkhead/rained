@@ -642,6 +642,9 @@ public sealed class RenderContext : IDisposable
         if (clearFlags.HasFlag(ClearFlags.Depth)) glClearMask |= (uint)GLEnum.DepthBufferBit;
         if (clearFlags.HasFlag(ClearFlags.Stencil)) glClearMask |= (uint)GLEnum.StencilBufferBit;
 
+        _drawBatch.Draw();
+        SetupState();
+        
         gl.ClearColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
         gl.ClearDepth(1f);
         gl.ClearStencil(0);
