@@ -10,7 +10,7 @@ using Path = System.IO.Path;
 var target = Argument("Target", "Package");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 var buildDir = "build_" + os;
-var useGles = os == "win-x64";
+var useGles = Argument<bool>("GLES", os == "win-x64");
 
 List<string> ExecCapture(string procName, System.Collections.Generic.IEnumerable<string> args)
 {

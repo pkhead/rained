@@ -16,10 +16,14 @@ at the time of a certain release, use the Git tags system.
 - Exiting from the light editor does not mess up the screen
 - Pressing escape does not crash the program
 
+## Screenshots
+![Screenshot of Rained's tile editor.](screenshot1.png)
+![Screenshot of Rained's prop editor with tile graphics enabled and a palette applied.](screenshot2.png)
+
 ## Building
 Prerequisities:
  - .NET Core toolchain
- - OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
+ - *(optional)* OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
  - *(optional)* Python 3
  - *(optional)* [glslang](https://github.com/KhronosGroup/glslang) CLI
 
@@ -30,7 +34,7 @@ git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-Set up Drizzle
+Compile Drizzle
 ```bash
 cd src/Drizzle
 dotnet run --project Drizzle.Transpiler
@@ -38,10 +42,17 @@ dotnet run --project Drizzle.Transpiler
 
 Back to the root directory, build and run Rained
 ```bash
-dotnet tool restore # first-time only
+# only needs to be run once
+dotnet tool restore
 
+# usage of desktop GL or GLES/ANGLE is determined by OS.
 dotnet cake --target=Build
-dotnet run --project src/Rained/Rained.csproj
+
+# alternative build command with desktop GL forced on.
+dotnet cake --target=Build --gles=false
+
+# run the project!
+dotnet run --project --no-build src/Rained/Rained.csproj
 ```
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
