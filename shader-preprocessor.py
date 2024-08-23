@@ -10,10 +10,13 @@ import io
 import sys
 import re
 import subprocess
+import argparse
 from os import path
 
 SHADER_DIR = 'glshaders'
 shader_dir = os.path.join(os.curdir, SHADER_DIR)
+
+GLSL_VALIDATOR = os.environ.get('GLSL_VALIDATOR', 'glslang')
 
 class ProcessData:
     def __init__(self):
@@ -127,8 +130,8 @@ def validate_source(src_name, out_file_path):
     
     # if the file had been updated, validate code
     if had_updated:
-        print(f"VALIDATE: {src_name}")
-        glslang = subprocess.Popen(['glslang', out_file_path], stdout=subprocess.PIPE)
+        print(f"Processing {src_name}...")
+        glslang = subprocess.Popen([GLSL_VALIDATOR, out_file_path], stdout=subprocess.PIPE)
         for line in io.TextIOWrapper(glslang.stdout, encoding='utf-8'):
             line = line.strip()
 
@@ -159,6 +162,12 @@ def validate_source(src_name, out_file_path):
     return success
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="GLSL shader validator and #include preprocessor. Requires glslang to function. You need glslang either in your PATH or as the value to an environment variable named GLSL_VALIDATOR."
+    )
+
+    parser.parse_args()
+
     exit_code = 0
 
     # get files in glshaders list that has the extension .vert.glsl or .frag.glsl

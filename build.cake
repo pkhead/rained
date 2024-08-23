@@ -25,6 +25,29 @@ bool IsUpToDate(string dstFile, params string[] deps)
     return true;
 }
 
+List<string> ExecCapture(string procName, System.Collections.Generic.IEnumerable<string> args)
+{
+    Verbose(procName + " " + string.Join(' ', args));
+    using var proc = StartAndReturnProcess(procName, new ProcessSettings()
+    {
+        Arguments = ProcessArgumentBuilder.FromStringsQuoted(args),
+        RedirectStandardOutput = true,
+        RedirectStandardError = true
+    });
+    proc.WaitForExit();
+
+    var output = new List<string>();
+
+    foreach (var str in proc.GetStandardOutput())
+        output.Add(str);
+
+    var code = proc.GetExitCode();
+    if (code != 0)
+        throw new Exception($"{procName} returned {code}");
+    
+    return output;
+}
+
 void Exec(string procName, System.Collections.Generic.IEnumerable<string> args)
 {
     Verbose(procName + " " + string.Join(' ', args));
@@ -36,7 +59,7 @@ void Exec(string procName, System.Collections.Generic.IEnumerable<string> args)
 
     var code = proc.GetExitCode();
     if (code != 0)
-        throw new Exception($"{procName} returned {code}");
+        throw new Exception($"{procName} returned {code}");    
 }
 
 enum ShaderType { Vertex, Fragment }
@@ -44,109 +67,61 @@ enum ShaderType { Vertex, Fragment }
 Task("Build Shaders")
     .Does(() =>
 {
-    string shaderc = EnvironmentVariable<string>("BGFX_SHADERC", "shaderc");
-
-    bool hasShaderC = false;
+    bool hasPython3 = false;
+    string pythonExec = "python3";
     try
     {
-        Exec(shaderc, ["-v"]);
-        hasShaderC = true;
+        ExecCapture("python3", ["--version"]);
+        hasPython3 = true;
     }
     catch
     {
-        hasShaderC = false;
-    }
-
-    if (!hasShaderC)
-    {
-        Information("Could not find shaderc! Make sure it is in your PATH or your BGFX_SHADERC environment variable is set.");
-        Information("Shader compilation skipped.");
-        return;
-    }
-    
-    /*string platform = "windows";
-    if (os == "win-x64" || os == "win-x86" || os == "win-arm64") platform = "windows";
-    else if (os == "linux-x64" || os == "linux-x86" || os == "linux-arm64") platform = "linux";
-    else if (os == "osx" || os == "osx-arm64" || os == "os-x64") platform = "osx";
-    else
-    {
-        Error($"Unknown runtime {os} when building shaders. Fall back to windows.");
-    }*/
-
-    // shaderc --varyingdef shadersrc/varying.def.sc -i shadersrc -f shadersrc/vs.sc -o shaders/vs.glsl --type vertex --platform windows -p 150
-    var shaderBuildDir = Path.Combine("shaders","build");
-    EnsureDirectoryExists(shaderBuildDir);
-    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"glsl"));
-    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"d3d"));
-    EnsureDirectoryExists(Path.Combine(shaderBuildDir,"spirv"));
-
-    string[] allHeaderFiles;
-
-    void CompileShader(string srcFile, string dstFile, string def, string shaderTypeStr, string shaderTarget)
-    {
-        if (!IsUpToDate(dstFile, [srcFile, def, ..allHeaderFiles]))
+        try
         {
-            Information($"Compile shader '{srcFile}' to '{dstFile}' with {def}");
-            Exec(shaderc, [
-                "--varyingdef", def,
-                "-i shaders",
-                "-f", srcFile,
-                "-o", dstFile,
-                "--type", shaderTypeStr,
-                //"--platform", platform,
-                "-p", shaderTarget
-            ]);
+            pythonExec = "python";
+            foreach (var line in ExecCapture("python", ["--version"]))
+            {
+                if (line[0..8] == "Python 3")
+                {
+                    hasPython3 = true;
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            hasPython3 = false;
         }
     }
 
-    void ShaderSource(string fileName, ShaderType shaderType)
+    if (!hasPython3)
     {
-        string shaderTypeStr = shaderType switch
-        {
-            ShaderType.Vertex => "vertex",
-            ShaderType.Fragment => "fragment",
-            _ => throw new ArgumentOutOfRangeException(nameof(shaderType))
-        };
-
-        string name = Path.GetFileNameWithoutExtension(fileName);
-        string srcFile = Path.Combine("shaders", fileName);
-
-        string def = "shaders/varying.def.sc";
-
-        string shebang = System.IO.File.ReadLines(srcFile).First();
-        if (shebang.Length > 3 && shebang[0..3] == "//!")
-            def = "shaders/" + shebang[3..];
-
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "glsl", name + ".bin"), def, shaderTypeStr, "150");
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "d3d", name + ".bin"), def, shaderTypeStr, "s_4_0");
-        CompileShader(srcFile, Path.Combine(shaderBuildDir, "spirv", name + ".bin"), def, shaderTypeStr, "spirv");
+        Information("Could not find python3!");
+        Information("Shader preprocessing/validation skipped.");
+        return;
     }
 
-    // first, collect all shader file files are they may depend on them
-    // obviously an imperfect system, ideally i would scan the file for all #includes i suppose...
-    // or just explicitly write dependencies here like a makefile, but i don't want to do that.
-    List<string> headerFiles = [];
-    foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
-    {
-        if (Path.GetExtension(fileName) != ".sh") continue;
-        headerFiles.Add(fileName);
-    }
-    allHeaderFiles = [..headerFiles];
+    string glslang = EnvironmentVariable<string>("GLSL_VALIDATOR", "glslang");
 
-    foreach (var fileName in System.IO.Directory.EnumerateFiles("shaders"))
+    bool hasGlslang = false;
+    try
     {
-        if (Path.GetExtension(fileName) != ".sc") continue;
-        var name = Path.GetFileNameWithoutExtension(fileName);
-        if (name.Length >= 4 && name[^4..] == ".def") continue;
-
-        string suffix = "[UNKNOWN]";
-        if (name.Length < 3 || ((suffix = name[^3..]) != "_vs" && suffix != "_fs"))
-            throw new Exception($"Shader source file {name}.sc must end in '_vs.sc' or '_fs.sc'.");
-        
-        if      (suffix == "_vs") ShaderSource(name + ".sc", ShaderType.Vertex);
-        else if (suffix == "_fs") ShaderSource(name + ".sc", ShaderType.Fragment);
-        else throw new Exception("Unreachable code");
+        ExecCapture(glslang, ["-v"]);
+        hasGlslang = true;
     }
+    catch
+    {
+        hasGlslang = false;
+    }
+
+    if (!hasGlslang)
+    {
+        Information("Could not find glslang! Make sure it is in your PATH or the GLSL_VALIDATOR environment variable is set.");
+        Information("Shader preprocessing/validation skipped.");
+        return;
+    }
+
+    Exec(pythonExec, ["shader-preprocessor.py"]);
 });
 
 Task("Build")

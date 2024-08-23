@@ -6,9 +6,6 @@ Another Rain World level editor. Read [this document](dist/README.md), which is 
 Please note that the "main" branch is ahead of the latest release. If you want to access the repository
 at the time of a certain release, use the Git tags system.
 
-## Important!!!
-Despite my attempt to fix it by switching to a different graphics library, Rained *still* doesn't launch on some computers, even with the Microsoft Visual C++ Redistributable package installed. I believe the occurrence of this happening is less likely than it was before, but it still happens. If you are affected, sorry for the inconvenience. I will try to get it fixed at some point but it is difficult because It Works on My Machine (TM), so I can't use any debugging tools.
-
 ## Features
 - Ease of use
 - Undo/redo everything
@@ -20,6 +17,12 @@ Despite my attempt to fix it by switching to a different graphics library, Raine
 - Pressing escape does not crash the program
 
 ## Building
+Prerequisities:
+ - .NET Core toolchain
+ - OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
+ - *(optional)* Python 3
+ - *(optional)* [glslang](https://github.com/KhronosGroup/glslang) CLI
+
 ### .NET CLI
 Clone with Git:
 ```bash
@@ -35,7 +38,9 @@ dotnet run --project Drizzle.Transpiler
 
 Back to the root directory, build and run Rained
 ```bash
-dotnet build
+dotnet tool restore # first-time only
+
+dotnet cake --target=Build
 dotnet run --project src/Rained/Rained.csproj
 ```
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).

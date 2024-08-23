@@ -7,9 +7,6 @@ Also, if you are on Windows and Rained fails to even open a window when launchin
 
 Hope you enjoy!
 
-# Important!!!
-Despite my attempt to fix it by switching to a different graphics library, Rained *still* doesn't launch on some computers, even with the Microsoft Visual C++ Redistributable package installed. I believe the occurrence of this happening is less likely than it was before, but it still happens. If you are affected, sorry for the inconvenience. I will try to get it fixed at some point but it is difficult because It Works on My Machine (TM), so I can't use any debugging tools.
-
 ## Updates
 Rained should notify you of any new updates upon startup or in the Help > About window. You can disable the update checker in the preferences window. If you want to update it, you should remove and replace all the files and folders from this installation folder EXCEPT:
 - config/
