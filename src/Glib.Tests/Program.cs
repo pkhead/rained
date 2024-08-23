@@ -26,23 +26,6 @@ namespace GlibTests
         private static float sqW = 100.0f;
         private static float sqH = 100.0f;
 
-        private const string InvertFragmentSource = @"#version 300 es
-        precision mediump float;
-
-        in vec2 v_texcoord0;
-        in vec4 v_color0;
-
-        out vec4 fragColor;
-
-        uniform sampler2D u_texture0;
-        uniform vec4 u_color;
-        
-        void main() {
-            vec4 texel = texture(u_texture0, v_texcoord0);
-            fragColor = vec4(vec3(1.0) - texel.rgb, texel.a) * v_color0 * u_color;
-        }
-        ";
-
         private static void Main(string[] args)
         {
             // create a window
@@ -106,7 +89,7 @@ namespace GlibTests
             texture = Glib.Texture.Load("assets/icon48.png");
             rainedLogo = Glib.Texture.Load("assets/rained-logo.png");
             testShader = Glib.Shader.Create();
-            invertColorShader = Glib.Shader.Create(null, InvertFragmentSource);
+            invertColorShader = Glib.Shader.Load(null, "invert.frag");
 
             mesh = Glib.StandardMesh.CreateIndexed([0, 1, 2, 3, 0, 2], 4);
 

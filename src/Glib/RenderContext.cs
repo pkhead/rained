@@ -146,6 +146,12 @@ public sealed class RenderContext : IDisposable
         }
     }
 
+    /// <summary>
+    /// Returns true if the graphics backend defines coordinate space origin as the bottom left.<br/><br/>
+    /// (As Glib uses OpenGL ES/ANGLE, this always returns true.)
+    /// </summary>
+    public bool OriginBottomLeft => true;
+
     private RenderContext(Window mainWindow)
     {
         if (Instance is not null)
@@ -175,7 +181,7 @@ public sealed class RenderContext : IDisposable
         if (_mainWindow.SilkWindow.API.Flags.HasFlag(ContextFlags.Debug))
             SetupErrorCallback();
 
-        defaultShader = new Shader();
+        defaultShader = Shader.Create();
         _drawBatch = new DrawBatch(BatchDrawCallback);
         WhiteTexture = new Texture(Image.FromColor(1, 1, Color.White));
         TransformMatrix = Matrix4x4.Identity;
@@ -255,6 +261,7 @@ public sealed class RenderContext : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        Shader.ClearShaderCache();
         gl.Dispose();
         GC.SuppressFinalize(this);
         Instance = null;

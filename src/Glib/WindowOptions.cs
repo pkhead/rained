@@ -73,6 +73,11 @@ public struct WindowOptions
     /// </summary>
     public bool GlDebugContext = false;
 
+    /// <summary>
+    /// Reference to the window that the new window should share its GL context with.
+    /// </summary>
+    public Window? GlSharedContext = null;
+
     public WindowOptions() {}
 
     internal readonly IWindow CreateSilkWindow()
@@ -97,6 +102,7 @@ public struct WindowOptions
         opts.Size = new(Width, Height);
         opts.VSync = VSync;
         opts.Title = Title;
+        opts.SharedContext = GlSharedContext?.SilkWindow.GLContext!;
         opts.IsVisible = Visible && !centerOnCreation;
         opts.IsEventDriven = IsEventDriven;
         opts.WindowBorder = Border switch
@@ -107,7 +113,12 @@ public struct WindowOptions
             _ => throw new Exception("Invalid WindowBorder enum value")
         };
 
-        var win = Silk.NET.Windowing.Window.Create(opts);
+        IWindow win;
+        if (GlSharedContext is not null)
+            win = GlSharedContext.SilkWindow.CreateWindow(opts);
+        else
+            win = Silk.NET.Windowing.Window.Create(opts);
+        
         if (centerOnCreation)
         {
             bool vis = Visible;

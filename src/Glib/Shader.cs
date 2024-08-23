@@ -74,6 +74,8 @@ public class Shader : Resource
     private List<string> _textureUnits = [];
     private Texture[] _boundTextures;
 
+    private static Dictionary<string, uint> _shaderCache = [];
+
     private static uint? _max_attrib_index = null;
 
     private static void BindAttribLocation(GL gl, uint program, uint index, string name)
@@ -84,30 +86,9 @@ public class Shader : Resource
             gl.BindAttribLocation(program, index, name);        
     }
 
-    internal unsafe Shader(string? vsSource = null, string? fsSource = null)
+    private unsafe Shader(uint vsh, uint fsh)
     {
         var gl = RenderContext.Gl;
-        
-        var vsh = gl.CreateShader(ShaderType.VertexShader);
-        gl.ShaderSource(vsh, vsSource ?? DefaultVertexSource);
-        gl.CompileShader(vsh);
-        if (gl.GetShader(vsh, GLEnum.CompileStatus) == 0)
-        {
-            var infoLog = gl.GetShaderInfoLog(vsh);
-            gl.DeleteShader(vsh);
-            throw new ShaderCompilationException("Vertex shader failed to compile: " + infoLog);
-        }
-
-        var fsh = gl.CreateShader(ShaderType.FragmentShader);
-        gl.ShaderSource(fsh, fsSource ?? DefaultFragmentSource);
-        gl.CompileShader(fsh);
-        if (gl.GetShader(fsh, GLEnum.CompileStatus) == 0)
-        {
-            var infoLog = gl.GetShaderInfoLog(fsh);
-            gl.DeleteShader(vsh);
-            gl.DeleteShader(fsh);
-            throw new ShaderCompilationException("Fragment shader failed to compile: " + infoLog);
-        }
 
         programHandle = gl.CreateProgram();
         gl.AttachShader(programHandle, vsh);
@@ -136,14 +117,9 @@ public class Shader : Resource
         if (gl.GetProgram(programHandle, GLEnum.LinkStatus) == 0)
         {
             var infoLog = gl.GetProgramInfoLog(programHandle);
-            gl.DeleteShader(vsh);
-            gl.DeleteShader(fsh);
             gl.DeleteProgram(programHandle);
             throw new ShaderCompilationException("Link error: " + infoLog);
         }
-
-        gl.DeleteShader(vsh);
-        gl.DeleteShader(fsh);
 
         // get list of uniforms
         int uniformCount = gl.GetProgram(programHandle, GLEnum.ActiveUniforms);
@@ -176,13 +152,147 @@ public class Shader : Resource
     }
 
     /// <summary>
-    /// Create a shader from source strings.
+    /// Create a shader from source code.
     /// </summary>
     /// <param name="vsName">The source of the vertex shader, or null to use the default one.</param>
     /// <param name="fsName">The source of the fragment shader, or null to use the default one.</param>
     /// <returns>A shader.</returns>
     /// <exception cref="ShaderCreationException">Thrown if the shader could not be created.</exception>
-    public static Shader Create(string? vsSource = null, string? fsSource = null) => new(vsSource, fsSource);
+    public static Shader Create(string? vsSource = null, string? fsSource = null)
+    {
+        var gl = RenderContext.Gl;
+
+        uint vsh, fsh;
+        vsh = fsh = 0;
+
+        try
+        {
+            vsh = gl.CreateShader(ShaderType.VertexShader);
+            gl.ShaderSource(vsh, vsSource ?? DefaultVertexSource);
+            gl.CompileShader(vsh);
+            if (gl.GetShader(vsh, GLEnum.CompileStatus) == 0)
+            {
+                var infoLog = gl.GetShaderInfoLog(vsh);
+                throw new ShaderCompilationException("Vertex shader failed to compile: " + infoLog);
+            }
+
+            fsh = gl.CreateShader(ShaderType.FragmentShader);
+            gl.ShaderSource(fsh, fsSource ?? DefaultFragmentSource);
+            gl.CompileShader(fsh);
+            if (gl.GetShader(fsh, GLEnum.CompileStatus) == 0)
+            {
+                var infoLog = gl.GetShaderInfoLog(fsh);
+                throw new ShaderCompilationException("Fragment shader failed to compile: " + infoLog);
+            }
+
+            return new Shader(vsh, fsh);
+        }
+        finally
+        {
+            if (vsh != 0) gl.DeleteShader(vsh);
+            if (fsh != 0) gl.DeleteShader(fsh);
+        }
+    }
+
+    /// <summary>
+    /// Create a shader from the name of a shader source file.
+    /// </summary>
+    /// <param name="vsName">The name of the vertex shader source, or null to use the default.</param>
+    /// <param name="fsName">The name of the fragment shader source, or null to use the default.</param>
+    /// <returns></returns>
+    public static Shader Load(string? vsName, string? fsName)
+    {
+        var gl = RenderContext.Gl;
+        var assembly = typeof(Shader).Assembly;
+
+        string? vsSource = null;
+        string? fsSource = null;
+        uint vsh, fsh;
+
+        vsName ??= "DEFAULT_VERT";
+        fsName ??= "DEFAULT_FRAG";
+
+        // get vertex source, or obtain from cache
+        if (!_shaderCache.TryGetValue(vsName, out vsh))
+        {
+            vsh = 0;
+
+            if (vsName == "DEFAULT_VERT")
+            {
+                vsSource = DefaultVertexSource;
+            }
+            else
+            {
+                using var vsStream = assembly.GetManifestResourceStream("Glib.shaders." + vsName)
+                    ?? throw new ArgumentException($"Shader '{vsName}' does not exist", nameof(vsName));
+                using var vsStreamReader = new StreamReader(vsStream);
+                vsSource = vsStreamReader.ReadToEnd();
+            }
+        }
+
+        // get fragment source, or obtain from cache
+        if (!_shaderCache.TryGetValue(fsName, out fsh))
+        {
+            fsh = 0;
+
+            if (fsName == "DEFAULT_FRAG")
+            {
+                fsSource = DefaultFragmentSource;
+            }
+            else
+            {
+                using var fsStream = assembly.GetManifestResourceStream("Glib.shaders." + fsName)
+                    ?? throw new ArgumentException($"Shader '{fsName}' does not exist", nameof(fsName));
+                using var fsStreamReader = new StreamReader(fsStream);
+                fsSource = fsStreamReader.ReadToEnd();
+            }
+        }
+        
+        // compile vertex shader if not in cache
+        if (vsh == 0)
+        {
+            if (vsSource is null) throw new UnreachableException();
+            vsh = gl.CreateShader(ShaderType.VertexShader);
+            gl.ShaderSource(vsh, vsSource);
+            gl.CompileShader(vsh);
+            if (gl.GetShader(vsh, GLEnum.CompileStatus) == 0)
+            {
+                var infoLog = gl.GetShaderInfoLog(vsh);
+                gl.DeleteShader(vsh);
+                throw new ShaderCompilationException("Vertex shader failed to compile: " + infoLog);
+            }
+
+            _shaderCache[vsName!] = vsh;
+        }
+
+        // compile fragment shader if not cache
+        if (fsh == 0)
+        {
+            if (fsSource is null) throw new UnreachableException();
+            fsh = gl.CreateShader(ShaderType.FragmentShader);
+            gl.ShaderSource(fsh, fsSource);
+            gl.CompileShader(fsh);
+            if (gl.GetShader(fsh, GLEnum.CompileStatus) == 0)
+            {
+                var infoLog = gl.GetShaderInfoLog(fsh);
+                gl.DeleteShader(fsh);
+                throw new ShaderCompilationException("Fragment shader failed to compile: " + infoLog);
+            }
+
+            _shaderCache[fsName!] = fsh;
+        }
+
+        return new Shader(vsh, fsh);
+    }
+
+    internal static void ClearShaderCache()
+    {
+        var gl = RenderContext.Gl;
+
+        foreach ((var name, var shader) in _shaderCache)
+            gl.DeleteShader(shader);
+        _shaderCache.Clear();
+    }
 
     public bool HasUniform(string uName)
     {
@@ -414,7 +524,7 @@ public class Shader : Resource
             }*/
 
             gl.ActiveTexture((GLEnum)((int)GLEnum.Texture0 + i));
-            gl.BindTexture(GLEnum.Texture2D, texture.Handle);
+            texture.Bind(gl);
             gl.Uniform1((int)handle, i);
         }
 

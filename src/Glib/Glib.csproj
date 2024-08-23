@@ -16,4 +16,10 @@
     <PackageReference Include="Silk.NET.Windowing" Version="2.21.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.9" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="../../glshaders/build/*.glsl">
+      <LogicalName>Glib.shaders.%(FileName)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>

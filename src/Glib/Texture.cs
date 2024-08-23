@@ -13,6 +13,7 @@ public enum TextureFilterMode
 public enum TextureWrapMode
 {
     Clamp,
+    Repeat,
     Mirror,
 }
 
@@ -65,12 +66,7 @@ public class Texture : Resource
         gl.BindTexture(GLEnum.Texture2D, _handle);
 
         var wrapMode = (int)GLEnum.ClampToEdge;
-        var filterMode = DefaultFilterMode switch
-        {
-            TextureFilterMode.Linear => (int)GLEnum.Linear,
-            TextureFilterMode.Nearest => (int)GLEnum.Nearest,
-            _ => throw new Exception("Unknown default texture filter mode")
-        };
+        var filterMode = (int)GLFilterMode(DefaultFilterMode);
 
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapS, ref wrapMode);
         gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapMode);
@@ -263,6 +259,39 @@ public class Texture : Resource
         }
     }
 
+    static GLEnum GLWrapMode(TextureWrapMode mode) => mode switch
+    {
+        TextureWrapMode.Clamp => GLEnum.ClampToEdge,
+        TextureWrapMode.Mirror => GLEnum.MirroredRepeat,
+        TextureWrapMode.Repeat => GLEnum.Repeat,
+        _ => throw new ArgumentOutOfRangeException(nameof(mode))
+    };
+
+    static GLEnum GLFilterMode(TextureFilterMode mode) => mode switch
+    {
+        TextureFilterMode.Linear => GLEnum.Linear,
+        TextureFilterMode.Nearest => GLEnum.Nearest,
+        _ => throw new ArgumentOutOfRangeException(nameof(mode))
+    };
+
+    /// <summary>
+    /// Binds the texture and uploads sampler parameters.
+    /// </summary>
+    /// <param name="gl"></param>
+    internal void Bind(GL gl)
+    {
+        var wrapModeU = (int)GLWrapMode(WrapModeU);
+        var wrapModeV = (int)GLWrapMode(WrapModeV);
+        var filterMin = (int)GLFilterMode(MinFilterMode);
+        var filterMag = (int)GLFilterMode(MagFilterMode);
+
+        gl.BindTexture(GLEnum.Texture2D, _handle);
+        gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapS, ref wrapModeU);
+        gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, ref wrapModeV);
+        gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMinFilter, ref filterMin);
+        gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, ref filterMag);
+    }
+
     /// <summary>
     /// Update the whole texture with a pre-allocated Bgfx memory handle.<br /><br />
     /// The dimensions and pixel format of the data will be interpreted as those of the texture.
@@ -294,10 +323,10 @@ public class Texture : Resource
     {
         return fmt switch
         {
-            GLEnum.Rgba8 => Glib.PixelFormat.RGBA,
-            GLEnum.Rgb8 => Glib.PixelFormat.RGB,
-            GLEnum.RG8 => Glib.PixelFormat.GrayscaleAlpha,
-            GLEnum.R8 => Glib.PixelFormat.Grayscale,
+            GLEnum.Rgba => Glib.PixelFormat.RGBA,
+            GLEnum.Rgb => Glib.PixelFormat.RGB,
+            GLEnum.RG => Glib.PixelFormat.GrayscaleAlpha,
+            GLEnum.Red => Glib.PixelFormat.Grayscale,
             _ => null
         };
     }

@@ -222,6 +222,8 @@ public class Window : IDisposable
 
     private double lastTime = 0.0;
 
+    public bool VSync { get => window.VSync; set => window.VSync = value; }
+
     public Window(WindowOptions options)
     {
         window = options.CreateSilkWindow();
