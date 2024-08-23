@@ -9,8 +9,9 @@ Bugs:
 - fix double resource disposal on window close
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
-v2.1.0:
-- bgfx linux build
+v2.1.1:
+- linux ANGLE .so's (contemplate if i need this given that linux user might have an opengl es driver?)
+- fix window color of some themes being pitch black
 - option to use "legacy" shortcut icons
 - optional download from solar's repo
 - fix save prompt when rendering
