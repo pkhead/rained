@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using ImGuiNET;
+using Silk.NET.Core.Native;
 
 namespace Glib.ImGui
 {
@@ -32,6 +33,27 @@ namespace Glib.ImGui
         public IntPtr Context;
 
         public bool ignoreMouseUp = false;
+
+        private unsafe delegate byte* GetClipTextCallback(IntPtr userData);
+        private unsafe delegate void SetClipTextCallback(IntPtr userData, byte* text);
+ 
+        private static GetClipTextCallback _getClipCallback = null!;
+        private static SetClipTextCallback _setClipCallback = null!;
+        private static unsafe byte* _activeClipboardBuffer = null;
+
+        private unsafe void SetClipText(IntPtr userData, byte* text)
+        {
+            _window.SilkInputContext.Keyboards[0].ClipboardText = SilkMarshal.PtrToString((nint) text);
+        }
+
+        private unsafe byte* GetClipText(IntPtr userData)
+        {
+            if (_activeClipboardBuffer != null)
+                SilkMarshal.Free((nint)_activeClipboardBuffer);
+            
+            _activeClipboardBuffer = (byte*) SilkMarshal.StringToPtr(_window.SilkInputContext.Keyboards[0].ClipboardText);
+            return _activeClipboardBuffer;
+        }
 
         /// <summary>
         /// Constructs a new ImGuiController.
@@ -73,6 +95,15 @@ namespace Glib.ImGui
 
             if (Mesh.IsBaseVertexSupported)
                 io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+            
+            unsafe
+            {
+                _getClipCallback = new GetClipTextCallback(GetClipText);
+                _setClipCallback = new SetClipTextCallback(SetClipText);
+
+                io.SetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_setClipCallback);
+                io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_getClipCallback);
+            }
             //io.BackendFlags |= ImGuiBackendFlags.PlatformHasViewports;
             //io.BackendFlags |= ImGuiBackendFlags.RendererHasViewports;
 
