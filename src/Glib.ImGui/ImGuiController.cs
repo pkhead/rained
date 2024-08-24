@@ -43,7 +43,13 @@ namespace Glib.ImGui
 
         private unsafe void SetClipText(IntPtr userData, byte* text)
         {
-            _window.SilkInputContext.Keyboards[0].ClipboardText = SilkMarshal.PtrToString((nint) text);
+            try
+            {
+                _window.SilkInputContext.Keyboards[0].ClipboardText = SilkMarshal.PtrToString((nint) text);
+            }
+            catch
+            {
+            }
         }
 
         private unsafe byte* GetClipText(IntPtr userData)
@@ -51,7 +57,16 @@ namespace Glib.ImGui
             if (_activeClipboardBuffer != null)
                 SilkMarshal.Free((nint)_activeClipboardBuffer);
             
-            _activeClipboardBuffer = (byte*) SilkMarshal.StringToPtr(_window.SilkInputContext.Keyboards[0].ClipboardText);
+            try
+            {
+                _activeClipboardBuffer = (byte*) SilkMarshal.StringToPtr(_window.SilkInputContext.Keyboards[0].ClipboardText);
+            }
+            catch
+            {
+                _activeClipboardBuffer = (byte*) SilkMarshal.Allocate(1);
+                _activeClipboardBuffer[0] = 0;
+            }
+            
             return _activeClipboardBuffer;
         }
 
