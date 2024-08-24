@@ -367,48 +367,18 @@ static class PreferencesWindow
             ImGui.PopItemWidth();
         }
 
-        ImGui.SeparatorText("Miscellaneous");
+        ImGui.SeparatorText("Interface");
         {
-            // they've brainwashed me to not add this
-            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
-            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
-            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
-
-            bool versionCheck = prefs.CheckForUpdates;
-            if (ImGui.Checkbox("Check for updates", ref versionCheck))
-                prefs.CheckForUpdates = versionCheck;
-            
-            bool hideScreenSize = prefs.HideScreenSize;
-            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
-                prefs.HideScreenSize = hideScreenSize;
-            
-            bool optimizedTile = prefs.OptimizedTilePreviews;
-            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
-                prefs.OptimizedTilePreviews = optimizedTile;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            ImGui.SetItemTooltip(
-                """
-                This will optimize tile preview rendering such
-                that only tile cells located in the bounds of
-                its tile head will be rendered. If this option
-                is turned off, all tile bodies will be
-                processed regardless or not if it is within the
-                bounds of its tile head.
-
-                Turning this off may be useful if you have very
-                erroneous tiles in a level and want to see them,
-                but otherwise there is no reason to do so.
-                """
-            );
-
             bool showCameraNumbers = prefs.ShowCameraNumbers;
             if (ImGui.Checkbox("Show camera numbers", ref showCameraNumbers))
                 prefs.ShowCameraNumbers = showCameraNumbers;
             
+            bool materialSelectorPreviews = prefs.MaterialSelectorPreview;
+            if (ImGui.Checkbox("Show previews in the material selector", ref materialSelectorPreviews))
+                prefs.MaterialSelectorPreview = materialSelectorPreviews;
+            
             bool doubleClickToCreateProp = prefs.DoubleClickToCreateProp;
-            if (ImGui.Checkbox("Double-click to create prop", ref doubleClickToCreateProp))
+            if (ImGui.Checkbox("Double-click to create props", ref doubleClickToCreateProp))
                 prefs.DoubleClickToCreateProp = doubleClickToCreateProp;
             
             ImGui.SameLine();
@@ -425,21 +395,11 @@ static class PreferencesWindow
                 );
                 ImGui.EndTooltip();
             }
-
-            //bool multiViewport = prefs.ImGuiMultiViewport;
-            //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
-            //    prefs.ImGuiMultiViewport = multiViewport;
-            //ImGui.SameLine();
-            //ImGui.TextDisabled("(?)");
-            //ImGui.SetItemTooltip(
-            //    """
-            //    Turning this on will allow inner windows to
-            //    go outside of the bounds of the main window.
-            //    This option requires a restart in order to
-            //    take effect.
-            //    """
-            //);
-
+            
+            bool hideScreenSize = prefs.HideScreenSize;
+            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
+                prefs.HideScreenSize = hideScreenSize;
+            
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             
             // camera border view mode
@@ -480,6 +440,53 @@ static class PreferencesWindow
             }
             
             ImGui.PopItemWidth();
+        }
+
+        ImGui.SeparatorText("Miscellaneous");
+        {
+            // they've brainwashed me to not add this
+            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
+            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
+            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
+
+            bool versionCheck = prefs.CheckForUpdates;
+            if (ImGui.Checkbox("Check for updates", ref versionCheck))
+                prefs.CheckForUpdates = versionCheck;
+            
+            bool optimizedTile = prefs.OptimizedTilePreviews;
+            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
+                prefs.OptimizedTilePreviews = optimizedTile;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will optimize tile preview rendering such
+                that only tile cells located in the bounds of
+                its tile head will be rendered. If this option
+                is turned off, all tile bodies will be
+                processed regardless or not if it is within the
+                bounds of its tile head.
+
+                Turning this off may be useful if you have very
+                erroneous tiles in a level and want to see them,
+                but otherwise there is no reason to do so.
+                """
+            );
+
+            //bool multiViewport = prefs.ImGuiMultiViewport;
+            //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
+            //    prefs.ImGuiMultiViewport = multiViewport;
+            //ImGui.SameLine();
+            //ImGui.TextDisabled("(?)");
+            //ImGui.SetItemTooltip(
+            //    """
+            //    Turning this on will allow inner windows to
+            //    go outside of the bounds of the main window.
+            //    This option requires a restart in order to
+            //    take effect.
+            //    """
+            //);
         }
     }
 

@@ -4,23 +4,17 @@ Bugs:
 - reported increased usage while computer is locked
 - reported crash in asset manager due to queues or something
 - rained does not work if launched in a path with non-latin characters
-  - fixed imgui, but bgfx is unable to create textures for some reason.
+  - need to test this again
 - asset manager merging is actually kind of buggy
-- fix double resource disposal on window close
-- linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
-
-v2.1.1:
-- toggle material previews
-- fix window color of some themes being pitch black
-- optional download from solar's repo
-- fix save prompt when rendering
 
 v2.2.0:
+- version manager
+- optional download from solar's repo
 - option to use "legacy" shortcut icons
+- favorite tiles and props
 - asset manager crap
 
 Overall:
-- favorite tiles and props
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
@@ -29,7 +23,6 @@ Overall:
 - dissolve material/tile separation
 - optimize tile deform rendering
 - does update checker notif window timing work?
-- auto-updater
 - logging
   - button to show latest log file
   - log window shows rained logs
