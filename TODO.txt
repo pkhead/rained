@@ -10,11 +10,14 @@ Bugs:
 - linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
 
 v2.1.1:
-- linux ANGLE .so's (contemplate if i need this given that linux user might have an opengl es driver?)
+- toggle material previews
 - fix window color of some themes being pitch black
-- option to use "legacy" shortcut icons
 - optional download from solar's repo
 - fix save prompt when rendering
+
+v2.2.0:
+- option to use "legacy" shortcut icons
+- asset manager crap
 
 Overall:
 - favorite tiles and props
