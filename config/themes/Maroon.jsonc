@@ -1,4 +1,4 @@
-// from https://github.com/pkhead/rained
+// from https://github.com/pkhead/soundbox
 
 {
   "WindowPadding": [
@@ -80,9 +80,9 @@
       1
     ],
     "WindowBg": [
-      0,
-      0,
-      0,
+      0.032,
+      0.008,
+      0.008,
       0.847059
     ],
     "ChildBg": [
