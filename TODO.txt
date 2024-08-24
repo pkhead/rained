@@ -4,10 +4,9 @@ Bugs:
 - reported increased usage while computer is locked
 - reported crash in asset manager due to queues or something
 - rained does not work if launched in a path with non-latin characters
-  - fixed imgui, but bgfx is unable to create textures for some reason.
+  - removed bgfx, test this again
 - asset manager merging is actually kind of buggy
-- fix double resource disposal on window close
-- linux/vulkan resizing looks weird... also sometimes creates segfault i guess... probably a bgfx bug?
+- don't clip mirror lines to scissor box
 
 v2.1.1:
 - toggle material previews
