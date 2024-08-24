@@ -162,6 +162,7 @@ Task("DotNetPublish")
     CopyDirectory("scripts", buildDir + "/scripts");
     CopyDirectory("config", buildDir + "/config");
     CopyFile("LICENSE.md", buildDir + "/LICENSE.md");
+    CopyFile("CREDITS.md", buildDir + "/CREDITS.md");
     
     if (FileExists(buildDir + "/config/preferences.json"))
     {

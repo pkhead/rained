@@ -66,7 +66,12 @@ static class AboutWindow
             ImGui.NewLine();
             ImGui.Text("(c) 2024 pkhead - MIT License");
             ImGui.Text("Rain World - Videocult/Adult Swim Games/Akapura Games");
+
+            ImGui.Bullet();
             ImGuiExt.LinkText("GitHub", "https://github.com/pkhead/rained");
+
+            ImGui.Bullet();
+            ImGuiExt.LinkText("Credits", "CREDITS.md");
 
             // notify user of a new version
             if (RainEd.Instance.LatestVersionInfo is not null && RainEd.Instance.LatestVersionInfo.VersionName != RainEd.Version)
@@ -91,38 +96,6 @@ static class AboutWindow
                 ImGui.TextWrapped("Gfx Driver: " + sysInfo.GraphicsRenderer);
                 ImGui.PopTextWrapPos();
             }
-            
-            ImGui.SeparatorText("Libraries");
-            
-            ImGui.Bullet();
-            ImGuiExt.LinkText("Drizzle", "https://github.com/pkhead/Drizzle");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2021 Pieter-Jan Briers - MIT License");
-
-            ImGui.Bullet();
-            ImGuiExt.LinkText("ImGui.NET", "https://github.com/ImGuiNET/ImGui.NET");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2017 Eric Mellino and ImGui.NET contributors - MIT License");
-
-            ImGui.Bullet();
-            ImGuiExt.LinkText("Dear ImGui", "https://github.com/ocornut/imgui");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2014-2024 Omar Cornut - MIT License");
-
-            ImGui.Bullet();
-            ImGuiExt.LinkText("Silk.NET", "https://dotnet.github.io/Silk.NET");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2021- .NET Foundation and Contributors - MIT License");
-
-            ImGui.Bullet();
-            ImGuiExt.LinkText("bgfx", "https://github.com/bkaradzic/bgfx");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2020-2024 Branimir Karadzic - BSD 2-Clause License");
-
-            ImGui.Bullet();
-            ImGuiExt.LinkText("RectpackSharp", "https://github.com/ThomasMiz/RectpackSharp");
-            ImGui.SameLine();
-            ImGui.Text("(c) 2020 ThomasMiz - MIT License");
             
             ImGui.EndPopup();
         }
