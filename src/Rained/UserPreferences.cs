@@ -111,6 +111,7 @@ class UserPreferences
     public bool ShowRenderPreview { get; set; }
     public bool CheckForUpdates { get; set; }
     public bool OptimizedTilePreviews { get; set; }
+    public bool MaterialSelectorPreview { get; set; } = true;
 
     public enum AutotileMouseModeOptions
     {

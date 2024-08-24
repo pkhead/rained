@@ -89,6 +89,7 @@ partial class TileEditor : IEditorMode
     {
         var tileDb = RainEd.Instance.TileDatabase;
         var matDb = RainEd.Instance.MaterialDatabase;
+        var prefs = RainEd.Instance.Preferences;
 
         if (ImGui.Begin("Tile Selector", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -193,7 +194,7 @@ partial class TileEditor : IEditorMode
                             }
 
                             // show material preview when hovered
-                            if (ImGui.IsItemHovered())
+                            if (prefs.MaterialSelectorPreview && ImGui.IsItemHovered())
                             {
                                 if (_activeMatPreview != mat.Name)
                                 {
