@@ -207,6 +207,12 @@ class GeometryEditor : IEditorMode
         window.WorkLayer = activeLayer == -1 ? 0 : activeLayer;
     }
 
+    public void ReloadLevel()
+    {
+        mirrorOriginX = RainEd.Instance.Level.Width / 2;
+        mirrorOriginY = RainEd.Instance.Level.Height / 2;
+    }
+
     public void SavePreferences(UserPreferences prefs)
     {
         switch (layerViewMode)
