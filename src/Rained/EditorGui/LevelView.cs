@@ -327,6 +327,8 @@ class LevelView
 
                     int canvasW = (int)(regionMax.X - regionMin.X);
                     int canvasH = (int)(regionMax.Y - regionMin.Y);
+                    canvasW = Math.Max(canvasW, 1);
+                    canvasH = Math.Max(canvasH, 1);
 
                     canvasWidget.Resize(canvasW, canvasH);
 

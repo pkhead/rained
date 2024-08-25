@@ -95,13 +95,17 @@ public class Framebuffer : Resource
 
     internal unsafe Framebuffer(FramebufferConfiguration config)
     {
+        Width = config.Width;
+        Height = config.Height;
+
+        if (Width <= 0 || Height <= 0)
+            throw new InvalidOperationException("Width and height must be integers greater than 0");
+        
         var gl = RenderContext.Gl;
 
         var oldDrawFb = (uint)gl.GetInteger(GetPName.DrawFramebufferBinding);
         var oldReadFb = (uint)gl.GetInteger(GetPName.ReadFramebufferBinding);
 
-        Width = config.Width;
-        Height = config.Height;
 
         //var attachments = new Bgfx.Attachment[config.Attachments.Count];
         _attachmentTexs = new Texture[config.Attachments.Count];

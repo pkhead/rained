@@ -56,6 +56,9 @@ public class Texture : Resource
 
     private unsafe void CreateTexture(PixelFormat format, void* data)
     {
+        if (Width <= 0 || Height <= 0)
+            throw new InvalidOperationException("Width and height must be integers greater than 0");
+        
         GlTextureFormat = format switch
         {
             Glib.PixelFormat.Grayscale => GLEnum.Red,

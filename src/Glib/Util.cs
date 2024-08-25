@@ -122,7 +122,7 @@ internal static class GlUtil
         GLEnum err;
         if ((err = gl.GetError()) != 0)
         {
-            RenderContext.LogError($"{msg} ({err})");
+            throw new InvalidOperationException($"{msg} ({err})");
         }
     }
 }
