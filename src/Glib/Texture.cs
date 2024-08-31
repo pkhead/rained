@@ -54,6 +54,13 @@ public class Texture : Resource
         }
     }
 
+    private static int? _maxSize = null;
+
+    /// <summary>
+    /// The maxmimum size in any given axis of a texture that the graphics backend can support.
+    /// </summary>
+    public static int MaxSize => _maxSize ??= RenderContext.Gl.GetInteger(GetPName.MaxTextureSize);
+
     private unsafe void CreateTexture(PixelFormat format, void* data)
     {
         if (Width <= 0 || Height <= 0)

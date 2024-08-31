@@ -127,6 +127,16 @@ namespace RainEd
                 Serilog.Log.Logger = _logger;
             }
 
+            RenderContext.Log = (LogLevel logLevel, string msg) =>
+            {
+                if (logLevel == LogLevel.Debug)
+                    Log.Information(msg);
+                else if (logLevel == LogLevel.Information)
+                    Log.Information("[GL] " + msg);
+                else if (logLevel == LogLevel.Error)
+                    Log.Error("[GL] " + msg);
+            };
+
             {
                 var windowOptions = new Glib.WindowOptions()
                 {
@@ -192,20 +202,7 @@ namespace RainEd
                         }
                     }
 
-                    RenderContext.Log = (LogLevel logLevel, string msg) =>
-                    {
-                        if (logLevel == LogLevel.Debug)
-                            Log.Information(msg);
-                        else if (logLevel == LogLevel.Information)
-                            Log.Information("GL: " + msg);
-                        else if (logLevel == LogLevel.Error)
-                            Log.Error("GL: " + msg);
-                    };
                     renderContext = RenderContext.Init(window);
-
-                    Log.Information("GL renderer: {RendererName}", renderContext.GpuRenderer);
-                    Log.Information("GL vendor: {VendorName}", renderContext.GpuVendor);
-
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
 

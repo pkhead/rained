@@ -164,6 +164,8 @@ public sealed class RenderContext : IDisposable
     public string GraphicsAPI => "OpenGL 3.3";
 #endif
 
+    static bool _printDiagnostics = true;
+
     private RenderContext(Window mainWindow)
     {
         Instance = this;
@@ -178,17 +180,26 @@ public sealed class RenderContext : IDisposable
         GpuVendor = gl.GetStringS(StringName.Vendor);
         GpuRenderer = gl.GetStringS(StringName.Renderer);
 
-        Console.WriteLine(GpuVendor);
-        Console.WriteLine(GpuRenderer);
-
-        Console.WriteLine("Extensions:");
-
-        var nExtensions = gl.GetInteger(GetPName.NumExtensions);
-        for (int i = 0; i < nExtensions; i++)
+        // print out diagnostics
+        if (_printDiagnostics)
         {
-            var extName = gl.GetStringS(GLEnum.Extensions, (uint)i);
-            Console.WriteLine("  - " + extName);
+            _printDiagnostics = false;
+            LogInfo("Vendor: " + GpuVendor);
+            LogInfo("Renderer: " + GpuRenderer);
+            LogInfo("Mesh.IsBaseVertexSupported: " + Mesh.IsBaseVertexSupported);
+            LogInfo("Mesh.Are32BitIndicesSupported: " + Mesh.IsBaseVertexSupported);
+            LogInfo("Texture.MaxSize: " + Texture.MaxSize);
+            LogInfo("Debug context supported: " + gl.IsExtensionPresent("GL_KHR_debug"));
+
+            LogInfo("Extensions present:");
+            var nExtensions = gl.GetInteger(GetPName.NumExtensions);
+            for (int i = 0; i < nExtensions; i++)
+            {
+                var extName = gl.GetStringS(GLEnum.Extensions, (uint)i);
+                LogInfo("  - " + extName);
+            }
         }
+
         
         _mainWindow = mainWindow;
         ScreenWidth = mainWindow.PixelWidth;

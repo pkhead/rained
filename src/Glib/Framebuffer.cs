@@ -101,17 +101,20 @@ public class Framebuffer : Resource
         if (Width <= 0 || Height <= 0)
             throw new InvalidOperationException("Width and height must be integers greater than 0");
         
+        if (Width >= Texture.MaxSize || Height >= Texture.MaxSize)
+            throw new UnsupportedOperationException("Width and height exceeds supported dimensions.");
+        
         var gl = RenderContext.Gl;
 
         var oldDrawFb = (uint)gl.GetInteger(GetPName.DrawFramebufferBinding);
         var oldReadFb = (uint)gl.GetInteger(GetPName.ReadFramebufferBinding);
-
 
         //var attachments = new Bgfx.Attachment[config.Attachments.Count];
         _attachmentTexs = new Texture[config.Attachments.Count];
 
         fbo = gl.GenFramebuffer();
         gl.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+        GlUtil.CheckError(gl, "Error when binding framebuffer");
 
         for (int i = 0; i < config.Attachments.Count; i++)
         {
@@ -183,6 +186,7 @@ public class Framebuffer : Resource
 
         gl.BindFramebuffer(GLEnum.DrawFramebuffer, oldDrawFb);
         gl.BindFramebuffer(GLEnum.ReadFramebuffer, oldReadFb);
+        GlUtil.CheckError(gl, "Error when unbinding framebuffer");
     }
 
     public static Framebuffer Create(FramebufferConfiguration config) => new(config);
