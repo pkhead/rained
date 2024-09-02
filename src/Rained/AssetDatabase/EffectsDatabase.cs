@@ -499,10 +499,10 @@ class EffectsDatabase
             });
         }
 
-        ////////////////////
-        // Drought Plants //
-        ////////////////////
-        BeginGroup("Drought Plants");
+        ///////////////
+        // LB Plants //
+        ///////////////
+        BeginGroup("LB Plants");
         {
             CreateEffect(new EffectInit("Colored Hang Roots", EffectType.NN)
             {
@@ -633,7 +633,7 @@ class EffectsDatabase
             });
         }
 
-        BeginGroup("Drought Erosion");
+        BeginGroup("LB Erosion");
         {
             CreateEffect(new EffectInit("Ultra Super Erode", EffectType.StandardErosion)
             {
@@ -650,7 +650,7 @@ class EffectsDatabase
             });
         }
 
-        BeginGroup("Drought Paint Effects");
+        BeginGroup("LB Paint Effects");
         {
             CreateEffect(new EffectInit("Super BlackGoo", EffectType.NN)
             {
@@ -674,7 +674,7 @@ class EffectsDatabase
             CustomConfig("Color 2", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
         }
 
-        BeginGroup("Drought Natural");
+        BeginGroup("LB Natural");
         {
             CreateEffect(new EffectInit("Colored Barnacles", EffectType.StandardErosion)
             {
@@ -712,7 +712,7 @@ class EffectsDatabase
             });
         }
 
-        BeginGroup("Drought Artificial");
+        BeginGroup("LB Artificial");
         {
             CreateEffect(new EffectInit("Assorted Trash", EffectType.NN)
             {
@@ -782,6 +782,13 @@ class EffectsDatabase
                 useLayers = true,
                 usePlantColors = true,
             });
+
+            CreateEffect(new EffectInit("Dandelions", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
         }
 
         BeginGroup("Leo Plants");
@@ -800,6 +807,93 @@ class EffectsDatabase
         BeginGroup("Nautillo Plants");
         {
             CreateEffect(new EffectInit("Fuzzy Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Leaf Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Meat Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Hyacinths", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true
+            });
+
+            CreateEffect(new EffectInit("Seed Grass", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true
+            });
+
+            CreateEffect(new EffectInit("Orb Plants", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true
+            });
+
+            CreateEffect(new EffectInit("Storm Plants", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Coral Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Horror Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+        }
+
+        BeginGroup("Tronsx Plants");
+        {
+            CreateEffect(new EffectInit("Thunder Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+        }
+
+        BeginGroup("Intrepid Plants");
+        {
+            CreateEffect(new EffectInit("Ice Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Grass Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Fancy Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
