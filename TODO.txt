@@ -7,6 +7,7 @@ Bugs:
   - need to test this again
 - asset manager merging is actually kind of buggy
 - don't clip mirror lines to scissor box
+- errors when rendering new effects???
 
 v2.2.0:
 - version manager
