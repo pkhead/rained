@@ -503,6 +503,7 @@ class PropDatabase
     [#nm:"Stretched Pipe", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Twisted Thread", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Stretched Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]
+    [#nm:"Long Barbed Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]
     """;
 
     public readonly List<PropCategory> Categories;
