@@ -30,19 +30,33 @@ static partial class Platform
         }
         else if (OperatingSystem.IsLinux())
         {
-            // try using zenity
+            // try using kdialog
             try
             {
-                var procStartInfo = new ProcessStartInfo("zenity", ["--error", "--text", windowContents, "--title", windowTitle])
+                var procStartInfo = new ProcessStartInfo("kdialog", ["--title", windowTitle, "--error", windowContents])
                 {
-                    UseShellExecute = false,
+                    UseShellExecute = false
                 };
 
                 Process.Start(procStartInfo)!.WaitForExit();
                 success = true;
             }
             catch (Exception)
-            {}
+            {
+                // if kdialog didn't work, try using zenity
+                try
+                {
+                    var procStartInfo = new ProcessStartInfo("zenity", ["--error", "--text", windowContents, "--title", windowTitle])
+                    {
+                        UseShellExecute = false,
+                    };
+
+                    Process.Start(procStartInfo)!.WaitForExit();
+                    success = true;
+                }
+                catch (Exception)
+                {}
+            }
         }
 
         return success;

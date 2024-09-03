@@ -439,7 +439,7 @@ namespace RainEd
 
             // show message box
             var windowTitle = "Fatal Exception";
-            var windowContents = $"A fatal exception has occured:\n{e}\n\nThe application will now quit.";
+            var windowContents = $"A fatal exception has occured:\n{e}\n\nMore information can be found in the logs. The application will now quit.";
 
             DisplayError(windowTitle, windowContents);
         }
