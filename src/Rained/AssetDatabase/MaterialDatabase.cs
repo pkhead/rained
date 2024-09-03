@@ -67,7 +67,7 @@ class MaterialDatabase
         CreateMaterial(     "Ridge",             new Color(206,  8,      57,     255)     );
 
         // drought materials
-        Categories.Add(new MaterialCategory("Drought Materials"));
+        Categories.Add(new MaterialCategory("LB Materials"));
         CreateMaterial(     "Steel",               new Color(220,170,195,    255)     );
         CreateMaterial(     "4Mosaic",             new Color(227, 76, 13,    255)     );
         CreateMaterial(     "Color A Ceramic",     new Color(120, 0, 90,    255)     );
