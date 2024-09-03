@@ -1,3 +1,7 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+
+
 /**
     Built-in tile/prop/material Init.txt manager
 
@@ -26,37 +30,10 @@ public class MergeException : Exception
     public MergeException(string message, System.Exception inner) : base(message, inner) { }
 }
 
-record InitData
-{
-    public string Name;
-    public string RawData;
-    public InitCategory Category = null!;
-
-    public InitData(string name, string data)
-    {
-        Name = name;
-        RawData = data;
-    }
-}
-
-record InitCategory
-{
-    public string Name;
-    public List<InitData> Items;
-    public Lingo.Color? Color;
-
-    public InitCategory(string name, Lingo.Color? color = null)
-    {
-        Name = name;
-        Color = color;
-        Items = [];
-    }
-}
-
 interface IAssetGraphicsManager
 {
-    public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect);
-    public void DeleteGraphics(InitData init, string dir);
+    public void CopyGraphics(string name, string srcDir, string destDir, bool expect);
+    public void DeleteGraphics(string name, string dir);
 }
 
 enum PromptResult { Yes, No, YesToAll, NoToAll }
@@ -88,38 +65,65 @@ class PromptOptions
 record CategoryList
 {
     public readonly string FilePath;
-    public readonly List<string> Lines;
-    private readonly List<object> parsedLines;
-    private bool isColored;
-    private readonly IAssetGraphicsManager graphicsManager;
+    //public readonly List<string> Lines;
+    private readonly List<InitLineData> lines;
+    private readonly bool isColored;
 
-    public readonly List<InitCategory> Categories = [];
-    public readonly Dictionary<string, List<InitData>> ItemDictionary = [];
+    // structs to store information directly from lines in the init file
+    public record class InitLineData(string RawLine)
+    {
+        public string RawLine = RawLine;
+    }
+    
+    private record class InitIrrelevantLine(string RawLine) : InitLineData(RawLine); // can represent comments or empty lines
+    private record class InitCategoryHeader(string RawLine, string Name, Lingo.Color? Color) : InitLineData(RawLine)
+    {
+        public string Name = Name;
+        public Lingo.Color? Color = Color;
+    }
+
+    public record class InitItem(string RawLine, string Name) : InitLineData(RawLine)
+    {
+        public string Name = Name;
+    }
+
+    public class InitCategory(string Name, Lingo.Color? Color)
+    {
+        public string Name = Name;
+        public Lingo.Color? Color = Color;
+        public List<InitItem> Items = [];
+    }
+
+    private readonly List<InitCategory> categories = [];
+    private readonly Dictionary<string, InitCategoryHeader> categoryHeaders = [];
+    private readonly Dictionary<InitItem, InitCategory> itemCategories = [];
 
     private record EmptyLine;
 
-    public CategoryList(string path, bool colored, IAssetGraphicsManager graphicsManager)
+    // helper function to create error string with line information
+    static string ErrorString(int lineNo, string msg)
+        => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg;    
+
+    public CategoryList(string path, bool colored)
     {
         isColored = colored;
-        this.graphicsManager = graphicsManager;
         FilePath = path;
-        parsedLines = [];
+        lines = [];
 
         if (!File.Exists(path))
         {
             Log.Error("{Path} not found!", path);
-            Lines = [];
             return;
         }
 
-        Lines = new List<string>(File.ReadAllLines(path));
-
+        // first, parse all of the lines
+        uint nextId = 1;
         var parser = new Lingo.LingoParser();
-        foreach (var line in Lines)
+        foreach (var line in File.ReadLines(path))
         {
             if (string.IsNullOrWhiteSpace(line))
             {
-                parsedLines.Add(new EmptyLine());
+                lines.Add(new InitIrrelevantLine(line));
                 continue;
             }
 
@@ -130,17 +134,20 @@ record CategoryList
                 {
                     if (parser.Read(line[1..]) is not Lingo.List list) continue;
 
-                    Categories.Add(new InitCategory(
-                        name: (string) list.values[0],
-                        color: (Lingo.Color) list.values[1]
+                    lines.Add(new InitCategoryHeader(
+                        RawLine: line,
+                        Name: (string) list.values[0],
+                        Color: (Lingo.Color) list.values[1]
                     ));
                 }
                 else
                 {
-                    Categories.Add(new InitCategory(line[1..]));
+                    lines.Add(new InitCategoryHeader(
+                        RawLine: line,
+                        Name: line[1..],
+                        Color: null
+                    ));
                 }
-
-                parsedLines.Add(Categories[^1]);
             }
 
             // item
@@ -150,65 +157,79 @@ record CategoryList
 
                 if (data is not null)
                 {
-                    var init = new InitData(
-                        name: (string) data.fields["nm"],
-                        data: line
-                    );
-                    AddInit(init);
-
-                    parsedLines.Add(init);
+                    lines.Add(new InitItem(
+                        RawLine: line,
+                        Name: (string) data.fields["nm"]
+                    ));
+                    // AddInit();
                 }
                 else
                 {
-                    parsedLines.Add(new EmptyLine());
+                    lines.Add(new InitIrrelevantLine(line));
                 }
+            }
+        }
+
+        // then, generate the category and items list stuff
+        ParseLines();
+    }
+
+    private void ParseLines()
+    {
+        categories.Clear();
+        categoryHeaders.Clear();
+
+        InitCategory? currentCategory = null;
+        int lineNum = 0;
+
+        foreach (var lineInfo in lines)
+        {
+            lineNum++;
+            
+            if (lineInfo is InitCategoryHeader groupInfo)
+            {
+                if (!categoryHeaders.TryAdd(groupInfo.Name, groupInfo))
+                    throw new Exception(ErrorString(lineNum, $"A category with the name '{groupInfo.Name}' was already created."));
+                
+                currentCategory = new InitCategory(groupInfo.Name, groupInfo.Color);
+                categories.Add(currentCategory);
+            }
+            else if (lineInfo is InitItem itemInfo)
+            {
+                if (currentCategory is null)
+                    throw new Exception(ErrorString(lineNum, "The first category header is missing"));
+                
+                currentCategory.Items.Add(itemInfo);
+                itemCategories[itemInfo] = currentCategory;
             }
         }
     }
 
-    private void WriteToFile()
+    public void Commit()
     {
         // force \r newlines
         if (File.Exists(FilePath))
-            File.WriteAllText(FilePath, string.Join("\r", Lines));
+            File.WriteAllText(FilePath, string.Join("\r", lines.Select(x => x.RawLine)));
     }
 
-    public void AddInit(InitData data, InitCategory? category = null)
+    public ReadOnlyCollection<InitCategory> Categories => categories.AsReadOnly();
+
+    public enum CategoryHeaderTypeEnum
     {
-        category ??= Categories[^1];
-        
-        data.Category = category;
-        category.Items.Add(data);
+        /// <summary>
+        /// `-Example Category`
+        /// </summary>
+        NameLiteral,
 
-        if (!ItemDictionary.TryGetValue(data.Name, out List<InitData>? list))
-        {
-            list = [];
-            ItemDictionary.Add(data.Name, list);
-        }
-        list.Add(data);
+        /// <summary>
+        /// `-["Example Category", color(255, 0, 0)]`
+        /// </summary>
+        LingoList
     }
 
-    public void ReplaceInit(InitData oldData, InitData newData)
-    {
-        if (oldData.Name != newData.Name)
-            throw new ArgumentException("Mismatched names");
-        
-        int i = parsedLines.IndexOf(oldData);
-        if (i == -1) throw new Exception("Could not find line index");
+    public CategoryHeaderTypeEnum CategoryHeaderType => isColored ? CategoryHeaderTypeEnum.LingoList : CategoryHeaderTypeEnum.NameLiteral;
 
-        if (parsedLines[i] is not InitData v || v != oldData || v.RawData != Lines[i])
-            throw new Exception("Line index points to incorrect item");
-        
-        oldData.Category.Items[oldData.Category.Items.IndexOf(oldData)] = newData;
-        newData.Category = oldData.Category;
-
-        var list = ItemDictionary[newData.Name];
-        list[list.IndexOf(oldData)] = newData;
-        parsedLines[i] = newData;
-        Lines[i] = newData.RawData;
-    }
-
-    private InitCategory? GetCategory(string name)
+    public InitCategory? GetCategoryByName(string name)
     {
         foreach (var cat in Categories)
         {
@@ -219,57 +240,171 @@ record CategoryList
         return null;
     }
 
+    public int GetCategoryIndex(InitCategory category)
+    {
+        return categories.IndexOf(category);
+    }
+
+    public InitCategory GetCategoryOfItem(InitItem item)
+    {
+        return itemCategories[item];
+    }
+
+    /// <summary>
+    /// Add an item to a category. The given category must have been created by this CategoryList.
+    /// </summary>
+    /// <param name="category">The category to add the item to. </param>
+    /// <param name="itemData">The item to add.</param>
+    /// <exception cref="ArgumentException">Thrown if the given category is not in this CategoryList.</exception>
+    /// <returns>The clone of the InitItem that was registered.</returns>
+    public InitItem AddItem(InitCategory category, InitItem itemData)
+    {
+        if (!categories.Contains(category)) throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
+        if (category.Items.Contains(itemData)) return itemData;
+        itemData = new InitItem(itemData.RawLine, itemData.Name);
+
+        category.Items.Add(itemData);
+
+        // add line to file
+
+        // first, find the last line of the section of this category in the file
+        int lineIndex = lines.IndexOf(categoryHeaders[category.Name]) + 1;
+        while (lineIndex < lines.Count && lines[lineIndex] is not InitCategoryHeader)
+            lineIndex++;
+        
+        // then, go up until a newline is not found
+        lineIndex--;
+        while (lineIndex > 0 && string.IsNullOrWhiteSpace(lines[lineIndex].RawLine))
+            lineIndex--;
+        
+        // write the new line into this space
+        lineIndex++;
+        lines.Insert(lineIndex, itemData);
+        itemCategories[itemData] = category;
+        return itemData;
+    }
+
+    public InitCategory AddCategory(string name, Lingo.Color? color, int index)
+    {
+        var category = new InitCategory(name, color);
+        categories.Insert(index, category);
+
+        // add category header to file. the position where the header is placed
+        // is dependent on the index
+        int lineIndex;
+
+        if (index < categories.Count)
+        {
+            lineIndex = lines.IndexOf(categoryHeaders[categories[index].Name]);
+            if (lineIndex == -1) throw new Exception("Could not determine where to place new category");
+        }
+        else
+        {
+            lineIndex = lines.Count - 1;
+        }
+
+        lines.Insert(lineIndex, new InitIrrelevantLine("")); // this will add an empty line after the category header
+
+        if (isColored)
+        {
+            if (color is null) Log.Warning("Expected color argument in AddCategory. Defaulting to black...");
+            Lingo.Color cv = color ?? new Lingo.Color(0, 0, 0);
+            lines.Insert(lineIndex, new InitCategoryHeader($"-[\"{name}\", color({cv.R}, {cv.G}, {cv.B})]", name, cv));
+        }
+        else
+        {
+            if (color is not null) Log.Warning("Unexpected color argument in AddCategory.");
+            lines.Insert(lineIndex, new InitCategoryHeader($"-{name}", name, null));
+        }
+
+        return category;
+    }
+
+    public void AddCategory(string name, Lingo.Color? color) => AddCategory(name, color, categories.Count);
+
+    /// <summary>
+    /// Move an item from one category to another.
+    /// </summary>
+    /// <param name="item">The item to move.</param>
+    /// <param name="dstCategory">The category to move the item to.</param>
+    /// <exception cref="ArgumentException">Thrown if the given category is not in this CategoryList.</exception>
+    public void MoveItem(InitItem item, InitCategory dstCategory)
+    {
+        if (!categories.Contains(dstCategory))
+            throw new ArgumentException("The given category was not created by this CategoryList", nameof(dstCategory));
+        if (dstCategory.Items.Contains(item)) return;
+        
+        // if this item already exists in the file, remove it
+        if (itemCategories.TryGetValue(item, out InitCategory? srcCategory))
+        {
+            srcCategory.Items.Remove(item);
+
+            // try to remove it from the file
+            int lineIndex = lines.IndexOf(categoryHeaders[srcCategory.Name]) + 1;
+            bool success = false;
+            while (lineIndex < lines.Count && lines[lineIndex] is not InitCategoryHeader)
+            {
+                if (lines[lineIndex] == item)
+                {
+                    success = true;
+                    lines.RemoveAt(lineIndex);
+                    break;
+                }
+            }
+
+            if (!success) Log.Warning("Could not remove item {Item} from category {Category} in the init file", item.Name, srcCategory.Name);
+        }
+
+        // now, add it to the new category
+        AddItem(dstCategory, item);
+    }
+
     public void DeleteCategory(InitCategory category)
     {
-        int lineIndex = parsedLines.IndexOf(category);
-        if (lineIndex == -1) throw new Exception("Failed to find line index");
-
-        if (!Categories.Remove(category))
-            throw new Exception("The category was not in the list");
+        if (!categories.Contains(category))
+            throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
         
-        // remove items in the category
-        var parentDir = Path.Combine(FilePath, "..");
-        foreach (var tile in category.Items)
+        // remove category header as well as the lines of the items contained in the category
+        // this is done by removing all lines in the same index until EOF or a different category header is reached.
+        int lineIndex = lines.IndexOf(categoryHeaders[category.Name]);
+        if (lineIndex == -1) throw new Exception($"Failed to find line index of category '{category.Name}'");
+        categoryHeaders.Remove(category.Name);
+
+        // the elusive do...while loop...
+        do
         {
-            ItemDictionary.Remove(tile.Name);
-            graphicsManager.DeleteGraphics(tile, parentDir);
+            if (lines[lineIndex] is InitItem item && !category.Items.Contains(item))
+                throw new Exception("Attempt to remove item in file that isn't in the category item list.");
+            lines.RemoveAt(lineIndex);
         }
+        while (lineIndex < lines.Count && lines[lineIndex] is not InitCategoryHeader);
 
-        // remove lines and tiles relating to the category
-        parsedLines.RemoveAt(lineIndex);
-        Lines.RemoveAt(lineIndex);
+        if (!categories.Remove(category))
+            throw new UnreachableException();
 
-        // keep removing lines until another category is found or the EOF is reached
-        while (lineIndex < Lines.Count && parsedLines[lineIndex] is not InitCategory)
+        // extra sanity check
+        foreach (var item in category.Items)
         {
-            parsedLines.RemoveAt(lineIndex);
-            Lines.RemoveAt(lineIndex);
+            if (lines.Contains(item))
+                throw new Exception("Removed item in category list still exists in the file!");
         }
-
-        WriteToFile();
     }
 
-    public void DeleteItem(InitData item, bool write = true)
+    public void DeleteItem(InitItem item)
     {
-        int lineIndex = parsedLines.IndexOf(item);
-        if (lineIndex == -1) throw new Exception("Failed to find line index");
-
-        // remove from category data
-        if (!item.Category.Items.Remove(item))
-            throw new Exception("Item was already removed!");
-
-        var parentDir = Path.Combine(FilePath, "..");
-        ItemDictionary.Remove(item.Name);
-        if (write) graphicsManager.DeleteGraphics(item, parentDir);
-
-        // delete the line
-        parsedLines.RemoveAt(lineIndex);
-        Lines.RemoveAt(lineIndex);
-
-        if (write) WriteToFile();
+        if (!itemCategories.TryGetValue(item, out InitCategory? category))
+            throw new ArgumentException("The given item does not exist within the CategoryList", nameof(item));
+        itemCategories.Remove(item);
+        
+        // remove from category
+        if (!category.Items.Remove(item))
+            throw new ArgumentException("The given item does not exist within the category", nameof(item));
+        
+        // remove line
+        lines.Remove(item);
     }
 
-    public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
+    /*public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
 
     public async Task Merge(string otherPath, PromptRequest promptOverwrite)
     {
@@ -550,20 +685,33 @@ record CategoryList
             Log.Error("Error while merging:\n{Error}", e);
             throw;
         }
-    }
+    }*/
 }
 
 class AssetManager
 {
-    public readonly CategoryList TileInit;
-    public readonly CategoryList PropInit;
-    public readonly CategoryList? MaterialsInit;
+    private readonly CategoryList TileInit;
+    private readonly CategoryList PropInit;
+    private readonly CategoryList? MaterialsInit;
+
+    private readonly StandardGraphicsManager graphicsManager1;
+    private readonly MaterialGraphicsManager graphicsManager2;
+
+    public enum CategoryListIndex
+    {
+        Tile, Prop, Materials
+    };
+
+    private record GfxManagerAction;
+    private record GfxManagerDeleteAction(IAssetGraphicsManager GraphicsManager, string Name, string Directory) : GfxManagerAction;
+    private record GfxManagerCopyAction(IAssetGraphicsManager GraphicsManager, string SourceDirectory, string DestDirectory, string Name, bool Expect) : GfxManagerAction;
+    private readonly Queue<GfxManagerAction> gfxManagerActionQueue = [];
 
     class StandardGraphicsManager : IAssetGraphicsManager
     {
-        public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect)
+        public void CopyGraphics(string name, string srcDir, string destDir, bool expect)
         {
-            var pngName = init.Name + ".png";
+            var pngName = name + ".png";
             var pngPath = AssetGraphicsProvider.GetFilePath(srcDir, pngName);
 
             // if expectImageExistence is false, only copy the image if it exists.
@@ -579,9 +727,9 @@ class AssetManager
             }
         }
 
-        public void DeleteGraphics(InitData init, string dir)
+        public void DeleteGraphics(string name, string dir)
         {
-            var filePath = AssetGraphicsProvider.GetFilePath(dir, init.Name + ".png");
+            var filePath = AssetGraphicsProvider.GetFilePath(dir, name + ".png");
 
             if (File.Exists(filePath))
             {
@@ -601,11 +749,11 @@ class AssetManager
             "Texture.png",
         ];
 
-        public void CopyGraphics(InitData init, string srcDir, string destDir, bool expect)
+        public void CopyGraphics(string name, string srcDir, string destDir, bool expect)
         {
             foreach (var ext in PossibleExtensions)
             {
-                var pngName = init.Name + ext;
+                var pngName = name + ext;
                 var pngPath = AssetGraphicsProvider.GetFilePath(srcDir, pngName);
 
                 if (File.Exists(pngPath))
@@ -619,11 +767,11 @@ class AssetManager
             }
         }
 
-        public void DeleteGraphics(InitData init, string dir)
+        public void DeleteGraphics(string name, string dir)
         {
             foreach (var ext in PossibleExtensions)
             {
-                var filePath = AssetGraphicsProvider.GetFilePath(dir, init.Name + ext);
+                var filePath = AssetGraphicsProvider.GetFilePath(dir, name + ext);
                 
                 if (File.Exists(filePath))
                 {
@@ -636,20 +784,88 @@ class AssetManager
     
     public AssetManager()
     {
-        var graphicsManager1 = new StandardGraphicsManager();
-        var graphicsManager2 = new MaterialGraphicsManager();
+        graphicsManager1 = new StandardGraphicsManager();
+        graphicsManager2 = new MaterialGraphicsManager();
         var matInitPath = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
 
-        TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true, graphicsManager1);
-        PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true, graphicsManager1);
+        TileInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt"), true);
+        PropInit = new(Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt"), true);
 
         if (File.Exists(matInitPath))
         {
-            MaterialsInit = new(matInitPath, false, graphicsManager2);
+            MaterialsInit = new(matInitPath, false);
         }
         else
         {
             MaterialsInit = null;
         }
+    }
+
+    private CategoryList? GetCategoryList(CategoryListIndex index) =>
+        index switch
+        {
+            CategoryListIndex.Tile => TileInit,
+            CategoryListIndex.Prop => PropInit,
+            CategoryListIndex.Materials => MaterialsInit,
+            _ => throw new ArgumentOutOfRangeException(nameof(index))
+        };
+
+    private IAssetGraphicsManager GetGraphicsManager(CategoryListIndex index) =>
+        index switch
+        {
+            CategoryListIndex.Tile => graphicsManager1,
+            CategoryListIndex.Prop => graphicsManager1,
+            CategoryListIndex.Materials => graphicsManager2,
+            _ => throw new ArgumentOutOfRangeException(nameof(index))
+        };
+    
+    public void DeleteCategory(CategoryListIndex index, int categoryIndex)
+    {
+        var list = GetCategoryList(index)!;
+        var category = list.Categories[categoryIndex];
+        list.DeleteCategory(category);
+
+        // queue deletion of all the items in the list
+        // which will be flushed on commit
+        var gfx = GetGraphicsManager(index);
+        var dir = Path.GetDirectoryName(list.FilePath)!;
+        foreach (var item in category.Items)
+        {
+            gfxManagerActionQueue.Enqueue(new GfxManagerDeleteAction(gfx, item.Name, dir));
+        }
+    }
+
+    public void DeleteItem(CategoryListIndex index, int categoryIndex, int assetIndex)
+    {
+        var list = GetCategoryList(index)!;
+        var item = list.Categories[categoryIndex].Items[assetIndex];
+        list.DeleteItem(item);
+
+        // queue deletion of item
+        var gfx = GetGraphicsManager(index);
+        var dir = Path.GetDirectoryName(list.FilePath)!;
+        gfxManagerActionQueue.Enqueue(new GfxManagerDeleteAction(gfx, item.Name, dir));
+    }
+
+    public ReadOnlyCollection<CategoryList.InitCategory> GetCategories(CategoryListIndex index)
+    {
+        return GetCategoryList(index)!.Categories;
+    }
+
+    public void Commit()
+    {
+        TileInit.Commit();
+        PropInit.Commit();
+        MaterialsInit?.Commit();
+
+        /*foreach (var action in gfxManagerActionQueue)
+        {
+            if (action is GfxManagerCopyAction copyAction)
+                copyAction.GraphicsManager.CopyGraphics(copyAction.Name, copyAction.SourceDirectory, copyAction.DestDirectory, copyAction.Expect);
+            
+            else if (action is GfxManagerDeleteAction delAction)
+                delAction.GraphicsManager.DeleteGraphics(delAction.Name, delAction.Directory);
+        }*/
+        gfxManagerActionQueue.Clear();
     }
 }

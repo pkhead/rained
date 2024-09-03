@@ -49,9 +49,9 @@ static class AssetManagerGUI
     }
 
     // uncolored variant
-    private static void ShowCategoryList(CategoryList categoryList, ref int selected, Vector2 listSize)
+    private static void ShowCategoryList(AssetManager.CategoryListIndex listIndex, ref int selected, Vector2 listSize)
     {
-        var categories = categoryList.Categories;
+        var categories = assetManager!.GetCategories(listIndex);
 
         if (ImGui.BeginListBox("##Categories", listSize))
         {
@@ -101,9 +101,9 @@ static class AssetManagerGUI
         }
     }
 
-    private static void ShowItemList(CategoryList categoryList, int selected, Vector2 listSize)
+    private static void ShowItemList(AssetManager.CategoryListIndex categoryList, int selected, Vector2 listSize)
     {
-        var categories = categoryList.Categories;
+        var categories = assetManager!.GetCategories(categoryList);
         
         // group listing list box
         ImGui.SameLine();
@@ -132,19 +132,20 @@ static class AssetManagerGUI
         }
     }
 
-    private static void DeleteCategory(CategoryList assetList, ref int selected)
+    private static void DeleteCategory(AssetManager.CategoryListIndex assetIndex, ref int selected)
     {
-        if (assetList.Categories.Count == 0) return;
+        var categories = assetManager!.GetCategories(assetIndex);
+        if (categories.Count == 0) return;
         
-        assetList.DeleteCategory(assetList.Categories[selected]);
+        assetManager.DeleteCategory(assetIndex, selected);
         
-        if (assetList.Categories.Count == 0)
+        if (categories.Count == 0)
         {
             selected = 0;
         }
         else
         {
-            selected = Math.Clamp(selected, 0, assetList.Categories.Count - 1);
+            selected = Math.Clamp(selected, 0, categories.Count - 1);
         }
     }
 
@@ -153,24 +154,26 @@ static class AssetManagerGUI
         switch (curAssetTab)
         {
             case AssetType.Tile:
-                DeleteCategory(assetManager!.TileInit, ref selectedTileCategory);
+                DeleteCategory(AssetManager.CategoryListIndex.Tile, ref selectedTileCategory);
                 break;
 
             case AssetType.Prop:
-                DeleteCategory(assetManager!.PropInit, ref selectedPropCategory);
+                DeleteCategory(AssetManager.CategoryListIndex.Prop, ref selectedPropCategory);
                 break;
 
             case AssetType.Material:
-                DeleteCategory(assetManager!.MaterialsInit!, ref selectedMatCategory);
+                DeleteCategory(AssetManager.CategoryListIndex.Materials, ref selectedMatCategory);
                 break;
         }
     }
 
-    private static void DeleteItem(CategoryList assetList, int selectedCategory)
+    private static void DeleteItem(AssetManager.CategoryListIndex assetIndex, int selectedCategory)
     {
-        var category = assetList.Categories[selectedCategory];
+        var categories = assetManager!.GetCategories(assetIndex);
+
+        var category = categories[selectedCategory];
         if (category.Items.Count == 0) return;
-        assetList.DeleteItem(category.Items[groupIndex]);
+        assetManager.DeleteItem(assetIndex, selectedCategory, groupIndex);
         
         if (category.Items.Count == 0)
         {
@@ -187,15 +190,15 @@ static class AssetManagerGUI
         switch (curAssetTab)
         {
             case AssetType.Tile:
-                DeleteItem(assetManager!.TileInit, selectedTileCategory);
+                DeleteItem(AssetManager.CategoryListIndex.Tile, selectedTileCategory);
                 break;
 
             case AssetType.Prop:
-                DeleteItem(assetManager!.PropInit, selectedPropCategory);
+                DeleteItem(AssetManager.CategoryListIndex.Prop, selectedPropCategory);
                 break;
 
             case AssetType.Material:
-                DeleteItem(assetManager!.MaterialsInit!, selectedMatCategory);
+                DeleteItem(AssetManager.CategoryListIndex.Materials, selectedMatCategory);
                 break;
         }
     }
@@ -228,6 +231,12 @@ static class AssetManagerGUI
         if (ImGui.Button("Delete Asset"))
         {
             deleteReq = 2;
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Apply"))
+        {
+            assetManager!.Commit();
         }
         
         /*ImGui.SameLine();
@@ -264,14 +273,15 @@ static class AssetManagerGUI
             if (ImGuiExt.BeginPopupModal("Delete?", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
             {
                 int idx = GetCurrentCategoryIndex();
+                var categories = assetManager!.GetCategories(GetCurrentAssetList());
 
                 if (wantDelete == 1)
                 {
-                    ImGui.TextUnformatted($"Are you sure you want to delete the category \"{GetCurrentAssetList().Categories[idx].Name}\"?");
+                    ImGui.TextUnformatted($"Are you sure you want to delete the category \"{categories[idx].Name}\"?");
                 }
                 else if (wantDelete == 2)
                 {
-                    ImGui.TextUnformatted($"Are you sure you want to delete the asset \"{GetCurrentAssetList().Categories[idx].Items[groupIndex].Name}\"?");
+                    ImGui.TextUnformatted($"Are you sure you want to delete the asset \"{categories[idx].Items[groupIndex].Name}\"?");
                 }
 
                 ImGui.Separator();
@@ -447,18 +457,18 @@ static class AssetManagerGUI
         // reload asset list in case user modified
         // (also makes it less bug-prone)
         assetManager = new AssetManager();
-        mergeTask = GetCurrentAssetList().Merge(path, PromptOverwrite);
+        //mergeTask = GetCurrentAssetList().Merge(path, PromptOverwrite);
     }
 
-    private static CategoryList GetCurrentAssetList()
+    private static AssetManager.CategoryListIndex GetCurrentAssetList()
         => curAssetTab switch
         {
-            AssetType.Tile => assetManager!.TileInit,
-            AssetType.Prop => assetManager!.PropInit,
-            AssetType.Material => assetManager!.MaterialsInit!,
+            AssetType.Tile => AssetManager.CategoryListIndex.Tile,
+            AssetType.Prop => AssetManager.CategoryListIndex.Prop,
+            AssetType.Material => AssetManager.CategoryListIndex.Materials,
             _ => throw new ArgumentOutOfRangeException(nameof(curAssetTab))
         };
-    
+
     private static int GetCurrentCategoryIndex()
         => curAssetTab switch
         {
@@ -584,8 +594,8 @@ static class AssetManagerGUI
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
                 var boxHeight = ImGui.GetContentRegionAvail().Y;
 
-                ShowCategoryList(assetManager.TileInit, ref selectedTileCategory, new Vector2(halfWidth, boxHeight));
-                ShowItemList(assetManager.TileInit, selectedTileCategory, new Vector2(halfWidth, boxHeight));
+                ShowCategoryList(AssetManager.CategoryListIndex.Tile, ref selectedTileCategory, new Vector2(halfWidth, boxHeight));
+                ShowItemList(AssetManager.CategoryListIndex.Tile, selectedTileCategory, new Vector2(halfWidth, boxHeight));
 
                 ImGui.EndTabItem();
             }
@@ -603,13 +613,13 @@ static class AssetManagerGUI
                 var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
                 var boxHeight = ImGui.GetContentRegionAvail().Y;
 
-                ShowCategoryList(assetManager.PropInit, ref selectedPropCategory, new Vector2(halfWidth, boxHeight));
-                ShowItemList(assetManager.PropInit, selectedPropCategory, new Vector2(halfWidth, boxHeight));
+                ShowCategoryList(AssetManager.CategoryListIndex.Prop, ref selectedPropCategory, new Vector2(halfWidth, boxHeight));
+                ShowItemList(AssetManager.CategoryListIndex.Prop, selectedPropCategory, new Vector2(halfWidth, boxHeight));
 
                 ImGui.EndTabItem();
             }
 
-            if (assetManager.MaterialsInit is not null)
+            if (assetManager.GetCategories(AssetManager.CategoryListIndex.Materials) is not null)
             {
                 if (ImGui.BeginTabItem("Materials"))
                 {
@@ -624,8 +634,8 @@ static class AssetManagerGUI
                     var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
 
-                    ShowCategoryList(assetManager.MaterialsInit, ref selectedMatCategory, new Vector2(halfWidth, boxHeight));
-                    ShowItemList(assetManager.MaterialsInit, selectedMatCategory, new Vector2(halfWidth, boxHeight));
+                    ShowCategoryList(AssetManager.CategoryListIndex.Materials, ref selectedMatCategory, new Vector2(halfWidth, boxHeight));
+                    ShowItemList(AssetManager.CategoryListIndex.Materials, selectedMatCategory, new Vector2(halfWidth, boxHeight));
 
                     ImGui.EndTabItem();
                 }
