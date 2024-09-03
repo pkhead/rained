@@ -1,0 +1,16 @@
+Rain World Community Editor; V.0.4.3; Editor configuration fileMore tile previews : TRUE
+Grime on gradients : FALSE
+Grime : TRUE
+Exit button : DROUGHT
+Exit render button : DROUGHT
+Material fixes : TRUE
+Camera editor border fix : TRUE
+Slime always affects editor decals : FALSE
+voxelStructRandomDisplace for tiles as props : TRUE
+notTrashProp fix : TRUE
+Show controls : TRUE
+Trash and Small pipes non solid : FALSE
+Gradients with BackgroundScenes fix : TRUE
+Invisible material fix : TRUE
+Tiles as props fixes : TRUE
+Large trash debug log : TRUERough Rock spreads more : FALSEDark Slime fix : TRUE

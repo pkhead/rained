@@ -476,11 +476,21 @@ class PropDatabase
     [#nm:"Wire Bunch", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:50, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(255,100,150), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
     [#nm:"Wire Bunch 2", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:50, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(255,100,150), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
     
-    -["Drought Rope Props", color(0, 255, 0)]
+    -["LB Rope Props", color(0, 255, 0)]
     [#nm:"Big Big Pipe", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(50,150,210), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
     [#nm:"Ring Chain", #tp:"rope", #depth:6, #tags:[], #notes:[], #segmentLength:40, #collisionDepth:3, #segRad:20, #grav:0.9, #friction:0.6, #airFric:0.95, #stiff:1, #previewColor:color(100,200,0), #previewEvery:1, #edgeDirection:0.1, #rigid:0.2, #selfPush:10, #sourcePush:0.1]
     [#nm:"Christmas Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(200,0, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
     [#nm:"Ornate Wire", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:17, #collisionDepth:0, #segRad:8.5, #grav:0.5, #friction:0.5, #airFric:0.9, #stiff:0, #previewColor:color(0,200, 200), #previewEvery:1, #edgeDirection:0, #rigid:0, #selfPush:0, #sourcePush:0]
+
+    -["Alduris Rope Props", color(0, 255, 0)]
+    [#nm:"Small Chain", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:22, #collisionDepth:0, #segRad:3, #grav:0.5, #friction:0.65, #airFric:0.95, #stiff:1, #previewColor:color(255,0,150), #previewEvery:2, #edgeDirection:0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    [#nm:"Fat Chain", #tp:"rope", #depth:0, #tags:[], #notes:[], #segmentLength:44, #collisionDepth:0, #segRad:8, #grav:0.5, #friction:0.65, #airFric:0.95, #stiff:1, #previewColor:color(255,0,150), #previewEvery:2, #edgeDirection:0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    
+    -["Dakras Rope Props", color(0, 255, 0)]
+    [#nm:"Big Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:56, #collisionDepth:3, #segRad:19, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(0,255,40), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    [#nm:"Chunky Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:28, #collisionDepth:3, #segRad:19, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(0,255,40), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:6.5, #sourcePush:0]
+    [#nm:"Big Bike Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:76, #collisionDepth:3, #segRad:33, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(100,150,100), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:33, #sourcePush:0]
+    [#nm:"Huge Bike Chain", #tp:"rope", #depth:9, #tags:[], #notes:[], #segmentLength:152, #collisionDepth:3, #segRad:66, #grav:0.9, #friction:0.8, #airFric:0.95, #stiff:1, #previewColor:color(100,200,100), #previewEvery:1, #edgeDirection:0.0, #rigid:0.0, #selfPush:66, #sourcePush:0]
     
     -["Long props", color(0, 255, 0)]
     [#nm:"Cabinet Clamp", #tp:"long", #depth:0, #tags:[], #notes:[]]
@@ -489,7 +499,7 @@ class PropDatabase
     [#nm:"Drill", #tp:"long", #depth:10, #tags:[], #notes:[]]
     [#nm:"Piston", #tp:"long", #depth:4, #tags:[], #notes:[]]
 
-    -["Drought Long Props", color(0, 255, 0)]
+    -["LB Long Props", color(0, 255, 0)]
     [#nm:"Stretched Pipe", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Twisted Thread", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Stretched Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]

@@ -304,7 +304,7 @@ class AppSetup
                 foreach (var entry in zip.Entries)
                 {
                     // replace the root folder name from "Drizzle.Data-community" to simply "Data"
-                    // also, ignore anything in cast - i already copied the data in there into assets/internal
+                    // also, ignore anything in cast - i already copied the data in there into assets/drizzle-cast
                     var modifiedName = "Data" + entry.FullName[entry.FullName.IndexOf('/')..];
                     if (modifiedName.Length >= 9 && modifiedName[0..9] == "Data/Cast") continue;
 

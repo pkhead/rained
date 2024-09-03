@@ -1,5 +1,4 @@
 // from https://github.com/pkhead/soundbox
-
 {
   "WindowPadding": [
     8,
@@ -80,10 +79,10 @@
       1
     ],
     "WindowBg": [
-      0.032,
-      0.008,
-      0.008,
-      0.847059
+      0.08235294,
+      0.027450979,
+      0.027450979,
+      0.84705883
     ],
     "ChildBg": [
       0,

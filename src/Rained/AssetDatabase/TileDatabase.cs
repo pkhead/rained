@@ -262,7 +262,7 @@ class TileDatabase
 
     // From Cast/Drought_393439_Drought Needed Init.txt
     private const string ExtraTiles = """
-    -["Drought 4Mosaic", color(227, 76, 13)]
+    -["LB 4Mosaic", color(227, 76, 13)]
     [#nm:"4Mosaic Square", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"4Mosaic Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"4Mosaic Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
@@ -271,7 +271,7 @@ class TileDatabase
     [#nm:"4Mosaic Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,8], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
 
 
-    -["Drought Missing 3DBricks", color(255, 150, 0)]
+    -["LB Missing 3DBricks", color(255, 150, 0)]
     [#nm:"3DBrick Square", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"3DBrick Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"3DBrick Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
@@ -280,7 +280,7 @@ class TileDatabase
     [#nm:"3DBrick Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,7], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
 
 
-    -["Drought Alt Grates", color(75, 75, 240)]
+    -["LB Alt Grates", color(75, 75, 240)]
     [#nm:"AltGrateA", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
     [#nm:"AltGrateB1", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
     [#nm:"AltGrateB2", #sz:point(1,1), #specs:[0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
@@ -313,7 +313,7 @@ class TileDatabase
     [#nm:"AltGrateO", #sz:point(5,5), #specs:[0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,6,1], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["notTrashProp", "notProp", "INTERNAL"]]
 
 
-    -["Drought Missing Stone", color(200, 165, 135)]
+    -["LB Missing Stone", color(200, 165, 135)]
     [#nm:"Small Stone Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
     [#nm:"Small Stone Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
     [#nm:"Small Stone Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:4, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
@@ -324,7 +324,7 @@ class TileDatabase
     [#nm:"Square Stone Marked", #sz:point(2,2), #specs:[1, 1, 1, 1], #specs2:0, #tp:"voxelStructRockType", #bfTiles:1, #rnd:3, #ptPos:0, #tags:["chaoticStone2 : rare", "INTERNAL"]]
 
 
-    -["Drought Missing Machine", color(230, 160, 230)]
+    -["LB Missing Machine", color(230, 160, 230)]
     [#nm:"Small Machine Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
     [#nm:"Small Machine Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
     [#nm:"Small Machine Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
@@ -332,7 +332,7 @@ class TileDatabase
     [#nm:"Small Machine Floor", #sz:point(1,1), #specs:[6], #specs2:0, #tp:"voxelStruct", #repeatL:[1,1,1,1,1,1,1,1,1,1], #bfTiles:1, #rnd:1, #ptPos:0, #tags:["nonSolid", "INTERNAL"]]
 
 
-    -["Drought Metal", color(100, 185, 245)]
+    -["LB Metal", color(100, 185, 245)]
     [#nm:"Small Metal Alt", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
     [#nm:"Small Metal Marked", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
     [#nm:"Small Metal X", #sz:point(1,1), #specs:[1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
@@ -356,7 +356,7 @@ class TileDatabase
     [#nm:"Large Big Metal X", #sz:point(4,4), #specs:[1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], #specs2:0, #tp:"box", #bfTiles:0, #rnd:1, #ptPos:0, #tags:["randomMetal", "INTERNAL"]]
 
 
-    -["Drought Missing Metal", color(180, 10, 10)]
+    -["LB Missing Metal", color(180, 10, 10)]
     [#nm:"Missing Metal Slope NE", #sz:point(1,1), #specs:[2], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"Missing Metal Slope NW", #sz:point(1,1), #specs:[3], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]
     [#nm:"Missing Metal Slope SW", #sz:point(1,1), #specs:[5], #specs2:0, #tp:"voxelStruct", #repeatL:[1,9], #bfTiles:0, #rnd:1, #ptPos:0, #tags:["INTERNAL"]]

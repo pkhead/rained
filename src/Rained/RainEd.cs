@@ -222,6 +222,7 @@ sealed class RainEd
             Log.Information("Initializing prop database...");
             PropDatabase = new Props.PropDatabase(TileDatabase);
 
+            DrizzleCast.Initialize();
             Log.Information("----- ASSET INIT DONE! -----");
         }
         #if !DEBUG

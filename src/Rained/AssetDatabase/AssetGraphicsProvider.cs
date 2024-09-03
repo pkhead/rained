@@ -83,11 +83,11 @@ class AssetGraphicsProvider
 
         // find prop path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
-        // kind of annoying. so i just put those images in assets/internal
+        // kind of annoying. so i just put those images in assets/drizzle-cast
         string texturePath = GetFilePath(Path.Combine(RainEd.Instance.AssetDataPath, "Props"), assetName + ".png");
-        if (!File.Exists(texturePath) && DrizzleCastMap.TryGetValue(assetName, out string? castPath))
+        if (!File.Exists(texturePath) && DrizzleCast.GetFileName(assetName + ".png", out string? castPath))
         {
-            texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
+            texturePath = castPath!;
         }
 
         texture = null;
@@ -133,11 +133,11 @@ class AssetGraphicsProvider
 
         // find tile path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
-        // kind of annoying. so i just put those images in assets/internal
+        // kind of annoying. so i just put those images in assets/drizzle-cast
         string texturePath = GetFilePath(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics"), assetName + ".png");
-        if (!File.Exists(texturePath) && DrizzleCastMap.TryGetValue(assetName, out string? castPath))
+        if (!File.Exists(texturePath) && DrizzleCast.GetFileName(assetName + ".png", out string? castPath))
         {
-            texturePath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
+            texturePath = castPath!;
         }
 
         using var srcImage = RlManaged.Image.Load(texturePath);
@@ -332,9 +332,9 @@ class AssetGraphicsProvider
         }
 
         var graphicsPath = GetFilePath(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics"), tile.Name + ".png");
-        if (!File.Exists(graphicsPath) && DrizzleCastMap.TryGetValue(tile.Name, out string? castPath))
+        if (!File.Exists(graphicsPath) && DrizzleCast.GetFileName(tile.Name + ".png", out string? castPath))
         {
-            graphicsPath = Path.Combine(Boot.AppDataPath, "assets", "internal", castPath!);
+            graphicsPath = castPath!;
         }
 
         using var fullImage = RlManaged.Image.Load(graphicsPath);
