@@ -1,15 +1,14 @@
 -- script to map cast name to cast file name in drizzle cast data
 -- (so that rained can properly read it...)
--- ok i know lua is a weird choice but i never bothered to learn python
 
 local lfs = require("lfs") -- luafilesystem
-local initFile = assert(io.open("assets/internal/Drought_393439_Drought Needed Init.txt", "r"), "could not open file")
+local initFile = assert(io.open("assets/drizzle-cast/Drought_393439_Drought Needed Init.txt", "r"), "could not open file")
 local initTxt = initFile:read("a")
 initFile:close()
 
 local castData = {}
 
-for name in lfs.dir("Data/Cast/") do
+for name in lfs.dir("assets/drizzle-cast/") do
     if string.sub(name, string.len(name) - 3) == ".png" then
         table.insert(castData, {
             fileName = name,
@@ -29,9 +28,8 @@ for tileName in string.gmatch(initTxt, "%[#nm:\"(.-)\",.-%]") do
     end
 end
 
--- i'm running this on msys2 (too lazy to get lua on windows)
--- wait why doesn't it work
-local outFile = assert(io.open("/dev/clipboard", "w"), "could not open file")
+-- i'm running this on msys2 (too lazy to get lua on windows properly)
+local outFile = assert(io.popen("clip.exe", "w"), "could not open clip.exe")
 outFile:write(table.concat(outputLines, "\n"))
 outFile:close()
 print("Copied to clipboard!")

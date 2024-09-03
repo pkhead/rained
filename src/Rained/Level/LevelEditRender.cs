@@ -114,7 +114,7 @@ class LevelEditRender : IDisposable
         tileRenderer = new TileRenderer(this);
 
         // TODO: this is actually unused for now
-        using var chainSegmentImg = RlManaged.Image.Load(Path.Combine(Boot.AppDataPath, "assets", "internal", "Internal_144_bigChainSegment.png"));
+        using var chainSegmentImg = RlManaged.Image.Load(Path.Combine(DrizzleCast.DirectoryPath, "Internal_144_bigChainSegment.png"));
         
         for (int x = 0; x < chainSegmentImg.Width; x++)
         {
