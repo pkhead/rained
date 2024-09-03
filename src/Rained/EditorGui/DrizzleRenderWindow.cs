@@ -171,7 +171,7 @@ class DrizzleRenderWindow : IDisposable
             }
             else if (drizzleRenderer.State == RenderState.Initializing)
             {
-                ImGui.Text("Initializing Zygote runtime...");
+                ImGui.Text("Initializing Drizzle...");
                 showTime = false;
             }
             else if (drizzleRenderer.State == RenderState.Loading)
