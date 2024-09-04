@@ -245,6 +245,22 @@ record CategoryList
         return categories.IndexOf(category);
     }
 
+    public InitItem[] GetItemsByName(string itemName)
+    {
+        List<InitItem> outList = [];
+
+        foreach (var cat in Categories)
+        {
+            foreach (var item in cat.Items)
+            {
+                if (item.Name == itemName)
+                    outList.Add(item);
+            }
+        }
+
+        return [..outList];
+    }
+
     public InitCategory GetCategoryOfItem(InitItem item)
     {
         return itemCategories[item];
@@ -286,9 +302,6 @@ record CategoryList
 
     public InitCategory AddCategory(string name, Lingo.Color? color, int index)
     {
-        var category = new InitCategory(name, color);
-        categories.Insert(index, category);
-
         // add category header to file. the position where the header is placed
         // is dependent on the index
         int lineIndex;
@@ -300,27 +313,38 @@ record CategoryList
         }
         else
         {
-            lineIndex = lines.Count - 1;
+            // if last line isn't empty, then add one line of padding
+            if (lines.Count > 0 && lines[^1] is InitIrrelevantLine l && string.IsNullOrWhiteSpace(l.RawLine))
+                lines.Add(new InitIrrelevantLine(""));
+            
+            lineIndex = lines.Count;
         }
 
+        var category = new InitCategory(name, color);
+        categories.Insert(index, category);
         lines.Insert(lineIndex, new InitIrrelevantLine("")); // this will add an empty line after the category header
+
+        InitCategoryHeader header;
 
         if (isColored)
         {
             if (color is null) Log.Warning("Expected color argument in AddCategory. Defaulting to black...");
             Lingo.Color cv = color ?? new Lingo.Color(0, 0, 0);
-            lines.Insert(lineIndex, new InitCategoryHeader($"-[\"{name}\", color({cv.R}, {cv.G}, {cv.B})]", name, cv));
+            header = new InitCategoryHeader($"-[\"{name}\", color({cv.R}, {cv.G}, {cv.B})]", name, cv);
         }
         else
         {
             if (color is not null) Log.Warning("Unexpected color argument in AddCategory.");
-            lines.Insert(lineIndex, new InitCategoryHeader($"-{name}", name, null));
+            header = new InitCategoryHeader($"-{name}", name, null);
         }
+
+        lines.Insert(lineIndex, header);
+        categoryHeaders.Add(category.Name, header);
 
         return category;
     }
 
-    public void AddCategory(string name, Lingo.Color? color) => AddCategory(name, color, categories.Count);
+    public InitCategory AddCategory(string name, Lingo.Color? color) => AddCategory(name, color, categories.Count);
 
     /// <summary>
     /// Move an item from one category to another.
@@ -868,4 +892,307 @@ class AssetManager
         }*/
         gfxManagerActionQueue.Clear();
     }
+
+    public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
+
+    public void Replace(CategoryListIndex initIndex, CategoryList srcInit)
+    {
+        var destInit = GetCategoryList(initIndex)!;
+        var gfxManager = GetGraphicsManager(initIndex);
+
+        if (destInit.CategoryHeaderType != srcInit.CategoryHeaderType)
+            throw new MergeException("Incompatible init types");
+
+        Log.Information("Replace {Path}", srcInit.FilePath);
+        var dstDir = Path.Combine(destInit.FilePath, "..");
+        var srcDir = Path.Combine(srcInit.FilePath, "..");
+
+        // graphic copy/deletion will be deferred so that it doesn't perform
+        // redudant file operations
+        HashSet<string> itemsToDelete = [];
+        HashSet<string> itemsToCopy = [];
+
+        // first, delete all items and categories
+        while (destInit.Categories.Count > 0)
+        {
+            var dstCategory = destInit.Categories[0];
+            foreach (var dstItem in dstCategory.Items)
+            {
+                itemsToDelete.Add(dstItem.Name);
+            }
+
+            destInit.DeleteCategory(dstCategory);
+        }
+
+        // then, add all items and categories from source
+        foreach (var srcCategory in srcInit.Categories)
+        {
+            var dstCategory = destInit.AddCategory(srcCategory.Name, srcCategory.Color);
+            foreach (var srcItem in srcCategory.Items)
+            {
+                destInit.AddItem(dstCategory, srcItem);
+
+                itemsToCopy.Add(srcItem.Name);
+                itemsToDelete.Remove(srcItem.Name);
+            }
+        }
+
+        // now, act on deferred file copies/deletes
+        foreach (var name in itemsToDelete)
+        {
+            gfxManagerActionQueue.Enqueue(new GfxManagerDeleteAction(
+                GraphicsManager: gfxManager,
+                Name: name,
+                Directory: dstDir
+            ));
+        }
+
+        foreach (var name in itemsToCopy)
+        {
+            gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
+                GraphicsManager: gfxManager,
+                SourceDirectory: srcDir,
+                DestDirectory: dstDir,
+                Name: name,
+                Expect: true
+            ));
+        }
+    }
+    
+    public void Append(CategoryListIndex initIndex, CategoryList srcInit)
+    {
+        var destInit = GetCategoryList(initIndex)!;
+        var gfxManager = GetGraphicsManager(initIndex);
+
+        if (destInit.CategoryHeaderType != srcInit.CategoryHeaderType)
+            throw new MergeException("Incompatible init types");
+
+        Log.Information("Append {Path}", srcInit.FilePath);
+        var dstDir = Path.Combine(destInit.FilePath, "..");
+        var srcDir = Path.Combine(srcInit.FilePath, "..");
+
+        // graphic copy operations will be deferred so that it doesn't perform
+        // redudant operations
+        HashSet<string> itemsToCopy = [];
+
+        // add all items and categories from source
+        foreach (var srcCategory in srcInit.Categories)
+        {
+            var dstCategory = destInit.GetCategoryByName(srcCategory.Name);
+
+            // don't create new category if appending a category from dest with the same name
+            if (dstCategory is not null)
+            {
+                // throw error on color mismatch
+                if (srcCategory.Color != dstCategory.Color)
+                        throw new Exception($"Category '{srcCategory.Name}' have different colors from source and destination init files.");
+            }
+            else // register the category
+            {
+                dstCategory = destInit.AddCategory(srcCategory.Name, srcCategory.Color);
+            }
+
+            foreach (var srcItem in srcCategory.Items)
+            {
+                destInit.AddItem(dstCategory, srcItem);
+                itemsToCopy.Add(srcItem.Name);
+            }
+        }
+
+        // now, act on deferred file copies
+        foreach (var name in itemsToCopy)
+        {
+            gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
+                GraphicsManager: gfxManager,
+                SourceDirectory: srcDir,
+                DestDirectory: dstDir,
+                Name: name,
+                Expect: true
+            ));
+        }
+    }
+
+    /*public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptOverwrite)
+    {
+        try
+        {
+            // automatically overwrite items that are only defined one time
+            // (LOOKING AT YOU, "INSIDE HUGE PIPE HORIZONTAL" DEFINED IN BOTH MISC AND LB INTAKE SYSTEM.)
+            bool? autoOverwrite = null;
+
+            var destInit = GetCategoryList(initIndex)!;
+            var gfxManager = GetGraphicsManager(initIndex);
+
+            if (destInit.CategoryHeaderType != srcInit.CategoryHeaderType)
+                throw new MergeException("Incompatible init types");
+
+            Log.Information("Merge {Path}", srcInit.FilePath);
+            var dstDir = Path.Combine(destInit.FilePath, "..");
+            var srcDir = Path.Combine(srcInit.FilePath, "..");
+
+            HashSet<string> processedItemNames = [];
+
+            foreach (var srcCategory in srcInit.Categories)
+            {
+                var destCategory = destInit.GetCategoryByName(srcCategory.Name);
+
+                // don't create new category if overwriting a category from dest with the same name
+                if (destCategory is not null)
+                {
+                    // throw error on color mismatch
+                    if (srcCategory.Color != destCategory.Color)
+                            throw new Exception($"Attempt to merge category '{destCategory.Name}' with a different color");
+                }
+                else // register the category
+                {
+                    destCategory = destInit.AddCategory(srcCategory.Name, srcCategory.Color);
+                }
+                
+                foreach (var item in srcCategory.Items)
+                {
+                    if (!processedItemNames.Add(item.Name)) continue;
+                    
+                    bool doInsert = true;
+                    bool expectGraphics = true;
+
+                    // check with user if the same tile appears multiple times in the
+                    // source
+                    var srcItems = srcInit.GetItemsByName(item.Name);
+                    if (srcInit.Length > 0)
+                    {
+                        doInsert = false;
+
+                        // if there is more than one item with the same name, or
+                        // if the item is defined in a different category,
+                        // it is a merge conflict that needs Advanced User Intervention.
+
+                        // (IM TALKING ABOUT YOU INSIDE HUGE PIPE HORIZINTAL WHICH IS IN BOTH MISC AND LB INTAKE SYSTEM)
+                        if (dstItems.Length > 1 || destInit.GetCategoryOfItem(dstItems[0]) != destCategory)
+                        {
+                            Log.Information("Merge conflict with asset '{Name}'", item.Name);
+                            
+                            // there will be an extra checkbox which will insert the new init
+                            // into a new line
+                            var options = new string[dstItems.Length + 1];
+                            for (int i = 0; i < dstItems.Length; i++)
+                            {
+                                options[i] = "Overwrite old definition in " + destInit.GetCategoryOfItem(dstItems[i]).Name;
+                            }
+                            options[^1] = "Add to " + destCategory.Name;
+
+                            var prompt = new PromptOptions($"Merge conflict with asset \"{item.Name}\"\nNew definition is in {destCategory.Name}", options);
+                            await promptOverwrite(prompt);
+                            
+                            for (int i = 0; i < dstItems.Length; i++)
+                            {
+                                if (prompt.CheckboxValues[i])
+                                {
+                                    Log.Information("Overwrite def in '{Category}'", destInit.GetCategoryOfItem(dstItems[0]).Name);
+                                    dstItems[0].RawLine = item.RawLine;
+                                    dstItems[0].Name = item.Name;
+                                    gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
+                                        GraphicsManager: gfxManager,
+                                        SourceDirectory: srcDir,
+                                        DestDirectory: dstDir,
+                                        item.Name,
+                                        expectGraphics
+                                    ));
+                                }
+                            }
+
+                            if (prompt.CheckboxValues[^1])
+                            {
+                                Log.Information("Add to '{Category}'", destCategory.Name);
+
+                                doInsert = true;
+                                expectGraphics = false;
+                            }
+                        }
+
+                        // simple merge conflict - item is only defined once and
+                        // both new and old items are in the same category
+                        else
+                        {
+                            bool doOverwrite;
+
+                            if (autoOverwrite.HasValue)
+                            {
+                                doOverwrite = autoOverwrite.Value;
+                            }
+                            else
+                            {
+                                // ask the user if they want to overwrite
+                                var opt = new PromptOptions($"Overwrite \"{item.Name}\"?");
+                                
+                                switch (await promptOverwrite(opt))
+                                {
+                                    case PromptResult.Yes:
+                                        doOverwrite = true;
+                                        break;
+
+                                    case PromptResult.No:
+                                        doOverwrite = false;
+                                        break;
+
+                                    case PromptResult.YesToAll:
+                                        doOverwrite = true;
+                                        autoOverwrite = true;
+                                        break;
+
+                                    case PromptResult.NoToAll:
+                                        doOverwrite = false;
+                                        autoOverwrite = false;
+                                        break;
+
+                                    default:
+                                        throw new Exception();
+                                }
+                            }
+
+                            if (doOverwrite)
+                            {
+                                // go ahead and overwrite
+                                Log.Information("Overwrite tile '{TileName}'", item.Name);
+                                dstItems[0].RawLine = item.RawLine;
+                                dstItems[0].Name = item.Name;
+                                gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
+                                    GraphicsManager: gfxManager,
+                                    SourceDirectory: srcDir,
+                                    DestDirectory: dstDir,
+                                    item.Name,
+                                    expectGraphics
+                                ));
+                            }
+                            else
+                            {
+                                Log.Information("Ignore tile '{TileName}'", item.Name);
+                            }
+                        }
+                    }
+                    
+                    if (doInsert)
+                    {
+                        destInit.AddItem(destCategory, item);
+
+                        gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
+                            GraphicsManager: gfxManager,
+                            SourceDirectory: srcDir,
+                            DestDirectory: dstDir,
+                            item.Name,
+                            expectGraphics
+                        ));
+                    }
+                }
+            }
+
+            //Log.Information("Writing merge result to {Path}...", FilePath);
+            //WriteToFile();
+            Log.Information("Merge successful!");
+        }
+        catch (Exception e)
+        {
+            Log.Error("Error while merging:\n{Error}", e);
+            throw;
+        }
+    }*/
 }

@@ -25,10 +25,9 @@ static class AssetManagerGUI
     private static string errorMsg = string.Empty;
 
     // variables related to the merge process
-    
-
     private static TaskCompletionSource<PromptResult>? mergePromptTcs = null;
     private static PromptOptions? mergePrompt = null;
+    private static TaskCompletionSource<int>? importOptionTcs = null;
     private static Task? mergeTask = null;
     
 
@@ -207,17 +206,11 @@ static class AssetManagerGUI
     {
         // render file browser
         FileBrowser.Render(ref fileBrowser);
-        
-        static bool isInitFile(string path, bool isRw)
-        {
-            var filename = Path.GetFileName(path);
-            return filename == "Init.txt" || string.Equals(filename, "copy to init.txt", StringComparison.InvariantCultureIgnoreCase);
-        }
 
         if (ImGui.Button("Import Init.txt"))
         {
-            fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportFile, RainEd.Instance.AssetDataPath);
-            fileBrowser.AddFilterWithCallback("Init.txt File", isInitFile, ".txt");
+            fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, ImportFileCallback, RainEd.Instance.AssetDataPath);
+            fileBrowser.AddFilter("Text file", ".txt");
         }
 
         int deleteReq = 0;
@@ -394,6 +387,50 @@ static class AssetManagerGUI
                         ImGui.End();
                     }
                 }
+                
+                if (importOptionTcs is not null)
+                {
+                    ImGuiExt.EnsurePopupIsOpen("Choose...");
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+                    if (ImGuiExt.BeginPopupModal("Choose...", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                    {
+                        ImGui.TextUnformatted("Please choose the desired import method.");
+                        ImGui.Separator();
+
+                        if (ImGui.Button("Replace", StandardPopupButtons.ButtonSize))
+                        {
+                            importOptionTcs.SetResult(0);
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SetItemTooltip("Replaces the current init file with the imported one.");
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Append", StandardPopupButtons.ButtonSize))
+                        {
+                            importOptionTcs.SetResult(1);
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SetItemTooltip("Appends the imported init file to the current one.");
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Merge", StandardPopupButtons.ButtonSize))
+                        {
+                            importOptionTcs.SetResult(2);
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SetItemTooltip("Intelligently merges the two init files, attempting to prevent duplicates.");
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize))
+                        {
+                            importOptionTcs.SetResult(-1);
+                            ImGui.CloseCurrentPopup();
+                        }
+                        
+                        ImGui.End();
+                    }
+                }
 
                 // show error if present
                 if (mergeTask.IsFaulted)
@@ -447,17 +484,35 @@ static class AssetManagerGUI
         }
     }
 
-    private static void ImportFile(string? path)
+    private static async Task ImportFile(string path)
+    {
+        var newInit = new CategoryList(path, curAssetTab != AssetType.Material);
+
+        importOptionTcs = new();
+        var res = await importOptionTcs.Task;
+        importOptionTcs = null;
+
+        // 0: Replace
+        // 1: Append
+        // 2: Merge
+
+        if (res == 0)
+            assetManager!.Replace(GetCurrentAssetList(), newInit);
+
+        else if (res == 1)
+            assetManager!.Append(GetCurrentAssetList(), newInit);
+        
+        else
+            Log.Information("Init.txt import was cancelled");
+    }
+
+    private static void ImportFileCallback(string? path)
     {
         if (mergeTask is not null) return;
         if (string.IsNullOrEmpty(path)) return;
 
         Log.Information("Import Init.txt file '{Path}'", path);
-
-        // reload asset list in case user modified
-        // (also makes it less bug-prone)
-        assetManager = new AssetManager();
-        //mergeTask = GetCurrentAssetList().Merge(path, PromptOverwrite);
+        mergeTask = ImportFile(path);
     }
 
     private static AssetManager.CategoryListIndex GetCurrentAssetList()
