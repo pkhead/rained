@@ -702,13 +702,14 @@ static class PreferencesWindow
         ConfigCheckbox("Grime");
         ConfigCheckbox("Material fixes");
         ConfigCheckbox("Slime always affects editor decals");
+        ConfigCheckbox("voxelStructRandomDisplace for tiles as props");
         ConfigCheckbox("notTrashProp fix");
         ConfigCheckbox("Trash and Small pipes non solid");
         ConfigCheckbox("Gradients with BackgroundScenes fix");
         ConfigCheckbox("Invisible material fix");
+        ConfigCheckbox("Tiles as props fixes");
         ConfigCheckbox("Large trash debug log");
         ConfigCheckbox("Rough Rock spreads more");
-        ConfigCheckbox("Tiles as props fix");
         ConfigCheckbox("Dark Slime fix");
     }
 }

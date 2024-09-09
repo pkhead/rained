@@ -50,6 +50,10 @@ class DrizzleConfiguration
 
     [StringName("Slime always affects editor decals")]
     public bool SlimeAlwaysAffectsEditorDecals { get; set; } = false;
+    
+    // what a mouthful
+    [StringName("voxelStructRandomDisplace for tiles as props")]
+    public bool VoxelStructRandomDisplaceForTilesAsProps { get; set; } = false;
 
     [StringName("notTrashProp fix")]
     public bool NotTrashPropFix { get; set; } = true;
@@ -63,7 +67,7 @@ class DrizzleConfiguration
     [StringName("Invisible material fix")]
     public bool InvisibleMaterialFix { get; set; } = true;
 
-    [StringName("Tiles as props fix")]
+    [StringName("Tiles as props fixes")]
     public bool TilesAsPropsFixes { get; set; } = true;
 
     [StringName("Large trash debug log")]
