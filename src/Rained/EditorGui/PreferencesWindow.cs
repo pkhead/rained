@@ -709,5 +709,6 @@ static class PreferencesWindow
         ConfigCheckbox("Large trash debug log");
         ConfigCheckbox("Rough Rock spreads more");
         ConfigCheckbox("Tiles as props fix");
+        ConfigCheckbox("Dark Slime fix");
     }
 }

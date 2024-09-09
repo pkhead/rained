@@ -197,6 +197,12 @@ class DrizzleRender : IDisposable
             {
                 LingoRuntime runtime;
 
+                // create large trash log file, in case user decided to have it enabled
+                // otherwise drizzle will not work
+                var largeTrashLogFile = Path.Combine(RainEd.Instance.AssetDataPath, "largeTrashLog.txt");
+                if (!File.Exists(largeTrashLogFile))
+                    File.Create(largeTrashLogFile).Dispose();
+
                 if (staticRuntime is not null)
                 {
                     runtime = staticRuntime;
@@ -663,6 +669,12 @@ class DrizzleRender : IDisposable
         {
             throw new DrizzleRenderException($"The data directory {dataPath} does not exist.");
         }
+
+        // create large trash log file, in case user decided to have it enabled
+        // otherwise drizzle will not work
+        var largeTrashLogFile = Path.Combine(dataPath, "largeTrashLog.txt");
+        if (!File.Exists(largeTrashLogFile))
+            File.Create(largeTrashLogFile).Dispose();
 
         LingoRuntime runtime;
 
