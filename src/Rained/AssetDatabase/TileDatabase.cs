@@ -37,8 +37,10 @@ class Tile
 
     public readonly string[] Tags;
 
+    // that's way too many parameters
     public Tile(
         string name,
+        DrizzleConfiguration drizzleConfig, // needed for the setting that controls if certain tiles can be loaded as props
         TileCategory category,
         TileType type,
         int width, int height,
@@ -106,7 +108,9 @@ class Tile
             case TileType.VoxelStructRandomDisplaceVertical:
                 LayerCount = repeatL!.Count;
                 ImageRowCount *= LayerCount;
-                CanBeProp = true;
+
+                if (type == TileType.VoxelStruct || drizzleConfig.VoxelStructRandomDisplaceForTilesAsProps)
+                    CanBeProp = true;
 
                 break;
             
@@ -146,7 +150,8 @@ class TileDatabase
 
     public TileDatabase()
     {
-        Categories = new();
+        var drizzleConfig = DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
+        Categories = [];
         
         var lingoParser = new Lingo.LingoParser();
 
@@ -220,6 +225,7 @@ class TileDatabase
                 try {
                     var tileData = new Tile(
                         name: name,
+                        drizzleConfig: drizzleConfig,
                         category: curGroup,
                         type: tileType,
                         width: (int) size.X,

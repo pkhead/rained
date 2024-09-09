@@ -703,6 +703,18 @@ static class PreferencesWindow
         ConfigCheckbox("Material fixes");
         ConfigCheckbox("Slime always affects editor decals");
         ConfigCheckbox("voxelStructRandomDisplace for tiles as props");
+
+        // notice tooltip for voxelStructRandomDisplace for tiles as props
+        ImGui.SameLine();
+        ImGui.TextDisabled("(!)");
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+            ImGui.TextWrapped("After changing this option, a restart is advised in order to update the props list.");
+            ImGui.PopTextWrapPos();
+            ImGui.EndTooltip();
+        }
+
         ConfigCheckbox("notTrashProp fix");
         ConfigCheckbox("Trash and Small pipes non solid");
         ConfigCheckbox("Gradients with BackgroundScenes fix");
