@@ -15,7 +15,7 @@ class DrizzleConfiguration
     }
 
     /*
-    Rain World Community Editor; V.0.4.21; Editor configuration file
+    Rain World Community Editor; V.0.4.31; Editor configuration file
     More tile previews : TRUE
     Grime on gradients : FALSE
     Grime : TRUE
@@ -33,6 +33,7 @@ class DrizzleConfiguration
     Tiles as props fixes : TRUE
     Large trash debug log : FALSE
     Rough Rock spreads more : FALSE
+    Dark Slime fix : TRUE
     */
 
     public readonly string FilePath;
@@ -40,26 +41,43 @@ class DrizzleConfiguration
     // only a select options, because the other ones don't affect rendering
     [StringName("Grime on gradients")]
     public bool GrimeOnGradients { get; set; } = false;
+
     [StringName("Grime")]
     public bool Grime { get; set; } = true;
+
     [StringName("Material fixes")]
     public bool MaterialFixes { get; set; } = true;
+
     [StringName("Slime always affects editor decals")]
     public bool SlimeAlwaysAffectsEditorDecals { get; set; } = false;
+    
+    // what a mouthful
+    [StringName("voxelStructRandomDisplace for tiles as props")]
+    public bool VoxelStructRandomDisplaceForTilesAsProps { get; set; } = false;
+
     [StringName("notTrashProp fix")]
     public bool NotTrashPropFix { get; set; } = true;
+
     [StringName("Trash and Small pipes non solid")]
     public bool TrashAndSmallPipesNonSolid { get; set; } = false;
+
     [StringName("Gradients with BackgroundScenes fix")]
     public bool GradientsWithBackgroundScenesFix { get; set; } = true;
+
     [StringName("Invisible material fix")]
     public bool InvisibleMaterialFix { get; set; } = true;
-    [StringName("Tiles as props fix")]
+
+    [StringName("Tiles as props fixes")]
     public bool TilesAsPropsFixes { get; set; } = true;
+
     [StringName("Large trash debug log")]
     public bool LargeTrashDebugLog { get; set; } = false;
+
     [StringName("Rough Rock spreads more")]
     public bool RoughRockSpreadsMore { get; set; } = false;
+
+    [StringName("Dark Slime fix")]
+    public bool DarkSlimeFix { get; set; } = true;
 
     private static PropertyInfo? GetPropertyByKey(string key)
     {
@@ -129,26 +147,15 @@ class DrizzleConfiguration
     {
         if (!File.Exists(filePath))
         {
-            File.WriteAllText(filePath, @"
-            Rain World Community Editor; V.0.4.21; Editor configuration file
-            More tile previews : TRUE
-            Grime on gradients : FALSE
-            Grime : TRUE
-            Exit button : DROUGHT
-            Exit render button : DROUGHT
-            Material fixes : TRUE
-            Camera editor border fix : TRUE
-            Slime always affects editor decals : FALSE
-            voxelStructRandomDisplace for tiles as props : TRUE
-            notTrashProp fix : TRUE
-            Show controls : TRUE
-            Trash and Small pipes non solid : FALSE
-            Gradients with BackgroundScenes fix : TRUE
-            Invisible material fix : TRUE
-            Tiles as props fixes : TRUE
-            Large trash debug log : FALSE
-            Rough Rock spreads more : FALSE
-            ");
+            if (DrizzleCast.GetFileName("baseConfig.txt", out string? baseConfigPath))
+            {
+                var baseConfig = File.ReadAllBytes(baseConfigPath);
+                File.WriteAllBytes(filePath, baseConfig);
+            }
+            else
+            {
+                throw new Exception("Could not find file path for cast member 'baseConfig.txt'");
+            }
         }
 
         return new DrizzleConfiguration(filePath);

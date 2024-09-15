@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace RainEd;
 
 /// <summary>
@@ -32,7 +34,7 @@ static class DrizzleCast
     /// <param name="key">The member name to query for.</param>
     /// <param name="value">The file path of the member, if it exists.</param>
     /// <returns>True if a member with the given name exists, false if not.</returns>
-    public static bool GetFileName(string memberName, out string? filePath)
+    public static bool GetFileName(string memberName, [NotNullWhen(true)] out string? filePath)
     {
         return _filenameMap.TryGetValue(memberName, out filePath);
     }

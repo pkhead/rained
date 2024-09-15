@@ -1,5 +1,7 @@
 # Rained
-![Fancy Logoe](rained-logo.png)
+<p align="center">
+    <img src="rained-logo.png" />
+</p>
 
 Another Rain World level editor. Read [this document](dist/README.md), which is bundled with every release package, for more information on how to use this software.
 

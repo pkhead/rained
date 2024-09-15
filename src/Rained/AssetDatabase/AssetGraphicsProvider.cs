@@ -115,18 +115,10 @@ class AssetGraphicsProvider
     /// <returns>The prop/tile texture, or null if the graphics file was invalid or not found.</returns>
     public RlManaged.Texture2D? GetPropTexture(Props.PropInit propInit)
     {
-        string name;
-
-        // don't ask me
-        if (propInit.Name == "Long Barbed Wire")
-            name = "Barbed Wire";
-        else
-            name = propInit.Name;
-
         if (propInit.PropFlags.HasFlag(Props.PropFlags.Tile))
-            return GetTileTexture(name);
+            return GetTileTexture(propInit.Name);
         else
-            return GetPropTexture(name);
+            return GetPropTexture(propInit.Name);
     }
 
     /// <summary>
