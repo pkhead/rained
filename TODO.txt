@@ -11,6 +11,16 @@ Bugs:
 
 v2.2.0:
 - version manager
+- radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
+- rebindable edit mode switch keybinds
+  - also, consider changing it to
+     1: env
+	 2: geo
+	 3: tiles
+	 4: props
+	 5: effects
+	 6: light
+	 7: cameras
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
 - favorite tiles and props
