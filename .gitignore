@@ -2,9 +2,18 @@
 /.vs
 /src/Rained/Properties
 
+# Visual Studio Code files
+/.vscode
+
+# I think this is for the JetBrains IDE?
+# I don't actually use this, this is just for the convenience of others.
+.idea/
+
 # MSBuild output
 **/bin
 **/obj
+
+# Cake publish script output
 /build_win-x64
 /build_linux-x64
 
@@ -15,14 +24,10 @@
 # Cake Tool files
 /tools
 
-# Visual Studio Code files
-/.vscode
-
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated
 
-# data
-/dist/Data
+# level editor assets/data
 /Data
 
 # rained-generated files
