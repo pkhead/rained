@@ -31,9 +31,9 @@ jobs:
     - name: Restore Cake Tool
       run: dotnet tool restore
     - name: Linux Package
-      run: dotnet cake --os=linux-x64
+      run: dotnet cake --os=linux-x64 --target=Package
     - name: Windows Package
-      run: dotnet cake --os=win-x64
+      run: dotnet cake --os=win-x64 --target=Package
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v2
       with:

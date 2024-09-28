@@ -48,10 +48,10 @@ Back to the root directory, build and run Rained
 dotnet tool restore
 
 # usage of desktop GL or GLES/ANGLE is determined by OS.
-dotnet cake --target=Build
+dotnet cake
 
 # alternative build command with desktop GL forced on.
-dotnet cake --target=Build --gles=false
+dotnet cake --gles=false
 
 # run the project!
 dotnet run --project --no-build src/Rained/Rained.csproj

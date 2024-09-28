@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using Path = System.IO.Path;
 
-var target = Argument("Target", "Package");
+var target = Argument("Target", "Build");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 var buildDir = "build_" + os;
 var useGles = Argument<bool>("GLES", os == "win-x64");
