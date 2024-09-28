@@ -460,15 +460,60 @@ static class EditorWindow
     
     private static bool closeDrizzleRenderWindow = false;
 
+    private static void LevelTab(string tabId, uint dockspaceId)
+    {
+        var levelName =
+            string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath) ? "Untitled" :
+            Path.GetFileNameWithoutExtension(RainEd.Instance.CurrentFilePath);
+
+        //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        if (ImGui.BeginTabItem(tabId))
+        {
+            ImGui.DockSpace(dockspaceId, new Vector2(0f, 0f));
+
+            //ImGui.PopStyleVar();
+            RainEd.Instance.LevelView.Render();
+            FileBrowser.Render(ref fileBrowser);
+
+            //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            ImGui.EndTabItem();         
+        }
+        //ImGui.PopStyleVar();
+    }
+
     public static void Render()
     {
         DrawMenuBar();
         HandleShortcuts();
-        
-        RainEd.Instance.LevelView.Render();
 
-        // render level browser
-        FileBrowser.Render(ref fileBrowser);
+        var workAreaFlags = ImGuiWindowFlags.NoTitleBar |
+            ImGuiWindowFlags.NoCollapse |
+            ImGuiWindowFlags.NoDecoration |
+            ImGuiWindowFlags.NoTitleBar |
+            ImGuiWindowFlags.NoResize |
+            ImGuiWindowFlags.NoBringToFrontOnFocus |
+            ImGuiWindowFlags.NoMove;
+        
+        ImGui.SetNextWindowPos(ImGui.GetMainViewport().WorkPos);
+        ImGui.SetNextWindowSize(ImGui.GetMainViewport().WorkSize);
+
+        if (ImGui.Begin("Work area", workAreaFlags))
+        {
+            var dockspaceId = ImGui.GetID("Dockspace");
+
+            if (ImGui.BeginTabBar("AAA"))
+            {
+                if (ImGui.BeginTabItem("Home"))
+                {
+                    ImGui.EndTabItem();
+                }
+
+                LevelTab("Tab 1", dockspaceId);
+                LevelTab("Tab 2", dockspaceId);
+
+                ImGui.EndTabBar();
+            }
+        } ImGui.End();
         
         // render drizzle render, if in progress
         // disposing of drizzle render window must be done on the next frame

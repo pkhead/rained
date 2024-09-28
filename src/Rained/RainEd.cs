@@ -691,7 +691,7 @@ sealed class RainEd
         
         Raylib.ClearBackground(Color.DarkGray);
         KeyShortcuts.Update();
-        ImGui.DockSpaceOverViewport();
+        //ImGui.DockSpaceOverViewport();
 
         UpdateRopeSimulation();
         EditorWindow.Render();
