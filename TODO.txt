@@ -12,6 +12,7 @@ Bugs:
 v2.2.0:
 - version manager
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
+- tile rect force geo thing solar asked
 - rebindable edit mode switch keybinds
   - also, consider changing it to
      1: env
@@ -27,6 +28,9 @@ v2.2.0:
 - asset manager crap
 
 Overall:
+- logging
+  - button to show latest log file
+  - log window shows rained logs
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
@@ -35,9 +39,6 @@ Overall:
 - dissolve material/tile separation
 - optimize tile deform rendering
 - does update checker notif window timing work?
-- logging
-  - button to show latest log file
-  - log window shows rained logs
 - prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
