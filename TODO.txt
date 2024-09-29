@@ -11,6 +11,9 @@ Bugs:
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
 
+- using close all didn't register no file selected at one point?
+  after testing render save prompt bug fix...
+
 v2.2.0:
 - version manager
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
