@@ -8,6 +8,8 @@ Bugs:
 - asset manager merging is actually kind of buggy
 - don't clip mirror lines to scissor box
 - errors when rendering new effects???
+- using keyboards shortcuts while rendering does weird things
+  fix: disable shortcuts while rendering
 
 v2.2.0:
 - version manager
