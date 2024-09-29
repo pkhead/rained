@@ -665,14 +665,19 @@ sealed class RainEd
 
         return tcs.Task;
     }
+
+    private async void AsyncCloseWindowRequest()
+    {
+        if (await EditorWindow.CloseAllTabs())
+        {
+            Running = false; 
+        }
+    }
     
     public void Draw(float dt)
     {
         if (Raylib.WindowShouldClose())
-            EditorWindow.PromptUnsavedChanges((bool ok) =>
-            {
-                if (ok) Running = false;
-            });
+            AsyncCloseWindowRequest();
         
         AssetGraphics.Maintenance();
         

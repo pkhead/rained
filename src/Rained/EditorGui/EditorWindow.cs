@@ -94,19 +94,23 @@ static class EditorWindow
         notifFlash = 0f;
     }
 
-    private static Action<bool>? promptCallback;
     private static bool promptUnsavedChanges;
     private static bool promptUnsavedChangesCancelable;
+    private static readonly List<TaskCompletionSource<bool>> _tcsUnsavedChanges = [];
 
     public static bool PromptUnsavedChanges(LevelTab tab, Action<bool> callback, bool canCancel = true)
     {
         var changeHistory = tab.ChangeHistory;
         promptUnsavedChangesCancelable = canCancel;
 
+        async Task CallbackTask()
+        {
+            callback(await PromptUnsavedChanges(tab, canCancel));
+        };
+
         if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(tab.FilePath)))
         {
-            promptUnsavedChanges = true;
-            promptCallback = callback;
+            _ = CallbackTask();
             return true;
         }
         else
@@ -117,7 +121,26 @@ static class EditorWindow
     }
 
     public static bool PromptUnsavedChanges(Action<bool> callback, bool canCancel = true) =>
-        PromptUnsavedChanges(RainEd.Instance.CurrentTab, callback, canCancel);
+        PromptUnsavedChanges(RainEd.Instance.CurrentTab!, callback, canCancel);
+    
+    public static Task<bool> PromptUnsavedChanges(LevelTab tab, bool canCancel = true)
+    {
+        var changeHistory = tab.ChangeHistory;
+        promptUnsavedChangesCancelable = canCancel;
+        var tcs = new TaskCompletionSource<bool>();
+
+        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(tab.FilePath)))
+        {
+            promptUnsavedChanges = true;
+            _tcsUnsavedChanges.Add(tcs);
+            return tcs.Task;
+        }
+        else
+        {
+            tcs.SetResult(true);
+            return tcs.Task;
+        }
+    }
 
     private static void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
     {
@@ -425,10 +448,14 @@ static class EditorWindow
             }
 
             if (success)
-                promptCallback?.Invoke(true);
+            {
+                foreach (var t in _tcsUnsavedChanges.ToArray())
+                {
+                    _tcsUnsavedChanges.Remove(t);
+                    t.SetResult(true);
+                }
+            }
         }
-
-        promptCallback = null;
     }
 
     static void ShowMiscWindows()
@@ -458,23 +485,6 @@ static class EditorWindow
     }
     
     private static bool closeDrizzleRenderWindow = false;
-
-    private static void LevelTab(string tabId, uint dockspaceId)
-    {
-        //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        if (ImGui.BeginTabItem(tabId))
-        {
-            ImGui.DockSpace(dockspaceId, new Vector2(0f, 0f));
-
-            //ImGui.PopStyleVar();
-            RainEd.Instance.LevelView.Render();
-            FileBrowser.Render(ref fileBrowser);
-
-            //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-            ImGui.EndTabItem();         
-        }
-        //ImGui.PopStyleVar();
-    }
 
     private static LevelTab? _prevTab = null;
 
@@ -507,7 +517,7 @@ static class EditorWindow
                 bool tabChanged = _prevTab != RainEd.Instance.CurrentTab;
 
                 var tabIndex = 0;
-                foreach (var tab in RainEd.Instance.Tabs)
+                foreach (var tab in RainEd.Instance.Tabs.ToArray())
                 {
                     var tabId = tab.Name + "##" + tabIndex;
                     var open = true;
@@ -671,10 +681,12 @@ static class EditorWindow
 
                 if (promptUnsavedChangesCancelable)
                 {
-                    promptCallback?.Invoke(true);
+                    foreach (var t in _tcsUnsavedChanges.ToArray())
+                    {
+                        _tcsUnsavedChanges.Remove(t);
+                        t.SetResult(true);
+                    }
                 }
-                
-                promptCallback = null;
             }
 
             if (promptUnsavedChangesCancelable)
@@ -683,8 +695,12 @@ static class EditorWindow
                 if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Escape))
                 {
                     ImGui.CloseCurrentPopup();
-                    promptCallback?.Invoke(false);
-                    promptCallback = null;
+
+                    foreach (var t in _tcsUnsavedChanges.ToArray())
+                    {
+                        _tcsUnsavedChanges.Remove(t);
+                        t.SetResult(false);
+                    }
                 }
             }
 
@@ -735,5 +751,27 @@ static class EditorWindow
             if (wasLmbDown && !isLmbDown)
                 isLmbReleased = true;
         }
+    }
+
+    public static async Task<bool> CloseAllTabs()
+    {
+        LevelTab[] tabs = [..RainEd.Instance.Tabs];
+
+        foreach (var tab in tabs)
+        {
+            if (tab.ChangeHistory.HasChanges || string.IsNullOrEmpty(tab.FilePath))
+                RainEd.Instance.CurrentTab = tab;
+
+            if (await PromptUnsavedChanges(tab))
+            {
+                RainEd.Instance.CloseTab(tab);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
