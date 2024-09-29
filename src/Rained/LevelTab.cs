@@ -7,6 +7,11 @@ class LevelTab
     public string Name;
     public Level Level;
     public readonly ChangeHistory.ChangeHistory ChangeHistory;
+    
+    /// <summary>
+    /// True if the file for the current level is non-existent or is an emergency save.
+    /// </summary>
+    public bool IsTemporaryFile => string.IsNullOrWhiteSpace(FilePath) || Path.GetDirectoryName(FilePath) == RainEd.EmergencySaveFolder;
 
     public Vector2 ViewOffset = new();
     public float ViewZoom = 1f;
@@ -30,16 +35,17 @@ class LevelTab
 
         if (FilePath is not null && Path.GetDirectoryName(FilePath) == RainEd.EmergencySaveFolder)
         {
-            Name += " [EMERGEMCY SAVE]";
-            /*int hyphenIndex = levelName.LastIndexOf('-');
+            // emergency save file names are formatted as [name]-[date]
+            // i only want to display [name] and the text [EMERGENCY SAVE]
+            int hyphenIndex = Name.LastIndexOf('-');
             if (hyphenIndex >= 0)
             {
-                levelName = levelName[0..hyphenIndex] + " [EMERGENCY SAVE]";
+                Name = Name[0..hyphenIndex] + " [EMERGENCY SAVE]";
             }
             else
             {
-                levelName += " [EMERGENCY SAVE]";
-            }*/
+                Name += " [EMERGENCY SAVE]";
+            }
         }
     }
 }

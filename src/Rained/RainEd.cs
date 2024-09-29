@@ -47,11 +47,6 @@ sealed class RainEd
     /// </summary> 
     public static readonly string EmergencySaveFolder = Path.Combine(Boot.AppDataPath, "emsavs");
 
-    /// <summary>
-    /// True if the file for the current level is non-existent or is an emergency save.
-    /// </summary>
-    public bool IsTemporaryFile => string.IsNullOrEmpty(CurrentFilePath) || Path.GetDirectoryName(CurrentFilePath) == EmergencySaveFolder;
-
     private readonly List<LevelTab> _tabs = [];
     public IEnumerable<LevelTab> Tabs => _tabs;
     private LevelTab? _currentTab = null;
@@ -442,13 +437,16 @@ sealed class RainEd
         {
             string oldFilePath = CurrentTab!.FilePath;
 
-            LevelSerialization.SaveLevelTextFile(path);
-            LevelSerialization.SaveLevelLightMap(path);
+            LevelSerialization.SaveLevelTextFile(Level, path);
+            LevelSerialization.SaveLevelLightMap(Level, path);
 
             CurrentTab.FilePath = path;
+            CurrentTab.Name = Path.GetFileNameWithoutExtension(path);
+
             UpdateTitle();
-            CurrentTab.ChangeHistory.MarkUpToDate();
+
             Log.Information("Done!");
+            CurrentTab.ChangeHistory.MarkUpToDate();
             EditorWindow.ShowNotification("Saved!");
             AddToRecentFiles(CurrentTab.FilePath);
 
@@ -481,24 +479,33 @@ sealed class RainEd
     /// </summary>
     public void EmergencySave()
     {
-        Directory.CreateDirectory(EmergencySaveFolder);
 
+        Directory.CreateDirectory(EmergencySaveFolder);
         var secs = (int)Math.Floor((DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
         var id = secs.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-        var fileName = CurrentFilePath;
-        if (string.IsNullOrEmpty(fileName))
+        foreach (var tab in Tabs)
         {
-            fileName = "unnamed";
-        }
-        else
-        {
-            fileName = Path.GetFileNameWithoutExtension(fileName);
-        }
+            var fileName = tab.FilePath;
+            bool doSave = tab.ChangeHistory.HasChanges;
 
-        var emSavFileName = Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt");
-        LevelSerialization.SaveLevelTextFile(emSavFileName);
-        LevelSerialization.SaveLevelLightMap(emSavFileName);
+            if (string.IsNullOrEmpty(fileName))
+            {
+                fileName = "unnamed";
+                doSave = true;
+            }
+            else
+            {
+                fileName = Path.GetFileNameWithoutExtension(fileName);
+            }
+
+            if (doSave)
+            {
+                var emSavFileName = Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt");
+                LevelSerialization.SaveLevelTextFile(tab.Level, emSavFileName);
+                LevelSerialization.SaveLevelLightMap(tab.Level, emSavFileName);
+            }
+        }
     }
 
     public static string[] DetectEmergencySaves()
@@ -562,6 +569,7 @@ sealed class RainEd
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
 
         levelView.ReloadLevel();
+        CurrentTab!.ChangeHistory.ForceMarkDirty();
         ChangeHistory.Clear();
         levelView.Renderer.ReloadLevel();
         levelView.ViewOffset += dstOrigin * Level.TileSize;
@@ -593,20 +601,6 @@ sealed class RainEd
     private void UpdateTitle()
     {
         string levelName = CurrentTab!.Name;
-        
-        if (CurrentTab.FilePath is not null && Path.GetDirectoryName(CurrentTab.FilePath) == EmergencySaveFolder)
-        {
-            int hyphenIndex = levelName.LastIndexOf('-');
-            if (hyphenIndex >= 0)
-            {
-                levelName = levelName[0..hyphenIndex] + " [EMERGENCY SAVE]";
-            }
-            else
-            {
-                levelName += " [EMERGENCY SAVE]";
-            }
-        }
-        
         Raylib.SetWindowTitle($"Rained - {levelName}");
     }
 

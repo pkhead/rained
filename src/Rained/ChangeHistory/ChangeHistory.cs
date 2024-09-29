@@ -10,6 +10,7 @@ class ChangeHistory
     private readonly Stack<IChangeRecord> undoStack = new();
     private readonly Stack<IChangeRecord> redoStack = new();
     private IChangeRecord? upToDate = null;
+    private bool dirty = false; // force flag for dirty status
 
     public event Action? Cleared = null;
     public event Action? UndidOrRedid = null; // WTF DO I CALL THIS!?!?
@@ -49,12 +50,20 @@ class ChangeHistory
     public void MarkUpToDate()
     {
         upToDate = undoStack.Count == 0 ? null : undoStack.Peek();
+        dirty = false;
+    }
+
+    public void ForceMarkDirty()
+    {
+        dirty = true;
     }
 
     public bool HasChanges {
         get
         {
-            if (upToDate is null)
+            if (dirty)
+                return true;
+            else if (upToDate is null)
                 return undoStack.Count > 0;
             else
                 return undoStack.Count == 0 || undoStack.Peek() != upToDate;

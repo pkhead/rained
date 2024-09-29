@@ -594,13 +594,9 @@ static class LevelSerialization
         "Color1", "Color2", "Dead"
     };
 
-    public static void SaveLevelTextFile(string path)
+    public static void SaveLevelTextFile(Level level, string path)
     {
-        // open text file
         var outputTxtFile = new StreamWriter(path);
-
-        var level = RainEd.Instance.Level;
-
         StringBuilder output = new();
 
         // Wtf this sucks i spent like an hour trying to figure out why drizzle wasn't rendering the props it was because
@@ -1069,10 +1065,8 @@ static class LevelSerialization
         outputTxtFile.Close();
     }
 
-    public static void SaveLevelLightMap(string path)
+    public static void SaveLevelLightMap(Level level, string path)
     {
-        var level = RainEd.Instance.Level;
-
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         using var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel

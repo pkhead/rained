@@ -155,7 +155,8 @@ static class EditorWindow
             return isRw;
         }
 
-        fileBrowser = new FileBrowser(openMode, callback, RainEd.Instance.IsTemporaryFile ? null : Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
+        var tab = RainEd.Instance.CurrentTab;
+        fileBrowser = new FileBrowser(openMode, callback, (tab is null || tab.IsTemporaryFile) ? null : Path.GetDirectoryName(tab.FilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
         fileBrowser.PreviewCallback = (string path, bool isRw) =>
         {
@@ -382,7 +383,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
         {
-            if (RainEd.Instance.IsTemporaryFile)
+            if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
                 OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
             else
                 SaveLevelCallback(RainEd.Instance.CurrentFilePath);
@@ -552,7 +553,7 @@ static class EditorWindow
                 var tabIndex = 0;
                 foreach (var tab in RainEd.Instance.Tabs.ToArray())
                 {
-                    var tabId = tab.Name + "##" + tabIndex;
+                    var tabId = tab.Name + "###" + tabIndex;
                     var open = true;
 
                     // use SetSelected on relevant tab if a tab switch was forced
@@ -580,7 +581,6 @@ static class EditorWindow
 
                         //ImGui.PopStyleVar();
                         RainEd.Instance.LevelView.Render();
-                        FileBrowser.Render(ref fileBrowser);
 
                         //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
                         ImGui.EndTabItem();
@@ -603,6 +603,8 @@ static class EditorWindow
                 ImGui.EndTabBar();
             }
         } ImGui.End();
+
+        FileBrowser.Render(ref fileBrowser);
         
         // render drizzle render, if in progress
         // disposing of drizzle render window must be done on the next frame
