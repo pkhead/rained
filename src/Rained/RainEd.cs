@@ -411,7 +411,7 @@ sealed class RainEd
             }
             catch (Exception e)
             {
-                Log.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
+                Log.UserLogger.Error("Error loading level {Path}:\n{ErrorMessage}", path, e);
                 EditorWindow.ShowNotification("Error while loading level");
             }
 
@@ -536,7 +536,7 @@ sealed class RainEd
             {
                 if (!Platform.TrashFile(file))
                 {
-                    Log.Warning("TrashFile is not supported, resorted to permanent deletion.");
+                    Log.UserLogger.Warning("File trashing is not supported on this platform, resorted to permanent deletion.");
                     File.Delete(file);
                 }
             }

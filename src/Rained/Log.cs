@@ -97,7 +97,18 @@ static class Log
         public void Emit(LogEvent logEvent)
         {
             var msg = logEvent.RenderMessage(_formatProvider);
+            var prefix = logEvent.Level switch
+            {
+                LogEventLevel.Verbose => "vrb",
+                LogEventLevel.Debug => "dbg",
+                LogEventLevel.Information => "inf",
+                LogEventLevel.Warning => "wrn",
+                LogEventLevel.Error => "err",
+                LogEventLevel.Fatal => "ftl",
+                _ => "???"
+            };
 
+            msg = $"[{prefix}] {msg}";
             lock (_log)
             {
                 _log.Add(new LogEntry((LogLevel)logEvent.Level, msg));

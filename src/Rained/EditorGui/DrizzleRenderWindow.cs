@@ -46,7 +46,7 @@ class DrizzleRenderWindow : IDisposable
         }
         catch (Exception e)
         {
-            Log.Error("Error occured when initializing render:\n{ErrorMessage}", e);
+            Log.UserLogger.Error("Error occured when initializing render:\n{ErrorMessage}", e);
         }
 
         layerPreviewShader = Shaders.RenderPreviewLayerShader;

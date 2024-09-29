@@ -1071,17 +1071,17 @@ static class LuaInterface
 
     public static void LogInfo(string msg)
     {
-        Log.UserLogger.Information("[LUA] " + msg);
+        Log.UserLogger.Information("[lua] " + msg);
     }
 
     public static void LogWarning(string msg)
     {
-        Log.UserLogger.Warning("[LUA] " + msg);
+        Log.UserLogger.Warning("[lua] " + msg);
     }
 
     public static void LogError(string msg)
     {
-        Log.UserLogger.Error("[LUA] " + msg);
+        Log.UserLogger.Error("[lua] " + msg);
     }
 
     private static void LuaPrint(params object[] args)

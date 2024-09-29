@@ -392,7 +392,7 @@ partial class TileEditor : IEditorMode
                             
                             if (tile is null)
                             {
-                                Log.Error("Could not find tile head");
+                                Log.UserLogger.Error("Could not find tile head");
                             }
                             else
                             {
@@ -415,7 +415,7 @@ partial class TileEditor : IEditorMode
                                 if (idx == -1)
                                 {
                                     EditorWindow.ShowNotification("Error");
-                                    Log.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
+                                    Log.UserLogger.Error("Error eyedropping material '{MaterialName}' (ID {ID})", matInfo.Name, selectedMaterial);
                                 }
                                 else
                                 {

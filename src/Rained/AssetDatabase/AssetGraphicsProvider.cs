@@ -100,7 +100,7 @@ class AssetGraphicsProvider
         }
         else
         {
-            Log.Warning($"Image {texturePath} is invalid or missing!");
+            Log.UserLogger.Warning($"Image {texturePath} is invalid or missing!");
         }
 
         propTexCache.Add(assetName, texture);
@@ -149,7 +149,7 @@ class AssetGraphicsProvider
         }
         else
         {
-            Log.Warning($"Image {texturePath} is invalid or missing!");
+            Log.UserLogger.Warning($"Image {texturePath} is invalid or missing!");
         }
 
         tileTexCache.Add(assetName, texture);
@@ -401,7 +401,7 @@ class AssetGraphicsProvider
         else
         {
             // tile graphics could not be loaded
-            Log.Warning($"Preview image {graphicsPath} is invalid or missing!");
+            Log.UserLogger.Warning($"Preview image {graphicsPath} is invalid or missing!");
 
             _tilePreviewRects[tile.Name] = (-1, -1);
             texture = null;

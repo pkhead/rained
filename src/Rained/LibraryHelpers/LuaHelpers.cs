@@ -92,7 +92,7 @@ static class LuaHelpers
         }
         catch (Exception e)
         {
-            Log.Error("A C# exception occured in a Lua context!\n{Error}", e);
+            Log.UserLogger.Error("A C# exception occured in a Lua context!\n{Error}", e);
             return lua.Error("C# exception: " + e.Message);
         }
     }

@@ -348,7 +348,7 @@ static class LevelSerialization
                                     int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
                                     if (cfgIndex == -1)
                                     {
-                                        Log.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
+                                        Log.UserLogger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                     }
                                     else
                                     {
@@ -433,7 +433,7 @@ static class LevelSerialization
             // wtf??
             if (img.Width == 0 && img.Height == 0)
             {
-                Log.Warning("Invalid lightmap image, loaded fallback");
+                Log.UserLogger.Warning("Invalid lightmap image, loaded fallback");
             }
             else
             {
@@ -546,7 +546,7 @@ static class LevelSerialization
                         }
                         else
                         {
-                            Log.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
+                            Log.UserLogger.Warning("Rope release mode was specified for a regular prop {PropName}", propInit.Name);
                         }
                     }
 
@@ -558,7 +558,7 @@ static class LevelSerialization
                         }
                         else
                         {
-                            Log.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
+                            Log.UserLogger.Warning("Wire thickness was specified for an incompatible prop {PropName}", propInit.Name);
                         }
                     }
                 }

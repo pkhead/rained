@@ -84,7 +84,7 @@ class LevelEditRender : IDisposable
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Could not load palette {PaletteNumber}: {Exception}", paletteNumber, e);
+                        Log.UserLogger.Error("Could not load palette {PaletteNumber}: {Exception}", paletteNumber, e);
                     }
 
                     if (palette is not null)
@@ -98,7 +98,7 @@ class LevelEditRender : IDisposable
                 }
                 else
                 {
-                    Log.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
+                    Log.UserLogger.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
                 }
             }
         }

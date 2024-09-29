@@ -496,7 +496,7 @@ static class AssetManagerGUI
         }
         catch (Exception e)
         {
-            Log.Error(e.ToString());
+            Log.UserLogger.Error(e.ToString());
             errorMsg = "Malformed Init.txt file in the new data folder";
 
             RainEd.Instance.AssetDataPath = oldPath;

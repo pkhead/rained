@@ -1034,7 +1034,7 @@ class GeometryEditor : IEditorMode
         {
             if (fillStack.Count > 100000)
             {
-                Log.Error("Flood fill stack overflow!");
+                Log.UserLogger.Error("Flood fill stack overflow!");
                 EditorWindow.ShowNotification("Stack overflow!");
                 break;
             }
