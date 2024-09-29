@@ -24,11 +24,8 @@ sealed class RainEd
     public static Glib.Window Window => Boot.Window;
     public static Glib.RenderContext RenderContext => Glib.RenderContext.Instance!;
 
-    private Level level;
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
-    private readonly LevelView levelView;
-    private readonly ChangeHistory.ChangeHistory changeHistory;
-    private bool ShowDemoWindow = false;
+    private readonly LevelWindow levelView;
 
     private readonly string prefFilePath;
     public UserPreferences Preferences;
@@ -42,9 +39,7 @@ sealed class RainEd
     public readonly Props.PropDatabase PropDatabase;
     public readonly AutotileCatalog Autotiles;
 
-    private string currentFilePath = string.Empty;
-
-    public string CurrentFilePath { get => currentFilePath; }
+    public string CurrentFilePath { get => CurrentTab!.FilePath; }
     
     /// <summary>
     /// The path of the emergency save file. Is created when the application
@@ -57,10 +52,14 @@ sealed class RainEd
     /// </summary>
     public bool IsTemporaryFile => string.IsNullOrEmpty(CurrentFilePath) || Path.GetDirectoryName(CurrentFilePath) == EmergencySaveFolder;
 
-    public Level Level { get => level; }
-    public LevelView LevelView { get => levelView; }
-    
-    public ChangeHistory.ChangeHistory ChangeHistory { get => changeHistory; }
+    private readonly List<LevelTab> _tabs = [];
+    public IEnumerable<LevelTab> Tabs => _tabs;
+    private LevelTab? _currentTab = null;
+    public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value); }
+
+    public Level Level { get => CurrentTab!.Level; }
+    public LevelWindow LevelView { get => levelView; }
+    public ChangeHistory.ChangeHistory ChangeHistory { get => CurrentTab!.ChangeHistory; }
 
     // this is used to set window IsEventDriven to true
     // when the user hasn't interacted with the window in a while
@@ -237,16 +236,14 @@ sealed class RainEd
             throw new RainEdStartupException();
         }
         #endif
-        
-        level = Level.NewDefaultLevel();
+
+        _tabs.Add(new LevelTab());
+        _currentTab = _tabs[0];      
 
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
-        Log.Information("Initializing change history...");
-        changeHistory = new ChangeHistory.ChangeHistory();
-
         Log.Information("Creating level view...");
-        levelView = new LevelView();
+        levelView = new LevelWindow();
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
@@ -381,15 +378,9 @@ sealed class RainEd
 
     public void LoadDefaultLevel()
     {
-        levelView.UnloadView();
-        level.LightMap.Dispose();
-        level = Level.NewDefaultLevel();
-        ReloadLevel();
-        levelView.LoadView();
-
-        currentFilePath = string.Empty;
-        UpdateTitle();
-
+        var tab = new LevelTab();
+        _tabs.Add(tab);
+        CurrentTab = tab;
         //AssetGraphics.ClearTextureCache();
     }
 
@@ -399,20 +390,15 @@ sealed class RainEd
         {
             Log.Information("Loading level {Path}...", path);
 
-            levelView.UnloadView();
-
             try
             {
                 var loadRes = LevelSerialization.Load(path);
 
                 if (loadRes.Level is not null)
                 {
-                    level = loadRes.Level;
-
-                    ReloadLevel();
-                    currentFilePath = path;
-                    UpdateTitle();
-
+                    var tab = new LevelTab(loadRes.Level, path);
+                    _tabs.Add(tab);
+                    CurrentTab = tab;
                     Log.Information("Done!");
                 }
                 else
@@ -454,23 +440,23 @@ sealed class RainEd
 
         try
         {
-            string oldFilePath = currentFilePath;
+            string oldFilePath = CurrentTab!.FilePath;
 
             LevelSerialization.SaveLevelTextFile(path);
             LevelSerialization.SaveLevelLightMap(path);
 
-            currentFilePath = path;
+            CurrentTab.FilePath = path;
             UpdateTitle();
-            changeHistory.MarkUpToDate();
+            CurrentTab.ChangeHistory.MarkUpToDate();
             Log.Information("Done!");
             EditorWindow.ShowNotification("Saved!");
-            AddToRecentFiles(currentFilePath);
+            AddToRecentFiles(CurrentTab.FilePath);
 
             // if the old level was an emergency save and the user
             // saved it to a non-emergency save file, delete the
             // old file as it is no longer necessary.
             var oldParentFolder = Path.GetDirectoryName(oldFilePath);
-            var newParentFolder = Path.GetDirectoryName(currentFilePath);
+            var newParentFolder = Path.GetDirectoryName(CurrentTab.FilePath);
 
             if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
             {
@@ -566,6 +552,8 @@ sealed class RainEd
 
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
+        var level = Level;
+
         if (newWidth == level.Width && newHeight == level.Height) return;
         Log.Information("Resizing level...");
         IsLevelLocked = true;
@@ -574,7 +562,7 @@ sealed class RainEd
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
 
         levelView.ReloadLevel();
-        changeHistory.Clear();
+        ChangeHistory.Clear();
         levelView.Renderer.ReloadLevel();
         levelView.ViewOffset += dstOrigin * Level.TileSize;
 
@@ -582,21 +570,31 @@ sealed class RainEd
         IsLevelLocked = false;
     }
 
-    private void ReloadLevel()
+    private void SwitchTab(LevelTab? tab)
     {
-        levelView.ReloadLevel();
-        changeHistory.Clear();
-        changeHistory.MarkUpToDate();
-        levelView.Renderer.ReloadLevel();
+        if (tab == _currentTab) return;
+        if (tab is not null && !_tabs.Contains(tab))
+            throw new ArgumentException("Given LevelTab is not in Tabs list", nameof(tab));
+        
+        _currentTab = tab;
+        if (_currentTab is not null)
+        {
+            levelView.ReloadLevel();
+            levelView.Renderer.ReloadLevel();
+            UpdateTitle();
+        }
+    }
+
+    public bool CloseTab(LevelTab tab)
+    {
+        return _tabs.Remove(tab);
     }
 
     private void UpdateTitle()
     {
-        string levelName =
-            string.IsNullOrEmpty(currentFilePath) ? "Untitled" :
-            Path.GetFileNameWithoutExtension(currentFilePath);
+        string levelName = CurrentTab!.Name;
         
-        if (currentFilePath is not null && Path.GetDirectoryName(currentFilePath) == EmergencySaveFolder)
+        if (CurrentTab.FilePath is not null && Path.GetDirectoryName(CurrentTab.FilePath) == EmergencySaveFolder)
         {
             int hyphenIndex = levelName.LastIndexOf('-');
             if (hyphenIndex >= 0)
@@ -671,7 +669,10 @@ sealed class RainEd
     public void Draw(float dt)
     {
         if (Raylib.WindowShouldClose())
-            EditorWindow.PromptUnsavedChanges(() => Running = false);
+            EditorWindow.PromptUnsavedChanges((bool ok) =>
+            {
+                if (ok) Running = false;
+            });
         
         AssetGraphics.Maintenance();
         
@@ -724,6 +725,7 @@ sealed class RainEd
 
     public void UpdateRopeSimulation()
     {
+        var level = CurrentTab!.Level;
         double nowTime = Raylib.GetTime();
         double stepTime = 1.0 / 30.0;
 

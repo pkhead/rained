@@ -9,7 +9,7 @@ namespace RainEd;
 class LightEditor : IEditorMode
 {
     public string Name { get => "Light"; }
-    private readonly LevelView window;
+    private readonly LevelWindow window;
 
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
@@ -23,7 +23,7 @@ class LightEditor : IEditorMode
 
     private ChangeHistory.LightChangeRecorder? changeRecorder = null;
 
-    public LightEditor(LevelView window)
+    public LightEditor(LevelWindow window)
     {
         this.window = window;
         ReloadLevel();
@@ -362,7 +362,7 @@ class LightEditor : IEditorMode
         );
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
         
         // draw the layers
         var drawTiles = RainEd.Instance.Preferences.ViewTiles;
@@ -370,7 +370,7 @@ class LightEditor : IEditorMode
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = LevelView.GeoColor(30f / 255f, alpha);
+            var color = LevelWindow.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();

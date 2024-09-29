@@ -8,7 +8,7 @@ namespace RainEd;
 class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
-    private readonly LevelView window;
+    private readonly LevelWindow window;
 
     private List<Camera> selectedCameras; // all selected cameras
 
@@ -28,7 +28,7 @@ class CameraEditor : IEditorMode
 
     private ChangeHistory.CameraChangeRecorder changeRecorder;
 
-    public CameraEditor(LevelView window)
+    public CameraEditor(LevelWindow window)
     {
         this.window = window;
         selectedCameras = [];
@@ -129,7 +129,7 @@ class CameraEditor : IEditorMode
         var levelRender = window.Renderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
         
         // draw the layers
         var drawTiles = RainEd.Instance.Preferences.ViewTiles;
@@ -137,7 +137,7 @@ class CameraEditor : IEditorMode
         for (int l = Level.LayerCount-1; l >= 0; l--)
         {
             var alpha = l == 0 ? 255 : 50;
-            var color = LevelView.GeoColor(30f / 255f, alpha);
+            var color = LevelWindow.GeoColor(30f / 255f, alpha);
             int offset = l * 2;
 
             Rlgl.PushMatrix();
