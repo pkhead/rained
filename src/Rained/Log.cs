@@ -18,9 +18,10 @@ static class Log
     {
         Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
 
-        var loggerConfig = new LoggerConfiguration()
         #if DEBUG
-        .MinimumLevel.Debug();
+        var loggerConfig = new LoggerConfiguration().MinimumLevel.Debug();
+        #else
+        var loggerConfig = new LoggerConfiguration();
         #endif
 
         List<string> logSetupErrors = [];
