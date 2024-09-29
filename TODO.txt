@@ -16,6 +16,7 @@ Bugs:
 
 v2.2.0:
 - version manager
+- make mirror lines can go in middle of tiles
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
 - tile rect force geo thing solar asked
 - rebindable edit mode switch keybinds

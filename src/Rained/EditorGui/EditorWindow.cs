@@ -365,6 +365,8 @@ static class EditorWindow
 
     private static void HandleShortcuts()
     {
+        if (RainEd.Instance.IsLevelLocked) return;
+        
         var fileActive = RainEd.Instance.CurrentTab is not null;
         var prefs = RainEd.Instance.Preferences;
         var renderer = RainEd.Instance.LevelView.Renderer;
