@@ -6,6 +6,7 @@ static class LogsWindow
 {
     public static bool IsWindowOpen = false;
     private static List<string> logs = [];
+    private static bool wrap = false;
     private static Filters filters = Filters.Information | Filters.Warning | Filters.Error;
 
     [Flags]
@@ -25,6 +26,9 @@ static class LogsWindow
         {
             if (ImGui.Button("Clear"))
                 logs.Clear();
+                
+            ImGui.SameLine();
+            ImGui.Checkbox("Wrap", ref wrap);
             
             {
                 var filtersInt = (int)filters;
@@ -48,6 +52,11 @@ static class LogsWindow
                 bool showInfo = filters.HasFlag(Filters.Information);
                 bool showWarnings = filters.HasFlag(Filters.Warning);
                 bool showErrors = filters.HasFlag(Filters.Error);
+
+                if (wrap)
+                    ImGui.PushTextWrapPos(ImGui.GetWindowWidth());
+                else
+                    ImGui.PushTextWrapPos(float.PositiveInfinity);
                 
                 foreach (var ev in logs)
                 {
@@ -69,17 +78,18 @@ static class LogsWindow
                             break;
                     }
                     
-                    ImGui.TextUnformatted(ev.Message);
+                    ImGui.TextWrapped(ev.Message);
+                    
                     ImGui.PopStyleColor();
                 }
                 ImGui.PopStyleVar();
 
+                ImGui.PopTextWrapPos();
+
                 // auto-scroll
                 if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
-                    ImGui.SetScrollHereY(1f);
-                
-                ImGui.EndChild();
-            }
+                    ImGui.SetScrollHereY(1f);                
+            } ImGui.EndChild();
         } ImGui.End();
     }
 }

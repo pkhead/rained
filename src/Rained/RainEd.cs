@@ -172,11 +172,11 @@ sealed class RainEd
             AssetGraphics = new AssetGraphicsProvider();
             
             initPhase = "materials";
-            Log.Information("Initializing materials database...");
+            Log.UserLogger.Information("Reading Materials/Init.txt");
             MaterialDatabase = new Tiles.MaterialDatabase();
 
             initPhase = "tiles";
-            Log.Information("Initializing tile database...");
+            Log.UserLogger.Information("Reading Graphics/Init.txt...");
             TileDatabase = new Tiles.TileDatabase();
 
             // init autotile catalog
@@ -209,14 +209,15 @@ sealed class RainEd
             EffectsDatabase = new EffectsDatabase();
 
             initPhase = "light brushes";
-            Log.Information("Initializing light brush database...");
+            Log.UserLogger.Information("Reading light brushes...");
             LightBrushDatabase = new Light.LightBrushDatabase();
 
             initPhase = "props";
-            Log.Information("Initializing prop database...");
+            Log.UserLogger.Information("Reading Props/Init.txt");
             PropDatabase = new Props.PropDatabase(TileDatabase);
 
             DrizzleCast.Initialize();
+            Log.UserLogger.Information("Asset initialization done!");
             Log.Information("----- ASSET INIT DONE! -----");
         }
         #if !DEBUG
