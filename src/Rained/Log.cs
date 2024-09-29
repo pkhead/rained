@@ -62,6 +62,9 @@ static class Log
         UserLogger = wrapperLogConfig.CreateLogger();
 
         Serilog.Log.Logger = UserLogger;
+
+        foreach (var msg in logSetupErrors)
+            Error(msg);
     }
 
     public static void Close()
