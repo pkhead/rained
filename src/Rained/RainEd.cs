@@ -699,7 +699,9 @@ sealed class RainEd
         KeyShortcuts.Update();
         //ImGui.DockSpaceOverViewport();
 
-        UpdateRopeSimulation();
+        if (CurrentTab != null)
+            UpdateRopeSimulation();
+        
         EditorWindow.Render();
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))

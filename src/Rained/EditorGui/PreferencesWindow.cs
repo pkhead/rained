@@ -509,6 +509,8 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.Open);
         ShortcutButton(KeyShortcut.Save);
         ShortcutButton(KeyShortcut.SaveAs);
+        ShortcutButton(KeyShortcut.CloseFile);
+        ShortcutButton(KeyShortcut.CloseAllFiles);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.Render);
         ShortcutButton(KeyShortcut.ExportGeometry);
