@@ -483,6 +483,10 @@ static class EditorWindow
                 }
             }
         }
+        else
+        {
+            _tcsUnsavedChanges.Clear();
+        }
     }
 
     static void ShowMiscWindows()
@@ -724,6 +728,10 @@ static class EditorWindow
                         _tcsUnsavedChanges.Remove(t);
                         t.SetResult(true);
                     }
+                }
+                else
+                {
+                    _tcsUnsavedChanges.Clear();
                 }
             }
 
