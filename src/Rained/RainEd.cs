@@ -113,7 +113,7 @@ sealed class RainEd
             }
             catch (Exception e)
             {
-                Log.Error("Failed to load user preferences!\n{ErrorMessage}", e);
+                Log.UserLogger.Error("Failed to load user preferences!\n{ErrorMessage}", e);
                 Preferences = new UserPreferences();
                 EditorWindow.ShowNotification("Failed to load preferences");
             }

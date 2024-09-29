@@ -171,7 +171,7 @@ class TileDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.List header)
                 {
-                    Log.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     return;
                 }
 
@@ -242,7 +242,7 @@ class TileDatabase
                     stringToTile.Add(name, tileData);
                 } catch (Exception e)
                 {
-                    Log.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
+                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }

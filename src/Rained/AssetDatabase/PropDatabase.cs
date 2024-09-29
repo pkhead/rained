@@ -534,7 +534,7 @@ class PropDatabase
     {
         if (allProps.ContainsKey(prop.Name))
         {
-            Log.Warning("Already added prop {PropName}", prop.Name);
+            Log.UserLogger.Warning("Already added prop {PropName}", prop.Name);
         }
 
         allProps[prop.Name] = prop;
@@ -576,7 +576,7 @@ class PropDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.List header)
                 {
-                    Log.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     continue;
                 }
 
@@ -600,7 +600,7 @@ class PropDatabase
                 catch (Exception e)
                 {
                     var name = propData is null ? "Unknown Prop" : (string) propData.fields["nm"];
-                    Log.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
+                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
                 }
             }
         }

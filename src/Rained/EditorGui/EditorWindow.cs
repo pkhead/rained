@@ -323,9 +323,9 @@ static class EditorWindow
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }
 
-                if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
+                if (ImGui.MenuItem("Logs", null, LogsWindow.IsWindowOpen))
                 {
-                    LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
+                    LogsWindow.IsWindowOpen = !LogsWindow.IsWindowOpen;
                 }
 
                 if (ImGui.MenuItem("Palettes", null, PaletteWindow.IsWindowOpen))
@@ -499,7 +499,7 @@ static class EditorWindow
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
         PaletteWindow.ShowWindow();
-        LuaInterface.ShowLogs();
+        LogsWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         GuideViewerWindow.ShowWindow();
     }

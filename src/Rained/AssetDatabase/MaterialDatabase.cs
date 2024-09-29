@@ -111,7 +111,7 @@ class MaterialDatabase
         var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
         if (!File.Exists(initFile))
         {
-            Log.Warning("Materials/Init.txt not found");
+            Log.UserLogger.Warning("Materials/Init.txt not found");
             return;
         }
         
