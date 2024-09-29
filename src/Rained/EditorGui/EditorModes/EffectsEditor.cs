@@ -7,7 +7,7 @@ namespace RainEd;
 class EffectsEditor : IEditorMode
 {
     public string Name { get => "Effects"; }
-    private readonly LevelView window;
+    private readonly LevelWindow window;
 
     private int selectedGroup = 0;
     private int selectedEffect = -1;
@@ -24,7 +24,7 @@ class EffectsEditor : IEditorMode
 
     private ChangeHistory.EffectsChangeRecorder changeRecorder;
 
-    public EffectsEditor(LevelView window)
+    public EffectsEditor(LevelWindow window)
     {
         this.window = window;
 
@@ -449,7 +449,7 @@ class EffectsEditor : IEditorMode
         var levelRender = window.Renderer;
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
 
         // draw layers, including tiles
         var drawTiles = RainEd.Instance.Preferences.ViewTiles;
@@ -466,7 +466,7 @@ class EffectsEditor : IEditorMode
 
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);
-                levelRender.RenderGeometry(l, LevelView.GeoColor(30f / 255f, 255));
+                levelRender.RenderGeometry(l, LevelWindow.GeoColor(30f / 255f, 255));
 
                 if (drawTiles)
                     levelRender.RenderTiles(l, 100);

@@ -10,7 +10,7 @@ partial class TileEditor : IEditorMode
 {
     public string Name { get => "Tiles"; }
 
-    private readonly LevelView window;
+    private readonly LevelWindow window;
     private Tile selectedTile;
     private int selectedMaterial = 1;
     private bool isToolActive = false;
@@ -55,7 +55,7 @@ partial class TileEditor : IEditorMode
     enum RectMode { Inactive, Place, Remove };
     private RectMode rectMode = 0;
     
-    public TileEditor(LevelView window) {
+    public TileEditor(LevelWindow window) {
         this.window = window;
         lastSelectionMode = selectionMode;
         selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
@@ -186,7 +186,7 @@ partial class TileEditor : IEditorMode
         var matDb = RainEd.Instance.MaterialDatabase;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
 
         // draw layers
         var drawProps = RainEd.Instance.Preferences.ViewProps;
@@ -200,7 +200,7 @@ partial class TileEditor : IEditorMode
             window.BeginLevelScissorMode();
 
             Rlgl.PushMatrix();
-                levelRender.RenderGeometry(l, LevelView.GeoColor(255));
+                levelRender.RenderGeometry(l, LevelWindow.GeoColor(255));
                 levelRender.RenderTiles(l, 255);
                 if (drawProps)
                     levelRender.RenderProps(l, 100);

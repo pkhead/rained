@@ -3,22 +3,17 @@ using Raylib_cs;
 using ImGuiNET;
 namespace RainEd;
 
-class LevelView
+class LevelWindow
 {
     public bool IsWindowOpen = true;
-
-    private Vector2 viewOffset = new();
-    private float viewZoom = 1f;
-    private float zoomSteps = 0;
-    private int workLayer = 0;
 
     private const float ZoomFactorPerStep = 1.5f;
     private const int MaxZoomSteps = 7;
     private const int MinZoomSteps = -5;
 
-    public float ViewZoom { get => viewZoom; }
-    public int WorkLayer { get => workLayer; set => workLayer = value; }
-    public Vector2 ViewOffset { get => viewOffset; set => viewOffset = value; }
+    public float ViewZoom { get => RainEd.Instance.CurrentTab.ViewZoom; private set => RainEd.Instance.CurrentTab.ViewZoom = value; }
+    public ref int WorkLayer => ref RainEd.Instance.CurrentTab.WorkLayer;
+    public ref Vector2 ViewOffset => ref RainEd.Instance.CurrentTab.ViewOffset;
 
     private int mouseCx = 0;
     private int mouseCy = 0;
@@ -122,7 +117,7 @@ class LevelView
         );  
     }
 
-    public LevelView()
+    public LevelWindow()
     {
         canvasWidget = new(1, 1);
         layerRenderTextures = new RlManaged.RenderTexture2D[3];
@@ -199,9 +194,9 @@ class LevelView
 
     public void ResetView()
     {
-        viewOffset = Vector2.Zero;
-        viewZoom = 1f;
-        zoomSteps = 0;
+        ViewOffset = Vector2.Zero;
+        RainEd.Instance.CurrentTab.ViewZoom = 1f;
+        RainEd.Instance.CurrentTab.ZoomSteps = 0;
     }
 
     public void ShowEditMenu()
@@ -272,7 +267,7 @@ class LevelView
                 StatusText = string.Empty;
 
                 {
-                    var zoomText = $"Zoom: {Math.Floor(viewZoom * 100f)}%";
+                    var zoomText = $"Zoom: {Math.Floor(ViewZoom * 100f)}%";
                     var mouseText = $"Mouse: ({MouseCx}, {MouseCy})";
                     WriteStatus(zoomText.PadRight(12, ' ') + mouseText);
                 }
@@ -285,8 +280,8 @@ class LevelView
                     var moveX = (EditorWindow.IsKeyDown(ImGuiKey.RightArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.LeftArrow)?1:0);
                     var moveY = (EditorWindow.IsKeyDown(ImGuiKey.DownArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.UpArrow)?1:0);
                     var moveSpeed = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
-                    viewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
-                    viewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
+                    ViewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
+                    ViewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
 
                     // edit mode keybinds
                     if (EditorWindow.IsKeyPressed(ImGuiKey._1))
@@ -361,31 +356,33 @@ class LevelView
 
     private void Zoom(float factor, Vector2 mpos)
     {
-        viewZoom *= factor;
-        viewOffset = -(mpos - viewOffset) / factor + mpos;
+        ViewZoom *= factor;
+        ViewOffset = -(mpos - ViewOffset) / factor + mpos;
     }
 
     private void DrawCanvas()
     {
+        var doc = RainEd.Instance.CurrentTab;
+
         OverrideMouseWheel = false;
         Raylib.ClearBackground(new Color(0, 0, 0, 0));
 
         Rlgl.PushMatrix();
-        Rlgl.Scalef(viewZoom, viewZoom, 1f);
-        Rlgl.Translatef(-viewOffset.X, -viewOffset.Y, 0);
+        Rlgl.Scalef(doc.ViewZoom, doc.ViewZoom, 1f);
+        Rlgl.Translatef(-doc.ViewOffset.X, -doc.ViewOffset.Y, 0);
 
         // send view info to the level renderer
         var viewportW = canvasWidget.RenderTexture.Texture.Width;
         var viewportH = canvasWidget.RenderTexture.Texture.Height;
-        Renderer.ViewTopLeft = viewOffset / Level.TileSize;
+        Renderer.ViewTopLeft = doc.ViewOffset / Level.TileSize;
         Renderer.ViewBottomRight =
-            (viewOffset + new Vector2(viewportW, viewportH) / viewZoom)
+            (ViewOffset + new Vector2(viewportW, viewportH) / doc.ViewZoom)
             / Level.TileSize;
-        Renderer.ViewZoom = viewZoom;
+        Renderer.ViewZoom = doc.ViewZoom;
 
         // obtain mouse coordinates
-        mouseCellFloat.X = (canvasWidget.MouseX / viewZoom + viewOffset.X) / Level.TileSize;
-        mouseCellFloat.Y = (canvasWidget.MouseY / viewZoom + viewOffset.Y) / Level.TileSize;
+        mouseCellFloat.X = (canvasWidget.MouseX / doc.ViewZoom + doc.ViewOffset.X) / Level.TileSize;
+        mouseCellFloat.Y = (canvasWidget.MouseY / doc.ViewZoom + doc.ViewOffset.Y) / Level.TileSize;
         mouseCx = (int) Math.Floor(mouseCellFloat.X);
         mouseCy = (int) Math.Floor(mouseCellFloat.Y);
 
@@ -455,7 +452,7 @@ class LevelView
             if (EditorWindow.IsPanning || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
             {
                 var mouseDelta = Raylib.GetMouseDelta();
-                viewOffset -= mouseDelta / viewZoom;
+                ViewOffset -= mouseDelta / ViewZoom;
             }
 
             // begin alt+left panning
@@ -481,13 +478,13 @@ class LevelView
                 wheelMove = -1f;
             }
 
-            zoomSteps = Math.Clamp(zoomSteps + wheelMove, MinZoomSteps, MaxZoomSteps);
+            doc.ZoomSteps = Math.Clamp(doc.ZoomSteps + wheelMove, MinZoomSteps, MaxZoomSteps);
 
             if (wheelMove != 0f)
             {
-                var newZoom = MathF.Pow(ZoomFactorPerStep, zoomSteps);
-                Zoom((float)(newZoom / viewZoom), mouseCellFloat * Level.TileSize);
-                viewZoom = newZoom; // to mitigate potential floating point error accumulation
+                var newZoom = MathF.Pow(ZoomFactorPerStep, doc.ZoomSteps);
+                Zoom((float)(newZoom / doc.ViewZoom), mouseCellFloat * Level.TileSize);
+                doc.ViewZoom = newZoom; // to mitigate potential floating point error accumulation
             }
 
             /*if (wheelMove > 0f && zoomSteps < 7)
@@ -516,10 +513,10 @@ class LevelView
     public void BeginLevelScissorMode()
     {
         Raylib.BeginScissorMode(
-            (int) (-viewOffset.X * viewZoom),
-            (int) (-viewOffset.Y * viewZoom),
-            (int) (RainEd.Instance.Level.Width * Level.TileSize * viewZoom),
-            (int) (RainEd.Instance.Level.Height * Level.TileSize * viewZoom)
+            (int) (-ViewOffset.X * ViewZoom),
+            (int) (-ViewOffset.Y * ViewZoom),
+            (int) (RainEd.Instance.Level.Width * Level.TileSize * ViewZoom),
+            (int) (RainEd.Instance.Level.Height * Level.TileSize * ViewZoom)
         );
     }
 }

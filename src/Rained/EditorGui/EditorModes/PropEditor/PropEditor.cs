@@ -8,7 +8,7 @@ namespace RainEd;
 partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
-    private readonly LevelView window;
+    private readonly LevelWindow window;
     
     private readonly List<Prop> selectedProps = new();
     private List<Prop>? initSelectedProps = null; // used for add rect select mode
@@ -54,7 +54,7 @@ partial class PropEditor : IEditorMode
 
     private ITransformMode? transformMode;
 
-    public PropEditor(LevelView window)
+    public PropEditor(LevelWindow window)
     {
         this.window = window;
         selectedInit = RainEd.Instance.PropDatabase.Categories[selectedPropGroup].Props[0];
@@ -328,7 +328,7 @@ partial class PropEditor : IEditorMode
         level.SortPropsByDepth();
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
 
         // draw geometry/tile layers
         var drawTiles = RainEd.Instance.Preferences.ViewTiles;
@@ -338,7 +338,7 @@ partial class PropEditor : IEditorMode
             Raylib.BeginTextureMode(layerFrames[l]);
 
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, LevelView.GeoColor(255));
+            levelRender.RenderGeometry(l, LevelWindow.GeoColor(255));
             if (drawTiles)
                 levelRender.RenderTiles(l, 100);
         }

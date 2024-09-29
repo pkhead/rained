@@ -16,7 +16,7 @@ enum KeyShortcut : int
     ViewZoomIn, ViewZoomOut,
     IncreaseBrushSize, DecreaseBrushSize,
 
-    New, Open, Save, SaveAs,
+    New, Open, Save, SaveAs, CloseFile, CloseAllFiles,
     Cut, Copy, Paste, Undo, Redo,
 
     Render, ExportGeometry,
@@ -262,10 +262,10 @@ static class KeyShortcuts
     public static bool Deactivated(KeyShortcut id)
         => keyShortcuts[id].IsDeactivated;
 
-    public static void ImGuiMenuItem(KeyShortcut id, string name, bool selected = false)
+    public static void ImGuiMenuItem(KeyShortcut id, string name, bool selected = false, bool enabled = true)
     {
         var shortcutData = keyShortcuts[id];
-        if (ImGui.MenuItem(name, shortcutData.ShortcutString, selected))
+        if (ImGui.MenuItem(name, shortcutData.ShortcutString, selected, enabled))
             shortcutData.IsActivated = true;
     }
 
@@ -318,6 +318,9 @@ static class KeyShortcuts
         Register("Open File", KeyShortcut.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
         Register("Save File", KeyShortcut.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
         Register("Save File As", KeyShortcut.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+        Register("Close", KeyShortcut.CloseFile, ImGuiKey.W, ImGuiModFlags.Ctrl);
+        Register("Close All", KeyShortcut.CloseAllFiles, ImGuiKey.W, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+
         Register("Render", KeyShortcut.Render, ImGuiKey.R, ImGuiModFlags.Ctrl);
         Register("Export Geometry", KeyShortcut.ExportGeometry, ImGuiKey.R, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
 

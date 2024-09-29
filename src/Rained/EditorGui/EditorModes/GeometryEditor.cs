@@ -9,7 +9,7 @@ class GeometryEditor : IEditorMode
 {
     public string Name { get => "Geometry"; }
 
-    private readonly LevelView window;
+    private readonly LevelWindow window;
     
     public enum Tool : int
     {
@@ -125,7 +125,7 @@ class GeometryEditor : IEditorMode
     private int mirrorOriginX;
     private int mirrorOriginY;
 
-    public GeometryEditor(LevelView levelView)
+    public GeometryEditor(LevelWindow levelView)
     {
         layerMask = new bool[3];
         layerMask[0] = true;
@@ -428,7 +428,7 @@ class GeometryEditor : IEditorMode
         var levelRender = window.Renderer;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelView.BackgroundColor);
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
 
         // update layer colors
         {
@@ -491,7 +491,7 @@ class GeometryEditor : IEditorMode
                 {
                     var alpha = (l == shownLayer) ? 255 : 50;
                     if (l == 0) foregroundAlpha = alpha;
-                    var color = LevelView.GeoColor(alpha);
+                    var color = LevelWindow.GeoColor(alpha);
                     int offset = (l - shownLayer) * 2;
 
                     Rlgl.PushMatrix();
