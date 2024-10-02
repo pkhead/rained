@@ -16,7 +16,7 @@
 
         5. Stores the line numbers. I guess. And the actual string.
 */
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 [Serializable]
 public class MergeException : Exception

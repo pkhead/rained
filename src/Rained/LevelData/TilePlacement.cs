@@ -1,5 +1,5 @@
-using RainEd.Assets;
-namespace RainEd.LevelData;
+using Rained.Assets;
+namespace Rained.LevelData;
 
 enum TilePlacementStatus
 {

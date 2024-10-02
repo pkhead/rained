@@ -1,7 +1,7 @@
 using ImGuiNET;
 
 using System.Runtime.InteropServices;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 static class AboutWindow
 {

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 using ImGuiNET;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 static class DebugWindow
 {

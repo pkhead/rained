@@ -1,4 +1,4 @@
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// A standard repository for shaders.

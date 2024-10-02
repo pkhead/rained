@@ -1,5 +1,5 @@
 using System.Text;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 partial class FileBrowser
 {

@@ -3,7 +3,7 @@ using System.Numerics;
 using Glib;
 using Raylib_cs;
 using System.Runtime.InteropServices;
-using RainEd;
+using Rained;
 namespace ImGuiNET;
 
 static class ImGuiExt
@@ -205,7 +205,7 @@ static class ImGuiExt
         var tex = framebuffer.GetTexture(slot);
 
         // determine if vertical flip is necessary
-        if (RainEd.RainEd.RenderContext!.OriginBottomLeft)
+        if (Rained.RainEd.RenderContext!.OriginBottomLeft)
             ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f));
         else
             ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height));
@@ -289,9 +289,9 @@ static class ImGuiExt
         // link interactive
         if (ImGui.InvisibleButton(id, textSize))
         {
-            if (!RainEd.Platform.OpenURL(link))
+            if (!Rained.Platform.OpenURL(link))
             {
-                RainEd.Log.Error("Could not open URL on user platform.");
+                Rained.Log.Error("Could not open URL on user platform.");
             }
         }
 

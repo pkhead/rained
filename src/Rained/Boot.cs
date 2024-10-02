@@ -7,7 +7,7 @@ using ImGuiNET;
 using System.Globalization;
 using Glib;
 
-namespace RainEd
+namespace Rained
 {
     static class Boot
     {

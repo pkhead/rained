@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 class LevelResizeWindow
 {

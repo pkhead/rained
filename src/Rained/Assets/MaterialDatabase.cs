@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 record MaterialInfo
 {

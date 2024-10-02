@@ -1,4 +1,4 @@
-namespace RainEd.EditorGui.Editors;
+namespace Rained.EditorGui.Editors;
 
 interface IEditorMode
 {

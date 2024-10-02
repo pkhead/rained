@@ -2,7 +2,7 @@ using ImGuiNET;
 using Raylib_cs;
 using System.Runtime.InteropServices;
 
-namespace RainEd;
+namespace Rained;
 
 enum KeyShortcut : int
 {

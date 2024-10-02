@@ -1,4 +1,4 @@
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 abstract class FileBrowserPreview : IDisposable
 {

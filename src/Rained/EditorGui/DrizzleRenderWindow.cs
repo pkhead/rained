@@ -2,12 +2,12 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using System.Diagnostics;
-using DrizzleRender = RainEd.Drizzle.DrizzleRender;
-using RenderState = RainEd.Drizzle.DrizzleRender.RenderState;
+using DrizzleRender = Rained.Drizzle.DrizzleRender;
+using RenderState = Rained.Drizzle.DrizzleRender.RenderState;
 using System.Runtime.CompilerServices;
 using System.Globalization;
-using RainEd.LevelData;
-namespace RainEd.EditorGui;
+using Rained.LevelData;
+namespace Rained.EditorGui;
 
 class DrizzleRenderWindow : IDisposable
 {

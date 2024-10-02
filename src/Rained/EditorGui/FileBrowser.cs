@@ -4,7 +4,7 @@ using ImGuiNET;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 partial class FileBrowser
 {

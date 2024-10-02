@@ -1,7 +1,7 @@
 using ImGuiNET;
 using System.Numerics;
 
-namespace RainEd.EditorGui.Editors;
+namespace Rained.EditorGui.Editors;
 
 partial class TileEditor : IEditorMode
 {

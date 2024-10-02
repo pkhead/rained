@@ -1,5 +1,5 @@
-using RainEd.LevelData;
-namespace RainEd.Assets;
+using Rained.LevelData;
+namespace Rained.Assets;
 
 enum EffectType
 {

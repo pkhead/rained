@@ -1,6 +1,6 @@
 using System.Numerics;
 using System.Text;
-namespace RainEd.Lingo;
+namespace Rained.Lingo;
 
 public class LingoParser
 {

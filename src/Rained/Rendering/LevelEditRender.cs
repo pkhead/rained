@@ -2,9 +2,9 @@ using Raylib_cs;
 using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
-using RainEd.LevelData;
-using RainEd.Assets;
-namespace RainEd.Rendering;
+using Rained.LevelData;
+using Rained.Assets;
+namespace Rained.Rendering;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
 class LevelEditRender : IDisposable

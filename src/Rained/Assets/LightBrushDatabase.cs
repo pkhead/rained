@@ -1,4 +1,4 @@
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 struct LightBrush
 {

@@ -1,7 +1,7 @@
 using System.Numerics;
-using RainEd.Assets;
+using Rained.Assets;
 using Raylib_cs;
-namespace RainEd.LevelData;
+namespace Rained.LevelData;
 
 public struct RotatedRect
 {

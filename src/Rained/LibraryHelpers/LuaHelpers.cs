@@ -1,7 +1,7 @@
 using System.Reflection;
 using KeraLua;
 
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// Class used to push C# functions to the Lua state.

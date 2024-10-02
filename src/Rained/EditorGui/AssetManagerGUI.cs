@@ -1,10 +1,10 @@
 /**
 * This is used by PreferencesWindow
 */
-using RainEd.Assets;
+using Rained.Assets;
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 static class AssetManagerGUI
 {

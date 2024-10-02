@@ -1,10 +1,10 @@
-using RainEd.Assets;
+using Rained.Assets;
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
-using RainEd.Autotiles;
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.Autotiles;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 partial class TileEditor : IEditorMode
 {

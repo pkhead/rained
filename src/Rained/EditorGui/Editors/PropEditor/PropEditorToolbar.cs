@@ -1,10 +1,10 @@
 using ImGuiNET;
 using System.Numerics;
 using Raylib_cs;
-using RainEd.Assets;
-using RainEd.LevelData;
+using Rained.Assets;
+using Rained.LevelData;
 
-namespace RainEd.EditorGui.Editors;
+namespace Rained.EditorGui.Editors;
 
 partial class PropEditor : IEditorMode
 {

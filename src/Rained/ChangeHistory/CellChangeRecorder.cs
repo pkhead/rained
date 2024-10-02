@@ -1,6 +1,6 @@
 using System.Numerics;
-using RainEd.LevelData;
-namespace RainEd.ChangeHistory;
+using Rained.LevelData;
+namespace Rained.ChangeHistory;
 
 class CellChangeRecord : IChangeRecord
 {

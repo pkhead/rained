@@ -1,8 +1,8 @@
 using Raylib_cs;
 using System.Numerics;
-using RainEd.EditorGui;
-using RainEd.Assets;
-namespace RainEd.LevelData;
+using Rained.EditorGui;
+using Rained.Assets;
+namespace Rained.LevelData;
 
 struct BrushAtom
 {

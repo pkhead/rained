@@ -1,4 +1,4 @@
-namespace RainEd.Lingo;
+namespace Rained.Lingo;
 
 public class ParseException : Exception
 {

@@ -1,9 +1,9 @@
 using ImGuiNET;
 using Raylib_cs;
 using System.Numerics;
-using RainEd.Assets;
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.Assets;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 class EffectsEditor : IEditorMode
 {

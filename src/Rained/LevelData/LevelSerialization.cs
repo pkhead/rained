@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Numerics;
 using System.Text;
-using RainEd.Assets;
+using Rained.Assets;
 using Raylib_cs;
-namespace RainEd.LevelData;
+namespace Rained.LevelData;
 
 record LevelLoadResult()
 {

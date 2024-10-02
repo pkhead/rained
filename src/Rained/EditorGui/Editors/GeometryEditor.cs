@@ -1,8 +1,8 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 class GeometryEditor : IEditorMode
 {

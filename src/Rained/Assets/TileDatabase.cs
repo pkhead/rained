@@ -1,7 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 public enum TileType : byte
 {

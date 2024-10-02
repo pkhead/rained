@@ -1,4 +1,4 @@
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 using ImGuiNET;
 using Raylib_cs;

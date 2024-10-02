@@ -1,7 +1,7 @@
-using RainEd.Assets;
+using Rained.Assets;
 using Raylib_cs;
 using System.Numerics;
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 enum PropType
 {

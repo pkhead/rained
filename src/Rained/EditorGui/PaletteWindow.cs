@@ -1,5 +1,5 @@
 using ImGuiNET;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 static class PaletteWindow
 {

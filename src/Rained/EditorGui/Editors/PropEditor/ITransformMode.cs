@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 partial class PropEditor : IEditorMode
 {

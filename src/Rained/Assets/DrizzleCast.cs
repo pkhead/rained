@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-namespace RainEd.Assets;
+namespace Rained.Assets;
 
 /// <summary>
 /// Stores the database of Drizzle cast libraries, read from the reading the drizzle-cast directory.

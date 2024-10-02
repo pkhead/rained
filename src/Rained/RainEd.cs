@@ -1,12 +1,12 @@
 using Raylib_cs;
 using ImGuiNET;
 using NLua.Exceptions;
-using RainEd.Autotiles;
-using RainEd.EditorGui;
-using RainEd.Assets;
-using RainEd.LevelData;
+using Rained.Autotiles;
+using Rained.EditorGui;
+using Rained.Assets;
+using Rained.LevelData;
 
-namespace RainEd;
+namespace Rained;
 
 [Serializable]
 public class RainEdStartupException : Exception
@@ -16,6 +16,9 @@ public class RainEdStartupException : Exception
     public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
 }
 
+/// <summary>
+/// The main application.
+/// </summary>
 sealed class RainEd
 {
     public const string Version = "v2.1.4";

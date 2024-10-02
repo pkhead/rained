@@ -6,8 +6,8 @@ using Drizzle.Logic;
 using Drizzle.Logic.Rendering;
 using Drizzle.Ported;
 using SixLabors.ImageSharp;
-using RainEd.Assets;
-namespace RainEd.Drizzle;
+using Rained.Assets;
+namespace Rained.Drizzle;
 
 enum RenderPreviewStage 
 {

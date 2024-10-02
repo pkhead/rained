@@ -1,4 +1,4 @@
-namespace RainEd.Autotiles;
+namespace Rained.Autotiles;
 using EditorGui;
 using System.Globalization;
 using ImGuiNET;

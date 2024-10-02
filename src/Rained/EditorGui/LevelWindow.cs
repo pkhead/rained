@@ -1,10 +1,10 @@
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
-using RainEd.EditorGui.Editors;
-using RainEd.Rendering;
-using RainEd.LevelData;
-namespace RainEd.EditorGui;
+using Rained.EditorGui.Editors;
+using Rained.Rendering;
+using Rained.LevelData;
+namespace Rained.EditorGui;
 
 class LevelWindow
 {

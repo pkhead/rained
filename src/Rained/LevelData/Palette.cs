@@ -1,5 +1,5 @@
 using Raylib_cs;
-namespace RainEd.LevelData;
+namespace Rained.LevelData;
 
 enum PaletteLightLevel
 {

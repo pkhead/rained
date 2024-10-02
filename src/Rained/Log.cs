@@ -1,4 +1,4 @@
-namespace RainEd;
+namespace Rained;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;

@@ -3,8 +3,8 @@ using ImGuiNET;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 class CameraEditor : IEditorMode
 {

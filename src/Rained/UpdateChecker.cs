@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Text.Json;
 
-namespace RainEd;
+namespace Rained;
 
 record class RainedVersionInfo
 {

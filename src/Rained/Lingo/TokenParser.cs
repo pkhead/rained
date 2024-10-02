@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace RainEd.Lingo;
+namespace Rained.Lingo;
 
 class TokenParser
 {

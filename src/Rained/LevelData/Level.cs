@@ -5,8 +5,8 @@
 */
 using System.Numerics;
 using Raylib_cs;
-using RainEd.Assets;
-namespace RainEd.LevelData;
+using Rained.Assets;
+namespace Rained.LevelData;
 
 public enum GeoType : sbyte
 {

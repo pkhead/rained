@@ -3,7 +3,7 @@ using ImGuiNET;
 using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 static class PreferencesWindow
 {

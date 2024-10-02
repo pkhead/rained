@@ -1,7 +1,7 @@
 using ImGuiNET;
 using Raylib_cs;
-using RainEd.LevelData;
-namespace RainEd.EditorGui.Editors;
+using Rained.LevelData;
+namespace Rained.EditorGui.Editors;
 
 class EnvironmentEditor : IEditorMode
 {

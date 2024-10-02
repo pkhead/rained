@@ -1,4 +1,4 @@
-namespace RainEd.Autotiles;
+namespace Rained.Autotiles;
 
 interface IAutotileInputBuilder
 {

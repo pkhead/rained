@@ -1,6 +1,6 @@
 using System.Reflection;
-using RainEd.Assets;
-namespace RainEd;
+using Rained.Assets;
+namespace Rained;
 
 /// <summary>
 /// Handles saving/loading of properties in the editorConfig.txt file

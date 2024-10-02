@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd.EditorGui;
+namespace Rained.EditorGui;
 
 enum PopupButtonList
 {

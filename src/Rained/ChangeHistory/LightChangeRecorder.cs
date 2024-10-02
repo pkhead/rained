@@ -1,8 +1,8 @@
 using Raylib_cs;
-using RainEd.Assets;
-using RainEd.LevelData;
-using RainEd.EditorGui.Editors;
-namespace RainEd.ChangeHistory;
+using Rained.Assets;
+using Rained.LevelData;
+using Rained.EditorGui.Editors;
+namespace Rained.ChangeHistory;
 
 class LightMapChangeRecord : IChangeRecord
 {

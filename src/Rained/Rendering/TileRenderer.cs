@@ -1,8 +1,8 @@
 using System.Numerics;
-using RainEd.Assets;
+using Rained.Assets;
 using Raylib_cs;
-using RainEd.LevelData;
-namespace RainEd.Rendering;
+using Rained.LevelData;
+namespace Rained.Rendering;
 
 class TileRenderer
 {

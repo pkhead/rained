@@ -3,10 +3,10 @@ using System.Text;
 using ImGuiNET;
 using NLua;
 using NLua.Exceptions;
-using RainEd.Autotiles;
-using RainEd.EditorGui;
-using RainEd.LevelData;
-namespace RainEd;
+using Rained.Autotiles;
+using Rained.EditorGui;
+using Rained.LevelData;
+namespace Rained;
 
 static class LuaInterface
 {

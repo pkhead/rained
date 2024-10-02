@@ -1,4 +1,4 @@
-namespace RainEd.ChangeHistory;
+namespace Rained.ChangeHistory;
 
 interface IChangeRecord
 {

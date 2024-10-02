@@ -1,4 +1,4 @@
-namespace RainEd.Autotiles;
+namespace Rained.Autotiles;
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;

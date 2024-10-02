@@ -1,4 +1,4 @@
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// Provides generalized functions where I don't know a good class to put it in.

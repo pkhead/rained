@@ -1,6 +1,6 @@
 using System.Numerics;
-using RainEd.LevelData;
-namespace RainEd.Rendering;
+using Rained.LevelData;
+namespace Rained.Rendering;
 
 /// <summary>
 /// A geometry renderer that builds chunk meshes
