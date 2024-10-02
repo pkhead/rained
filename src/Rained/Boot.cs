@@ -5,10 +5,9 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
-using Serilog;
 using Glib;
 
-namespace RainEd
+namespace Rained
 {
     static class Boot
     {
@@ -36,8 +35,6 @@ namespace RainEd
         // window scale for dpi
         public static float WindowScale { get; set; } = 1.0f;
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
-
-        private static Serilog.Core.Logger? _logger = null;
 
         private static void Main(string[] args)
         {
@@ -98,33 +95,12 @@ namespace RainEd
 
             // setup serilog
             {
-                Directory.CreateDirectory(Path.Combine(AppDataPath, "logs"));
-
                 bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
                 #if DEBUG
                 logToStdout = true;
                 #endif
 
-                var logLatest = Path.Combine(AppDataPath, "logs", "latest.log.txt");
-                if (File.Exists(logLatest))
-                    File.Delete(logLatest);
-
-                var loggerConfig = new LoggerConfiguration()
-                #if DEBUG
-                .MinimumLevel.Debug()
-                #endif
-                .WriteTo.File(
-                    Path.Combine(AppDataPath, "logs", "log.txt"),
-                    rollingInterval: RollingInterval.Hour,
-                    retainedFileCountLimit: 10
-                )
-                .WriteTo.File(logLatest, retainedFileCountLimit: 1);
-
-                if (logToStdout)
-                    loggerConfig = loggerConfig.WriteTo.Console();
-
-                _logger = loggerConfig.CreateLogger();
-                Serilog.Log.Logger = _logger;
+                Log.Setup(logToStdout);
             }
 
             RenderContext.Log = (LogLevel logLevel, string msg) =>
@@ -134,7 +110,7 @@ namespace RainEd
                 else if (logLevel == LogLevel.Information)
                     Log.Information("[GL] " + msg);
                 else if (logLevel == LogLevel.Error)
-                    Log.Error("[GL] " + msg);
+                    Log.UserLogger.Error("[GL] " + msg);
             };
 
             {
@@ -370,7 +346,7 @@ namespace RainEd
             GC.WaitForPendingFinalizers();
             
             Raylib.CloseWindow();
-            _logger.Dispose();
+            Log.Close();
         }
 
         private static void CloseSplashScreenWindow()

@@ -1,9 +1,9 @@
-namespace RainEd;
+namespace Rained.Autotiles;
 using System.Numerics;
 using Raylib_cs;
-using Autotiles;
+using LevelData;
 
-class AutotileRectBuilder(Autotiles.Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
+class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
 {
     private readonly Autotile autotile = autotile;
     private readonly Vector2i startPos = startPos;

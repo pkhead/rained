@@ -1,7 +1,7 @@
 using ImGuiNET;
 using System.Numerics;
 using System.Text.Json;
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// A JSON-serializable ImGui style

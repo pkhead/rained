@@ -1,8 +1,8 @@
 // this is just a single property, so I figured it wasn't worth it
 // to write a whole DefaultMaterialChangeRecorder for it, and instead
 // write the code for that in TileEditor
-
-namespace RainEd.ChangeHistory;
+using Rained.EditorGui.Editors;
+namespace Rained.ChangeHistory;
 
 class DefaultMaterialChangeRecord : IChangeRecord
 {

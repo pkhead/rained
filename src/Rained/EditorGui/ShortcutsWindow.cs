@@ -1,8 +1,7 @@
-using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using ImGuiNET;
-namespace RainEd;
+namespace Rained.EditorGui;
 
 static partial class ShortcutsWindow
 {

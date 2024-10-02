@@ -1,5 +1,5 @@
-namespace RainEd.Autotiles;
-
+namespace Rained.Autotiles;
+using LevelData;
 using System.Numerics;
 
 enum AutotileType
@@ -112,23 +112,23 @@ abstract class Autotile
 
     readonly struct InstancedPathTileTable
     {
-        public readonly Tiles.Tile? LeftDown;
-        public readonly Tiles.Tile? LeftUp;
-        public readonly Tiles.Tile? RightDown;
-        public readonly Tiles.Tile? RightUp;
-        public readonly Tiles.Tile? Vertical;
-        public readonly Tiles.Tile? Horizontal;
+        public readonly Assets.Tile? LeftDown;
+        public readonly Assets.Tile? LeftUp;
+        public readonly Assets.Tile? RightDown;
+        public readonly Assets.Tile? RightUp;
+        public readonly Assets.Tile? Vertical;
+        public readonly Assets.Tile? Horizontal;
 
-        public readonly Tiles.Tile? TRight;
-        public readonly Tiles.Tile? TLeft;
-        public readonly Tiles.Tile? TUp;
-        public readonly Tiles.Tile? TDown;
-        public readonly Tiles.Tile? XJunct;
+        public readonly Assets.Tile? TRight;
+        public readonly Assets.Tile? TLeft;
+        public readonly Assets.Tile? TUp;
+        public readonly Assets.Tile? TDown;
+        public readonly Assets.Tile? XJunct;
 
-        public readonly Tiles.Tile? CapRight;
-        public readonly Tiles.Tile? CapUp;
-        public readonly Tiles.Tile? CapLeft;
-        public readonly Tiles.Tile? CapDown;
+        public readonly Assets.Tile? CapRight;
+        public readonly Assets.Tile? CapUp;
+        public readonly Assets.Tile? CapLeft;
+        public readonly Assets.Tile? CapDown;
 
         public readonly bool AllowJunctions = false;
         public readonly bool PlaceCaps = false;
@@ -164,7 +164,7 @@ abstract class Autotile
         }
     }
 
-    private static PathDirection GetDirectionsFromTile(InstancedPathTileTable tileTable, Tiles.Tile tile)
+    private static PathDirection GetDirectionsFromTile(InstancedPathTileTable tileTable, Assets.Tile tile)
     {
         if (tile == tileTable.LeftDown)
             return PathDirection.Left | PathDirection.Down;
@@ -204,7 +204,7 @@ abstract class Autotile
         return 0;
     }
 
-    private static Tiles.Tile? GetTileFromDirections(InstancedPathTileTable tiles, PathDirection dirs)
+    private static Assets.Tile? GetTileFromDirections(InstancedPathTileTable tiles, PathDirection dirs)
     {
         var right = dirs.HasFlag(PathDirection.Right);
         var up = dirs.HasFlag(PathDirection.Up);

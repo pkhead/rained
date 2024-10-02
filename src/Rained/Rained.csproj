@@ -22,9 +22,10 @@
   <ItemGroup>
     <PackageReference Include="NLua" Version="1.7.2" />
     <PackageReference Include="RectpackSharp" Version="1.2.0" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Serilog" Version="4.0.2" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.TextWriter" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

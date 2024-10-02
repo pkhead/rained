@@ -1,10 +1,10 @@
 /**
 * This is used by PreferencesWindow
 */
-using RainEd.Assets;
+using Rained.Assets;
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd;
+namespace Rained.EditorGui;
 
 static class AssetManagerGUI
 {
@@ -561,7 +561,7 @@ static class AssetManagerGUI
         }
         catch (Exception e)
         {
-            Log.Error(e.ToString());
+            Log.UserLogger.Error(e.ToString());
             errorMsg = "Malformed Init.txt file in the new data folder";
 
             RainEd.Instance.AssetDataPath = oldPath;

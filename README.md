@@ -48,10 +48,10 @@ Back to the root directory, build and run Rained
 dotnet tool restore
 
 # usage of desktop GL or GLES/ANGLE is determined by OS.
-dotnet cake --target=Build
+dotnet cake
 
 # alternative build command with desktop GL forced on.
-dotnet cake --target=Build --gles=false
+dotnet cake --gles=false
 
 # run the project!
 dotnet run --project --no-build src/Rained/Rained.csproj
@@ -62,6 +62,20 @@ Upon first startup, you can configure where your Data folder is located. If you 
 Report bugs and other complaints by creating an issue or pinging @chromosoze on a Rain World modding Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
 
 Pull requests are welcome.
+
+### Subprojects
+Rained has multiple projects in the C# solution. Here is a list of their brief descriptions:
+
+|                    |                                                            |
+| ------------------ | ---------------------------------------------------------- |
+| **Drizzle**        | Port of the original renderer from Lingo to C#.            |
+| **Glib**           | OpenGL 3.3/OpenGL ES 2.0 and Silk.NET wrapper.             |
+| **Glib.ImGui**     | ImGui.NET backend for Glib/Silk.NET.                       |
+| **Glib.Tests**     | Test program for Glib visual output.                       |
+| **ImGui.NET**      | Freetype-enabled version of ImGui.NET.                     |
+| **Rained**         | The entire Rained application.                             |
+| **Rained.Console** | C application to launch Rained from a console environment. |
+| **Rained.Tests**   | A few unit tests for Rained.                               |
 
 ### The "nightly" tag
 The "nightly" tag really only exists so that I'm able to create nightly GitHub releases. It's a bit annoying. I wouldn't recommend interacting with it.

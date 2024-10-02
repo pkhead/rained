@@ -1,7 +1,6 @@
 using System.Globalization;
 using ImGuiNET;
-
-namespace RainEd;
+namespace Rained.EditorGui;
 
 static class EmergencySaveWindow
 {
@@ -12,11 +11,8 @@ static class EmergencySaveWindow
     private static string[] savDisplays = [];
     private static string[] dateList = [];
 
-    private static int radio = -1;
-
     public static void UpdateList(string[] emSavList)
     {
-        radio = -1;
         savList = new string[emSavList.Length];
         dateList = new string[emSavList.Length];
         savDisplays = new string[emSavList.Length];
@@ -32,8 +28,6 @@ static class EmergencySaveWindow
             savDisplays[i] = levelName[0..levelName.LastIndexOf('-')];
             dateList[i] = writeTime.ToString(culture.DateTimeFormat.ShortDatePattern, culture) + " at " + writeTime.ToString(culture.DateTimeFormat.ShortTimePattern, culture);
         }
-
-        if (emSavList.Length == 1) radio = 0;
     }
 
     public static void ShowWindow()
@@ -64,7 +58,7 @@ static class EmergencySaveWindow
                 {
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
-                    ImGui.RadioButton(savDisplays[i] + "##" + savList[i], ref radio, i);
+                    ImGui.TextUnformatted(savDisplays[i]);
                     ImGui.TableSetColumnIndex(1);
                     ImGui.TextUnformatted(dateList[i]);
                 }
@@ -74,9 +68,13 @@ static class EmergencySaveWindow
 
             ImGui.Separator();
 
-            if (ImGui.Button("Open", StandardPopupButtons.ButtonSize) && radio >= 0)
+            if (ImGui.Button("Open All", StandardPopupButtons.ButtonSize))
             {
-                RainEd.Instance.LoadLevel(savList[radio]);
+                foreach (var save in savList)
+                {
+                    RainEd.Instance.LoadLevel(save);
+                }
+
                 ImGui.CloseCurrentPopup();
                 IsWindowOpen = false;
             }
@@ -89,7 +87,7 @@ static class EmergencySaveWindow
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("Discard", StandardPopupButtons.ButtonSize))
+            if (ImGui.Button("Discard All", StandardPopupButtons.ButtonSize))
             {
                 RainEd.DiscardEmergencySaves();
                 ImGui.CloseCurrentPopup();

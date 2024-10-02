@@ -1,5 +1,5 @@
 using ImGuiNET;
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// Provides methods for ImGui font handling

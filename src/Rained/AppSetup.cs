@@ -5,7 +5,8 @@
 */
 
 using ImGuiNET;
-using RainEd;
+using Rained;
+using Rained.EditorGui;
 using Raylib_cs;
 using System.Numerics;
 using System.IO.Compression;

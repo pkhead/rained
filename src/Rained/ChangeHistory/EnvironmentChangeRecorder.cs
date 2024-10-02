@@ -1,4 +1,4 @@
-namespace RainEd.ChangeHistory;
+namespace Rained.ChangeHistory;
 
 struct EnvironmentData
 {

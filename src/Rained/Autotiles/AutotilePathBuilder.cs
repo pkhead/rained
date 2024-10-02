@@ -1,8 +1,9 @@
-namespace RainEd;
+namespace Rained.Autotiles;
 using System.Numerics;
 using Raylib_cs;
 using ImGuiNET;
-using Autotiles;
+using LevelData;
+using EditorGui;
 
 class AutotilePathBuilder : IAutotileInputBuilder
 {

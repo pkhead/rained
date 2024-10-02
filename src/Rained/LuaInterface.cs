@@ -1,11 +1,12 @@
-namespace RainEd;
-
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
 using NLua;
 using NLua.Exceptions;
-using Autotiles;
+using Rained.Autotiles;
+using Rained.EditorGui;
+using Rained.LevelData;
+namespace Rained;
 
 static class LuaInterface
 {
@@ -329,21 +330,6 @@ static class LuaInterface
 
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
-
-    enum LogLevel : byte
-    {
-        Warning,
-        Error,
-        Info
-    };
-
-    readonly struct LogEntry(LogLevel level, string msg)
-    {
-        public readonly LogLevel Level = level;
-        public readonly string Message = msg;
-    }
-
-    private static readonly List<LogEntry> Log = [];
     
     delegate void LuaPrintDelegate(params string[] args);
 
@@ -630,7 +616,7 @@ static class LuaInterface
                 if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
                 if (layer < 0 || layer > 2) return 0;
 
-                Tiles.Tile? tile = null;
+                Assets.Tile? tile = null;
 
                 if (tileName is not null)
                 {
@@ -1086,20 +1072,17 @@ static class LuaInterface
 
     public static void LogInfo(string msg)
     {
-        Serilog.Log.Information("[LUA] " + msg);
-        Log.Add(new LogEntry(LogLevel.Info, msg));
+        Log.UserLogger.Information("[lua] " + msg);
     }
 
     public static void LogWarning(string msg)
     {
-        Serilog.Log.Warning("[LUA] " + msg);
-        Log.Add(new LogEntry(LogLevel.Warning, msg));
+        Log.UserLogger.Warning("[lua] " + msg);
     }
 
     public static void LogError(string msg)
     {
-        Serilog.Log.Error("[LUA] " + msg);
-        Log.Add(new LogEntry(LogLevel.Error, msg));
+        Log.UserLogger.Error("[lua] " + msg);
     }
 
     private static void LuaPrint(params object[] args)
@@ -1128,51 +1111,6 @@ static class LuaInterface
         }
 
         LogWarning(stringBuilder.ToString());        
-    }
-
-    public static bool IsLogWindowOpen = false;
-    public static void ShowLogs()
-    {
-        if (!IsLogWindowOpen) return;
-
-        if (ImGui.Begin("Logs", ref IsLogWindowOpen))
-        {
-            if (ImGui.Button("Clear"))
-                Log.Clear();
-
-            if (ImGui.BeginChild("scrolling", Vector2.Zero, ImGuiChildFlags.None, ImGuiWindowFlags.HorizontalScrollbar))
-            {
-                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 5f));
-                
-                foreach (var msg in Log)
-                {
-                    switch (msg.Level)
-                    {
-                        case LogLevel.Error:
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 48f/255f, 48/255f, 1f));
-                            break;
-
-                        case LogLevel.Warning:
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 165f/255f, 48f/255f, 1f));
-                            break;
-
-                        case LogLevel.Info:
-                            ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.Text]);
-                            break;
-                    }
-                    
-                    ImGui.TextUnformatted(msg.Message);
-                    ImGui.PopStyleColor();
-                }
-                ImGui.PopStyleVar();
-
-                // auto-scroll
-                if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
-                    ImGui.SetScrollHereY(1f);
-                
-                ImGui.EndChild();
-            }
-        } ImGui.End();
     }
 
     /*public static void CheckAutotileRequirements()

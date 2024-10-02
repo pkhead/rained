@@ -1,7 +1,8 @@
-using RainEd.Props;
+using Rained.LevelData;
+using Rained.EditorGui.Editors;
 using System.Numerics;
 
-namespace RainEd.ChangeHistory;
+namespace Rained.ChangeHistory;
 
 record PropTransformExt
 {

@@ -1,7 +1,7 @@
 using System.Reflection;
 using KeraLua;
 
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// Class used to push C# functions to the Lua state.
@@ -92,7 +92,7 @@ static class LuaHelpers
         }
         catch (Exception e)
         {
-            Log.Error("A C# exception occured in a Lua context!\n{Error}", e);
+            Log.UserLogger.Error("A C# exception occured in a Lua context!\n{Error}", e);
             return lua.Error("C# exception: " + e.Message);
         }
     }

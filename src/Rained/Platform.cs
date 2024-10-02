@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
-namespace RainEd;
+namespace Rained;
 
 /// <summary>
 /// Provides methods to perform platform-specific tasks.

@@ -1,5 +1,5 @@
 using Glib;
-using RainEd;
+using Rained;
 using System.Diagnostics;
 using System.Numerics;
 namespace Raylib_cs;
@@ -43,7 +43,7 @@ static class Raylib
     private static double frameTime = 0.0;
     private static double targetFrameLength = 0.0;
     private static Stopwatch frameStopwatch = new();
-    private static RainEd.Platform.SleepHandler? sleepHandle;
+    private static Rained.Platform.SleepHandler? sleepHandle;
 
     private static Vector2? lastMousePos = null;
     private static Vector2 mouseDelta = Vector2.Zero;
@@ -431,7 +431,7 @@ static class Raylib
         }
         catch (ShaderCompilationException e)
         {
-            RainEd.Log.Error(e.ToString());
+            Rained.Log.Error(e.ToString());
             return new Shader();
         }
     }
@@ -448,7 +448,7 @@ static class Raylib
         }
         catch (ShaderCompilationException e)
         {
-            RainEd.Log.Error(e.ToString());
+            Rained.Log.Error(e.ToString());
             return new Shader();
         }
     }
@@ -502,7 +502,7 @@ static class Raylib
             var ms = frameStopwatch.ElapsedMilliseconds;
             if (ms < targetFrameLenMs)
             {
-                sleepHandle ??= new RainEd.Platform.SleepHandler();
+                sleepHandle ??= new Rained.Platform.SleepHandler();
                 var waitInMs = (int)(targetFrameLenMs - frameStopwatch.ElapsedMilliseconds) - 1;
                 if (waitInMs > 0) sleepHandle.Wait(waitInMs / 1000.0);
                 while (frameStopwatch.ElapsedMilliseconds < targetFrameLenMs)
@@ -679,7 +679,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            RainEd.Log.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
+            Rained.Log.UserLogger.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
             obj.image = null;
         }
 
@@ -744,8 +744,8 @@ static class Raylib
             }
             catch (Exception e)
             {
-                if (RainEd.RainEd.Instance is not null)
-                    RainEd.Log.Error("Error exporting image: {Exception}", e.ToString());
+                if (Rained.RainEd.Instance is not null)
+                    Log.UserLogger.Error("Error exporting image: {Exception}", e.ToString());
                 
                 return false;
             }
@@ -896,7 +896,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            RainEd.Log.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
+            Log.UserLogger.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
             return new Texture2D()
             {
                 ID = null

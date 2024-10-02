@@ -10,7 +10,7 @@ static class RlExt
         var tex = target.Texture;
 
         // determine if vertical flip is necessary
-        if (RainEd.RainEd.RenderContext!.OriginBottomLeft)
+        if (Rained.RainEd.RenderContext!.OriginBottomLeft)
             Raylib.DrawTexturePro(
                 texture: target.Texture,
                 source: new Rectangle(0f, tex.Height, tex.Width, -tex.Height),

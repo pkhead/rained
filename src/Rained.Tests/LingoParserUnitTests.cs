@@ -1,5 +1,5 @@
 namespace Rained.Tests;
-using LingoParser = RainEd.Lingo.LingoParser;
+using LingoParser = Rained.Lingo.LingoParser;
 
 public class LingoParserUnitTests
 {
@@ -79,7 +79,7 @@ public class LingoParserUnitTests
     public void ListTest()
     {
         var lingoParser = new LingoParser();
-        var res = lingoParser.Read("[1, 2, 3]") as RainEd.Lingo.List;
+        var res = lingoParser.Read("[1, 2, 3]") as Rained.Lingo.List;
         
         // check value list
         Assert.True(res is not null);
@@ -93,7 +93,7 @@ public class LingoParserUnitTests
     public void SymbolListTest()
     {
         var lingoParser = new LingoParser();
-        var res = lingoParser.Read("[#foo: \"a\" & \"b\", #bar: \"cd\"]") as RainEd.Lingo.List;
+        var res = lingoParser.Read("[#foo: \"a\" & \"b\", #bar: \"cd\"]") as Rained.Lingo.List;
 
         // check fields
         Assert.True(res is not null);

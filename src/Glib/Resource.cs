@@ -4,7 +4,9 @@ internal class ResourceList
 {
     private readonly List<WeakReference<Resource>> _allResources = [];
     private readonly Queue<Resource> _disposeQueue = [];
-    private readonly Mutex _mutex = new();
+
+    internal object syncRoot = new();
+    internal uint totalTextureMemory = 0;
 
     public void RegisterResource(Resource res)
     {
@@ -13,13 +15,14 @@ internal class ResourceList
 
     public void Idle()
     {
-        _mutex.WaitOne();
-        foreach (var resource in _disposeQueue)
+        lock (_disposeQueue)
         {
-            resource.Dispose();
+            foreach (var resource in _disposeQueue)
+            {
+                resource.Dispose();
+            }
+            _disposeQueue.Clear();
         }
-        _disposeQueue.Clear();
-        _mutex.ReleaseMutex();
     }
 
     public void DisposeRemaining()
@@ -33,9 +36,8 @@ internal class ResourceList
 
     public void QueueDispose(Resource resource)
     {
-        _mutex.WaitOne();
-        _disposeQueue.Enqueue(resource);
-        _mutex.ReleaseMutex();
+        lock (_disposeQueue)
+            _disposeQueue.Enqueue(resource);
     }
 }
 
@@ -73,7 +75,10 @@ public abstract class Resource : IDisposable
         if (disposing)
             FreeResources(_rctx);
         else
+        {
+            RenderContext.LogInfo(GetType().Name + " garbage collected");
             _rctx.resourceList.QueueDispose(this);
+        }
         
         _disposed = false;
     }

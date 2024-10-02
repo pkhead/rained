@@ -1,8 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
-
-namespace RainEd;
+namespace Rained.EditorGui;
 
 static class EditorWindow
 {
@@ -94,23 +93,57 @@ static class EditorWindow
         notifFlash = 0f;
     }
 
-    private static Action? promptCallback;
     private static bool promptUnsavedChanges;
     private static bool promptUnsavedChangesCancelable;
+    private static readonly List<TaskCompletionSource<bool>> _tcsUnsavedChanges = [];
 
-    public static void PromptUnsavedChanges(Action callback, bool canCancel = true)
+    public static bool PromptUnsavedChanges(LevelTab tab, Action<bool> callback, bool canCancel = true)
     {
-        var changeHistory = RainEd.Instance.ChangeHistory;
+        if (tab is null)
+        {
+            callback(true);
+            return false;
+        }
+        
+        var changeHistory = tab.ChangeHistory;
         promptUnsavedChangesCancelable = canCancel;
 
-        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath)))
+        async Task CallbackTask()
         {
-            promptUnsavedChanges = true;
-            promptCallback = callback;
+            callback(await PromptUnsavedChanges(tab, canCancel));
+        };
+
+        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(tab.FilePath)))
+        {
+            _ = CallbackTask();
+            return true;
         }
         else
         {
-            callback();
+            callback(true);
+            return false;
+        }
+    }
+
+    public static bool PromptUnsavedChanges(Action<bool> callback, bool canCancel = true) =>
+        PromptUnsavedChanges(RainEd.Instance.CurrentTab!, callback, canCancel);
+    
+    public static Task<bool> PromptUnsavedChanges(LevelTab tab, bool canCancel = true)
+    {
+        var changeHistory = tab.ChangeHistory;
+        promptUnsavedChangesCancelable = canCancel;
+        var tcs = new TaskCompletionSource<bool>();
+
+        if (changeHistory.HasChanges || (!canCancel && string.IsNullOrEmpty(tab.FilePath)))
+        {
+            promptUnsavedChanges = true;
+            _tcsUnsavedChanges.Add(tcs);
+            return tcs.Task;
+        }
+        else
+        {
+            tcs.SetResult(true);
+            return tcs.Task;
         }
     }
 
@@ -121,7 +154,8 @@ static class EditorWindow
             return isRw;
         }
 
-        fileBrowser = new FileBrowser(openMode, callback, RainEd.Instance.IsTemporaryFile ? null : Path.GetDirectoryName(RainEd.Instance.CurrentFilePath));
+        var tab = RainEd.Instance.CurrentTab;
+        fileBrowser = new FileBrowser(openMode, callback, (tab is null || tab.IsTemporaryFile) ? null : Path.GetDirectoryName(tab.FilePath));
         fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
         fileBrowser.PreviewCallback = (string path, bool isRw) =>
         {
@@ -134,6 +168,8 @@ static class EditorWindow
     {
         if (ImGui.BeginMainMenuBar())
         {
+            var fileActive = RainEd.Instance.CurrentTab is not null;
+
             if (ImGui.BeginMenu("File"))
             {
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
@@ -157,10 +193,7 @@ static class EditorWindow
                             {
                                 if (File.Exists(filePath))
                                 {
-                                    PromptUnsavedChanges(() =>
-                                    {
-                                        RainEd.Instance.LoadLevel(filePath);
-                                    });
+                                    RainEd.Instance.LoadLevel(filePath);
                                 }
                                 else
                                 {
@@ -175,13 +208,16 @@ static class EditorWindow
                     ImGui.EndMenu();
                 }
 
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Save, "Save");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.SaveAs, "Save As...");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Save, "Save", enabled: fileActive);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.SaveAs, "Save As...", enabled: fileActive);
+
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.CloseFile, "Close", enabled: fileActive);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.CloseAllFiles, "Close All");
 
                 ImGui.Separator();
 
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...", enabled: fileActive);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...", enabled: fileActive);
                 ImGui.MenuItem("Mass Render", false);
 
                 ImGui.Separator();
@@ -193,7 +229,10 @@ static class EditorWindow
                 ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))
                 {
-                    PromptUnsavedChanges(() => RainEd.Instance.Running = false);
+                    PromptUnsavedChanges((bool ok) =>
+                    {
+                        if (ok) RainEd.Instance.Running = false;
+                    });
                 }
 
                 ImGui.EndMenu();
@@ -201,15 +240,15 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("Edit"))
             {
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Undo, "Undo");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Redo, "Redo");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Undo, "Undo", enabled: fileActive);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Redo, "Redo", enabled: fileActive);
                 //ImGui.Separator();
                 //ImGuiMenuItemShortcut(ShortcutID.Cut, "Cut");
                 //ImGuiMenuItemShortcut(ShortcutID.Copy, "Copy");
                 //ImGuiMenuItemShortcut(ShortcutID.Paste, "Paste");
                 ImGui.Separator();
 
-                if (ImGui.MenuItem("Resize Level..."))
+                if (ImGui.MenuItem("Resize Level...", enabled: fileActive))
                 {
                     levelResizeWin = new LevelResizeWindow();
                 }
@@ -219,7 +258,7 @@ static class EditorWindow
                 {
                     ImGui.Separator();
 
-                    if (ImGui.BeginMenu("Commands"))
+                    if (ImGui.BeginMenu("Commands", fileActive))
                     {
                         foreach (RainEd.Command cmd in customCommands)
                         {
@@ -234,7 +273,10 @@ static class EditorWindow
                 }
 
                 ImGui.Separator();
-                RainEd.Instance.LevelView.ShowEditMenu();
+                if (fileActive)
+                {
+                    RainEd.Instance.LevelView.ShowEditMenu();
+                }
 
                 ImGui.EndMenu();
             }
@@ -243,9 +285,9 @@ static class EditorWindow
             {
                 var prefs = RainEd.Instance.Preferences;
 
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out");
-                if (ImGui.MenuItem("Reset View"))
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomIn, "Zoom In", enabled: fileActive);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ViewZoomOut, "Zoom Out", enabled: fileActive);
+                if (ImGui.MenuItem("Reset View", enabled: fileActive))
                 {
                     RainEd.Instance.LevelView.ResetView();
                 }
@@ -280,9 +322,9 @@ static class EditorWindow
                     ShortcutsWindow.IsWindowOpen = !ShortcutsWindow.IsWindowOpen;
                 }
 
-                if (ImGui.MenuItem("Plugin Logs", null, LuaInterface.IsLogWindowOpen))
+                if (ImGui.MenuItem("Logs", null, LogsWindow.IsWindowOpen))
                 {
-                    LuaInterface.IsLogWindowOpen = !LuaInterface.IsLogWindowOpen;
+                    LogsWindow.IsWindowOpen = !LogsWindow.IsWindowOpen;
                 }
 
                 if (ImGui.MenuItem("Palettes", null, PaletteWindow.IsWindowOpen))
@@ -322,64 +364,73 @@ static class EditorWindow
 
     private static void HandleShortcuts()
     {
-        var changeHistory = RainEd.Instance.ChangeHistory;
+        if (RainEd.Instance.IsLevelLocked) return;
+        
+        var fileActive = RainEd.Instance.CurrentTab is not null;
         var prefs = RainEd.Instance.Preferences;
         var renderer = RainEd.Instance.LevelView.Renderer;
 
         if (KeyShortcuts.Activated(KeyShortcut.New))
         {
-            PromptUnsavedChanges(() =>
-            {
-                Log.Information("Load default level...");
-                RainEd.Instance.LoadDefaultLevel();
-                Log.Information("Done!");
-            });
+            Log.Information("Load default level...");
+            RainEd.Instance.LoadDefaultLevel();
+            Log.Information("Done!");
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Open))
         {
-            PromptUnsavedChanges(() =>
-            {
-                OpenLevelBrowser(FileBrowser.OpenMode.Read, RainEd.Instance.LoadLevel);
-            });
+            OpenLevelBrowser(FileBrowser.OpenMode.Read, RainEd.Instance.LoadLevel);
         }
 
-        if (KeyShortcuts.Activated(KeyShortcut.Save))
+        if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
         {
-            if (RainEd.Instance.IsTemporaryFile)
+            if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
                 OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
             else
                 SaveLevelCallback(RainEd.Instance.CurrentFilePath);
         }
 
-        if (KeyShortcuts.Activated(KeyShortcut.SaveAs))
+        if (KeyShortcuts.Activated(KeyShortcut.SaveAs) && fileActive)
         {
             OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
         }
 
-        if (KeyShortcuts.Activated(KeyShortcut.Undo))
+        if (KeyShortcuts.Activated(KeyShortcut.CloseFile) && fileActive)
         {
-            changeHistory.Undo();
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Redo))
-        {
-            changeHistory.Redo();
-        }
-
-        if (KeyShortcuts.Activated(KeyShortcut.Render))
-        {
-            PromptUnsavedChanges(() =>
+            PromptUnsavedChanges((bool ok) =>
             {
-                drizzleRenderWindow = new DrizzleRenderWindow(false);
+                if (ok) RainEd.Instance.CloseTab(RainEd.Instance.CurrentTab!);
+            });
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.CloseAllFiles))
+        {
+            _ = CloseAllTabs();
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Undo) && fileActive)
+        {
+            RainEd.Instance.CurrentTab?.ChangeHistory.Undo();
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Redo) && fileActive)
+        {
+            RainEd.Instance.CurrentTab?.ChangeHistory.Redo();
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Render) && fileActive)
+        {
+            PromptUnsavedChanges((bool ok) =>
+            {
+                if (ok) drizzleRenderWindow = new DrizzleRenderWindow(false);
             }, false);
         }
 
-        if (KeyShortcuts.Activated(KeyShortcut.ExportGeometry))
+        if (KeyShortcuts.Activated(KeyShortcut.ExportGeometry) && fileActive)
         {
-            PromptUnsavedChanges(() =>
+            PromptUnsavedChanges((bool ok) =>
             {
-                drizzleRenderWindow = new DrizzleRenderWindow(true);
+                if (ok) drizzleRenderWindow = new DrizzleRenderWindow(true);
             }, false);
         }
 
@@ -426,10 +477,18 @@ static class EditorWindow
             }
 
             if (success)
-                promptCallback?.Invoke();
+            {
+                foreach (var t in _tcsUnsavedChanges.ToArray())
+                {
+                    _tcsUnsavedChanges.Remove(t);
+                    t.SetResult(true);
+                }
+            }
         }
-
-        promptCallback = null;
+        else
+        {
+            _tcsUnsavedChanges.Clear();
+        }
     }
 
     static void ShowMiscWindows()
@@ -439,7 +498,7 @@ static class EditorWindow
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
         PaletteWindow.ShowWindow();
-        LuaInterface.ShowLogs();
+        LogsWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         GuideViewerWindow.ShowWindow();
     }
@@ -460,14 +519,90 @@ static class EditorWindow
     
     private static bool closeDrizzleRenderWindow = false;
 
+    private static LevelTab? _prevTab = null;
+    private static int _prevTabCount = 0;
+
     public static void Render()
     {
         DrawMenuBar();
         HandleShortcuts();
-        
-        RainEd.Instance.LevelView.Render();
+        LevelTab? tabToDelete = null;
 
-        // render level browser
+        var workAreaFlags = ImGuiWindowFlags.NoTitleBar |
+            ImGuiWindowFlags.NoCollapse |
+            ImGuiWindowFlags.NoDecoration |
+            ImGuiWindowFlags.NoTitleBar |
+            ImGuiWindowFlags.NoResize |
+            ImGuiWindowFlags.NoBringToFrontOnFocus |
+            ImGuiWindowFlags.NoMove;
+        
+        ImGui.SetNextWindowPos(ImGui.GetMainViewport().WorkPos);
+        ImGui.SetNextWindowSize(ImGui.GetMainViewport().WorkSize);
+
+        if (ImGui.Begin("Work area", workAreaFlags))
+        {
+            var dockspaceId = ImGui.GetID("Dockspace");
+            
+            if (ImGui.BeginTabBar("AAA", ImGuiTabBarFlags.DrawSelectedOverline | ImGuiTabBarFlags.Reorderable))
+            {
+                // if a tab switch was forced by outside code setting TabIndex
+                bool tabChanged = _prevTab != RainEd.Instance.CurrentTab;
+                var anyTabActive = false;
+
+                var tabIndex = 0;
+                foreach (var tab in RainEd.Instance.Tabs.ToArray())
+                {
+                    var tabId = tab.Name + "###" + tabIndex;
+                    var open = true;
+
+                    // use SetSelected on relevant tab if a tab switch was forced
+                    var tabFlags = ImGuiTabItemFlags.None;
+                    
+                    if (tabChanged && RainEd.Instance.CurrentTab == tab)
+                    {
+                        tabFlags |= ImGuiTabItemFlags.SetSelected;
+                        _prevTab = tab;
+                    }
+
+                    if (tab.ChangeHistory.HasChanges)
+                    {
+                        tabFlags |= ImGuiTabItemFlags.UnsavedDocument;
+                    }
+
+                    if (ImGui.BeginTabItem(tabId, ref open, tabFlags))
+                    {
+                        if (!tabChanged)
+                            RainEd.Instance.CurrentTab = tab;
+                        anyTabActive = true;
+                        _prevTab = tab;
+
+                        ImGui.DockSpace(dockspaceId, new Vector2(0f, 0f));
+
+                        //ImGui.PopStyleVar();
+                        RainEd.Instance.LevelView.Render();
+
+                        //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+                        ImGui.EndTabItem();
+                    }
+
+                    if (!open)
+                        tabToDelete = tab;
+                    
+                    tabIndex++;
+                }
+                
+                // imgui doesn't show a tab on the frame that it is deleted 
+                // but it's still being processed or something Idk???
+                // What the hell. Why.
+                // anyway that's why i only set this to null given these conditions.
+                if (!tabChanged && !anyTabActive && tabIndex == _prevTabCount)
+                    RainEd.Instance.CurrentTab = null;
+                _prevTabCount = tabIndex;
+
+                ImGui.EndTabBar();
+            }
+        } ImGui.End();
+
         FileBrowser.Render(ref fileBrowser);
         
         // render drizzle render, if in progress
@@ -589,13 +724,16 @@ static class EditorWindow
 
                 if (promptUnsavedChangesCancelable)
                 {
-                    if (promptCallback is not null)
+                    foreach (var t in _tcsUnsavedChanges.ToArray())
                     {
-                        promptCallback();
+                        _tcsUnsavedChanges.Remove(t);
+                        t.SetResult(true);
                     }
                 }
-                
-                promptCallback = null;
+                else
+                {
+                    _tcsUnsavedChanges.Clear();
+                }
             }
 
             if (promptUnsavedChangesCancelable)
@@ -604,7 +742,12 @@ static class EditorWindow
                 if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize) || ImGui.IsKeyPressed(ImGuiKey.Escape))
                 {
                     ImGui.CloseCurrentPopup();
-                    promptCallback = null;
+
+                    foreach (var t in _tcsUnsavedChanges.ToArray())
+                    {
+                        _tcsUnsavedChanges.Remove(t);
+                        t.SetResult(false);
+                    }
                 }
             }
 
@@ -613,6 +756,25 @@ static class EditorWindow
 
         if (timerDelay > 0)
             timerDelay--;
+        
+        // deferred tab deletion
+        if (tabToDelete is not null)
+            RainEd.Instance.DeferToNextFrame(() =>
+            {
+                var oldTab = RainEd.Instance.CurrentTab;
+                
+                bool didPrompt = PromptUnsavedChanges(tabToDelete, (bool ok) =>
+                {
+                    RainEd.Instance.CurrentTab = oldTab;
+                    if (ok) RainEd.Instance.CloseTab(tabToDelete);
+                });
+                
+                // i want it to switch to the tab that is being deleted
+                // when it shows the prompt, then switch back to the previous tab
+                // when done.
+                if (didPrompt)
+                    RainEd.Instance.CurrentTab = tabToDelete;
+            });
     }
 
     public static void UpdateMouseState()
@@ -636,5 +798,27 @@ static class EditorWindow
             if (wasLmbDown && !isLmbDown)
                 isLmbReleased = true;
         }
+    }
+
+    public static async Task<bool> CloseAllTabs()
+    {
+        LevelTab[] tabs = [..RainEd.Instance.Tabs];
+
+        foreach (var tab in tabs)
+        {
+            if (tab.ChangeHistory.HasChanges || string.IsNullOrEmpty(tab.FilePath))
+                RainEd.Instance.CurrentTab = tab;
+
+            if (await PromptUnsavedChanges(tab))
+            {
+                RainEd.Instance.CloseTab(tab);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

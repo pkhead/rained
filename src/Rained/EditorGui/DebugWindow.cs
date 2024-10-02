@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 using ImGuiNET;
-namespace RainEd;
+namespace Rained.EditorGui;
 
 static class DebugWindow
 {
@@ -18,11 +18,17 @@ static class DebugWindow
             var io = ImGui.GetIO();
 
             ImGui.TextUnformatted(string.Format("Application average {0:F3} ms/frame ({1:F1} FPS)", 1000.0f / io.Framerate, io.Framerate));
+            ImGui.TextUnformatted($"Total texture memory: {(float)Glib.RenderContext.Instance!.TotalTextureMemory / 1000000} mb");
             ImGui.Checkbox("Show demo window", ref _showDemoWindow);
 
             if (_showDemoWindow)
             {
                 ImGui.ShowDemoWindow();
+            }
+
+            if (ImGui.Button("GC"))
+            {
+                GC.Collect();
             }
 
             if (ImGui.CollapsingHeader("Tile atlases"))

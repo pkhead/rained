@@ -3,7 +3,8 @@ using ImGuiNET;
 using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
-namespace RainEd;
+namespace Rained.EditorGui;
+
 static class PreferencesWindow
 {
     private const string WindowName = "Preferences";
@@ -509,6 +510,8 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.Open);
         ShortcutButton(KeyShortcut.Save);
         ShortcutButton(KeyShortcut.SaveAs);
+        ShortcutButton(KeyShortcut.CloseFile);
+        ShortcutButton(KeyShortcut.CloseAllFiles);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.Render);
         ShortcutButton(KeyShortcut.ExportGeometry);

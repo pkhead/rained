@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-namespace RainEd;
+namespace Rained;
 
 partial class BootOptions
 {
