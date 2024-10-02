@@ -276,10 +276,7 @@ sealed class RainEd
         GC.WaitForPendingFinalizers();
 
         // check on the update checker
-        if (!versionCheckTask.IsCompleted)
-            versionCheckTask.Wait();
-        
-        if (versionCheckTask.IsCompletedSuccessfully)
+        try
         {
             LatestVersionInfo = versionCheckTask.Result;
 
@@ -298,10 +295,9 @@ sealed class RainEd
                 Log.Information("Version check was disabled");
             }
         }
-        else if (versionCheckTask.IsFaulted)
+        catch (Exception e)
         {
-            Log.Error("Version check faulted...");
-            Log.Error(versionCheckTask.Exception.ToString());
+            Log.Error("Version check faulted...\n" + e);
         }
 
         Log.Information("Boot successful!");
