@@ -94,7 +94,7 @@ class LightMap : IDisposable
         );
 
         // get light map as a texture
-        var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
+        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
 
         // put into a render texture
         lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
