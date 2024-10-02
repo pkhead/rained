@@ -3,7 +3,7 @@ Ported verison of ropeModel.lingo
 I commented WARNING in places where I'm not sure Lingo does exactly what I think it does
 **/
 using System.Numerics;
-namespace RainEd.Props;
+namespace RainEd;
 
 struct RopePhysicalProperties
 {

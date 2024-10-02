@@ -1,9 +1,9 @@
 namespace RainEd.Autotiles;
 
-using System.Drawing;
 using System.Numerics;
 using ImGuiNET;
-
+using LevelData;
+using EditorGui;
 
 class StandardPathAutotile : Autotile
 {
@@ -70,7 +70,7 @@ class StandardPathAutotile : Autotile
         Turn
     }
 
-    private bool CheckDimensions(Tiles.Tile tile, TileType tileType)
+    private bool CheckDimensions(Assets.Tile tile, TileType tileType)
         => tileType switch
         {
             TileType.Horizontal => tile.Width == SegmentLength && tile.Height == PathThickness,
@@ -250,7 +250,7 @@ class StandardPathAutotile : Autotile
     // copied from TileEditorToolbar.cs
     private string searchQuery = "";
     private int selectedTileGroup = 0;
-    private Tiles.Tile? selectedTile = null;
+    private Assets.Tile? selectedTile = null;
 
     // available groups (available = passes search)
     private readonly List<int> matSearchResults = [];

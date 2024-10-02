@@ -1,6 +1,5 @@
 namespace RainEd;
 using Serilog;
-using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -9,8 +8,8 @@ static class Log
     /// <summary>
     /// Logger whose contents will be shown in the in-app log window.
     /// </summary>
-    public static Serilog.Core.Logger UserLogger = null!;
-    private static Serilog.Core.Logger _logger = null!;
+    public static Logger UserLogger = null!;
+    private static Logger _logger = null!;
 
     public static List<LogEntry> UserLog = [];
 

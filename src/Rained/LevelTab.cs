@@ -1,4 +1,5 @@
 using System.Numerics;
+using RainEd.LevelData;
 namespace RainEd;
 
 class LevelTab

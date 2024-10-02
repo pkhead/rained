@@ -1,4 +1,5 @@
-using RainEd.Props;
+using RainEd.LevelData;
+using RainEd.EditorGui.Editors;
 using System.Numerics;
 
 namespace RainEd.ChangeHistory;

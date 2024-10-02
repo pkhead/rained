@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd;
+namespace RainEd.EditorGui;
 
 // fancy class to show guide.md in the rained window
 static class GuideViewerWindow

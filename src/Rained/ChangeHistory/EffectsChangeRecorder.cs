@@ -1,3 +1,5 @@
+using RainEd.LevelData;
+using RainEd.EditorGui.Editors;
 namespace RainEd.ChangeHistory;
 
 struct EffectConfigData

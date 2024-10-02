@@ -2,6 +2,9 @@ using Raylib_cs;
 using ImGuiNET;
 using NLua.Exceptions;
 using RainEd.Autotiles;
+using RainEd.EditorGui;
+using RainEd.Assets;
+using RainEd.LevelData;
 
 namespace RainEd;
 
@@ -32,11 +35,11 @@ sealed class RainEd
 
     public string AssetDataPath;
     public readonly AssetGraphicsProvider AssetGraphics;
-    public readonly Tiles.MaterialDatabase MaterialDatabase;
-    public readonly Tiles.TileDatabase TileDatabase;
+    public readonly MaterialDatabase MaterialDatabase;
+    public readonly TileDatabase TileDatabase;
     public readonly EffectsDatabase EffectsDatabase;
-    public readonly Light.LightBrushDatabase LightBrushDatabase;
-    public readonly Props.PropDatabase PropDatabase;
+    public readonly LightBrushDatabase LightBrushDatabase;
+    public readonly PropDatabase PropDatabase;
     public readonly AutotileCatalog Autotiles;
 
     public string CurrentFilePath { get => CurrentTab!.FilePath; }
@@ -173,11 +176,11 @@ sealed class RainEd
             
             initPhase = "materials";
             Log.UserLogger.Information("Reading Materials/Init.txt");
-            MaterialDatabase = new Tiles.MaterialDatabase();
+            MaterialDatabase = new Assets.MaterialDatabase();
 
             initPhase = "tiles";
             Log.UserLogger.Information("Reading Graphics/Init.txt...");
-            TileDatabase = new Tiles.TileDatabase();
+            TileDatabase = new Assets.TileDatabase();
 
             // init autotile catalog
             Autotiles = new AutotileCatalog();
@@ -210,11 +213,11 @@ sealed class RainEd
 
             initPhase = "light brushes";
             Log.UserLogger.Information("Reading light brushes...");
-            LightBrushDatabase = new Light.LightBrushDatabase();
+            LightBrushDatabase = new LightBrushDatabase();
 
             initPhase = "props";
             Log.UserLogger.Information("Reading Props/Init.txt");
-            PropDatabase = new Props.PropDatabase(TileDatabase);
+            PropDatabase = new PropDatabase(TileDatabase);
 
             DrizzleCast.Initialize();
             Log.UserLogger.Information("Asset initialization done!");

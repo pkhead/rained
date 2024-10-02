@@ -4,7 +4,7 @@
 using RainEd.Assets;
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd;
+namespace RainEd.EditorGui;
 
 static class AssetManagerGUI
 {

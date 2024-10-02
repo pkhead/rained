@@ -6,8 +6,8 @@ using DrizzleRender = RainEd.Drizzle.DrizzleRender;
 using RenderState = RainEd.Drizzle.DrizzleRender.RenderState;
 using System.Runtime.CompilerServices;
 using System.Globalization;
-
-namespace RainEd;
+using RainEd.LevelData;
+namespace RainEd.EditorGui;
 
 class DrizzleRenderWindow : IDisposable
 {

@@ -1,4 +1,6 @@
 using System.Numerics;
+using RainEd.LevelData;
+using RainEd.EditorGui.Editors;
 namespace RainEd.ChangeHistory;
 
 struct CameraData

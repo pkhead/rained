@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Raylib_cs;
 using ImGuiNET;
+using RainEd.EditorGui;
 namespace RainEd;
 
 struct HexColor(byte r = 0, byte g = 0, byte b = 0)

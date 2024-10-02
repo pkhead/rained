@@ -1,8 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
-
-namespace RainEd;
+namespace RainEd.EditorGui;
 
 static class EditorWindow
 {

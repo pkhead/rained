@@ -1,6 +1,6 @@
 using ImGuiNET;
 using System.Numerics;
-namespace RainEd;
+namespace RainEd.EditorGui;
 
 // This is a modified version of the code for ImGui.ShowStyleEditor(), converted to C#
 static class ThemeEditor

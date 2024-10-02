@@ -1,7 +1,6 @@
 using ImGuiNET;
-using System.Numerics;
-
-namespace RainEd;
+using RainEd.LevelData;
+namespace RainEd.EditorGui;
 
 static class LevelLoadFailedWindow
 {

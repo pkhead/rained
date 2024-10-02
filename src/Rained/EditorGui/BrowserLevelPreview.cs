@@ -1,8 +1,8 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
-
-namespace RainEd;
+using RainEd.LevelData;
+namespace RainEd.EditorGui;
 
 class BrowserLevelPreview : FileBrowserPreview
 {
