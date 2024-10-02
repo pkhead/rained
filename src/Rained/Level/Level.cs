@@ -286,7 +286,7 @@ struct CellPosition(int x, int y, int layer)
 }
 
 // more functions are defined in LevelTiles.cs
-partial class Level
+partial class Level : IDisposable
 {
     // all objects associated with shortcuts
     // (these are tracked because they will be rendered separately from other objects
@@ -354,6 +354,11 @@ partial class Level
 
         // initialize light map
         lightMap = new LightMap(Width, Height);
+    }
+
+    public void Dispose()
+    {
+        lightMap.Dispose();
     }
 
     public static Level NewDefaultLevel()

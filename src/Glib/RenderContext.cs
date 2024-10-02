@@ -166,6 +166,8 @@ public sealed class RenderContext : IDisposable
 
     static bool _printDiagnostics = true;
 
+    public uint TotalTextureMemory => resourceList.totalTextureMemory;
+
     private RenderContext(Window mainWindow)
     {
         Instance = this;

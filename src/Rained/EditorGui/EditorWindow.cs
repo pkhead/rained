@@ -544,8 +544,6 @@ static class EditorWindow
         {
             var dockspaceId = ImGui.GetID("Dockspace");
             
-            // TODO: reorderable tabs
-            // (in order to do it properly I need access to imgui internal functions to get the tab order/index & stuff)
             if (ImGui.BeginTabBar("AAA", ImGuiTabBarFlags.DrawSelectedOverline | ImGuiTabBarFlags.Reorderable))
             {
                 // if a tab switch was forced by outside code setting TabIndex

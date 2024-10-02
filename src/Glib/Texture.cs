@@ -30,6 +30,11 @@ public class Texture : Resource
     public readonly Glib.PixelFormat? PixelFormat;
     protected GLEnum GlTextureFormat { get; private set; }
 
+    /// <summary>
+    /// Size of the texture in video memory, used for diagnostics.
+    /// </summary>
+    private uint textureSize;
+
     internal uint Handle => _handle;
 
     public static TextureFilterMode DefaultFilterMode { get; set; } = TextureFilterMode.Linear;
@@ -89,8 +94,22 @@ public class Texture : Resource
         GlUtil.CheckError(gl, "Could not create texture");
         
         gl.TexImage2D(GLEnum.Texture2D, 0, (int)GlTextureFormat, (uint)Width, (uint)Height, 0, GlTextureFormat, GLEnum.UnsignedByte, data);
-
         GlUtil.CheckError(gl, "Could not create texture");
+
+        uint pixelByteSize = format switch
+        {
+            Glib.PixelFormat.Grayscale => 1,
+            Glib.PixelFormat.GrayscaleAlpha => 2,
+            Glib.PixelFormat.RGB => 3,
+            Glib.PixelFormat.RGBA => 4,
+            _ => throw new UnreachableException()
+        };
+        
+        var resList = RenderContext.Instance!.resourceList;
+        textureSize = pixelByteSize * (uint)Width * (uint)Height;
+
+        lock (resList.syncRoot)
+            resList.totalTextureMemory += textureSize;
     }
     
     internal unsafe Texture(int width, int height, PixelFormat format)
@@ -103,11 +122,46 @@ public class Texture : Resource
 
     internal unsafe Texture(int width, int height, GLEnum format, uint handle)
     {
+        var gl = RenderContext.Gl;
+
         Width = width;
         Height = height;
         PixelFormat = GetPixelFormatFromTexture(format);
         _handle = handle;
         GlTextureFormat = format;
+        
+        // calculate size of texture for diagnostics
+        textureSize = 0;
+        /*
+        var oldTex = (uint) gl.GetInteger(GLEnum.TextureBinding2D);
+        gl.BindTexture(GLEnum.Texture2D, _handle);
+        GlUtil.CheckError(gl, "Could not query texture internal format");
+
+        gl.GetTexLevelParameter(GLEnum.Texture2D, 0, GLEnum.TextureInternalFormat, out int internalFormat);
+        GlUtil.CheckError(gl, "Could not query texture internal format");
+
+        uint pixelByteSize = (InternalFormat)internalFormat switch
+        {
+            InternalFormat.Red => 1,
+            InternalFormat.RG => 2,
+            InternalFormat.Rgb => 3,
+            InternalFormat.Rgba => 4,
+            InternalFormat.DepthComponent16 => 2,
+            InternalFormat.DepthComponent24 => 3,
+            InternalFormat.DepthComponent32 => 4,
+            _ => 0
+        };
+
+        if (pixelByteSize == 0)
+            RenderContext.LogInfo("Unknown internal format " + internalFormat);
+        
+        textureSize = (uint)Width * (uint)Height * pixelByteSize;
+        var resList = RenderContext.Instance!.resourceList;
+        lock (resList.syncRoot)
+            resList.totalTextureMemory += textureSize;
+
+        gl.BindTexture(GLEnum.Texture2D, oldTex);
+        GlUtil.CheckError(gl, "Could not query texture internal format");*/
     }
 
     private unsafe byte* GetImageData(Image image)
@@ -163,6 +217,10 @@ public class Texture : Resource
 
     protected override void FreeResources(RenderContext rctx)
     {
+        var resList = rctx.resourceList;
+        lock (resList.syncRoot)
+            resList.totalTextureMemory -= textureSize;
+
         rctx.gl.DeleteTexture(_handle);
         _handle = 0;
     }

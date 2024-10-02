@@ -69,7 +69,17 @@ class EditorGeometryRenderer
 
     public void ReloadLevel()
     {
-        // TODO: dispose old chunk layers
+        // dispose old chunk layers
+        for (int x = 0; x < chunkColCount; x++)
+        {
+            for (int y = 0; y < chunkRowCount; y++)
+            {
+                chunkLayers[x,y,0]?.Dispose();
+                chunkLayers[x,y,1]?.Dispose();
+                chunkLayers[x,y,2]?.Dispose();
+            }
+        }
+
         chunkColCount = (RainEd.Instance.Level.Width-1) / ChunkWidth + 1;
         chunkRowCount = (RainEd.Instance.Level.Height-1) / ChunkHeight + 1;
         chunkLayers = new Glib.StandardMesh?[chunkColCount, chunkRowCount, 3];
