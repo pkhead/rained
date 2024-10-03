@@ -14,6 +14,8 @@ Bugs:
 - using close all didn't register no file selected at one point?
   after testing render save prompt bug fix...
 - CRACK TERRAIN ON AIR !!!!!!!!!!!!!
+- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
+- radial menu for view toggles
 
 v2.2.0:
 - version manager

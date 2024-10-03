@@ -239,10 +239,23 @@ class LevelWindow
         
         if (IsWindowOpen)
         {
+            var newEditMode = selectedMode;
+
+            // edit mode switch radial menu
+            {
+                if (EditorWindow.IsKeyPressed(ImGuiKey.GraveAccent))
+                    RadialMenu.OpenPopupRadialMenu("Mode Switch");
+                
+                Span<string> options = ["Env", "Geo", "Tiles", "Cameras", "Light", "Effects", "Props"];
+                var sel = RadialMenu.PopupRadialMenu("Mode Switch", options, selectedMode);
+                if (sel != -1)
+                {
+                    newEditMode = sel;
+                }
+            }
+
             if (ImGui.Begin("Level"))
             {
-                var newEditMode = selectedMode;
-
                 // edit mode
                 ImGui.AlignTextToFramePadding();
                 ImGui.Text("Edit Mode");
