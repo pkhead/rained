@@ -16,6 +16,9 @@ Bugs:
 - CRACK TERRAIN ON AIR !!!!!!!!!!!!!
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
 - radial menu for view toggles
+- fix error abt worm grass in guide
+- make actual manual
+- make sure line numbers of erroneous init are printed out
 
 v2.2.0:
 - version manager
