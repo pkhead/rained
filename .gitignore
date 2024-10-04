@@ -34,3 +34,6 @@
 /config/preferences.json
 /logs
 /emsavs
+
+# mkdocs generated output
+/site
