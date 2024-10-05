@@ -1,0 +1,9 @@
+# Tiles
+Tiles are used to make level geometry actually look like something. Without them, levels will just look like they're made out of big blocks of concrete.
+Each tile is a specific asset hand-crafted by someone. These include things like huge beams, pipes, stones, metal things, machinery-looking stuff, and other set pieces.
+
+Each tile has a defined width and height, as well the geometry the tile matches up with, known as "geometry requirements". These geometry requirements are visualized by a set of green-colored outlines shown behind the tile before placing them in the level editor. A full square outline represents that it needs a solid block here, a cross represents that it needs air here, and an empty space represents that it doesn't care what goes here. Tiles may also need slopes at certain locations too.
+
+It's laborious to manually place geometry to fit a tile, so there is a quick way to deal with that. If you hold G while placing a tile, it will automatically place the geometry for you. Likewise, if you hold G while removing a tile, it will clear up all the geometry that the tile requires. You may also hold F while placing a tile to force-place it, even if the geometry doesn't match up with the tile's requirements. You can even have tiles overwrite portions of an already existing tile when force-placing, as long as it doesn't mess with the tile root, which is at the center of every tile.
+
+The tile editor also allows you to place materials. These are represented in the editor by colored squares centered in each cell, but when rendering they will look fancier. You may also set the default material for a level, in which case any cells that don't have a material set will use that material. 

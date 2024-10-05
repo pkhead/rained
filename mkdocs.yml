@@ -6,20 +6,28 @@ nav:
     - Brief: brief.md
     - User interface: user-interface.md
     - Editing the level:
-      - Overview: level-view.md
+      - Overview: overview.md
+      - Resizing: resize.md
       - Environment: editors/env.md
-      - Geometry: geometry.md
-      - Tiles: tiles.md
-      - Cameras: cameras.md
-      - Light: light.md
-      - Effects: effects.md
-      - Props: props.md
+      - Geometry: editors/geo.md
+      - Tiles: editors/tiles.md
+      - Cameras: editors/cameras.md
+      - Light: editors/light.md
+      - Effects: editors/effects.md
+      - Props: editors/props.md
+    - Playing your level: playing-your-level.md
     - Further reading: resources.md
 theme:
-  name: readthedocs
+  name: material
+  features:
+    - content.tabs.link
 markdown_extensions:
   - def_list
   - attr_list
+  - md_in_html
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 site_url: ""
 use_directory_urls: False

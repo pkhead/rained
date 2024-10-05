@@ -1,0 +1,9 @@
+# Cameras
+Rooms in the Rain World game are all red-colored, pre-rendered, static images. A camera defines an area of the level that the player can view. In-game, when the player intersects with the rectangular area a camera inhibits, the game will switch to viewing the level through that camera.
+
+The outer black rectangle of the camera shows the viewable area of the camera when Rain World is played in a 16:9 resolution. The thick inner green rectangle (red-colored in the official level editor) shows the viewable area when Rain World is played in a 4:3 resolution. It's also the boundary between cameras when the game considers which camera to switch over to. Usually cameras are arranged in a grid, but this isn't required (unless you want the SBCameraScroll mod to work properly).
+
+## Camera Angles
+Cameras also have a thing called "camera angles". These are controlled by the green rings that appear on the corners of a camera when you have one selected. Moving them around basically warps the perspective of the level when rendering so it kind of looks like it's viewed at an angle, which can look pretty cool.
+
+These rings control the offsets of the corners of the green quad. The green quad actually represents the shape of the furthest sublayer for the camera. Each screen/camera in a Rain World level is rendered in 30 sublayers, as each of the three work layers are subdivided into ten sublayers for rendering. The fifth closest sublayer is always a perfect rectangle, but the farther back the sublayer is, the more intense the warping becomes, until the furthest layer's shape matches the green quad. The sublayers combine in rendering into a single, 3Dish image.
