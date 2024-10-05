@@ -97,7 +97,7 @@ class EnvironmentEditor : IEditorMode
             {
                 isDragging = true;
 
-                var my = Math.Clamp(window.MouseCy, -1, level.Height - level.BufferTilesBot);
+                var my = Math.Clamp(window.MouseCy, -10, level.Height - level.BufferTilesBot);
                 level.WaterLevel = (int)(level.Height - level.BufferTilesBot - 0.5f - my);
             }
         }
