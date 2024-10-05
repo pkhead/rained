@@ -1,4 +1,4 @@
-# User Interface
+# User interface
 The user interface is comprised of windows, with each window containing many widgets such as buttons, sliders, text, e.t.c.
 
 ## Windows
@@ -30,7 +30,7 @@ Most widgets are obvious, but some have special interactions that should be note
 Click and drag your mouse horizontally on this widget to change its value.
 If <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can type in the value of the slider.
 
-### Drag Input
+### Drag input
 ![Drag input](img/draginput.png)
 
 These work identically to sliders, except that there is no visual knob and also no limit on the minimum or maximum value.

@@ -345,9 +345,27 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("Help"))
             {
-                if (ImGui.MenuItem("Guide..."))
+                if (ImGui.MenuItem("Readme..."))
                 {
-                    GuideViewerWindow.IsWindowOpen = true;
+                    Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.md"));
+                }
+
+                if (ImGui.MenuItem("Documentation..."))
+                {
+                    #if DEBUG
+                    var docPath = Path.Combine("dist", "docs", "index.html");
+                    #else
+                    var docPath = Path.Combine(Boot.AppDataPath, "docs", "index.html");
+                    #endif
+
+                    if (File.Exists(docPath))
+                    {
+                        Platform.OpenURL(docPath);
+                    }
+                    else
+                    {
+                        ShowNotification("Could not open documentation.");
+                    }
                 }
 
                 if (ImGui.MenuItem("About..."))

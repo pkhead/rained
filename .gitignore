@@ -36,4 +36,4 @@
 /emsavs
 
 # mkdocs generated output
-/site
+/dist/docs

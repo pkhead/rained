@@ -5,9 +5,10 @@ nav:
   - Manual:
     - Brief: brief.md
     - User interface: user-interface.md
+    - Asset management: asset-management.md
+    - Updates: updates.md
     - Editing the level:
       - Overview: overview.md
-      - Resizing: resize.md
       - Environment: editors/env.md
       - Geometry: editors/geo.md
       - Tiles: editors/tiles.md
@@ -30,4 +31,5 @@ markdown_extensions:
       alternate_style: true
 
 site_url: ""
+site_dir: "dist/docs"
 use_directory_urls: False

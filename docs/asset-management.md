@@ -1,0 +1,6 @@
+# Asset management
+The release package does not contain Rain World levels and assets because the location of those files is configured on a first launch. This is so that users who have previously installed a Rain World level editor on their computer don't have to copy or symlink their old data.
+
+Upon first startup, Rained will ask you if you want to select an asset folder that already exists on your computer, or if you want to download all of the assets from the Internet. If you have never download a Rain World level editor on your computer before, select "Download Data". Otherwise, you may select "Choose Data Folder" to select the pre-existing folder on your computer containing Rain World level editor assets. The folder you choose must have a "Graphics", "Props", and "Levels" folder within. The "LevelEditorProjects" and "Materials" folders are optional.
+
+If you want to import custom tiles, props, or materials into Rained, you *can* do so by editing the Init.txt files manually and copying over the graphics and stuff, or you can do the same thing automagically through the assets tab in the preferences window (File > Preferences). It'll save you some time! Although, if you have a .zip file you unfortunately must decompress it first.

@@ -58,6 +58,20 @@ dotnet run --project --no-build src/Rained/Rained.csproj
 ```
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
+### Documentation
+The documentation is built using [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). You'll need python and pip to build it.
+
+```bash
+# install material for mkdocs
+pip install mkdocs-material
+
+# serve docs on http://localhost:8000
+mkdocs serve
+
+# build doc site
+mkdocs build
+```
+
 ## Contributing
 Report bugs and other complaints by creating an issue or pinging @chromosoze on a Rain World modding Discord server. DM requests also work, but it's likely that it'll take me a while to notice them as I don't pinged for it.
 

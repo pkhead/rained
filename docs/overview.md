@@ -6,7 +6,7 @@ Levels are created in the level editor are then are rendered into:
 - one text (.txt) file, containing only the information needed by the game to store things like the water level and level collision;
 - and several image (.png) files, each for each camera, containing the visual of the level for an entire screen.
 
-The rendered files are incompatible with the files for the level editor, and vice versa.
+The files rendered for the game are incompatible with the files for the level editor, and vice versa.
 
 ## Level viewport
 ![The Level viewport](img/level-view.png)
@@ -14,6 +14,25 @@ The rendered files are incompatible with the files for the level editor, and vic
 The level viewport is the window that takes up the majority of the screen. It is where you can see and interact with the level that is currently being edited.
 
 You can zoom in and out by using the scroll wheel, the buttons in the View menu, or the <kbd>+</kbd>/<kbd>-</kbd> keys. Panning the level is done by either moving the mouse while holding down the middle mouse button or <kbd>Alt</kbd> key, or by using the arrow keys. If you are using the arrow keys, holding <kbd>Shift</kbd> will speed up the panning.
+
+## Border
+Rain World levels have a border which dictates the region of the level that is interactable in-game. The border is displayed in Rained as a white rectangle.
+
+Anything outside of the border rectangle will appear in the .png renders of the level, but will not be present in the .txt file describing the geometry of the level. As such, creatures interacting with geometry outside of the level border will either pass through solid blocks or stand on thin air, depending on the closest block that is inside the border at a given position. Any objects in the geometry editor that is outside of the border will be colored red instead of white, indicating that the object will have no effect in-game.
+
+## Resizing
+Pressing the "Resize Level" button in the **Edit** menu will open this window:
+
+![The "Resize Level" window](img/level-resize.png)
+
+- **Width/Height**: This is the desired width and height of the level in grid units.
+- **Screen Width/Screen Height**: This is the desired width and height of the level in screens. Below are the formulas used for grid unit/screen conversion.
+
+        Width = 52 * Screens + 20
+        Height = 40 * Screens + 3
+
+- **Anchors**: Controls the origin point of the resize operation. It can be set to one of the four corners of the level, the centers of the four edges, or the center of the level.
+- **Border Tiles**: Controls the offset from the level's edge for each edge of the level border.
 
 ## Edit modes
 Each level has several aspects that can be edited in separate "edit modes", also called "editors" by most people.
