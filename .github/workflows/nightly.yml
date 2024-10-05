@@ -50,7 +50,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: docs
-        path: ./dist
+        path: ./dist/docs
     - name: Restore Cake Tool
       run: dotnet tool restore
     - name: Linux Package
@@ -84,7 +84,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: docs
-        path: ./dist
+        path: ./dist/docs
     - name: Restore Cake Tool
       run: dotnet tool restore
     - name: Windows Package
