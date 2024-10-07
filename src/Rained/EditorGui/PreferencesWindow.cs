@@ -517,6 +517,8 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ExportGeometry);
 
         ImGui.SeparatorText("Editing");
+        ShortcutButton(KeyShortcut.SelectEditor);
+        ImGui.Separator();
         ShortcutButton(KeyShortcut.NavUp);
         ShortcutButton(KeyShortcut.NavDown);
         ShortcutButton(KeyShortcut.NavLeft);

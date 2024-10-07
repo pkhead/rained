@@ -21,6 +21,8 @@ enum KeyShortcut : int
 
     Render, ExportGeometry,
 
+    SelectEditor,
+
     // Geometry
     ToggleLayer1, ToggleLayer2, ToggleLayer3,
     ToggleMirrorX, ToggleMirrorY,
@@ -333,6 +335,8 @@ static class KeyShortcuts
             Register("Redo", KeyShortcut.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl, true);
         else
             Register("Redo", KeyShortcut.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift, true);
+
+        Register("Mode Select", KeyShortcut.SelectEditor, ImGuiKey.GraveAccent, ImGuiModFlags.None);
         
         Register("Cycle Layer", KeyShortcut.SwitchLayer, ImGuiKey.Tab, ImGuiModFlags.None);
         Register("Switch Tab", KeyShortcut.SwitchTab, ImGuiKey.Tab, ImGuiModFlags.Shift);

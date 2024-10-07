@@ -243,7 +243,7 @@ class LevelWindow
 
             // edit mode switch radial menu
             {
-                if (EditorWindow.IsKeyPressed(ImGuiKey.GraveAccent))
+                if (KeyShortcuts.Activated(KeyShortcut.SelectEditor))
                     RadialMenu.OpenPopupRadialMenu("Mode Switch");
                 
                 Span<string> options = ["Env", "Geo", "Tiles", "Cameras", "Light", "Effects", "Props"];
