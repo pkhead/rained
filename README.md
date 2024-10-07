@@ -1,7 +1,10 @@
 # Rained
 <p align="center">
     <img src="rained-logo.png" />
+    <br />
+    <a href="https://github.com/pkhead/rained/releases">Downloads</a>
 </p>
+
 
 Another Rain World level editor. Read [this document](dist/README.md), which is bundled with every release package, for more information on how to use this software.
 
