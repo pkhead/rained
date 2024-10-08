@@ -57,6 +57,10 @@ partial class TileEditor : IEditorMode
 
     enum PlacementMode { None, Force, Geometry };
     private PlacementMode placementMode = PlacementMode.None;
+
+    // time at which the geo modifier key was pressed
+    // used for the tile geoification feature.
+    private float modifierButtonPressTime = 0f;
     
     public TileEditor(LevelWindow window) {
         this.window = window;
@@ -259,6 +263,11 @@ partial class TileEditor : IEditorMode
             lastMouseX = window.MouseCx;
             lastMouseY = window.MouseCy;
             removedOnSameCell = false;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.TileForceGeometry))
+        {
+            modifierButtonPressTime = (float)Raylib.GetTime();
         }
         
         if (RainEd.Instance.Preferences.TilePlacementModeToggle)
@@ -792,6 +801,25 @@ partial class TileEditor : IEditorMode
 
                 rectMode = RectMode.Inactive;
             }
+
+            // if the force geo button is tapped, will geoify tiles
+            // instead of placing new ones
+            else if (KeyShortcuts.Deactivated(KeyShortcut.TileForceGeometry) &&
+                ((float)Raylib.GetTime() - modifierButtonPressTime) < 0.3)
+            {
+                for (int x = 0; x < Math.Abs(rectW); x++)
+                {
+                    for (int y = 0; y < Math.Abs(rectH); y++)
+                    {
+                        var gx = (int)minX + x;
+                        var gy = (int)minY + y;
+                        if (!level.IsInBounds(gx, gy)) continue;
+                        GeoifyTile(gx, gy, window.WorkLayer);
+                    }
+                }
+
+                rectMode = RectMode.Inactive;
+            }
         }
 
         // check if rect place mode will start
@@ -1006,5 +1034,39 @@ partial class TileEditor : IEditorMode
                 activePathBuilder = null;
             }
         }
+    }
+
+    private void GeoifyTile(int x, int y, int layer)
+    {
+        var level = RainEd.Instance.Level;
+        var render = RainEd.Instance.LevelView.Renderer;
+
+        if (!level.Layers[layer, x, y].HasTile()) return;
+
+        Tile? tile = level.GetTile(layer, x, y);
+        if (tile is null)
+        {
+            Log.Error("GeoifyTile: Tile not found?");
+            return;
+        }
+
+        var tileHeadPos = level.GetTileHead(layer, x, y);
+        var localX = x - tileHeadPos.X + tile.CenterX;
+        var localY = y - tileHeadPos.Y + tile.CenterY;
+        var localZ = layer - tileHeadPos.Layer;
+        
+        sbyte[,] requirements;
+        if (localZ == 0)
+            requirements = tile.Requirements;
+        else if (localZ == 1)
+            requirements = tile.Requirements2;
+        else
+        {
+            Log.Error("GeoifyTile: localZ is not 0 or 1");
+            return;
+        }
+
+        level.Layers[layer, x, y].Geo = (GeoType) requirements[localX, localY];
+        render.InvalidateGeo(x, y, layer);
     }
 }
