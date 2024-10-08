@@ -401,6 +401,7 @@ static class PreferencesWindow
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
                 prefs.HideScreenSize = hideScreenSize;
             
+            
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             
             // camera border view mode
@@ -412,6 +413,11 @@ static class PreferencesWindow
             var autotileMouseMode = (int) prefs.AutotileMouseMode;
             if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
                 prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions) autotileMouseMode;
+            
+            // tile placement mode toggle
+            var tilePlacementToggle = prefs.TilePlacementModeToggle ? 1 : 0;
+            if (ImGui.Combo("Tile placement modifier mode", ref tilePlacementToggle, "Hold\0Toggle"))
+                prefs.TilePlacementModeToggle = tilePlacementToggle != 0;
             
             // prop selection layer filter
             var propSelectionLayerFilter = (int) prefs.PropSelectionLayerFilter;

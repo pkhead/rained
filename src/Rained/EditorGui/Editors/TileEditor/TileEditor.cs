@@ -54,6 +54,9 @@ partial class TileEditor : IEditorMode
 
     enum RectMode { Inactive, Place, Remove };
     private RectMode rectMode = 0;
+
+    enum PlacementMode { None, Force, Geometry };
+    private PlacementMode placementMode = PlacementMode.None;
     
     public TileEditor(LevelWindow window) {
         this.window = window;
@@ -258,8 +261,29 @@ partial class TileEditor : IEditorMode
             removedOnSameCell = false;
         }
         
-        modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
-        forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
+        if (RainEd.Instance.Preferences.TilePlacementModeToggle)
+        {
+            if (KeyShortcuts.Activated(KeyShortcut.TileForceGeometry))
+            {
+                placementMode = placementMode == PlacementMode.Geometry
+                    ? PlacementMode.None : PlacementMode.Geometry;
+            }
+
+            if (KeyShortcuts.Activated(KeyShortcut.TileForcePlacement) && selectionMode != SelectionMode.Materials)
+            {
+                placementMode = placementMode == PlacementMode.Force
+                    ? PlacementMode.None : PlacementMode.Force;
+            }
+            
+            modifyGeometry = placementMode == PlacementMode.Geometry;
+            forcePlace = placementMode == PlacementMode.Force;
+        }
+        else
+        {
+            modifyGeometry = KeyShortcuts.Active(KeyShortcut.TileForceGeometry);
+            forcePlace = KeyShortcuts.Active(KeyShortcut.TileForcePlacement);
+        }
+
         disallowMatOverwrite = KeyShortcuts.Active(KeyShortcut.TileIgnoreDifferent);
 
         if (chainHolderMode)
