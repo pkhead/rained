@@ -57,7 +57,7 @@ dotnet cake
 dotnet cake --gles=false
 
 # run the project!
-dotnet run --project --no-build src/Rained/Rained.csproj
+dotnet run --no-build --project src/Rained/Rained.csproj
 ```
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
