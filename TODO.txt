@@ -21,19 +21,12 @@ Bugs:
 - make sure line numbers of erroneous init are printed out
 
 v2.2.0:
-- version manager
+- tile graphic&spec previews when hovering
+  over it in tile selector
 - make mirror lines can go in middle of tiles
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
 - tile rect force geo thing solar asked
 - rebindable edit mode switch keybinds
-  - also, consider changing it to
-     1: env
-	 2: geo
-	 3: tiles
-	 4: props
-	 5: effects
-	 6: light
-	 7: cameras
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
 - favorite tiles and props
