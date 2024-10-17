@@ -23,14 +23,16 @@ Bugs:
 v2.2.0:
 - tile graphic&spec previews when hovering
   over it in tile selector
+- effects previews
+- unlocked camera angles
 - make mirror lines can go in middle of tiles
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
 - tile rect force geo thing solar asked
 - rebindable edit mode switch keybinds
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
-- favorite tiles and props
 - asset manager crap
+- favorite tiles&props
 
 Overall:
 - logging
