@@ -296,7 +296,9 @@ class CameraEditor : IEditorMode
                 var vecDiff = window.MouseCellFloat - cornerHoverCamera!.GetCornerPosition(selectedCorner, false);
 
                 var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
-                var offset = Math.Clamp(vecDiff.Length(), 0f, 4f);
+                var offset = Math.Max(vecDiff.Length(), 0f);
+                if (EditorWindow.IsKeyDown(ImGuiKey.LeftShift) && offset >= 4f)
+                    offset = 4f;
                 cornerHoverCamera.CornerAngles[selectedCorner] = angle;
                 cornerHoverCamera.CornerOffsets[selectedCorner] = offset / 4f;
             }

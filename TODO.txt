@@ -21,6 +21,10 @@ Bugs:
 - make sure line numbers of erroneous init are printed out
 
 v2.2.0:
+- allow user to open levels with unrecognized tiles/props
+  - so need to figure out how to store tiles/props by name only instead of
+    by init reference... probably could use an ID system and most IDs are
+    a reference to a tile but some IDs are for placeholders.
 - tile graphic&spec previews when hovering
   over it in tile selector
 - effects previews
