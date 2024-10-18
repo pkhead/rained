@@ -63,15 +63,20 @@ static class KeyShortcuts
         public string ShortcutString = null!;
         public ImGuiKey Key;
         public ImGuiModFlags Mods;
+        public ImGuiModFlags AllowedMods;
         public bool IsActivated = false;
         public bool IsDeactivated = false;
         public bool IsDown = false;
         public bool AllowRepeat = false;
 
         public readonly ImGuiKey OriginalKey;
-        public readonly ImGuiModFlags OriginalMods; 
+        public readonly ImGuiModFlags OriginalMods;
 
-        public KeyShortcutBinding(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
+        public KeyShortcutBinding(
+            string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods,
+            bool allowRepeat = false,
+            ImGuiModFlags allowedMods = ImGuiModFlags.None
+        )
         {
             if (key == ImGuiKey.Backspace) key = ImGuiKey.Delete;
 
@@ -80,6 +85,7 @@ static class KeyShortcuts
             Key = key;
             Mods = mods;
             AllowRepeat = allowRepeat;
+            AllowedMods = allowedMods;
 
             OriginalKey = Key;
             OriginalMods = Mods;
@@ -132,10 +138,10 @@ static class KeyShortcuts
                 kp = ImGui.IsKeyPressed(Key, AllowRepeat);
             
             return kp &&
-            (Mods.HasFlag(ImGuiModFlags.Ctrl) == ImGui.IsKeyDown(ImGuiKey.ModCtrl)) &&
-            (Mods.HasFlag(ImGuiModFlags.Shift) == ImGui.IsKeyDown(ImGuiKey.ModShift)) &&
-            (Mods.HasFlag(ImGuiModFlags.Alt) == ImGui.IsKeyDown(ImGuiKey.ModAlt)) &&
-            (Mods.HasFlag(ImGuiModFlags.Super) == ImGui.IsKeyDown(ImGuiKey.ModSuper));
+            CheckModKey(ImGuiModFlags.Ctrl, ImGuiKey.ModCtrl) &&
+            CheckModKey(ImGuiModFlags.Shift, ImGuiKey.ModShift) &&
+            CheckModKey(ImGuiModFlags.Alt, ImGuiKey.ModAlt) &&
+            CheckModKey(ImGuiModFlags.Super, ImGuiKey.ModSuper);
         }
 
         public bool IsKeyDown()
@@ -161,17 +167,27 @@ static class KeyShortcuts
                 kp = ImGui.IsKeyDown(Key);
             
             return kp &&
-            (Mods.HasFlag(ImGuiModFlags.Ctrl) == ImGui.IsKeyDown(ImGuiKey.ModCtrl)) &&
-            (Mods.HasFlag(ImGuiModFlags.Shift) == ImGui.IsKeyDown(ImGuiKey.ModShift)) &&
-            (Mods.HasFlag(ImGuiModFlags.Alt) == ImGui.IsKeyDown(ImGuiKey.ModAlt)) &&
-            (Mods.HasFlag(ImGuiModFlags.Super) == ImGui.IsKeyDown(ImGuiKey.ModSuper));
+            CheckModKey(ImGuiModFlags.Ctrl, ImGuiKey.ModCtrl) &&
+            CheckModKey(ImGuiModFlags.Shift, ImGuiKey.ModShift) &&
+            CheckModKey(ImGuiModFlags.Alt, ImGuiKey.ModAlt) &&
+            CheckModKey(ImGuiModFlags.Super, ImGuiKey.ModSuper);
+        }
+
+        private bool CheckModKey(ImGuiModFlags mod, ImGuiKey key) {
+            var down = ImGui.IsKeyDown(key);
+            return (Mods.HasFlag(mod) == down) || (down && AllowedMods.HasFlag(mod));
         }
     }
     private static readonly Dictionary<KeyShortcut, KeyShortcutBinding> keyShortcuts = [];
 
-    private static void Register(string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods, bool allowRepeat = false)
+
+    private static void Register(
+        string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods,
+        bool allowRepeat = false,
+        ImGuiModFlags allowedMods = ImGuiModFlags.None
+    )
     {
-        keyShortcuts.Add(id, new KeyShortcutBinding(name, id, key, mods, allowRepeat));
+        keyShortcuts.Add(id, new KeyShortcutBinding(name, id, key, mods, allowRepeat, allowedMods));
     }
 
     public static void Rebind(KeyShortcut id, ImGuiKey key, ImGuiModFlags mods)
@@ -352,9 +368,15 @@ static class KeyShortcuts
         // Tile Editor
         Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);
         Register("Set Material to Default", KeyShortcut.SetMaterial, ImGuiKey.E, ImGuiModFlags.None, true);
-        Register("Force Geometry Modifier", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None);
-        Register("Force Placement Modifier", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None);
-        Register("Disallow Overwrite Modifier", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None);
+        Register("Force Geometry Modifier", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None,
+            allowedMods: ImGuiModFlags.Shift
+        );
+        Register("Force Placement Modifier", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None,
+            allowedMods: ImGuiModFlags.Shift
+        );
+        Register("Disallow Overwrite Modifier", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None,
+            allowedMods: ImGuiModFlags.Shift
+        );
 
         // Light Editor
         Register("Reset Brush Transform", KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
