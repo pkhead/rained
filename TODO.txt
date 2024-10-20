@@ -26,10 +26,7 @@ v2.2.0:
   - so need to figure out how to store tiles/props by name only instead of
     by init reference... probably could use an ID system and most IDs are
     a reference to a tile but some IDs are for placeholders.
-- tile graphic&spec previews when hovering
-  over it in tile selector
 - effects previews
-- unlocked camera angles
 - make mirror lines can go in middle of tiles
 - radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
 - tile rect force geo thing solar asked

@@ -510,7 +510,7 @@ class TileRenderer
         }
     }
 
-    private static Rectangle GetGraphicSublayer(Tile tile, int sublayer, int variation)
+    public static Rectangle GetGraphicSublayer(Tile tile, int sublayer, int variation)
     {
         var width = (tile.Width + tile.BfTiles * 2) * 20;
         var height = (tile.Height + tile.BfTiles * 2) * 20;

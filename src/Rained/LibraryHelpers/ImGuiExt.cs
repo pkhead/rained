@@ -200,16 +200,19 @@ static class ImGuiExt
         ImageRect(texture.ID!, width, height, new Glib.Rectangle(srcRec.Position, srcRec.Size), new Glib.Color(color.X, color.Y, color.Z, color.W));
     }
 
-    public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
+    public static void ImageRenderTexture(Framebuffer framebuffer, int slot, Glib.Color color)
     {
         var tex = framebuffer.GetTexture(slot);
 
         // determine if vertical flip is necessary
         if (Rained.RainEd.RenderContext!.OriginBottomLeft)
-            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f));
+            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 1f), new Vector2(1f, 0f), (Vector4) color);
         else
-            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height));
+            ImGui.Image(TextureID(tex), new Vector2(tex.Width, tex.Height), new Vector2(0f, 0f), new Vector2(1f, 1f), (Vector4) color);
     }
+
+    public static void ImageRenderTexture(Framebuffer framebuffer, int slot = 0)
+        => ImageRenderTexture(framebuffer, slot, Glib.Color.White);
 
     public static bool ImageButtonRect(string id, Texture tex, float width, float height, Glib.Rectangle srcRec, Glib.Color color)
     {
@@ -236,9 +239,10 @@ static class ImGuiExt
     }
 
     public static void ImageRenderTexture(RenderTexture2D framebuffer)
-    {
-        ImageRenderTexture(framebuffer.ID!);
-    }
+        => ImageRenderTexture(framebuffer.ID!);
+    
+    public static void ImageRenderTexture(RenderTexture2D framebuffer, Raylib_cs.Color color)
+        => ImageRenderTexture(framebuffer.ID!, 0, Raylib.ToGlibColor(color));
 
     public static bool ImageButtonRect(string id, Texture2D tex, float width, float height, Raylib_cs.Rectangle srcRec, Raylib_cs.Color color)
     {

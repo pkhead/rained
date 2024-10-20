@@ -1,4 +1,6 @@
 using ImGuiNET;
+using Rained.Assets;
+using Raylib_cs;
 using System.Numerics;
 
 namespace Rained.EditorGui.Editors;
@@ -16,7 +18,10 @@ partial class TileEditor : IEditorMode
     private readonly List<int> tileSearchResults = [];
 
     private RlManaged.Texture2D? _loadedMatPreview = null;
+    private bool _previewReady = false;
     private string _activeMatPreview = "";
+
+    private RlManaged.RenderTexture2D? _tilePreview = null;
     
     private void ProcessSearch()
     {
@@ -82,6 +87,143 @@ partial class TileEditor : IEditorMode
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.SetMaterial, "Set Selected Material as Default");
+    }
+
+    private void RenderTilePreview(Tile tile)
+    {
+        if (RainEd.Instance.Preferences.ViewPreviews)
+        {
+            var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
+            if (tileTexture is null)
+                goto renderPlaceholder;
+
+            var totalTileWidth = tile.Width + tile.BfTiles * 2;
+            var totalTileHeight = tile.Height + tile.BfTiles * 2;
+            
+            var previewWidth = totalTileWidth * 20;
+            var previewHeight = totalTileHeight * 20;
+            previewHeight += totalTileHeight * 20;
+            
+            previewWidth += 2;
+            previewHeight += 5;
+
+            if (_tilePreview == null || _tilePreview.Texture.Width != previewWidth || _tilePreview.Texture.Height != previewHeight)
+            {
+                _tilePreview?.Dispose();
+                _tilePreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
+            }
+
+            Raylib.BeginTextureMode(_tilePreview);
+            Raylib.ClearBackground(Color.Blank);
+            Rlgl.PushMatrix();
+            Rlgl.Translatef(1f, 1f, 0f);
+
+            // first, draw tile graphics
+            Raylib.BeginShaderMode(Shaders.TileShader);
+            Color drawCol = tile.Category.Color;
+            var dstRec = new Rectangle(0, 0, totalTileWidth * 20, totalTileHeight * 20);
+
+            // draw front of box tile
+            if (tile.Type == TileType.Box)
+            {
+                var height = tile.Height * 20;
+                var srcRec = new Rectangle(
+                    0f,
+                    tile.ImageYOffset + height * tile.Width,
+                    totalTileWidth * 20, totalTileHeight * 20
+                );
+
+                Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, drawCol);
+            }
+
+            // draw voxel tile
+            else
+            {
+                for (int l = tile.LayerCount - 1; l >= 0; l--)
+                {
+                    var srcRec = Rendering.TileRenderer.GetGraphicSublayer(tile, l, 0);
+
+                    float lf = (float)l / tile.LayerCount;
+
+                    // fade to white as the layer is further away
+                    // from the front
+                    float a = lf;
+                    var col = new Color
+                    {
+                        R = (byte)(drawCol.R * (1f - a) + (drawCol.R * 0.5) * a),
+                        G = (byte)(drawCol.G * (1f - a) + (drawCol.G * 0.5) * a),
+                        B = (byte)(drawCol.B * (1f - a) + (drawCol.B * 0.5) * a),
+                        A = 255
+                    };
+
+                    Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, col);
+                }
+            }
+
+            Raylib.EndShaderMode();
+
+            // show tile inner border
+            Raylib.DrawRectangleLines(tile.BfTiles * 20, tile.BfTiles * 20, tile.Width * 20, tile.Height * 20,
+                new Color(255, 255, 255, 200));
+
+            // show tile outer border
+            Raylib.DrawRectangleLines(0, 0, totalTileWidth * 20, totalTileHeight * 20,
+                new Color(255, 255, 255, 150));
+            
+            // then, draw tile specs
+            Rlgl.Translatef(0f, totalTileHeight * 20 + 3f, 0f);
+            Rlgl.Translatef(tile.BfTiles * 20f, tile.BfTiles * 20f, 0f);
+            DrawTileSpecs(tile, 0, 0,
+                tileSize: 20
+            );
+            Rlgl.PopMatrix();
+
+            Raylib.EndTextureMode();
+
+            ImGuiExt.ImageRenderTexture(_tilePreview);
+        }
+        else
+        {
+            var previewTexFound = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var previewRect);
+            if (!previewTexFound || previewTexture is null || previewRect is null)
+                goto renderPlaceholder;
+                
+            var previewWidth = previewRect.Value.Width + 2;
+            var previewHeight = previewRect.Value.Height * 2 + 5;
+            
+            if (_tilePreview == null || _tilePreview.Texture.Width != previewWidth || _tilePreview.Texture.Height != previewHeight)
+            {
+                _tilePreview?.Dispose();
+                _tilePreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
+            }
+
+            Raylib.BeginTextureMode(_tilePreview);
+
+            // image will have 1 pixel of padding to accomodate for
+            // lines
+            Raylib.ClearBackground(Color.Blank);
+            Rlgl.PushMatrix();
+            Rlgl.Translatef(1f, 1f, 0f);
+            
+            Raylib.DrawTextureRec(previewTexture, previewRect.Value, Vector2.Zero, tile.Category.Color);
+
+            Rlgl.Translatef(0f, previewRect.Value.Height + 3f, 0f);
+            DrawTileSpecs(tile, 0, 0,
+                tileSize: 16
+            );
+            Rlgl.PopMatrix();
+
+            Raylib.EndTextureMode();
+
+            ImGuiExt.ImageRenderTexture(_tilePreview);
+            //ImGuiExt.ImageRect(previewTexture!, previewWidth, previewHeight, previewRect.Value, tile.Category.Color);
+        }
+
+        return;
+
+        // fallback case
+        renderPlaceholder:
+        ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
     }
 
     public void DrawToolbar()
@@ -150,6 +292,7 @@ partial class TileEditor : IEditorMode
                     if (selectionMode != SelectionMode.Materials)
                     {
                         selectionMode = SelectionMode.Materials;
+
                         ProcessSearch();
                     }
 
@@ -278,13 +421,7 @@ partial class TileEditor : IEditorMode
                             if (ImGui.IsItemHovered())
                             {
                                 ImGui.BeginTooltip();
-
-                                var previewTexFound = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var previewRect);
-                                if (previewTexFound && previewTexture is not null && previewRect is not null)
-                                    ImGuiExt.ImageRect(previewTexture!, previewRect!.Value!.Width, previewRect.Value.Height!, previewRect.Value, tile.Category.Color);
-                                else
-                                    ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
-
+                                RenderTilePreview(tile);
                                 ImGui.EndTooltip();
                             }
                         }
