@@ -9,7 +9,9 @@ Levels are created in the level editor are then are rendered into:
 The files rendered for the game are incompatible with the files for the level editor, and vice versa.
 
 ## Level viewport
-![The Level viewport](img/level-view.png)
+<figure markdown="span">
+        ![The Level viewport](img/level-view.png)
+</figure>
 
 The level viewport is the window that takes up the majority of the screen. It is where you can see and interact with the level that is currently being edited.
 
@@ -23,7 +25,9 @@ Anything outside of the border rectangle will appear in the .png renders of the 
 ## Resizing
 Pressing the "Resize Level" button in the **Edit** menu will open this window:
 
-![The "Resize Level" window](img/level-resize.png)
+<figure markdown="span">
+        ![The "Resize Level" window](img/level-resize.png)
+</figure>
 
 - **Width/Height**: This is the desired width and height of the level in grid units.
 - **Screen Width/Screen Height**: This is the desired width and height of the level in screens. Below are the formulas used for grid unit/screen conversion.

@@ -1,7 +1,9 @@
 # Geometry
 This edit mode is where you edit the room's geometry and some interactable objects. The window docked to the right, titled "Build", contains the tools you can use to edit the geometry and place objects, as well as some checkboxes for the layer mask and mirror options.
 
-![The Build window](../img/build-window.png)
+<figure markdown="span">
+    ![The Build window](../img/build-window.png)
+</figure>
 
 ## View mode
 The view mode controls how each layer is composited in the level viewport.
@@ -36,7 +38,7 @@ Here is the list of tools not related to shortcuts:
 | ![Icon](../img/tool-icons/slope.png) Slope | A 45-degree slope. Can only be placed on corners. |
 | ![Icon](../img/tool-icons/invisible.png) Invisible Wall | Corresponds to "Glass" in the official level editor. The cell will be collidable but invisible. |
 | ![Icon](../img/tool-icons/halfblock.png) Platform | A half-block. In game, you may freely pass through it if entering from the bottom, but in order to go through it from above, you have to hold the down button. |
-| ![Icon](../img/tool-icons/horizpole.png)/![Icon](/img/tool-icons/vertpole.png) Beam | Otherwise known as poles, creatures can climb on them. |
+| ![Icon](../img/tool-icons/horizpole.png)/![Icon](../img/tool-icons/vertpole.png) Beam | Otherwise known as poles, creatures can climb on them. |
 | ![Icon](../img/tool-icons/fissure.png) Fissure | Corresponds to "Crack Terrain" in the official level editor. You can use this to create a type of tunnel. It's not used in game often. For normal tunnels, you use air blocks. |
 | ![Icon](../img/tool-icons/waterfall.png) Waterfall | You use this to create decorative waterfalls. Water flows down from the cell that the waterfall object is placed in. |
 | ![Icon](../img/tool-icons/batfly.png) Batfly Hive | Can only be placed on the ground. It makes those spiky white things that batflies burrow into. |
@@ -48,11 +50,15 @@ Here is the list of tools not related to shortcuts:
 ### Shortcuts
 Shortcuts, otherwise known as "pipes", are used for inter- or intra-room transportation. Below are four examples of shortcuts. This one is a two-way connection between two points in the same room.
 
-![Shortcut 1](../img/shortcuts/shortcut1.png)
+<figure markdown="span">
+    ![Shortcut 1](../img/shortcuts/shortcut1.png)
+</figure>
 
 This image below has three shortcuts. The first from the top transports creatures to a different room, the second from the top is a creature den, and third from the top is a Whack-A-Mole hole, transporting creatures to another Whack-A-Mole hole in the same room.
 
-![Shortcut 2](../img/shortcuts/shortcut2.png)
+<figure markdown="span">
+    ![Shortcut 2](../img/shortcuts/shortcut2.png)
+</figure>
 
 Shortcut entrances have specific requirements in order to be recognized as valid. First, the 3x3 area of geometry around the shortcut entrance must be made of solid blocks, save for one block, where you enter the shortcut from, which should be either air or a platform (platforms are used for downward-facing shortcut entrances). So, for example, to create a shortcut entrance into a wall, you will place a single air block into the wall, and replace the next solid block in the hole with the shortcut entrance. Second, you must have a shortcut dot placed in the direction of the shortcut entrance. So, if you have an air block to the left of the shortcut entrance, you will need to begin the path of shortcut dots on the block to the right of the shortcut entrance.
 

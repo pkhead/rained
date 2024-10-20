@@ -1,5 +1,7 @@
 site_name: Rained
-plugins: []
+plugins:
+  - offline
+  - search
 nav:
   - Home: index.md
   - Manual:
@@ -20,6 +22,12 @@ nav:
     - Further reading: resources.md
 theme:
   name: material
+  favicon:
+    img/favicon.ico
+  logo:
+    img/favicon.ico
+  palette:
+    scheme: slate
   features:
     - content.tabs.link
 markdown_extensions:

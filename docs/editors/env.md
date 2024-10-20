@@ -11,4 +11,7 @@ Listed below are the options found in the editor-specific window:
 
 When water is enabled, the water line, colored blue, will be visible in all edit modes. In the Environment editor, areas that are submerged will be tinted blue. Dragging your mouse anywhere from within the level viewport with water enabled will set the water height to reach your mouse cursor.
 
-![The Level viewport](../img/env-editor.png)
+<figure markdown="span">
+    ![Level with water enabled.](../img/env-editor.png)
+    <figcaption>Level with water enabled.</figcaption>
+</figure>
