@@ -48,6 +48,8 @@ Like sliders, if <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can 
 ## Menubar
 Rained adopts the standard concept of a "menubar", a collection of menus/submenus in a bar that is located at the very top of the window.
 
+Whenever this documentation refers to an item in the menubar, it will do so by first naming the menu the item is in, followed by a `>`, and then finally the name of the item with or without ellipses at the end if present, all within preformatted text. For example, `File > Open` or `Help > About`.
+
 **File**
 :   - **New**: Create a new level.
     - **Open**: Open a level from disk.
