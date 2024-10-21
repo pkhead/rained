@@ -60,12 +60,16 @@ place down a tile regardless of if the underlying geometry fits the requirements
 These modifiers also work with the rectangular-area fill/erase feature, but "Force Geometry" has a special behavior depending on if you tap the key for a short amount of time while the rectangle is active, or if you don't. If tapped, it will place the required geometry for the already-placed tiles underneath the rectangle, and close the rectangle. Otherwise, geometry-forced tiles will be placed if the modifier is held down when the mouse button is released.
 
 ### Heads and Bodies
-TODO:
 
-- Proper instances of a tile are composed of a tile head and zero or more of its tile bodies.
-- "Tile Heads" view option
-- You aren't allowed to place a tile over a tile head whatsoever.
-- R key
+Rain World handles tiles differently than one would intuit. Normally, a tile appears as and behaves like a singular whole when editing, but in reality a tile is composed of multiple "atoms", each of a 1x1 grid size, that are arranged to form the whole tile. For each placed tile, there is one tile head and zero or more tile bodies that make up the tile.
+
+**TODO: figure visually demonstrating tile bodies and heads**
+
+The center of every tile is the tile head, which is required for a tile to exist as it is the component that references the tile being rendered. The tile body is surrounded by tile heads each of store a reference to their corresponding tile head. Rained knows which portion of the texture to render for each tile body based by their position relative to its tile head. You may highlight each tile head in the level by enabling `View > Tile Heads`.
+
+It is valid for a tile to be missing some tile bodies. You can do so by force-placing another tile over another one, which will remove some tile bodies of the tile being overlapped. However, you cannot place a tile in such a way that it overwrites the tile head, no matter what modifier you use, since by doing so all tile bodies reference by the tile head will become invalid.
+
+In regards to rendering, tile bodies that are missing do not cause the render to be missing those parts of the rendered tile; the tile in its entirety will still be rendered. However, it does affect how the geometry at that tile body is rendered. Without a tile body the geometry will be rendered overlapping with the tile graphics, whereas with a tile body there will be no rendered geometry at that cell.
 
 ### Tile Graphics
 The image displayed by default in Rained for the visual representation of tiles is not what actually gets rendered in-game. Rather, it is a crude representation of the tile. These images are, by defualt, used in place of the real tile graphics while editing the level due to concerns of performance and video memory. However, you can choose to have Rained render tile graphics using their actual in-game representation by toggling `View > Tile Graphics`. Out of the box, tiles will be colored using their respective category colors, but for a more accurate in-game representation you may also enable palette rendering through the `View > Palettes` window.
