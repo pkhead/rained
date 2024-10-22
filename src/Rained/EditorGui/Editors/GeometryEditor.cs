@@ -102,6 +102,7 @@ class GeometryEditor : IEditorMode
 
     private Tool selectedTool = Tool.Wall;
     private bool isToolActive = false;
+    private bool ignoreClick = false;
     private bool isErasing = false;
     private readonly RlManaged.Texture2D toolIcons;
 
@@ -545,14 +546,21 @@ class GeometryEditor : IEditorMode
             );
 
             // click and drag to move split
-            if (!mirrorDrag.HasFlag(MirrorFlags.MirrorX) && !isToolActive)
+            if (MathF.Abs(window.MouseCellFloat.X - MirrorPositionX) * window.ViewZoom < 0.2)
             {
-                if (MathF.Abs(window.MouseCellFloat.X - MirrorPositionX) * window.ViewZoom < 0.2)
+                if (!mirrorDrag.HasFlag(MirrorFlags.MirrorX) && !isToolActive)
                 {
                     mirrorCursor |= MirrorFlags.MirrorX;
 
                     if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                         mirrorDrag |= MirrorFlags.MirrorX;
+                }
+                
+                if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                {
+                    mirrorOriginX = RainEd.Instance.Level.Width;
+                    mirrorDrag &= ~MirrorFlags.MirrorX;
+                    ignoreClick = true;
                 }
             }
         }
@@ -567,14 +575,21 @@ class GeometryEditor : IEditorMode
             );
 
             // click and drag to move split
-            if (!mirrorDrag.HasFlag(MirrorFlags.MirrorY) && !isToolActive)
+            if (MathF.Abs(window.MouseCellFloat.Y - MirrorPositionY) * window.ViewZoom < 0.2)
             {
-                if (MathF.Abs(window.MouseCellFloat.Y - MirrorPositionY) * window.ViewZoom < 0.2)
+                if (!mirrorDrag.HasFlag(MirrorFlags.MirrorY) && !isToolActive)
                 {
                     mirrorCursor |= MirrorFlags.MirrorY;
 
                     if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                         mirrorDrag |= MirrorFlags.MirrorY;
+                }
+
+                if (EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                {
+                    mirrorOriginY = RainEd.Instance.Level.Height;
+                    mirrorDrag &= ~MirrorFlags.MirrorY;
+                    ignoreClick = true;
                 }
             }
         }
@@ -664,7 +679,9 @@ class GeometryEditor : IEditorMode
         }
 
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
-        
+        if (ignoreClick)
+            isMouseDown = false;
+
         if (window.IsViewportHovered && mirrorDrag == 0)
         {
             // cursor rect mode
@@ -756,6 +773,9 @@ class GeometryEditor : IEditorMode
             isToolActive = false;
             window.CellChangeRecorder.PushChange();
         }
+
+        if (!EditorWindow.IsMouseDown(ImGuiMouseButton.Left) && !EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            ignoreClick = false;
         
         lastMouseX = window.MouseCx;
         lastMouseY = window.MouseCy;
