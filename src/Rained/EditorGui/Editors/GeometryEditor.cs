@@ -533,24 +533,26 @@ class GeometryEditor : IEditorMode
         levelRender.RenderCameraBorders();
 
         // draw mirror splits
+        MirrorFlags mirrorCursor = 0;
+
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
         {
             Raylib.DrawLineEx(
                 new Vector2(MirrorPositionX * Level.TileSize, 0),
                 new Vector2(MirrorPositionX * Level.TileSize, level.Height * Level.TileSize),
                 2f / window.ViewZoom,
-                mirrorDrag == MirrorFlags.MirrorX ? Color.White : Color.Red
+                mirrorDrag.HasFlag(MirrorFlags.MirrorX) ? Color.White : Color.Red
             );
 
             // click and drag to move split
-            if (mirrorDrag == 0 && !isToolActive)
+            if (!mirrorDrag.HasFlag(MirrorFlags.MirrorX) && !isToolActive)
             {
                 if (MathF.Abs(window.MouseCellFloat.X - MirrorPositionX) * window.ViewZoom < 0.2)
                 {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                    mirrorCursor |= MirrorFlags.MirrorX;
 
                     if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
-                        mirrorDrag = MirrorFlags.MirrorX;
+                        mirrorDrag |= MirrorFlags.MirrorX;
                 }
             }
         }
@@ -561,34 +563,44 @@ class GeometryEditor : IEditorMode
                 new Vector2(0, MirrorPositionY * Level.TileSize),
                 new Vector2(level.Width * Level.TileSize, MirrorPositionY * Level.TileSize),
                 2f / window.ViewZoom,
-                mirrorDrag == MirrorFlags.MirrorY ? Color.White : Color.Red
+                mirrorDrag.HasFlag(MirrorFlags.MirrorY) ? Color.White : Color.Red
             );
 
             // click and drag to move split
-            if (mirrorDrag == 0 && !isToolActive)
+            if (!mirrorDrag.HasFlag(MirrorFlags.MirrorY) && !isToolActive)
             {
                 if (MathF.Abs(window.MouseCellFloat.Y - MirrorPositionY) * window.ViewZoom < 0.2)
                 {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+                    mirrorCursor |= MirrorFlags.MirrorY;
 
                     if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
-                        mirrorDrag = MirrorFlags.MirrorY;
+                        mirrorDrag |= MirrorFlags.MirrorY;
                 }
             }
         }
 
-        // mirror drag logic
-        if (mirrorDrag == MirrorFlags.MirrorX)
-        {
+        // mouse cursor
+        mirrorCursor |= mirrorDrag;
+
+        if (mirrorCursor.HasFlag(MirrorFlags.MirrorX) && mirrorCursor.HasFlag(MirrorFlags.MirrorY))
+            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
+        
+        else if (mirrorCursor.HasFlag(MirrorFlags.MirrorX))
             ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+        
+        else if (mirrorCursor.HasFlag(MirrorFlags.MirrorY))
+            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+
+        // mirror drag logic
+        if (mirrorDrag.HasFlag(MirrorFlags.MirrorX))
+        {
             mirrorOriginX = !ImGui.IsKeyDown(ImGuiKey.ModShift)
                 ? (int)MathF.Round(window.MouseCellFloat.X * 2f)
                 : (int)MathF.Round(window.MouseCellFloat.X) * 2;
         }
 
-        if (mirrorDrag == MirrorFlags.MirrorY)
+        if (mirrorDrag.HasFlag(MirrorFlags.MirrorY))
         {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
             mirrorOriginY = !ImGui.IsKeyDown(ImGuiKey.ModShift)
                 ? (int)MathF.Round(window.MouseCellFloat.Y * 2f)
                 : (int)MathF.Round(window.MouseCellFloat.Y) * 2;
