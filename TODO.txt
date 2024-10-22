@@ -27,43 +27,43 @@ v2.2.0:
     by init reference... probably could use an ID system and most IDs are
     a reference to a tile but some IDs are for placeholders.
 - effects previews
-- make mirror lines can go in middle of tiles
-- radial menu for editor mode selection (bound to space - rebind rope simulation to Q/E/R)
-- tile rect force geo thing solar asked
 - rebindable edit mode switch keybinds
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
 - asset manager crap
-- favorite tiles&props
+- new level screen, camera autoplace
 
-Overall:
-- logging
-  - button to show latest log file
-  - log window shows rained logs
-- asset manager
-  - can rearrange the order of stuff in asset manager
-  - can change color in asset manager
-  - fix merging
-  - can select certain packs from solar repo?
-- dissolve material/tile separation
-- optimize tile deform rendering
-- does update checker notif window timing work?
-- prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
-- material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
-  (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
+v2.3.0:
+- favorite tiles&props
+- please finally add the geo editing stuff
+- material previews
+- translation system
 - autotiles
+  - add rained.getApiVersion()  (different version than rained.getVersion())
   - option to join only inner tiles
   - ability to recognize more than one tile as a direction type
   - cross beams autotile
     - ability to constrain autotile shape into a square
 - method of generating approximated geometry from prop
+- show prop preview over mouse
+
+Overall:
+- asset manager
+  - can rearrange the order of stuff in asset manager
+  - can change color in asset manager
+  - fix merging
+  - can select certain packs from solar repo?
+- optimize tile deform rendering
+- does update checker notif window timing work?
+- prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
+- material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
+  (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
 - new level screen
 - Move Level
 - undo/redo for level resize
 - level resze drag
 - level resize change history
 - put asterik in window title for unsaved levels
-- ability to have more than one level loaded at once
 
 Geometry Editor:
 - select and copy/paste
