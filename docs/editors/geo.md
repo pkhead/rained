@@ -101,4 +101,6 @@ And here are some examples of invalid shortcuts:
 There are three checkboxes below the tool selector labeled "Layer 1", "Layer 2", and "Layer 3". These checkboxes control the layer mask, which controls the layers tool interactions manipulate. You may enable/deactivate each layer by clicking on the checkboxes or by using the <kbd>E</kbd>, <kbd>R</kbd>, and <kbd>T</kbd> keys on your keyboard. Alternatively, you may press <kbd>Tab</kbd> to shift the layer mask downwards. If you have only one layer selected, this has the same effect as selecting the next layer.
 
 ## Mirroring
-Below the layer mask configuration are the options for mirroring. The checkbox labeled "Mirror X", if enabled, will enable horziontal mirroring for tool interactions about the red line that will appear. "Mirror Y", if enabled, will do the same for vertical mirroring. Each mirror line can be moved by clicking and dragging it.
+Below the layer mask configuration are the options for mirroring. The checkbox labeled "Mirror X", if enabled, will enable horziontal mirroring for tool interactions about the red line that will appear. "Mirror Y", if enabled, will do the same for vertical mirroring.
+
+Each mirror split can be moved by clicking and dragging it. Holding down <kbd>Shift</kbd> while dragging a mirror split will snap it to the edges of cells, ignoring their centers. The split can be recentered by double-clicking on it.
