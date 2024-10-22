@@ -124,12 +124,22 @@ class GeometryEditor : IEditorMode
     private int mirrorOriginX;
     private int mirrorOriginY;
 
+    private float MirrorPositionX {
+        get => mirrorOriginX / 2f;
+        set => mirrorOriginX = (int) Math.Round(value * 2f);
+    }
+
+    private float MirrorPositionY {
+        get => mirrorOriginY / 2f;
+        set => mirrorOriginY = (int) Math.Round(value * 2f);
+    }
+
     public GeometryEditor(LevelWindow levelView)
     {
         layerMask = new bool[3];
         layerMask[0] = true;
-        mirrorOriginX = RainEd.Instance.Level.Width / 2;
-        mirrorOriginY = RainEd.Instance.Level.Height / 2;
+        mirrorOriginX = RainEd.Instance.Level.Width;
+        mirrorOriginY = RainEd.Instance.Level.Height;
 
         window = levelView;
         toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
@@ -208,8 +218,8 @@ class GeometryEditor : IEditorMode
 
     public void ReloadLevel()
     {
-        mirrorOriginX = RainEd.Instance.Level.Width / 2;
-        mirrorOriginY = RainEd.Instance.Level.Height / 2;
+        mirrorOriginX = RainEd.Instance.Level.Width;
+        mirrorOriginY = RainEd.Instance.Level.Height;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -526,8 +536,8 @@ class GeometryEditor : IEditorMode
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
         {
             Raylib.DrawLineEx(
-                new Vector2(mirrorOriginX * Level.TileSize, 0),
-                new Vector2(mirrorOriginX * Level.TileSize, level.Height * Level.TileSize),
+                new Vector2(MirrorPositionX * Level.TileSize, 0),
+                new Vector2(MirrorPositionX * Level.TileSize, level.Height * Level.TileSize),
                 2f / window.ViewZoom,
                 mirrorDrag == MirrorFlags.MirrorX ? Color.White : Color.Red
             );
@@ -535,7 +545,7 @@ class GeometryEditor : IEditorMode
             // click and drag to move split
             if (mirrorDrag == 0 && !isToolActive)
             {
-                if (MathF.Abs(window.MouseCellFloat.X - mirrorOriginX) * window.ViewZoom < 0.2)
+                if (MathF.Abs(window.MouseCellFloat.X - MirrorPositionX) * window.ViewZoom < 0.2)
                 {
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
 
@@ -548,8 +558,8 @@ class GeometryEditor : IEditorMode
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
             Raylib.DrawLineEx(
-                new Vector2(0, mirrorOriginY * Level.TileSize),
-                new Vector2(level.Width * Level.TileSize, mirrorOriginY * Level.TileSize),
+                new Vector2(0, MirrorPositionY * Level.TileSize),
+                new Vector2(level.Width * Level.TileSize, MirrorPositionY * Level.TileSize),
                 2f / window.ViewZoom,
                 mirrorDrag == MirrorFlags.MirrorY ? Color.White : Color.Red
             );
@@ -557,7 +567,7 @@ class GeometryEditor : IEditorMode
             // click and drag to move split
             if (mirrorDrag == 0 && !isToolActive)
             {
-                if (MathF.Abs(window.MouseCellFloat.Y - mirrorOriginY) * window.ViewZoom < 0.2)
+                if (MathF.Abs(window.MouseCellFloat.Y - MirrorPositionY) * window.ViewZoom < 0.2)
                 {
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
 
@@ -571,13 +581,17 @@ class GeometryEditor : IEditorMode
         if (mirrorDrag == MirrorFlags.MirrorX)
         {
             ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-            mirrorOriginX = (int)MathF.Round(window.MouseCellFloat.X);
+            mirrorOriginX = !ImGui.IsKeyDown(ImGuiKey.ModShift)
+                ? (int)MathF.Round(window.MouseCellFloat.X * 2f)
+                : (int)MathF.Round(window.MouseCellFloat.X) * 2;
         }
 
         if (mirrorDrag == MirrorFlags.MirrorY)
         {
             ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-            mirrorOriginY = (int)MathF.Round(window.MouseCellFloat.Y);
+            mirrorOriginY = !ImGui.IsKeyDown(ImGuiKey.ModShift)
+                ? (int)MathF.Round(window.MouseCellFloat.Y * 2f)
+                : (int)MathF.Round(window.MouseCellFloat.Y) * 2;
         }
 
         if (mirrorDrag != 0 && !EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
@@ -742,20 +756,24 @@ class GeometryEditor : IEditorMode
         int count = 1;
         positions[0] = (tx, ty);
 
-        // mirror logic
+        // if the mirror line is in the center of a tile, and the
+        // mouse pos occupies the same tile, mirroring would have no effect.
+        // thus, to save computation/mem or make it less error prone or whatever,
+        // these flags aid in preventing the storage and processing of the
+        // redundant positions.
+        bool doMirrorX = tx * 2 + 1 != mirrorOriginX;
+        bool doMirrorY = ty * 2 + 1 != mirrorOriginY;
+
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && doMirrorX)
+            positions[count++] = ((int)(MirrorPositionX * 2 - tx - 1), ty);
+        
+        if (mirrorFlags.HasFlag(MirrorFlags.MirrorY) && doMirrorY)
+            positions[count++] = (tx, (int)(MirrorPositionY * 2 - ty - 1));
+        
         if (mirrorFlags.HasFlag(MirrorFlags.MirrorX) && mirrorFlags.HasFlag(MirrorFlags.MirrorY))
         {
-            positions[count++] = (mirrorOriginX * 2 - tx - 1, ty);
-            positions[count++] = (tx, mirrorOriginY * 2 - ty - 1);
-            positions[count++] = (mirrorOriginX * 2 - tx - 1, mirrorOriginY * 2 - ty - 1);
-        }
-        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorX))
-        {
-            positions[count++] = (mirrorOriginX * 2 - tx - 1, ty);
-        }
-        else if (mirrorFlags.HasFlag(MirrorFlags.MirrorY))
-        {
-            positions[count++] = (tx, mirrorOriginY * 2 - ty - 1);
+            if (doMirrorX || doMirrorY)
+                positions[count++] = ((int)(MirrorPositionX * 2 - tx - 1), (int)(MirrorPositionY * 2 - ty - 1));
         }
 
         return count;
