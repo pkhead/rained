@@ -392,7 +392,7 @@ sealed class RainEd
             {
                 var loadRes = LevelSerialization.Load(path);
 
-                if (loadRes.Level is not null)
+                if (!loadRes.HadUnrecognizedAssets)
                 {
                     var tab = new LevelTab(loadRes.Level, path);
                     _tabs.Add(tab);
@@ -404,6 +404,12 @@ sealed class RainEd
                     // level failed to load due to unrecognized assets
                     LevelLoadFailedWindow.LoadResult = loadRes;
                     LevelLoadFailedWindow.IsWindowOpen = true;
+                    LevelLoadFailedWindow.LoadAnywayCallback = () =>
+                    {
+                        var tab = new LevelTab(loadRes.Level, path);
+                        _tabs.Add(tab);
+                        CurrentTab = tab;
+                    };
                 }
 
                 // i think it may be useful to add it to the list

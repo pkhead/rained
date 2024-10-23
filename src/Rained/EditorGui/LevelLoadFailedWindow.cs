@@ -4,10 +4,12 @@ namespace Rained.EditorGui;
 
 static class LevelLoadFailedWindow
 {
-    public const string WindowName = "Load Failure";
+    public const string WindowName = "Unrecognized Assets";
     public static bool IsWindowOpen = false;
 
     public static LevelLoadResult? LoadResult = null;
+
+    public static Action? LoadAnywayCallback = null;
 
     public static void ShowWindow()
     {
@@ -21,7 +23,8 @@ static class LevelLoadFailedWindow
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            ImGui.Text("The level failed to load due to unrecognized assets.");
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35f);
+            ImGui.TextWrapped("The level contains unrecognized assets. Trying to load the level in this state will have the asset instances removed.");
 
             // show unknown props
             if (LoadResult!.UnrecognizedProps.Length > 0)
@@ -63,8 +66,24 @@ static class LevelLoadFailedWindow
                 }
             }
 
+            if (LoadResult!.UnrecognizedTiles.Length > 0)
+            {
+                ImGui.TextWrapped("You will need to turn off \"Optimized Tile Previews\" to see the bodies of the affected tiles.");
+            }
+
+            ImGui.PopTextWrapPos();
             ImGui.Separator();
-            if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+
+            if (ImGui.Button("Load anyway", StandardPopupButtons.ButtonSize))
+            {
+                LoadAnywayCallback?.Invoke();
+
+                ImGui.CloseCurrentPopup();
+                IsWindowOpen = false;
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize))
             {
                 ImGui.CloseCurrentPopup();
                 IsWindowOpen = false;

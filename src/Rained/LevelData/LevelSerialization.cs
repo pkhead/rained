@@ -5,9 +5,10 @@ using Rained.Assets;
 using Raylib_cs;
 namespace Rained.LevelData;
 
-record LevelLoadResult()
+record LevelLoadResult(Level Level)
 {
-    public Level? Level = null;
+    public Level Level = Level;
+    public bool HadUnrecognizedAssets = false;
     public string[] UnrecognizedMaterials = [];
     public string[] UnrecognizedTiles = [];
     public string[] UnrecognizedProps = [];
@@ -566,14 +567,12 @@ static class LevelSerialization
         }
 
         // return load result
-        var loadResult = new LevelLoadResult();
-
-        // a null Level means the load failed
-        if (loadSuccess)
+        var loadResult = new LevelLoadResult(level)
         {
-            loadResult.Level = level;
-        }
-        else
+            HadUnrecognizedAssets = !loadSuccess
+        };
+
+        if (!loadSuccess)
         {
             loadResult.UnrecognizedEffects = [..unknownEffects];
             loadResult.UnrecognizedMaterials = [..unknownMats];
