@@ -401,6 +401,21 @@ static class PreferencesWindow
             if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
                 prefs.HideScreenSize = hideScreenSize;
             
+            bool removeCangleLimit = prefs.RemoveCameraAngleLimit;
+            if (ImGui.Checkbox("Unlock camera angles", ref removeCangleLimit))
+                prefs.RemoveCameraAngleLimit = removeCangleLimit;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("Normally, there is a limit to how large you can make the strength of a camera angle, unless you hold SHIFT. With this enabled, the limit will be removed without the need to hold SHIFT, and doing so will instead impose the limit.");
+                ImGui.PopTextWrapPos();
+
+                ImGui.End();
+            }
+            
             
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             

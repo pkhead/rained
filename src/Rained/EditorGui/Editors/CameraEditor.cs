@@ -293,11 +293,15 @@ class CameraEditor : IEditorMode
             // corner drag
             if (selectedCorner >= 0)
             {
+                var limitAmp = RainEd.Instance.Preferences.RemoveCameraAngleLimit
+                    ? EditorWindow.IsKeyDown(ImGuiKey.ModShift)
+                    : !EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+                
                 var vecDiff = window.MouseCellFloat - cornerHoverCamera!.GetCornerPosition(selectedCorner, false);
 
                 var angle = MathF.Atan2(vecDiff.X, -vecDiff.Y);
                 var offset = Math.Max(vecDiff.Length(), 0f);
-                if (EditorWindow.IsKeyDown(ImGuiKey.LeftShift) && offset >= 4f)
+                if (limitAmp && offset >= 4f)
                     offset = 4f;
                 cornerHoverCamera.CornerAngles[selectedCorner] = angle;
                 cornerHoverCamera.CornerOffsets[selectedCorner] = offset / 4f;

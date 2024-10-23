@@ -190,6 +190,7 @@ class UserPreferences
 
     public bool DoubleClickToCreateProp { get; set; } = false;
     public bool TilePlacementModeToggle { get; set; } = false;
+    public bool RemoveCameraAngleLimit { get; set; } = false;
 
     public bool ShowPaletteWindow { get; set; }
     public bool UsePalette { get; set; }
