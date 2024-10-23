@@ -3,8 +3,6 @@ Bugs:
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
 - reported crash in asset manager due to queues or something
-- rained does not work if launched in a path with non-latin characters
-  - need to test this again
 - asset manager merging is actually kind of buggy
 - don't clip mirror lines to scissor box
 - errors when rendering new effects???
@@ -15,17 +13,12 @@ Bugs:
   after testing render save prompt bug fix...
 - CRACK TERRAIN ON AIR !!!!!!!!!!!!!
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
-- radial menu for view toggles
 - fix error abt worm grass in guide
 - make actual manual
 - make sure line numbers of erroneous init are printed out
 
 v2.2.0:
 - mass render
-- allow user to open levels with unrecognized tiles/props
-  - so need to figure out how to store tiles/props by name only instead of
-    by init reference... probably could use an ID system and most IDs are
-    a reference to a tile but some IDs are for placeholders.
 - effects previews
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
@@ -65,6 +58,10 @@ Overall:
 - level resze drag
 - level resize change history
 - put asterik in window title for unsaved levels
+- allow user to open levels with unrecognized tiles/props
+  - so need to figure out how to store tiles/props by name only instead of
+    by init reference... probably could use an ID system and most IDs are
+    a reference to a tile but some IDs are for placeholders.
 
 Geometry Editor:
 - select and copy/paste

@@ -15,9 +15,9 @@ static class ImGuiExt
         if (iniFilenameAlloc != 0)
             Marshal.FreeHGlobal(iniFilenameAlloc);
 
-        byte[] nameBytes = Encoding.ASCII.GetBytes(iniFilename + "\0");
+        byte[] nameBytes = Encoding.UTF8.GetBytes(iniFilename + "\0");
         iniFilenameAlloc = Marshal.AllocHGlobal(nameBytes.Length);
-        Marshal.Copy(nameBytes, 0, iniFilenameAlloc, nameBytes.Count());
+        Marshal.Copy(nameBytes, 0, iniFilenameAlloc, nameBytes.Length);
         
         unsafe
         {
