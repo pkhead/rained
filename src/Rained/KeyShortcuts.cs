@@ -9,6 +9,10 @@ enum KeyShortcut : int
     None = -1,
 
     RightMouse,
+
+    // Edit modes
+    EnvironmentEditor, GeometryEditor, TileEditor,
+    CameraEditor, LightEditor, EffectsEditor, PropEditor, 
     
     // General
     NavUp, NavLeft, NavDown, NavRight,
@@ -320,6 +324,14 @@ static class KeyShortcuts
     public static void InitShortcuts()
     {
         Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiModFlags.None);
+
+        Register("Environment Editor", KeyShortcut.EnvironmentEditor, ImGuiKey._1, ImGuiModFlags.None);
+        Register("Geometry Editor", KeyShortcut.GeometryEditor, ImGuiKey._2, ImGuiModFlags.None);
+        Register("Tile Editor", KeyShortcut.TileEditor, ImGuiKey._3, ImGuiModFlags.None);
+        Register("Camera Editor", KeyShortcut.CameraEditor, ImGuiKey._4, ImGuiModFlags.None);
+        Register("Light Editor", KeyShortcut.LightEditor, ImGuiKey._5, ImGuiModFlags.None);
+        Register("Effects Editor", KeyShortcut.EffectsEditor, ImGuiKey._6, ImGuiModFlags.None);
+        Register("Prop Editor", KeyShortcut.PropEditor, ImGuiKey._7, ImGuiModFlags.None);
 
         Register("Navigate Up", KeyShortcut.NavUp, ImGuiKey.W, ImGuiModFlags.None, true);
         Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);

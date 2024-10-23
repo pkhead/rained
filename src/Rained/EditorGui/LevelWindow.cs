@@ -300,25 +300,25 @@ class LevelWindow
                     ViewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
 
                     // edit mode keybinds
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._1))
+                    if (KeyShortcuts.Activated(KeyShortcut.EnvironmentEditor))
                         newEditMode = (int) EditModeEnum.Environment;
                     
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._2))
+                    if (KeyShortcuts.Activated(KeyShortcut.GeometryEditor))
                         newEditMode = (int) EditModeEnum.Geometry;
                     
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._3))
+                    if (KeyShortcuts.Activated(KeyShortcut.TileEditor))
                         newEditMode = (int) EditModeEnum.Tile;
                     
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._4))
+                    if (KeyShortcuts.Activated(KeyShortcut.CameraEditor))
                         newEditMode = (int) EditModeEnum.Camera;
                     
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._5))
+                    if (KeyShortcuts.Activated(KeyShortcut.LightEditor))
                         newEditMode = (int) EditModeEnum.Light;
                     
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._6))
+                    if (KeyShortcuts.Activated(KeyShortcut.EffectsEditor))
                         newEditMode = (int) EditModeEnum.Effect;
 
-                    if (EditorWindow.IsKeyPressed(ImGuiKey._7))
+                    if (KeyShortcuts.Activated(KeyShortcut.PropEditor))
                         newEditMode = (int) EditModeEnum.Prop;
                 }
 

@@ -27,10 +27,11 @@ v2.2.0:
     by init reference... probably could use an ID system and most IDs are
     a reference to a tile but some IDs are for placeholders.
 - effects previews
-- rebindable edit mode switch keybinds
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
 - asset manager crap
+- Q/E to rotate prop
+- switch for alt light editor brush rotation/scale controls
 - new level screen, camera autoplace
 
 v2.3.0:

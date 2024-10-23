@@ -524,6 +524,13 @@ static class PreferencesWindow
 
         ImGui.SeparatorText("Editing");
         ShortcutButton(KeyShortcut.SelectEditor);
+        ShortcutButton(KeyShortcut.EnvironmentEditor);
+        ShortcutButton(KeyShortcut.GeometryEditor);
+        ShortcutButton(KeyShortcut.TileEditor);
+        ShortcutButton(KeyShortcut.CameraEditor);
+        ShortcutButton(KeyShortcut.LightEditor);
+        ShortcutButton(KeyShortcut.EffectsEditor);
+        ShortcutButton(KeyShortcut.PropEditor);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.NavUp);
         ShortcutButton(KeyShortcut.NavDown);
