@@ -325,6 +325,7 @@ class GeometryEditor : IEditorMode
             ImGui.Text(ToolNames[selectedTool]);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(2, 2));
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
             for (int i = 0; i < (int) Tool.ToolCount; i++)
@@ -365,7 +366,7 @@ class GeometryEditor : IEditorMode
                 ImGui.PopStyleColor();
             }
             
-            ImGui.PopStyleVar(2);
+            ImGui.PopStyleVar(3);
             ImGui.PopStyleColor();
 
             // show work layers

@@ -699,7 +699,7 @@ sealed class RainEd
 
         EditorWindow.UpdateMouseState();
         
-        Raylib.ClearBackground(Color.DarkGray);
+        Raylib.ClearBackground(new Color(51, 51, 51, 255));
         KeyShortcuts.Update();
         //ImGui.DockSpaceOverViewport();
 
