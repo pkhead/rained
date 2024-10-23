@@ -1,7 +1,9 @@
 site_name: Rained
+
 plugins:
   - offline
   - search
+
 nav:
   - Home: index.md
   - Manual:
@@ -20,6 +22,8 @@ nav:
       - Props: editors/props.md
     - Playing your level: playing-your-level.md
     - Further reading: resources.md
+  - Developing: developing.md
+
 theme:
   name: material
   favicon:
