@@ -526,7 +526,13 @@ partial class FileBrowser
                 ImGui.SetNextItemWidth(-0.0001f);
                 if (ImGui.InputText("##Path", ref pathBuf, 128, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
-                    SetPath(Path.GetFullPath(pathBuf));
+                    var fullPath = Path.GetFullPath(pathBuf);
+                    if (!Path.EndsInDirectorySeparator(fullPath)) fullPath += Path.DirectorySeparatorChar;
+                    
+                    if (fullPath != cwd && SetPath(fullPath))
+                    {
+                        selected.Clear();
+                    }
                 }
 
                 enterPath = !closeTextInput;
@@ -802,7 +808,7 @@ partial class FileBrowser
                 {
                     if (selectedDirs.Any())
                     {
-                        if (selectedDirs.Count() > 1) ActivateEntry(entries[selectedDirs.First()]);
+                        if (selectedDirs.Count() == 1) ActivateEntry(entries[selectedDirs.First()]);
                     }
                     else
                     {
@@ -828,7 +834,7 @@ partial class FileBrowser
                 {
                     if (selectedDirs.Any())
                     {
-                        if (selectedDirs.Count() > 1) ActivateEntry(entries[selectedDirs.First()]);
+                        if (selectedDirs.Count() == 1) ActivateEntry(entries[selectedDirs.First()]);
                     }
                     else
                     {
@@ -935,18 +941,26 @@ partial class FileBrowser
             }
             else
             {
+                var rangeStart = selected[^1];
+                var rangeEnd = idx;
+                int dir = rangeEnd >= rangeStart ? 1 : -1;
+                var i = rangeStart;
+                var steps = Math.Abs(rangeEnd - rangeStart);
+
                 if (selected.Contains(idx))
                 {
-                    for (var j = Math.Min(idx, selected[^1]); j <= Math.Max(idx, selected[^1]); j++)
+                    for (var n = 0; n <= steps; n++)
                     {
-                        selected.Remove(j);
-                    }    
+                        selected.Remove(i);
+                        i += dir;
+                    }
                 }
                 else
                 {
-                    for (var j = Math.Min(idx, selected[^1]); j <= Math.Max(idx, selected[^1]); j++)
+                    for (var n = 0; n <= steps; n++)
                     {
-                        if (!selected.Contains(j)) selected.Add(j);
+                        if (!selected.Contains(i)) selected.Add(i);
+                        i += dir;
                     }
                 }
             }
