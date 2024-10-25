@@ -147,7 +147,7 @@ static class EditorWindow
         }
     }
 
-    private static void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string> callback)
+    private static void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string[]> callback)
     {
         static bool levelCheck(string path, bool isRw)
         {
@@ -395,20 +395,29 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Open))
         {
-            OpenLevelBrowser(FileBrowser.OpenMode.Read, RainEd.Instance.LoadLevel);
+            OpenLevelBrowser(FileBrowser.OpenMode.Read, static (paths) =>
+            {
+                if (paths.Length > 0) RainEd.Instance.LoadLevel(paths[0]);
+            });
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
         {
             if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
-                OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+                OpenLevelBrowser(FileBrowser.OpenMode.Write, static (paths) =>
+                {
+                    if (paths.Length > 0) SaveLevelCallback(paths[0]);
+                });
             else
                 SaveLevelCallback(RainEd.Instance.CurrentFilePath);
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.SaveAs) && fileActive)
         {
-            OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+            OpenLevelBrowser(FileBrowser.OpenMode.Write, static (paths) =>
+            {
+                if (paths.Length > 0) SaveLevelCallback(paths[0]);
+            });
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.CloseFile) && fileActive)
@@ -733,7 +742,10 @@ static class EditorWindow
 
                 // unsaved change callback is run in SaveLevel
                 if (string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath))
-                    OpenLevelBrowser(FileBrowser.OpenMode.Write, SaveLevelCallback);
+                    OpenLevelBrowser(FileBrowser.OpenMode.Write, static (paths) =>
+                    {
+                        if (paths.Length > 0) SaveLevelCallback(paths[0]);
+                    });
                 else
                     SaveLevelCallback(RainEd.Instance.CurrentFilePath);
             }

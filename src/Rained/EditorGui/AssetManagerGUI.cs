@@ -437,10 +437,11 @@ static class AssetManagerGUI
         }
     }
 
-    private static void ImportFile(string? path)
+    private static void ImportFile(string[] paths)
     {
+        if (paths.Length == 0) return;
         if (mergeTask is not null) return;
-        if (string.IsNullOrEmpty(path)) return;
+        var path = paths[0];
 
         Log.Information("Import Init.txt file '{Path}'", path);
 

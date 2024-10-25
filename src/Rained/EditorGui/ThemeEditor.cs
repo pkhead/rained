@@ -36,9 +36,10 @@ static class ThemeEditor
         fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, SaveCallback, Path.Combine(Boot.AppDataPath, "config", "themes"));
         fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
-        static void SaveCallback(string? path)
+        static void SaveCallback(string[] paths)
         {
-            if (string.IsNullOrEmpty(path)) return;
+            if (paths.Length == 0) return;
+            var path = paths[0];
 
             var style = new SerializableStyle(ImGui.GetStyle());
             style.WriteToFile(path);
@@ -52,9 +53,10 @@ static class ThemeEditor
         fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, Callback, Path.Combine(Boot.AppDataPath, "config", "themes"));
         fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
-        static void Callback(string? path)
+        static void Callback(string[] paths)
         {
-            if (string.IsNullOrEmpty(path)) return;
+            if (paths.Length == 0) return;
+            var path = paths[0];
 
             var style = SerializableStyle.FromFile(path);
             style?.Apply(ImGui.GetStyle());

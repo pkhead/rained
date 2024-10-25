@@ -215,8 +215,11 @@ class AppSetup
         return false;
     }
 
-    private void FileBrowserCallback(string? path)
+    private void FileBrowserCallback(string[] paths)
     {
+        if (paths.Length == 0) return;
+        var path = paths[0];
+        
         if (!string.IsNullOrEmpty(path))
         {
             // check for any missing directories
