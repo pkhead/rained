@@ -16,6 +16,8 @@ static class MassRenderWindow
     private static FileBrowser? fileBrowser;
     private static int parallelismLimit = 1;
     private static bool limitParallelism = false;
+    private static int queueItemMode = 0;
+    private static readonly string[] queueItemModeNames = ["Files", "Folders"];
 
     private static MassRenderProcessWindow? massRenderProc = null;
 
@@ -43,6 +45,16 @@ static class MassRenderWindow
 
             ImGui.SeparatorText("Queue");
             {
+                if (ButtonSwitch("ItemQueueSwitch", ["Files", "Folders"], ref queueItemMode))
+                {
+                    levelPaths.Clear();
+                }
+
+                /*{
+                    ImGui.SliderInt("##QueueMode", ref queueItemMode, 0, 1, queueItemModeNames[queueItemMode]);
+
+                }*/
+
                 if (ImGui.BeginListBox("##Levels"))
                 {
                     foreach (var path in levelPaths)
@@ -62,14 +74,23 @@ static class MassRenderWindow
                         return isRw;
                     }
 
-                    var tab = RainEd.Instance.CurrentTab;
-                    fileBrowser = new FileBrowser(FileBrowser.OpenMode.MultiRead, FileCallback, null);
-                    fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
-                    fileBrowser.PreviewCallback = (string path, bool isRw) =>
+                    // select files
+                    if (queueItemMode == 0)
                     {
-                        if (isRw) return new BrowserLevelPreview(path);
-                        return null;
-                    };
+                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.MultiRead, FileCallback, null);
+                        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+                        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+                        {
+                            if (isRw) return new BrowserLevelPreview(path);
+                            return null;
+                        };
+                    }
+
+                    // select folders
+                    else if (queueItemMode == 1)
+                    {
+                        fileBrowser = new FileBrowser(FileBrowser.OpenMode.MultiDirectory, FolderCallback, null);
+                    }
                 }
 
                 ImGui.SameLine();
@@ -130,8 +151,24 @@ static class MassRenderWindow
 
     private static void StartRender()
     {
-        var massRender = new Drizzle.DrizzleMassRender(
-            levelPaths.Select(x => x.Path).ToArray(),
+        string[] files;
+
+        if (queueItemMode == 0)
+        {
+            files = levelPaths.Select(x => x.Path).ToArray();
+        } 
+        else if (queueItemMode == 1)
+        {
+            files = levelPaths.SelectMany(x => Directory.GetFiles(x.Path).Where(x => Path.GetExtension(x) == ".txt"))
+                .ToArray();
+        }
+        else
+        {
+            throw new Exception("Invalid item mode");
+        }
+
+        var massRender = new DrizzleMassRender(
+            files,
             limitParallelism ? 0 : parallelismLimit
         );
 
@@ -145,5 +182,64 @@ static class MassRenderWindow
             if (levelPaths.Any(x => x.Path == path)) continue;
             levelPaths.Add(new LevelPath(path, Path.GetFileNameWithoutExtension(path)));
         }
+    }
+
+    private static void FolderCallback(string[] paths)
+    {
+        foreach (var path in paths)
+        {
+            levelPaths.Add(new LevelPath(path, Path.GetFileName(path)));
+        }
+    }
+
+    private static bool ButtonSwitch(string id, ReadOnlySpan<string> options, ref int selected)
+    {
+        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
+        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+
+        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
+        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
+        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
+
+        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+
+        ImGui.PushID(id);
+
+        var returnValue = false;
+        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - options.Length)) / options.Length, 0f);
+
+        for (int i = 0; i < options.Length; i++)
+        {
+            if (selected == i)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
+            }
+            else
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
+            }
+
+            ImGui.PushID(i);
+            if (i > 0) ImGui.SameLine();
+            if (ImGui.Button(options[i], itemSize))
+            {
+                if (selected != i) returnValue = true;
+                selected = i;
+            }
+            ImGui.PopID();
+
+            ImGui.PopStyleColor(3);
+        }
+
+        ImGui.PopID();
+        ImGui.PopStyleVar();
+
+        return returnValue;
     }
 }
