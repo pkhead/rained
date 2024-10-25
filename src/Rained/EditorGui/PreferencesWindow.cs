@@ -460,6 +460,31 @@ static class PreferencesWindow
                 );
                 ImGui.End();
             }
+
+            // light editor control scheme
+            var lightEditorControlScheme = (int) prefs.LightEditorControlScheme;
+            if (ImGui.Combo("Light editor control scheme", ref lightEditorControlScheme, "Mouse\0Keyboard\0"))
+                prefs.LightEditorControlScheme = (UserPreferences.LightEditorControlSchemeOption) lightEditorControlScheme;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    This changes how the brush in the light
+                    editor will be scaled and rotated.
+
+                    - Mouse: Hold Q/E and move the mouse for
+                    scaling and rotation, respectively.
+
+                    - Keyboard: Mimics the controls in the
+                    original level editor: WASD to
+                    scale and Q/E to rotate.
+                    """
+                );
+                ImGui.End();
+            }
             
             ImGui.PopItemWidth();
         }
@@ -597,6 +622,11 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ZoomLightOut);
         ShortcutButton(KeyShortcut.RotateLightCW);
         ShortcutButton(KeyShortcut.RotateLightCCW);
+        ImGui.Separator();
+        ShortcutButton(KeyShortcut.RotateBrushCW);
+        ShortcutButton(KeyShortcut.RotateBrushCCW);
+        ShortcutButton(KeyShortcut.PreviousBrush);
+        ShortcutButton(KeyShortcut.NextBrush);
 
         ImGui.SeparatorText("Props");
         ShortcutButton(KeyShortcut.ToggleVertexMode);

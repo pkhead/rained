@@ -192,6 +192,40 @@ class UserPreferences
     public bool TilePlacementModeToggle { get; set; } = false;
     public bool RemoveCameraAngleLimit { get; set; } = false;
 
+    public enum LightEditorControlSchemeOption
+    {
+        Mouse, Keyboard
+    };
+    public LightEditorControlSchemeOption LightEditorControlScheme = LightEditorControlSchemeOption.Mouse;
+
+    [JsonPropertyName("lightEditorControlScheme")]
+    public string LightEditorControlSchemeString
+    {
+        get => LightEditorControlScheme switch
+        {
+            LightEditorControlSchemeOption.Mouse => "mouse",
+            LightEditorControlSchemeOption.Keyboard => "keyboard",
+            _ => throw new Exception("Invalid LightEditorControlScheme")
+        };
+        set
+        {
+            switch (value)
+            {
+                case "mouse":
+                    LightEditorControlScheme = LightEditorControlSchemeOption.Mouse;
+                    break;
+
+                case "keyboard":
+                    LightEditorControlScheme = LightEditorControlSchemeOption.Keyboard;
+                    break;
+
+                default:
+                    Log.Error("Invalid 'lightEditorControlScheme' option");
+                    break;
+            }
+        }
+    }
+
     public bool ShowPaletteWindow { get; set; }
     public bool UsePalette { get; set; }
     public int PaletteIndex { get; set; }

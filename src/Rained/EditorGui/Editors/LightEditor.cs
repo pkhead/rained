@@ -80,6 +80,7 @@ class LightEditor : IEditorMode
 
         var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
+        var prefs = RainEd.Instance.Preferences;
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -204,6 +205,7 @@ class LightEditor : IEditorMode
         } ImGui.End();
 
         // keyboard catalog navigation
+        if (prefs.LightEditorControlScheme == UserPreferences.LightEditorControlSchemeOption.Mouse)
         {
             // S to move down one row
             if (KeyShortcuts.Activated(KeyShortcut.NavDown))
@@ -253,6 +255,19 @@ class LightEditor : IEditorMode
             
             // A to move left
             if (KeyShortcuts.Activated(KeyShortcut.NavLeft))
+            {
+                if (selectedBrush == 0)
+                    selectedBrush = brushDb.Brushes.Count - 1;
+                else
+                    selectedBrush--;
+            }
+        }
+        else
+        {
+            if (KeyShortcuts.Activated(KeyShortcut.NextBrush))
+                selectedBrush = (selectedBrush + 1) % brushDb.Brushes.Count;
+            
+            if (KeyShortcuts.Activated(KeyShortcut.PreviousBrush))
             {
                 if (selectedBrush == 0)
                     selectedBrush = brushDb.Brushes.Count - 1;
@@ -337,6 +352,7 @@ class LightEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
+        var prefs = RainEd.Instance.Preferences;
 
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
@@ -349,7 +365,6 @@ class LightEditor : IEditorMode
         var wasDrawing = isDrawing;
         isCursorEnabled = true;
         isDrawing = false;
-
 
         // draw light background
         Raylib.DrawRectangle(
@@ -481,22 +496,53 @@ class LightEditor : IEditorMode
                 );
             }
 
-            var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
-            var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
-
-            if (doScale || doRotate)
+            switch (prefs.LightEditorControlScheme)
             {
-                if (wasCursorEnabled)
+                case UserPreferences.LightEditorControlSchemeOption.Mouse:
                 {
-                    savedMouseGp = mpos;
-                    savedMousePos = Raylib.GetMousePosition();
-                }
-                isCursorEnabled = false;
+                    var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
+                    var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
 
-                if (doScale)
-                    brushSize += Raylib.GetMouseDelta();
-                if (doRotate)
-                    brushRotation -= Raylib.GetMouseDelta().Y / 2f;
+                    if (doScale || doRotate)
+                    {
+                        if (wasCursorEnabled)
+                        {
+                            savedMouseGp = mpos;
+                            savedMousePos = Raylib.GetMousePosition();
+                        }
+                        isCursorEnabled = false;
+
+                        if (doScale)
+                            brushSize += Raylib.GetMouseDelta();
+                        if (doRotate)
+                            brushRotation -= Raylib.GetMouseDelta().Y / 2f;
+                    }
+
+                    break;
+                }
+
+                case UserPreferences.LightEditorControlSchemeOption.Keyboard:
+                {
+                    var rotSpeed = Raylib.GetFrameTime() * 60f;
+
+                    if (KeyShortcuts.Active(KeyShortcut.RotateBrushCW))
+                        brushRotation += rotSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.RotateBrushCCW))
+                        brushRotation -= rotSpeed;
+                    
+                    var scaleSpeed = Raylib.GetFrameTime() * 60f;
+
+                    if (KeyShortcuts.Active(KeyShortcut.NavRight))
+                        brushSize.X += scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavLeft))
+                        brushSize.X -= scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavUp))
+                        brushSize.Y += scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavDown))
+                        brushSize.Y -= scaleSpeed;
+                    
+                    break;
+                }
             }
 
             brushSize.X = MathF.Max(0f, brushSize.X);

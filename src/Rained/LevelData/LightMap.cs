@@ -6,6 +6,9 @@ namespace Rained.LevelData;
 
 struct BrushAtom
 {
+    /// <summary>
+    /// In degrees. Thanks, Raylib.
+    /// </summary>
     public float rotation;
     public Rectangle rect;
     public int brush;

@@ -42,6 +42,9 @@ enum KeyShortcut : int
     RotateLightCW, RotateLightCCW,
     ScaleLightBrush, RotateLightBrush,
 
+    RotateBrushCW, RotateBrushCCW,
+    PreviousBrush, NextBrush,
+
     // Camera
     CameraSnapX, CameraSnapY,
 
@@ -396,8 +399,17 @@ static class KeyShortcuts
         Register("Move Light Outward", KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiModFlags.Shift);
         Register("Rotate Light CW", KeyShortcut.RotateLightCW, ImGuiKey.D, ImGuiModFlags.Shift);
         Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiModFlags.Shift);
-        Register("Scale Brush", KeyShortcut.ScaleLightBrush, ImGuiKey.Q, ImGuiModFlags.None);
-        Register("Rotate Brush", KeyShortcut.RotateLightBrush, ImGuiKey.E, ImGuiModFlags.None);
+        Register("Mouse Scale Brush", KeyShortcut.ScaleLightBrush, ImGuiKey.Q, ImGuiModFlags.None);
+        Register("Mouse Rotate Brush", KeyShortcut.RotateLightBrush, ImGuiKey.E, ImGuiModFlags.None);
+
+        Register("Rotate Brush CW", KeyShortcut.RotateBrushCW, ImGuiKey.E, ImGuiModFlags.None);
+        Register("Rotate Brush CCW", KeyShortcut.RotateBrushCCW, ImGuiKey.Q, ImGuiModFlags.None);
+        Register("Previous Brush", KeyShortcut.PreviousBrush, ImGuiKey.Z, ImGuiModFlags.None,
+            allowRepeat: true
+        );
+        Register("Next Brush", KeyShortcut.NextBrush, ImGuiKey.X, ImGuiModFlags.None,
+            allowRepeat: true
+        );
 
         // Camera Editor
         Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.Q, ImGuiModFlags.None);
