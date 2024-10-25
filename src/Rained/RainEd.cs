@@ -382,6 +382,13 @@ sealed class RainEd
         //AssetGraphics.ClearTextureCache();
     }
 
+    public void OpenLevel(Level level, string filePath = "")
+    {
+        var tab = new LevelTab(level, filePath);
+        _tabs.Add(tab);
+        CurrentTab = tab;
+    }
+
     public void LoadLevel(string path)
     {
         if (!string.IsNullOrEmpty(path))

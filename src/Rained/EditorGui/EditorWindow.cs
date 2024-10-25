@@ -390,9 +390,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.New))
         {
-            Log.Information("Load default level...");
-            RainEd.Instance.LoadDefaultLevel();
-            Log.Information("Done!");
+            NewLevelWindow.OpenWindow();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Open))
@@ -519,6 +517,7 @@ static class EditorWindow
         LogsWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         GuideViewerWindow.ShowWindow();
+        NewLevelWindow.ShowWindow();
     }
 
     /// <summary>
