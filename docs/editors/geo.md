@@ -23,9 +23,13 @@ You may select a tool from the Build window by clicking on them or by using WASD
 With a tool selected, you can use it by pressing the left mouse button in the level viewport. Pressing the right mouse button will either erase geometry if a geometry tool is selected, or erase all objects in a cell if it is an object tool.
 
 ### Tool behavior
-Some tools will modify what kind of geometry a cell uses, or modify what objects are contained in a cell. The tools that modify geometry, thus called "geometry tools" are "Wall", "Air", "Toggle Wall/Air", "Invisible Wall", "Slope", "Platform", and "Copy Backwards". Using this tool on a cell will overwrite what was placed by another tool of the same type. All of the other tools, called "object tools" instead add an object to the cell, meaning that using another tool of that type on the same cell will not overwrite what was previously placed.
+Some tools will modify what kind of geometry a cell uses, or modify what objects are contained in a cell. The tools that modify geometry, thus called "geometry tools" are Wall, Air, Toggle Wall/Air, Invisible Wall, Slope, Platform, and Copy Backwards. Using this tool on a cell will overwrite what was placed by another tool of the same type. All of the other tools, called "object tools" instead add an object to the cell, meaning that using another tool of that type on the same cell will not overwrite what was previously placed.
 
-If you press the right mouse button with a geometry tool selected, it will replace the cell with air. If you instead have an object tool selected, it will erase all objects in the cell. If an object tool is used on a cell that already contains the same object that the tool places, that specific object will instead be erased.
+If you press the right mouse button with a geometry tool selected, it will replace the cell with air. If you instead have an object tool selected, it will erase all objects in the cell. If an object tool is used on a cell that already contains the same object that the tool places, that specific object will instead be erased. And for the Wall and Air tools, you can perform a flood fill by having the <kbd>Q</kbd> key held before pressing down the left or right mouse button.
+
+You can also edit a rectangular area of the level with one action by clicking and dragging your mouse while holding <kbd>Shift</kbd>, although this behavior is disabled for some tools where the behavior has been deemed useless for it. Once the mouse is released, it will fill or erase the selected rectangular area, depending on which mouse button you had pressed.
+
+The Slope tool acts differently with the rect-select action, because it is used to create slope formations of a user-supplied size. It constrains the selection to a square shape, and when the mouse is released it will attempt to construct a slope formation that matches the size of the square and has a direction inferred by neighboring geometry. If it could not create a legal slope formation, nothing will be placed.
 
 ### Non-shortcut tools
 Here is the list of tools not related to shortcuts:
