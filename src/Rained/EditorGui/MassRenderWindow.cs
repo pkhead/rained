@@ -1,7 +1,9 @@
 namespace Rained.EditorGui;
 
+using System.Data;
 using System.Numerics;
 using ImGuiNET;
+using Rained.Drizzle;
 
 static class MassRenderWindow
 {
@@ -14,6 +16,8 @@ static class MassRenderWindow
     private static FileBrowser? fileBrowser;
     private static int parallelismLimit = 1;
     private static bool limitParallelism = false;
+
+    private static MassRenderProcessWindow? massRenderProc = null;
 
     public static void OpenWindow()
     {
@@ -35,6 +39,8 @@ static class MassRenderWindow
 
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
+            RainEd.Instance.IsLevelLocked = true;
+
             ImGui.SeparatorText("Queue");
             {
                 if (ImGui.BeginListBox("##Levels"))
@@ -88,7 +94,7 @@ static class MassRenderWindow
 
             if (ImGui.Button("Render", StandardPopupButtons.ButtonSize))
             {
-
+                StartRender();
             }
 
             ImGui.SameLine();
@@ -97,12 +103,39 @@ static class MassRenderWindow
                 IsWindowOpen = false;
                 levelPaths.Clear();
                 ImGui.CloseCurrentPopup();
+                IsWindowOpen = false;
             }
             
             fileBrowser?.Render();
 
+            if (massRenderProc is not null)
+            {
+                massRenderProc.Render();
+                if (massRenderProc.IsDone)
+                {
+                    massRenderProc = null;
+                    IsWindowOpen = false;
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+
             ImGui.EndPopup();
         }
+        
+        if (!IsWindowOpen)
+        {
+            RainEd.Instance.IsLevelLocked = false;
+        }
+    }
+
+    private static void StartRender()
+    {
+        var massRender = new Drizzle.DrizzleMassRender(
+            levelPaths.Select(x => x.Path).ToArray(),
+            limitParallelism ? 0 : parallelismLimit
+        );
+
+        massRenderProc = new MassRenderProcessWindow(massRender);
     }
 
     private static void FileCallback(string[] paths)

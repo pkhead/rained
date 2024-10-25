@@ -154,6 +154,9 @@ class RenderPreviewImages : IDisposable
     }
 }
 
+/// <summary>
+/// Rendering process for a single level.
+/// </summary>
 class DrizzleRender : IDisposable
 {
     private abstract record ThreadMessage;
@@ -169,6 +172,7 @@ class DrizzleRender : IDisposable
     private record MessageReceievePreview(RenderPreview Preview) : ThreadMessage;
 
     private static LingoRuntime? staticRuntime = null; 
+    public static LingoRuntime? StaticRuntime => staticRuntime;
 
     private class RenderThread
     {
