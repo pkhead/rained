@@ -11,13 +11,10 @@ Bugs:
 
 - using close all didn't register no file selected at one point?
   after testing render save prompt bug fix...
-- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
-- fix error abt worm grass in guide
-- make actual manual
 - make sure line numbers of erroneous init are printed out
 
 v2.2.0:
-- mass render
+- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
 - effects previews
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
