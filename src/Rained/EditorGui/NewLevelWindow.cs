@@ -15,12 +15,11 @@ static class NewLevelWindow
     private static float levelScreenW;
     private static float levelScreenH;
     private static int levelBufL, levelBufR, levelBufT, levelBufB;
-    private static bool fillLayer1;
-    private static bool fillLayer2;
-    private static bool fillLayer3;
+    private static bool[] fillLayer = new bool[3];
     private static bool autoCameras;
 
     private static RlManaged.RenderTexture2D? previewFramebuffer = null;
+    private static List<Vector2> cameraPositions = [];
 
     public static void OpenWindow()
     {
@@ -30,9 +29,9 @@ static class NewLevelWindow
         levelBufR = 12;
         levelBufT = 3;
         levelBufB = 5;
-        fillLayer1 = true;
-        fillLayer2 = true;
-        fillLayer3 = false;
+        fillLayer[0] = true;
+        fillLayer[1] = true;
+        fillLayer[2] = false;
         autoCameras = true;
 
         IsWindowOpen = true;
@@ -108,9 +107,9 @@ static class NewLevelWindow
 
                 ImGui.SeparatorText("Layers");
                 {
-                    ImGui.Checkbox("Fill Layer 1", ref fillLayer1);
-                    ImGui.Checkbox("Fill Layer 2", ref fillLayer2);
-                    ImGui.Checkbox("Fill Layer 3", ref fillLayer3);
+                    ImGui.Checkbox("Fill Layer 1", ref fillLayer[0]);
+                    ImGui.Checkbox("Fill Layer 2", ref fillLayer[1]);
+                    ImGui.Checkbox("Fill Layer 3", ref fillLayer[2]);
                 }
 
                 ImGui.SeparatorText("Options");
@@ -134,9 +133,9 @@ static class NewLevelWindow
             {
                 previewFramebuffer?.Dispose();
                 previewFramebuffer = RlManaged.RenderTexture2D.Load((int)(ImGui.GetFontSize() * 40f), previewHeight);
-                UpdatePreview();
             }
 
+            UpdatePreview();
             ImGuiExt.ImageRenderTexture(previewFramebuffer);
 
             ImGui.EndGroup();
@@ -163,8 +162,15 @@ static class NewLevelWindow
 
     private static List<Vector2> CalcCameraPositions(List<Vector2> cameraPositions)
     {
-        var screenW = (int)MathF.Round( Math.Max(1f, (levelWidth - 20) / 52f) );
-        var screenH = (int)MathF.Round( Math.Max(1f, (levelHeight - 3) / 40f) );
+        if (!autoCameras)
+        {
+            cameraPositions.Clear();
+            cameraPositions.Add(new Vector2(1f, 1f));
+            return cameraPositions;
+        }
+
+        var screenW = (int)MathF.Floor( Math.Max(1f, (levelWidth - 20) / 52f) );
+        var screenH = (int)MathF.Floor( Math.Max(1f, (levelHeight - 3) / 40f) );
         var levelCenter = new Vector2(
             levelBufL + levelWidth - levelBufR,
             levelBufT + levelHeight - levelBufB
@@ -172,7 +178,7 @@ static class NewLevelWindow
 
         // uhh why do i have to do this
         // what does StandardSize mean, exactly ??
-        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);;
+        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
 
         var camTotalSize = new Vector2(
             camInnerSize.X * screenW,
@@ -202,7 +208,73 @@ static class NewLevelWindow
         const int TileSize = 2;
         
         Raylib.BeginTextureMode(previewFramebuffer);
-        Raylib.ClearBackground(Color.White);
+        Raylib.ClearBackground(Color.Blank);
+
+        Span<Color> layerColors = stackalloc Color[3];
+        {
+            var layerCol1 = RainEd.Instance.Preferences.LayerColor1;
+            var layerCol2 = RainEd.Instance.Preferences.LayerColor2;
+            var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
+            layerColors =
+            [
+                new Color(layerCol1.R, layerCol1.G, layerCol1.B, (byte)255),
+                new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)100),
+                new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)70),
+            ];
+        }
+
+        Rlgl.PushMatrix();
+        Rlgl.Translatef(
+            (previewFramebuffer.Texture.Width - levelWidth * TileSize) / 2f,
+            (previewFramebuffer.Texture.Height - levelHeight * TileSize) / 2f,
+            0f
+        );
+
+        // draw background color
+        Raylib.DrawRectangle(
+            0, 0, levelWidth * TileSize, levelHeight * TileSize,
+            RainEd.Instance.Preferences.BackgroundColor.ToRGBA(255)
+        );
+
+        // draw layers
+        for (int i = 0; i < 3; i++)
+        {
+            if (fillLayer[i])
+                Raylib.DrawRectangle(0, 0, levelWidth * TileSize, levelHeight * TileSize, layerColors[i]);
+        }
+
+        // level border
+        Raylib.DrawRectangleLines(
+            levelBufL * TileSize, levelBufT * TileSize,
+            (levelWidth - levelBufR - levelBufL) * TileSize, (levelHeight - levelBufB - levelBufT) * TileSize,
+            Color.White
+        );
+
+        // draw cameras
+        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
+        var camOffset = (Camera.WidescreenSize - camInnerSize) / 2f;
+        
+        // outer border
+        foreach (var camPos in CalcCameraPositions(cameraPositions))
+        {
+            Raylib.DrawRectangleLines(
+                (int)(camPos.X * TileSize), (int)(camPos.Y * TileSize),
+                (int)(Camera.WidescreenSize.X * TileSize), (int)(Camera.WidescreenSize.Y * TileSize),
+                new Color(0, 255, 0, 255)
+            );
+        }
+
+        // inner border
+        foreach (var camPos in CalcCameraPositions(cameraPositions))
+        {
+            Raylib.DrawRectangleLines(
+                (int)((camPos.X + camOffset.X) * TileSize), (int)((camPos.Y + camOffset.Y) * TileSize),
+                (int)(camInnerSize.X * TileSize), (int)(camInnerSize.Y * TileSize),
+                new Color(255, 0, 0, 255)
+            );
+        }
+
+        Rlgl.PopMatrix();
         Raylib.EndTextureMode();
     }
 
@@ -221,18 +293,18 @@ static class NewLevelWindow
         {
             for (int x = 0; x < level.Width; x++)
             {
-                if (fillLayer1)
+                if (fillLayer[0])
                     level.Layers[0,x,y].Geo = GeoType.Solid;
 
-                if (fillLayer2)
+                if (fillLayer[1])
                     level.Layers[1,x,y].Geo = GeoType.Solid;
 
-                if (fillLayer3)
+                if (fillLayer[2])
                     level.Layers[2,x,y].Geo = GeoType.Solid;
             }
         }
 
-        // camera autoplace
+        // camera placement
         foreach (var camPos in CalcCameraPositions())
         {
             level.Cameras.Add(new Camera(camPos));
