@@ -5,27 +5,28 @@ plugins:
   - search
 
 nav:
-  - Home: index.md
+  - Home: en/index.md
   - Manual:
-    - Brief: brief.md
-    - User interface: user-interface.md
-    - Asset management: asset-management.md
-    - Updates: updates.md
+    - Brief: en/brief.md
+    - User interface: en/user-interface.md
+    - Asset management: en/asset-management.md
+    - Updates: en/updates.md
     - Editing the level:
-      - Overview: overview.md
-      - Environment: editors/env.md
-      - Geometry: editors/geo.md
-      - Tiles: editors/tiles.md
-      - Cameras: editors/cameras.md
-      - Light: editors/light.md
-      - Effects: editors/effects.md
-      - Props: editors/props.md
-    - Playing your level: playing-your-level.md
-    - Further reading: resources.md
-  - Developing: developing.md
+      - Overview: en/overview.md
+      - Environment: en/editors/env.md
+      - Geometry: en/editors/geo.md
+      - Tiles: en/editors/tiles.md
+      - Cameras: en/editors/cameras.md
+      - Light: en/editors/light.md
+      - Effects: en/editors/effects.md
+      - Props: en/editors/props.md
+    - Playing your level: en/playing-your-level.md
+    - Further reading: en/resources.md
+  - Developing: en/developing.md
 
 theme:
   name: material
+  language: en
   favicon:
     img/favicon.ico
   logo:
@@ -41,6 +42,12 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+
+extra:
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
 
 site_url: ""
 site_dir: "dist/docs"

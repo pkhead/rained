@@ -26,7 +26,7 @@ Anything outside of the border rectangle will appear in the .png renders of the 
 Pressing the "Resize Level" button in the **Edit** menu will open this window:
 
 <figure markdown="span">
-        ![The "Resize Level" window](img/level-resize.png)
+        ![The "Resize Level" window](../img/level-resize.png)
 </figure>
 
 - **Width/Height**: This is the desired width and height of the level in grid units.

@@ -24,7 +24,7 @@ Each camera has three concentric boundaries. Sorted from largest to smallest, th
 Each camera has an "angle" at each of their four corners, represented by the green rings that appear on selected cameras. These control the vertices of the camera quad, colored green.
 
 <figure markdown="span">
-    ![Camera angles](../img/camera-angles.png)
+    ![Camera angles](../../img/camera-angles.png)
     <figcaption>Camera angles, each with a different offset.</figcaption>
 </figure>
 
@@ -33,7 +33,7 @@ Each dot is the location of the relevant vertex of the camera quad, and the oute
 The green quad itself controls how the perspective of the level render will be warped. Each render is comprised of 30 sublayers. The fifth closest sublayer of each render is always a perfect rectangle, but the farther back the sublayer is, the more intense the warping becomes, until the furthest layer's shape matches the green quad.
 
 <figure markdown="span">
-    ![Camera Angle Reference](../img/oameras-mayhemm.png)
+    ![Camera Angle Reference](../../img/oameras-mayhemm.png)
     <figcaption>Image credit: [Mayhemmm](https://github.com/mayhemmmwith3ms)</figcaption>
 </figure>
 **TODO:** Ask mayhemmm if i can use this image

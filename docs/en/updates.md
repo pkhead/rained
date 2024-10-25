@@ -10,7 +10,7 @@ rainedvm is a program that eases the process of updating Rained. Downloads are h
 Inside the .zip or .tar.gz download is the executable `rainedvm`. Simply extract it and drop it in the Rained installation folder. When you want to update Rained, launch the executable and it should open a window that looks like this:
 
 <figure markdown="span">
-    ![rainedvm](img/rainedvm.png)
+    ![rainedvm](../img/rainedvm.png)
 </figure>
 
 Select the version you want to upgrade (or downgrade) to and press the "Install" button. Installing a new version should take less than a minute.
