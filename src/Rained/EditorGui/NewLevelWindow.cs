@@ -1,4 +1,6 @@
 namespace Rained.EditorGui;
+
+using System.Numerics;
 using ImGuiNET;
 using Rained.LevelData;
 
@@ -118,31 +120,7 @@ static class NewLevelWindow
             {
                 if (btnPressed == 0)
                 {
-                    var level = new Level(levelWidth, levelHeight)
-                    {
-                        BufferTilesLeft = levelBufL,
-                        BufferTilesTop = levelBufT,
-                        BufferTilesRight = levelBufR,
-                        BufferTilesBot = levelBufB
-                    };
-
-                    // fill options
-                    for (int y = 0; y < level.Height; y++)
-                    {
-                        for (int x = 0; x < level.Width; x++)
-                        {
-                            if (fillLayer1)
-                                level.Layers[0,x,y].Geo = GeoType.Solid;
-
-                            if (fillLayer2)
-                                level.Layers[1,x,y].Geo = GeoType.Solid;
-
-                            if (fillLayer3)
-                                level.Layers[2,x,y].Geo = GeoType.Solid;
-                        }
-                    }
-
-                    RainEd.Instance.OpenLevel(level);
+                    RainEd.Instance.OpenLevel(CreateLevel());
                 }
 
                 IsWindowOpen = false;
@@ -151,5 +129,62 @@ static class NewLevelWindow
 
             ImGui.EndPopup();
         }
+    }
+
+    private static Level CreateLevel()
+    {
+        var level = new Level(levelWidth, levelHeight)
+        {
+            BufferTilesLeft = levelBufL,
+            BufferTilesTop = levelBufT,
+            BufferTilesRight = levelBufR,
+            BufferTilesBot = levelBufB
+        };
+
+        // fill options
+        for (int y = 0; y < level.Height; y++)
+        {
+            for (int x = 0; x < level.Width; x++)
+            {
+                if (fillLayer1)
+                    level.Layers[0,x,y].Geo = GeoType.Solid;
+
+                if (fillLayer2)
+                    level.Layers[1,x,y].Geo = GeoType.Solid;
+
+                if (fillLayer3)
+                    level.Layers[2,x,y].Geo = GeoType.Solid;
+            }
+        }
+
+        // camera autoplace
+        var screenW = (int)MathF.Round( Math.Max(1f, (levelWidth - 20) / 52f) );
+        var screenH = (int)MathF.Round( Math.Max(1f, (levelHeight - 3) / 40f) );
+        var levelCenter = new Vector2(
+            levelBufL + levelWidth - levelBufR,
+            levelBufT + levelHeight - levelBufB
+        ) / 2f;
+
+        // uhh why do i have to do this
+        // what does StandardSize mean, exactly ??
+        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);;
+
+        var camTotalSize = new Vector2(
+            camInnerSize.X * screenW,
+            camInnerSize.Y * screenH
+        );
+        var camTopLeft = levelCenter - camTotalSize / 2f;
+        var camOffset = (Camera.WidescreenSize - camInnerSize) / 2f;
+
+        for (int row = 0; row < screenH; row++)
+        {
+            for (int col = 0; col < screenW; col++)
+            {
+                var camPos = camTopLeft + camInnerSize * new Vector2(col, row) - camOffset;
+                level.Cameras.Add(new Camera(camPos));
+            }
+        }
+
+        return level;
     }
 }
