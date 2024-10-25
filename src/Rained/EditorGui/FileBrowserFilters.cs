@@ -83,7 +83,7 @@ partial class FileBrowser
     {
         filteredEntries.Clear();
 
-        if (mode == OpenMode.Directory)
+        if (mode is OpenMode.Directory or OpenMode.MultiDirectory)
         {
             for (int i = 0; i < entries.Count; i++)
             {

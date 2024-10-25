@@ -73,6 +73,7 @@ class MassRenderProcessWindow
                 RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
             }
 
+            lock (levelProgress)
             {
                 float progress = renderedLevels + levelProgress.Values.Sum();
                 ImGui.ProgressBar(progress / totalLevels, new Vector2(-0.00001f, 0f));
@@ -125,21 +126,26 @@ class MassRenderProcessWindow
                 break;
 
             case MassRenderLevelCompleted level:
-                renderedLevels++;
-
-                if (!level.Success)
+                lock (levelProgress)
                 {
-                    problematicLevels.Add(level.LevelName);
+                    renderedLevels++;
+
+                    if (!level.Success)
+                    {
+                        problematicLevels.Add(level.LevelName);
+                    }
+
+                    levelProgress.Remove(level.LevelName);
                 }
-
-                levelProgress.Remove(level.LevelName);
-
                 break;
             
             case MassRenderLevelProgress levelProg:
-                if (!levelProgress.TryAdd(levelProg.LevelName, levelProg.Progress))
+                lock (levelProgress)
                 {
-                    levelProgress[levelProg.LevelName] = levelProg.Progress;
+                    if (!levelProgress.TryAdd(levelProg.LevelName, levelProg.Progress))
+                    {
+                        levelProgress[levelProg.LevelName] = levelProg.Progress;
+                    }
                 }
 
                 break;

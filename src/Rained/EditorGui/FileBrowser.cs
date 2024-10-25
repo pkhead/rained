@@ -726,7 +726,7 @@ partial class FileBrowser
             scrollToSelected = false;
 
             // ok and cancel buttons
-            if (mode == OpenMode.Directory)
+            if (mode is OpenMode.Directory or OpenMode.MultiDirectory)
             {
                 if (ImGui.Button("Open"))
                     ok = true;
@@ -748,7 +748,7 @@ partial class FileBrowser
             ImGui.SameLine();
 
             // file filter
-            if (mode != OpenMode.Directory)
+            if (!(mode is OpenMode.Directory or OpenMode.MultiDirectory))
             {
                 ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 12f);
                 if (ImGui.BeginCombo("##Filter", selectedFilter.FilterName))
@@ -776,7 +776,7 @@ partial class FileBrowser
             var oldName = nameBuf;
             var enterPressed = ImGui.InputTextWithHint(
                 "##Name",
-                mode == OpenMode.Directory ? "Folder Name" : "File Name",
+                mode is OpenMode.Directory or OpenMode.MultiDirectory ? "Folder Name" : "File Name",
                 ref nameBuf, 128,
                 ImGuiInputTextFlags.EnterReturnsTrue
             );
