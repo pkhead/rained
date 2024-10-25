@@ -334,6 +334,41 @@ class EditorGeometryRenderer
                     {
                         drawRect(x * Level.TileSize + 8, y * Level.TileSize, 4, Level.TileSize, Glib.Color.White);
                     }
+
+                    // draw crack
+                    if (hasCrack)
+                    {
+                        // top-right triangle
+                        drawTri(
+                            new Vector2((x+1) * Level.TileSize, y * Level.TileSize),
+                            new Vector2((x+1) * Level.TileSize - 2f, y * Level.TileSize),
+                            new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
+                            Glib.Color.White
+                        );
+
+                        // bottom-left triangle
+                        drawTri(
+                            new Vector2(x * Level.TileSize, (y+1) * Level.TileSize),
+                            new Vector2(x * Level.TileSize + 2f, (y+1) * Level.TileSize),
+                            new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
+                            Glib.Color.White
+                        );
+
+                        // long quad
+                        drawTri(
+                            new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
+                            new Vector2(x * Level.TileSize + 2f, (y+1) * Level.TileSize),
+                            new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
+                            Glib.Color.White
+                        );
+
+                        drawTri(
+                            new Vector2((x+1) * Level.TileSize, y * Level.TileSize + 2f),
+                            new Vector2((x+1) * Level.TileSize - 2f, y * Level.TileSize),
+                            new Vector2(x * Level.TileSize, (y+1) * Level.TileSize - 2f),
+                            Glib.Color.White
+                        );
+                    }
                 }
             }
         }
