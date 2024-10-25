@@ -23,7 +23,6 @@ v2.2.0:
 - option to use "legacy" shortcut icons
 - asset manager crap
 - Q/E to rotate prop
-- switch for alt light editor brush rotation/scale controls
 
 v2.3.0:
 - favorite tiles&props
