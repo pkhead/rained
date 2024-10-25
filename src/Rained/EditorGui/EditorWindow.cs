@@ -438,7 +438,11 @@ static class EditorWindow
         {
             PromptUnsavedChanges((bool ok) =>
             {
-                if (ok) drizzleRenderWindow = new DrizzleRenderWindow(false);
+                if (ok)
+                {
+                    RainEd.Instance.AssetGraphics.ClearTextureCache();
+                    drizzleRenderWindow = new DrizzleRenderWindow(false);
+                }
             }, false);
         }
 

@@ -65,6 +65,9 @@ sealed class RainEd
     // this is used to set window IsEventDriven to true
     // when the user hasn't interacted with the window in a while
     private float remainingActiveTime = 2f;
+
+    // time since the last AssetGraphics.ClearTextureCache() call
+    private float lastTexCacheClear = 0f;
     
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
@@ -379,7 +382,6 @@ sealed class RainEd
         var tab = new LevelTab();
         _tabs.Add(tab);
         CurrentTab = tab;
-        //AssetGraphics.ClearTextureCache();
     }
 
     public void OpenLevel(Level level, string filePath = "")
@@ -391,6 +393,8 @@ sealed class RainEd
 
     public void LoadLevel(string path)
     {
+        TryClearTextureCache();
+        
         if (!string.IsNullOrEmpty(path))
         {
             Log.Information("Loading level {Path}...", path);
@@ -422,8 +426,6 @@ sealed class RainEd
                 // i think it may be useful to add it to the list
                 // even if the level failed to load due to unrecognized assets
                 AddToRecentFiles(path);
-
-                //AssetGraphics.ClearTextureCache();
             }
             catch (Exception e)
             {
@@ -444,6 +446,8 @@ sealed class RainEd
     /// <param name="path"></param>
     public void SaveLevel(string path)
     {
+        TryClearTextureCache();
+
         Log.Information("Saving level to {Path}...", path);
         IsLevelLocked = true;
 
@@ -592,6 +596,20 @@ sealed class RainEd
 
         Log.Information("Done!");
         IsLevelLocked = false;
+    }
+
+    /// <summary>
+    /// Checks if enough time has passed since the last call to
+    /// AssetGraphics.ClearTextureCache() before calling it.
+    /// </summary>
+    private void TryClearTextureCache()
+    {
+        // time interval: 5mins
+        if ((float)Raylib.GetTime() >= lastTexCacheClear + 60f*5f)
+        {
+            AssetGraphics.ClearTextureCache();
+            lastTexCacheClear = (float)Raylib.GetTime();
+        }
     }
 
     private void SwitchTab(LevelTab? tab)

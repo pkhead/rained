@@ -513,11 +513,24 @@ class AssetGraphicsProvider
     }
 
     /// <summary>
-    /// Clears the tile preview atlas(es).
+    /// Clears the tile/prop texture cache.
     /// </summary>
     public void ClearTextureCache()
     {
+        foreach (var atlas in _tilePreviewAtlases)
+            atlas.texture.Dispose();
+
         _tilePreviewAtlases.Clear();
         _tilePreviewRects.Clear();
+
+        foreach (var tex in tileTexCache.Values)
+            tex?.Dispose();
+
+        foreach (var tex in propTexCache.Values)
+            tex?.Dispose();
+        
+        tileTexCache.Clear();
+        propTexCache.Clear();
+        _loadedTilePreviews.Clear();
     }
 }
