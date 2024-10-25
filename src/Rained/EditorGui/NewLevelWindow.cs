@@ -105,11 +105,12 @@ static class NewLevelWindow
                     levelBufB = Math.Max(levelBufB, 0);
                 }
 
-                ImGui.SeparatorText("Layers");
+                ImGui.SeparatorText("Fill Layers");
                 {
-                    ImGui.Checkbox("Fill Layer 1", ref fillLayer[0]);
-                    ImGui.Checkbox("Fill Layer 2", ref fillLayer[1]);
-                    ImGui.Checkbox("Fill Layer 3", ref fillLayer[2]);
+                    ImGuiExt.ButtonFlags("Layers", ["1", "2", "3"], fillLayer);
+                    //ImGui.Checkbox("Fill Layer 1", ref fillLayer[0]);
+                    //ImGui.Checkbox("Fill Layer 2", ref fillLayer[1]);
+                    //ImGui.Checkbox("Fill Layer 3", ref fillLayer[2]);
                 }
 
                 ImGui.SeparatorText("Options");

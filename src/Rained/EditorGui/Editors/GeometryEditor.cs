@@ -370,25 +370,22 @@ class GeometryEditor : IEditorMode
             ImGui.PopStyleColor();
 
             // show work layers
-            for (int i = 0; i < 3; i++)
-            {
-                ImGui.Checkbox("Layer " + (i+1), ref layerMask[i]);
-            }
-
             ImGui.Separator();
 
+            ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
+
+            ImGui.Text("Layers");
+            ImGuiExt.ButtonFlags("##Layers", ["1", "2", "3"], layerMask);
+
             // show mirror toggles
+            ImGui.Text("Mirror");
             {
-                bool mirrorX = mirrorFlags.HasFlag(MirrorFlags.MirrorX);
-                bool mirrorY = mirrorFlags.HasFlag(MirrorFlags.MirrorY);
-
-                ImGui.Checkbox("Mirror X", ref mirrorX);
-                ImGui.Checkbox("Mirror Y", ref mirrorY);
-
-                mirrorFlags = 0;
-                if (mirrorX) mirrorFlags |= MirrorFlags.MirrorX;
-                if (mirrorY) mirrorFlags |= MirrorFlags.MirrorY;
+                var _mirrorFlags = (int) mirrorFlags;
+                if (ImGuiExt.ButtonFlags("##Mirror", ["X", "Y"], ref _mirrorFlags))
+                    mirrorFlags = (MirrorFlags) _mirrorFlags;
             }
+
+            ImGui.PopItemWidth();
 
             // show fill rect hint
             if (isToolRectActive)

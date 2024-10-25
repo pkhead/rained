@@ -45,7 +45,7 @@ static class MassRenderWindow
 
             ImGui.SeparatorText("Queue");
             {
-                if (ButtonSwitch("ItemQueueSwitch", ["Files", "Folders"], ref queueItemMode))
+                if (ImGuiExt.ButtonSwitch("ItemQueueSwitch", ["Files", "Folders"], ref queueItemMode))
                 {
                     levelPaths.Clear();
                 }
@@ -190,56 +190,5 @@ static class MassRenderWindow
         {
             levelPaths.Add(new LevelPath(path, Path.GetFileName(path)));
         }
-    }
-
-    private static bool ButtonSwitch(string id, ReadOnlySpan<string> options, ref int selected)
-    {
-        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
-        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
-
-        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
-        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
-        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
-
-        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
-
-        ImGui.PushID(id);
-
-        var returnValue = false;
-        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - options.Length)) / options.Length, 0f);
-
-        for (int i = 0; i < options.Length; i++)
-        {
-            if (selected == i)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
-            }
-            else
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
-            }
-
-            ImGui.PushID(i);
-            if (i > 0) ImGui.SameLine();
-            if (ImGui.Button(options[i], itemSize))
-            {
-                if (selected != i) returnValue = true;
-                selected = i;
-            }
-            ImGui.PopID();
-
-            ImGui.PopStyleColor(3);
-        }
-
-        ImGui.PopID();
-        ImGui.PopStyleVar();
-
-        return returnValue;
     }
 }

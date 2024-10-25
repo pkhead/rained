@@ -317,4 +317,170 @@ static class ImGuiExt
         var drawList = ImGui.GetWindowDrawList();
         drawList.AddLine(cursorScreenPos + textSize * new Vector2(0f, 1f), cursorScreenPos + textSize, ImGui.ColorConvertFloat4ToU32(textColor));
     }
+
+    public static bool ButtonSwitch(string id, ReadOnlySpan<string> options, ref int selected)
+    {
+        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
+        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+
+        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
+        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
+        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
+
+        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+
+        ImGui.PushID(id);
+
+        var returnValue = false;
+        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - options.Length)) / options.Length, 0f);
+
+        for (int i = 0; i < options.Length; i++)
+        {
+            if (selected == i)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
+            }
+            else
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
+            }
+
+            ImGui.PushID(i);
+            if (i > 0) ImGui.SameLine();
+            if (ImGui.Button(options[i], itemSize))
+            {
+                if (selected != i) returnValue = true;
+                selected = i;
+            }
+            ImGui.PopID();
+
+            ImGui.PopStyleColor(3);
+        }
+
+        ImGui.PopID();
+        ImGui.PopStyleVar();
+
+        return returnValue;
+    }
+
+    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, ref int flags)
+    {
+        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
+        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+
+        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
+        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
+        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
+
+        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+
+        ImGui.PushID(id);
+
+        var returnValue = false;
+        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - flagNames.Length)) / flagNames.Length, 0f);
+
+        for (int i = 0; i < flagNames.Length; i++)
+        {
+            var flag = 1 << i;
+            var isActive = (flags & flag) != 0;
+
+            if (isActive)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
+            }
+            else
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
+            }
+
+            ImGui.PushID(i);
+            if (i > 0) ImGui.SameLine();
+            if (ImGui.Button(flagNames[i], itemSize))
+            {
+                if (isActive)
+                    flags &= ~flag;
+                else
+                    flags |= flag;
+                
+                returnValue = true;
+            }
+            ImGui.PopID();
+
+            ImGui.PopStyleColor(3);
+        }
+
+        ImGui.PopID();
+        ImGui.PopStyleVar();
+
+        return returnValue;
+    }
+
+    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, Span<bool> values)
+    {
+        if (flagNames.Length != values.Length)
+            throw new ArgumentException("Array size mismatch", nameof(values));
+        
+        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
+        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+
+        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
+        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
+        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
+
+        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+
+        ImGui.PushID(id);
+
+        var returnValue = false;
+        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - flagNames.Length)) / flagNames.Length, 0f);
+
+        for (int i = 0; i < flagNames.Length; i++)
+        {
+            var flag = 1 << i;
+            var isActive = values[i];
+
+            if (isActive)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
+            }
+            else
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
+            }
+
+            ImGui.PushID(i);
+            if (i > 0) ImGui.SameLine();
+            if (ImGui.Button(flagNames[i], itemSize))
+            {
+                values[i] = !values[i];
+                returnValue = true;
+            }
+            ImGui.PopID();
+
+            ImGui.PopStyleColor(3);
+        }
+
+        ImGui.PopID();
+        ImGui.PopStyleVar();
+
+        return returnValue;
+    }
 }
