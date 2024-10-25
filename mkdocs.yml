@@ -8,9 +8,9 @@ nav:
   - Home: en/index.md
   - Manual:
     - Brief: en/brief.md
+    - Installation and Updates: en/install-updates.md
     - User interface: en/user-interface.md
     - Asset management: en/asset-management.md
-    - Updates: en/updates.md
     - Editing the level:
       - Overview: en/overview.md
       - Environment: en/editors/env.md
@@ -36,10 +36,12 @@ theme:
   features:
     - content.tabs.link
 markdown_extensions:
+  - admonition
   - def_list
   - attr_list
   - md_in_html
   - pymdownx.superfences
+  - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
 
