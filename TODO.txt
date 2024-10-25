@@ -24,7 +24,6 @@ v2.2.0:
 - asset manager crap
 - Q/E to rotate prop
 - switch for alt light editor brush rotation/scale controls
-- new level screen, camera autoplace
 
 v2.3.0:
 - favorite tiles&props
