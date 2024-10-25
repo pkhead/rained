@@ -11,7 +11,7 @@ ANGLE is provided by a set of DLLs that takes a lot of waiting to build. Fortuna
 
 However, there is a hiccup with the referencing of the DLLs for Rained. Since whatever searches for the ANGLE DLLs does not go through the C# DLL resolver, that means that the ANGLE DLLs *must* either be in PATH or, on Windows, in the same folder as the running executable. There is no problem here for release packages, since it needs to be put there anyway, but when running from a non-publish build there are two ways Rained can be launched and neither of them have the ANGLE DLLs automatically put in the directories of the executables.
 
-If the program is being ran via `dotnet Rained.dll`, the ANGLE DLLs need to be present in the directory where `dotnet.exe` is located, otherwise the program will fail to start. If the program is being ran by running Rained.exe directly, the ANGLE DLLs need to be present in the build directory containing Rained.exe. You can alternatively copy the ANGLE DLLs to a directory that's referenced in the path for DLLs, and it should work just fine for both launch situations.
+If the program is being ran via `dotnet Rained.dll`, the ANGLE DLLs need to be present in the directory where `dotnet.exe` is located, otherwise the program will fail to start. If the program is being ran by running Rained.exe directly, the ANGLE DLLs need to be present in the build directory containing Rained.exe. You can alternatively copy the ANGLE DLLs to a directory that's referenced in the DLL search path, and it should work just fine for both launch situations.
 
 If you don't feel like doing all of this, there is a way to build Rained with desktop OpenGL that doesn't have all this DLL nonsense as a prerequisite. How to do so is explained later in this document.
 
