@@ -34,7 +34,7 @@ partial class FileBrowser
     private string selectedFilePath = "";
     private bool scrollToSelected = false;
     private readonly List<Entry> entries = new();
-    private readonly List<(int, Entry)> filteredEntries = new();
+    private readonly List<(int index, Entry entry)> filteredEntries = new();
     private readonly List<FileFilter> fileFilters = new();
     private FileFilter selectedFilter;
     private bool needFilterRefresh = false;
@@ -788,11 +788,12 @@ partial class FileBrowser
                 string name = selectedFilter.Enforce(nameBuf);
                 selected.Clear();;
 
-                for (int i = 0; i < entries.Count; i++)
+                for (int i = 0; i < filteredEntries.Count; i++)
                 {
-                    if (entries[i].Name == name)
+                    if (filteredEntries[i].entry.Name == name)
                     {
-                        selected.Add(i);
+                        if (!selected.Contains(filteredEntries[i].index))
+                            selected.Add(filteredEntries[i].index);
                         scrollToSelected = true;
                         break;
                     }
@@ -931,6 +932,10 @@ partial class FileBrowser
 
     private void SelectIndex(int idx)
     {
+        var filterSet = new HashSet<int>();
+        foreach (var (index, _) in filteredEntries)
+            filterSet.Add(index);
+
         if (multiSelect && ImGui.IsKeyDown(ImGuiKey.ModShift))
         {
             // shift-click: add all items inbetween
@@ -959,7 +964,8 @@ partial class FileBrowser
                 {
                     for (var n = 0; n <= steps; n++)
                     {
-                        if (!selected.Contains(i)) selected.Add(i);
+                        if (filterSet.Contains(i) && !selected.Contains(i))
+                            selected.Add(i);
                         i += dir;
                     }
                 }
@@ -968,9 +974,7 @@ partial class FileBrowser
         else if (multiSelect && ImGui.IsKeyDown(ImGuiKey.ModCtrl))
         {
             // ctrl-click: basic multi-select
-            if (selected.Contains(idx))
-                selected.Remove(idx);
-            else
+            if (!selected.Remove(idx))
                 selected.Add(idx);
         }
         else
