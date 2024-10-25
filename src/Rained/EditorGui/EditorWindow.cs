@@ -218,7 +218,10 @@ static class EditorWindow
 
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Render, "Render...", enabled: fileActive);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ExportGeometry, "Export Geometry...", enabled: fileActive);
-                ImGui.MenuItem("Mass Render", false);
+                if (ImGui.MenuItem("Mass Render..."))
+                {
+                    MassRenderWindow.OpenWindow();
+                }
 
                 ImGui.Separator();
                 if (ImGui.MenuItem("Preferences"))
@@ -531,6 +534,7 @@ static class EditorWindow
         EmergencySaveWindow.ShowWindow();
         GuideViewerWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
+        MassRenderWindow.ShowWindow();
     }
 
     /// <summary>
