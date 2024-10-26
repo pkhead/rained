@@ -1,5 +1,5 @@
 # Tiles
-![Level shown in the tiles mode.](../../img/tile-editor.png)
+![Level shown in the tiles mode.](img//tile-editor.png)
 The tile editor is where you decorate the level with materials and tiles. Editing tiles and materials is a crucial part of the level editing process, and is normally done after creating an initial block-out of the level in the geometry editor, and usually afterwards is worked on in tandem with the geometry editor. Forming a basic understanding of the principles of tiling is key to designing a good-looking level (although this manual will not delve into the general principles of tile design).
 
 ## Materials
@@ -31,7 +31,7 @@ Functionally, they behave similarly to tiles in tile-based games/level editors, 
 In order to place a tile, you first must select the tile you want to place in the tile selector, depicted below. The left column displays tile categories, and the right column displays tiles in the currently selected tile category. Hovering over an item in the right column will show a pop-up preview of the tile, and clicking on it will select that tile.
 
 <figure markdown="span">
-    ![The tile selector.](../../img/tile-selector.png)
+    ![The tile selector.](img//tile-selector.png)
     <figcaption>The tile selector.</figcaption>
 </figure>
 
@@ -43,7 +43,7 @@ You may switch work layers either by pressing <kbd>Tab</kbd> or interacting with
 Each tile specifies the pattern of geometry that the tile occupies. This is referred to as "geometry/tile specs", "geometry/tile requirements", or simply "specs". These specs in Rained are shown as green outlines behind the tile cursor in the level view. The specs for the first layer are shown as a bright green, and the specs for the second layer, if demanded by the tile, are shown as a dark green.
 
 <figure markdown="span">
-    ![Tile cursor preview of "Very Large Beam"](../../img/tile-cursor-white.png)
+    ![Tile cursor preview of "Very Large Beam"](img//tile-cursor-white.png)
 </figure>
 
 The requirement of each individual cell should be obvious---as it shows an outline of the required geometry type at that cell---except for two cases:
@@ -77,12 +77,12 @@ The image displayed by default in Rained for the visual representation of tiles 
 Note that the tile graphics preview is inaccurate in regards to geometry rendering. When rendering, any cell that is occupied by a tile head or tile body will not have their geometry rendered so that the tile can display properly. This therefore means that if a tile requires solid geometry for any cell but has empty space in that portion of the graphic, Rained will display that cell as solid but in reality that cell will be invisible when rendering. A specific example of a tile that exhibits this behavior is "Ventilation Box Empty".
 
 <figure markdown="span">
-    ![Ventilation Box Empty in Rained](../../img/ventbox-empty-preview.png)
+    ![Ventilation Box Empty in Rained](img//ventbox-empty-preview.png)
     <figcaption>The tile as is displayed in Rained.</figcaption>
 </figure>
 
 <figure markdown="span">
-    ![Ventilation Box Empty in-game](../../img/ventbox-empty-render.png)
+    ![Ventilation Box Empty in-game](img//ventbox-empty-render.png)
     <figcaption>The tile render as is shown in-game. Note how the solid geometry in the tile is not rendered.</figcaption>
 </figure>
 

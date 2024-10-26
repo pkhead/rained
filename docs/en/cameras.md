@@ -24,7 +24,7 @@ Each camera has three concentric boundaries. Sorted from largest to smallest, th
 Each camera has an "angle" at each of their four corners, represented by the green rings that appear on selected cameras. These control the vertices of the camera quad, colored green.
 
 <figure markdown="span">
-    ![Camera angles](../../img/camera-angles.png)
+    ![Camera angles](img//camera-angles.png)
     <figcaption>Camera angles, each with a different offset.</figcaption>
 </figure>
 
@@ -34,7 +34,7 @@ The green quad itself controls how the perspective of the level render will be w
 
 <!---
 <figure markdown="span">
-    ![Camera Angle Reference](../../img/oameras-mayhemm.png)
+    ![Camera Angle Reference](img//oameras-mayhemm.png)
     <figcaption>Image credit: [Mayhemmm](https://github.com/mayhemmmwith3ms)</figcaption>
 </figure>
 -->

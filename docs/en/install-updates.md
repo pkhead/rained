@@ -21,7 +21,7 @@ rainedvm is a program that eases the process of maintaining Rained versions. Dow
 Inside the .zip or .tar.gz download is the executable `rainedvm`. Simply extract it and drop it in the folder where you want to install Rained. Then, launch the executable, which should open a window that looks like this:
 
 <figure markdown="span">
-    ![rainedvm](../img/rainedvm.png)
+    ![rainedvm](img//rainedvm.png)
 </figure>
 
 Select the version you want to install and then press the "Install" button. Once, done you can run Rained from your file manager.

@@ -5,7 +5,7 @@ The user interface is comprised of windows, with each window containing many wid
 ### Floating windows
 
 <figure markdown="span">
-    ![A floating window.](../img/floating-window.png)
+    ![A floating window.](img//floating-window.png)
 </figure>
 
 - **Collapse**: The window's contents will be hidden, leaving only the titlebar visible. Click again to expand the window, restoring it to normal.
@@ -15,7 +15,7 @@ The user interface is comprised of windows, with each window containing many wid
 A window can be moved by clicking and dragging from either the title bar or an unoccupied space from within the window. If dragged by the titlebar, the window can be docked. Overlays will appear on the user interface, and dragging your mouse over one of them will allow you to choose where a window will be docked.
 
 <figure markdown="span">
-    ![Docking overlays](../img/docking-window.png)
+    ![Docking overlays](img//docking-window.png)
 </figure>
 
 In addition, windows can be dragged by its titlebar without showing the docking overlays by holding <kbd>Shift</kbd>. After being docked, the window can be undocked by dragging it by its titlebar.
@@ -23,7 +23,7 @@ In addition, windows can be dragged by its titlebar without showing the docking 
 ### Docked windows
 
 <figure markdown="span">
-    ![A docked window.](../img/docked-window.png)
+    ![A docked window.](img//docked-window.png)
 </figure>
 
 Docked windows will have a button that resembles an upside-down "eject" icon. This is used as either a vertical tab list, for docked windows that are tabbed into the same space, or a button to open a popup that allows you to hide or show the tab bar.
@@ -34,13 +34,13 @@ When the tab bar is hidden, a little right triangle will be visible on the top l
 Most widgets are obvious, but some have special interactions that should be noted.
 
 ### Slider
-![Slider](../img/slider.png)
+![Slider](img//slider.png)
 
 Click and drag your mouse horizontally on this widget to change its value.
 If <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can type in the value of the slider.
 
 ### Drag input
-![Drag input](../img/draginput.png)
+![Drag input](img//draginput.png)
 
 These work identically to sliders, except that there is no visual knob and also no limit on the minimum or maximum value.
 Like sliders, if <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can type in the value of the input.

@@ -1,6 +1,6 @@
 # Home
 <figure markdown="span">
-    ![Rained logo](../img/rained-logo.png)
+    ![Rained logo](img//rained-logo.png)
     [GitHub](https://github.com/pkhead/rained) | [Downloads](https://github.com/pkhead/rained/releases)
 </figure>
 
