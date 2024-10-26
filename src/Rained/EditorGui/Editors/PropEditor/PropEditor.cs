@@ -53,6 +53,7 @@ partial class PropEditor : IEditorMode
     private DragMode dragMode;
 
     private ITransformMode? transformMode;
+    private bool isModeMouseDown = false;
 
     public PropEditor(LevelWindow window)
     {
@@ -271,7 +272,7 @@ partial class PropEditor : IEditorMode
     private Rectangle GetSelectionAABB(bool excludeNonmovable = false)
         => CalcPropExtents(selectedProps, excludeNonmovable);
 
-    private static Rectangle CalcPropExtents(List<Prop> props, bool excludeNonmovable = false)
+    private static Rectangle CalcPropExtents(IEnumerable<Prop> props, bool excludeNonmovable = false)
     {
         var minX = float.PositiveInfinity;
         var maxX = float.NegativeInfinity;
@@ -318,6 +319,23 @@ partial class PropEditor : IEditorMode
         );
 
         return isGizmoHovered;
+    }
+
+    private void BeginTransformMode(ITransformMode mode)
+    {
+        if (transformMode is not null)
+        {
+            changeRecorder.PushTransform();
+
+            if (transformMode is WarpTransformMode)
+            {
+                selectedProps[0].TryConvertToAffine();
+            }
+        }
+
+        changeRecorder.BeginTransform();
+        isModeMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
+        transformMode = mode;
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -499,12 +517,11 @@ partial class PropEditor : IEditorMode
                     // draw gizmo handle at corner
                     if (DrawGizmoHandle(handlePos, 0) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        changeRecorder.BeginTransform();
-                        transformMode = new ScaleTransformMode(
+                        BeginTransformMode(new ScaleTransformMode(
                             handleId: i,
                             props: selectedProps,
                             snap: snappingMode / 2f
-                        );
+                        ));
                     }
                 }
             }
@@ -535,20 +552,20 @@ partial class PropEditor : IEditorMode
                 // draw gizmo handle
                 if (DrawGizmoHandle(rotDotPos, 0) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                 {
-                    changeRecorder.BeginTransform();
-                    transformMode = new RotateTransformMode(
+                    BeginTransformMode(new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
                         props: selectedProps
-                    );
+                    ));
                 }
                 
                 if (KeyShortcuts.Activated(KeyShortcut.RotatePropCW) || KeyShortcuts.Activated(KeyShortcut.RotatePropCCW))
                 {
-                    changeRecorder.BeginTransform();
-                    transformMode = new KeyboardRotateTransformMode(
-                        rotCenter: aabb.Position + aabb.Size / 2f,
-                        props: selectedProps
-                    );
+                    BeginTransformMode(new MoveTransformMode(
+                        props: selectedProps,
+                        snap: snappingMode / 2f,
+                        mouseDown: false
+                    ));
+                    isModeMouseDown = false;
                 }
             }
 
@@ -575,12 +592,11 @@ partial class PropEditor : IEditorMode
                             // draw gizmo handle at corner
                             if (DrawGizmoHandle(handlePos, 1) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                             {
-                                changeRecorder.BeginTransform();
-                                transformMode = new WarpTransformMode(
+                                BeginTransformMode(new WarpTransformMode(
                                     handleId: i,
                                     prop: selectedProps[0],
                                     snap: snappingMode / 2f
-                                );
+                                ));
                             }
                         }
                     }
@@ -603,12 +619,11 @@ partial class PropEditor : IEditorMode
                             
                             if (DrawGizmoHandle(i == 1 ? pB : pA, 2) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                             {
-                                changeRecorder.BeginTransform();
-                                transformMode = new LongTransformMode(
+                                BeginTransformMode(new LongTransformMode(
                                     handleId: i,
                                     prop: prop,
                                     snap: snappingMode / 2f
-                                );
+                                ));
                             }
                         }
                     }
@@ -664,7 +679,7 @@ partial class PropEditor : IEditorMode
         }
 
         // in prop transform mode
-        if (transformMode is null)
+        if (!isModeMouseDown)
         {
             // in default mode
             PropSelectUpdate();
@@ -674,6 +689,12 @@ partial class PropEditor : IEditorMode
         if (transformMode is not null)
         {
             transformMode.Update(dragStartPos, window.MouseCellFloat);
+            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                transformMode.MouseReleased();
+                isModeMouseDown = false;
+            }
+
             if (transformMode.Deactivated())
             {
                 changeRecorder.PushTransform();
@@ -805,11 +826,11 @@ partial class PropEditor : IEditorMode
                             selectedProps.Add(hoveredProp);
                         }
 
-                        changeRecorder.BeginTransform();
-                        transformMode = new MoveTransformMode(
+                        BeginTransformMode(new MoveTransformMode(
                             selectedProps,
-                            snappingMode / 2f
-                        );
+                            snappingMode / 2f,
+                            mouseDown: true
+                        ));
                     }
                 }
                 

@@ -8,6 +8,7 @@ partial class PropEditor : IEditorMode
 {
     interface ITransformMode
     {
+        void MouseReleased() {}
         void Update(Vector2 mouseDragStart, Vector2 mousePos);
         bool Deactivated()
             => EditorWindow.IsMouseReleased(ImGuiMouseButton.Left);
@@ -15,15 +16,20 @@ partial class PropEditor : IEditorMode
 
     class MoveTransformMode : ITransformMode
     {
+        private readonly Vector2 rotCenter;
+        private Vector2 mouseDelta;
         private readonly PropTransform[] dragInitPositions;
         private readonly Prop[] props;
         private readonly Dictionary<Prop, Vector2[]> initRopePoints;
         private readonly float snap;
+        private float rotAngle = 0f;
+        private bool mouseDown = true;
 
-        public MoveTransformMode(List<Prop> props, float snap)
+        public MoveTransformMode(List<Prop> props, float snap, bool mouseDown)
         {
             this.props = props.ToArray();
             this.snap = snap;
+            this.mouseDown = mouseDown;
 
             // record initial drag positions
             dragInitPositions = new PropTransform[props.Count];
@@ -48,18 +54,38 @@ partial class PropEditor : IEditorMode
                     initRopePoints.Add(props[i], ptArr);
                 }
             }
+
+            var propsAABB = CalcPropExtents(props, true);
+            rotCenter = propsAABB.Position + propsAABB.Size / 2f;
+        }
+
+        public void MouseReleased()
+        {
+            mouseDown = false;
         }
 
         public void Update(Vector2 dragStartPos, Vector2 mousePos)
         {
             bool posSnap = props.Length == 1 && props[0].IsAffine;
 
-            var mouseDelta = mousePos - dragStartPos;
-            
-            if (snap > 0 && !posSnap)
+            if (mouseDown)
             {
-                mouseDelta = Snap(mouseDelta, snap);
+                mouseDelta = mousePos - dragStartPos;
+                if (snap > 0 && !posSnap)
+                {
+                    mouseDelta = Snap(mouseDelta, snap);
+                }
             }
+
+            var rotSpeed = Raylib.GetFrameTime() * (60f / 180f * MathF.PI);;
+
+            if (KeyShortcuts.Active(KeyShortcut.RotatePropCCW))
+                rotAngle -= rotSpeed;
+
+            if (KeyShortcuts.Active(KeyShortcut.RotatePropCW))
+                rotAngle += rotSpeed;
+            
+            var rotMat = Matrix3x2.CreateRotation(rotAngle);
 
             for (int i = 0; i < props.Length; i++)
             {
@@ -67,7 +93,10 @@ partial class PropEditor : IEditorMode
                 if (!prop.IsMovable) continue;
 
                 if (prop.IsAffine)
-                    prop.Rect.Center = dragInitPositions[i].rect.Center + mouseDelta;
+                {
+                    prop.Rect.Rotation = dragInitPositions[i].rect.Rotation + rotAngle;
+                    prop.Rect.Center = Vector2.Transform(dragInitPositions[i].rect.Center - rotCenter, rotMat) + rotCenter;
+                    prop.Rect.Center += mouseDelta;
 
                     if (snap > 0 && posSnap)
                     {
@@ -86,15 +115,27 @@ partial class PropEditor : IEditorMode
                             rope.Model.SetSegmentPosition(j, initPts[j] + (prop.Rect.Center - dragInitPositions[i].rect.Center));
                         }
                     }
+                }
                 else
                 {
                     var pts = prop.QuadPoints;
-                    pts[0] = dragInitPositions[i].quad[0] + mouseDelta;
-                    pts[1] = dragInitPositions[i].quad[1] + mouseDelta;
-                    pts[2] = dragInitPositions[i].quad[2] + mouseDelta;
-                    pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
+
+                    for (int j = 0; j < 4; j++)
+                    {
+                        pts[j] = Vector2.Transform(dragInitPositions[i].quad[j] - rotCenter, rotMat)
+                            + rotCenter + mouseDelta;
+                    }
+                    // pts[0] = dragInitPositions[i].quad[0] + mouseDelta;
+                    // pts[1] = dragInitPositions[i].quad[1] + mouseDelta;
+                    // pts[2] = dragInitPositions[i].quad[2] + mouseDelta;
+                    // pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
                 }
             }
+        }
+
+        public bool Deactivated()
+        {
+            return !EditorWindow.IsMouseDown(ImGuiMouseButton.Left) && !(KeyShortcuts.Active(KeyShortcut.RotatePropCCW) || KeyShortcuts.Active(KeyShortcut.RotatePropCW));
         }
     }
     
@@ -483,65 +524,6 @@ partial class PropEditor : IEditorMode
                     }
                 }
             }
-        }
-    }
-
-    class KeyboardRotateTransformMode : ITransformMode
-    {
-        private readonly Vector2 rotCenter;
-        private readonly PropTransform[] origTransforms;
-        private readonly Prop[] props;
-        private float rotationAngle = 0f;
-
-        public KeyboardRotateTransformMode(Vector2 rotCenter, List<Prop> props)
-        {
-            this.props = [..props];
-            this.rotCenter = rotCenter;
-            origTransforms = new PropTransform[props.Count];
-            for (int i = 0; i < props.Count; i++)
-            {
-                origTransforms[i] = props[i].Transform.Clone();
-            }
-        }
-
-        public void Update(Vector2 dragStartPos, Vector2 mousePos)
-        {
-            var rotSpeed = Raylib.GetFrameTime() * (60f / 180f * MathF.PI);;
-
-            if (KeyShortcuts.Active(KeyShortcut.RotatePropCCW))
-                rotationAngle -= rotSpeed;
-
-            if (KeyShortcuts.Active(KeyShortcut.RotatePropCW))
-                rotationAngle += rotSpeed;
-            
-            var rotMat = Matrix3x2.CreateRotation(rotationAngle);
-
-            for (int i = 0; i < props.Length; i++)
-            {
-                var prop = props[i];
-                if (!prop.IsMovable) continue;
-
-                if (prop.IsAffine)
-                {
-                    var origTransform = origTransforms[i].rect;
-                    prop.Rect.Rotation = origTransform.Rotation + rotationAngle;
-                    prop.Rect.Center = Vector2.Transform(origTransform.Center - rotCenter, rotMat) + rotCenter;
-                }
-                else
-                {
-                    var pts = prop.QuadPoints;
-                    var origPts = origTransforms[i].quad;
-                    for (int k = 0; k < 4; k++)
-                    {
-                        pts[k] = Vector2.Transform(origPts[k] - rotCenter, rotMat) + rotCenter;
-                    }
-                }
-            }
-        }
-
-        public bool Deactivated()
-        {
-            return !(KeyShortcuts.Active(KeyShortcut.RotatePropCCW) || KeyShortcuts.Active(KeyShortcut.RotatePropCW));
         }
     }
 }
