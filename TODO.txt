@@ -22,7 +22,6 @@ v2.2.0:
 - optional download from solar's repo
 - option to use "legacy" shortcut icons
 - asset manager crap
-- Q/E to rotate prop
 
 v2.3.0:
 - favorite tiles&props
