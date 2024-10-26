@@ -541,6 +541,15 @@ partial class PropEditor : IEditorMode
                         props: selectedProps
                     );
                 }
+                
+                if (KeyShortcuts.Activated(KeyShortcut.RotatePropCW) || KeyShortcuts.Activated(KeyShortcut.RotatePropCCW))
+                {
+                    changeRecorder.BeginTransform();
+                    transformMode = new KeyboardRotateTransformMode(
+                        rotCenter: aabb.Position + aabb.Size / 2f,
+                        props: selectedProps
+                    );
+                }
             }
 
             // freeform warp gizmo
@@ -665,7 +674,7 @@ partial class PropEditor : IEditorMode
         if (transformMode is not null)
         {
             transformMode.Update(dragStartPos, window.MouseCellFloat);
-            if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left))
+            if (transformMode.Deactivated())
             {
                 changeRecorder.PushTransform();
 

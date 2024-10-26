@@ -632,6 +632,8 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ToggleVertexMode);
         ShortcutButton(KeyShortcut.RopeSimulation);
         ShortcutButton(KeyShortcut.ResetSimulation);
+        ShortcutButton(KeyShortcut.RotatePropCCW);
+        ShortcutButton(KeyShortcut.RotatePropCW);
     }
 
     private static readonly List<string> availableThemes = [];
