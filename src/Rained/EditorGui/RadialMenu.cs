@@ -17,8 +17,11 @@ static class RadialMenu
         ImGui.OpenPopup(id);
     }
 
-    public static int PopupRadialMenu(string id, ReadOnlySpan<string> items, int p_selected)
+    public static int PopupRadialMenu(string id, KeyShortcut shortcut, ReadOnlySpan<string> items, int p_selected)
     {
+        if (KeyShortcuts.Activated(shortcut))
+            OpenPopupRadialMenu(id);
+        
         int ret = -1;
         const float RadiusMin = 30.0f;
         const float RadiusMax = 120.0f;
@@ -96,7 +99,7 @@ static class RadialMenu
 
             drawList.PopClipRect();
 
-            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            if (KeyShortcuts.Deactivated(shortcut))
             {
                 ImGui.CloseCurrentPopup();
                 ret = itemHovered;
