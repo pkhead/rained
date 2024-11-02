@@ -507,7 +507,9 @@ partial class TileEditor : IEditorMode
                     // remove tile on right click
                     if (!removedOnSameCell && isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
                     {
-                        if (selectionMode == SelectionMode.Autotiles || selectionMode == SelectionMode.Tiles || (selectionMode == SelectionMode.Materials && !disallowMatOverwrite))
+                        if ((selectionMode is SelectionMode.Autotiles or SelectionMode.Tiles) ||
+                            (selectionMode == SelectionMode.Materials && !disallowMatOverwrite)
+                        )
                         {
                             removedOnSameCell = true;
                             level.RemoveTileCell(window.WorkLayer, window.MouseCx, window.MouseCy, modifyGeometry);
