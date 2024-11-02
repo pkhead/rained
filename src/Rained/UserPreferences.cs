@@ -387,7 +387,7 @@ class UserPreferences
             if (!File.Exists(filePath)) filePath = Path.Combine(dir, Theme + ".json");
 
             var style = SerializableStyle.FromFile(filePath);
-            style!.Apply(ImGui.GetStyle());
+            style!.Apply(ImGuiExt.Style);
         }
         catch (Exception e)
         {

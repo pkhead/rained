@@ -314,14 +314,14 @@ namespace Rained
                         // (this is so the style editor works)
                         unsafe
                         {
-                            ImGuiStyle styleCopy = *ImGui.GetStyle().NativePtr;
+                            ImGuiExt.StoreStyle();
                             ImGui.GetStyle().ScaleAllSizes(curWindowScale);
 
                             ImGuiController!.Update(Raylib.GetFrameTime());
                             app.Draw(Raylib.GetFrameTime());
 
                             ImGuiController!.Render();
-                            *ImGui.GetStyle().NativePtr = styleCopy;
+                            ImGuiExt.LoadStyle();
                         }
                         
                         Raylib.EndDrawing();

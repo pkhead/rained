@@ -500,4 +500,49 @@ static class ImGuiExt
 
         return returnValue;
     }
+
+    private static unsafe ImGuiStyle* _storedStylePtr = null;
+
+    /// <summary>
+    /// Store the current style.
+    /// </summary>
+    public static unsafe void StoreStyle()
+    {
+        if (_storedStylePtr is null)
+            _storedStylePtr = (ImGuiStyle*) NativeMemory.Alloc((nuint)sizeof(ImGuiStyle));
+
+        *_storedStylePtr = *ImGui.GetStyle().NativePtr;
+    }
+
+    /// <summary>
+    /// Load the previously stored style.
+    /// </summary>
+    public static unsafe void LoadStyle()
+    {
+        if (_storedStylePtr is null)
+            throw new NullReferenceException("Style has not been stored.");
+        
+        *ImGui.GetStyle().NativePtr = *_storedStylePtr;
+    }
+
+    /*public static unsafe ref ImGuiStyle StoredStyle
+    {
+        get
+        {
+            if (_storedStylePtr is null) throw new NullReferenceException("Stored style is null");
+            return ref Unsafe.AsRef<ImGuiStyle>(_storedStylePtr);
+        }
+    }*/
+
+    /// <summary>
+    /// Obtain the ImGuiStylePtr unaffected by the content scale.
+    /// </summary>
+    public static unsafe ImGuiStylePtr Style
+    {
+        get
+        {
+            if (_storedStylePtr is null) return ImGui.GetStyle();
+            return new ImGuiStylePtr(_storedStylePtr);
+        }
+    }
 }

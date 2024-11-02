@@ -28,7 +28,7 @@ static class ThemeEditor
 
     public static void SaveRef()
     {
-        ImGuiExt.SaveStyleRef(ImGui.GetStyle(), ref ref_saved_style);
+        ImGuiExt.SaveStyleRef(ImGuiExt.Style, ref ref_saved_style);
     }
 
     public static void SaveStyle()
@@ -41,7 +41,7 @@ static class ThemeEditor
             if (paths.Length == 0) return;
             var path = paths[0];
 
-            var style = new SerializableStyle(ImGui.GetStyle());
+            var style = new SerializableStyle(ImGuiExt.Style);
             style.WriteToFile(path);
             RainEd.Instance.Preferences.Theme = Path.GetFileNameWithoutExtension(path);
             ThemeSaved?.Invoke();
@@ -59,7 +59,7 @@ static class ThemeEditor
             var path = paths[0];
 
             var style = SerializableStyle.FromFile(path);
-            style?.Apply(ImGui.GetStyle());
+            style?.Apply(ImGuiExt.Style);
         }
     }
 
@@ -67,7 +67,7 @@ static class ThemeEditor
     {
         // You can pass in a reference ImGuiStyle structure to compare to, revert to and save to
         // (without a reference style pointer, we will use one compared locally as a reference)
-        var style = ImGui.GetStyle();
+        var style = ImGuiExt.Style;
 
         // Default to using internal storage as reference
         if (init)
@@ -113,7 +113,7 @@ static class ThemeEditor
 
         if (ImGui.Button("Save to File"))
         {
-            var styleState = new SerializableStyle(ImGui.GetStyle());
+            var styleState = new SerializableStyle(ImGuiExt.Style);
             styleState.WriteToFile(Path.Combine(Boot.AppDataPath, "config", "themes", RainEd.Instance.Preferences.Theme + ".json"));
 
             ImGuiExt.SaveStyleRef(style, ref ref_saved_style);
@@ -232,7 +232,7 @@ static class ThemeEditor
                         ImGui.LogToClipboard();
                     else
                         ImGui.LogToTTY();
-                    ImGui.LogText("ImVec4* colors = ImGui.GetStyle().Colors;" + '\n');
+                    ImGui.LogText("ImVec4* colors = ImGuiExt.StoredStyle.Colors;" + '\n');
                     for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
                     {
                         ref Vector4 col = ref style.Colors[i];
