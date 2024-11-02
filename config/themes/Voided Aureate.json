@@ -1,0 +1,411 @@
+{
+  "WindowPadding": [
+    8,
+    8
+  ],
+  "FramePadding": [
+    4,
+    3
+  ],
+  "ItemSpacing": [
+    8,
+    5
+  ],
+  "ItemInnerSpacing": [
+    4,
+    4
+  ],
+  "TouchExtraPadding": [
+    0,
+    0
+  ],
+  "IndentSpacing": 20,
+  "ScrollbarSize": 18,
+  "GrabMinSize": 13,
+  "WindowBorderSize": 0,
+  "ChildBorderSize": 1,
+  "PopupBorderSize": 1,
+  "FrameBorderSize": 0,
+  "TabBorderSize": 0,
+  "TabBarBorderSize": 1,
+  "WindowRounding": 10,
+  "ChildRounding": 12,
+  "FrameRounding": 7,
+  "PopupRounding": 9,
+  "ScrollbarRounding": 12,
+  "GrabRounding": 12,
+  "TabRounding": 5,
+  "CellPadding": [
+    4,
+    4
+  ],
+  "TableAngledHeadersAngle": 35.000004,
+  "WindowTitleAlign": [
+    0,
+    0.5
+  ],
+  "WindowMenuButtonPosition": "left",
+  "ColorButtonPosition": "right",
+  "ButtonTextAlign": [
+    0.5,
+    0.5
+  ],
+  "SelectableTextAlign": [
+    0,
+    0
+  ],
+  "SeparatorTextBorderSize": 3,
+  "SeparatorTextAlign": [
+    0,
+    0.5
+  ],
+  "SeparatorTextPadding": [
+    20,
+    3
+  ],
+  "LogSliderDeadzone": 4,
+  "Colors": {
+    "Text": [
+      0.898039,
+      0.898039,
+      0.898039,
+      1
+    ],
+    "TextDisabled": [
+      0.6,
+      0.6,
+      0.6,
+      1
+    ],
+    "WindowBg": [
+      0.06666667,
+      0.016470589,
+      0.016470589,
+      0.84705883
+    ],
+    "ChildBg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "PopupBg": [
+      0.137255,
+      0.109804,
+      0.109804,
+      0.917647
+    ],
+    "Border": [
+      0.498039,
+      0.498039,
+      0.498039,
+      0.498039
+    ],
+    "BorderShadow": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "FrameBg": [
+      0.427451,
+      0.427451,
+      0.427451,
+      0.388235
+    ],
+    "FrameBgHovered": [
+      0.7261411,
+      0.6025942,
+      0.23802964,
+      0.4
+    ],
+    "FrameBgActive": [
+      0.74902,
+      0.66705734,
+      0.478431,
+      0.686275
+    ],
+    "TitleBg": [
+      0.59751034,
+      0.46635455,
+      0.07933747,
+      0.647059
+    ],
+    "TitleBgActive": [
+      0.7302904,
+      0.5650726,
+      0.18484528,
+      0.866667
+    ],
+    "TitleBgCollapsed": [
+      0.8,
+      0.6887967,
+      0.4,
+      0.2
+    ],
+    "MenuBarBg": [
+      0,
+      0,
+      0,
+      0.8
+    ],
+    "ScrollbarBg": [
+      0.298039,
+      0.2,
+      0.2,
+      0.6
+    ],
+    "ScrollbarGrab": [
+      0.89626557,
+      0.6406923,
+      0.21941769,
+      0.298039
+    ],
+    "ScrollbarGrabHovered": [
+      1,
+      0.7405256,
+      0.06666702,
+      0.4
+    ],
+    "ScrollbarGrabActive": [
+      1,
+      0.7571557,
+      0.35686302,
+      0.6
+    ],
+    "CheckMark": [
+      0.898039,
+      0.898039,
+      0.898039,
+      0.498039
+    ],
+    "SliderGrab": [
+      1,
+      1,
+      1,
+      0.298039
+    ],
+    "SliderGrabActive": [
+      0.8,
+      0.6445203,
+      0.388235,
+      0.6
+    ],
+    "Button": [
+      0.8174274,
+      0.6072207,
+      0.12549715,
+      0.7372549
+    ],
+    "ButtonHovered": [
+      0.8039216,
+      0.6156863,
+      0.1254902,
+      0.84705883
+    ],
+    "ButtonActive": [
+      0.80497926,
+      0.61993974,
+      0.24049172,
+      1
+    ],
+    "Header": [
+      0.5568628,
+      0.40392157,
+      0.15686275,
+      0.7137255
+    ],
+    "HeaderHovered": [
+      0.65975106,
+      0.51216155,
+      0.07665157,
+      1
+    ],
+    "HeaderActive": [
+      0.866667,
+      0.529412,
+      0.529412,
+      0.8
+    ],
+    "Separator": [
+      0.498039,
+      0.498039,
+      0.498039,
+      0.6
+    ],
+    "SeparatorHovered": [
+      0.6,
+      0.6,
+      0.698039,
+      1
+    ],
+    "SeparatorActive": [
+      0.698039,
+      0.698039,
+      0.898039,
+      1
+    ],
+    "ResizeGrip": [
+      1,
+      1,
+      1,
+      0.098039
+    ],
+    "ResizeGripHovered": [
+      0.776471,
+      0.819608,
+      1,
+      0.6
+    ],
+    "ResizeGripActive": [
+      0.776471,
+      0.819608,
+      1,
+      0.898039
+    ],
+    "TabHovered": [
+      0.84313726,
+      0.60784316,
+      0,
+      0.9254902
+    ],
+    "Tab": [
+      0.76763487,
+      0.5692797,
+      0.054148514,
+      0.788235
+    ],
+    "TabSelected": [
+      0.73858917,
+      0.5436955,
+      0.14404024,
+      1
+    ],
+    "TabSelectedOverline": [
+      0.9526066,
+      0.8352238,
+      0.8352238,
+      0.4
+    ],
+    "TabDimmed": [
+      0,
+      0,
+      0,
+      0.83137256
+    ],
+    "TabDimmedSelected": [
+      0,
+      0,
+      0,
+      0.83
+    ],
+    "TabDimmedSelectedOverline": [
+      0.71784234,
+      0.552734,
+      0.17275873,
+      1
+    ],
+    "DockingPreview": [
+      0.898039,
+      0.77197933,
+      0.4,
+      0.309804
+    ],
+    "DockingEmptyBg": [
+      0.2,
+      0.2,
+      0.2,
+      1
+    ],
+    "PlotLines": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "PlotLinesHovered": [
+      0.898039,
+      0.698039,
+      0,
+      1
+    ],
+    "PlotHistogram": [
+      0.898039,
+      0.698039,
+      0,
+      1
+    ],
+    "PlotHistogramHovered": [
+      1,
+      0.6,
+      0,
+      1
+    ],
+    "TableHeaderBg": [
+      0.556863,
+      0.43570116,
+      0.156863,
+      0.447059
+    ],
+    "TableBorderStrong": [
+      0.678431,
+      0.5476036,
+      0.20784302,
+      0.8
+    ],
+    "TableBorderLight": [
+      0.258824,
+      0.258824,
+      0.278431,
+      1
+    ],
+    "TableRowBg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "TableRowBgAlt": [
+      1,
+      1,
+      1,
+      0.066667
+    ],
+    "TextSelectedBg": [
+      1,
+      0.77178425,
+      0,
+      0.34902
+    ],
+    "DragDropTarget": [
+      1,
+      1,
+      0,
+      0.898039
+    ],
+    "NavHighlight": [
+      0.447059,
+      0.447059,
+      0.898039,
+      0.8
+    ],
+    "NavWindowingHighlight": [
+      1,
+      1,
+      1,
+      0.698039
+    ],
+    "NavWindowingDimBg": [
+      0.8,
+      0.8,
+      0.8,
+      0.2
+    ],
+    "ModalWindowDimBg": [
+      0.2,
+      0.2,
+      0.2,
+      0.34902
+    ]
+  }
+}

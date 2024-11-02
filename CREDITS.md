@@ -30,6 +30,7 @@ SOFTWARE.
 - [Blue Hydrangea](https://github.com/airways/dear-imgui-rs-hello)
 - [Codz](https://github.com/ocornut/imgui/issues/707#issuecomment-252413954)
 - Darcula... I forgot where I got this from.
+- Voided Aureate: by Nocturne
 - Dark, Light, and ImGui Classic were created by Omar Cornut, the creator of Dear ImGui.
 - Every other theme was created by me.
 
