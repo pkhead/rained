@@ -349,6 +349,8 @@ partial class FileBrowser
     /// <exception cref="Exception"></exception>
     public bool Render()
     {
+        int iconSize = 13 * Boot.PixelIconScale;
+
         Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
 
         string winName = mode switch
@@ -382,7 +384,7 @@ partial class FileBrowser
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
             // back button
-            if (ImGuiExt.ImageButtonRect("<", icons, 13, 13, GetIconRect(0), textColor))
+            if (ImGuiExt.ImageButtonRect("<", icons, iconSize, iconSize, GetIconRect(0), textColor))
             {
                 if (backStack.TryPop(out string? newPath))
                 {
@@ -397,7 +399,7 @@ partial class FileBrowser
             ImGui.SetItemTooltip("Back");
 
             // forward button
-            if (ImGuiExt.ImageButtonRect(">", icons, 13, 13, GetIconRect(1), textColor))
+            if (ImGuiExt.ImageButtonRect(">", icons, iconSize, iconSize, GetIconRect(1), textColor))
             {
                 if (forwardStack.TryPop(out string? newPath))
                 {
@@ -415,7 +417,7 @@ partial class FileBrowser
             // because spacing is added after creating a button, not before.
             ImGui.PopStyleVar();
 
-            if (ImGuiExt.ImageButtonRect("^", icons, 13, 13, GetIconRect(2), textColor))
+            if (ImGuiExt.ImageButtonRect("^", icons, iconSize, iconSize, GetIconRect(2), textColor))
             {
                 var oldDir = cwd;
                 if (SetPath(Path.Combine(cwd, "..")))
@@ -428,7 +430,7 @@ partial class FileBrowser
             ImGui.SetItemTooltip("Go To Parent Directory");
 
             ImGui.SameLine();
-            if (ImGuiExt.ImageButtonRect("Refresh", icons, 13, 13, GetIconRect(4), textColor))
+            if (ImGuiExt.ImageButtonRect("Refresh", icons, iconSize, iconSize, GetIconRect(4), textColor))
             {
                 if (Directory.Exists(cwd))
                     SetPath(cwd);
@@ -438,7 +440,7 @@ partial class FileBrowser
             ImGui.SetItemTooltip("Refresh");
 
             ImGui.SameLine();
-            if (ImGuiExt.ImageButtonRect("NewFolder", icons, 13, 13, GetIconRect(5), textColor))
+            if (ImGuiExt.ImageButtonRect("NewFolder", icons, iconSize, iconSize, GetIconRect(5), textColor))
             {
                 ImGui.OpenPopup("Create Folder");
                 folderName = "";
@@ -516,7 +518,7 @@ partial class FileBrowser
             ImGui.SameLine();
             if (enterPath || showPathInput)
             {
-                bool closeTextInput = ImGuiExt.ImageButtonRect("Type", icons, 13, 13, GetIconRect(3), textColor);
+                bool closeTextInput = ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(3), textColor);
                 ImGui.SameLine();
                 ImGui.SetItemTooltip("Close Text Input");
 
@@ -540,7 +542,7 @@ partial class FileBrowser
             }
             else
             {
-                if (ImGuiExt.ImageButtonRect("Type", icons, 13, 13, GetIconRect(8), textColor))
+                if (ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(8), textColor))
                     showPathInput = true;
                 ImGui.SetItemTooltip("Open Text Input");
                 
@@ -672,7 +674,7 @@ partial class FileBrowser
                     // this is the offset into the file icon texture
                     int fileTypeIcon = entry.Type == EntryType.Directory ? 5 : 6;
 
-                    ImGuiExt.ImageRect(icons, 13, 13, GetIconRect(entry.IconIndex), textColor);
+                    ImGuiExt.ImageRect(icons, iconSize, iconSize, GetIconRect(entry.IconIndex), textColor);
                     ImGui.SameLine();
                     
                     var entryName = entry.Name;
@@ -1019,7 +1021,7 @@ partial class FileBrowser
         LoadIcons();
 
         var textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
-        if (ImGuiExt.ImageButtonRect(id, icons, 13, 13, GetIconRect(5), textColor))
+        if (ImGuiExt.ImageButtonRect(id, icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(5), textColor))
         {
             activeFileBrowserButton = ImGui.GetItemID();
             fileBrowserReturn = false;

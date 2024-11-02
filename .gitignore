@@ -13,6 +13,9 @@
 **/bin
 **/obj
 
+# Miscellaneous files
+.DS_Store
+
 # Cake publish script output
 /build_win-x64
 /build_linux-x64

@@ -352,7 +352,7 @@ class GeometryEditor : IEditorMode
                 ImGui.PushID(i);
                 
                 // create tool button, select if clicked
-                if (ImGuiExt.ImageButtonRect("ToolButton", toolIcons, 24, 24, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
+                if (ImGuiExt.ImageButtonRect("ToolButton", toolIcons, 24 * Boot.PixelIconScale, 24 * Boot.PixelIconScale, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
                 {
                     selectedTool = toolEnum;
                 }

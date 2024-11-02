@@ -179,8 +179,8 @@ partial class TileEditor : IEditorMode
             Rlgl.PopMatrix();
 
             Raylib.EndTextureMode();
-
-            ImGuiExt.ImageRenderTexture(_tilePreview);
+            
+            ImGuiExt.ImageRenderTextureScaled(_tilePreview, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
         }
         else
         {
@@ -348,7 +348,7 @@ partial class TileEditor : IEditorMode
                                 if (_loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(_loadedMatPreview))
                                 {
                                     ImGui.BeginTooltip();
-                                    ImGuiExt.Image(_loadedMatPreview);
+                                    ImGuiExt.ImageSize(_loadedMatPreview, _loadedMatPreview.Width * Boot.PixelIconScale, _loadedMatPreview.Height * Boot.PixelIconScale);
                                     ImGui.EndTooltip();
                                 }
                             }

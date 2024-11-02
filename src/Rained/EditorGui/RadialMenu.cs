@@ -20,11 +20,11 @@ static class RadialMenu
     public static int PopupRadialMenu(string id, ReadOnlySpan<string> items, int p_selected)
     {
         int ret = -1;
-        const float RadiusMin = 30.0f;
-        const float RadiusMax = 120.0f;
-        const float DetectionRadius = RadiusMax * 4f;
-        const float RadiusInteractMin = 20.0f;
-        const float ItemPadding = 2.0f;
+        float RadiusMin = 24.0f * Boot.WindowScale;
+        float RadiusMax = 96.0f * Boot.WindowScale;
+        float DetectionRadius = RadiusMax * 4f;
+        float RadiusInteractMin = 16.0f * Boot.WindowScale;
+        float ItemPadding = 1.6f * Boot.WindowScale;
         const int ItemsMin = 6;
 
         //ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0, 0, 0, 0));

@@ -451,7 +451,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                ImGuiExt.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTextureScaled(previewTexture, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
                                 ImGui.EndTooltip();
                             }
                         }
@@ -531,7 +531,7 @@ partial class PropEditor : IEditorMode
                             if (ImGui.BeginItemTooltip())
                             {
                                 UpdatePreview(prop);
-                                ImGuiExt.ImageRenderTexture(previewTexture);
+                                ImGuiExt.ImageRenderTextureScaled(previewTexture, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
                                 ImGui.EndTooltip();
                             }
                         }

@@ -314,7 +314,7 @@ partial class PropEditor : IEditorMode
         
         Raylib.DrawCircleV(
             pos * Level.TileSize,
-            (isGizmoHovered ? 8f : 4f) / window.ViewZoom,
+            (isGizmoHovered ? 6f : 3f) / window.ViewZoom * Boot.WindowScale,
             color
         );
 

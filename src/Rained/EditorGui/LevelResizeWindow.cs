@@ -142,7 +142,7 @@ class LevelResizeWindow
 
                         if (ImGuiExt.ImageButtonRect(
                             "##button",
-                            RainEd.Instance.LevelGraphicsTexture, 20, 20,
+                            RainEd.Instance.LevelGraphicsTexture, 20 * Boot.PixelIconScale, 20 * Boot.PixelIconScale,
                             new Rectangle(textureX * 20, textureY * 20, 20, 20),
                             textColor
                         ))

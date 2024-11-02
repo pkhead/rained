@@ -583,14 +583,14 @@ class CameraEditor : IEditorMode
                 // point at corner
                 Raylib.DrawCircleV(
                     cornerPos * Level.TileSize,
-                    5f / window.ViewZoom,
+                    5f / window.ViewZoom * Boot.WindowScale,
                     color
                 );
 
                 // point at corner origin
                 Raylib.DrawCircleV(
                     cornerOrigin * Level.TileSize,
-                    2f / window.ViewZoom,
+                    2f / window.ViewZoom * Boot.WindowScale,
                     color
                 );
 

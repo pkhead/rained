@@ -316,6 +316,12 @@ public class Window : IDisposable
 
     private void OnMouseMove(IMouse mouse, Vector2 position)
     {
+        // idk what this is about
+        if (OperatingSystem.IsMacOS())
+        {
+            position *= ContentScale;
+        }
+        
         _mousePos = position;
         MouseMove?.Invoke(position.X, position.Y);
     }

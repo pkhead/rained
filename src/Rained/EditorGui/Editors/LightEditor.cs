@@ -112,9 +112,12 @@ class LightEditor : IEditorMode
                 var radius = (level.LightDistance - 1f) / (Level.MaxLightDistance - 1f) * (maxRadius - minRadius) + minRadius;
                 var centerRadius = (5f - 1f) / (Level.MaxLightDistance - 1f) * (maxRadius - minRadius) + minRadius;
 
+                centerRadius *= Boot.WindowScale;
+                radius *= Boot.WindowScale;
+
                 var color = ImGui.ColorConvertFloat4ToU32( ImGui.GetStyle().Colors[(int) ImGuiCol.Text] );
 
-                var circleCenter = screenCursor + new Vector2(avail.X / 2f, maxRadius);
+                var circleCenter = screenCursor + new Vector2(avail.X / 2f, maxRadius * Boot.WindowScale);
                 drawList.AddCircle(circleCenter, centerRadius, color); // draw center circle
                 drawList.AddCircle(circleCenter, radius, color); // draw distance circle
                 
@@ -123,16 +126,16 @@ class LightEditor : IEditorMode
 
                 drawList.AddCircleFilled(
                     new Vector2(MathF.Cos(correctedAngle), MathF.Sin(correctedAngle)) * radius + circleCenter,
-                    6f,
+                    6f * Boot.WindowScale,
                     color
                 );
 
-                ImGui.InvisibleButton("LightRing", new Vector2(avail.X, maxRadius * 2f));
+                ImGui.InvisibleButton("LightRing", new Vector2(avail.X, maxRadius * 2f * Boot.WindowScale));
                 if (ImGui.IsItemActive())
                 {
                     isChangingParameters = true;
 
-                    var vecDiff = ImGui.GetMousePos() - circleCenter;
+                    var vecDiff = (ImGui.GetMousePos() - circleCenter) / Boot.WindowScale;
 
                     level.LightAngle = MathF.Atan2(vecDiff.Y, vecDiff.X) - MathF.PI / 2f;
                     if (level.LightAngle < 0)
@@ -181,7 +184,7 @@ class LightEditor : IEditorMode
                     }
 
                     ImGui.PushID(i);
-                    if (ImGuiExt.ImageButtonRect("##Texture", texture, 64, 64, new Rectangle(0, 0, texture.Width, texture.Height)))
+                    if (ImGuiExt.ImageButtonRect("##Texture", texture, 64 * Boot.WindowScale, 64 * Boot.WindowScale, new Rectangle(0, 0, texture.Width, texture.Height)))
                     {
                         selectedBrush = i;
                     }
