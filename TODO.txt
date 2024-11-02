@@ -16,8 +16,6 @@ Bugs:
 v2.2.0:
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
 - radial menu for view toggle
-  also make it so you hold down grave accent then let go, instead of
-  clicking mouse
 - effects previews
 - optional download from solar's repo
 - option to use "legacy" shortcut icons

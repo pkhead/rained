@@ -243,11 +243,8 @@ class LevelWindow
 
             // edit mode switch radial menu
             {
-                if (KeyShortcuts.Activated(KeyShortcut.SelectEditor))
-                    RadialMenu.OpenPopupRadialMenu("Mode Switch");
-                
                 Span<string> options = ["Env", "Geo", "Tiles", "Cameras", "Light", "Effects", "Props"];
-                var sel = RadialMenu.PopupRadialMenu("Mode Switch", options, selectedMode);
+                var sel = RadialMenu.PopupRadialMenu("Mode Switch", KeyShortcut.SelectEditor, options, selectedMode);
                 if (sel != -1)
                 {
                     newEditMode = sel;

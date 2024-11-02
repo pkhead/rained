@@ -26,7 +26,7 @@ Anything outside of the border rectangle will appear in the .png renders of the 
 Pressing the "Resize Level" button in the **Edit** menu will open this window:
 
 <figure markdown="span">
-        ![The "Resize Level" window](../img/level-resize.png)
+        ![The "Resize Level" window](img//level-resize.png)
 </figure>
 
 - **Width/Height**: This is the desired width and height of the level in grid units.
@@ -43,12 +43,12 @@ Each level has several aspects that can be edited in separate "edit modes", also
 
 Listed are all seven edit modes:
 
-- **[Environment](editors/env.md)**: Edit miscellaneous properties about the level.
-- **[Geometry](editors/geo.md)**: Edit the playable geometry and objects in the level.
-- **[Tiles](editors/tiles.md)**: Place pre-made tile assets in the level to make it look like something.
-- **[Cameras](editors/cameras.md)**: Edit cameras.
-- **[Light](editors/light.md)**: Edit lights and shadows.
-- **[Effects](editors/effects.md)**: Control procedurally generated decorations, erosion, plants, and other effects.
-- **[Props](editors/props.md)**: Place pre-made assets in the level with full freedom of positioning, rotation, and scaling.
+- **[Environment](env.md)**: Edit miscellaneous properties about the level.
+- **[Geometry](geo.md)**: Edit the playable geometry and objects in the level.
+- **[Tiles](tiles.md)**: Place pre-made tile assets in the level to make it look like something.
+- **[Cameras](cameras.md)**: Edit cameras.
+- **[Light](light.md)**: Edit lights and shadows.
+- **[Effects](effects.md)**: Control procedurally generated decorations, erosion, plants, and other effects.
+- **[Props](props.md)**: Place pre-made assets in the level with full freedom of positioning, rotation, and scaling.
 
 The current edit mode can be changed by either pressing number keys 1-7, selecting an option from the "Edit Mode" listbox located near the top-left of the screen, or by opening the radial menu using the <kbd>`</kbd> button.
