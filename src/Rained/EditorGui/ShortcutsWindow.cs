@@ -81,6 +81,7 @@ static partial class ShortcutsWindow
             ("[Duplicate]", "Duplicate selected camera"),
             ("[CameraSnapX]/[NavUp]/[NavDown]", "Snap X to other cameras"),
             ("[CameraSnapY]/[NavLeft]/[NavRight]", "Snap Y to other cameras"),
+            ("Hold Shift", "Lock/unlock camera angle"),
         ],
 
         // Light
