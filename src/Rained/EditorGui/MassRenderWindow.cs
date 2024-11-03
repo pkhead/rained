@@ -15,8 +15,7 @@ static class MassRenderWindow
     private static readonly List<LevelPath> levelPaths = [];
     private static readonly List<LevelPath> folderPaths = [];
     private static FileBrowser? fileBrowser;
-    private static int parallelismLimit = 1;
-    private static bool limitParallelism = false;
+    private static int parallelismLimit = 4;
     private static int queueItemMode = 0;
     private static readonly string[] queueItemModeNames = ["Files", "Folders"];
 
@@ -102,13 +101,18 @@ static class MassRenderWindow
 
             ImGui.SeparatorText("Options");
             {
-                ImGui.Checkbox("Limit Parallelism", ref limitParallelism);
+                ImGui.SetNextItemWidth(ImGui.GetFontSize() * 6.0f);
+                ImGui.InputInt("Threads", ref parallelismLimit);
+                parallelismLimit = Math.Max(parallelismLimit, 1);
 
-                if (limitParallelism)
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                if (ImGui.BeginItemTooltip())
                 {
-                    ImGui.SetNextItemWidth(ImGui.GetFontSize() * 10.0f);
-                    ImGui.InputInt("Threads", ref parallelismLimit);
-                    parallelismLimit = Math.Max(parallelismLimit, 1);
+                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20f);
+                    ImGui.TextWrapped("The maximum amount of concurrent render processes. Higher values make the total render time shorter, but require more CPU cores and RAM.");
+                    ImGui.PopTextWrapPos();
+                    ImGui.EndTooltip();
                 }
             }
 
@@ -163,7 +167,7 @@ static class MassRenderWindow
 
         var massRender = new DrizzleMassRender(
             [..files],
-            limitParallelism ? parallelismLimit : 0
+            parallelismLimit
         );
 
         massRenderProc = new MassRenderProcessWindow(massRender);
