@@ -21,7 +21,9 @@ partial class TileEditor : IEditorMode
     private bool _previewReady = false;
     private string _activeMatPreview = "";
 
-    private RlManaged.RenderTexture2D? _tilePreview = null;
+    private RlManaged.RenderTexture2D? _hoverPreview = null;
+    private RlManaged.RenderTexture2D? _tileGfxRender = null;
+    private RlManaged.RenderTexture2D? _tileSpecRender = null;
     
     private void ProcessSearch()
     {
@@ -89,6 +91,58 @@ partial class TileEditor : IEditorMode
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.SetMaterial, "Set Selected Material as Default");
     }
 
+    private void RenderTileLayers(Tile tile)
+    {
+        var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name)
+            ?? throw new Exception("Could not load tile graphics");
+        
+        var totalTileWidth = tile.Width + tile.BfTiles * 2;
+        var totalTileHeight = tile.Height + tile.BfTiles * 2;
+
+        Raylib.BeginShaderMode(Shaders.TileShader);
+        Color drawCol = tile.Category.Color;
+        var dstRec = new Rectangle(0, 0, totalTileWidth * 20, totalTileHeight * 20);
+
+        // draw front of box tile
+        if (tile.Type == TileType.Box)
+        {
+            var height = tile.Height * 20;
+            var srcRec = new Rectangle(
+                0f,
+                tile.ImageYOffset + height * tile.Width,
+                totalTileWidth * 20, totalTileHeight * 20
+            );
+
+            Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, drawCol);
+        }
+
+        // draw voxel tile
+        else
+        {
+            for (int l = tile.LayerCount - 1; l >= 0; l--)
+            {
+                var srcRec = Rendering.TileRenderer.GetGraphicSublayer(tile, l, 0);
+
+                float lf = (float)l / tile.LayerCount;
+
+                // fade to white as the layer is further away
+                // from the front
+                float a = lf;
+                var col = new Color
+                {
+                    R = (byte)(drawCol.R * (1f - a) + (drawCol.R * 0.5) * a),
+                    G = (byte)(drawCol.G * (1f - a) + (drawCol.G * 0.5) * a),
+                    B = (byte)(drawCol.B * (1f - a) + (drawCol.B * 0.5) * a),
+                    A = 255
+                };
+
+                Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, col);
+            }
+        }
+
+        Raylib.EndShaderMode();
+    }
+
     private void RenderTilePreview(Tile tile)
     {
         if (RainEd.Instance.Preferences.ViewPreviews)
@@ -107,60 +161,19 @@ partial class TileEditor : IEditorMode
             previewWidth += 2;
             previewHeight += 5;
 
-            if (_tilePreview == null || _tilePreview.Texture.Width != previewWidth || _tilePreview.Texture.Height != previewHeight)
+            if (_hoverPreview == null || _hoverPreview.Texture.Width != previewWidth || _hoverPreview.Texture.Height != previewHeight)
             {
-                _tilePreview?.Dispose();
-                _tilePreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
+                _hoverPreview?.Dispose();
+                _hoverPreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
             }
 
-            Raylib.BeginTextureMode(_tilePreview);
+            Raylib.BeginTextureMode(_hoverPreview);
             Raylib.ClearBackground(Color.Blank);
             Rlgl.PushMatrix();
             Rlgl.Translatef(1f, 1f, 0f);
 
             // first, draw tile graphics
-            Raylib.BeginShaderMode(Shaders.TileShader);
-            Color drawCol = tile.Category.Color;
-            var dstRec = new Rectangle(0, 0, totalTileWidth * 20, totalTileHeight * 20);
-
-            // draw front of box tile
-            if (tile.Type == TileType.Box)
-            {
-                var height = tile.Height * 20;
-                var srcRec = new Rectangle(
-                    0f,
-                    tile.ImageYOffset + height * tile.Width,
-                    totalTileWidth * 20, totalTileHeight * 20
-                );
-
-                Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, drawCol);
-            }
-
-            // draw voxel tile
-            else
-            {
-                for (int l = tile.LayerCount - 1; l >= 0; l--)
-                {
-                    var srcRec = Rendering.TileRenderer.GetGraphicSublayer(tile, l, 0);
-
-                    float lf = (float)l / tile.LayerCount;
-
-                    // fade to white as the layer is further away
-                    // from the front
-                    float a = lf;
-                    var col = new Color
-                    {
-                        R = (byte)(drawCol.R * (1f - a) + (drawCol.R * 0.5) * a),
-                        G = (byte)(drawCol.G * (1f - a) + (drawCol.G * 0.5) * a),
-                        B = (byte)(drawCol.B * (1f - a) + (drawCol.B * 0.5) * a),
-                        A = 255
-                    };
-
-                    Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, col);
-                }
-            }
-
-            Raylib.EndShaderMode();
+            RenderTileLayers(tile);
 
             // show tile inner border
             Raylib.DrawRectangleLines(tile.BfTiles * 20, tile.BfTiles * 20, tile.Width * 20, tile.Height * 20,
@@ -180,7 +193,7 @@ partial class TileEditor : IEditorMode
 
             Raylib.EndTextureMode();
             
-            ImGuiExt.ImageRenderTextureScaled(_tilePreview, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
+            ImGuiExt.ImageRenderTextureScaled(_hoverPreview, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
         }
         else
         {
@@ -191,13 +204,13 @@ partial class TileEditor : IEditorMode
             var previewWidth = previewRect.Value.Width + 2;
             var previewHeight = previewRect.Value.Height * 2 + 5;
             
-            if (_tilePreview == null || _tilePreview.Texture.Width != previewWidth || _tilePreview.Texture.Height != previewHeight)
+            if (_hoverPreview == null || _hoverPreview.Texture.Width != previewWidth || _hoverPreview.Texture.Height != previewHeight)
             {
-                _tilePreview?.Dispose();
-                _tilePreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
+                _hoverPreview?.Dispose();
+                _hoverPreview = RlManaged.RenderTexture2D.Load((int)previewWidth, (int)previewHeight);
             }
 
-            Raylib.BeginTextureMode(_tilePreview);
+            Raylib.BeginTextureMode(_hoverPreview);
 
             // image will have 1 pixel of padding to accomodate for
             // lines
@@ -215,7 +228,7 @@ partial class TileEditor : IEditorMode
 
             Raylib.EndTextureMode();
 
-            ImGuiExt.ImageRenderTexture(_tilePreview);
+            ImGuiExt.ImageRenderTexture(_hoverPreview);
             //ImGuiExt.ImageRect(previewTexture!, previewWidth, previewHeight, previewRect.Value, tile.Category.Color);
         }
 
@@ -534,6 +547,86 @@ partial class TileEditor : IEditorMode
             }
         } ImGui.End();
         
+        bool tileGfxPreview = prefs.ViewTileGraphicPreview;
+        bool tileSpecPreview = prefs.ViewTileSpecPreview;
+
+        // window for tile graphics preview
+        var previewWindowFlags = ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+        if (tileGfxPreview)
+        {
+            if (ImGui.Begin("Tile###TileGfxPreview", ref tileGfxPreview, previewWindowFlags))
+            {
+                if (selectedTile is not null &&
+                    RainEd.Instance.AssetGraphics.GetTileTexture(selectedTile.Name) is not null)
+                {
+                    // render tile layers into framebuffer
+                    var totalTileWidth = selectedTile.Width + selectedTile.BfTiles * 2;
+                    var totalTileHeight = selectedTile.Height + selectedTile.BfTiles * 2;
+
+                    var fbWidth = totalTileWidth * 20;
+                    var fbHeight = totalTileHeight * 20;
+
+                    if (_tileGfxRender is null ||
+                        _tileGfxRender.Texture.Width != fbWidth ||
+                        _tileGfxRender.Texture.Height != fbHeight)
+                    {
+                        _tileGfxRender?.Dispose();
+                        _tileGfxRender = RlManaged.RenderTexture2D.Load(fbWidth, fbHeight);
+                    }
+
+                    Raylib.BeginTextureMode(_tileGfxRender);
+                    Raylib.ClearBackground(Color.Blank);
+                    RenderTileLayers(selectedTile);
+                    Raylib.EndTextureMode();
+
+                    // render framebuffer into imgui
+                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth, -fbHeight + ImGui.GetFrameHeight())) / 2f);
+                    ImGuiExt.ImageRenderTexture(_tileGfxRender);
+                }
+            }
+            ImGui.End();
+        }
+
+        // window for tile spec preview
+        if (tileSpecPreview)
+        {
+            if (ImGui.Begin("Specs###TileSpecPreview", ref tileSpecPreview, previewWindowFlags))
+            {
+                if (selectedTile is not null)
+                {
+                    // render tile specs into framebuffer
+                    var fbWidth = selectedTile.Width * 20 + 8;
+                    var fbHeight = selectedTile.Height * 20 + 8;
+
+                    if (_tileSpecRender is null ||
+                        _tileSpecRender.Texture.Width != fbWidth ||
+                        _tileSpecRender.Texture.Height != fbHeight)
+                    {
+                        _tileSpecRender?.Dispose();
+                        _tileSpecRender = RlManaged.RenderTexture2D.Load(fbWidth, fbHeight);
+                    }
+
+                    Raylib.BeginTextureMode(_tileSpecRender);
+                    Raylib.ClearBackground(Color.Blank);
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef(4f, 4f, 0f);
+                    DrawTileSpecs(selectedTile, 0, 0,
+                        tileSize: 20
+                    );
+                    Rlgl.PopMatrix();
+                    Raylib.EndTextureMode();
+
+                    // render framebuffer into imgui
+                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth, -fbHeight + ImGui.GetFrameHeight())) / 2f);
+                    ImGuiExt.ImageRenderTexture(_tileSpecRender);
+                }
+            }
+            ImGui.End();
+        }
+
+        prefs.ViewTileGraphicPreview = tileGfxPreview;
+        prefs.ViewTileSpecPreview = tileSpecPreview;
+
         // shift+tab to switch between tabs
         if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
         {

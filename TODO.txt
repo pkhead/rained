@@ -15,6 +15,7 @@ Bugs:
 
 v2.2.0:
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
+- palette preview and shortcuts window undock after restart
 - radial menu for view toggle
 - effects previews
 - optional download from solar's repo
