@@ -21,6 +21,11 @@ static class NewLevelWindow
     private static RlManaged.RenderTexture2D? previewFramebuffer = null;
     private static List<Vector2> cameraPositions = [];
 
+    // window size isn't correctly centered on first appearance
+    // cus it doesn't know the correct window size on first frame
+    // so this is a hack to fix that.
+    private static int _centerTick = 0;
+
     public static void OpenWindow()
     {
         levelWidth = 72;
@@ -46,11 +51,16 @@ static class NewLevelWindow
         if (!ImGui.IsPopupOpen(WindowName) && IsWindowOpen)
         {
             ImGui.OpenPopup(WindowName);
-
-            // center popup modal
-            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            _centerTick = 4;
         }
 
+        // center popup modal
+        // window size isn't correctly centered on first appearance
+        // cus it doesn't know the correct window size on first frame
+        // so this is a hack to fix that.
+        ImGuiExt.CenterNextWindow(_centerTick == 0 ? ImGuiCond.Appearing : ImGuiCond.Always);
+        if (_centerTick > 0) _centerTick--;
+        
         if (ImGui.BeginPopupModal(WindowName, ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
             // options column
