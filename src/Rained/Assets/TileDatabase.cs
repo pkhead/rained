@@ -1,4 +1,5 @@
 using System.Numerics;
+using Pidgin;
 using Raylib_cs;
 
 namespace Rained.Assets;
@@ -148,6 +149,11 @@ class TileDatabase
     public readonly List<TileCategory> Categories;
     private readonly Dictionary<string, Tile> stringToTile = new();
 
+    /// <summary>
+    /// True if there were any errors while loading.
+    /// </summary>
+    public bool HasErrors { get; private set; } = false;
+
     public TileDatabase()
     {
         var drizzleConfig = DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
@@ -187,7 +193,22 @@ class TileDatabase
             {
                 if (curGroup is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
 
-                var tileInit = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed tile init")));
+                var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
+                if (parseErr is not null)
+                {
+                    HasErrors = true;
+                    Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
+                    return;
+                }
+
+                if (parsedLine is null)
+                {
+                    HasErrors = true;
+                    Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
+                    return;
+                }
+                
+                var tileInit = (Lingo.List) parsedLine;
 
                 object? tempValue = null;
                 var name = (string) tileInit.fields["nm"];
@@ -240,7 +261,8 @@ class TileDatabase
 
                     curGroup.Tiles.Add(tileData);
                     stringToTile.Add(name, tileData);
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
                 }

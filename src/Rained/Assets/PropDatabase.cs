@@ -511,6 +511,11 @@ class PropDatabase
     public readonly List<PropColor> PropColors; // custom colors
     private readonly Dictionary<string, PropInit> allProps;
 
+    /// <summary>
+    /// True if any errors were encountered while loading.
+    /// </summary>
+    public bool HasErrors { get; private set; } = false;
+
     private int catIndex = 0;
 
     public PropDatabase(TileDatabase tileDatabase)
@@ -599,8 +604,22 @@ class PropDatabase
                 Lingo.List? propData = null;
                 try // curse you Wryak
                 {
-                    propData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception(ErrorString(lineNo, "Malformed prop init")));
-                    var propInit = new PropInit(currentCategory, propData);
+                    var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
+                    if (parseErr is not null)
+                    {
+                        HasErrors = true;
+                        Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
+                        return;
+                    }
+                    
+                    if (parsedLine is null)
+                    {
+                        HasErrors = true;
+                        Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
+                        return;
+                    }
+
+                    var propInit = new PropInit(currentCategory, (Lingo.List) parsedLine);
                     currentCategory.Props.Add(propInit);
                     AddPropToIndex(lineNo, propInit);
                 }

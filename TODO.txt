@@ -11,7 +11,6 @@ Bugs:
 
 - using close all didn't register no file selected at one point?
   after testing render save prompt bug fix...
-- make sure line numbers of erroneous init are printed out
 
 v2.2.0:
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
@@ -25,6 +24,8 @@ v2.2.0:
 v2.3.0:
 - favorite tiles&props
 - please finally add the geo editing stuff
+  - ctrl+C to initiate copy mode... simplifies ui
+- tile prefabs (prefabs tab in tile selector)
 - material previews
 - translation system
 - autotiles
@@ -36,24 +37,27 @@ v2.3.0:
 - method of generating approximated geometry from prop
 - show prop preview over mouse
 
-Overall:
+v2.4.0 (or v3.0.0, depending on the frequency of major updates):
+- Fully FeatuerdWorld editor
+
+Other features:
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
   - fix merging
   - can select certain packs from solar repo?
+- autosave
 - optimize tile deform rendering
-- does update checker notif window timing work?
 - prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
-- new level screen
 - Move Level
 - undo/redo for level resize
 - level resze drag
 - level resize change history
 - put asterik in window title for unsaved levels
 - allow user to open levels with unrecognized tiles/props
+  without erasing unrecognized assets
   - so need to figure out how to store tiles/props by name only instead of
     by init reference... probably could use an ID system and most IDs are
     a reference to a tile but some IDs are for placeholders.

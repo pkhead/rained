@@ -6,8 +6,10 @@ public class LingoParser
 {
     private readonly Queue<Token> tokens = new();
 
-    public object? Read(string str)
+    public object? Read(string str, out ParseException? exception)
     {
+        exception = null;
+
         var stream = new MemoryStream(Encoding.ASCII.GetBytes(str));
         var reader = new StreamReader(stream);
         var tokenParser = new TokenParser(reader);
@@ -24,14 +26,18 @@ public class LingoParser
         }
 
         // do this because even level file reading is janky
-        catch (ParseException)
+        catch (ParseException e)
         {
+            exception = e;
             return null;
         }
     }
 
-    private Token PeekToken() => tokens.Peek();
-    private Token PopToken() => tokens.Dequeue();
+    public object? Read(string str)
+        => Read(str, out _);
+
+    private Token PeekToken() => tokens.Count == 0 ? throw new ParseException("Unexpected EOF") : tokens.Peek();
+    private Token PopToken() => tokens.Count == 0 ? throw new ParseException("Unexpected EOF") : tokens.Dequeue();
 
     /*private void Error(string msg)
     {

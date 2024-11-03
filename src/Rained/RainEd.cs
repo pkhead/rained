@@ -242,6 +242,9 @@ sealed class RainEd
         }
         #endif
 
+        if (TileDatabase.HasErrors || PropDatabase.HasErrors)
+            InitErrorsWindow.IsWindowOpen = true;
+
         _tabs.Add(new LevelTab());
         _currentTab = _tabs[0];      
 

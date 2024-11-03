@@ -549,6 +549,7 @@ static class EditorWindow
         GuideViewerWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();
+        InitErrorsWindow.ShowWindow();
     }
 
     /// <summary>
