@@ -1,15 +1,15 @@
 {
   "WindowPadding": [
-    8,
+    10,
     8
   ],
   "FramePadding": [
-    4,
+    7,
     3
   ],
   "ItemSpacing": [
     8,
-    5
+    4
   ],
   "ItemInnerSpacing": [
     4,
@@ -19,10 +19,10 @@
     0,
     0
   ],
-  "IndentSpacing": 20,
-  "ScrollbarSize": 18,
-  "GrabMinSize": 13,
-  "WindowBorderSize": 0,
+  "IndentSpacing": 15,
+  "ScrollbarSize": 12,
+  "GrabMinSize": 9,
+  "WindowBorderSize": 1,
   "ChildBorderSize": 1,
   "PopupBorderSize": 1,
   "FrameBorderSize": 0,
@@ -96,10 +96,10 @@
       0.917647
     ],
     "Border": [
-      0.498039,
-      0.498039,
-      0.498039,
-      0.498039
+      1,
+      0.81712055,
+      0,
+      0.09727627
     ],
     "BorderShadow": [
       0,
@@ -144,9 +144,9 @@
       0.2
     ],
     "MenuBarBg": [
-      0,
-      0,
-      0,
+      0.04669261,
+      0.019803481,
+      0.019803481,
       0.8
     ],
     "ScrollbarBg": [
@@ -294,10 +294,10 @@
       0.83137256
     ],
     "TabDimmedSelected": [
+      0.04280156,
       0,
       0,
-      0,
-      0.83
+      1
     ],
     "TabDimmedSelectedOverline": [
       0.71784234,

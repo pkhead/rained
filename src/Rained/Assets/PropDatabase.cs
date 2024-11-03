@@ -631,6 +631,8 @@ class PropDatabase
             }
         }
 
+        Log.UserLogger.Information("Reading tiles as props...");
+        
         // read tile database to create Tiles as Prop
         // the "Tiles as props" categories are not touched by the tile editor;
         // it only touches the TileCategories field
