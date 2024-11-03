@@ -10,9 +10,10 @@ static class MassRenderWindow
     public const string WindowName = "Mass Render";
     public static bool IsWindowOpen = false;
 
-    record LevelPath(string Path, string LevelName);
+    record LevelPath(string Path, string Name);
     
     private static readonly List<LevelPath> levelPaths = [];
+    private static readonly List<LevelPath> folderPaths = [];
     private static FileBrowser? fileBrowser;
     private static int parallelismLimit = 1;
     private static bool limitParallelism = false;
@@ -24,6 +25,7 @@ static class MassRenderWindow
     public static void OpenWindow()
     {
         levelPaths.Clear();
+        folderPaths.Clear();
         fileBrowser = null;
 
         IsWindowOpen = true;
@@ -45,10 +47,8 @@ static class MassRenderWindow
 
             ImGui.SeparatorText("Queue");
             {
-                if (ImGuiExt.ButtonSwitch("ItemQueueSwitch", ["Files", "Folders"], ref queueItemMode))
-                {
-                    levelPaths.Clear();
-                }
+                ImGuiExt.ButtonSwitch("ItemQueueSwitch", ["Files", "Folders"], ref queueItemMode);
+                var curModePaths = queueItemMode == 1 ? folderPaths : levelPaths;
 
                 /*{
                     ImGui.SliderInt("##QueueMode", ref queueItemMode, 0, 1, queueItemModeNames[queueItemMode]);
@@ -57,10 +57,10 @@ static class MassRenderWindow
 
                 if (ImGui.BeginListBox("##Levels"))
                 {
-                    foreach (var path in levelPaths)
+                    foreach (var path in curModePaths)
                     {
                         ImGui.PushID(path.Path);
-                        ImGui.Selectable(path.LevelName);
+                        ImGui.Selectable(path.Name);
                         ImGui.PopID();
                     }
 
@@ -96,7 +96,7 @@ static class MassRenderWindow
                 ImGui.SameLine();
                 if (ImGui.Button("Clear", StandardPopupButtons.ButtonSize))
                 {
-                    levelPaths.Clear();
+                    curModePaths.Clear();
                 }
             }
 
@@ -106,7 +106,8 @@ static class MassRenderWindow
 
                 if (limitParallelism)
                 {
-                    ImGui.InputInt("##Parallelism", ref parallelismLimit);
+                    ImGui.SetNextItemWidth(ImGui.GetFontSize() * 10.0f);
+                    ImGui.InputInt("Threads", ref parallelismLimit);
                     parallelismLimit = Math.Max(parallelismLimit, 1);
                 }
             }
@@ -151,24 +152,17 @@ static class MassRenderWindow
 
     private static void StartRender()
     {
-        string[] files;
+        List<string> files = [];
 
-        if (queueItemMode == 0)
-        {
-            files = levelPaths.Select(x => x.Path).ToArray();
-        } 
-        else if (queueItemMode == 1)
-        {
-            files = levelPaths.SelectMany(x => Directory.GetFiles(x.Path).Where(x => Path.GetExtension(x) == ".txt"))
-                .ToArray();
-        }
-        else
-        {
-            throw new Exception("Invalid item mode");
-        }
+        // process folders
+        files.AddRange(folderPaths.SelectMany(x => Directory.GetFiles(x.Path).Where(x => Path.GetExtension(x) == ".txt")));
+
+        // process files, not including files that were already added when processing folders
+        // obviously quite slow. hashset not viable because I want them to be in order of submission.
+        files.AddRange(levelPaths.Where(x => !files.Contains(x.Path)).Select(x => x.Path));
 
         var massRender = new DrizzleMassRender(
-            files,
+            [..files],
             limitParallelism ? 0 : parallelismLimit
         );
 
@@ -188,7 +182,8 @@ static class MassRenderWindow
     {
         foreach (var path in paths)
         {
-            levelPaths.Add(new LevelPath(path, Path.GetFileName(path)));
+            var dirname = Path.GetFileName(Path.GetDirectoryName(path)!);
+            folderPaths.Add(new LevelPath(path, dirname));
         }
     }
 }

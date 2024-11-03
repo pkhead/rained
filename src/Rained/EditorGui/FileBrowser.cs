@@ -861,7 +861,7 @@ partial class FileBrowser
                     //if (ent.Type == EntryType.Directory)
                     //{
                     isDone = true;
-                    callbackData = [..selected.Select(x => Path.Combine(cwd, entries[x].Name))];
+                    callbackData = [..selected.Select(x => Path.Combine(cwd, entries[x].Name) + Path.DirectorySeparatorChar)];
                     //}
                 }
                 else
