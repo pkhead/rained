@@ -700,7 +700,7 @@ partial class PropEditor : IEditorMode
                     }
 
                     if (hasCustomDepth)
-                        MultiselectSliderInt("Custom Depth", "CustomDepth", 1, 30, "%i", ImGuiSliderFlags.AlwaysClamp);
+                        MultiselectSliderInt("Custom Depth", "CustomDepth", 0, 30, "%i", ImGuiSliderFlags.AlwaysClamp);
                 }
 
                 // custom color, if available
