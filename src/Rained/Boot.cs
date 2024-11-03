@@ -107,6 +107,7 @@ namespace Rained
                 Log.Setup(logToStdout);
             }
 
+            // setup GL logger
             RenderContext.Log = (LogLevel logLevel, string msg) =>
             {
                 if (logLevel == LogLevel.Debug)
@@ -116,6 +117,17 @@ namespace Rained
                 else if (logLevel == LogLevel.Error)
                     Log.UserLogger.Error("[GL] " + msg);
             };
+
+            // load user preferences (though, will be loaded again in the RainEd class)
+            // this is for reading preferences that will be applied in the boot process
+            UserPreferences? prefs = null;
+            {
+                var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
+                if (File.Exists(prefsFile))
+                {
+                    prefs = UserPreferences.LoadFromFile(prefsFile);
+                }
+            }
 
             {
                 var windowOptions = new Glib.WindowOptions()
@@ -173,15 +185,6 @@ namespace Rained
                             }
                         });
                     }*/
-                    UserPreferences? prefs = null;
-                    {
-                        var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
-                        if (File.Exists(prefsFile))
-                        {
-                            prefs = UserPreferences.LoadFromFile(prefsFile);
-                        }
-                    }
-
                     renderContext = RenderContext.Init(window);
                     ImGuiController = new Glib.ImGui.ImGuiController(window, ImGuiConfigure);
                 };
@@ -208,16 +211,46 @@ namespace Rained
 
                     //var rctx = splashScreenWindow.RenderContext!;
                     var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                    var colorMask = Glib.Texture.Load(Path.Combine(AppDataPath, "assets","splash-screen-colormask.png"));
 
+                    // get theme filepath
+                    var themeName = prefs?.Theme ?? "Dark";
+                    var themeFilePath = Path.Combine(AppDataPath, "config", "themes", themeName + ".jsonc");
+                    if (!File.Exists(themeFilePath)) themeFilePath = Path.Combine(AppDataPath, "config", "themes", themeName + ".json");
+
+                    // get accent color from theme
+                    Glib.Color color;
+                    try
+                    {
+                        var style = SerializableStyle.FromFile(themeFilePath);
+                        var colorArr = style!.Colors["Button"];
+                        color = new Glib.Color(colorArr[0], colorArr[1], colorArr[2], colorArr[3]);
+                    }
+                    catch
+                    {
+                        color = Glib.Color.FromRGBA(41, 74, 122);
+                    }
+
+                    // draw splash screen, affected by accent color
+                    // accent color is color-mask texture
                     splashScreenCtx.Begin();
                     splashScreenCtx.Clear(Glib.Color.Black);
                     splashScreenCtx.DrawTexture(texture);
+
+                    if (!showAltSplashScreen)
+                    {
+                        splashScreenCtx.DrawColor = color;
+                        splashScreenCtx.DrawTexture(colorMask);
+                    }
+
+                    splashScreenCtx.DrawColor = Glib.Color.White;
                     splashScreenCtx.End();
 
                     splashScreenWindow.MakeCurrent();
                     splashScreenWindow.SwapBuffers();
 
                     texture.Dispose();
+                    colorMask?.Dispose();
                     splashScreenCtx.Dispose();
 
                     renderContext.MakeCurrent();
@@ -282,6 +315,7 @@ namespace Rained
                 CloseSplashScreenWindow();
 
                 isAppReady = true;
+                prefs = null;
                 
 #if EXCEPTION_CATCHING
                 try
