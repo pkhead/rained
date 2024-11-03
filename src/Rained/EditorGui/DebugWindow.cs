@@ -11,6 +11,11 @@ static class DebugWindow
 
     public static void ShowWindow()
     {
+        if (_showDemoWindow)
+        {
+            ImGui.ShowDemoWindow();
+        }
+        
         if (!IsWindowOpen) return;
 
         if (ImGui.Begin(WindowName, ref IsWindowOpen))
@@ -18,13 +23,10 @@ static class DebugWindow
             var io = ImGui.GetIO();
 
             ImGui.TextUnformatted(string.Format("Application average {0:F3} ms/frame ({1:F1} FPS)", 1000.0f / io.Framerate, io.Framerate));
+            ImGui.TextUnformatted("Loaded tile graphics: " + RainEd.Instance.AssetGraphics.TileTextureCount);
+            ImGui.TextUnformatted("Loaded prop graphics: " + RainEd.Instance.AssetGraphics.PropTextureCount);
             ImGui.TextUnformatted($"Total texture memory: {(float)Glib.RenderContext.Instance!.TotalTextureMemory / 1000000} mb");
             ImGui.Checkbox("Show demo window", ref _showDemoWindow);
-
-            if (_showDemoWindow)
-            {
-                ImGui.ShowDemoWindow();
-            }
 
             if (ImGui.Button("GC"))
             {

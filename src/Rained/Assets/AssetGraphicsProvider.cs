@@ -533,4 +533,14 @@ class AssetGraphicsProvider
         propTexCache.Clear();
         _loadedTilePreviews.Clear();
     }
+
+    /// <summary>
+    /// The number of loaded tile textures, excluding tile previews.
+    /// </summary>
+    public int TileTextureCount => tileTexCache.Count;
+
+    /// <summary>
+    /// The number of loaded prop textures.
+    /// </summary>
+    public int PropTextureCount => propTexCache.Count;
 }
