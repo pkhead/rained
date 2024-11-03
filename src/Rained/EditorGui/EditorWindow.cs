@@ -335,6 +335,20 @@ static class EditorWindow
                     PaletteWindow.IsWindowOpen = !PaletteWindow.IsWindowOpen;
                 }
 
+                if (ImGui.BeginMenu("Tile Preview"))
+                {
+                    var viewGfx = prefs.ViewTileGraphicPreview;
+                    var viewSpecs = prefs.ViewTileSpecPreview;
+
+                    if (ImGui.MenuItem("Graphics", null, ref viewGfx))
+                        prefs.ViewTileGraphicPreview = viewGfx;
+                    
+                    if (ImGui.MenuItem("Geometry", null, ref viewSpecs))
+                        prefs.ViewTileSpecPreview = viewSpecs;
+                    
+                    ImGui.EndMenu();
+                }
+
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))

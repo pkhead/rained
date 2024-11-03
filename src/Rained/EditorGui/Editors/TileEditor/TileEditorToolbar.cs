@@ -552,9 +552,9 @@ partial class TileEditor : IEditorMode
 
         // window for tile graphics preview
         var previewWindowFlags = ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-        if (tileGfxPreview)
+        if (tileGfxPreview && selectionMode == SelectionMode.Tiles)
         {
-            if (ImGui.Begin("Tile###TileGfxPreview", ref tileGfxPreview, previewWindowFlags))
+            if (ImGui.Begin("Graphics###TileGfxPreview", ref tileGfxPreview, previewWindowFlags))
             {
                 if (selectedTile is not null &&
                     RainEd.Instance.AssetGraphics.GetTileTexture(selectedTile.Name) is not null)
@@ -588,9 +588,9 @@ partial class TileEditor : IEditorMode
         }
 
         // window for tile spec preview
-        if (tileSpecPreview)
+        if (tileSpecPreview && selectionMode == SelectionMode.Tiles)
         {
-            if (ImGui.Begin("Specs###TileSpecPreview", ref tileSpecPreview, previewWindowFlags))
+            if (ImGui.Begin("Geometry###TileSpecPreview", ref tileSpecPreview, previewWindowFlags))
             {
                 if (selectedTile is not null)
                 {
