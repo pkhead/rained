@@ -56,12 +56,21 @@ static class MassRenderWindow
 
                 if (ImGui.BeginListBox("##Levels"))
                 {
-                    foreach (var path in curModePaths)
+                    int deleteRequest = -1;
+
+                    for (int i = 0; i < curModePaths.Count; i++)
                     {
+                        var path = curModePaths[i];
+                        
                         ImGui.PushID(path.Path);
-                        ImGui.Selectable(path.Name);
+                        if (ImGui.Selectable(path.Name))
+                            deleteRequest = i;
+
                         ImGui.PopID();
                     }
+
+                    if (deleteRequest >= 0)
+                        curModePaths.RemoveAt(deleteRequest);
 
                     ImGui.EndListBox();
                 }
@@ -118,7 +127,8 @@ static class MassRenderWindow
 
             ImGui.Separator();
 
-            if (ImGui.Button("Render", StandardPopupButtons.ButtonSize))
+            if (ImGui.Button("Render", StandardPopupButtons.ButtonSize) &&
+                (levelPaths.Count > 0 || folderPaths.Count > 0))
             {
                 StartRender();
             }
@@ -128,6 +138,7 @@ static class MassRenderWindow
             {
                 IsWindowOpen = false;
                 levelPaths.Clear();
+                folderPaths.Clear();
                 ImGui.CloseCurrentPopup();
                 IsWindowOpen = false;
             }
