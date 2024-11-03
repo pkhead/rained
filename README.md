@@ -66,4 +66,4 @@ Report bugs and other complaints by creating an issue or pinging @chromosoze on 
 
 Pull requests are welcome.
 
-Documentation about the development setup is found [here](docs/developing.md).
+Documentation about the development setup is found [here](docs/en/developing.md).
