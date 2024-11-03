@@ -163,7 +163,7 @@ static class MassRenderWindow
 
         var massRender = new DrizzleMassRender(
             [..files],
-            limitParallelism ? 0 : parallelismLimit
+            limitParallelism ? parallelismLimit : 0
         );
 
         massRenderProc = new MassRenderProcessWindow(massRender);

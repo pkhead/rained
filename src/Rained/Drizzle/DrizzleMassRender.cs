@@ -65,6 +65,7 @@ class DrizzleMassRender
         cancel?.ThrowIfCancellationRequested();
 
         Log.Information("Starting render of {LevelCount} levels", levelPaths.Length);
+        Log.Information("Parallelism: {ThreadCount}", maxDegreeOfParallelism == 0 ? "unlimited" : maxDegreeOfParallelism);
         progress?.Report(new MassRenderBegan(levelPaths.Length));
         var sw = Stopwatch.StartNew();
 
@@ -79,7 +80,7 @@ class DrizzleMassRender
         var successes = 0;
         var done = 0;
 
-        Parallel.ForEach(levelPaths, s =>
+        Parallel.ForEach(levelPaths, parallelOptions, s =>
         {
             cancel?.ThrowIfCancellationRequested();
 
