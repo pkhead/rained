@@ -41,6 +41,7 @@ v2.4.0 (or v3.0.0, depending on the frequency of major updates):
 - Fully FeatuerdWorld editor
 
 Other features:
+- light map stretch
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
