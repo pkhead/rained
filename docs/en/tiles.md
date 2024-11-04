@@ -37,7 +37,9 @@ In order to place a tile, you first must select the tile you want to place in th
 
 With a tile selected and your mouse over the level view, a preview of the tile will display over your mouse which is called the "tile cursor". Pressing down the left mouse button will place down the tile at that position. and pressing down the right mouse button will remove the tile that is being hovered over. You can also place or remove a rectangular area of tiles by holding <kbd>Shift</kbd> before pressing either the left or right mouse button.
 
-You may switch work layers either by pressing <kbd>Tab</kbd> or interacting with the "Work Layer" input box located on the very top of the "Tile Selector" window. 
+!!! note
+
+    You may switch work layers either by pressing <kbd>Tab</kbd> or interacting with the "Work Layer" input box located on the very top of the "Tile Selector" window. 
 
 ### Geometry Specifications/Requirements
 Each tile specifies the pattern of geometry that the tile occupies. This is referred to as "geometry/tile specs", "geometry/tile requirements", or simply "specs". These specs in Rained are shown as green outlines behind the tile cursor in the level view. The specs for the first layer are shown as a bright green, and the specs for the second layer, if demanded by the tile, are shown as a dark green.
@@ -46,7 +48,7 @@ Each tile specifies the pattern of geometry that the tile occupies. This is refe
     ![Tile cursor preview of "Very Large Beam"](img//tile-cursor-white.png)
 </figure>
 
-The requirement of each individual cell should be obvious---as it shows an outline of the required geometry type at that cell---except for two cases:
+The requirement of each individual cell should be obvious—as it shows an outline of the required geometry type at that cell—except for two cases:
 
 - **Unspecified**: This will not show an outline at a given cell. This means that any kind of geometry is tolerated at that space, and if the tile is placed down with the "Force Geometry" modifier that space will not be modified.
 - **Air**: This will show as a cross, meaning that the geometry at that space must be an air cell.
@@ -55,7 +57,9 @@ The requirement of each individual cell should be obvious---as it shows an outli
 Normally, you will not be able to place down a tile if the geometry under the cursor does not meet the specifications for the selected tile. In this case, the cursor tile preview will be colored red instead of white. However, you can force Rained to place down the tile regardless of the underlying geometry if you have either the "Force Placement" or "Force Geometry" modifiers active.
 
 In order to activate the "Force Placement" modifier, you must have the <kbd>F</kbd> key held down. Once this is active, you may
-place down a tile regardless of if the underlying geometry fits the requirements of tile's specs. The "Force Geometry" modifier, activated by holding down the <kbd>G</kbd> key, will instead, upon placement, modify the geometry underneath the tile to fit the tile specs. This way, you don't have to labouriously manually place the geometry down for any large or complex tiles. Additionally, if you remove a tile with "Force Geometry" active, it will remove the tile's required geometry along with the tile itself.
+place down a tile regardless of if the underlying geometry fits the requirements of tile's specs.
+
+The "Force Geometry" modifier, activated by holding down the <kbd>G</kbd> key, will instead, upon placement, modify the geometry underneath the tile to fit the tile specs. This way, you don't have to labouriously manually place the geometry down for any large or complex tiles. Additionally, if you remove a tile with "Force Geometry" active, it will remove the tile's required geometry along with the tile itself.
 
 These modifiers also work with the rectangular-area fill/erase feature, but "Force Geometry" has a special behavior depending on if you tap the key for a short amount of time while the rectangle is active, or if you don't. If tapped, it will place the required geometry for the already-placed tiles underneath the rectangle, and close the rectangle. Otherwise, geometry-forced tiles will be placed if the modifier is held down when the mouse button is released.
 
@@ -65,16 +69,16 @@ Rain World handles tiles differently than one would intuit. Normally, a tile app
 
 **TODO: figure visually demonstrating tile bodies and heads**
 
-The center of every tile is the tile head, which is required for a tile to exist as it is the component that references the tile being rendered. The tile body is surrounded by tile heads each of store a reference to their corresponding tile head. Rained knows which portion of the texture to render for each tile body based by their position relative to its tile head. You may highlight each tile head in the level by enabling `View > Tile Heads`.
+The center of every tile is the tile head, which is required for a tile to exist as it is the component that references the tile being rendered. The tile head is surrounded by zero or more tile bodies, each of which store a reference to their corresponding tile head. Rained knows which portion of the texture to render for each tile body based by their position relative to its tile head. You may highlight each tile head in the level by enabling `View > Tile Heads`.
 
 It is valid for a tile to be missing some tile bodies. You can do so by force-placing another tile over another one, which will remove some tile bodies of the tile being overlapped. However, you cannot place a tile in such a way that it overwrites the tile head, no matter what modifier you use, since by doing so all tile bodies reference by the tile head will become invalid.
 
-In regards to rendering, tile bodies that are missing do not cause the render to be missing those parts of the rendered tile; the tile in its entirety will still be rendered. However, it does affect how the geometry at that tile body is rendered. Without a tile body the geometry will be rendered overlapping with the tile graphics, whereas with a tile body there will be no rendered geometry at that cell.
+In regards to rendering, tile bodies that are missing do not cause the render to be missing those parts of the rendered tile; the tile in its entirety will still be rendered. However, it does affect how the geometry at that tile body is rendered. Without a tile body, the geometry will be rendered overlapping with the tile graphics, whereas with a tile body there will be no rendered geometry at that cell.
 
 ### Tile Graphics
-The image displayed by default in Rained for the visual representation of tiles is not what actually gets rendered in-game. Rather, it is a crude representation of the tile. These images are, by defualt, used in place of the real tile graphics while editing the level due to concerns of performance and video memory. However, you can choose to have Rained render tile graphics using their actual in-game representation by toggling `View > Tile Graphics`. Out of the box, tiles will be colored using their respective category colors, but for a more accurate in-game representation you may also enable palette rendering through the `View > Palettes` window.
+The image displayed by default in Rained for the visual representation of tiles is not what actually gets rendered in-game. Rather, it is a crude representation of the tile. These images are, by default, used in place of the real tile graphics while editing the level due to concerns of performance and video memory. However, you can choose to have Rained render tile graphics using their actual in-game representation by toggling `View > Tile Graphics`. Out of the box, tiles will be colored using their respective category colors, but for a more accurate in-game representation you may also enable palette rendering through the `View > Palettes` window.
 
-Note that the tile graphics preview is inaccurate in regards to geometry rendering. When rendering, any cell that is occupied by a tile head or tile body will not have their geometry rendered so that the tile can display properly. This therefore means that if a tile requires solid geometry for any cell but has empty space in that portion of the graphic, Rained will display that cell as solid but in reality that cell will be invisible when rendering. A specific example of a tile that exhibits this behavior is "Ventilation Box Empty".
+Note that the tile graphics preview is inaccurate in regards to geometry rendering. When rendering, any cell that is occupied by a tile head or tile body will not have their geometry rendered so that the tile can display properly. This therefore means that if a tile requires solid geometry for any cell but has empty space in that portion of the graphic, Rained will display that cell as solid even though that cell will be invisible when rendering. A specific example of a tile that exhibits this behavior is "Ventilation Box Empty".
 
 <figure markdown="span">
     ![Ventilation Box Empty in Rained](img//ventbox-empty-preview.png)

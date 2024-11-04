@@ -1,11 +1,33 @@
 # Light
-In the light editor, you edit an image used to render shadows onto the level, called the "light map". The image has only dark areas and light areas. The dark areas of the image, represented in red in the editor, cast a shadow into the world. You can think of it as the stuff behind the camera that is casting a shadow into the viewable area.
+This is the editor used to control light and shadows in the level.
 
-Do note that the shadow projection shown in the light editor is not entirely accurate to what it will look like in-game, as when rendering the different depths of each sublayer will be accounted for.
+## Light angle
+**TODO: light angle screenshot**
 
-Light maps are usually fairly simple. As a basic template, if you have an interior room, the light map will be filled with shadow except for some holes where light peeks through. If you have an exterior room, the light map will be filled with light except for some stuff that normally sort of looks like shapes found in the level itself, like there's more of what you're seeing in the level behind the camera.
+The top-right corner of screen houses the window used to control the direction of the light as well as its distance. You can control the two parameters either using the sliders, interacting with the light ring using the mouse, or using WASD while holding <kbd>Shift</kbd>.
 
-## Light Angle
-There are also controls on the top-right that control the light angle. This is basically the angle light is coming from. It's probably best to have the dot come from somewhere near the top-left, since tiles have lighting information baked in and they assume the light comes from that area.
+What the light angle does is self-explanatory, but it should be noted that it's suggested to keep it near the top-left as tile/prop lighting normally assume that is the direction light is coming from.
 
-The radius of the ring with the dot on it basically controls how "head-on" the light angle is. This is known as "light flatness" or "light distance". If the radius of the ring that the dot resides on is larger, shadows will be longer. It's kind of similar to how shadow lengths change based on what time of day it is. If it's noon, the sun is directly overhead, so shadows are short and cast directly downwards. That corresponds to a smaller circle in the light editor. If it's sunset or sunrise, the sun is closer to the horizon and shadows will be longer. That corresponds to a larger circle.
+The light distance parameter, or otherwise known as "flatness", controls the length of shadows. As the parameter decreases, rendered shadows will become shorter. Inversely, as the parameter increases, rendered shadows will become longer. It is similar to the way shadows in real life behave based on the position of the sun. A overhead sun is what represents the light distance being zero, with shadows being very short. As the sun (or the point on the light ring) moves away from the center, shadows become longer.
+
+## Light map
+**TODO: light map screenshot**
+
+The level viewport is dedicated to the editing of the light map. It is a black-and-white image, with white areas (transparent in the editor) representing sunlight and black areas (red and translucent in the editor) represneting shadows. The image's shadow is casted onto the world, as if viewing the shadows casted by objects and structures behind the camera. The shadow projection shown in the light editor is not entirely accurate to what it will look like in-game, since it does not account for the different sublayer depths. But it is still a good approximation.
+
+Light maps are usually fairly simple. As a rule of thumb, if you have an interior room, the light map should be mostly filled with shadow except for some gaps or windows, small or large, where light peeks through. If you have an outside room, the light map will be mostly filled with light except for the shadows of some structures/motifs resembling those found in the level or region itself. As always, it is best to analyze the light maps of pre-existing rooms yourself.
+
+!!! note
+
+    If you notice the level is being rendered in complete darkness even though you have light in your lightmap, it's likely that you've disabled sunlight in the environment editor.
+
+### Brushes
+**TODO: image of the brush catalog**
+
+You edit this light map as if you were drawing an image in a paint editing program. You first select the brush shape that you want from the bottom-right, either by clicking on them or using WASD. Then, when you want to paint shadows, you hold down the left mouse button over the level viewport, and when you want to erase shadows, you hold down the right mouse button instead.
+
+The brush can also be scaled and rotated. To scale the brush, you hold down the <kbd>Q</kbd> key and move your mouse. To rotate the brush, you hold down the <kbd>E</kbd> key and move your mouse up or down. If you don't like this methodology, you can change the *Light editor control scheme* setting to "Keyboard". With that, you scale using the WASD keys, rotate clockwise by holding <kbd>E</kbd>, and rotate counter-clockwise by holding <kbd>Q</kbd>. Holding down <kbd>Shift</kbd> will make it faster.
+
+!!! note
+
+    Changing the setting to "Keyboard" also removes the ability to browse through the brush catalog using WASD.
