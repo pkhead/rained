@@ -12,7 +12,7 @@ static class PaletteWindow
         var prefs = RainEd.Instance.Preferences;
 
         ImGuiExt.CenterNextWindow(ImGuiCond.FirstUseEver);
-        if (ImGui.Begin("Palette Preview##Palette", ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize))
+        if (ImGui.Begin("Palettes", ref IsWindowOpen, ImGuiWindowFlags.AlwaysAutoResize))
         {
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 8.0f);
 

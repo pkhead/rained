@@ -541,16 +541,27 @@ static class EditorWindow
         }
     }
 
+    /// <summary>
+    /// Show miscellaneous windows that may be docked.
+    /// </summary>
     static void ShowMiscWindows()
     {
         ShortcutsWindow.ShowWindow();
+        PaletteWindow.ShowWindow();
+        LogsWindow.ShowWindow();
+    }
+
+    /// <summary>
+    /// Only show miscellaneous windows that cannot be docked since
+    /// they are either pop-ups or can be viewable without a level
+    /// active.
+    /// </summary>
+    static void ShowMiscFloatingWindows()
+    {
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
-        PaletteWindow.ShowWindow();
-        LogsWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
-        GuideViewerWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();
         InitErrorsWindow.ShowWindow();
@@ -633,6 +644,7 @@ static class EditorWindow
 
                         //ImGui.PopStyleVar();
                         RainEd.Instance.LevelView.Render();
+                        ShowMiscWindows();
 
                         //ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
                         ImGui.EndTabItem();
@@ -733,7 +745,7 @@ static class EditorWindow
             }
         }
 
-        ShowMiscWindows();
+        ShowMiscFloatingWindows();
 
         // prompt unsaved changes
         if (promptUnsavedChanges)
