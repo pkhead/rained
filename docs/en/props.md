@@ -5,9 +5,12 @@ Props are used similarly to tiles but with a higher degree of freedom for placem
 positioned into any of the 30 sublayers rather than only one of the 3 work layers. Additionally, props are also used to make destruction effects and place
 physically simulated ropes, tubes, and wires.
 
+!!! tip
+
+    Unlike tiles, props do not affect geometry. If you want a prop to be collidable, you must place fitting geometry and make it invisible. This is done by either using the Glass material, or filling them with an empty tile.
+
 ## Editing props
-You first must select the prop you want to place in the prop catalog, similar to how you would with tiles. Then, right-click in the level view to place
-it down.
+You first must select the prop you want to place in the prop catalog, similar to how you would with tiles. Then, to place it down, either right-click in the level view or press the <kbd>C</kbd> key.
 
 **TODO:** screenshot of a selected prop
 
@@ -27,9 +30,6 @@ individual prop of your desire by double-clicking and selecting it from the pop-
 You may also warp a prop as if editing it as an arbitrary quadrilateral. You do so by first activating Vertex Mode, done by pressing the <kbd>F</kbd> key.
 The outlines of props will then either turn white or green. You may manipulate the corners of white props as you please. Green-colored props are explained later.
 
-## Prop options
-TODO
-
 ## Prop types
 There are three different prop types:
 
@@ -43,14 +43,41 @@ This prop type determines how you can edit and interact with the prop.
 These props are signaled by a blue outline when they are selected. When Vertex Mode is on, they will instead have a white outline, meaning that you can warp
 them as usual.
 
+#### Destruction props
+These render differently than other props, rendering subtractively rather than additively. The presence of them in your
+level adds meaning to the **Render Order** option.
+
+#### Decals
+When rendering, decals paste its texture to whatever solid area the prop is intersecting with.
+
 ### Longs
 These props are signaled by a green outline when they are selected. You edit them as you would with standard props when Vertex Mode is off, but if Vertex Mode
-is on, you can't warp them as you would with a standard prop. Instead, you can only move drag two of their endpoints.
+is on, you can't warp them as you would with a standard prop. Instead, you can only move their endpoints.
 
 **TODO:** image of a long prop
 
 ### Rope-type props
-Rope-type props are similar to long props in terms of editing, but they also include a physics
+Rope-type props are similar to long props in terms of editing, but they also include a physically simulated rope. Each segment of the rope is displayed as
+a dot. To simulate the rope, hold down the Simulate button or the <kbd>Space</kbd> key. The rope will freeze once the button is let go.
+
+## Prop options
+
+The following is a list of all possible prop options. Note that not all props will have every option available.
+
+- **Render Order:** Affects the order the prop is rendered in if a destruction prop is in the level.
+- **Depth Offset:** The sublayer position of the prop, ranging from 0-29. The next work layer is reached every 10 units.
+- **Seed:** Seed used for procedural generation.
+- **Render Time:** Used to control whether or not the prop renders before or after effects.
+- **Custom Depth:** The size of the prop in terms of sublayers.
+- **Variation:** The variation of the prop used.
+- **Custom Color:** The color of the decal prop.
+- **Apply Color:** True if the prop should use its custom color.
+
+The following options are applicable only to rope-type props:
+
+- **Flexibility:** Controls the flexibility of the prop. Scaling the prop vertically does the same thing.
+- **Release:** Controls which end of the prop is not attached.
+- **Thickness:** The thickness of the rope.
 
 <!--
 Multiple props can be selected at once
