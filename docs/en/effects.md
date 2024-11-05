@@ -18,16 +18,20 @@ To create an effect, find the effect you want in the "Add Effect" window and cli
     <figcaption>Example BlackGoo effect matrix.</figcaption>
 </figure>
 
-In the editor, when you have an effect selected, you can paint green pixels in the "effect matrix" overlaid on top of the level view, which controls the strength of the effect at that area. Pink represents no effect, and green represents a stronger effect. Some effects, namely those in the "Plants (Individual)" category, have you place individual pixels instead of brushing over areas to create the effect.
+With an effect active, its effect matrix will be shown in the level view. The effect matrix controls the strength of the effect at certain locations, where
+pink represents no effect and green represents a stronger effect. You paint green by holding down the left mouse button, and you paint pink by holding down
+the right mouse button. You can change the radius of your brush by holding <kbd>Shift</kbd> and moving the scroll wheel.
+
+Some effects affect how you edit the effect matrix in a slightly different way. For example, when you create BlackGoo it creates a filled effect matrix
+rather than an empty one. Some effects, like BlackGoo and the ones in the "Plants (Individual)" category, only allow you to paint in the range of two values:
+full strength or no effect at all.
 
 ## Options
-Effects can be configured. TODO.
-
-### Common options
-Effects can use their own custom options, but the following is a list of common ones:
+Each instance of an effect has a set of configurable parameters that affect how they are rendered. Effects can use their own custom options,
+but the following is a list of common ones:
 
 - **Layers:** The layers that the effect will render in.
 - **3D:** TODO: what does 3d do
 - **Affect Gradients And Decals:** TODO: what does this do
-- **Color:** The effect color to use. "Dead" means that it'll instead use the normal level palette, making it indeed look gray and dead.
+- **Color:** The effect color to use for the plant. "Dead" means that it'll instead use the normal level palette, making it indeed look gray and dead.
 - **Seed:** Seed used for random number generation.
