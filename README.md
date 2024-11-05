@@ -8,7 +8,7 @@
 
 Another Rain World level editor. Read [this document](dist/README.md), which is bundled with every release package, for more information on how to use this software.
 
-Please note that the "main" branch is ahead of the latest release. If you want to access the repository
+Please note that the "main" branch is ahead of the latest release, but is in sync with Nightly. If you want to access the repository
 at the time of a certain release, use the Git tags system.
 
 ## Features
