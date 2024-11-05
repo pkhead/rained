@@ -470,7 +470,6 @@ static class EditorWindow
             {
                 if (ok)
                 {
-                    RainEd.Instance.AssetGraphics.ClearTextureCache();
                     drizzleRenderWindow = new DrizzleRenderWindow(false);
                 }
             }, false);

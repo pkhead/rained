@@ -80,6 +80,6 @@ public abstract class Resource : IDisposable
             _rctx.resourceList.QueueDispose(this);
         }
         
-        _disposed = false;
+        _disposed = true;
     }
 }

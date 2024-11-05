@@ -395,9 +395,7 @@ sealed class RainEd
     }
 
     public void LoadLevel(string path)
-    {
-        TryClearTextureCache();
-        
+    {        
         if (!string.IsNullOrEmpty(path))
         {
             Log.Information("Loading level {Path}...", path);
@@ -449,8 +447,6 @@ sealed class RainEd
     /// <param name="path"></param>
     public void SaveLevel(string path)
     {
-        TryClearTextureCache();
-
         Log.Information("Saving level to {Path}...", path);
         IsLevelLocked = true;
 
@@ -601,20 +597,6 @@ sealed class RainEd
         IsLevelLocked = false;
     }
 
-    /// <summary>
-    /// Checks if enough time has passed since the last call to
-    /// AssetGraphics.ClearTextureCache() before calling it.
-    /// </summary>
-    private void TryClearTextureCache()
-    {
-        // time interval: 5mins
-        if ((float)Raylib.GetTime() >= lastTexCacheClear + 60f*5f)
-        {
-            AssetGraphics.ClearTextureCache();
-            lastTexCacheClear = (float)Raylib.GetTime();
-        }
-    }
-
     private void SwitchTab(LevelTab? tab)
     {
         if (tab == _currentTab) return;
@@ -712,6 +694,7 @@ sealed class RainEd
             AsyncCloseWindowRequest();
         
         AssetGraphics.Maintenance();
+        AssetGraphics.CleanUpTextures();
         
         foreach (var f in deferredActions) f();
         deferredActions.Clear();

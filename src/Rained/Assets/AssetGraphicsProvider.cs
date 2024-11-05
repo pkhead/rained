@@ -6,8 +6,23 @@ using RectpackSharp;
 
 class AssetGraphicsProvider
 {
-    private readonly Dictionary<string, RlManaged.Texture2D?> tileTexCache = [];
-    private readonly Dictionary<string, RlManaged.Texture2D?> propTexCache = [];
+    record class CachedTexture(RlManaged.Texture2D? Texture)
+    {
+        private readonly RlManaged.Texture2D? texture = Texture;
+        private long lastAccess = Environment.TickCount64;
+
+        public RlManaged.Texture2D? Texture => texture;
+        public long LastAccess => lastAccess;
+
+        public RlManaged.Texture2D? Obtain()
+        {
+            lastAccess = Environment.TickCount64;
+            return Texture;
+        }
+    }
+
+    private readonly Dictionary<string, CachedTexture> tileTexCache = [];
+    private readonly Dictionary<string, CachedTexture> propTexCache = [];
     private readonly Dictionary<string, RlManaged.Image> _loadedTilePreviews = [];
 
     // tile previews are separate images...
@@ -78,8 +93,8 @@ class AssetGraphicsProvider
     /// <returns>The prop texture, or null if the graphics file was invalid or not found.</returns>
     public RlManaged.Texture2D? GetPropTexture(string assetName)
     {
-        if (propTexCache.TryGetValue(assetName, out RlManaged.Texture2D? texture))
-            return texture;
+        if (propTexCache.TryGetValue(assetName, out CachedTexture? texture))
+            return texture.Obtain();
 
         // find prop path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
@@ -90,21 +105,20 @@ class AssetGraphicsProvider
             texturePath = castPath!;
         }
 
-        texture = null;
-
         using var srcImage = RlManaged.Image.Load(texturePath);
         if (Raylib.IsImageReady(srcImage))
         {
             CropImage(srcImage);
-            texture = RlManaged.Texture2D.LoadFromImage(srcImage);
+            texture = new CachedTexture(RlManaged.Texture2D.LoadFromImage(srcImage));
         }
         else
         {
             Log.UserLogger.Warning($"Image {texturePath} is invalid or missing!");
+            texture = new CachedTexture(null);
         }
 
         propTexCache.Add(assetName, texture);
-        return texture;
+        return texture.Obtain();
     }
 
     /// <summary>
@@ -128,8 +142,8 @@ class AssetGraphicsProvider
     /// <returns>The tile texture, or null if the graphics file was invalid or not found.</returns>
     public RlManaged.Texture2D? GetTileTexture(string assetName)
     {
-        if (tileTexCache.TryGetValue(assetName, out RlManaged.Texture2D? texture))
-            return texture;
+        if (tileTexCache.TryGetValue(assetName, out CachedTexture? texture))
+            return texture.Obtain();
 
         // find tile path
         // for some reason, previews for drought props are in cast data instead of in the Props folder
@@ -145,15 +159,16 @@ class AssetGraphicsProvider
         if (Raylib.IsImageReady(srcImage))
         {
             CropImage(srcImage);
-            texture = RlManaged.Texture2D.LoadFromImage(srcImage);
+            texture = new CachedTexture(RlManaged.Texture2D.LoadFromImage(srcImage));
         }
         else
         {
             Log.UserLogger.Warning($"Image {texturePath} is invalid or missing!");
+            texture = new CachedTexture(null);
         }
 
         tileTexCache.Add(assetName, texture);
-        return texture;
+        return texture.Obtain();
     }
 
     private bool PackAtlas(TilePreviewAtlas atlas)
@@ -513,25 +528,47 @@ class AssetGraphicsProvider
     }
 
     /// <summary>
-    /// Clears the tile/prop texture cache.
+    /// Disposes tile/prop textures that haven't been used in a while.
     /// </summary>
-    public void ClearTextureCache()
+    public void CleanUpTextures()
     {
-        foreach (var atlas in _tilePreviewAtlases)
-            atlas.texture.Dispose();
+        var now = Environment.TickCount64;
+        const long Length = 30000; // 30 seconds
 
-        _tilePreviewAtlases.Clear();
-        _tilePreviewRects.Clear();
+        int clearCount = 0;
 
-        foreach (var tex in tileTexCache.Values)
-            tex?.Dispose();
+        // first, clean up tile textures
+        List<string> remove = [];
+        foreach (var (name, tex) in tileTexCache)
+        {
+            if ((now - tex.LastAccess) >= Length && tex.Texture is not null)
+            {
+                tex.Texture.Dispose();
+                remove.Add(name);
+                clearCount++;
+            }
+        }
 
-        foreach (var tex in propTexCache.Values)
-            tex?.Dispose();
-        
-        tileTexCache.Clear();
-        propTexCache.Clear();
-        _loadedTilePreviews.Clear();
+        foreach (var name in remove) tileTexCache.Remove(name);
+        remove.Clear();
+
+        // then, clean up prop textures
+        foreach (var (name, tex) in propTexCache)
+        {
+            if ((now - tex.LastAccess) >= Length && tex.Texture is not null)
+            {
+                tex.Texture.Dispose();
+                remove.Add(name);
+                clearCount++;
+            }
+        }
+
+        foreach (var name in remove) propTexCache.Remove(name);
+
+        if (clearCount > 0)
+        {
+            Log.Debug("Disposed {ClearCount} asset textures", clearCount);
+        }
     }
 
     /// <summary>
