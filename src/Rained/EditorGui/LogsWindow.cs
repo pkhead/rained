@@ -54,7 +54,7 @@ static class LogsWindow
                 bool showErrors = filters.HasFlag(Filters.Error);
 
                 if (wrap)
-                    ImGui.PushTextWrapPos(ImGui.GetContentRegionAvail().X);
+                    ImGui.PushTextWrapPos(ImGui.GetContentRegionAvail().X - 1f);
                 else
                     ImGui.PushTextWrapPos(float.PositiveInfinity);
                 
