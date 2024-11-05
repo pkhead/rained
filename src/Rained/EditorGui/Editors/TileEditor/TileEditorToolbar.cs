@@ -145,7 +145,9 @@ partial class TileEditor : IEditorMode
 
     private void RenderTilePreview(Tile tile)
     {
-        if (RainEd.Instance.Preferences.ViewPreviews)
+        var prefs = RainEd.Instance.Preferences;
+
+        if (prefs.ViewPreviews)
         {
             var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
             if (tileTexture is null)
@@ -156,10 +158,14 @@ partial class TileEditor : IEditorMode
             
             var previewWidth = totalTileWidth * 20;
             var previewHeight = totalTileHeight * 20;
-            previewHeight += totalTileHeight * 20;
+            if (prefs.ViewTileSpecsOnTooltip)
+            {
+                previewHeight += totalTileHeight * 20;
+                previewHeight += 3; // spacing inbetween graphics and geometry
+            }
             
             previewWidth += 2;
-            previewHeight += 5;
+            previewHeight += 2;
 
             if (_hoverPreview == null || _hoverPreview.Texture.Width != previewWidth || _hoverPreview.Texture.Height != previewHeight)
             {
@@ -184,13 +190,16 @@ partial class TileEditor : IEditorMode
                 new Color(255, 255, 255, 150));
             
             // then, draw tile specs
-            Rlgl.Translatef(0f, totalTileHeight * 20 + 3f, 0f);
-            Rlgl.Translatef(tile.BfTiles * 20f, tile.BfTiles * 20f, 0f);
-            DrawTileSpecs(tile, 0, 0,
-                tileSize: 20
-            );
-            Rlgl.PopMatrix();
+            if (prefs.ViewTileSpecsOnTooltip)
+            {
+                Rlgl.Translatef(0f, totalTileHeight * 20 + 3f, 0f);
+                Rlgl.Translatef(tile.BfTiles * 20f, tile.BfTiles * 20f, 0f);
+                DrawTileSpecs(tile, 0, 0,
+                    tileSize: 20
+                );
+            }
 
+            Rlgl.PopMatrix();
             Raylib.EndTextureMode();
             
             ImGuiExt.ImageRenderTextureScaled(_hoverPreview, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
@@ -202,7 +211,16 @@ partial class TileEditor : IEditorMode
                 goto renderPlaceholder;
                 
             var previewWidth = previewRect.Value.Width + 2;
-            var previewHeight = previewRect.Value.Height * 2 + 5;
+            float previewHeight;
+
+            if (prefs.ViewTileSpecsOnTooltip)
+            {
+                previewHeight = previewRect.Value.Height * 2 + 5;
+            }            
+            else
+            {
+                previewHeight = previewRect.Value.Height + 2;
+            }
             
             if (_hoverPreview == null || _hoverPreview.Texture.Width != previewWidth || _hoverPreview.Texture.Height != previewHeight)
             {
@@ -218,17 +236,22 @@ partial class TileEditor : IEditorMode
             Rlgl.PushMatrix();
             Rlgl.Translatef(1f, 1f, 0f);
             
+            // draw preview texture
             Raylib.DrawTextureRec(previewTexture, previewRect.Value, Vector2.Zero, tile.Category.Color);
 
-            Rlgl.Translatef(0f, previewRect.Value.Height + 3f, 0f);
-            DrawTileSpecs(tile, 0, 0,
-                tileSize: 16
-            );
-            Rlgl.PopMatrix();
+            // draw tile specs
+            if (prefs.ViewTileSpecsOnTooltip)
+            {
+                Rlgl.Translatef(0f, previewRect.Value.Height + 3f, 0f);
+                DrawTileSpecs(tile, 0, 0,
+                    tileSize: 16
+                );
+            }
 
+            Rlgl.PopMatrix();
             Raylib.EndTextureMode();
 
-            ImGuiExt.ImageRenderTexture(_hoverPreview);
+            ImGuiExt.ImageRenderTextureScaled(_hoverPreview, Vector2.One * Boot.PixelIconScale);
             //ImGuiExt.ImageRect(previewTexture!, previewWidth, previewHeight, previewRect.Value, tile.Category.Color);
         }
 

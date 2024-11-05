@@ -339,12 +339,16 @@ static class EditorWindow
                 {
                     var viewGfx = prefs.ViewTileGraphicPreview;
                     var viewSpecs = prefs.ViewTileSpecPreview;
+                    var specsTooltip = prefs.ViewTileSpecsOnTooltip;
 
                     if (ImGui.MenuItem("Graphics", null, ref viewGfx))
                         prefs.ViewTileGraphicPreview = viewGfx;
                     
                     if (ImGui.MenuItem("Geometry", null, ref viewSpecs))
                         prefs.ViewTileSpecPreview = viewSpecs;
+                    
+                    if (ImGui.MenuItem("Tooltip Geometry", null, ref specsTooltip))
+                        prefs.ViewTileSpecsOnTooltip = specsTooltip;
                     
                     ImGui.EndMenu();
                 }
