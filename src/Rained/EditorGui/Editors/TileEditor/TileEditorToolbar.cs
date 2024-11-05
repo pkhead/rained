@@ -550,6 +550,16 @@ partial class TileEditor : IEditorMode
         bool tileGfxPreview = prefs.ViewTileGraphicPreview;
         bool tileSpecPreview = prefs.ViewTileSpecPreview;
 
+        static float GetFitScale(int fbWidth, int fbHeight)
+        {
+            var winSize = ImGui.GetWindowSize() - new Vector2(0f, ImGui.GetFrameHeight())
+                - ImGui.GetStyle().WindowPadding * 2f;
+            float scale = Math.Min(winSize.X / fbWidth, winSize.Y / fbHeight);
+            scale = Math.Max(scale, 0.25f);
+
+            return scale;
+        }
+
         // window for tile graphics preview
         var previewWindowFlags = ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
         if (tileGfxPreview && selectionMode == SelectionMode.Tiles)
@@ -565,6 +575,7 @@ partial class TileEditor : IEditorMode
 
                     var fbWidth = totalTileWidth * 20;
                     var fbHeight = totalTileHeight * 20;
+                    var scale = GetFitScale(fbWidth, fbHeight);
 
                     if (_tileGfxRender is null ||
                         _tileGfxRender.Texture.Width != fbWidth ||
@@ -576,12 +587,14 @@ partial class TileEditor : IEditorMode
 
                     Raylib.BeginTextureMode(_tileGfxRender);
                     Raylib.ClearBackground(Color.Blank);
+                    Rlgl.PushMatrix();
                     RenderTileLayers(selectedTile);
+                    Rlgl.PopMatrix();
                     Raylib.EndTextureMode();
 
                     // render framebuffer into imgui
-                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth, -fbHeight + ImGui.GetFrameHeight())) / 2f);
-                    ImGuiExt.ImageRenderTexture(_tileGfxRender);
+                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth*scale, -fbHeight*scale + ImGui.GetFrameHeight())) / 2f);
+                    ImGuiExt.ImageRenderTextureScaled(_tileGfxRender, Vector2.One * scale);
                 }
             }
             ImGui.End();
@@ -597,18 +610,20 @@ partial class TileEditor : IEditorMode
                     // render tile specs into framebuffer
                     var fbWidth = selectedTile.Width * 20 + 8;
                     var fbHeight = selectedTile.Height * 20 + 8;
-
+                    var scale = GetFitScale(fbWidth, fbHeight);
+                    
                     if (_tileSpecRender is null ||
-                        _tileSpecRender.Texture.Width != fbWidth ||
-                        _tileSpecRender.Texture.Height != fbHeight)
+                        _tileSpecRender.Texture.Width != fbWidth * scale ||
+                        _tileSpecRender.Texture.Height != fbHeight * scale)
                     {
                         _tileSpecRender?.Dispose();
-                        _tileSpecRender = RlManaged.RenderTexture2D.Load(fbWidth, fbHeight);
+                        _tileSpecRender = RlManaged.RenderTexture2D.Load((int)(fbWidth * scale), (int)(fbHeight * scale));
                     }
 
                     Raylib.BeginTextureMode(_tileSpecRender);
                     Raylib.ClearBackground(Color.Blank);
                     Rlgl.PushMatrix();
+                    Rlgl.Scalef(scale, scale, 1f);
                     Rlgl.Translatef(4f, 4f, 0f);
                     DrawTileSpecs(selectedTile, 0, 0,
                         tileSize: 20
@@ -617,7 +632,7 @@ partial class TileEditor : IEditorMode
                     Raylib.EndTextureMode();
 
                     // render framebuffer into imgui
-                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth, -fbHeight + ImGui.GetFrameHeight())) / 2f);
+                    ImGui.SetCursorPos((ImGui.GetWindowSize() + new Vector2(-fbWidth*scale, -fbHeight*scale + ImGui.GetFrameHeight())) / 2f);
                     ImGuiExt.ImageRenderTexture(_tileSpecRender);
                 }
             }
