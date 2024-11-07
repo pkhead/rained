@@ -41,12 +41,12 @@ OBJECT_TYPE = {
     SCAVENGER_HOLE = 21
 }
 
----Get the current version number.
+---Get the current application version.
 ---@return string version The version number as a string 
 function rained.getVersion() end
 
----Get the current API version.
----@return integer major, integer minor
+---Get the current API version. This is separate from the application version.
+---@return integer major, integer minor, integer revision
 function rained.getApiVersion() end
 
 ---Show a notification to the user.

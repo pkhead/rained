@@ -10,6 +10,7 @@ static class LuaInterface
 {
     public const int VersionMajor = 2;
     public const int VersionMinor = 1;
+    public const int VersionRevision = 0;
     
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
@@ -131,7 +132,8 @@ static class LuaInterface
         {
             lua.PushInteger(VersionMajor);
             lua.PushInteger(VersionMinor);
-            return 2;
+            lua.PushInteger(VersionRevision);
+            return 3;
         });
         lua.SetField(-2, "getApiVersion");
 
