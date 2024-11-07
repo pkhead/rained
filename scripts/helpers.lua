@@ -37,22 +37,33 @@ local patterns = {
 ---@param right integer The right side of the rectangle.
 ---@param bottom integer The bottom side of the rectangle.
 ---@param forceModifier ForceModifier
-function module.patternBox(prefix, layer, left, top, right, bottom, forceModifier)
-    -- place corner tiles
-    rained.tiles.placeTile("Block Corner NW", left, top, layer, forceModifier)
-    rained.tiles.placeTile("Block Corner NE", right, top, layer, forceModifier)
-    rained.tiles.placeTile("Block Corner SE", right, bottom, layer, forceModifier)
-    rained.tiles.placeTile("Block Corner SW", left, bottom, layer, forceModifier)
-
-    -- fill sides
-    for x = left + 1, right - 1 do
-        rained.tiles.placeTile("Block Edge N", x, top, layer, forceModifier)
-        rained.tiles.placeTile("Block Edge S", x, bottom, layer, forceModifier)
+---@param placeBorder boolean? True if the border should be placed, false if not. (defaults to true)
+function module.patternBox(prefix, layer, left, top, right, bottom, forceModifier, placeBorder)
+    if placeBorder == nil then
+        placeBorder = true
     end
 
-    for y = top + 1, bottom - 1 do
-        rained.tiles.placeTile("Block Edge W", left, y, layer, forceModifier)
-        rained.tiles.placeTile("Block Edge E", right, y, layer, forceModifier)
+    if placeBorder then
+        rained.tiles.placeTile("Block Corner NW", left, top, layer, forceModifier)
+        rained.tiles.placeTile("Block Corner NE", right, top, layer, forceModifier)
+        rained.tiles.placeTile("Block Corner SE", right, bottom, layer, forceModifier)
+        rained.tiles.placeTile("Block Corner SW", left, bottom, layer, forceModifier)
+
+        -- fill sides
+        for x = left + 1, right - 1 do
+            rained.tiles.placeTile("Block Edge N", x, top, layer, forceModifier)
+            rained.tiles.placeTile("Block Edge S", x, bottom, layer, forceModifier)
+        end
+
+        for y = top + 1, bottom - 1 do
+            rained.tiles.placeTile("Block Edge W", left, y, layer, forceModifier)
+            rained.tiles.placeTile("Block Edge E", right, y, layer, forceModifier)
+        end
+    else
+        left = left - 1
+        top = top - 1
+        right = right + 1
+        bottom = bottom + 1
     end
 
     -- the following code is translated straight from the lingo code
