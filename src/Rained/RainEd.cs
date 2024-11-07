@@ -203,7 +203,7 @@ sealed class RainEd
                 Exception actualException = e.IsNetException ? e.InnerException! : e;
                 string? stackTrace = actualException.Data["Traceback"] as string;
 
-                var displayMsg = "RainEd could not start due to an error in a Lua script:\n\n" + actualException.Message;
+                var displayMsg = "Rained could not start due to an error in a Lua script:\n\n" + actualException.Message;
                 if (stackTrace is not null)
                 {
                     displayMsg += "\n" + stackTrace;
