@@ -10,6 +10,9 @@ namespace Rained;
 
 static class LuaInterface
 {
+    public const int VersionMajor = 2;
+    public const int VersionMinor = 1;
+
     // this is the C# side for autotiles programmed in Lua
     class LuaAutotile : Autotile
     {
@@ -443,6 +446,15 @@ static class LuaInterface
         luaState.Push(new Func<string>(GetVersion));
         lua.SetField(-2, "getVersion");
 
+        // function getApiVersion
+        LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+        {
+            lua.PushInteger(VersionMajor);
+            lua.PushInteger(VersionMinor);
+            return 2;
+        });
+        lua.SetField(-2, "getApiVersion");
+
         luaState.Push(new Action<string>(ShowNotification));
         lua.SetField(-2, "alert");
 
@@ -513,6 +525,73 @@ static class LuaInterface
                 RainEd.Instance.LevelView.Renderer.InvalidateGeo(x, y, layer);
             });
             lua.SetField(-2, "setGeo");
+
+            // function getMaterial
+            luaState.Push(static (int x, int y, int layer) =>
+            {
+                layer--;
+                if (!RainEd.Instance.Level.IsInBounds(x, y)) return null;
+                if (layer < 0 || layer > 2) return null;
+
+                var idx = RainEd.Instance.Level.Layers[layer, x, y].Material;
+                if (idx == 0) return null;
+                return RainEd.Instance.MaterialDatabase.GetMaterial(idx)?.Name;
+            });
+            lua.SetField(-2, "getMaterial");
+
+            // function setMaterial
+            LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+            {
+                var x = (int) lua.CheckNumber(1);
+                var y = (int) lua.CheckNumber(2);
+                var layer = (int) lua.CheckNumber(3) - 1;
+                string? matName = lua.IsNil(4) ? null : lua.CheckString(4);
+
+                int matId;
+                if (matName is not null)
+                {
+                    var mat = RainEd.Instance.MaterialDatabase.GetMaterial(matName);
+                    if (mat is null)
+                        return lua.ArgumentError(4, $"'{matName}' is not a recognized material");
+                    matId = mat.ID;
+                }
+                else
+                {
+                    matId = 0;
+                }
+
+                if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+                if (layer < 0 || layer > 2) return 0;
+                RainEd.Instance.Level.Layers[layer, x, y].Material = matId;
+                return 0;
+            });
+            lua.SetField(-2, "setMaterial");
+
+            // function setMaterialId
+            LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+            {
+                var x = (int) lua.CheckNumber(1);
+                var y = (int) lua.CheckNumber(2);
+                var layer = (int) lua.CheckNumber(3) - 1;
+                var matId = (int) lua.CheckNumber(4);
+                
+                if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+                if (layer < 0 || layer > 2) return 0;
+                RainEd.Instance.Level.Layers[layer, x, y].Material = matId;
+                return 0;
+            });
+            lua.SetField(-2, "setMaterialId");
+
+            // function getMaterial
+            luaState.Push(static (int x, int y, int layer) =>
+            {
+                layer--;
+                if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+                if (layer < 0 || layer > 2) return 0;
+
+                return RainEd.Instance.Level.Layers[layer, x, y].Material;
+            });
+            lua.SetField(-2, "getMaterialId");
 
             // function getObjects
             LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
