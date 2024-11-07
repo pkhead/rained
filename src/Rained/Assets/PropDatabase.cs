@@ -539,9 +539,9 @@ class PropDatabase
     {
         if (allProps.ContainsKey(prop.Name))
         {
-            if (lineNo == -2) // dumb idk
+            if (lineNo == -2) // dumb ik
             {
-                Log.UserLogger.Warning("Tiles: Already added prop {PropName}", prop.Name);
+                Log.UserLogger.Warning("Tile As Prop: Already added prop {PropName}", prop.Name);
             }
             else
             {
@@ -566,8 +566,14 @@ class PropDatabase
     }
 
     // helper function to create error message with line inforamtion
-    private static string ErrorString(int lineNo, string msg)
-            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+    static string ErrorString(int lineNo, string msg)
+    {
+        if (lineNo == -1)
+            return "[EMBEDDED]: " + msg;
+        else
+            return "Line " + lineNo + ": " + msg;
+    }
+
 
     private void InitProps(TileDatabase tileDatabase)
     {

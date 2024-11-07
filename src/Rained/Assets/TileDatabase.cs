@@ -166,7 +166,12 @@ class TileDatabase
 
         // helper function to create error string with line information
         static string ErrorString(int lineNo, string msg)
-            => "Line " + (lineNo == -1 ? "[UNKNOWN]" : lineNo) + ": " + msg; 
+        {
+            if (lineNo == -1)
+                return "[EMBEDDED]: " + msg;
+            else
+                return "Line " + lineNo + ": " + msg;
+        }
 
         void ProcessLine(string line, int lineNo)
         {
@@ -264,7 +269,7 @@ class TileDatabase
                 }
                 catch (Exception e)
                 {
-                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile '{Name}': {ErrorMessage}"), name, e.Message);
+                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile {Name}: {ErrorMessage}"), name, e.Message);
                 }
             }
         }
