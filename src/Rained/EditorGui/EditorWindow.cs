@@ -178,36 +178,9 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
 
-                var recentFiles = RainEd.Instance.Preferences.RecentFiles;
                 if (ImGui.BeginMenu("Open Recent"))
                 {
-                    if (recentFiles.Count == 0)
-                    {
-                        ImGui.MenuItem("(no recent files)", false);
-                    }
-                    else
-                    {
-                        // traverse backwards
-                        for (int i = recentFiles.Count - 1; i >= 0; i--)
-                        {
-                            var filePath = recentFiles[i];
-
-                            if (ImGui.MenuItem(Path.GetFileName(filePath)))
-                            {
-                                if (File.Exists(filePath))
-                                {
-                                    RainEd.Instance.LoadLevel(filePath);
-                                }
-                                else
-                                {
-                                    ShowNotification("File could not be accessed");
-                                    recentFiles.RemoveAt(i);
-                                }
-                            }
-
-                        }
-                    }
-
+                    RecentLevelsList();
                     ImGui.EndMenu();
                 }
 
@@ -387,22 +360,9 @@ static class EditorWindow
                     Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.md"));
                 }
 
-                if (ImGui.MenuItem("Documentation..."))
+                if (ImGui.MenuItem("Manual..."))
                 {
-                    #if DEBUG
-                    var docPath = Path.Combine("dist", "docs", "en", "index.html");
-                    #else
-                    var docPath = Path.Combine(Boot.AppDataPath, "docs", "en", "index.html");
-                    #endif
-
-                    if (File.Exists(docPath))
-                    {
-                        Platform.OpenURL(docPath);
-                    }
-                    else
-                    {
-                        ShowNotification("Could not open documentation.");
-                    }
+                    OpenManual();
                 }
 
                 if (ImGui.MenuItem("About..."))
@@ -415,6 +375,14 @@ static class EditorWindow
 
             ImGui.EndMainMenuBar();
         }
+    }
+
+    private static void OpenLevelPrompt()
+    {
+        OpenLevelBrowser(FileBrowser.OpenMode.Read, static (paths) =>
+        {
+            if (paths.Length > 0) RainEd.Instance.LoadLevel(paths[0]);
+        });
     }
 
     private static void HandleShortcuts()
@@ -431,10 +399,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Open))
         {
-            OpenLevelBrowser(FileBrowser.OpenMode.Read, static (paths) =>
-            {
-                if (paths.Length > 0) RainEd.Instance.LoadLevel(paths[0]);
-            });
+            OpenLevelPrompt();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
@@ -941,48 +906,26 @@ static class EditorWindow
 
         ImGui.SetCursorPosY(RainedLogo.Height - 100f);
         var btnSize = new Vector2(-0.00001f, 0f);
-        ImGui.Button("New Level", btnSize);
-        ImGui.Button("Open Level", btnSize);
-        ImGui.Button("Manual", btnSize);
+
+        if (ImGui.Button("New Level...", btnSize))
+            NewLevelWindow.OpenWindow();
+        
+        if (ImGui.Button("Open Level...", btnSize))
+            OpenLevelPrompt();
+        
+        if (ImGui.Button("Manual...", btnSize))
+            OpenManual();
 
         // recent levels list
         ImGui.Text("Recent Levels");
         var listBoxSize = ImGui.GetContentRegionAvail();
-        var recentFiles = RainEd.Instance.Preferences.RecentFiles;
-
         // if new version was found, make space for the text
         if (newVersion)
             listBoxSize.Y -= ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemSpacing.Y + 1;
         
         if (ImGui.BeginListBox("##RecentLevels", listBoxSize))
         {
-            if (recentFiles.Count == 0)
-            {
-                ImGui.MenuItem("(no recent files)", false);
-            }
-            else
-            {
-                // traverse backwards
-                for (int i = recentFiles.Count - 1; i >= 0; i--)
-                {
-                    var filePath = recentFiles[i];
-
-                    if (ImGui.MenuItem(Path.GetFileName(filePath)))
-                    {
-                        if (File.Exists(filePath))
-                        {
-                            RainEd.Instance.LoadLevel(filePath);
-                        }
-                        else
-                        {
-                            ShowNotification("File could not be accessed");
-                            recentFiles.RemoveAt(i);
-                        }
-                    }
-
-                }
-            }
-
+            RecentLevelsList();
             ImGui.EndListBox();
         }
 
@@ -995,5 +938,55 @@ static class EditorWindow
         }
 
         ImGui.EndChild();
+    }
+
+    private static void RecentLevelsList()
+    {
+        var recentFiles = RainEd.Instance.Preferences.RecentFiles;
+
+        if (recentFiles.Count == 0)
+        {
+            ImGui.MenuItem("(no recent files)", false);
+        }
+        else
+        {
+            // traverse backwards
+            for (int i = recentFiles.Count - 1; i >= 0; i--)
+            {
+                var filePath = recentFiles[i];
+
+                if (ImGui.MenuItem(Path.GetFileName(filePath)))
+                {
+                    if (File.Exists(filePath))
+                    {
+                        RainEd.Instance.LoadLevel(filePath);
+                    }
+                    else
+                    {
+                        ShowNotification("File could not be accessed");
+                        recentFiles.RemoveAt(i);
+                    }
+                }
+
+            }
+        }
+    }
+
+    private static void OpenManual()
+    {
+        #if DEBUG
+        var docPath = Path.Combine("dist", "docs", "en", "index.html");
+        #else
+        var docPath = Path.Combine(Boot.AppDataPath, "docs", "en", "index.html");
+        #endif
+
+        if (File.Exists(docPath))
+        {
+            Platform.OpenURL(docPath);
+        }
+        else
+        {
+            ShowNotification("Could not open documentation.");
+        }
     }
 }
