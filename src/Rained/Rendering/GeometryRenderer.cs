@@ -104,6 +104,8 @@ class EditorGeometryRenderer
     // build the mesh for the sub-rectangle of a layer
     private void MeshGeometry(out Glib.StandardMesh? geoMesh, int layer, int subL, int subT, int subR, int subB)
     {
+        var viewBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
+
         var vertices = verticesBuf;
         var colors = colorsBuf;
         var indices = indicesBuf;
@@ -233,7 +235,7 @@ class EditorGeometryRenderer
                                 );
                             }
                         }
-                        else if (renderInfo.ViewObscuredBeams)
+                        else if (viewBeams)
                         {
                             // extra logic to signify that there is a beam here
                             // when beam is completely covered

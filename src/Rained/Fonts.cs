@@ -14,6 +14,12 @@ static class Fonts
 
     private static readonly string FontDirectory = Path.Combine(Boot.AppDataPath, "config","fonts");
 
+    /// <summary>
+    /// Set to true if the font should be reloaded before the start
+    /// of the next frame.
+    /// </summary>
+    public static bool FontReloadQueued = false;
+
     public static void UpdateAvailableFonts()
     {
         List<string> fontFiles = [];
@@ -28,7 +34,7 @@ static class Fonts
         availableFontPaths = [..fontFiles];
     }
 
-    public static void ReloadFonts()
+    public static void ReloadFonts(float fontSize)
     {
         var oldFont = GetCurrentFont();
 
@@ -42,10 +48,10 @@ static class Fonts
         foreach (var file in availableFontPaths)
         {
             var fullFilePath = Path.Combine(FontDirectory, file + ".ttf");
-            var font = io.Fonts.AddFontFromFileTTF(fullFilePath, 13f * Boot.WindowScale);
+            var font = io.Fonts.AddFontFromFileTTF(fullFilePath, fontSize * Boot.WindowScale);
             loadedFontList.Add(font);
 
-            var bigFont = io.Fonts.AddFontFromFileTTF(fullFilePath, 26f * Boot.WindowScale);
+            var bigFont = io.Fonts.AddFontFromFileTTF(fullFilePath, 2f * fontSize * Boot.WindowScale);
             loadedBigFontsList.Add(bigFont);
         }
 

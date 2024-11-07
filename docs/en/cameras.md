@@ -28,7 +28,7 @@ Each camera has a movable point at each of their four corners, represented by th
 
 Each dot is the location of the relevant vertex of the camera quad, and the outer ring for each camera angle represents the maximum distance the dot can be from its origin. If you want to move the point outside of its bounds, you can do so by holding <kbd>Shift</kbd>. Alternatively, you can enable the *Unlock camera angles* setting to invert that behavior.
 
-The green quad itself controls how the perspective of the level render will be warped. Each render is comprised of 30 sublayers. The fifth closest sublayer of each render is always a perfect rectangle, but the farther back the sublayer is, the more intense the warping becomes, until the furthest layer's shape matches the green quad. In effect, it allows the editor to control the angle the level is viewed at, as well as how weak or strong the perspective effect will be.
+The green quad itself controls how the perspective of the level render will be warped. Each render is comprised of 30 sublayers. The fifth closest sublayer of each render is always a perfect rectangle, but the farther back the sublayer is, the more intense the warping becomes, until the furthest layer's shape matches the green quad. In effect, it allows the editor to control the angle the level is viewed at in a psuedo-3D fashion, as well as how weak or strong the perspective effect will be.
 
 Below is an image explaining camera angles alongside a visual:
 

@@ -31,7 +31,7 @@ sealed class RainEd
     public static Glib.RenderContext RenderContext => Glib.RenderContext.Instance!;
 
     public readonly RlManaged.Texture2D LevelGraphicsTexture;
-    private readonly LevelWindow levelView;
+    private LevelWindow? levelView;
 
     private readonly string prefFilePath;
     public UserPreferences Preferences;
@@ -59,15 +59,12 @@ sealed class RainEd
     public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value); }
 
     public Level Level { get => CurrentTab!.Level; }
-    public LevelWindow LevelView { get => levelView; }
+    public LevelWindow LevelView { get => levelView!; }
     public ChangeHistory.ChangeHistory ChangeHistory { get => CurrentTab!.ChangeHistory; }
 
     // this is used to set window IsEventDriven to true
     // when the user hasn't interacted with the window in a while
     private float remainingActiveTime = 2f;
-
-    // time since the last AssetGraphics.ClearTextureCache() call
-    private float lastTexCacheClear = 0f;
     
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
@@ -196,14 +193,14 @@ sealed class RainEd
             // (trying to get lua error messages to show as soon as possible)
             try
             {
-                LuaInterface.Initialize();
+                LuaScripting.LuaInterface.Initialize();
             }
             catch (LuaScriptException e)
             {
                 Exception actualException = e.IsNetException ? e.InnerException! : e;
                 string? stackTrace = actualException.Data["Traceback"] as string;
 
-                var displayMsg = "RainEd could not start due to an error in a Lua script:\n\n" + actualException.Message;
+                var displayMsg = "Rained could not start due to an error in a Lua script:\n\n" + actualException.Message;
                 if (stackTrace is not null)
                 {
                     displayMsg += "\n" + stackTrace;
@@ -245,13 +242,7 @@ sealed class RainEd
         if (TileDatabase.HasErrors || PropDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
 
-        _tabs.Add(new LevelTab());
-        _currentTab = _tabs[0];      
-
         LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
-
-        Log.Information("Creating level view...");
-        levelView = new LevelWindow();
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
@@ -296,11 +287,6 @@ sealed class RainEd
             {
                 Log.Information("Version check successful!");
                 Log.Information(LatestVersionInfo.VersionName);
-
-                if (LatestVersionInfo.VersionName != Version)
-                {
-                    EditorWindow.ShowNotification("New version available! Check the About window for more info.");
-                }
             }
             else
             {
@@ -347,7 +333,7 @@ sealed class RainEd
         Autotiles.SaveConfig();
 
         // save user preferences
-        levelView.SavePreferences(Preferences);
+        levelView?.SavePreferences(Preferences);
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
         Preferences.ShowPaletteWindow = PaletteWindow.IsWindowOpen;
 
@@ -357,7 +343,7 @@ sealed class RainEd
         Preferences.DataPath = AssetDataPath;
         
         UserPreferences.SaveToFile(Preferences, prefFilePath);
-        levelView.Renderer.Dispose();
+        levelView?.Renderer.Dispose();
     }
 
     public void ShowPathInSystemBrowser(string path, bool reveal)
@@ -436,8 +422,8 @@ sealed class RainEd
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            levelView.ReloadLevel();
-            levelView.LoadView();
+
+            levelView!.LoadView();
         }
     }
 
@@ -606,6 +592,7 @@ sealed class RainEd
         _currentTab = tab;
         if (_currentTab is not null)
         {
+            levelView ??= new LevelWindow();
             levelView.ReloadLevel();
             levelView.Renderer.ReloadLevel();
             UpdateTitle();
@@ -620,8 +607,15 @@ sealed class RainEd
 
     private void UpdateTitle()
     {
-        string levelName = CurrentTab!.Name;
-        Raylib.SetWindowTitle($"Rained - {levelName}");
+        if (CurrentTab is not null)
+        {
+            string levelName = CurrentTab.Name;
+            Raylib.SetWindowTitle($"Rained - {levelName}");
+        }
+        else
+        {
+            Raylib.SetWindowTitle("Rained");
+        }
     }
 
     /// <summary>

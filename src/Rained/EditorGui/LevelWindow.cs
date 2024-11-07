@@ -70,7 +70,7 @@ class LevelWindow
         get
         {
             var renderer = RainEd.Instance.LevelView.Renderer;
-            if (renderer.Palette >= 0)
+            if (renderer.UsePalette)
             {
                 return renderer.GetPaletteColor(PaletteColor.Sky);
             }
@@ -85,7 +85,7 @@ class LevelWindow
     public static Color GeoColor(int alpha)
     {
         var renderer = RainEd.Instance.LevelView.Renderer;
-        if (renderer.Palette >= 0)
+        if (renderer.UsePalette)
         {
             var col = renderer.GetPaletteColor(PaletteColor.Black);
             return new Color(col.R, col.G, col.B, (byte)alpha);
@@ -103,7 +103,7 @@ class LevelWindow
 
         var renderer = RainEd.Instance.LevelView.Renderer;
         Color col;
-        if (renderer.Palette >= 0)
+        if (renderer.UsePalette)
         {
             col = renderer.GetPaletteColor(PaletteColor.Black);
         }
@@ -146,10 +146,6 @@ class LevelWindow
         editorModes.Add(new PropEditor(this));
 
         // load user preferences
-        Renderer.ViewGrid = RainEd.Instance.Preferences.ViewGrid;
-        Renderer.ViewObscuredBeams = RainEd.Instance.Preferences.ViewObscuredBeams;
-        Renderer.ViewTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
-        Renderer.ViewCameras = RainEd.Instance.Preferences.ViewCameras;
         Renderer.Palette = RainEd.Instance.Preferences.UsePalette ? RainEd.Instance.Preferences.PaletteIndex : -1;
         Renderer.FadePalette = RainEd.Instance.Preferences.PaletteFadeIndex;
         Renderer.PaletteMix = RainEd.Instance.Preferences.PaletteFade;
@@ -157,14 +153,9 @@ class LevelWindow
 
     public void SavePreferences(UserPreferences prefs)
     {
-        prefs.ViewGrid = Renderer.ViewGrid;
-        prefs.ViewObscuredBeams = Renderer.ViewObscuredBeams;
-        prefs.ViewTileHeads = Renderer.ViewTileHeads;
-        prefs.ViewCameras = Renderer.ViewCameras;
-
         // i suppose this is redundant, as the PaletteWindow automatically
         // updates the values in the prefs json
-        prefs.UsePalette = Renderer.Palette != -1;
+        prefs.UsePalette = Renderer.UsePalette;
         prefs.PaletteFadeIndex = Renderer.FadePalette;
         prefs.PaletteFade = Renderer.PaletteMix;
         

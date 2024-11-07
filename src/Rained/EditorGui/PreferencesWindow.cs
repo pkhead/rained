@@ -340,6 +340,20 @@ static class PreferencesWindow
                     ImGui.EndCombo();
                 }
 
+                var fontSize = prefs.FontSize;
+                if (ImGui.InputInt("Font size", ref fontSize))
+                    prefs.FontSize = fontSize;
+                
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                    Fonts.FontReloadQueued = true;
+                
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                if (ImGui.BeginItemTooltip())
+                {
+                    ImGui.Text("The default value for this is 13.");
+                    ImGui.EndTooltip();
+                }
 
                 ImGui.PopItemWidth();
             }

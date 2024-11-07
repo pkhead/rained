@@ -3,6 +3,7 @@ local helpers = require("helpers")
 -- setup autotile data
 local autotile = rained.tiles.createAutotile("Alt Grate box", "Pattern Boxes")
 autotile.type = "rect"
+autotile:addToggleOption("border", "Place Border", true)
 
 -- Rained will not allow the user to use this autotile
 -- if any of the tiles in this table are not installed
@@ -48,5 +49,5 @@ autotile.requiredTiles = {
 ---@param bottom integer The Y coordinate of the bottom side of the rectangle.
 ---@param forceModifier ForceModifier Force-placement mode, as a string. Can be nil, "force", or "geometry".
 function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
-    helpers.patternBox("AltGrate", layer, left, top, right, bottom, forceModifier)
+    helpers.patternBox("AltGrate", layer, left, top, right, bottom, forceModifier, autotile:getOption("border"))
 end

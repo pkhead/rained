@@ -74,6 +74,9 @@ static class EditorWindow
     private static float notifFlash = 0f;
     private static int timerDelay = 10;
 
+    private static bool homeTab = true;
+    private static bool switchToHomeTab = false;
+
     private static DrizzleRenderWindow? drizzleRenderWindow = null;
     private static LevelResizeWindow? levelResizeWin = null;
     public static LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
@@ -175,36 +178,9 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
 
-                var recentFiles = RainEd.Instance.Preferences.RecentFiles;
                 if (ImGui.BeginMenu("Open Recent"))
                 {
-                    if (recentFiles.Count == 0)
-                    {
-                        ImGui.MenuItem("(no recent files)", false);
-                    }
-                    else
-                    {
-                        // traverse backwards
-                        for (int i = recentFiles.Count - 1; i >= 0; i--)
-                        {
-                            var filePath = recentFiles[i];
-
-                            if (ImGui.MenuItem(Path.GetFileName(filePath)))
-                            {
-                                if (File.Exists(filePath))
-                                {
-                                    RainEd.Instance.LoadLevel(filePath);
-                                }
-                                else
-                                {
-                                    ShowNotification("File could not be accessed");
-                                    recentFiles.RemoveAt(i);
-                                }
-                            }
-
-                        }
-                    }
-
+                    RecentLevelsList();
                     ImGui.EndMenu();
                 }
 
@@ -297,25 +273,33 @@ static class EditorWindow
 
                 ImGui.Separator();
 
-                var renderer = RainEd.Instance.LevelView.Renderer;
-
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", renderer.ViewGrid);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
-
-                if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
+                Rendering.LevelEditRender? renderer = null;
+                if (RainEd.Instance.CurrentTab is not null)
                 {
-                    renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
-                    renderer.InvalidateGeo(0);
-                    renderer.InvalidateGeo(1);
-                    renderer.InvalidateGeo(2);
+                    renderer = RainEd.Instance.LevelView.Renderer;
                 }
 
-                if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", prefs.ViewGrid);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", prefs.ViewCameras);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
+
+                if (ImGui.MenuItem("Obscured Beams", null, prefs.ViewObscuredBeams))
                 {
-                    renderer.ViewTileHeads = !renderer.ViewTileHeads;
+                    prefs.ViewObscuredBeams = !prefs.ViewObscuredBeams;
+
+                    if (renderer is not null)
+                    {
+                        renderer.InvalidateGeo(0);
+                        renderer.InvalidateGeo(1);
+                        renderer.InvalidateGeo(2);
+                    }
+                }
+
+                if (ImGui.MenuItem("Tile Heads", null, prefs.ViewTileHeads))
+                {
+                    prefs.ViewTileHeads = !prefs.ViewTileHeads;
                 }
 
                 ImGui.Separator();
@@ -353,6 +337,11 @@ static class EditorWindow
                     ImGui.EndMenu();
                 }
 
+                if (ImGui.MenuItem("Home", !homeTab))
+                {
+                    homeTab = true;
+                    switchToHomeTab = true;
+                }
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
@@ -371,22 +360,9 @@ static class EditorWindow
                     Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.md"));
                 }
 
-                if (ImGui.MenuItem("Documentation..."))
+                if (ImGui.MenuItem("Manual..."))
                 {
-                    #if DEBUG
-                    var docPath = Path.Combine("dist", "docs", "en", "index.html");
-                    #else
-                    var docPath = Path.Combine(Boot.AppDataPath, "docs", "en", "index.html");
-                    #endif
-
-                    if (File.Exists(docPath))
-                    {
-                        Platform.OpenURL(docPath);
-                    }
-                    else
-                    {
-                        ShowNotification("Could not open documentation.");
-                    }
+                    OpenManual();
                 }
 
                 if (ImGui.MenuItem("About..."))
@@ -401,13 +377,20 @@ static class EditorWindow
         }
     }
 
+    private static void OpenLevelPrompt()
+    {
+        OpenLevelBrowser(FileBrowser.OpenMode.Read, static (paths) =>
+        {
+            if (paths.Length > 0) RainEd.Instance.LoadLevel(paths[0]);
+        });
+    }
+
     private static void HandleShortcuts()
     {
         if (RainEd.Instance.IsLevelLocked) return;
         
         var fileActive = RainEd.Instance.CurrentTab is not null;
         var prefs = RainEd.Instance.Preferences;
-        var renderer = RainEd.Instance.LevelView.Renderer;
 
         if (KeyShortcuts.Activated(KeyShortcut.New))
         {
@@ -416,10 +399,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Open))
         {
-            OpenLevelBrowser(FileBrowser.OpenMode.Read, static (paths) =>
-            {
-                if (paths.Length > 0) RainEd.Instance.LoadLevel(paths[0]);
-            });
+            OpenLevelPrompt();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
@@ -485,7 +465,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGrid))
         {
-            renderer.ViewGrid = !renderer.ViewGrid;
+            prefs.ViewGrid = !prefs.ViewGrid;
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewTiles))
@@ -500,7 +480,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewCameras))
         {
-            renderer.ViewCameras = !renderer.ViewCameras;
+            prefs.ViewCameras = !prefs.ViewCameras;
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGraphics))
@@ -611,6 +591,31 @@ static class EditorWindow
                 // if a tab switch was forced by outside code setting TabIndex
                 bool tabChanged = _prevTab != RainEd.Instance.CurrentTab;
                 var anyTabActive = false;
+
+                // home tab
+                if (homeTab)
+                {
+                    var tabFlags = ImGuiTabItemFlags.None;
+
+                    if (switchToHomeTab)
+                    {
+                        tabFlags |= ImGuiTabItemFlags.SetSelected;
+                        _prevTab = null;
+                        switchToHomeTab = false;
+                    }
+                    
+                    if (ImGui.BeginTabItem("Home", ref homeTab, tabFlags))
+                    {
+                        if (!tabChanged)
+                        {
+                            RainEd.Instance.CurrentTab = null;
+                            _prevTab = null;
+                        }
+
+                        HomeTab();
+                        ImGui.EndTabItem();
+                    }
+                }
 
                 var tabIndex = 0;
                 foreach (var tab in RainEd.Instance.Tabs.ToArray())
@@ -887,5 +892,101 @@ static class EditorWindow
         }
 
         return true;
+    }
+
+    public static void HomeTab()
+    {
+        var childSize = new Vector2(RainedLogo.Width, RainedLogo.Height - 100f + ImGui.GetFrameHeight() * 16f);
+        ImGui.SetCursorPos((ImGui.GetWindowSize() - childSize) / 2f);
+        ImGui.BeginChild("Contents", childSize);
+
+        var newVersion = RainEd.Instance.LatestVersionInfo is not null && RainEd.Instance.LatestVersionInfo.VersionName != RainEd.Version;
+
+        RainedLogo.Draw();
+
+        ImGui.SetCursorPosY(RainedLogo.Height - 100f);
+        var btnSize = new Vector2(-0.00001f, 0f);
+
+        if (ImGui.Button("New Level...", btnSize))
+            NewLevelWindow.OpenWindow();
+        
+        if (ImGui.Button("Open Level...", btnSize))
+            OpenLevelPrompt();
+        
+        if (ImGui.Button("Manual...", btnSize))
+            OpenManual();
+
+        // recent levels list
+        ImGui.Text("Recent Levels");
+        var listBoxSize = ImGui.GetContentRegionAvail();
+        // if new version was found, make space for the text
+        if (newVersion)
+            listBoxSize.Y -= ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemSpacing.Y + 1;
+        
+        if (ImGui.BeginListBox("##RecentLevels", listBoxSize))
+        {
+            RecentLevelsList();
+            ImGui.EndListBox();
+        }
+
+        // show new version
+        if (newVersion)
+        {
+            ImGui.Text("New version available!");
+            ImGui.SameLine();
+            ImGuiExt.LinkText(RainEd.Instance.LatestVersionInfo!.VersionName, RainEd.Instance.LatestVersionInfo.GitHubReleaseUrl);
+        }
+
+        ImGui.EndChild();
+    }
+
+    private static void RecentLevelsList()
+    {
+        var recentFiles = RainEd.Instance.Preferences.RecentFiles;
+
+        if (recentFiles.Count == 0)
+        {
+            ImGui.MenuItem("(no recent files)", false);
+        }
+        else
+        {
+            // traverse backwards
+            for (int i = recentFiles.Count - 1; i >= 0; i--)
+            {
+                var filePath = recentFiles[i];
+
+                if (ImGui.MenuItem(Path.GetFileName(filePath)))
+                {
+                    if (File.Exists(filePath))
+                    {
+                        RainEd.Instance.LoadLevel(filePath);
+                    }
+                    else
+                    {
+                        ShowNotification("File could not be accessed");
+                        recentFiles.RemoveAt(i);
+                    }
+                }
+
+            }
+        }
+    }
+
+    private static void OpenManual()
+    {
+        #if DEBUG
+        var docPath = Path.Combine("dist", "docs", "en", "index.html");
+        #else
+        var docPath = Path.Combine(Boot.AppDataPath, "docs", "en", "index.html");
+        #endif
+
+        if (File.Exists(docPath))
+        {
+            Platform.OpenURL(docPath);
+        }
+        else
+        {
+            ShowNotification("Could not open documentation.");
+        }
     }
 }

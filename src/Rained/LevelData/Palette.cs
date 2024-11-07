@@ -18,7 +18,7 @@ struct PaletteShadeColors
     public Color Shaded;
 }
 
-record Palette
+record class Palette
 {
     public readonly Color SkyColor;
     public readonly Color FogColor;

@@ -41,9 +41,13 @@ OBJECT_TYPE = {
     SCAVENGER_HOLE = 21
 }
 
----Get the current version number.
+---Get the current application version.
 ---@return string version The version number as a string 
 function rained.getVersion() end
+
+---Get the current API version. This is separate from the application version.
+---@return integer major, integer minor, integer revision
+function rained.getApiVersion() end
 
 ---Show a notification to the user.
 ---@param msg string The message to show
@@ -81,6 +85,34 @@ function rained.cells.getGeo(x, y, layer) end
 ---@param layer integer The given layer, in the range [1, 3].
 ---@param geo integer The geometry type of a cell.
 function rained.cells.setGeo(x, y, layer, geo) end
+
+---Set the material of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@param material string The name of the desired material. Nil to clear.
+function rained.cells.setMaterial(x, y, layer, material) end
+
+---Get the name of a cell's material.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@return string name The name of the material, or nil if there was no material there.
+function rained.cells.getMaterial(x, y, layer) end
+
+---Set the material ID of a given cell.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@param material integer The ID of the material. Zero to clear.
+function rained.cells.setMaterialId(x, y, layer, material) end
+
+---Get the name of a cell's material ID.
+---@param x integer
+---@param y integer
+---@param layer integer The given layer, in the range [1, 3].
+---@return integer id The ID of the material, or 0 if there was no material there.
+function rained.cells.getMaterialId(x, y, layer) end
 
 ---Get the geometry objects of a given cell.
 ---@param x integer
