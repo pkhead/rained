@@ -13,14 +13,17 @@ Bugs:
   after testing render save prompt bug fix...
 
 v2.2.0:
-- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
 - radial menu for view toggle
+- show entrance numbers (ctrl+e)
+- toggle for showing shortcuts in tile editor
+
+v2.2.x:
+- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
 - effects previews
 - optional download from solar's repo
-- option to use "legacy" shortcut icons
-- asset manager crap
 
 v2.3.0 (or later):
+- asset manager crap
 - favorite tiles&props
 - please finally add the geo editing stuff
   - ctrl+C to initiate copy mode... simplifies ui
