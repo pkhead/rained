@@ -169,7 +169,7 @@ namespace Rained
                     }
                     
                     Fonts.UpdateAvailableFonts();
-                    Fonts.ReloadFonts();
+                    Fonts.ReloadFonts(prefs?.FontSize ?? 13f);
                 };
 
                 window.Load += () =>
@@ -331,12 +331,13 @@ namespace Rained
 
                     while (app.Running)
                     {
-                        // update fonts if scale changed
+                        // update fonts if scale changed or reload was requested
                         var io = ImGui.GetIO();
-                        if (WindowScale != curWindowScale)
+                        if (WindowScale != curWindowScale || Fonts.FontReloadQueued)
                         {
+                            Fonts.FontReloadQueued = false;
                             curWindowScale = WindowScale;
-                            Fonts.ReloadFonts();
+                            Fonts.ReloadFonts(app.Preferences.FontSize);
                             ImGuiController!.RecreateFontDeviceTexture();
                         }
 

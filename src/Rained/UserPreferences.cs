@@ -257,6 +257,7 @@ class UserPreferences
 
     public string Theme { get; set; }
     public string Font { get; set; }
+    public int FontSize { get; set; } = 13;
     public float ContentScale { get; set; }
     public bool ImGuiMultiViewport { get; set; }
     public bool Vsync { get; set; } = false;
