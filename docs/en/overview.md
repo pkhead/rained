@@ -8,6 +8,24 @@ Levels are created in the level editor are then are rendered into:
 
 The files rendered for the game are incompatible with the files for the level editor, and vice versa.
 
+## Creating a level
+<figure markdown="span">
+        ![The "New Level" window](img/new-level.png)
+        <figcaption>The "New Level" window.</figpcation>
+</figure>
+
+This is the window where you configure the options for a newly created level. It has several options:
+
+- **Width/Height**: This is the desired width and height of the level in grid units.
+- **Screen Width/Screen Height**: This is the desired width and height of the level in screens. Below are the formulas used for grid unit/screen conversion.
+
+        Width = 52 * Screens + 20
+        Height = 40 * Screens + 3
+
+- **Border Tiles**: Controls the distance from the edge for each side of the level border. The purpose of this is explained [shortly afterwards](#border).
+- **Fill Layers**: Controls which layers you want to be filled with solid geometry.
+- **Auto-place Cameras**: If checked, will automatically place one or more cameras to fit the level bounds. If unchecked, instead only one camera will be placed at a location independent of the level creation parameters.
+
 ## Level viewport
 <figure markdown="span">
         ![The Level viewport](img/level-view.png)
@@ -20,7 +38,7 @@ You can zoom in and out by using the scroll wheel, the buttons in the View menu,
 ## Border
 Rain World levels have a border which dictates the region of the level that is interactable in-game. The border is displayed in Rained as a white rectangle.
 
-Anything outside of the border rectangle will appear in the .png renders of the level, but will not be present in the .txt file describing the geometry of the level. As such, creatures interacting with geometry outside of the level border will either pass through solid blocks or stand on thin air, depending on the closest block that is inside the border at a given position. Any objects in the geometry editor that is outside of the border will be colored red instead of white, indicating that the object will have no effect in-game.
+Anything outside of the border rectangle will appear in the .png renders of the level, but will not be present in the .txt file describing the geometry of the level. As such, the area outside of the border is non-interactable. Creatures attempting to interact with geometry outside of the level border will either pass through solid blocks or stand on thin air, depending on the closest block that is inside the border at their position. Any objects placed in the geometry editor that is outside of the border will be colored red instead of white, indicating that the object will have no effect in-game.
 
 ## Resizing
 Pressing the "Resize Level" button in the **Edit** menu will open this window:
@@ -36,7 +54,7 @@ Pressing the "Resize Level" button in the **Edit** menu will open this window:
         Height = 40 * Screens + 3
 
 - **Anchors**: Controls the origin point of the resize operation. It can be set to one of the four corners of the level, the centers of the four edges, or the center of the level.
-- **Border Tiles**: Controls the offset from the level's edge for each edge of the level border.
+- **Border Tiles**: Controls the distance from the edge for each side of the level border.
 
 ## Edit modes
 Each level has several aspects that can be edited in separate "edit modes", also called "editors" by most people.
