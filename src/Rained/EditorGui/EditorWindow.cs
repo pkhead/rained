@@ -647,7 +647,7 @@ static class EditorWindow
                             _prevTab = null;
                         }
 
-                        ImGui.Text("Home sweet home");
+                        HomeTab();
                         ImGui.EndTabItem();
                     }
                 }
@@ -927,5 +927,73 @@ static class EditorWindow
         }
 
         return true;
+    }
+
+    public static void HomeTab()
+    {
+        var childSize = new Vector2(RainedLogo.Width, RainedLogo.Height - 100f + ImGui.GetFrameHeight() * 16f);
+        ImGui.SetCursorPos((ImGui.GetWindowSize() - childSize) / 2f);
+        ImGui.BeginChild("Contents", childSize);
+
+        var newVersion = RainEd.Instance.LatestVersionInfo is not null && RainEd.Instance.LatestVersionInfo.VersionName != RainEd.Version;
+
+        RainedLogo.Draw();
+
+        ImGui.SetCursorPosY(RainedLogo.Height - 100f);
+        var btnSize = new Vector2(-0.00001f, 0f);
+        ImGui.Button("New Level", btnSize);
+        ImGui.Button("Open Level", btnSize);
+        ImGui.Button("Manual", btnSize);
+
+        // recent levels list
+        ImGui.Text("Recent Levels");
+        var listBoxSize = ImGui.GetContentRegionAvail();
+        var recentFiles = RainEd.Instance.Preferences.RecentFiles;
+
+        // if new version was found, make space for the text
+        if (newVersion)
+            listBoxSize.Y -= ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemSpacing.Y + 1;
+        
+        if (ImGui.BeginListBox("##RecentLevels", listBoxSize))
+        {
+            if (recentFiles.Count == 0)
+            {
+                ImGui.MenuItem("(no recent files)", false);
+            }
+            else
+            {
+                // traverse backwards
+                for (int i = recentFiles.Count - 1; i >= 0; i--)
+                {
+                    var filePath = recentFiles[i];
+
+                    if (ImGui.MenuItem(Path.GetFileName(filePath)))
+                    {
+                        if (File.Exists(filePath))
+                        {
+                            RainEd.Instance.LoadLevel(filePath);
+                        }
+                        else
+                        {
+                            ShowNotification("File could not be accessed");
+                            recentFiles.RemoveAt(i);
+                        }
+                    }
+
+                }
+            }
+
+            ImGui.EndListBox();
+        }
+
+        // show new version
+        if (newVersion)
+        {
+            ImGui.Text("New version available!");
+            ImGui.SameLine();
+            ImGuiExt.LinkText(RainEd.Instance.LatestVersionInfo!.VersionName, RainEd.Instance.LatestVersionInfo.GitHubReleaseUrl);
+        }
+
+        ImGui.EndChild();
     }
 }
