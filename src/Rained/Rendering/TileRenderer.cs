@@ -115,7 +115,7 @@ class TileRenderer
     public void PreviewRender(int layer, int alpha)
     {
         var level = RainEd.Instance.Level;
-        var drawTileHeads = renderInfo.ViewTileHeads;
+        var drawTileHeads = RainEd.Instance.Preferences.ViewTileHeads;
         int viewL = (int) Math.Floor(renderInfo.ViewTopLeft.X);
         int viewT = (int) Math.Floor(renderInfo.ViewTopLeft.Y);
         int viewR = (int) Math.Ceiling(renderInfo.ViewBottomRight.X);
@@ -225,7 +225,7 @@ class TileRenderer
             }
 
             // highlight tile heads
-            if (renderInfo.ViewTileHeads)
+            if (drawTileHeads)
             {
                 foreach (var tileRender in tileRenders)
                 {
@@ -480,7 +480,7 @@ class TileRenderer
         }
 
         // highlight tile heads
-        if (renderInfo.ViewTileHeads)
+        if (RainEd.Instance.Preferences.ViewTileHeads)
         {
             foreach (var tileRender in tileRenders)
             {

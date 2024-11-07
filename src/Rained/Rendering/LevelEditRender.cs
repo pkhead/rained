@@ -37,11 +37,6 @@ class LevelEditRender : IDisposable
     private readonly RainEd editor;
     private Level Level { get => editor.Level; }
 
-    public bool ViewGrid = true;
-    public bool ViewObscuredBeams = false;
-    public bool ViewTileHeads = false;
-    public bool ViewCameras = false;
-
     public Vector2 ViewTopLeft;
     public Vector2 ViewBottomRight;
     public float ViewZoom = 1f;
@@ -807,7 +802,7 @@ class LevelEditRender : IDisposable
 
     public void RenderGrid()
     {
-        if (!ViewGrid) return;
+        if (!RainEd.Instance.Preferences.ViewGrid) return;
 
         var rctx = RainEd.RenderContext!;
 
@@ -893,7 +888,7 @@ class LevelEditRender : IDisposable
 
     public void RenderCameraBorders()
     {
-        if (!ViewCameras) return;
+        if (!RainEd.Instance.Preferences.ViewCameras) return;
 
         var camBorderMode = RainEd.Instance.Preferences.CameraBorderMode;
         bool both = camBorderMode == CameraBorderModeOption.Both;

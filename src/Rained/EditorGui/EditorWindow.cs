@@ -74,6 +74,9 @@ static class EditorWindow
     private static float notifFlash = 0f;
     private static int timerDelay = 10;
 
+    private static bool homeTab = true;
+    private static bool switchToHomeTab = false;
+
     private static DrizzleRenderWindow? drizzleRenderWindow = null;
     private static LevelResizeWindow? levelResizeWin = null;
     public static LevelResizeWindow? LevelResizeWindow { get => levelResizeWin; }
@@ -297,25 +300,33 @@ static class EditorWindow
 
                 ImGui.Separator();
 
-                var renderer = RainEd.Instance.LevelView.Renderer;
-
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", renderer.ViewGrid);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", renderer.ViewCameras);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
-
-                if (ImGui.MenuItem("Obscured Beams", null, renderer.ViewObscuredBeams))
+                Rendering.LevelEditRender? renderer = null;
+                if (RainEd.Instance.CurrentTab is not null)
                 {
-                    renderer.ViewObscuredBeams = !renderer.ViewObscuredBeams;
-                    renderer.InvalidateGeo(0);
-                    renderer.InvalidateGeo(1);
-                    renderer.InvalidateGeo(2);
+                    renderer = RainEd.Instance.LevelView.Renderer;
                 }
 
-                if (ImGui.MenuItem("Tile Heads", null, renderer.ViewTileHeads))
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGrid, "Grid", prefs.ViewGrid);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewTiles, "Tiles", prefs.ViewTiles);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", prefs.ViewCameras);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
+
+                if (ImGui.MenuItem("Obscured Beams", null, prefs.ViewObscuredBeams))
                 {
-                    renderer.ViewTileHeads = !renderer.ViewTileHeads;
+                    prefs.ViewObscuredBeams = !prefs.ViewObscuredBeams;
+
+                    if (renderer is not null)
+                    {
+                        renderer.InvalidateGeo(0);
+                        renderer.InvalidateGeo(1);
+                        renderer.InvalidateGeo(2);
+                    }
+                }
+
+                if (ImGui.MenuItem("Tile Heads", null, prefs.ViewTileHeads))
+                {
+                    prefs.ViewTileHeads = !prefs.ViewTileHeads;
                 }
 
                 ImGui.Separator();
@@ -353,6 +364,11 @@ static class EditorWindow
                     ImGui.EndMenu();
                 }
 
+                if (ImGui.MenuItem("Home", !homeTab))
+                {
+                    homeTab = true;
+                    switchToHomeTab = true;
+                }
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
@@ -407,7 +423,6 @@ static class EditorWindow
         
         var fileActive = RainEd.Instance.CurrentTab is not null;
         var prefs = RainEd.Instance.Preferences;
-        var renderer = RainEd.Instance.LevelView.Renderer;
 
         if (KeyShortcuts.Activated(KeyShortcut.New))
         {
@@ -485,7 +500,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGrid))
         {
-            renderer.ViewGrid = !renderer.ViewGrid;
+            prefs.ViewGrid = !prefs.ViewGrid;
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewTiles))
@@ -500,7 +515,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewCameras))
         {
-            renderer.ViewCameras = !renderer.ViewCameras;
+            prefs.ViewCameras = !prefs.ViewCameras;
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGraphics))
@@ -611,6 +626,31 @@ static class EditorWindow
                 // if a tab switch was forced by outside code setting TabIndex
                 bool tabChanged = _prevTab != RainEd.Instance.CurrentTab;
                 var anyTabActive = false;
+
+                // home tab
+                if (homeTab)
+                {
+                    var tabFlags = ImGuiTabItemFlags.None;
+
+                    if (switchToHomeTab)
+                    {
+                        tabFlags |= ImGuiTabItemFlags.SetSelected;
+                        _prevTab = null;
+                        switchToHomeTab = false;
+                    }
+                    
+                    if (ImGui.BeginTabItem("Home", ref homeTab, tabFlags))
+                    {
+                        if (!tabChanged)
+                        {
+                            RainEd.Instance.CurrentTab = null;
+                            _prevTab = null;
+                        }
+
+                        ImGui.Text("Home sweet home");
+                        ImGui.EndTabItem();
+                    }
+                }
 
                 var tabIndex = 0;
                 foreach (var tab in RainEd.Instance.Tabs.ToArray())
