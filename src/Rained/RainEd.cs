@@ -396,6 +396,7 @@ sealed class RainEd
                     _tabs.Add(tab);
                     CurrentTab = tab;
                     Log.Information("Done!");
+                    levelView!.LoadView();
                 }
                 else
                 {
@@ -407,6 +408,7 @@ sealed class RainEd
                         var tab = new LevelTab(loadRes.Level, path);
                         _tabs.Add(tab);
                         CurrentTab = tab;
+                        levelView!.LoadView();
                     };
                 }
 
@@ -422,8 +424,6 @@ sealed class RainEd
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-
-            levelView!.LoadView();
         }
     }
 
