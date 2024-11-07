@@ -1,7 +1,6 @@
 using System.Reflection;
 using KeraLua;
-
-namespace Rained;
+namespace Rained.LuaScripting;
 
 /// <summary>
 /// Class used to push C# functions to the Lua state.
@@ -36,7 +35,6 @@ static class LuaHelpers
 
     private static readonly KeraLua.LuaFunction wrapperGcDelegate = new KeraLua.LuaFunction(WrapperGCDelegate);
     private static readonly KeraLua.LuaFunction wrapperCallDelegate = new KeraLua.LuaFunction(WrapperCallDelegate);
-    private static readonly KeraLua.LuaFunction wrapperMtDelegate = new KeraLua.LuaFunction(MetatableDelegate);
 
     public static void Init(Lua lua)
     {
@@ -45,7 +43,7 @@ static class LuaHelpers
         lua.PushCFunction(gcDelegate);
         lua.SetField(-2, "__gc");
 
-        lua.PushCFunction(MetatableDelegate);
+        lua.PushCFunction(mtDelegate);
         lua.SetField(-2, "__metatable");
 
         lua.Pop(1);
@@ -55,7 +53,7 @@ static class LuaHelpers
         lua.PushCFunction(wrapperGcDelegate);
         lua.SetField(-2, "__gc");
 
-        lua.PushCFunction(MetatableDelegate);
+        lua.PushCFunction(mtDelegate);
         lua.SetField(-2, "__metatable");
 
         lua.Pop(1);

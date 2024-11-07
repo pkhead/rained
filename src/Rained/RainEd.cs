@@ -196,7 +196,7 @@ sealed class RainEd
             // (trying to get lua error messages to show as soon as possible)
             try
             {
-                LuaInterface.Initialize();
+                LuaScripting.LuaInterface.Initialize();
             }
             catch (LuaScriptException e)
             {
