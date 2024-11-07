@@ -70,7 +70,7 @@ class LevelWindow
         get
         {
             var renderer = RainEd.Instance.LevelView.Renderer;
-            if (renderer.Palette >= 0)
+            if (renderer.UsePalette)
             {
                 return renderer.GetPaletteColor(PaletteColor.Sky);
             }
@@ -85,7 +85,7 @@ class LevelWindow
     public static Color GeoColor(int alpha)
     {
         var renderer = RainEd.Instance.LevelView.Renderer;
-        if (renderer.Palette >= 0)
+        if (renderer.UsePalette)
         {
             var col = renderer.GetPaletteColor(PaletteColor.Black);
             return new Color(col.R, col.G, col.B, (byte)alpha);
@@ -103,7 +103,7 @@ class LevelWindow
 
         var renderer = RainEd.Instance.LevelView.Renderer;
         Color col;
-        if (renderer.Palette >= 0)
+        if (renderer.UsePalette)
         {
             col = renderer.GetPaletteColor(PaletteColor.Black);
         }
@@ -164,7 +164,7 @@ class LevelWindow
 
         // i suppose this is redundant, as the PaletteWindow automatically
         // updates the values in the prefs json
-        prefs.UsePalette = Renderer.Palette != -1;
+        prefs.UsePalette = Renderer.UsePalette;
         prefs.PaletteFadeIndex = Renderer.FadePalette;
         prefs.PaletteFade = Renderer.PaletteMix;
         

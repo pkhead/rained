@@ -21,32 +21,19 @@ static class PaletteWindow
 
             if (ImGui.Checkbox("Enabled", ref usePalette))
             {
-                prefs.UsePalette = usePalette;
-
-                if (usePalette)
-                    renderer.Palette = prefs.PaletteIndex;
-                else
-                    renderer.Palette = -1;
+                prefs.UsePalette = renderer.UsePalette = usePalette;
             }
 
             int paletteIndex = prefs.PaletteIndex;
             if (ImGui.InputInt("Palette", ref paletteIndex))
             {
-                paletteIndex = Math.Clamp(paletteIndex, 0, renderer.Palettes.Length - 1);
-                prefs.PaletteIndex = paletteIndex;
-
-                if (prefs.UsePalette)
-                    renderer.Palette = paletteIndex;
-                else
-                    renderer.Palette = -1;
+                prefs.PaletteIndex = renderer.Palette = paletteIndex;
             }
 
             int fadePalette = prefs.PaletteFadeIndex;
             if (ImGui.InputInt("Fade Palette", ref fadePalette))
             {
-                fadePalette = Math.Clamp(fadePalette, 0, renderer.Palettes.Length - 1);
-                prefs.PaletteFadeIndex = fadePalette;
-                renderer.FadePalette = fadePalette;
+                prefs.PaletteFadeIndex = renderer.FadePalette = fadePalette;
             }
 
             float fadeAmt = prefs.PaletteFade;

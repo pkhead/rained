@@ -352,7 +352,7 @@ class TileRenderer
         // palette rendering mode
         bool renderPalette;
 
-        if (renderInfo.Palette >= 0)
+        if (renderInfo.UsePalette)
         {
             renderPalette = true;
             shader = Shaders.PaletteShader;

@@ -56,10 +56,14 @@ class LevelEditRender : IDisposable
 
     private readonly RlManaged.Texture2D bigChainSegment;
 
+    public bool UsePalette = false;
     public int Palette = 0;
-    public int FadePalette = -1;
+    public int FadePalette = 1;
     public float PaletteMix = 0f;
-    public readonly Palette[] Palettes;
+
+    private readonly Dictionary<int, Palette> Palettes;
+    private readonly Palette dummyPalette = new();
+
     public Glib.Texture PaletteTexture => paletteTexture;
     private readonly Glib.Texture paletteTexture;
     private readonly Glib.Image _paletteImgBuf; // for updating paletteTexture
@@ -69,42 +73,36 @@ class LevelEditRender : IDisposable
         editor = RainEd.Instance;
 
         // load palettes
-        var palettes = new List<Palette>();
+        var palettes = new Dictionary<int, Palette>();
         foreach (var filePath in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "assets", "palettes")))
         {
-            var match = Regex.Match(Path.GetFileName(filePath), @"palette(\d+).png");
-            if (match is not null)
+            int paletteNumber = 0;
+            bool validFilename = false;
+
+            var fileName = Path.GetFileName(filePath);
+            if (fileName[^4..] == ".png" && fileName[..7] == "palette")
             {
-                if (match.Groups.Count > 1 && int.TryParse(match.Groups[1].Value, CultureInfo.InvariantCulture, out int paletteNumber))
-                {
-                    Palette? palette = null;
+                validFilename = int.TryParse(fileName[7..^4], CultureInfo.InvariantCulture, out paletteNumber);
+            }
 
-                    try
-                    {
-                        palette = new Palette(filePath);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.UserLogger.Error("Could not load palette {PaletteNumber}: {Exception}", paletteNumber, e);
-                    }
-
-                    if (palette is not null)
-                    {
-                        while (palettes.Count < paletteNumber) palettes.Add(new Palette());
-                        if (paletteNumber >= palettes.Count)
-                            palettes.Add(new Palette(filePath));
-                        else
-                            palettes[paletteNumber] = new Palette(filePath);
-                    }
-                }
-                else
+            if (validFilename)
+            {
+                try
                 {
-                    Log.UserLogger.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
+                    palettes[paletteNumber] = new Palette(filePath);
                 }
+                catch (Exception e)
+                {
+                    Log.UserLogger.Error("Could not load palette {PaletteNumber}: {Exception}", paletteNumber, e);
+                }
+            }
+            else
+            {
+                Log.UserLogger.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
             }
         }
         
-        Palettes = [..palettes];
+        Palettes = palettes;
 
         // create palette texture which will be computed and sent to the palette shader
         // (Glib.PixelFormat.RGB does not work for some reason)
@@ -168,6 +166,14 @@ class LevelEditRender : IDisposable
     }
     */
 
+    public Palette GetPalette(int index)
+    {
+        if (Palettes.TryGetValue(index, out Palette? p))
+            return p;
+        else
+            return dummyPalette;
+    }
+
     private bool IsInBorder(int x, int y)
     {
         return
@@ -205,7 +211,7 @@ class LevelEditRender : IDisposable
 
     public Color GetSunColor(PaletteLightLevel lightLevel, int sublayer, int index)
     {
-        var p = Palettes[index].SunPalette;
+        var p = GetPalette(index).SunPalette;
         return lightLevel switch
         {
             PaletteLightLevel.Lit => p[sublayer].Lit,
@@ -217,7 +223,7 @@ class LevelEditRender : IDisposable
 
     public Color GetPaletteColor(PaletteColor colorName, int index)
     {
-        var p = Palettes[index];
+        var p = GetPalette(index);
         return colorName switch
         {
             PaletteColor.Sky => p.SkyColor,
@@ -256,13 +262,13 @@ class LevelEditRender : IDisposable
 
     public Color GetSunColor(PaletteLightLevel lightLevel, int sublayer)
     {
-        if (Palette == -1) return new Color(0, 0, 0, 0);
+        if (!UsePalette) return new Color(0, 0, 0, 0);
         return GetSunColorMix(lightLevel, sublayer, Palette, FadePalette, PaletteMix);
     }
 
     public Color GetPaletteColor(PaletteColor colorName)
     {
-        if (Palette == -1) return new Color(0, 0, 0, 0);
+        if (!UsePalette) return new Color(0, 0, 0, 0);
         return GetPaletteColorMix(colorName, Palette, FadePalette, PaletteMix);
     }
     #endregion
@@ -547,7 +553,7 @@ class LevelEditRender : IDisposable
         bool renderPalette;
 
         // palette rendering mode
-        if (Palette >= 0)
+        if (UsePalette)
         {
             renderPalette = true;
             UpdatePaletteTexture();
