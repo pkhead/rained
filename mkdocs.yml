@@ -20,6 +20,7 @@ nav:
       - Light: light.md
       - Effects: effects.md
       - Props: props.md
+    - Rendering your level: rendering.md
     - Playing your level: playing-your-level.md
     - Further reading: resources.md
   - Developing: developing.md

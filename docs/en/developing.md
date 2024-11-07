@@ -3,7 +3,10 @@ This document is for those who want to develop/modify Rained. Rained is an open-
 of the GitHub repository, but this document further details the development setup.
 
 ## Using ANGLE
-**TL;DR: If you are on Windows, copy the DLLs in `src\Glib\angle\win-x64` to `C:\Program Files\dotnet`.**
+
+!!! info
+
+    TL;DR: If you are on Windows, copy the DLLs in `src\Glib\angle\win-x64` to `C:\Program Files\dotnet`.
 
 For Windows, Rained prefers to use [ANGLE](https://chromium.googlesource.com/angle/angle), an OpenGL ES implementation for various graphics APIs. On other operating systems, Rained will prefer to use desktop OpenGL 3.3. The reasoning for this is that Windows OpenGL drivers can be a bit quirky, so to speak, and depending on the user's vendor, badly optimized. Also, I kept getting reports of OpenGL errors of a mysterious origin, although that may be fixed by now.
 
