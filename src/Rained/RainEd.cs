@@ -287,11 +287,6 @@ sealed class RainEd
             {
                 Log.Information("Version check successful!");
                 Log.Information(LatestVersionInfo.VersionName);
-
-                if (LatestVersionInfo.VersionName != Version)
-                {
-                    EditorWindow.ShowNotification("New version available! Check the About window for more info.");
-                }
             }
             else
             {
