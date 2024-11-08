@@ -527,7 +527,6 @@ static class EditorWindow
     {
         ShortcutsWindow.ShowWindow();
         PaletteWindow.ShowWindow();
-        LogsWindow.ShowWindow();
     }
 
     /// <summary>
@@ -544,6 +543,7 @@ static class EditorWindow
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();
         InitErrorsWindow.ShowWindow();
+        LogsWindow.ShowWindow();
     }
 
     /// <summary>
