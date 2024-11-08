@@ -80,7 +80,7 @@ struct PropColor
     public Color Color;
 }
 
-record PropInit
+record class PropInit
 {
     public readonly string Name;
     public readonly PropCategory Category;
@@ -537,7 +537,7 @@ class PropDatabase
     
     private void AddPropToIndex(int lineNo, PropInit prop)
     {
-        if (allProps.ContainsKey(prop.Name))
+        /*if (allProps.ContainsKey(prop.Name))
         {
             if (lineNo == -2) // dumb ik
             {
@@ -547,8 +547,7 @@ class PropDatabase
             {
                 Log.UserLogger.Warning(ErrorString(lineNo, "Already added prop " + prop.Name));
             }
-        }
-
+        }*/
         allProps[prop.Name] = prop;
     }
 
@@ -615,14 +614,14 @@ class PropDatabase
                     {
                         HasErrors = true;
                         Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
-                        return;
+                        continue;
                     }
                     
                     if (parsedLine is null)
                     {
                         HasErrors = true;
                         Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
-                        return;
+                        continue;
                     }
 
                     var propInit = new PropInit(currentCategory, (Lingo.List) parsedLine);
@@ -680,6 +679,26 @@ class PropDatabase
             if (tilePropCategory.Props.Count > 0)
             {
                 TileCategories.Add(tilePropCategory);
+            }
+        }
+
+        // purge empty categories
+        for (int i = Categories.Count - 1; i >= 0; i--)
+        {
+            if (Categories[i].Props.Count == 0)
+            {
+                Log.UserLogger.Warning("{Category} was empty", Categories[i].Name);
+                Categories.RemoveAt(i);
+            }
+        }
+
+        // purge empty tile categories
+        for (int i = TileCategories.Count - 1; i >= 0; i--)
+        {
+            if (TileCategories[i].Props.Count == 0)
+            {
+                Log.UserLogger.Warning("{Category} was empty", TileCategories[i].Name);
+                TileCategories.RemoveAt(i);
             }
         }
     }
