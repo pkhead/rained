@@ -245,7 +245,7 @@ sealed class RainEd
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
-            Log.Information("Initializing Zygote runtime...");
+            Log.Information("Initializing Lingo runtime...");
             Drizzle.DrizzleRender.InitStaticRuntime();
         }
 

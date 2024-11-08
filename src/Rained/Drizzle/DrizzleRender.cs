@@ -225,7 +225,7 @@ class DrizzleRender : IDisposable
                 }
 
                 // process user cancel if cancelled while init
-                // zygote runtime
+                // drizzle runtime
                 if (InQueue.TryDequeue(out ThreadMessage? msg))
                 {
                     if (msg is MessageDoCancel)
@@ -243,7 +243,7 @@ class DrizzleRender : IDisposable
                 if (GeometryExport)
                 {
                     // process user cancel if cancelled while init
-                    // zygote runtime
+                    // drizzle runtime
                     if (InQueue.TryDequeue(out msg))
                     {
                         if (msg is MessageDoCancel)
@@ -261,7 +261,7 @@ class DrizzleRender : IDisposable
                     Renderer.PreviewSnapshot += PreviewSnapshot;
                     
                     // process user cancel if cancelled while init
-                    // zygote runtime
+                    // drizzle runtime
                     if (InQueue.TryDequeue(out msg))
                     {
                         if (msg is MessageDoCancel)

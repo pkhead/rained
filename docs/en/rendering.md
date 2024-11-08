@@ -46,7 +46,7 @@ You also have the option to specify the maximum amount of threads that can be us
 There are several options available for configuring Drizzle. These can be accessed in the Drizzle page in the preferences window, opened by selecting **File > Preferences**.
 
 ### Initialize on startup
-If you would rather not have to wait for the Drizzle runtime to initialize on each render, you have the option to initialize it on start-up and have it available for the duration of the session. This is achieved by opening the preferences window (**File > Preferences**), navigating to the "Drizzle" page, and toggling on the option **Initialize the Drizzle runtime on app startup**. You will have to restart Rained in order for this option to go into effect.
+If you would rather not have to wait for the Drizzle runtime to initialize on each render, you have the option to initialize it on start-up and have it available for the duration of the session. This is achieved by opening the preferences window (**File > Preferences**), navigating to the "Drizzle" page, and toggling on the option **Initialize Drizzle on app startup**. You will have to restart Rained in order for this option to go into effect.
 
 ### Configuration
 There are several options available for configuring how Drizzle renders levels. This is an interface for editing the editorConfig.txt file. These options are listed below the "Rendering" category on the preferences page.
