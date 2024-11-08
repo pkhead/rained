@@ -600,7 +600,7 @@ sealed class RainEd
 
     public bool CloseTab(LevelTab tab)
     {
-        tab.Level.Dispose();
+        tab.Dispose();
         return _tabs.Remove(tab);
     }
 

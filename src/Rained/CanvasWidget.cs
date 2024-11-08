@@ -60,7 +60,7 @@ class UICanvasWidget
             curWidth = newWidth;
             curHeight = newHeight;
 
-            renderTexture?.Dispose();
+            renderTexture.Dispose();
             renderTexture = RlManaged.RenderTexture2D.Load(curWidth, curHeight);
         }
     }

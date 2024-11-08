@@ -2,7 +2,7 @@ using System.Numerics;
 using Rained.LevelData;
 namespace Rained;
 
-class LevelTab
+class LevelTab : IDisposable
 {
     public string FilePath;
     public string Name;
@@ -48,5 +48,10 @@ class LevelTab
                 Name += " [EMERGENCY SAVE]";
             }
         }
+    }
+
+    public void Dispose()
+    {
+        Level.Dispose();
     }
 }

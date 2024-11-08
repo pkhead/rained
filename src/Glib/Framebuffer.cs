@@ -90,6 +90,7 @@ public class Framebuffer : Resource
 
     private readonly uint fbo;
     private readonly Texture?[] _attachmentTexs;
+    private readonly List<uint> _renderBufHandles = [];
 
     internal uint Handle => fbo;
 
@@ -175,6 +176,8 @@ public class Framebuffer : Resource
                 gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, attachPoint, GLEnum.Renderbuffer, handle);
                 gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
                 GlUtil.CheckError(gl, "Could not create framebuffer renderbuffer attachment");
+
+                _renderBufHandles.Add(handle);
             }
         }
 
@@ -198,6 +201,11 @@ public class Framebuffer : Resource
         {
             _attachmentTexs[i]?.Dispose();
             _attachmentTexs[i] = null!;
+        }
+
+        foreach (var handle in _renderBufHandles)
+        {
+            rctx.gl.DeleteRenderbuffer(handle);
         }
 
         rctx.gl.DeleteFramebuffer(fbo);
