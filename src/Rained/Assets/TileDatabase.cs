@@ -265,7 +265,7 @@ class TileDatabase
                     );
 
                     curGroup.Tiles.Add(tileData);
-                    stringToTile.Add(name, tileData);
+                    stringToTile.TryAdd(name, tileData);
                 }
                 catch (Exception e)
                 {
@@ -287,6 +287,16 @@ class TileDatabase
         while ((line2 = reader.ReadLine()) is not null)
         {
             ProcessLine(line2, -1);
+        }
+
+        // purge empty categories
+        for (int i = Categories.Count - 1; i >= 0; i--)
+        {
+            if (Categories[i].Tiles.Count == 0)
+            {
+                Log.UserLogger.Warning("{Category} was empty", Categories[i].Name);
+                Categories.RemoveAt(i);
+            }
         }
     }
 

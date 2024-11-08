@@ -23,7 +23,7 @@ partial class PropEditor : IEditorMode
     private int selectedTileIdx = 0;
     private SelectionMode selectionMode = SelectionMode.Props;
     private SelectionMode? forceSelection = null;
-    private PropInit selectedInit;
+    private PropInit? selectedInit;
     private RlManaged.RenderTexture2D previewTexture = null!;
     private PropInit? curPropPreview = null;
 
