@@ -614,14 +614,14 @@ class PropDatabase
                     {
                         HasErrors = true;
                         Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
-                        return;
+                        continue;
                     }
                     
                     if (parsedLine is null)
                     {
                         HasErrors = true;
                         Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
-                        return;
+                        continue;
                     }
 
                     var propInit = new PropInit(currentCategory, (Lingo.List) parsedLine);
