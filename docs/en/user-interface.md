@@ -48,7 +48,7 @@ Like sliders, if <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can 
 ## Menubar
 Rained adopts the standard concept of a "menubar", a collection of menus/submenus in a bar that is located at the very top of the window.
 
-Whenever this documentation refers to an item in the menubar, it will do so by first naming the menu the item is in, followed by a `>`, and then finally the name of the item with or without ellipses at the end if present, all within preformatted text. For example, `File > Open` or `Help > About`.
+Whenever this documentation refers to an item in the menubar, it will do so by first naming the menu the item is in, followed by a `>`, and then finally the name of the item with or without ellipses at the end if present, all bolded. For example, **File > Open** or **Help > About**.
 
 **File**
 :   - **New**: Create a new level.
@@ -58,6 +58,7 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Save As**: Choose a file on disk and save the level to it.
     - **Render**: Render the level using Drizzle.
     - **Export Geometry**: Export the geometry of the level without rendering the visuals, using Drizzle.
+    - **Mass Render**: Render multiple levels at once.
     - **Preferences**: Open the preferences window.
     - **Quit**: Quit Rained.
 
@@ -82,6 +83,8 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Keyboard Shortcuts**: Toggle the visibility of the keyboard shortcuts window.
     - **Logs**: Toggle the visibility of the logs window.
     - **Palettes**: Toggle the visibility of the palettes window.
+    - **Tile Preview**: Toggles for tile preview visuals.
+    - **Home**: Opens the Home tab.
     - **Show Data Folder**: Open the system's file browser to the Drizzle data folder.
     - **Show Render Folder**: Open the system's file browser to the folder where Drizzle outputs level renders.
 

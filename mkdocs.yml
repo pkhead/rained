@@ -10,7 +10,6 @@ nav:
     - Brief: brief.md
     - Installation and Updates: install-updates.md
     - User interface: user-interface.md
-    - Asset management: asset-management.md
     - Editing the level:
       - Overview: overview.md
       - Environment: env.md
@@ -20,8 +19,7 @@ nav:
       - Light: light.md
       - Effects: effects.md
       - Props: props.md
-    - Rendering your level: rendering.md
-    - Playing your level: playing-your-level.md
+    - Rendering and playing: rendering.md
     - Further reading: resources.md
   - Developing: developing.md
 

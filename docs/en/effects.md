@@ -31,7 +31,7 @@ Each instance of an effect has a set of configurable parameters that affect how 
 but the following is a list of common ones:
 
 - **Layers:** The layers that the effect will render in.
-- **3D:** TODO: what does 3d do
-- **Affect Gradients And Decals:** TODO: what does this do
+- **3D:** The effect is applied on a per-sublayer basis.
+- **Affect Gradients And Decals:** The effect will affect gradients and decals.
 - **Color:** The effect color to use for the plant. "Dead" means that it'll instead use the normal level palette, making it indeed look gray and dead.
 - **Seed:** Seed used for random number generation.

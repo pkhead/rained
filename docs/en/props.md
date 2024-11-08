@@ -1,5 +1,7 @@
 # Props
-**TODO:** screenshot of the props editor
+<figure markdown="span">
+    ![Screenshot of the prop editor](img/prop-editor.png)
+</figure>
 
 Props are used similarly to tiles but with a higher degree of freedom for placement. They don't have to be grid-aligned, can be rotated freely, and can be
 positioned into any of the 30 sublayers rather than only one of the 3 work layers. Additionally, props are also used to make destruction effects and place
@@ -12,7 +14,10 @@ physically simulated ropes, tubes, and wires.
 ## Editing props
 You first must select the prop you want to place in the prop catalog, similar to how you would with tiles. Then, to place it down, either right-click in the level view or press the <kbd>C</kbd> key.
 
-**TODO:** screenshot of a selected prop
+<figure markdown="span">
+    ![A selected prop.](img/selected-prop.png)
+    <figcaption>A selected prop.</figcaption>
+</figure>
 
 With a prop selected, you can move the prop by clicking and dragging it, scale the prop by dragging one of its corners or edges, and rotate it by either clicking
 and dragging the extruding widget, or holding down the <kbd>Q</kbd> or <kbd>E</kbd> keys.
@@ -21,7 +26,10 @@ Multiple props can be selected at once, by holding down the <kbd>Shift</kbd> key
 that was already selected. In addition, if you have more than one prop overlaid on top of the other, and you want to select a specific one, you can select an
 individual prop of your desire by double-clicking and selecting it from the pop-up menu.
 
-**TODO:** demonstration of this pop-up menu
+<figure markdown="span">
+    ![The pop-up selection menu.](img/prop-select-popup.png)
+    <figcaption>The pop-up selection menu.</figcaption>
+</figure>
 
 !!! info
 
@@ -51,18 +59,25 @@ level adds meaning to the **Render Order** option.
 When rendering, decals paste its texture to whatever solid area the prop is intersecting with.
 
 ### Longs
+<figure markdown="span">
+    ![A drill suspender, a long prop.](img/long-prop.png)
+    <figcaption>The long prop "Drill Suspender", viewed in Vertex Mode.</figcaption>
+</figure>
+
 These props are signaled by a green outline when they are selected. You edit them as you would with standard props when Vertex Mode is off, but if Vertex Mode
 is on, you can't warp them as you would with a standard prop. Instead, you can only move their endpoints.
 
-**TODO:** image of a long prop
-
 ### Rope-type props
+<figure markdown="span">
+    ![A tube, viewed in Vertex Mode.](img/rope-prop.png)
+    <figcaption>A tube, viewed in Vertex Mode.</figcaption>
+</figure>
+
 Rope-type props are similar to long props in terms of editing, but they also include a physically simulated rope. Each segment of the rope is displayed as
 a dot. To simulate the rope, hold down the Simulate button or the <kbd>Space</kbd> key. The rope will freeze once the button is let go.
 
 ## Prop options
-
-The following is a list of all possible prop options. Note that not all props will have every option available.
+On the bottom-right is a window titled "Prop Options". This is where you can edit the options of one or more props that are currently selected. The following is a list of all possible prop options. Note that not all props will have every option available.
 
 - **Render Order:** Affects the order the prop is rendered in if a destruction prop is in the level.
 - **Depth Offset:** The sublayer position of the prop, ranging from 0-29. The next work layer is reached every 10 units.

@@ -4,7 +4,7 @@ This is the editor where you can place and move cameras. Each camera represents 
 ## Editing
 Cameras are represented by green rectangles/quadrilaterals. You can select cameras by clicking on them, and you can move them by dragging them around. Multiple cameras can be selected at once by holding <kbd>Shift</kbd> while selecting another camera. Selected cameras can be deleted by pressing the <kbd>X</kbd> key. You may also add cameras by either double-clicking on an empty space or by pressing the <kbd>C</kbd> key.
 
-By default, cameras can only be viewed in the camera editor, but by enabling `View > Camera Borders`, you can view the outlines of cameras in all editors, colored green. Which outlines will be visible is determined by the *Camera border view mode* option in the Preferences window.
+By default, cameras can only be viewed in the camera editor, but by enabling **View > Camera Borders**, you can view the outlines of cameras in all editors, colored green. Which outlines will be visible is determined by the *Camera border view mode* option in the Preferences window.
 
 ### Snapping
 Usually, cameras are aligned in a grid, which is why Rained allows you to snap them together. Cameras can be aligned with other cameras by holding the <kbd>A</kbd>/<kbd>D</kbd> or <kbd>W</kbd>/<kbd>S</kbd> key, while moving one or more cameras, and moving a camera near the axis another camera lies on.
@@ -40,4 +40,4 @@ Below is an image explaining camera angles alongside a visual:
 ## Render order
 Cameras are rendered in order from first created to last. The order that cameras will be rendered in can be shown by enabling the *Show camera numbers* option in the preferences window. They will shown as white numbers in the middle of a camera.
 
-You can't do much to change the order of cameras, other than moving or recreating them in the order you want. However, you can set which camera should be rendered first by selecting a camera and pressing `Edit > Set Priority`. Only one camera can be prioritized at a time. Also, this flag is not saved in the level file and therefore will be reset on the next reload. If you want to remove the priority status of any camera, simply press `Edit > Clear Priority`. You do not need to have the relevant camera selected to do this.
+You can't do much to change the order of cameras, other than moving or recreating them in the order you want. However, you can set which camera should be rendered first by selecting a camera and pressing **Edit > Set Priority**. Only one camera can be prioritized at a time. Also, this flag is not saved in the level file and therefore will be reset on the next reload. If you want to remove the priority status of any camera, simply press **Edit > Clear Priority**. You do not need to have the relevant camera selected to do this.

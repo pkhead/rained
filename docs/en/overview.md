@@ -4,7 +4,7 @@ Each level is composed of three work layers that each form a grid. The first lay
 Levels are created in the level editor are then are rendered into:
 
 - one text (.txt) file, containing only the information needed by the game to store things like the water level and level collision;
-- and several image (.png) files, each for each camera, containing the visual of the level for an entire screen.
+- and several image (.png) files, one for each camera, containing the visual of the level for an entire screen.
 
 The files rendered for the game are incompatible with the files for the level editor, and vice versa.
 
