@@ -104,7 +104,6 @@ sealed class RainEd
 
         Log.Information("========================");
         Log.Information("Rained {Version} started", Version);
-        Log.Information("App data located in {AppDataPath}", Boot.AppDataPath);
 
         // load user preferences
         KeyShortcuts.InitShortcuts();
@@ -384,7 +383,7 @@ sealed class RainEd
     {        
         if (!string.IsNullOrEmpty(path))
         {
-            Log.Information("Loading level {Path}...", path);
+            Log.Information("Loading level {Path}...", Path.GetFileName(path));
 
             try
             {
