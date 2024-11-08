@@ -2,7 +2,7 @@
 <p align="center">
     <img src="rained-logo.png" />
     <br />
-    <a href="https://github.com/pkhead/rained/releases">Downloads</a>
+    <a href="https://github.com/pkhead/rained/releases">Downloads</a> | <a href="https://pkhead.github.io/rained/en/">Manual</a>
 </p>
 
 
@@ -66,4 +66,4 @@ Report bugs and other complaints by creating an issue or pinging @chromosoze on 
 
 Pull requests are welcome.
 
-Documentation about the development setup is found [here](docs/en/developing.md).
+Documentation about the development setup is found [here](https://pkhead.github.io/rained/en/developing.html).
