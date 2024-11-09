@@ -74,18 +74,19 @@ class LightChangeRecorder : IDisposable
 {
     private readonly List<BrushAtom> currentStrokeData = new();
     public LightMapChangeRecord? lastStroke = null;
-    private readonly RlManaged.Texture2D origLightmap;
+    private readonly RlManaged.Texture2D? origLightmap;
     
     private float oldAngle, oldDist;
 
-    public LightChangeRecorder(RlManaged.Image lightMapImg)
+    public LightChangeRecorder(RlManaged.Image? lightMapImg)
     {
-        origLightmap = RlManaged.Texture2D.LoadFromImage(lightMapImg);
+        if (lightMapImg is not null)
+            origLightmap = RlManaged.Texture2D.LoadFromImage(lightMapImg);
     }
 
     public void Dispose()
     {
-        origLightmap.Dispose();
+        origLightmap?.Dispose();
         lastStroke = null;
     }
     
@@ -140,12 +141,14 @@ class LightChangeRecorder : IDisposable
 
     public void Retrace()
     {
-        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Light;
         var lightMap = RainEd.Instance.Level.LightMap;
+        if (lightMap.RenderTexture is null || origLightmap is null) return;
+
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Light;
 
         lightMap.RaylibBeginTextureMode();
         Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(origLightmap, 0, 0, Color.White);
+        Raylib.DrawTexture(origLightmap!, 0, 0, Color.White);
         Raylib.BeginShaderMode(Shaders.LevelLightShader);
         recurse(lastStroke);
         Raylib.EndShaderMode();
