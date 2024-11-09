@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 
 namespace Rained.WorldData;
 
@@ -87,12 +88,11 @@ class Room
     /// <param name="fileName">Path the room's .txt file.</param>
     public Room(string fileName)
     {
-        var stopwatch = Stopwatch.StartNew();
-
         var lines = File.ReadAllLines(fileName);
-
         Name = lines[0];
         Log.Information("Load {RoomName}", Name);
+
+        var stopwatch = Stopwatch.StartNew();
 
         // line 2:
         // <Width>*<Height>|<WaterLevel>|<IsWaterInFront>
@@ -117,23 +117,44 @@ class Room
         // line 12: play matrix
         {
             var line = lines[11];
-            Debug.Assert(line[^1] == '|', "Play matrix line did not end with a '|' character.");
-            var data = lines[11].Split('|');
-            
-            Debug.Assert(data.Length - 1 == Width * Height);
             Cells = new LevelPlayCell[Height, Width];
 
-            var i = 0;
+            var cursor = 0;
+            StringBuilder cellStr = new();
+            List<string> cellData = [];
+
             for (int x = 0; x < Width; x++)
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    var cellData = data[i++].Split(',');
+                    cellStr.Clear();
+                    cellData.Clear();
+
+                    while (true)
+                    {
+                        if (line[cursor] == ',')
+                        {
+                            cellData.Add(cellStr.ToString());
+                            cellStr.Clear();
+                        }
+                        else if (line[cursor] == '|')
+                        {
+                            cellData.Add(cellStr.ToString());
+                            break;
+                        }
+                        else
+                        {
+                            cellStr.Append(line[cursor]);
+                        }
+
+                        cursor++;
+                    }
+                    cursor++;
 
                     var geo = (CellPlayGeo) int.Parse(cellData[0], CultureInfo.InvariantCulture);
                     CellPlayFeature features = 0;
 
-                    for (int j = 1; j < cellData.Length; j++)
+                    for (int j = 1; j < cellData.Count; j++)
                     {
                         features |= int.Parse(cellData[j], CultureInfo.InvariantCulture) switch
                         {
@@ -157,6 +178,9 @@ class Room
                 }
             }
         }
+
+        Log.Debug("Read play matrix: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
 
         // parse nodes
         List<RoomNode> nodes = [];
@@ -190,6 +214,9 @@ class Room
                 lastHive = hive;
             }
         }
+
+        Log.Debug("Parse play matrix: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
 
         // room node priority:
         //   1. room exits (white)
@@ -280,7 +307,7 @@ class Room
         Nodes = [..nodes];
 
         stopwatch.Stop();
-        Log.Debug("Room process: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
+        Log.Debug("Node process: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
         for (int i = 0; i < Nodes.Length; i++)
         {
             Log.Debug("{Index}: {NodeType}", i, Nodes[i].Type);
@@ -357,6 +384,7 @@ class Room
                     // get next direction
                     possibleDirs_i = 0;
 
+                    // TODO: test shortcut direction ordering
                     if (IsShortcut(GetCellOrDefault(x-1, y).Features))
                         possibleDirs[possibleDirs_i++] = new Vector2i(-1, 0);
 
@@ -370,7 +398,7 @@ class Room
                         possibleDirs[possibleDirs_i++] = new Vector2i(0, 1);
 
                     // TODO: test t-junction
-                    if (possibleDirs_i == 0 || possibleDirs_i == 3)
+                    if (possibleDirs_i == 0)
                     {
                         Log.UserLogger.Error("{RoomName}: Invalid shortcut", Name);
                         return false;
