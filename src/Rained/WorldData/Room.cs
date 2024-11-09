@@ -89,7 +89,7 @@ class Room
     public Room(string fileName)
     {
         var lines = File.ReadAllLines(fileName);
-        Name = lines[0];
+        Name = Path.GetFileNameWithoutExtension(fileName);
         Log.Information("Load {RoomName}", Name);
 
         var stopwatch = Stopwatch.StartNew();
