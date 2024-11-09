@@ -87,6 +87,8 @@ class Room
     /// <param name="fileName">Path the room's .txt file.</param>
     public Room(string fileName)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         var lines = File.ReadAllLines(fileName);
 
         Name = lines[0];
@@ -221,7 +223,7 @@ class Room
         }
 
         // side exits
-        for (int side = 0; side < 1; side++)
+        for (int side = 0; side < 2; side++)
         {
             int x = side == 0 ? 0 : Width-1;
 
@@ -277,6 +279,8 @@ class Room
 
         Nodes = [..nodes];
 
+        stopwatch.Stop();
+        Log.Debug("Room process: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
         for (int i = 0; i < Nodes.Length; i++)
         {
             Log.Debug("{Index}: {NodeType}", i, Nodes[i].Type);
@@ -365,7 +369,8 @@ class Room
                     if (IsShortcut(GetCellOrDefault(x, y+1).Features))
                         possibleDirs[possibleDirs_i++] = new Vector2i(0, 1);
 
-                    if (possibleDirs_i != 2)
+                    // TODO: test t-junction
+                    if (possibleDirs_i == 0 || possibleDirs_i == 3)
                     {
                         Log.UserLogger.Error("{RoomName}: Invalid shortcut", Name);
                         return false;
@@ -413,6 +418,8 @@ class Room
     static readonly Glib.Color WallBehindColor = Glib.Color.FromRGBA(128, 128, 128);
     static readonly Glib.Color WallColor = Glib.Color.FromRGBA(77, 77, 77);
     static readonly Glib.Color FeatureColor = Glib.Color.FromRGBA(128, 77, 77);
+    static readonly Glib.Color ShortcutColor = Glib.Color.FromRGBA(0, 100, 255);
+    static readonly Glib.Color WaterColor = Glib.Color.FromRGBA(0, 0, 255, 127);
     
     static readonly Glib.Color[] NodeColors = [
         // exit
@@ -442,6 +449,7 @@ class Room
 
     public void GenerateTexture()
     {
+        var stopwatch = Stopwatch.StartNew();
         using var img = Glib.Image.FromColor(Width, Height, BackgroundColor);
         
         // geo
@@ -455,6 +463,9 @@ class Room
                 var beamMask = CellPlayFeature.VerticalBeam | CellPlayFeature.HorizontalBeam;
                 if (cell.Geo is CellPlayGeo.Slope or CellPlayGeo.Platform || (cell.Features & beamMask) != 0)
                     col = FeatureColor;
+                
+                else if (cell.Geo == CellPlayGeo.ShortcutEntrance)
+                    col = ShortcutColor;
 
                 else if (cell.Features.HasFlag(CellPlayFeature.WallBehind))
                     col = WallBehindColor;
@@ -474,6 +485,28 @@ class Room
                 img.SetPixel(node.Position.X, node.Position.Y, NodeColors[(int)node.Type]);
             }
         }
+
+        // water
+        if (HasWater)
+        {
+            for (int y = Height - WaterLevel - 1; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    var col = img.GetPixel(x, y);
+
+                    float invA = WaterColor.A;
+                    var r = col.R * invA + WaterColor.R * WaterColor.A;
+                    var g = col.G * invA + WaterColor.G * WaterColor.A;
+                    var b = col.B * invA + WaterColor.B * WaterColor.A;
+
+                    img.SetPixel(x, y, new Glib.Color(r, g, b));
+                }
+            }
+        }
+
+        stopwatch.Stop();
+        Log.Debug("Render time: {Elapsed} ms", stopwatch.ElapsedMilliseconds);
 
         img.ExportPng("test.png");
     }
