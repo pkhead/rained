@@ -52,68 +52,6 @@ record PropTransformExt
     }
 }
 
-class PropTransformChangeRecord : IChangeRecord
-{
-    private readonly Prop[] targetProps;
-    private readonly PropTransformExt[] oldTransforms;
-    private readonly PropTransformExt[] newTransforms;
-
-    public PropTransformChangeRecord(Prop[] targetProps, PropTransformExt[] oldTransforms)
-    {
-        this.targetProps = targetProps;
-        this.oldTransforms = oldTransforms;
-
-        newTransforms = new PropTransformExt[targetProps.Length];
-        for (int i = 0; i < targetProps.Length; i++)
-        {
-            newTransforms[i] = new PropTransformExt(targetProps[i]);
-        }
-    }
-
-    public void Apply(bool useNew)
-    {
-        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Prop;
-
-        for (int i = 0; i < targetProps.Length; i++)
-        {
-            var prop = targetProps[i];
-
-            if (useNew)
-            {
-                newTransforms[i].Apply(prop);
-            }
-            else
-            {
-                oldTransforms[i].Apply(prop);
-            }
-        }
-    }
-}
-
-class PropListChangeRecord : IChangeRecord
-{
-    private readonly Prop[] oldProps;
-    private readonly Prop[] newProps;
-
-    public PropListChangeRecord(Prop[] oldProps, Prop[] newProps)
-    {
-        this.oldProps = oldProps;
-        this.newProps = newProps;
-    }
-
-    public void Apply(bool useNew)
-    {
-        var propsList = RainEd.Instance.Level.Props;
-        var targetArr = useNew ? newProps : oldProps;
-
-        propsList.Clear();
-        foreach (var prop in targetArr)
-        {
-            propsList.Add(prop);
-        }
-    }
-}
-
 struct PropSettings(Prop prop)
 {
     public int DepthOffset = prop.DepthOffset;
@@ -154,16 +92,25 @@ struct PropSettings(Prop prop)
     }
 }
 
-class PropSettingsChangeRecord : IChangeRecord
+class PropChangeRecord : IChangeRecord
 {
     private readonly Prop[] targetProps;
+    private readonly PropTransformExt[] oldTransforms;
+    private readonly PropTransformExt[] newTransforms;
     private readonly PropSettings[] oldSettings;
     private readonly PropSettings[] newSettings;
 
-    public PropSettingsChangeRecord(Prop[] targetProps, PropSettings[] oldSettings)
+    public PropChangeRecord(Prop[] targetProps, PropTransformExt[] oldTransforms, PropSettings[] oldSettings)
     {
         this.targetProps = targetProps;
+        this.oldTransforms = oldTransforms;
         this.oldSettings = oldSettings;
+
+        newTransforms = new PropTransformExt[targetProps.Length];
+        for (int i = 0; i < targetProps.Length; i++)
+        {
+            newTransforms[i] = new PropTransformExt(targetProps[i]);
+        }
 
         newSettings = new PropSettings[targetProps.Length];
         for (int i = 0; i < targetProps.Length; i++)
@@ -174,11 +121,47 @@ class PropSettingsChangeRecord : IChangeRecord
 
     public void Apply(bool useNew)
     {
+        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Prop;
         var settings = useNew ? newSettings : oldSettings;
 
         for (int i = 0; i < targetProps.Length; i++)
         {
+            var prop = targetProps[i];
+
+            if (useNew)
+            {
+                newTransforms[i].Apply(prop);
+            }
+            else
+            {
+                oldTransforms[i].Apply(prop);
+            }
+
             settings[i].Apply(targetProps[i]);
+        }
+    }
+}
+
+class PropListChangeRecord : IChangeRecord
+{
+    private readonly Prop[] oldProps;
+    private readonly Prop[] newProps;
+
+    public PropListChangeRecord(Prop[] oldProps, Prop[] newProps)
+    {
+        this.oldProps = oldProps;
+        this.newProps = newProps;
+    }
+
+    public void Apply(bool useNew)
+    {
+        var propsList = RainEd.Instance.Level.Props;
+        var targetArr = useNew ? newProps : oldProps;
+
+        propsList.Clear();
+        foreach (var prop in targetArr)
+        {
+            propsList.Add(prop);
         }
     }
 }
@@ -186,11 +169,12 @@ class PropSettingsChangeRecord : IChangeRecord
 class PropChangeRecorder
 {
     private bool isTransformActive = false;
-    private readonly List<PropTransformExt> oldTransforms = [];
-    private Prop[]? oldProps = null;
 
-    private readonly List<PropSettings> oldSettings = [];
-    private readonly List<Prop> recordedProps = [];
+    private readonly List<PropTransformExt> oldTransforms = [];
+    private readonly Dictionary<Prop, PropSettings> oldSettings = [];
+
+    // for list changes
+    private Prop[]? oldProps = null;
 
     public bool IsTransformActive { get => isTransformActive; }
 
@@ -201,19 +185,38 @@ class PropChangeRecorder
 
     public void BeginTransform()
     {
+        if (isTransformActive) throw new Exception("PropChangeRecorder.BeginTransform() was called twice");
+        isTransformActive = true;
+
         var level = RainEd.Instance.Level;
 
         oldTransforms.Clear();
         foreach (var prop in level.Props)
         {
             oldTransforms.Add(new PropTransformExt(prop));
-            recordedProps.Add(prop);
         }
     }
 
-    public void PushTransform()
+    private static bool TransformsEqual(Prop prop, PropTransformExt transform)
+    {   
+        if (!prop.Transform.Equals(transform.Transform)) return false;
+
+        // check rope points/velocities
+        if (prop.Rope?.Model is RopeModel model)
+        {
+            if (model.SegmentCount != transform.RopePoints.Length)
+                return false;
+            
+            for (int i = 0; i < model.SegmentCount; i++)
+                if (transform.RopePoints[i] != model.GetSegmentPos(i) || transform.RopeVelocities[i] != model.GetSegmentVel(i))
+                    return false;
+        }
+
+        return true;
+    }
+
+    public void PushChanges()
     {
-        if (isTransformActive) throw new Exception("PropChangeRecorder.PushTransform() was called twice");
         isTransformActive = false;
         var level = RainEd.Instance.Level;
 
@@ -221,6 +224,30 @@ class PropChangeRecorder
         {
             Log.Error("Props changed between BeginTransform and PushTransform of PropChangeRecorder");
             return;
+        }
+
+        List<Prop> changedProps = [];
+        List<PropTransformExt> changedOldTransforms = [];
+        List<PropSettings> changedOldSettings = [];
+
+        // find props whose settings or transforms have changed
+        for (int i = 0; i < level.Props.Count; i++)
+        {
+            if (
+                !TransformsEqual(level.Props[i], oldTransforms[i]) ||
+                !new PropSettings(level.Props[i]).Equals(oldSettings[level.Props[i]]))
+            {
+                changedProps.Add(level.Props[i]);
+                changedOldTransforms.Add(oldTransforms[i]);
+                changedOldSettings.Add(oldSettings[level.Props[i]]);
+            }
+        }
+
+        if (changedProps.Count > 0)
+        {
+            Log.Debug("{ChangeCount} props changed", changedProps.Count);
+            var changeRecord = new PropChangeRecord([..changedProps], [..changedOldTransforms], [..changedOldSettings]);
+            RainEd.Instance.ChangeHistory.Push(changeRecord);
         }
 
         /*bool didChange = false;
@@ -232,9 +259,6 @@ class PropChangeRecorder
                 break;
             }
         }*/
-
-        var changeRecord = new PropTransformChangeRecord(level.Props.ToArray(), oldTransforms.ToArray());
-        RainEd.Instance.ChangeHistory.Push(changeRecord);
 
         TakeSettingsSnapshot();
     }
@@ -288,18 +312,21 @@ class PropChangeRecorder
         var level = RainEd.Instance.Level;
 
         oldSettings.Clear();
-        recordedProps.Clear();
-
         foreach (var prop in level.Props)
         {
-            recordedProps.Add(prop);
-            oldSettings.Add(new PropSettings(prop));
+            oldSettings.Add(prop, new PropSettings(prop));
         }
     }
 
     public void PushSettingsChanges()
     {
-        var targetProps = new List<Prop>();
+        if (!IsTransformActive)
+        {
+            BeginTransform();
+            PushChanges();
+        }
+
+        /*var targetProps = new List<Prop>();
         var oldList = new List<PropSettings>();
 
         for (int i = 0; i < recordedProps.Count; i++)
@@ -321,8 +348,6 @@ class PropChangeRecorder
         {
             var changeRecord = new PropSettingsChangeRecord([..targetProps], [..oldList]);
             RainEd.Instance.ChangeHistory.Push(changeRecord);
-        }
-
-        TakeSettingsSnapshot();
+        }*/
     }
 }

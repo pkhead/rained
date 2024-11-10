@@ -353,7 +353,7 @@ partial class PropEditor : IEditorMode
         {
             // push rope transform if simulation had just ended
             Log.Information("End rope simulation");
-            changeRecorder.PushTransform();
+            changeRecorder.PushChanges();
         }
     }
 
@@ -660,7 +660,7 @@ partial class PropEditor : IEditorMode
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
                             prop.ResetTransform();
-                    changeRecorder.PushTransform();
+                    changeRecorder.PushChanges();
                 }
 
                 ImGui.SameLine();
@@ -669,7 +669,7 @@ partial class PropEditor : IEditorMode
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
                             prop.FlipX();
-                    changeRecorder.PushTransform();
+                    changeRecorder.PushChanges();
                 }
 
                 ImGui.SameLine();
@@ -678,7 +678,7 @@ partial class PropEditor : IEditorMode
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
                             prop.FlipY();
-                    changeRecorder.PushTransform();
+                    changeRecorder.PushChanges();
                 }
 
                 ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
@@ -842,7 +842,7 @@ partial class PropEditor : IEditorMode
                                 foreach (var prop in selectedProps)
                                     prop.Rope!.ResetModel();
                                 
-                                changeRecorder.PushTransform();
+                                changeRecorder.PushChanges();
                             }
 
                             ImGui.SameLine();

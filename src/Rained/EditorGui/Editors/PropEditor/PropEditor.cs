@@ -142,7 +142,7 @@ partial class PropEditor : IEditorMode
     public void Unload()
     {
         if (changeRecorder.IsTransformActive)
-            changeRecorder.PushTransform();
+            changeRecorder.PushChanges();
         
         if (transformMode is WarpTransformMode)
         {
@@ -325,7 +325,7 @@ partial class PropEditor : IEditorMode
     {
         if (transformMode is not null)
         {
-            changeRecorder.PushTransform();
+            changeRecorder.PushChanges();
 
             if (transformMode is WarpTransformMode)
             {
@@ -697,7 +697,7 @@ partial class PropEditor : IEditorMode
 
             if (transformMode.Deactivated())
             {
-                changeRecorder.PushTransform();
+                changeRecorder.PushChanges();
 
                 if (transformMode is WarpTransformMode)
                 {
