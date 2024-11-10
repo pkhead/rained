@@ -282,11 +282,18 @@ class TileDatabase
         }
 
         // read internal extra tiles
-        using var reader = new StringReader(ExtraTiles);
-        string? line2;
-        while ((line2 = reader.ReadLine()) is not null)
+        if (DrizzleCast.GetFileName("Drought Needed Init.txt", out string? initPath))
         {
-            ProcessLine(line2, -1);
+            using var reader = File.OpenText(initPath);
+            string? line2;
+            while ((line2 = reader.ReadLine()) is not null)
+            {
+                ProcessLine(line2, -1);
+            }
+        }
+        else
+        {
+            Log.UserLogger.Error("Could not read Drought Needed Init.txt");
         }
 
         // purge empty categories
