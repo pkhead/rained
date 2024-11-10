@@ -32,7 +32,10 @@ static class EmergencySaveWindow
 
     public static void ShowWindow()
     {
-        if (!ImGui.IsPopupOpen(WindowName) && IsWindowOpen)
+        // prevent both windows from showing up simultaneously
+        bool windowOpen = IsWindowOpen && !InitErrorsWindow.IsWindowOpen;
+
+        if (!ImGui.IsPopupOpen(WindowName) && windowOpen)
         {
             ImGui.OpenPopup(WindowName);
 
