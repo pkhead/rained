@@ -10,6 +10,8 @@ static class AboutWindow
 
     record SystemInfo(string FrameworkName, string OsName, string Arch, string GraphicsAPI, string GraphicsVendor, string GraphicsRenderer);
     private static SystemInfo? systemInfo;
+    private readonly static Version? drizzleVersion =
+        typeof(global::Drizzle.Lingo.Runtime.LingoRuntime).Assembly.GetName().Version;
 
     private static SystemInfo GetSystemInfo()
     {
@@ -70,8 +72,11 @@ static class AboutWindow
                 ImGuiExt.LinkText(RainEd.Instance.LatestVersionInfo.VersionName, RainEd.Instance.LatestVersionInfo.GitHubReleaseUrl);
             }
 
-            ImGui.SeparatorText("System Information");
+            ImGui.Separator();
             {
+                if (drizzleVersion is not null)
+                    ImGui.BulletText($"Drizzle: {drizzleVersion}");
+
                 var sysInfo = systemInfo ?? GetSystemInfo();
                 ImGui.BulletText(".NET: " + sysInfo.FrameworkName);
                 ImGui.BulletText("OS: " + sysInfo.OsName);
