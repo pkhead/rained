@@ -2,6 +2,7 @@
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Silk.NET.Core.Native;
 using Silk.NET.GLFW;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -66,6 +67,20 @@ public class Window : IDisposable
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
     public bool IsEventDriven { get => window.IsEventDriven; set => window.IsEventDriven = value; }
 
+    private static readonly unsafe delegate*<WindowHandle*, float*, float*, void> GlfwGetWindowContentScale;
+    private static readonly unsafe delegate*<WindowHandle*, nint, void> GlfwSetWindowContentScaleCallback;
+
+    unsafe static Window()
+    {
+        var glfw = Glfw.GetApi();
+        
+        GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
+            glfw.Context.GetProcAddress("glfwGetWindowContentScale");
+
+        GlfwSetWindowContentScaleCallback = (delegate*<WindowHandle*, nint, void>)
+            glfw.Context.GetProcAddress("glfwSetWindowContentScaleCallback");
+    }
+
     /// <summary>
     /// The content scale of the window. Only valid after Initialize has been called.
     /// <br /><br />
@@ -82,15 +97,19 @@ public class Window : IDisposable
                 {
                     return Vector2.One;
                 }
-                
-                try
-                {
-                    MoreGlfw.GlfwGetWindowContentScale(glfwWindow, out float xScale, out float yScale);
-                    return new Vector2(xScale, yScale);
-                }
-                catch (DllNotFoundException)
+
+                if (GlfwGetWindowContentScale is null)
                 {
                     return Vector2.One;
+                }
+                else
+                {
+                    float xScale, yScale;
+                    GlfwGetWindowContentScale(glfwWindow, &xScale, &yScale);
+                    if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
+                        throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                    
+                    return new Vector2(xScale, yScale);
                 }
             }
         }
@@ -142,16 +161,8 @@ public class Window : IDisposable
                 _ => throw new ArgumentException("Invalid MouseCursorIcon enum", nameof(value))
             };
 
-            //cursor.StandardCursor = newCursor;
-
-            // some sort of silk.NET bug..
             var cursor = inputContext.Mice[0].Cursor;
-            var cursorType = cursor.GetType();
-            var stdCursorFld = cursorType.GetField("_standardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-            var updateStdCursorMethod = cursorType.GetMethod("UpdateStandardCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-
-            stdCursorFld.SetValue(cursor, newCursor);
-            updateStdCursorMethod.Invoke(cursor, null);
+            cursor.StandardCursor = newCursor;
         }
     }
 
@@ -247,19 +258,13 @@ public class Window : IDisposable
         {
             var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
 
-            if (glfwWindow is not null)
+            if (glfwWindow is not null && GlfwSetWindowContentScaleCallback != null)
             {
-                MoreGlfw.InitializeDllImportResolver();
-
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
-
-                try
-                {
-                    MoreGlfw.GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
-                }
-                catch (DllNotFoundException)
-                {}
+                GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
+                if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
+                    throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
             }
         }
         
