@@ -1,4 +1,4 @@
-Rain World Community Editor; V.0.4.51; Editor configuration fileMore tile previews : TRUE
+Rain World Community Editor; V.0.4.52; Editor configuration fileMore tile previews : TRUE
 Grime on gradients : FALSE
 Grime : TRUE
 Exit button : DROUGHT

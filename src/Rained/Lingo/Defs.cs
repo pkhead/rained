@@ -72,6 +72,14 @@ public class List
 {
     public List<object> values = new();
     public Dictionary<string, object> fields = new(); 
+
+    public object? GetValueOrNull(string key)
+    {
+        if (fields.TryGetValue(key, out object? v))
+            return v;
+        else
+            return null;
+    }
 }
 
 enum TokenType
