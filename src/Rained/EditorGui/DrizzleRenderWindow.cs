@@ -149,7 +149,7 @@ class DrizzleRenderWindow : IDisposable
         // status sidebar
         if (drizzleRenderer is null || drizzleRenderer.State == RenderState.Errored)
         {
-            ImGui.Text("An error occured!\nCheck the logs for more info.");
+            ImGui.Text("An error occured!\nCheck the log file for more info.");
             if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
         }
         else if (drizzleRenderer.State == RenderState.Cancelling)
@@ -186,7 +186,7 @@ class DrizzleRenderWindow : IDisposable
             }
             else
             {
-                ImGui.Text($"Rendering {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount} cameras...");
+                ImGui.Text($"Rendering camera {drizzleRenderer.CamerasDone+1} of {drizzleRenderer.CameraCount}...");
                 
                 if (!elapsedStopwatch.IsRunning)
                 {
@@ -195,7 +195,7 @@ class DrizzleRenderWindow : IDisposable
             }
 
             if (showTime)
-                ImGui.TextUnformatted(elapsedStopwatch.Elapsed.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture));
+                ImGui.TextUnformatted(elapsedStopwatch.Elapsed.ToString(@"hh\:mm\:ss", Boot.UserCulture));
             
             ImGui.NewLine();
             ImGui.TextUnformatted(drizzleRenderer.DisplayString);
