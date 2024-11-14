@@ -1104,8 +1104,11 @@ class EffectsDatabase
                     single = individual,
                     defaultLayer = individual ? Effect.LayerMode.First : Effect.LayerMode.All,
                     crossScreen = type == "grower" || type == "hanger" || type == "clinger",
-                    use3D = wall && has3D == 1
+                    use3D = wall && has3D == 2
                 });
+
+                if (type == "clinger")
+                    CustomConfig("Side", ["Left", "Right", "Random"], "Random");
             }
         }
     }
