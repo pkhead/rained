@@ -6,6 +6,12 @@ using System.Runtime.InteropServices;
 using Rained;
 namespace ImGuiNET;
 
+[Flags]
+enum ButtonGroupOptions : uint
+{
+    Vertical = 1
+}
+
 static class ImGuiExt
 {
     private static nint iniFilenameAlloc = 0;
@@ -335,27 +341,62 @@ static class ImGuiExt
         drawList.AddLine(cursorScreenPos + textSize * new Vector2(0f, 1f), cursorScreenPos + textSize, ImGui.ColorConvertFloat4ToU32(textColor));
     }
 
-    public static bool ButtonSwitch(string id, ReadOnlySpan<string> options, ref int selected)
+    private const float ButtonGroupInactiveAlpha = 0.25f;
+
+    public struct ButtonGroup : IDisposable
     {
-        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
-        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+        public Vector4 activeCol;
+        public Vector4 activeColHover;
+        public Vector4 activeColActive;
 
-        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
-        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
-        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
+        public Vector4 inactiveCol;
+        public Vector4 inactiveColHover;
+        public Vector4 inactiveColActive;
 
-        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+        public Vector2 ItemSize;
 
-        ImGui.PushID(id);
+        private bool verticalLayout;
 
-        var returnValue = false;
-        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - options.Length)) / options.Length, 0f);
-
-        for (int i = 0; i < options.Length; i++)
+        public static ButtonGroup Begin(string id, int buttonCount, ButtonGroupOptions opts)
         {
-            if (selected == i)
+            var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+            var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
+            var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
+
+            var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W * ButtonGroupInactiveAlpha);
+            var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W * ButtonGroupInactiveAlpha);
+            var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W * ButtonGroupInactiveAlpha);
+
+            var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
+            ImGui.PushID(id);
+
+            Vector2 itemSize;
+            if (opts.HasFlag(ButtonGroupOptions.Vertical))
+            {
+                itemSize = new Vector2(ImGui.CalcItemWidth(), 0f);
+            }
+            else
+            {
+                itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - buttonCount)) / buttonCount, 0f);
+            }
+
+            return new ButtonGroup()
+            {
+                activeCol = activeCol,
+                activeColHover = activeColHover,
+                activeColActive = activeColActive,
+                inactiveCol = inactiveCol,
+                inactiveColHover = inactiveColHover,
+                inactiveColActive = inactiveColActive,
+                ItemSize = itemSize,
+                verticalLayout = opts.HasFlag(ButtonGroupOptions.Vertical)
+            };
+        }
+
+        public readonly void BeginButton(int i, bool selected)
+        {
+            if (selected)
             {
                 ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
                 ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
@@ -369,62 +410,53 @@ static class ImGuiExt
             }
 
             ImGui.PushID(i);
-            if (i > 0) ImGui.SameLine();
-            if (ImGui.Button(options[i], itemSize))
+            if (!verticalLayout && i > 0) ImGui.SameLine();
+        }
+
+        public readonly void EndButton()
+        {
+            ImGui.PopID();
+            ImGui.PopStyleColor(3);
+        }
+
+        public readonly void Dispose()
+        {
+            ImGui.PopID();
+            ImGui.PopStyleVar();
+        }
+    }
+
+    public static bool ButtonSwitch(string id, ReadOnlySpan<string> options, ref int selected, ButtonGroupOptions groupOptions = 0)
+    {
+        using var group = ButtonGroup.Begin(id, options.Length, groupOptions);
+        var returnValue = false;
+
+        for (int i = 0; i < options.Length; i++)
+        {
+            group.BeginButton(i, selected == i);
+            if (ImGui.Button(options[i], group.ItemSize))
             {
                 if (selected != i) returnValue = true;
                 selected = i;
             }
-            ImGui.PopID();
-
-            ImGui.PopStyleColor(3);
+            group.EndButton();
         }
-
-        ImGui.PopID();
-        ImGui.PopStyleVar();
 
         return returnValue;
     }
 
-    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, ref int flags)
+    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, ref int flags, ButtonGroupOptions groupOptions = 0)
     {
-        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
-        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
-
-        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
-        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
-        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
-
-        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
-
-        ImGui.PushID(id);
-
+        using var group = ButtonGroup.Begin(id, flagNames.Length, groupOptions);
         var returnValue = false;
-        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - flagNames.Length)) / flagNames.Length, 0f);
 
         for (int i = 0; i < flagNames.Length; i++)
         {
             var flag = 1 << i;
             var isActive = (flags & flag) != 0;
 
-            if (isActive)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
-            }
-            else
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
-            }
-
-            ImGui.PushID(i);
-            if (i > 0) ImGui.SameLine();
-            if (ImGui.Button(flagNames[i], itemSize))
+            group.BeginButton(i, isActive);
+            if (ImGui.Button(flagNames[i], group.ItemSize))
             {
                 if (isActive)
                     flags &= ~flag;
@@ -433,70 +465,32 @@ static class ImGuiExt
                 
                 returnValue = true;
             }
-            ImGui.PopID();
-
-            ImGui.PopStyleColor(3);
+            group.EndButton();
         }
-
-        ImGui.PopID();
-        ImGui.PopStyleVar();
 
         return returnValue;
     }
 
-    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, Span<bool> values)
+    public static bool ButtonFlags(string id, ReadOnlySpan<string> flagNames, Span<bool> values, ButtonGroupOptions groupOptions = 0)
     {
         if (flagNames.Length != values.Length)
             throw new ArgumentException("Array size mismatch", nameof(values));
         
-        var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-        var activeColHover = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered];
-        var activeColActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive];
-
-        var inactiveCol = new Vector4(activeCol.X, activeCol.Y, activeCol.Z, activeCol.W / 2f);
-        var inactiveColHover = new Vector4(activeColHover.X, activeColHover.Y, activeColHover.Z, activeColHover.W / 2f);
-        var inactiveColActive = new Vector4(activeColActive.X, activeColActive.Y, activeColActive.Z, activeColActive.W / 2f);
-
-        var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, itemSpacing);
-
-        ImGui.PushID(id);
-
+        using var group = ButtonGroup.Begin(id, flagNames.Length, groupOptions);
         var returnValue = false;
-        var itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - flagNames.Length)) / flagNames.Length, 0f);
 
         for (int i = 0; i < flagNames.Length; i++)
         {
-            var flag = 1 << i;
             var isActive = values[i];
 
-            if (isActive)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, activeCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, activeColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, activeColActive);
-            }
-            else
-            {
-                ImGui.PushStyleColor(ImGuiCol.Button, inactiveCol);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, inactiveColHover);
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, inactiveColActive);
-            }
-
-            ImGui.PushID(i);
-            if (i > 0) ImGui.SameLine();
-            if (ImGui.Button(flagNames[i], itemSize))
+            group.BeginButton(i, isActive);
+            if (ImGui.Button(flagNames[i], group.ItemSize))
             {
                 values[i] = !values[i];
                 returnValue = true;
             }
-            ImGui.PopID();
-
-            ImGui.PopStyleColor(3);
+            group.EndButton();
         }
-
-        ImGui.PopID();
-        ImGui.PopStyleVar();
 
         return returnValue;
     }

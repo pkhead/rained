@@ -374,8 +374,9 @@ class GeometryEditor : IEditorMode
 
             ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
 
+            // layers
             ImGui.Text("Layers");
-            ImGuiExt.ButtonFlags("##Layers", ["1", "2", "3"], layerMask);
+            ImGuiExt.ButtonFlags("##Layers", ["1", "2", "3"], layerMask, ButtonGroupOptions.Vertical);
 
             // show mirror toggles
             ImGui.Text("Mirror");
@@ -779,6 +780,23 @@ class GeometryEditor : IEditorMode
         lastMouseY = window.MouseCy;
 
         Raylib.EndScissorMode();
+
+        if (window.IsViewportHovered)
+            RenderCursor();
+    }
+
+    // render active layer squares near cursor
+    private void RenderCursor()
+    {
+        var drawList = ImGui.GetForegroundDrawList();
+        var mousePos = ImGui.GetMousePos() + new Vector2(8f * Boot.WindowScale, 0f);
+
+        for (int i = 0; i < 3; i++)
+        {
+            var pos = mousePos + new Vector2(i * 8f, 0f);
+            var col = new Vector4(LayerColors[i].R / 255f, LayerColors[i].G / 255f, LayerColors[i].B / 255f, layerMask[i] ? 1f : 0.2f);
+            drawList.AddRectFilled(pos, pos + Vector2.One * 6f * Boot.WindowScale, ImGui.ColorConvertFloat4ToU32(col));
+        }
     }
 
     private int GetMirroredPositions(int tx, int ty, Span<(int x, int y)> positions)
