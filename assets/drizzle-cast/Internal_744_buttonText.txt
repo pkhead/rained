@@ -1,1 +1,1 @@
-Edit the geometry of the level.
+Render and save as a Rain World playable level.

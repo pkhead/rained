@@ -35,7 +35,9 @@ enum PixelFormat
     /// <summary>
     /// Luminance, 1 bit per pixel
     /// </summary>
-    L1
+    L1,
+
+    Palette8
 }
 
 /// <summary>
@@ -581,7 +583,7 @@ class DrizzleRender : IDisposable
             case RenderPreviewLights lights:
             {
                 PreviewImages.Stage = RenderPreviewStage.Lights;
-                PreviewImages.SetSize(2300, 1500, PixelFormat.L1);
+                PreviewImages.SetSize(2300, 1500, PixelFormat.Palette8);
                 PreviewImages.DisableBlackOut();
 
                 for (int i = 0; i < 30; i++)
@@ -611,6 +613,11 @@ class DrizzleRender : IDisposable
         else if (srcImg.Depth == 32)
         {
             if (dstImg.Format != PixelFormat.Bgra32)
+                throw new Exception("Mismatched image formats");
+        }
+        else if (srcImg.Type == ImageType.Palette8)
+        {
+            if (dstImg.Format != PixelFormat.Palette8)
                 throw new Exception("Mismatched image formats");
         }
         else

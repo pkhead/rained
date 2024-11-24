@@ -103,6 +103,7 @@ class EffectsDatabase
 {
     private readonly List<EffectGroup> groups;
     public List<EffectGroup> Groups { get => groups; }
+    public bool HasErrors { get; private set; } = false;
 
     public EffectsDatabase()
     {
@@ -634,6 +635,9 @@ class EffectsDatabase
             });
         }
 
+        ////////////////
+        // LB Erosion //
+        ////////////////
         BeginGroup("LB Erosion");
         {
             CreateEffect(new EffectInit("Ultra Super Erode", EffectType.StandardErosion)
@@ -651,6 +655,9 @@ class EffectsDatabase
             });
         }
 
+        //////////////////////
+        // LB Paint Effects //
+        //////////////////////
         BeginGroup("LB Paint Effects");
         {
             CreateEffect(new EffectInit("Super BlackGoo", EffectType.NN)
@@ -675,6 +682,9 @@ class EffectsDatabase
             CustomConfig("Color 2", "EffectColor2", ["EffectColor1", "EffectColor2", "None"]);
         }
 
+        ////////////////
+        // LB Natural //
+        ////////////////
         BeginGroup("LB Natural");
         {
             CreateEffect(new EffectInit("Colored Barnacles", EffectType.StandardErosion)
@@ -713,6 +723,9 @@ class EffectsDatabase
             });
         }
 
+        ///////////////////
+        // LB Artificial //
+        ///////////////////
         BeginGroup("LB Artificial");
         {
             CreateEffect(new EffectInit("Assorted Trash", EffectType.NN)
@@ -742,6 +755,9 @@ class EffectsDatabase
             CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
         }
 
+        ///////////////////
+        // Dakras Plants //
+        ///////////////////
         BeginGroup("Dakras Plants");
         {
             CreateEffect(new EffectInit("Left Facing Kelp", EffectType.NN)
@@ -792,6 +808,9 @@ class EffectsDatabase
             });
         }
 
+        ////////////////
+        // Leo Plants //
+        ////////////////
         BeginGroup("Leo Plants");
         {
             CreateEffect(new EffectInit("Ivy", EffectType.NN)
@@ -805,6 +824,9 @@ class EffectsDatabase
             CustomConfig("Leaf Density", 1, 100);
         }
 
+        /////////////////////
+        // Nautillo Plants //
+        /////////////////////
         BeginGroup("Nautillo Plants");
         {
             CreateEffect(new EffectInit("Fuzzy Growers", EffectType.NN)
@@ -868,6 +890,9 @@ class EffectsDatabase
             });
         }
 
+        ///////////////////
+        // Tronsx Plants //
+        ///////////////////
         BeginGroup("Tronsx Plants");
         {
             CreateEffect(new EffectInit("Thunder Growers", EffectType.NN)
@@ -878,6 +903,9 @@ class EffectsDatabase
             });
         }
 
+        /////////////////////
+        // Intrepid Plants //
+        /////////////////////
         BeginGroup("Intrepid Plants");
         {
             CreateEffect(new EffectInit("Ice Growers", EffectType.NN)
@@ -901,6 +929,197 @@ class EffectsDatabase
                 crossScreen = true
             });
         }
+
+        //////////////////////
+        // LudoCrypt Plants //
+        //////////////////////
+        BeginGroup("LudoCrypt Plants");
+        {
+            CreateEffect(new EffectInit("Mushroom Stubs", EffectType.NN)
+            {
+                usePlantColors = true,
+                useLayers = true,
+            });
+            CustomConfig("Mushroom Size", ["Small", "Medium", "Random"], "Medium");
+            CustomConfig("Mushroom Width", ["Small", "Medium", "Wide", "Random"], "Medium");
+        }
+
+        /////////////////////
+        // Aldruis Effects //
+        /////////////////////
+        BeginGroup("Alduris Effects");
+        {
+            CreateEffect(new EffectInit("Mosaic Plants", EffectType.NN)
+            {
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First,
+                usePlantColors = true,
+                crossScreen = true
+            });
+            CustomConfig("Color Intensity", "Medium", ["High", "Medium", "Low", "None", "Random"]);
+            CustomConfig("Flowers", "Off", ["Off", "On"]);
+            CustomConfig("Detail Color", "Color1", ["Color1", "Color2", "Dead"]);
+
+            CreateEffect(new EffectInit("Lollipop Mold", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+            });
+
+            CreateEffect(new EffectInit("Cobwebs", EffectType.NN)
+            {
+                useLayers = true,
+                defaultLayer = Effect.LayerMode.First,
+                crossScreen = true
+            });
+            CustomConfig("Effect Color", ["EffectColor1", "EffectColor2", "None"], "None");
+            CustomConfig("Color Intensity", ["High", "Medium", "Low", "None"], "Medium");
+        }
+
+        //////////////////
+        // April Plants //
+        //////////////////
+        BeginGroup("April Plants");
+        {
+            CreateEffect(new EffectInit("Grape Roots", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true
+            });
+
+            CreateEffect(new EffectInit("Og Grass", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true
+            });
+
+            CreateEffect(new EffectInit("Hand Growers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                crossScreen = true,
+                binary = true,
+                single = true
+            });
+        }
+
+        RegisterCustomEffects();
+    }
+
+    private void RegisterCustomEffects()
+    {
+        var lingoParser = new Lingo.LingoParser();
+        var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Effects", "Init.txt");
+
+        if (!File.Exists(initFile))
+        {
+            Log.UserLogger.Information("Effects/Init.txt not found.");
+            return;
+        }
+
+        Log.UserLogger.Information("Reading Effects/Init.txt...");
+
+        bool groupCheck = false;
+        var lineNo = 0;
+        
+        foreach (var line in File.ReadLines(initFile))
+        {
+            lineNo++;
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line[0] == '-')
+            {
+                BeginGroup(line[1..]);
+                groupCheck = true;
+            }
+            else
+            {
+                if (!groupCheck) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
+
+                // check for parse exception
+                var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
+                if (parseErr is not null)
+                {
+                    HasErrors = true;
+                    LogError(lineNo, parseErr.Message + " (line ignored)");
+                    continue;
+                }
+
+                // check for... a different parse exception? i know this emulates lingo behavior but
+                // why didn't i just make it throw a ParseExcep- whatever
+                if (parsedLine is null)
+                {
+                    HasErrors = true;
+                    LogError(lineNo, "Malformed effect init (line ignored)");
+                    continue;
+                }
+
+                var effectInit = (Lingo.List) parsedLine;
+                object? temp;
+
+                // read name field
+                if (!effectInit.fields.TryGetValue("nm", out temp))
+                {
+                    HasErrors = true;
+                    LogError(lineNo, "Effect init does not have required field 'nm'.");
+                    continue;
+                }
+                string name = (string) temp;
+
+                // read type field
+                if (!effectInit.fields.TryGetValue("tp", out temp))
+                {
+                    HasErrors = true;
+                    LogError(lineNo, "Effect init does not have required field 'tp'.");
+                    continue;
+                }
+                string type = (string) temp;
+
+                // emit a warning if effect type is not a valid value. (warning instead of error for future-proofing)
+                switch (type)
+                {
+                    case "standardPlant":
+                    case "grower":
+                    case "hanger":
+                    case "clinger":
+                    case "individual":
+                    case "wall":
+                        break;
+                    
+                    default:
+                        Log.UserLogger.Warning(ErrorString(lineNo, "Effect init does not have a valid 'tp' field."));
+                        break;
+                }
+
+                var hasColor = effectInit.fields.TryGetValue("pickColor", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
+                var individual = type == "individual";
+                var wall = type == "wall";
+                var has3D = effectInit.fields.TryGetValue("can3D", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
+
+                CreateEffect(new EffectInit(name, EffectType.NN) {
+                    usePlantColors = hasColor == 1,
+                    useLayers = true,
+                    binary = individual,
+                    single = individual,
+                    defaultLayer = individual ? Effect.LayerMode.First : Effect.LayerMode.All,
+                    crossScreen = type == "grower" || type == "hanger" || type == "clinger",
+                    use3D = wall && has3D == 2
+                });
+
+                if (type == "clinger")
+                    CustomConfig("Side", ["Left", "Right", "Random"], "Random");
+            }
+        }
+    }
+
+    private static string ErrorString(int lineNo, string msg)
+        => "Line " + lineNo + ": " + msg;
+    
+    private void LogError(int lineNo, string template, params string[] values)
+    {
+        HasErrors = true;
+        Log.UserLogger.Error(ErrorString(lineNo, template), template, values);
     }
 
     public EffectInit GetEffectFromName(string name)
@@ -956,10 +1175,15 @@ class EffectsDatabase
         activeGroup.effects.Add(effect);
     }
 
+    // why the hell did i organize it this way it's stupid
     private void CustomConfig(string name, string defaultOption, string[] options)
     {
         activeEffect.customConfigs.Add(new CustomEffectString(name, defaultOption, options));
     }
+
+    // this is better because you can directly copy+paste the values from startUp.lingo without reordering
+    private void CustomConfig(string name, string[] options, string defaultOption) =>
+        CustomConfig(name, defaultOption, options);
 
     private void CustomConfig(string name, int min, int max)
     {

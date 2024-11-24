@@ -104,6 +104,15 @@ sealed class RainEd
 
         Log.Information("========================");
         Log.Information("Rained {Version} started", Version);
+        
+        // display drizzle version
+        {
+            var drizzleVer = typeof(global::Drizzle.Lingo.Runtime.LingoRuntime).Assembly.GetName().Version;
+            if (drizzleVer is not null)
+                Log.Information("Drizzle version: " + drizzleVer.ToString());
+            else
+                Log.Information("Drizzle version: UNKNOWN");
+        }
 
         // load user preferences
         KeyShortcuts.InitShortcuts();

@@ -1,6 +1,7 @@
 namespace Rained.EditorGui;
 
 using System.Numerics;
+using System.Diagnostics;
 using ImGuiNET;
 using Rained.Drizzle;
 
@@ -17,6 +18,9 @@ class MassRenderProcessWindow
     private int totalLevels = 1;
     private readonly Dictionary<string, float> levelProgress = [];
     private readonly List<string> problematicLevels = [];
+
+    private Stopwatch elapsedStopwatch = new();
+    private bool showTime = false;
 
     public MassRenderProcessWindow(DrizzleMassRender renderProcess)
     {
@@ -80,13 +84,24 @@ class MassRenderProcessWindow
             }
 
             // status text
-            if (renderTask.IsCanceled)
+            if (renderTask is null || renderTask.IsFaulted)
+            {
+                ImGui.Text("An error occured!\nCheck the log file for more info.");
+                if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
+            }
+            else if (renderTask.IsCanceled)
             {
                 ImGui.Text("Render was cancelled.");
+
+                if (elapsedStopwatch.IsRunning)
+                    elapsedStopwatch.Stop();
             }
             else if (cancel)
             {
                 ImGui.Text("Cancelling...");
+
+                if (elapsedStopwatch.IsRunning)
+                    elapsedStopwatch.Stop();
             }
             else if (!renderBegan)
             {
@@ -94,12 +109,22 @@ class MassRenderProcessWindow
             }
             else if (renderedLevels < totalLevels)
             {
+                if (!elapsedStopwatch.IsRunning)
+                    elapsedStopwatch.Start();
+                
                 ImGui.TextUnformatted($"{totalLevels - renderedLevels} levels remaining...");
+                showTime = true;
             }
             else
             {
                 ImGui.TextUnformatted("Render completed!");
+
+                if (elapsedStopwatch.IsRunning)
+                    elapsedStopwatch.Stop();
             }
+
+            if (showTime)
+                ImGui.TextUnformatted(elapsedStopwatch.Elapsed.ToString(@"hh\:mm\:ss", Boot.UserCulture));
 
             // error list
             if (problematicLevels.Count > 0)
