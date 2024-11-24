@@ -44,6 +44,7 @@ class LevelWindow
     // render texture given to each editor mode class
     private readonly RlManaged.RenderTexture2D[] layerRenderTextures;
     public readonly LevelEditRender Renderer;
+    public readonly LevelNodeData NodeData;
 
     private ChangeHistory.CellChangeRecorder cellChangeRecorder;
     public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
@@ -131,6 +132,8 @@ class LevelWindow
         }
         
         Renderer = new LevelEditRender();
+        NodeData = new LevelNodeData(RainEd.Instance.Level);
+        
         cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
         RainEd.Instance.ChangeHistory.Cleared += () =>
         {
