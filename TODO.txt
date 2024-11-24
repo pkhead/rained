@@ -23,6 +23,7 @@ v2.2.x:
 - optional download from solar's repo
 
 v2.3.0 (or later):
+- render single camera
 - asset manager crap
 - favorite tiles&props
 - please finally add the geo editing stuff
@@ -43,6 +44,7 @@ v2.4.0 (or v3.0.0, depending on the frequency of major updates):
 - Fully FeatuerdWorld editor
 
 Other features:
+- prop editor lasso select ()
 - light map stretch
 - asset manager
   - can rearrange the order of stuff in asset manager
