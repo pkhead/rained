@@ -322,7 +322,7 @@ partial class Level : IDisposable
     public readonly List<Prop> SortedProps = new();
     public readonly Dictionary<(int, int, int), Vector2i> ChainData = [];
     
-    public int TileSeed = 200;
+    public int TileSeed;
     public bool DefaultMedium = false; // idk what the hell this does
     public bool HasSunlight = true;
     public bool HasWater = false;
@@ -337,6 +337,7 @@ partial class Level : IDisposable
         BufferTilesTop = 3;
         BufferTilesRight = 12;
         BufferTilesBot = 5;
+        TileSeed = Environment.TickCount % 400;
 
         WaterLevel = height / 2;
 
