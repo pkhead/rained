@@ -325,15 +325,6 @@ class DrizzleRenderWindow : IDisposable
         }
     }
 
-    private static void ConvertPaletteImage(byte[] pixels, byte[] convertedBitmap)
-    {
-        int j = 0;
-        for (int i = 0; i < convertedBitmap.Length; i++)
-        {
-            convertedBitmap[j++] = (byte)(pixels[i] * 30);
-        }
-    }
-
     private static void AllocTexture(Drizzle.RenderImage? img, ref RlManaged.Texture2D? tex)
     {
         if (img == null)
@@ -379,16 +370,10 @@ class DrizzleRenderWindow : IDisposable
                     break;
                 }
 
-                // convert palette8
+                // upload palette8 buffer directly
                 case Drizzle.PixelFormat.Palette8:
                 {
-                    var srcPixels = img.Pixels!;
-
-                    if (convertedBitmap is null || convertedBitmap.Length != img.Width * img.Height)
-                        convertedBitmap = new byte[img.Width * img.Height];
-                    
-                    ConvertPaletteImage(srcPixels, convertedBitmap);
-                    gtex.UpdateFromImage(convertedBitmap);
+                    gtex.UpdateFromImage(new ReadOnlySpan<byte>(img.Pixels, 0, img.Width * img.Height));
                     break;
                 }
 
