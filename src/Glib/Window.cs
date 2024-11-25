@@ -104,10 +104,11 @@ public class Window : IDisposable
                 }
                 else
                 {
-                    float xScale, yScale;
+                    float xScale = 1f;
+                    float yScale = 1f;
                     GlfwGetWindowContentScale(glfwWindow, &xScale, &yScale);
-                    if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
-                        throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                    //if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
+                    //    throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
                     
                     return new Vector2(xScale, yScale);
                 }
@@ -474,6 +475,9 @@ public class Window : IDisposable
 
     public void SetIcon(ReadOnlySpan<Image> icons)
     {
+        // regular windows do not have icons on MacOS
+        if (OperatingSystem.IsMacOS()) return;
+
         // convert Glib.Images into rawImages
         // (ImageSharp does not store image memory in a contiguous region)
         Silk.NET.Core.RawImage[] rawImages = new Silk.NET.Core.RawImage[icons.Length];

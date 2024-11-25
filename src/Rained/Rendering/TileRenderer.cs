@@ -356,7 +356,7 @@ class TileRenderer
         {
             renderPalette = true;
             shader = Shaders.PaletteShader;
-            renderInfo.UpdatePaletteTexture();
+            renderInfo.Palette.UpdateTexture();
         }
 
         // normal rendering mode
@@ -417,7 +417,7 @@ class TileRenderer
                         curShader = shader;
 
                         if (shader == Shaders.PaletteShader)
-                            renderInfo.BeginPaletteShaderMode();
+                            renderInfo.Palette.BeginPaletteShaderMode();
                         else
                             Raylib.BeginShaderMode(shader);
                     }

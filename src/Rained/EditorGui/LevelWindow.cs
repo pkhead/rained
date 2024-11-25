@@ -73,7 +73,7 @@ class LevelWindow
             var renderer = RainEd.Instance.LevelView.Renderer;
             if (renderer.UsePalette)
             {
-                return renderer.GetPaletteColor(PaletteColor.Sky);
+                return renderer.Palette.GetPaletteColor(PaletteColor.Sky);
             }
             else
             {
@@ -88,7 +88,7 @@ class LevelWindow
         var renderer = RainEd.Instance.LevelView.Renderer;
         if (renderer.UsePalette)
         {
-            var col = renderer.GetPaletteColor(PaletteColor.Black);
+            var col = renderer.Palette.GetPaletteColor(PaletteColor.Black);
             return new Color(col.R, col.G, col.B, (byte)alpha);
         }
         else
@@ -106,7 +106,7 @@ class LevelWindow
         Color col;
         if (renderer.UsePalette)
         {
-            col = renderer.GetPaletteColor(PaletteColor.Black);
+            col = renderer.Palette.GetPaletteColor(PaletteColor.Black);
         }
         else
         {
@@ -149,9 +149,9 @@ class LevelWindow
         editorModes.Add(new PropEditor(this));
 
         // load user preferences
-        Renderer.Palette = RainEd.Instance.Preferences.UsePalette ? RainEd.Instance.Preferences.PaletteIndex : -1;
-        Renderer.FadePalette = RainEd.Instance.Preferences.PaletteFadeIndex;
-        Renderer.PaletteMix = RainEd.Instance.Preferences.PaletteFade;
+        Renderer.Palette.Index = RainEd.Instance.Preferences.UsePalette ? RainEd.Instance.Preferences.PaletteIndex : -1;
+        Renderer.Palette.FadeIndex = RainEd.Instance.Preferences.PaletteFadeIndex;
+        Renderer.Palette.Mix = RainEd.Instance.Preferences.PaletteFade;
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -159,8 +159,8 @@ class LevelWindow
         // i suppose this is redundant, as the PaletteWindow automatically
         // updates the values in the prefs json
         prefs.UsePalette = Renderer.UsePalette;
-        prefs.PaletteFadeIndex = Renderer.FadePalette;
-        prefs.PaletteFade = Renderer.PaletteMix;
+        prefs.PaletteFadeIndex = Renderer.Palette.FadeIndex;
+        prefs.PaletteFade = Renderer.Palette.Mix;
         
         foreach (var mode in editorModes)
         {

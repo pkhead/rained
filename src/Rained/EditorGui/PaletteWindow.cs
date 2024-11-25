@@ -27,20 +27,20 @@ static class PaletteWindow
             int paletteIndex = prefs.PaletteIndex;
             if (ImGui.InputInt("Palette", ref paletteIndex))
             {
-                prefs.PaletteIndex = renderer.Palette = paletteIndex;
+                prefs.PaletteIndex = renderer.Palette.Index = paletteIndex;
             }
 
             int fadePalette = prefs.PaletteFadeIndex;
             if (ImGui.InputInt("Fade Palette", ref fadePalette))
             {
-                prefs.PaletteFadeIndex = renderer.FadePalette = fadePalette;
+                prefs.PaletteFadeIndex = renderer.Palette.FadeIndex = fadePalette;
             }
 
             float fadeAmt = prefs.PaletteFade;
             if (ImGui.SliderFloat("Fade Amount", ref fadeAmt, 0f, 1f))
             {
                 prefs.PaletteFade = fadeAmt;
-                renderer.PaletteMix = fadeAmt;
+                renderer.Palette.Mix = fadeAmt;
             }
 
             ImGui.TextDisabled("Note: These settings are not\nsaved in the project.");
