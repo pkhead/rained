@@ -327,7 +327,17 @@ static class LevelSerialization
                             {
                                 var selectedValue = (string) optionData.values[2];
                                 optionIndex = optionValues.IndexOf(selectedValue);
-                                if (optionIndex == -1) throw new Exception("Invalid option value in effect");
+                                
+                                if (optionIndex == -1)
+                                {
+                                    Log.UserLogger.Warning(
+                                        "Invalid value {ValueName} for option {OptionName} for effect {EffectName}",
+                                        selectedValue, optionName, effectInit!.name
+                                    );
+
+                                    // default to first value
+                                    optionIndex = 0;
+                                }
                             }
 
                             switch (optionName)

@@ -392,7 +392,7 @@ sealed class RainEd
     {        
         if (!string.IsNullOrEmpty(path))
         {
-            Log.Information("Loading level {Path}...", Path.GetFileName(path));
+            Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
 
             try
             {
