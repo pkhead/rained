@@ -345,55 +345,13 @@ partial class PropEditor : IEditorMode
 
         level.SortPropsByDepth();
 
-        // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
-
-        // draw geometry/tile layers
-        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
-        for (int l = Level.LayerCount-1; l >= 0; l--)
+        levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
-            // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrames[l]);
-
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            levelRender.RenderGeometry(l, LevelWindow.GeoColor(255));
-            if (drawTiles)
-                levelRender.RenderTiles(l, 100);
-        }
-
-        // draw alpha-blended result into main frame
-        Raylib.BeginTextureMode(mainFrame);
-        for (int l = Level.LayerCount-1; l >= 0; l--)
-        {
-            Rlgl.PushMatrix();
-                Rlgl.LoadIdentity();
-
-                var alpha = l == window.WorkLayer ? 255 : 50;
-                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
-            Rlgl.PopMatrix();
-        }
-
-        // draw props
-        for (int l = Level.LayerCount-1; l >= 0; l--)
-        {
-            // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrames[l]);
-            Raylib.ClearBackground(Color.Blank);
-            levelRender.RenderProps(l, 255);
-        }
-
-        for (int l = Level.LayerCount-1; l >= 0; l--)
-        {
-            // draw alpha-blended result into main frame
-            Raylib.BeginTextureMode(mainFrame);
-            Rlgl.PushMatrix();
-                Rlgl.LoadIdentity();
-
-                var alpha = l == window.WorkLayer ? 255 : 50;
-                RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
-            Rlgl.PopMatrix();
-        }
-        
+            DrawProps = true,
+            DrawPropsInFront = true,
+            ActiveLayer = window.WorkLayer,
+            LayerOffset = 0
+        });
         levelRender.RenderGrid();
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();

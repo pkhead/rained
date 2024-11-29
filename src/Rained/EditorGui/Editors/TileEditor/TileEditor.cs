@@ -238,38 +238,13 @@ partial class TileEditor : IEditorMode
         var matDb = RainEd.Instance.MaterialDatabase;
 
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
-
-        // draw layers
-        var drawProps = RainEd.Instance.Preferences.ViewProps;
-        for (int l = Level.LayerCount-1; l >= 0; l--)
+        //RainEd.RenderContext!.BlendMode = Glib.BlendMode.Normal;
+        levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
-            // draw layer into framebuffer
-            Raylib.BeginTextureMode(layerFrames[l]);
-
-            Raylib.EndScissorMode();
-            Raylib.ClearBackground(Color.Blank);
-            window.BeginLevelScissorMode();
-
-            Rlgl.PushMatrix();
-                levelRender.RenderGeometry(l, LevelWindow.GeoColor(255));
-                levelRender.RenderTiles(l, 255);
-                if (drawProps)
-                    levelRender.RenderProps(l, 100);
-            Rlgl.PopMatrix();
-        }
-
-        // draw alpha-blended result into main frame
-        Raylib.BeginTextureMode(mainFrame);
-        for (int l = Level.LayerCount-1; l >= 0; l--)
-        {
-            Rlgl.PushMatrix();
-            Rlgl.LoadIdentity();
-
-            var alpha = l == window.WorkLayer ? 255 : 50;
-            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
-            Rlgl.PopMatrix();
-        }
+            DrawTiles = true,
+            ActiveLayer = window.WorkLayer
+        });
+        //RainEd.RenderContext!.BlendMode = Glib.BlendMode.CorrectedFramebufferNormal;
 
         // determine if the user is hovering over a shortcut block
         // if so, make the shortcuts more apparent
