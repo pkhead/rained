@@ -9,10 +9,10 @@ out vec4 fragColor;
 void main()
 {
     vec4 texelColor = texture(u_texture0, v_texcoord0);
-    bool isWhite = texelColor.r == 1.0;
+    bool isBlack = texelColor.r == 0.0;
     
     fragColor = vec4(
         vec3(1.0, 0.0, 0.0),
-        1.0 - float(isWhite)
+        1.0 - float(isBlack)
     ) * u_color;
 }

@@ -393,30 +393,10 @@ class LightEditor : IEditorMode
         }
         
         // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
-        
-        // draw the layers
-        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
-        var drawProps = RainEd.Instance.Preferences.ViewProps;
-        for (int l = Level.LayerCount-1; l >= 0; l--)
+        levelRender.RenderLevel(new Rendering.LevelRenderConfig()
         {
-            var alpha = l == 0 ? 255 : 50;
-            var color = LevelWindow.GeoColor(30f / 255f, alpha);
-            int offset = l * 2;
-
-            Rlgl.PushMatrix();
-            Rlgl.Translatef(offset, offset, 0f);
-            levelRender.RenderGeometry(l, color);
-
-            if (drawTiles)
-                levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
-            
-            if (drawProps)
-                levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
-            
-            Rlgl.PopMatrix();
-        }
-
+            Fade = 30f / 255f
+        });
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
 

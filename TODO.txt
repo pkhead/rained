@@ -1,5 +1,11 @@
+DRIZZLE UPDATE:
+- port effects
+- custom effects system
+- port new inits (if any) from startUp.txt or whatever
+
 Bugs:
 - chain holder undo/redo is broken
+- level resize with chain holder crashes rained
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
 - reported crash in asset manager due to queues or something

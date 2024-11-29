@@ -496,33 +496,11 @@ class GeometryEditor : IEditorMode
                     }
                 }
 
-                for (int l = Level.LayerCount-1; l >= 0; l--)
+                levelRender.RenderLevel(new Rendering.LevelRenderConfig()
                 {
-                    var alpha = (l == shownLayer) ? 255 : 50;
-                    if (l == 0) foregroundAlpha = alpha;
-                    var color = LevelWindow.GeoColor(alpha);
-                    int offset = (l - shownLayer) * 2;
-
-                    Rlgl.PushMatrix();
-                    Rlgl.Translatef(offset, offset, 0f);
-                    levelRender.RenderGeometry(l, color);
-
-                    if (drawTiles)
-                    {
-                        // if alpha is 255, the product wil be 100 (like in every other edit mode)
-                        // and a smaller geo alpha will thus have a smaller tile alpha value
-                        levelRender.RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
-                    }
-
-                    if (drawProps)
-                    {
-                        levelRender.RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
-                    }
-
-                    levelRender.RenderObjects(l, new Color(255, 255, 255, alpha));
-
-                    Rlgl.PopMatrix();
-                }
+                    ActiveLayer = shownLayer,
+                    DrawObjects = true
+                });
 
                 break;
         }

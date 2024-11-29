@@ -2,6 +2,7 @@ using Raylib_cs;
 using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
 namespace Rained.Rendering;
@@ -627,13 +628,16 @@ class LevelEditRender : IDisposable
 
                 if (rope is not null)
                 {
+                    var segColor = prop.PropInit.Rope!.PreviewColor;
+                    segColor.A = (byte)(segColor.A * alpha / 255f);
+
                     for (int i = 0; i < rope.SegmentCount; i++)
                     {
                         var newPos = rope.GetSmoothSegmentPos(i);
                         var oldPos = rope.GetSmoothLastSegmentPos(i);
                         var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
 
-                        Raylib.DrawCircleV(lerpPos * Level.TileSize, 2f, prop.PropInit.Rope!.PreviewColor);
+                        Raylib.DrawCircleV(lerpPos * Level.TileSize, 2f, segColor);
                     }
                 }
             }
@@ -837,7 +841,167 @@ class LevelEditRender : IDisposable
             );
         }
     }
+    
+    private void FillWater()
+    {
+        var level = RainEd.Instance.Level;
 
+        float waterHeight = level.WaterLevel + level.BufferTilesBot + 0.5f;
+        Raylib.DrawRectangle(
+            0,
+            (int)((level.Height - waterHeight) * Level.TileSize),
+            level.Width * Level.TileSize,
+            (int)(waterHeight * Level.TileSize),
+            new Color(0, 0, 255, 100)
+        );
+    }
+
+    /// <summary>
+    /// Render level into single framebuffer.
+    /// </summary>
+    public void RenderLevel(LevelRenderConfig config)
+    {
+        var level = RainEd.Instance.Level;
+
+        // draw level background
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
+        
+        // draw the layers
+        var drawTiles = config.DrawTiles || RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = config.DrawProps || RainEd.Instance.Preferences.ViewProps;
+
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
+            var alpha = l == config.ActiveLayer ? 255 : 50;
+            var color = LevelWindow.GeoColor(config.Fade, alpha);
+            int offset = (l - config.ActiveLayer) * config.LayerOffset;
+
+            Rlgl.PushMatrix();
+            Rlgl.Translatef(offset, offset, 0f);
+            RenderGeometry(l, color);
+
+            if (drawTiles)
+                RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (drawProps)
+                RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (config.DrawObjects)
+                RenderObjects(l, new Color(255, 255, 255, alpha));
+            
+            Rlgl.PopMatrix();
+
+            // draw water behind first layer if set
+            if (config.FillWater && l == 1 && level.HasWater && !level.IsWaterInFront)
+                FillWater();
+        }
+
+        // draw water
+        if (config.FillWater && level.HasWater && level.IsWaterInFront)
+            FillWater();
+    }
+
+    /// <summary>
+    /// Render level into multiple framebuffers, and then composite it into the main one.
+    /// </summary>
+    /// <param name="config"></param>
+    /// <param name="mainFrame"></param>
+    /// <param name="layerFrames"></param>
+    public void RenderLevelComposite(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames, LevelRenderConfig config)
+    {
+        var level = RainEd.Instance.Level;
+        var window = RainEd.Instance.LevelView;
+
+        // draw level background
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
+        
+        // draw the layers
+        var drawTiles = config.DrawTiles || RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = config.DrawProps || RainEd.Instance.Preferences.ViewProps;
+        var propAlpha = config.DrawProps ? 255 : 100;
+
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
+            // draw layer into framebuffer
+            int offset = (l - config.ActiveLayer) * config.LayerOffset;
+            Raylib.BeginTextureMode(layerFrames[l]);
+
+            Raylib.EndScissorMode();
+            Raylib.ClearBackground(new Color(0, 0, 0, 0));
+            window.BeginLevelScissorMode();
+
+            Rlgl.PushMatrix();
+                Rlgl.Translatef(offset, offset, 0f);
+                RenderGeometry(l, LevelWindow.GeoColor(config.Fade, 255));
+
+                // if drawTiles was explicitly set, they are drawn opaque.
+                // but if it was not set, and is being drawn because of the view setting,
+                // they are partially transparent.
+                if (drawTiles)
+                    RenderTiles(l, config.DrawTiles ? 255 : 100);
+
+                // same goes for props.
+                if (drawProps && !config.DrawPropsInFront)
+                    RenderProps(l, propAlpha);
+                
+                if (config.DrawObjects)
+                    RenderObjects(l, new Color(255, 255, 255, 255));
+                
+            Rlgl.PopMatrix();
+        }
+
+        // draw alpha-blended result into main frame
+        Raylib.BeginTextureMode(mainFrame);
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
+            Rlgl.PushMatrix();
+            Rlgl.LoadIdentity();
+
+            var alpha = l == config.ActiveLayer ? 255 : 50;
+            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
+
+            // draw water behind first layer if set
+            if (config.FillWater && l == 1 && level.HasWater && !level.IsWaterInFront)
+                FillWater();
+            
+            Rlgl.PopMatrix();
+        }
+
+        // draw props in front of geo
+        if (drawProps && config.DrawPropsInFront)
+        {
+            for (int l = Level.LayerCount-1; l >= 0; l--)
+            {
+                int offset = (l - config.ActiveLayer) * config.LayerOffset;
+
+                // draw props into layer's framebuffer
+                Raylib.BeginTextureMode(layerFrames[l]);
+                Raylib.ClearBackground(Color.Blank);
+
+                Rlgl.PushMatrix();
+                Rlgl.Translatef(offset, offset, 0);
+                RenderProps(l, propAlpha);
+                Rlgl.PopMatrix();
+            }
+
+            for (int l = Level.LayerCount-1; l >= 0; l--)
+            {
+                // draw alpha-blended results into main frame
+                Raylib.BeginTextureMode(mainFrame);
+                Rlgl.PushMatrix();
+                    Rlgl.LoadIdentity();
+
+                    var alpha = l == config.ActiveLayer ? 255 : 50;
+                    RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
+                Rlgl.PopMatrix();
+            }
+        }
+
+        // draw water
+        if (config.FillWater && level.HasWater && level.IsWaterInFront)
+            FillWater();
+    }
+    
     public void Dispose()
     {
         Palette.Dispose();

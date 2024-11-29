@@ -189,17 +189,8 @@ public sealed class RenderContext : IDisposable
             LogInfo("Vendor: " + GpuVendor);
             LogInfo("Renderer: " + GpuRenderer);
             LogInfo("Mesh.IsBaseVertexSupported: " + Mesh.IsBaseVertexSupported);
-            LogInfo("Mesh.Are32BitIndicesSupported: " + Mesh.IsBaseVertexSupported);
             LogInfo("Texture.MaxSize: " + Texture.MaxSize);
             LogInfo("Debug context supported: " + gl.IsExtensionPresent("GL_KHR_debug"));
-
-            LogInfo("Extensions present:");
-            var nExtensions = gl.GetInteger(GetPName.NumExtensions);
-            for (int i = 0; i < nExtensions; i++)
-            {
-                var extName = gl.GetStringS(GLEnum.Extensions, (uint)i);
-                LogInfo("  - " + extName);
-            }
         }
 
         

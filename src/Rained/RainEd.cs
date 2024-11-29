@@ -21,7 +21,7 @@ public class RainEdStartupException : Exception
 /// </summary>
 sealed class RainEd
 {
-    public const string Version = "v2.2.0-dev";
+    public const string Version = "v2.2.1-dev";
 
     public static RainEd Instance = null!;
 
@@ -104,6 +104,15 @@ sealed class RainEd
 
         Log.Information("========================");
         Log.Information("Rained {Version} started", Version);
+        
+        // display drizzle version
+        {
+            var drizzleVer = typeof(global::Drizzle.Lingo.Runtime.LingoRuntime).Assembly.GetName().Version;
+            if (drizzleVer is not null)
+                Log.Information("Drizzle version: " + drizzleVer.ToString());
+            else
+                Log.Information("Drizzle version: UNKNOWN");
+        }
 
         // load user preferences
         KeyShortcuts.InitShortcuts();
@@ -383,7 +392,7 @@ sealed class RainEd
     {        
         if (!string.IsNullOrEmpty(path))
         {
-            Log.Information("Loading level {Path}...", Path.GetFileName(path));
+            Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
 
             try
             {

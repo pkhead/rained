@@ -449,45 +449,11 @@ class EffectsEditor : IEditorMode
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
         
-        // draw level background (solid white)
-        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
-
-        // draw layers, including tiles
-        var drawTiles = RainEd.Instance.Preferences.ViewTiles;
-        var drawProps = RainEd.Instance.Preferences.ViewProps;
-        for (int l = Level.LayerCount-1; l >= 0; l--)
+        levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
-            // draw layer into framebuffer
-            int offset = l * 2;
-            Raylib.BeginTextureMode(layerFrames[l]);
-
-            Raylib.EndScissorMode();
-            Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            window.BeginLevelScissorMode();
-
-            Rlgl.PushMatrix();
-                Rlgl.Translatef(offset, offset, 0f);
-                levelRender.RenderGeometry(l, LevelWindow.GeoColor(30f / 255f, 255));
-
-                if (drawTiles)
-                    levelRender.RenderTiles(l, 100);
-
-                if (drawProps)
-                    levelRender.RenderProps(l, 100);
-            Rlgl.PopMatrix();
-        }
-
-        // draw alpha-blended result into main frame
-        Raylib.BeginTextureMode(mainFrame);
-        for (int l = Level.LayerCount-1; l >= 0; l--)
-        {
-            Rlgl.PushMatrix();
-            Rlgl.LoadIdentity();
-
-            var alpha = l == window.WorkLayer ? 255 : 50;
-            RlExt.DrawRenderTexture(layerFrames[l], 0, 0, new Color(255, 255, 255, alpha));
-            Rlgl.PopMatrix();
-        }
+            Fade = 30f / 255f,
+            ActiveLayer = window.WorkLayer
+        });
 
         if (selectedEffect >= 0)
         {
