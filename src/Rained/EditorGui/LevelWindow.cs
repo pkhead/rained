@@ -149,9 +149,11 @@ class LevelWindow
         editorModes.Add(new PropEditor(this));
 
         // load user preferences
-        Renderer.Palette.Index = RainEd.Instance.Preferences.UsePalette ? RainEd.Instance.Preferences.PaletteIndex : -1;
-        Renderer.Palette.FadeIndex = RainEd.Instance.Preferences.PaletteFadeIndex;
-        Renderer.Palette.Mix = RainEd.Instance.Preferences.PaletteFade;
+        var prefs = RainEd.Instance.Preferences;
+        Renderer.UsePalette = prefs.UsePalette;
+        Renderer.Palette.Index = prefs.PaletteIndex;
+        Renderer.Palette.FadeIndex = prefs.PaletteFadeIndex;
+        Renderer.Palette.Mix = prefs.PaletteFade;
     }
 
     public void SavePreferences(UserPreferences prefs)
