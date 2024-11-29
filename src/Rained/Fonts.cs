@@ -10,6 +10,11 @@ static class Fonts
     private static ImFontPtr[] loadedFonts = [];
     private static ImFontPtr[] loadedBigFonts = [];
 
+    /// <summary>
+    /// Embedded ProggyClean, 13px
+    /// </summary>
+    public static ImFontPtr DefaultFont;
+
     public static ReadOnlySpan<string> AvailableFonts => availableFontPaths;
 
     private static readonly string FontDirectory = Path.Combine(Boot.AppDataPath, "config","fonts");
@@ -44,6 +49,7 @@ static class Fonts
         var io = ImGui.GetIO();
 
         io.Fonts.Clear();
+        DefaultFont = io.Fonts.AddFontDefault();
 
         foreach (var file in availableFontPaths)
         {
@@ -122,6 +128,16 @@ static class Fonts
                     return loadedBigFonts[i];
                 }
             }
+        }
+
+        return null;
+    }
+
+    public static ImFontPtr GetFontPtr(string name)
+    {
+        for (int i = 0; i < AvailableFonts.Length; i++)
+        {
+            if (AvailableFonts[i] == name) return loadedFonts[i];
         }
 
         return null;

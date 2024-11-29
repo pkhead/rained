@@ -3,6 +3,7 @@ using System.Numerics;
 using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
+using ImGuiNET;
 namespace Rained.Rendering;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
@@ -182,18 +183,34 @@ class LevelEditRender : IDisposable
                 }
             }
         }
+    }
 
-        // draw nodes
-        if (layer == 0)
+    public void RenderNodes(Color color)
+    {
+        var idx = 0;
+        foreach (var (nodePos, nodeType) in RainEd.Instance.CurrentTab!.NodeData.Nodes)
         {
-            foreach (var (nodePos, nodeType) in RainEd.Instance.CurrentTab!.NodeData.Nodes)
-            {
-                Raylib.DrawRectangle(
-                    nodePos.X * Level.TileSize, nodePos.Y * Level.TileSize,
-                    Level.TileSize, Level.TileSize,
-                    Color.White
-                );
-            }
+            Raylib.DrawRectangle(
+                nodePos.X * Level.TileSize, nodePos.Y * Level.TileSize,
+                Level.TileSize, Level.TileSize,
+                Color.White
+            );
+
+            var text = idx.ToString();
+            var pos = new Vector2(nodePos.X + 0.5f, nodePos.Y + 0.5f);
+            var font = Fonts.DefaultFont;
+
+            RainEd.RenderContext!.DrawColor = Glib.Color.Black;
+            var txtSize = TextRendering.CalcTextSize(font, text);
+            var scale = 2f / ViewZoom;
+            TextRendering.DrawText(
+                text: text,
+                font: font,
+                offset: pos * Level.TileSize - txtSize / 2f * scale,
+                scale: new Vector2(scale, scale)
+            );
+
+            idx++;
         }
     }
 

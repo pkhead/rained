@@ -1,9 +1,9 @@
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
-using System.Runtime.InteropServices;
 
 using Rained.LevelData;
+using Rained.Rendering;
 namespace Rained.EditorGui.Editors;
 
 class CameraEditor : IEditorMode
@@ -407,45 +407,6 @@ class CameraEditor : IEditorMode
         lastMousePos = window.MouseCellFloat;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    readonly struct ImGuiGlyph
-    {
-        public readonly uint Bitfield;
-        public readonly float AdvanceX; // Distance to next character
-        public readonly float X0, Y0, X1, Y1; // Glyph corners
-        public readonly float U0, V0, U1, V1; // Texture coordinates
-    }
-
-    private unsafe void DrawText(string text, Vector2 offset, Vector2 scale)
-    {
-        var rctx = RainEd.RenderContext;
-        var font = Fonts.GetCurrentBigFont()!.Value;
-        var fontTex = Boot.ImGuiController!.FontTexture;
-        
-        for (int i = 0; i < text.Length; i++)
-        {
-            char c = text[i];
-            ImGuiGlyph* glyph = (ImGuiGlyph*) font.FindGlyph(c).NativePtr;
-            var glyphW = (glyph->U1 - glyph->U0) * fontTex.Width;
-            var glyphH = (glyph->V1 - glyph->V0) * fontTex.Height;
-
-            rctx.DrawTexture(
-                texture: fontTex,
-                srcRect: new Glib.Rectangle(
-                    glyph->U0 * fontTex.Width, glyph->V0 * fontTex.Height,
-                    glyphW, glyphH
-                ),
-                dstRect: new Glib.Rectangle(
-                    offset,
-                    new Vector2(glyphW * scale.X, glyphH * scale.Y)
-                )
-            );
-
-            var advX = font.IndexAdvanceX[c];
-            offset.X += (c < font.IndexAdvanceX.Size ? advX : font.FallbackAdvanceX) * scale.X;
-        }
-    }
-
     private void RenderCamera(Camera camera, bool isHovered, int hoveredCorner)
     {
         var camCenter = camera.Position + Camera.WidescreenSize / 2f;
@@ -525,9 +486,14 @@ class CameraEditor : IEditorMode
         {
             RainEd.RenderContext.DrawColor = Glib.Color.White;
             var text = (RainEd.Instance.Level.Cameras.IndexOf(camera) + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            DrawText(
-                text, camCenter * Level.TileSize - ImGui.CalcTextSize(text) / (2f * window.ViewZoom),
-                new Vector2(1f / window.ViewZoom, 1f / window.ViewZoom)
+            
+            var font = Fonts.GetCurrentBigFont()!.Value;
+            var txtSize = TextRendering.CalcTextSize(font, text);
+            TextRendering.DrawText(
+                text: text,
+                font: font,
+                offset: camCenter * Level.TileSize - txtSize / (2f * window.ViewZoom),
+                scale: new Vector2(1f / window.ViewZoom, 1f / window.ViewZoom)
             );
         }
 

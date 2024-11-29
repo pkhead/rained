@@ -506,6 +506,7 @@ class GeometryEditor : IEditorMode
         }
 
         levelRender.RenderShortcuts(Color.White);
+        levelRender.RenderNodes(Color.White);
         levelRender.RenderGrid();
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();

@@ -669,6 +669,7 @@ namespace Glib.ImGui
             _fontTexture?.Dispose();
             //_fontTexture = Glib.Texture.Create(width, height, pixels);
             _fontTexture = Glib.Texture.Create(width, height, Glib.PixelFormat.RGBA);
+            _fontTexture.FilterMode = TextureFilterMode.Nearest;
             _fontTexture.UpdateFromImage(new Span<byte>((void*)pixels, width * height * bytesPerPixel));
 
             // Store our identifier
