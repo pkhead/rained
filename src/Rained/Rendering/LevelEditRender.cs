@@ -2,6 +2,7 @@ using Raylib_cs;
 using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
 namespace Rained.Rendering;
@@ -957,6 +958,65 @@ class LevelEditRender : IDisposable
                 Color.Blue
             );
         }
+    }
+
+    private void FillWater()
+    {
+        var level = RainEd.Instance.Level;
+
+        float waterHeight = level.WaterLevel + level.BufferTilesBot + 0.5f;
+        Raylib.DrawRectangle(
+            0,
+            (int)((level.Height - waterHeight) * Level.TileSize),
+            level.Width * Level.TileSize,
+            (int)(waterHeight * Level.TileSize),
+            new Color(0, 0, 255, 100)
+        );
+    }
+
+    /// <summary>
+    /// Render level into single framebuffer.
+    /// </summary>
+    public void RenderLevel(LevelRenderConfig config)
+    {
+        var level = RainEd.Instance.Level;
+
+        // draw level background
+        Raylib.DrawRectangle(0, 0, level.Width * Level.TileSize, level.Height * Level.TileSize, LevelWindow.BackgroundColor);
+        
+        // draw the layers
+        var drawTiles = config.DrawTiles || RainEd.Instance.Preferences.ViewTiles;
+        var drawProps = config.DrawProps || RainEd.Instance.Preferences.ViewProps;
+
+        for (int l = Level.LayerCount-1; l >= 0; l--)
+        {
+            var alpha = l == config.ActiveLayer ? 255 : 50;
+            var color = LevelWindow.GeoColor(config.Fade, alpha);
+            int offset = (l - config.ActiveLayer) * 2;
+
+            Rlgl.PushMatrix();
+            Rlgl.Translatef(offset, offset, 0f);
+            RenderGeometry(l, color);
+
+            if (drawTiles)
+                RenderTiles(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (drawProps)
+                RenderProps(l, (int)(alpha * (100.0f / 255.0f)));
+            
+            if (config.DrawObjects)
+                RenderObjects(l, new Color(255, 255, 255, alpha));
+            
+            Rlgl.PopMatrix();
+
+            // draw water behind first layer if set
+            if (config.FillWater && l == 1 && level.HasWater && !level.IsWaterInFront)
+                FillWater();
+        }
+
+        // draw water
+        if (config.FillWater && level.HasWater && level.IsWaterInFront)
+            FillWater();
     }
 
     /// <summary>
