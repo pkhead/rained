@@ -32,7 +32,7 @@ class LevelWindow
     private readonly UICanvasWidget canvasWidget;
     public bool IsViewportHovered { get => canvasWidget.IsHovered; }
 
-    private readonly List<IEditorMode> editorModes = new();
+    private readonly IEditorMode[] editorModes = new IEditorMode[7];
     private int selectedMode = (int) EditModeEnum.Environment;
     private int queuedEditMode = (int) EditModeEnum.None;
 
@@ -140,13 +140,13 @@ class LevelWindow
             cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
         };
 
-        editorModes.Add(new EnvironmentEditor(this));
-        editorModes.Add(new GeometryEditor(this));
-        editorModes.Add(new TileEditor(this));
-        editorModes.Add(new CameraEditor(this));
-        editorModes.Add(new LightEditor(this));
-        editorModes.Add(new EffectsEditor(this));
-        editorModes.Add(new PropEditor(this));
+        editorModes[(int)EditModeEnum.Environment] = new EnvironmentEditor(this);
+        editorModes[(int)EditModeEnum.Geometry] = new GeometryEditor(this);
+        editorModes[(int)EditModeEnum.Tile] = new TileEditor(this);
+        editorModes[(int)EditModeEnum.Camera] = new CameraEditor(this);
+        editorModes[(int)EditModeEnum.Light] = new LightEditor(this);
+        editorModes[(int)EditModeEnum.Effect] = new EffectsEditor(this);
+        editorModes[(int)EditModeEnum.Prop] = new PropEditor(this);
 
         // load user preferences
         var prefs = RainEd.Instance.Preferences;
@@ -256,7 +256,7 @@ class LevelWindow
                 ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 8f);
                 if (ImGui.BeginCombo("##EditMode", editorModes[selectedMode].Name))
                 {
-                    for (int i = 0; i < editorModes.Count; i++)
+                    for (int i = 0; i < editorModes.Length; i++)
                     {
                         var isSelected = i == selectedMode;
                         if (ImGui.Selectable(editorModes[i].Name, isSelected))
