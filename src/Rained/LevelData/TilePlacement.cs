@@ -157,7 +157,8 @@ static class TilePlacement
         int tileLeft = tileRootX - tile.CenterX;
         int tileTop = tileRootY - tile.CenterY;
 
-        var levelRenderer = RainEd.Instance.LevelView.Renderer;
+        var view = RainEd.Instance.LevelView;
+        var levelRenderer = view.Renderer;
 
         for (int x = 0; x < tile.Width; x++)
         {
@@ -176,14 +177,14 @@ static class TilePlacement
                     if (specInt >= 0)
                     {
                         level.Layers[layer, gx, gy].Geo = (GeoType) specInt;
-                        levelRenderer.InvalidateGeo(gx, gy, layer);
+                        view.InvalidateGeo(gx, gy, layer);
                     }
 
                     // place second layer
                     if (layer < 2 && spec2Int >= 0)
                     {
                         level.Layers[layer+1, gx, gy].Geo = (GeoType) spec2Int;
-                        levelRenderer.InvalidateGeo(gx, gy, layer+1);
+                        view.InvalidateGeo(gx, gy, layer+1);
                     }
                 }
 
@@ -228,7 +229,8 @@ static class TilePlacement
     /// <exception cref="Exception">Thrown if the tile at the given position is not a tile head</exception>
     public static void RemoveTile(this Level level, int layer, int tileRootX, int tileRootY, bool removeGeometry)
     {
-        var levelRenderer = RainEd.Instance.LevelView.Renderer;
+        var view = RainEd.Instance.LevelView;
+        var levelRenderer = view.Renderer;
 
         var tile = level.Layers[layer, tileRootX, tileRootY].TileHead
             ?? throw new Exception("Attempt to remove unknown tile");
@@ -267,13 +269,13 @@ static class TilePlacement
                     if (specInt >= 0)
                     {
                         level.Layers[layer, gx, gy].Geo = GeoType.Air;
-                        levelRenderer.InvalidateGeo(gx, gy, layer);
+                        view.InvalidateGeo(gx, gy, layer);
                     }
 
                     if (spec2Int >= 0 && layer < 2)
                     {
                         level.Layers[layer+1, gx, gy].Geo = GeoType.Air;
-                        levelRenderer.InvalidateGeo(gx, gy, layer+1);
+                        view.InvalidateGeo(gx, gy, layer+1);
                     }
                 }
             }
@@ -282,9 +284,7 @@ static class TilePlacement
         // remove tile root
         level.Layers[layer, tileRootX, tileRootY].TileHead = null;
 
-        // remove chain data
         level.RemoveChainData(layer, tileRootX, tileRootY);
-
         levelRenderer.InvalidateTileHead(tileRootX, tileRootY, layer);
     }
 

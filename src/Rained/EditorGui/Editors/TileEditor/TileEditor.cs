@@ -583,7 +583,7 @@ partial class TileEditor : IEditorMode
                                 if (modifyGeometry)
                                 {
                                     level.Layers[window.WorkLayer, x, y].Geo = GeoType.Solid;
-                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                    window.InvalidateGeo(x, y, window.WorkLayer);
                                 }
 
                                 level.Layers[window.WorkLayer, x, y].Material = selectedMaterial;
@@ -606,7 +606,7 @@ partial class TileEditor : IEditorMode
                                 if (modifyGeometry)
                                 {
                                     level.Layers[window.WorkLayer, x, y].Geo = GeoType.Air;
-                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                    window.InvalidateGeo(x, y, window.WorkLayer);
                                 }
                             }
 
@@ -700,7 +700,7 @@ partial class TileEditor : IEditorMode
                                 if (modifyGeometry)
                                 {
                                     level.Layers[window.WorkLayer, x, y].Geo = GeoType.Solid;
-                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                    window.InvalidateGeo(x, y, window.WorkLayer);
                                 }
 
                                 cell.Material = selectedMaterial;
@@ -713,7 +713,7 @@ partial class TileEditor : IEditorMode
                                 if (modifyGeometry)
                                 {
                                     level.Layers[window.WorkLayer, x, y].Geo = GeoType.Air;
-                                    window.Renderer.InvalidateGeo(x, y, window.WorkLayer);
+                                    window.InvalidateGeo(x, y, window.WorkLayer);
                                 }
 
                                 cell.Material = 0;
@@ -1058,6 +1058,6 @@ partial class TileEditor : IEditorMode
         }
 
         level.Layers[layer, x, y].Geo = (GeoType) requirements[localX, localY];
-        render.InvalidateGeo(x, y, layer);
+        window.InvalidateGeo(x, y, layer);
     }
 }

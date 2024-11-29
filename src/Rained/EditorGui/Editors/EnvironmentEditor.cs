@@ -68,20 +68,6 @@ class EnvironmentEditor : IEditorMode
         } ImGui.End();
     }
 
-    private void DrawWater()
-    {
-        var level = RainEd.Instance.Level;
-
-        float waterHeight = level.WaterLevel + level.BufferTilesBot + 0.5f;
-        Raylib.DrawRectangle(
-            0,
-            (int)((level.Height - waterHeight) * Level.TileSize),
-            level.Width * Level.TileSize,
-            (int)(waterHeight * Level.TileSize),
-            new Color(0, 0, 255, 100)
-        );
-    }
-
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         bool wasDragging = isDragging;

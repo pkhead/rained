@@ -719,6 +719,9 @@ sealed class RainEd
         if (CurrentTab != null)
             UpdateRopeSimulation();
         
+        // update node data
+        CurrentTab?.NodeData.Update();
+        
         EditorWindow.Render();
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))

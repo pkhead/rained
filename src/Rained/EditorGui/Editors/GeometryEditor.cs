@@ -829,7 +829,7 @@ class GeometryEditor : IEditorMode
                 else if (selectedTool is Tool.Air)
                     cell.Geo = GeoType.Solid;
 
-                window.Renderer.InvalidateGeo(x, y, l);
+                window.InvalidateGeo(x, y, l);
             }
         }
     }
@@ -955,7 +955,7 @@ class GeometryEditor : IEditorMode
                     ref var dstCell = ref level.Layers[dstLayer, tx, ty];
                     dstCell.Geo = cell.Geo;
                     dstCell.Objects = cell.Objects;
-                    window.Renderer.InvalidateGeo(tx, ty, dstLayer);
+                    window.InvalidateGeo(tx, ty, dstLayer);
 
                     break;
                 }
@@ -1045,7 +1045,7 @@ class GeometryEditor : IEditorMode
             }
 
             level.Layers[layer, tx, ty] = cell;
-            window.Renderer.InvalidateGeo(tx, ty, layer);
+            window.InvalidateGeo(tx, ty, layer);
         }
     }
 
@@ -1113,7 +1113,7 @@ class GeometryEditor : IEditorMode
                 oldBelowEmpty = belowEmpty;
                 
                 level.Layers[layer, x, y].Geo = fillGeo;
-                renderer.InvalidateGeo(x, y, layer);
+                window.InvalidateGeo(x, y, layer);
                 x++;
             } 
         }

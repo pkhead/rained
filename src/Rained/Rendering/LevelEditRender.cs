@@ -182,6 +182,19 @@ class LevelEditRender : IDisposable
                 }
             }
         }
+
+        // draw nodes
+        if (layer == 0)
+        {
+            foreach (var (nodePos, nodeType) in RainEd.Instance.CurrentTab!.NodeData.Nodes)
+            {
+                Raylib.DrawRectangle(
+                    nodePos.X * Level.TileSize, nodePos.Y * Level.TileSize,
+                    Level.TileSize, Level.TileSize,
+                    Color.White
+                );
+            }
+        }
     }
 
     private enum ShortcutDirection

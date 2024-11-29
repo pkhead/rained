@@ -44,7 +44,6 @@ class LevelWindow
     // render texture given to each editor mode class
     private readonly RlManaged.RenderTexture2D[] layerRenderTextures;
     public readonly LevelEditRender Renderer;
-    public readonly LevelNodeData NodeData;
 
     private ChangeHistory.CellChangeRecorder cellChangeRecorder;
     public ChangeHistory.CellChangeRecorder CellChangeRecorder { get => cellChangeRecorder; }
@@ -132,7 +131,6 @@ class LevelWindow
         }
         
         Renderer = new LevelEditRender();
-        NodeData = new LevelNodeData(RainEd.Instance.Level);
         
         cellChangeRecorder = new ChangeHistory.CellChangeRecorder();
         RainEd.Instance.ChangeHistory.Cleared += () =>
@@ -527,5 +525,21 @@ class LevelWindow
             (int) (RainEd.Instance.Level.Width * Level.TileSize * ViewZoom),
             (int) (RainEd.Instance.Level.Height * Level.TileSize * ViewZoom)
         );
+    }
+
+    // seems a bit random to be placed here but i'm lazy
+    /// <summary>
+    /// Invalidate geometry for both the renderer and node list.
+    /// </summary>
+    /// <param name="x">The X position of the dirty cell.</param>
+    /// <param name="y">The Y position of the dirty cell.</param>
+    /// <param name="layer">The work layer of the dirty cell.</param>
+    public void InvalidateGeo(int x, int y, int layer)
+    {
+        Log.Debug("InvalidateGeo({X}, {Y}, {Layer})", x, y, layer);
+
+        Renderer.InvalidateGeo(x, y, layer);
+        if (layer == 0)
+            RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
     }
 }

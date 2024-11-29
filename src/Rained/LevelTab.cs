@@ -7,6 +7,7 @@ class LevelTab : IDisposable
     public string FilePath;
     public string Name;
     public Level Level;
+    public LevelNodeData NodeData;
     public readonly ChangeHistory.ChangeHistory ChangeHistory;
     
     /// <summary>
@@ -25,6 +26,7 @@ class LevelTab : IDisposable
         Name = "Unnamed";
         Level = Level.NewDefaultLevel();
         ChangeHistory = new ChangeHistory.ChangeHistory();
+        NodeData = new LevelNodeData(Level);
     }
 
     public LevelTab(Level level, string filePath = "")
@@ -33,6 +35,7 @@ class LevelTab : IDisposable
         Name = string.IsNullOrWhiteSpace(filePath) ? "Unnamed" : Path.GetFileNameWithoutExtension(filePath);
         Level = level;
         ChangeHistory = new ChangeHistory.ChangeHistory();
+        NodeData = new LevelNodeData(Level);
 
         if (FilePath is not null && Path.GetDirectoryName(FilePath) == RainEd.EmergencySaveFolder)
         {

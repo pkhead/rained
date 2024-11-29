@@ -1,5 +1,6 @@
 namespace Rained.LevelData;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 
 enum NodeType
@@ -37,6 +38,9 @@ class LevelNodeData
     private readonly Level level;
 
     private readonly List<(Vector2i pos, NodeType type)> nodes = [];
+    public IEnumerable<(Vector2i pos, NodeType type)> Nodes => nodes;
+    private bool dirty = false;
+    private bool hadWater;
 
     public LevelNodeData(Level level)
     {
@@ -47,24 +51,22 @@ class LevelNodeData
         {
             for (int x = 0; x < level.Width; x++)
             {
-                RegisterObject(x, y, 0);
+                InvalidateCell(x, y);
             }
         }
 
         Update();
+        hadWater = level.HasWater;
     }
 
     /// <summary>
-    /// Register a newly placed geometry object into the NodeData system.
-    /// If it is not a relevant shortcut object, it will be ignored.
+    /// Marks a cell on the first layer as dirty.
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="layer"></param>
-    public void RegisterObject(int x, int y, int layer)
+    /// <param name="x">The X position of the cell.</param>
+    /// <param name="y">The Y position of the cell.</param>
+    public void InvalidateCell(int x, int y)
     {
         const LevelObject nodeMask = LevelObject.Entrance | LevelObject.CreatureDen | LevelObject.GarbageWorm | LevelObject.ScavengerHole | LevelObject.Hive;
-        if (layer != 0) return; // only objects added to the first layer can be scanned for node creation
 
         var cell = level.Layers[0,x,y];
         var cellPos = new Vector2i(x, y);
@@ -73,15 +75,23 @@ class LevelNodeData
             shortcutLocsSet.Add(cellPos);
         else
             shortcutLocsSet.Remove(cellPos);
+        
+        dirty = true;
     }
 
     /// <summary>
-    /// Recalculate the nodes list.
+    /// Recalculate the nodes list if needed.
     /// </summary>
     public void Update()
     {
+        if (hadWater != level.HasWater) dirty = true;
+        hadWater = level.HasWater;
+        
+        if (!dirty) return;
+
+        var stopwatch = new Stopwatch();
+
         var shortcutLocs = shortcutLocsSet.ToArray();
-        var level = RainEd.Instance.Level;
         Array.Sort(shortcutLocs, (Vector2i pos0, Vector2i pos1) =>
         {
             var idx0 = pos0.Y * level.Width + pos0.X;
@@ -236,13 +246,14 @@ class LevelNodeData
         {
             nodes.Add((pos, NodeType.GarbageHoles));
         }
-        
-        for (int i = 0; i < nodes.Count; i++)
-        {
-            Log.Debug("{Index}: {NodeType}", i, nodes[i].type);
-        }
+
+        stopwatch.Stop();
+        Log.Debug("nodedata update: {ElapsedTime} ms", stopwatch.ElapsedMilliseconds);
+
+        dirty = false;
     }
 
+    // TODO: implement this
     private bool ValidShortcut(int x, int y)
     {
         return true;
