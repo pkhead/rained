@@ -127,6 +127,11 @@ partial class PropEditor : IEditorMode
         isMouseDragging = false;
     }
 
+    public void ReloadLevel()
+    {
+        changeRecorder.TakeSettingsSnapshot();
+    }
+
     public void SavePreferences(UserPreferences prefs)
     {
         if (snappingMode == 0)
