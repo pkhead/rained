@@ -51,6 +51,7 @@ v2.4.0 (or v3.0.0, depending on the frequency of major updates):
 
 Other features:
 - prop editor lasso select ()
+- effects save/load presets/prefabs
 - light map stretch
 - asset manager
   - can rearrange the order of stuff in asset manager
