@@ -487,13 +487,12 @@ class CameraEditor : IEditorMode
             RainEd.RenderContext.DrawColor = Glib.Color.White;
             var text = (RainEd.Instance.Level.Cameras.IndexOf(camera) + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
             
-            var font = Fonts.GetCurrentBigFont()!.Value;
-            var txtSize = TextRendering.CalcTextSize(font, text);
-            TextRendering.DrawText(
+            var txtSize = TextRendering.CalcOutlinedTextSize(text);
+            var scale = 2f / window.ViewZoom;
+            TextRendering.DrawTextOutlined(
                 text: text,
-                font: font,
-                offset: camCenter * Level.TileSize - txtSize / (2f * window.ViewZoom),
-                scale: new Vector2(1f / window.ViewZoom, 1f / window.ViewZoom)
+                offset: camCenter * Level.TileSize - txtSize / 2f * scale,
+                scale: new Vector2(scale, scale)
             );
         }
 

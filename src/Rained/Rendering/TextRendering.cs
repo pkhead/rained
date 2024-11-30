@@ -3,7 +3,6 @@ namespace Rained.Rendering;
 using System.Numerics;
 using ImGuiNET;
 using RectpackSharp;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -104,6 +103,11 @@ static class TextRendering
         return font.CalcTextSizeA(font.FontSize, float.PositiveInfinity, float.PositiveInfinity, text);
     }
 
+    public static Vector2 CalcOutlinedTextSize(string text)
+    {
+        return CalcTextSize(Fonts.DefaultFont, text);
+    }
+
     /// <summary>
     /// Generate an outlined ProggyClean font texture atlas.
     /// </summary>
@@ -199,10 +203,10 @@ static class TextRendering
             ref var outGlyph = ref outlineFontGlyphs[rect.Id];
             outGlyph.Bitfield = glyph->Bitfield;
             outGlyph.AdvanceX = glyph->AdvanceX;
-            outGlyph.X0 = glyph->X0;
-            outGlyph.X1 = glyph->X1;
-            outGlyph.Y0 = glyph->Y0;
-            outGlyph.Y1 = glyph->Y1;
+            outGlyph.X0 = glyph->X0 - 1;
+            outGlyph.X1 = glyph->X1 + 1;
+            outGlyph.Y0 = glyph->Y0 - 1;
+            outGlyph.Y1 = glyph->Y1 + 1;
             outGlyph.U0 = (float)rect.X / texWidth;
             outGlyph.V0 = (float)rect.Y / texHeight;
             outGlyph.U1 = (float)(rect.X + rect.Width) / texWidth;
@@ -214,9 +218,7 @@ static class TextRendering
 
     private static Glib.Color GetPixelOrTransparent(Glib.Image img, int x, int y, int minX, int minY, int maxX, int maxY)
     {
-        if (x < minX || y < minY || x >= maxX || y >= maxY)
-            return Glib.Color.Transparent;
-        return img.GetPixel(x, y);
+        return (x < minX || y < minY || x >= maxX || y >= maxY) ? Glib.Color.Transparent : img.GetPixel(x, y);
     }
 
     private static int FindOutlineGlyph(char c)

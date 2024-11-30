@@ -184,28 +184,48 @@ class LevelEditRender : IDisposable
             }
         }
     }
+    
+    static readonly Glib.Color[] NodeColors = [
+        // exit
+        Glib.Color.FromRGBA(200, 200, 200),
+
+        // den
+        Glib.Color.FromRGBA(255, 0, 255),
+
+        // region transportation
+        Glib.Color.FromRGBA(52, 50, 52),
+
+        // side exit
+        Glib.Color.FromRGBA(128, 216, 128),
+
+        // sky exit
+        Glib.Color.FromRGBA(52, 216, 255),
+
+        // sea exit
+        Glib.Color.FromRGBA(0, 0, 255),
+
+        // batfly hive
+        Glib.Color.FromRGBA(0, 255, 0),
+
+        // garbage worm
+        Glib.Color.FromRGBA(255, 128, 0)
+    ];
 
     public void RenderNodes(Color color)
     {
+        var rctx = RainEd.RenderContext!;
         var idx = 0;
+
         foreach (var (nodePos, nodeType) in RainEd.Instance.CurrentTab!.NodeData.Nodes)
         {
-            Raylib.DrawRectangle(
-                nodePos.X * Level.TileSize, nodePos.Y * Level.TileSize,
-                Level.TileSize, Level.TileSize,
-                Color.White
-            );
-
             var text = idx.ToString();
             var pos = new Vector2(nodePos.X + 0.5f, nodePos.Y + 0.5f);
-            var font = Fonts.DefaultFont;
 
-            RainEd.RenderContext!.DrawColor = Glib.Color.Black;
-            var txtSize = TextRendering.CalcTextSize(font, text);
+            rctx.DrawColor = NodeColors[(int)nodeType];
+            var txtSize = TextRendering.CalcOutlinedTextSize(text);
             var scale = 2f / ViewZoom;
-            TextRendering.DrawText(
+            TextRendering.DrawTextOutlined(
                 text: text,
-                font: font,
                 offset: pos * Level.TileSize - txtSize / 2f * scale,
                 scale: new Vector2(scale, scale)
             );
