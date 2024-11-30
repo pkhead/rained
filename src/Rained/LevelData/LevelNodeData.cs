@@ -95,7 +95,7 @@ class LevelNodeData
         Array.Sort(shortcutLocs, (Vector2i pos0, Vector2i pos1) =>
         {
             var idx0 = pos0.Y * level.Width + pos0.X;
-            var idx1 = pos1.Y * level.Width + pos1.Y;
+            var idx1 = pos1.Y * level.Width + pos1.X;
             return idx0 - idx1;
         });
 
@@ -103,8 +103,6 @@ class LevelNodeData
         List<(Vector2i pos, NodeType type)> shortcuts = [];
         List<Vector2i> hives = [];
         List<Vector2i> garbageHoles = [];
-        var lastHive = false;
-        var lastY = 0;
 
         foreach (var shortcutLoc in shortcutLocs)
         {
@@ -119,17 +117,10 @@ class LevelNodeData
             }
 
             // hive detection
-            if (y != lastY) lastHive = false;
-            var hive = cell.Has(LevelObject.Hive) && cell.Geo == GeoType.Air && level.GetClamped(0, x, y+1).Geo == GeoType.Solid;
-            if (hive != lastHive && hive)
+            if (IsHive(x, y) && !IsHive(x-1, y))
                 hives.Add(new Vector2i(x, y));
-            
-            lastHive = hive;
-            if (cell.Has(LevelObject.Hive))
-            {
-                hives.Add(shortcutLoc);
-            }
 
+            // shortcut nodes
             if ((cell.Objects & (LevelObject.Entrance | LevelObject.CreatureDen | LevelObject.ScavengerHole)) != 0)
             {
                 NodeType nodeType = NodeType.Exit;
@@ -157,8 +148,6 @@ class LevelNodeData
                 if (valid && ValidShortcut(x, y))
                     shortcuts.Add((shortcutLoc, nodeType));
             }
-
-            lastY = y;
         }
 
         // room node priority:
@@ -257,5 +246,19 @@ class LevelNodeData
     private bool ValidShortcut(int x, int y)
     {
         return true;
+    }
+
+    private LevelCell GetCellOrDefault(int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= level.Width || y >= level.Height)
+            return new LevelCell();
+        
+        return level.Layers[0,y,x];
+    }
+
+    private bool IsHive(int x, int y)
+    {
+        ref var cell = ref level.Layers[0,x,y];
+        return cell.Has(LevelObject.Hive) && cell.Geo == GeoType.Air && level.GetClamped(0, x, y+1).Geo == GeoType.Solid;
     }
 }
