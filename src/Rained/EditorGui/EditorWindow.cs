@@ -284,6 +284,7 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", prefs.ViewCameras);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewConnections, "Connections", prefs.ViewConnections);
 
                 if (ImGui.MenuItem("Obscured Beams", null, prefs.ViewObscuredBeams))
                 {
@@ -486,6 +487,11 @@ static class EditorWindow
         if (KeyShortcuts.Activated(KeyShortcut.ToggleViewGraphics))
         {
             prefs.ViewPreviews = !prefs.ViewPreviews;
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewConnections))
+        {
+            prefs.ViewConnections = !prefs.ViewConnections;
         }
     }
 

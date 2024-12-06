@@ -56,6 +56,7 @@ class UserPreferences
     public bool ViewTileGraphicPreview { get; set; } = true;
     public bool ViewTileSpecPreview { get; set; } = true;
     public bool ViewTileSpecsOnTooltip { get; set; } = true;
+    public bool ViewConnections { get; set; } = false;
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }
