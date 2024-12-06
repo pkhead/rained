@@ -506,7 +506,7 @@ class GeometryEditor : IEditorMode
         }
 
         levelRender.RenderShortcuts(Color.White);
-        if (RainEd.Instance.Preferences.ViewConnections)
+        if (RainEd.Instance.Preferences.ViewNodeIndices)
             levelRender.RenderNodes(Color.White);
         levelRender.RenderGrid();
         levelRender.RenderBorder();

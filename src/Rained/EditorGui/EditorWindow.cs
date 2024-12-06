@@ -284,7 +284,31 @@ static class EditorWindow
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewProps, "Props", prefs.ViewProps);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewCameras, "Camera Borders", prefs.ViewCameras);
                 KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewGraphics, "Tile Graphics", prefs.ViewPreviews);
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewConnections, "Connections", prefs.ViewConnections);
+
+                if (ImGui.BeginMenu("Node Indices"))
+                {
+                    KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleViewNodeIndices, "Show", prefs.ViewNodeIndices);
+                    ImGui.Separator();
+
+                    Span<string> flagNames = [
+                        "Room Exits",
+                        "Creature Dens",
+                        "Region Transports",
+                        "Side Exits",
+                        "Sky Exits",
+                        "Sea Exits",
+                        "Hives",
+                        "Garbage Holes",
+                    ];
+
+                    for (int i = 0; i < flagNames.Length; i++)
+                    {
+                        ref var flag = ref prefs.NodeViewFilter.Flags[i];
+                        ImGui.MenuItem(flagNames[i], null, ref flag);
+                    }
+
+                    ImGui.EndMenu();
+                }
 
                 if (ImGui.MenuItem("Obscured Beams", null, prefs.ViewObscuredBeams))
                 {
@@ -489,9 +513,9 @@ static class EditorWindow
             prefs.ViewPreviews = !prefs.ViewPreviews;
         }
 
-        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewConnections))
+        if (KeyShortcuts.Activated(KeyShortcut.ToggleViewNodeIndices))
         {
-            prefs.ViewConnections = !prefs.ViewConnections;
+            prefs.ViewNodeIndices = !prefs.ViewNodeIndices;
         }
     }
 

@@ -215,9 +215,12 @@ class LevelEditRender : IDisposable
     {
         var rctx = RainEd.RenderContext!;
         var idx = 0;
+        var filter = RainEd.Instance.Preferences.NodeViewFilter.Flags;
 
         foreach (var (nodePos, nodeType) in RainEd.Instance.CurrentTab!.NodeData.Nodes)
         {
+            if (!filter[(int)nodeType]) continue;
+            
             var text = idx.ToString();
             var pos = new Vector2(nodePos.X + 0.5f, nodePos.Y + 0.5f);
 

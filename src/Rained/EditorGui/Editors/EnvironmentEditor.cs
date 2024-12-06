@@ -93,7 +93,7 @@ class EnvironmentEditor : IEditorMode
         {
             FillWater = true
         });
-        if (RainEd.Instance.Preferences.ViewConnections)
+        if (RainEd.Instance.Preferences.ViewNodeIndices)
         {
             levelRender.RenderShortcuts(Color.White);
             levelRender.RenderNodes(Color.White);

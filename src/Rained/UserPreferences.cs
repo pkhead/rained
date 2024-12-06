@@ -41,6 +41,73 @@ struct HexColor(byte r = 0, byte g = 0, byte b = 0)
     }
 }
 
+class NodeViewFilterData
+{
+    public bool[] Flags;
+
+    public NodeViewFilterData()
+    {
+        Flags = new bool[8];
+        
+        RoomExit = true;
+        CreatureDen = true;
+        RegionTransport = false;
+        SideExit = false;
+        SkyExit = false;
+        SeaExit = false;
+        Hives = false;
+        GarbageHole = true;
+    }
+    
+    public bool RoomExit
+    {
+        get => Flags[0];
+        set => Flags[0] = value;
+    }
+
+    public bool CreatureDen
+    {
+        get => Flags[1];
+        set => Flags[1] = value;
+    }
+
+    public bool RegionTransport
+    {
+        get => Flags[2];
+        set => Flags[2] = value;
+    }
+
+    public bool SideExit
+    {
+        get => Flags[3];
+        set => Flags[3] = value;
+    }
+
+    public bool SkyExit
+    {
+        get => Flags[4];
+        set => Flags[4] = value;
+    }
+
+    public bool SeaExit
+    {
+        get => Flags[5];
+        set => Flags[5] = value;
+    }
+
+    public bool Hives
+    {
+        get => Flags[6];
+        set => Flags[6] = value;
+    }
+
+    public bool GarbageHole
+    {
+        get => Flags[7];
+        set => Flags[7] = value;
+    }
+}
+
 class UserPreferences
 {
     public string DataPath { get; set; }
@@ -56,7 +123,8 @@ class UserPreferences
     public bool ViewTileGraphicPreview { get; set; } = true;
     public bool ViewTileSpecPreview { get; set; } = true;
     public bool ViewTileSpecsOnTooltip { get; set; } = true;
-    public bool ViewConnections { get; set; } = false;
+    public bool ViewNodeIndices { get; set; } = false;
+    public NodeViewFilterData NodeViewFilter { get; set; } = new();
 
     public string GeometryViewMode { get; set; }
     public string PropSnap { get; set; }

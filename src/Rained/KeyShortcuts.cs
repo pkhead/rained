@@ -53,7 +53,7 @@ enum KeyShortcut : int
 
     // View settings shortcuts
     ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
-    ToggleViewCameras, ToggleViewGraphics, ToggleViewConnections,
+    ToggleViewCameras, ToggleViewGraphics, ToggleViewNodeIndices,
     RotatePropCW, RotatePropCCW,
 
     /// <summary>
@@ -291,17 +291,10 @@ static class KeyShortcuts
     public static void ImGuiMenuItem(KeyShortcut id, string name, bool selected = false, bool enabled = true)
     {
         var shortcutData = keyShortcuts[id];
-        
-        if (shortcutData.Key == ImGuiKey.None)
-        {
-            if (ImGui.MenuItem(name, "", selected, enabled))
-                shortcutData.IsActivated = true;
-        }
-        else
-        {
-            if (ImGui.MenuItem(name, shortcutData.ShortcutString, selected, enabled))
-                shortcutData.IsActivated = true;
-        }
+        var shortcutStr = shortcutData.Key == ImGuiKey.None ? null : shortcutData.ShortcutString;
+
+        if (ImGui.MenuItem(name, shortcutStr, selected, enabled))
+            shortcutData.IsActivated = true;
     }
 
     public static string GetShortcutString(KeyShortcut id)
@@ -439,6 +432,6 @@ static class KeyShortcuts
         Register("View Props", KeyShortcut.ToggleViewProps, ImGuiKey.P, ImGuiModFlags.Ctrl);
         Register("View Camera Borders", KeyShortcut.ToggleViewCameras, ImGuiKey.M, ImGuiModFlags.Ctrl);
         Register("View Tile Graphics", KeyShortcut.ToggleViewGraphics, ImGuiKey.T, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
-        Register("View Connections", KeyShortcut.ToggleViewConnections, ImGuiKey.None, ImGuiModFlags.None);
+        Register("View Node Indices", KeyShortcut.ToggleViewNodeIndices, ImGuiKey.None, ImGuiModFlags.None);
     }
 }
