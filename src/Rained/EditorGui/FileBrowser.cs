@@ -255,6 +255,7 @@ partial class FileBrowser
 
         cwd = path;
         entries.Clear();
+        selected.Clear();
 
         // add directories
         foreach (var dirPath in Directory.EnumerateDirectories(path))
