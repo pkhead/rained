@@ -66,15 +66,11 @@ class LevelNodeData
     /// <param name="y">The Y position of the cell.</param>
     public void InvalidateCell(int x, int y)
     {
-        const LevelObject nodeMask = LevelObject.Entrance | LevelObject.CreatureDen | LevelObject.GarbageWorm | LevelObject.ScavengerHole | LevelObject.Hive;
-
-        var cell = level.Layers[0,x,y];
-        var cellPos = new Vector2i(x, y);
-
-        if ((cell.Objects & nodeMask) != 0)
-            shortcutLocsSet.Add(cellPos);
+        ref var cell = ref level.Layers[0,x,y];
+        if (cell.Geo == GeoType.ShortcutEntrance || (cell.Objects & (LevelObject.GarbageWorm | LevelObject.Hive)) != 0)
+            shortcutLocsSet.Add(new Vector2i(x, y));
         else
-            shortcutLocsSet.Remove(cellPos);
+            shortcutLocsSet.Remove(new Vector2i(x, y));
         
         dirty = true;
     }
@@ -104,6 +100,7 @@ class LevelNodeData
         List<Vector2i> hives = [];
         List<Vector2i> garbageHoles = [];
 
+        // fill shortcuts, hives, and garbageHole lists
         foreach (var shortcutLoc in shortcutLocs)
         {
             var x = shortcutLoc.X;
@@ -121,34 +118,17 @@ class LevelNodeData
                 hives.Add(new Vector2i(x, y));
 
             // shortcut nodes
-            if ((cell.Objects & (LevelObject.Entrance | LevelObject.CreatureDen | LevelObject.ScavengerHole)) != 0)
-            {
-                NodeType nodeType = NodeType.Exit;
-                bool valid = true;
-
-                switch (cell.Objects)
-                {
-                    case LevelObject.Entrance:
-                        nodeType = NodeType.Exit;
-                        break;
-                    
-                    case LevelObject.CreatureDen:
-                        nodeType = NodeType.Den;
-                        break;
-                    
-                    case LevelObject.ScavengerHole:
-                        nodeType = NodeType.RegionTransportation;
-                        break;
-                    
-                    default:
-                        valid = false;
-                        break;
-                }
-                
-                if (valid && ValidShortcut(x, y))
-                    shortcuts.Add((shortcutLoc, nodeType));
-            }
+            if (cell.Geo == GeoType.ShortcutEntrance && ProcessShortcut(x, y, out Vector2i shortcutPos, out var nodeType))
+                shortcuts.Add((shortcutPos, nodeType));
         }
+
+        // sort shortcuts by position
+        shortcuts.Sort(((Vector2i pos, NodeType type) s0, (Vector2i pos, NodeType type) s1) =>
+        {
+            var idx0 = s0.pos.Y * level.Width + s0.pos.X;
+            var idx1 = s1.pos.Y * level.Width + s1.pos.X;
+            return idx0 - idx1;
+        });
 
         // room node priority:
         //   1. room exits (white)
@@ -242,10 +222,93 @@ class LevelNodeData
         dirty = false;
     }
 
-    // TODO: implement this
-    private bool ValidShortcut(int x, int y)
+    private bool ProcessShortcut(int x, int y, out Vector2i nodePos, out NodeType type)
+    {        
+        type = NodeType.Exit;
+        nodePos = Vector2i.Zero;
+        if (!IsValidShortcutEntrance(x, y, out int _, out int _)) return false;
+        
+        int lastX = x;
+        int lastY = y;
+
+        while (true)
+        {
+            int x3 = x;
+            int y3 = y;
+            if (!NextShortcutPosition(ref x, ref y, lastX, lastY)) break;
+            lastX = x3;
+            lastY = y3;
+
+            ref var cell = ref level.Layers[0,x,y];
+            
+            if (cell.Objects.HasFlag(LevelObject.Entrance))
+            {
+                type = NodeType.Exit;
+                nodePos = new Vector2i(x, y);
+                return true;
+            }
+            else if (cell.Objects.HasFlag(LevelObject.CreatureDen))
+            {
+                type = NodeType.Den;
+                nodePos = new Vector2i(x, y);
+                return true;
+            }
+            else if (cell.Objects.HasFlag(LevelObject.ScavengerHole))
+            {
+                type = NodeType.RegionTransportation;
+                nodePos = new Vector2i(x, y);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    private bool NextShortcutPosition(ref int x, ref int y, int lastX, int lastY)
     {
-        return true;
+        // implementation referenced from decompiled game code
+        // ShortcutHandler.NextShortcutPosition(IntVector2 pos, IntVector2 lastPos, Room room)
+        ReadOnlySpan<(int x, int y)> fourDirections = [
+            (-1, 0),
+            (0, -1),
+            (1, 0),
+            (0, 1)
+        ];
+
+        var dx = x - lastX;
+        var dy = y - lastY;
+        Debug.Assert((dx == 0 && dy == 0) || Math.Abs(dx) + Math.Abs(dy) == 1);
+
+        // first check if the shortcut can continue in a straight path
+        // if so, pick that position
+        if ((dx != 0 || dy != 0) && IsShortcut(GetCellOrDefault(x + dx, y + dy)))
+        {
+            x += dx;
+            y += dy;
+            return true;
+        }
+        else // the shortcut curves here, find out where to go
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                var dir = fourDirections[i];
+                if (!(dir.x == -dx && dir.y == -dy) && IsShortcut(GetCellOrDefault(x + dir.x, y + dir.y)))
+                {
+                    x += dir.x;
+                    y += dir.y;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private const LevelObject objectMask = LevelObject.Shortcut | LevelObject.Entrance | LevelObject.CreatureDen | LevelObject.WhackAMoleHole | LevelObject.ScavengerHole;
+
+    private static bool IsShortcut(in LevelCell cell)
+    {
+        return cell.Geo == GeoType.ShortcutEntrance || (cell.Objects & objectMask) != 0;
     }
 
     private LevelCell GetCellOrDefault(int x, int y)
@@ -253,7 +316,57 @@ class LevelNodeData
         if (x < 0 || y < 0 || x >= level.Width || y >= level.Height)
             return new LevelCell();
         
-        return level.Layers[0,y,x];
+        return level.Layers[0,x,y];
+    }
+
+    private bool IsValidShortcutEntrance(int x, int y, out int dx, out int dy)
+    {
+        dx = 0;
+        dy = 0;
+        
+        var layers = level.Layers;
+        if (layers[0,x,y].Geo != GeoType.ShortcutEntrance) return false;
+
+        // check if all four corners are solid blocks
+        if (layers[0,x-1,y-1].Geo != GeoType.Solid) return false;
+        if (layers[0,x+1,y-1].Geo != GeoType.Solid) return false;
+        if (layers[0,x+1,y+1].Geo != GeoType.Solid) return false;
+        if (layers[0,x-1,y+1].Geo != GeoType.Solid) return false;
+        
+        // check if all but one of 4 neighbors are solid
+        int numSolid = 0;
+        if (layers[0,x-1,y].Geo == GeoType.Solid) numSolid++;
+        if (layers[0,x+1,y].Geo == GeoType.Solid) numSolid++;
+        if (layers[0,x,y-1].Geo == GeoType.Solid) numSolid++;
+        if (layers[0,x,y+1].Geo == GeoType.Solid) numSolid++;
+        if (numSolid != 3) return false;
+
+
+        int sdx = 0;
+        int sdy = 0;
+        int shortcutCount = 0;
+
+        void checkDir(int pdx, int pdy)
+        {
+            if ((layers[0, x+pdx, y+pdy].Geo is GeoType.Solid or GeoType.Platform) && (layers[0, x-pdx, y-pdy].Objects & objectMask) != 0)
+            {
+                sdx = pdx;
+                sdy = pdy;
+                shortcutCount++;
+            }
+        }
+
+        checkDir(-1, 0);
+        checkDir(1, 0);
+        if (shortcutCount > 1) return false;
+        checkDir(0, -1);
+        if (shortcutCount > 1) return false;
+        checkDir(0, 1);
+        if (shortcutCount > 1) return false;
+
+        dx = sdx;
+        dy = sdy;
+        return true;
     }
 
     private bool IsHive(int x, int y)
