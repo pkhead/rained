@@ -536,8 +536,6 @@ class LevelWindow
     /// <param name="layer">The work layer of the dirty cell.</param>
     public void InvalidateGeo(int x, int y, int layer)
     {
-        Log.Debug("InvalidateGeo({X}, {Y}, {Layer})", x, y, layer);
-
         Renderer.InvalidateGeo(x, y, layer);
         if (layer == 0)
             RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
