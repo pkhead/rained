@@ -66,6 +66,8 @@ class LevelNodeData
     /// <param name="y">The Y position of the cell.</param>
     public void InvalidateCell(int x, int y)
     {
+        if (!level.IsInBorder(x, y)) return;
+
         ref var cell = ref level.Layers[0,x,y];
         if (cell.Geo == GeoType.ShortcutEntrance || (cell.Objects & (LevelObject.GarbageWorm | LevelObject.Hive)) != 0)
             shortcutLocsSet.Add(new Vector2i(x, y));
@@ -164,10 +166,10 @@ class LevelNodeData
         // side exits
         for (int side = 0; side < 2; side++)
         {
-            int x = side == 0 ? 0 : level.Width-1;
+            int x = side == 0 ? level.BufferTilesLeft : level.Width - level.BufferTilesRight - 1;
 
             var lastSolid = true;
-            for (int y = 0; y < level.Height; y++)
+            for (int y = level.BufferTilesTop; y < level.Height - level.BufferTilesBot; y++)
             {
                 var solid = level.Layers[0,x,y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
@@ -180,11 +182,12 @@ class LevelNodeData
         // sky exits
         {
             var lastSolid = true;
-            for (int x = 0; x < level.Width; x++)
+            var y = level.BufferTilesTop;
+            for (int x = level.BufferTilesLeft; x < level.Width - level.BufferTilesRight; x++)
             {
-                var solid = level.Layers[0,x,0].Geo == GeoType.Solid;
+                var solid = level.Layers[0,x,y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
-                    nodes.Add((new Vector2i(x, 0), NodeType.SkyExit));
+                    nodes.Add((new Vector2i(x, y), NodeType.SkyExit));
                 
                 lastSolid = solid;
             }
@@ -194,11 +197,12 @@ class LevelNodeData
         if (level.HasWater)
         {
             var lastSolid = true;
-            for (int x = 0; x < level.Width; x++)
+            var y = level.Height - level.BufferTilesBot - 1;
+            for (int x = level.BufferTilesLeft; x < level.Width - level.BufferTilesRight; x++)
             {
-                var solid = level.Layers[0, x, level.Height-1].Geo == GeoType.Solid;
+                var solid = level.Layers[0, x, y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
-                    nodes.Add((new Vector2i(x, level.Height-1), NodeType.SeaExit));
+                    nodes.Add((new Vector2i(x, y), NodeType.SeaExit));
                 
                 lastSolid = solid;
             }
@@ -313,7 +317,7 @@ class LevelNodeData
 
     private LevelCell GetCellOrDefault(int x, int y)
     {
-        if (x < 0 || y < 0 || x >= level.Width || y >= level.Height)
+        if (x < level.BufferTilesLeft || y < level.BufferTilesTop || x >= level.Width - level.BufferTilesRight || y >= level.Height - level.BufferTilesBot)
             return new LevelCell();
         
         return level.Layers[0,x,y];
@@ -372,6 +376,6 @@ class LevelNodeData
     private bool IsHive(int x, int y)
     {
         ref var cell = ref level.Layers[0,x,y];
-        return cell.Has(LevelObject.Hive) && cell.Geo == GeoType.Air && level.GetClamped(0, x, y+1).Geo == GeoType.Solid;
+        return cell.Has(LevelObject.Hive) && cell.Geo == GeoType.Air && level.GetBorderClamped(0, x, y+1).Geo == GeoType.Solid;
     }
 }

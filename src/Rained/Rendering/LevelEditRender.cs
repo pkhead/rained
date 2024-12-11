@@ -120,13 +120,6 @@ class LevelEditRender : IDisposable
     }
     */
 
-    private bool IsInBorder(int x, int y)
-    {
-        return
-            x >= Level.BufferTilesLeft && y >= Level.BufferTilesTop &&
-            x < Level.Width - Level.BufferTilesRight && y < Level.Height - Level.BufferTilesBot;
-    }
-
     // mark entire layer as dirty
     public void InvalidateGeo(int layer)
     {
@@ -411,7 +404,7 @@ class LevelEditRender : IDisposable
                             editor.LevelGraphicsTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
-                            IsInBorder(x, y) ? color : new Color(255, 0, 0, 255)
+                            Level.IsInBorder(x, y) ? color : new Color(255, 0, 0, 255)
                         );
                     }
                 }

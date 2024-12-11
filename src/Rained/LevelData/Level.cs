@@ -392,6 +392,13 @@ partial class Level : IDisposable
         return Layers[layer, x, y];
     }
 
+    public LevelCell GetBorderClamped(int layer, int x, int y)
+    {
+        x = Math.Clamp(x, BufferTilesLeft, Width - BufferTilesRight - 1);
+        y = Math.Clamp(y, BufferTilesTop, Height - BufferTilesBot - 1);
+        return Layers[layer, x, y];
+    }
+
     // i added this function recently, so older code won't be using this
     // utility function (until i rewrite them to do so)
     public Assets.Tile? GetTile(LevelCell cell)
@@ -623,5 +630,12 @@ partial class Level : IDisposable
     public bool TryGetChainData(int layer, int x, int y, out Vector2i chainEndPos)
     {
         return ChainData.TryGetValue((layer, x, y), out chainEndPos);
+    }
+
+    public bool IsInBorder(int x, int y)
+    {
+        return
+            x >= BufferTilesLeft && y >= BufferTilesTop &&
+            x < Width - BufferTilesRight && y < Height - BufferTilesBot;
     }
 }
