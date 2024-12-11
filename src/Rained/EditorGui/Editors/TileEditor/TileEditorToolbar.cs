@@ -356,6 +356,9 @@ partial class TileEditor : IEditorMode
                     ImGui.SameLine();
                     if (ImGui.BeginListBox("##Materials", new Vector2(halfWidth, boxHeight)))
                     {
+                        var drawList = ImGui.GetWindowDrawList();
+                        float textHeight = ImGui.GetTextLineHeight();
+
                         var matList = matDb.Categories[selectedMatGroup].Materials;
 
                         for (int i = 0; i < matList.Count; i++)
@@ -366,10 +369,17 @@ partial class TileEditor : IEditorMode
                             if (!mat.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
                             
-                            if (ImGui.Selectable(mat.Name, mat.ID == selectedMaterial))
+                            var cursor = ImGui.GetCursorScreenPos();
+                            if (ImGui.Selectable("  " + mat.Name, mat.ID == selectedMaterial))
                             {
                                 selectedMaterial = mat.ID;
                             }
+
+                            drawList.AddRectFilled(
+                                p_min: cursor,
+                                p_max: cursor + new Vector2(10f, textHeight),
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(mat.Color.R / 255f, mat.Color.G / 255f, mat.Color.B / 255f, 1f))
+                            );
 
                             // show material preview when hovered
                             if (prefs.MaterialSelectorPreview && ImGui.IsItemHovered())
