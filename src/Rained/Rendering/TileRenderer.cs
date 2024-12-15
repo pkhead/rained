@@ -521,4 +521,139 @@ class TileRenderer
             width, height
         );
     }
+
+    public static void DrawGeometryOutline(int tileInt, int x, int y, float lineWidth, float tileSize, Color color)
+    {
+        if (tileInt == 0)
+        {
+            // air is represented by a cross (OMG ASCEND WITH GORB???)
+            // an empty cell (-1) would mean any tile is accepted
+            Raylib.DrawLineV(
+                startPos: new Vector2(x * tileSize + 5, y * tileSize + 5),
+                endPos: new Vector2((x+1) * tileSize - 5, (y+1) * tileSize - 5),
+                color
+            );
+
+            Raylib.DrawLineV(
+                startPos: new Vector2((x+1) * tileSize - 5, y * tileSize + 5),
+                endPos: new Vector2(x * tileSize + 5, (y+1) * tileSize - 5),
+                color
+            );
+        }
+        else if (tileInt > 0)
+        {
+            var cellType = (GeoType) tileInt;
+            switch (cellType)
+            {
+                case GeoType.Solid:
+                    RlExt.DrawRectangleLinesRec(
+                        new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize),
+                        color
+                    );
+                    break;
+                
+                case GeoType.Platform:
+                    RlExt.DrawRectangleLinesRec(
+                        new Rectangle(x * tileSize, y * tileSize, tileSize, 10),
+                        color
+                    );
+                    break;
+                
+                case GeoType.Glass:
+                    RlExt.DrawRectangleLinesRec(
+                        new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize),
+                        color
+                    );
+                    break;
+
+                case GeoType.ShortcutEntrance:
+                    RlExt.DrawRectangleLinesRec(
+                        new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize),
+                        Color.Red
+                    );
+                    break;
+
+                case GeoType.SlopeLeftDown:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y+1) * tileSize,
+                        new Vector2(x+1, y) * tileSize,
+                        new Vector2(x, y) * tileSize,
+                        color
+                    );
+                    break;
+
+                case GeoType.SlopeLeftUp:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x, y+1) * tileSize,
+                        new Vector2(x+1, y+1) * tileSize,
+                        new Vector2(x+1, y) * tileSize,
+                        color
+                    );
+                    break;
+
+                case GeoType.SlopeRightDown:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y) * tileSize,
+                        new Vector2(x, y) * tileSize,
+                        new Vector2(x, y+1) * tileSize,
+                        color
+                    );
+                    break;
+
+                case GeoType.SlopeRightUp:
+                    Raylib.DrawTriangleLines(
+                        new Vector2(x+1, y+1) * tileSize,
+                        new Vector2(x, y) * tileSize,
+                        new Vector2(x, y+1) * tileSize,
+                        color
+                    );
+                    break;
+            }
+        }
+    }
+
+    public static void DrawTileSpecs(Tile selectedTile, int tileOriginX, int tileOriginY,
+        float tileSize = Level.TileSize,
+        byte alpha = 255
+    )
+    {
+        var lineWidth = 1f / RainEd.Instance.LevelView.ViewZoom;
+        var prefs = RainEd.Instance.Preferences;
+
+        if (selectedTile.HasSecondLayer)
+        {
+            var col = prefs.TileSpec2.ToRGBA(alpha);
+
+            for (int x = 0; x < selectedTile.Width; x++)
+            {
+                for (int y = 0; y < selectedTile.Height; y++)
+                {
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef(tileOriginX * tileSize + 2, tileOriginY * tileSize + 2, 0);
+
+                    sbyte tileInt = selectedTile.Requirements2[x,y];
+                    DrawGeometryOutline(tileInt, x, y, lineWidth, tileSize, col);
+                    Rlgl.PopMatrix();
+                }
+            }
+        }
+
+        // first layer
+        {
+            var col = prefs.TileSpec1.ToRGBA(alpha);
+
+            for (int x = 0; x < selectedTile.Width; x++)
+            {
+                for (int y = 0; y < selectedTile.Height; y++)
+                {
+                    Rlgl.PushMatrix();
+                    Rlgl.Translatef(tileOriginX * tileSize, tileOriginY * tileSize, 0);
+
+                    sbyte tileInt = selectedTile.Requirements[x,y];
+                    DrawGeometryOutline(tileInt, x, y, lineWidth, tileSize, col);
+                    Rlgl.PopMatrix();
+                }
+            }
+        }
+    }
 }
