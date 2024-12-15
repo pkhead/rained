@@ -536,6 +536,27 @@ partial class Level : IDisposable
             }
         }
 
+        // modify chain data
+        List<(CellPosition src, Vector2i dst)> newChainData = [];
+        foreach (((int srcL, int srcX, int srcY), Vector2i dstPos) in ChainData)
+        {
+            var newX = srcX + dstOriginX;
+            var newY = srcY + dstOriginY;
+
+            if (IsInBounds(newX, newY))
+            {
+                newChainData.Add((
+                    src: new CellPosition(newX, newY, srcL),
+                    dst: new Vector2i(dstPos.X + dstOriginX, dstPos.Y + dstOriginY)
+                ));
+            }
+        }
+        ChainData.Clear();
+        foreach ((CellPosition src, Vector2i dst) in newChainData)
+        {
+            ChainData.Add((src.Layer, src.X, src.Y), dst);
+        }
+
         // resize effect matrices
         foreach (var effect in Effects)
         {
