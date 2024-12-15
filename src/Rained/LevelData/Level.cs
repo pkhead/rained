@@ -118,8 +118,20 @@ class Camera
     public float[] CornerOffsets = new float[4];
     public float[] CornerAngles = new float[4];
 
-    public readonly static Vector2 WidescreenSize = new(70f, 40f);
-    public readonly static Vector2 StandardSize = new(52.5f, 40f);
+    /// <summary>
+    /// Size of the in-game 16:9 view area.
+    /// </summary>
+    public readonly static Vector2 WidescreenSize = new(68.3f, 38.4f);
+
+    /// <summary>
+    /// Size of the in-game 4:3 ("fullscreen" aspect ratio) view area.
+    /// </summary>
+    public readonly static Vector2 StandardSize = new(51.2f, 38.4f);
+
+    /// <summary>
+    /// Full size of the render output.
+    /// </summary>
+    public readonly static Vector2 Size = new(70f, 40f);
 
     public Camera(Vector2 position)
     {
@@ -144,9 +156,9 @@ class Camera
         int y = (cornerIndex & 2) >> 1;
         
         return offset ?
-            Position + new Vector2(WidescreenSize.X * x, WidescreenSize.Y * y) + GetCornerOffset(cornerIndex)
+            Position + new Vector2(Size.X * x, Size.Y * y) + GetCornerOffset(cornerIndex)
         :
-            Position + new Vector2(WidescreenSize.X * x, WidescreenSize.Y * y);
+            Position + new Vector2(Size.X * x, Size.Y * y);
     }
 }
 

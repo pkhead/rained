@@ -1,8 +1,4 @@
 Bugs:
-- check cam sizes
-    StandardSize: (1,024x768)
-    WidescreenSize: (1,366x768)
-    FullSize: (1,400x800)
 - chain holder undo/redo is broken
 - level resize with chain holder crashes rained
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props

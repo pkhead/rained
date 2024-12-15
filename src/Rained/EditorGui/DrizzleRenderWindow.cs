@@ -53,8 +53,8 @@ class DrizzleRenderWindow : IDisposable
         layerPreviewLightShader = Shaders.RenderPreviewLightShader;
 
         previewComposite = RlManaged.RenderTexture2D.Load(
-            (int)Camera.WidescreenSize.X * 20,
-            (int)Camera.WidescreenSize.Y * 20
+            (int)Camera.Size.X * 20,
+            (int)Camera.Size.Y * 20
         );
 
         if (!onlyGeo)

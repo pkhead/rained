@@ -566,14 +566,14 @@ class LevelEditRender : IDisposable
 
         foreach (var camera in Level.Cameras)
         {
-            var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+            var camCenter = camera.Position + Camera.Size / 2f;
 
-            // draw full rect ouline
+            // draw 16:9 ouline
             if (showWidescreen)
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(
-                        camera.Position * Level.TileSize,
+                        (camCenter - Camera.WidescreenSize / 2f) * Level.TileSize,
                         Camera.WidescreenSize * Level.TileSize
                     ),
                     2f / ViewZoom,
@@ -584,11 +584,10 @@ class LevelEditRender : IDisposable
             // 4:3 outline
             if (showStandard)
             {
-                var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(
-                        (camCenter - standardResOutlineSize / 2) * Level.TileSize,
-                        standardResOutlineSize * Level.TileSize
+                        (camCenter - Camera.StandardSize / 2f) * Level.TileSize,
+                        Camera.StandardSize * Level.TileSize
                     ),
                     (both ? 1f : 2f) / ViewZoom,
                     new Color(0, 255, 0, 255)

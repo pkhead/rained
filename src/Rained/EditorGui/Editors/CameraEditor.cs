@@ -101,7 +101,7 @@ class CameraEditor : IEditorMode
         {
             // determine if mouse is within camera bounds
             var cameraA = camera.Position;
-            var cameraB = camera.Position + Camera.WidescreenSize;
+            var cameraB = camera.Position + Camera.Size;
 
             // if so, select this camera
             if (mpos.X > cameraA.X && mpos.Y > cameraA.Y &&
@@ -292,7 +292,7 @@ class CameraEditor : IEditorMode
                 dragTargetPos += window.MouseCellFloat - lastMousePos;
 
                 // camera snap for the active camera
-                var thisCamCenter = dragTargetPos + Camera.WidescreenSize / 2f;
+                var thisCamCenter = dragTargetPos + Camera.Size / 2f;
                 var snapThreshold = 1.5f / window.ViewZoom;
 
                 float minDistX = float.PositiveInfinity;
@@ -303,7 +303,7 @@ class CameraEditor : IEditorMode
                 {
                     if (selectedCameras.Contains(camera)) continue;
 
-                    var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+                    var camCenter = camera.Position + Camera.Size / 2f;
                     var distX = MathF.Abs(camCenter.X - thisCamCenter.X);
                     var distY = MathF.Abs(camCenter.Y - thisCamCenter.Y);
 
@@ -338,7 +338,7 @@ class CameraEditor : IEditorMode
             if (wantCreate)
             {
                 changeRecorder.BeginChange();
-                var cam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
+                var cam = new Camera(window.MouseCellFloat - Camera.Size / 2f);
                 level.Cameras.Add(cam);
                 selectedCameras = [cam];
                 activeCamera = cam;
@@ -355,7 +355,7 @@ class CameraEditor : IEditorMode
                     List<Camera> newList = [];
                     foreach (var srcCam in selectedCameras)
                     {
-                        var newCam = new Camera(window.MouseCellFloat - Camera.WidescreenSize / 2f);
+                        var newCam = new Camera(window.MouseCellFloat - Camera.Size / 2f);
                         level.Cameras.Add(newCam);
 
                         for (int i = 0; i < 4; i++)
@@ -409,7 +409,7 @@ class CameraEditor : IEditorMode
 
     private void RenderCamera(Camera camera, bool isHovered, int hoveredCorner)
     {
-        var camCenter = camera.Position + Camera.WidescreenSize / 2f;
+        var camCenter = camera.Position + Camera.Size / 2f;
 
         // draw full camera quad
         var p0 = camera.GetCornerPosition(0, true) * Level.TileSize;
@@ -425,18 +425,17 @@ class CameraEditor : IEditorMode
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
                 camera.Position * Level.TileSize,
-                Camera.WidescreenSize * Level.TileSize
+                Camera.Size * Level.TileSize
             ),
             2f / window.ViewZoom,
             new Color(0, 0, 0, 255)       
         );
 
-        // draw inner outline
-        var innerOutlineSize = Camera.WidescreenSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
+        // 16:9 outline
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
-                (camCenter - innerOutlineSize / 2) * Level.TileSize,
-                innerOutlineSize * Level.TileSize
+                (camCenter - Camera.WidescreenSize / 2) * Level.TileSize,
+                Camera.WidescreenSize * Level.TileSize
             ),
             2f / window.ViewZoom,
             new Color(9, 0, 0, 255)
@@ -444,11 +443,10 @@ class CameraEditor : IEditorMode
 
         // 4:3 outline
         Color cameraColor = RainEd.Instance.Level.PrioritizedCamera == camera ? new Color(255, 0, 0, 255) : new Color(0, 255, 0, 255);
-        var standardResOutlineSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
-                (camCenter - standardResOutlineSize / 2) * Level.TileSize,
-                standardResOutlineSize * Level.TileSize
+                (camCenter - Camera.StandardSize / 2) * Level.TileSize,
+                Camera.StandardSize * Level.TileSize
             ),
             2f / window.ViewZoom,
             cameraColor

@@ -189,14 +189,12 @@ static class NewLevelWindow
 
         // uhh why do i have to do this
         // what does StandardSize mean, exactly ??
-        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
-
         var camTotalSize = new Vector2(
-            camInnerSize.X * screenW,
-            camInnerSize.Y * screenH
+            Camera.StandardSize.X * screenW,
+            Camera.StandardSize.Y * screenH
         );
         var camTopLeft = levelCenter - camTotalSize / 2f;
-        var camOffset = (Camera.WidescreenSize - camInnerSize) / 2f;
+        var camOffset = (Camera.Size - Camera.StandardSize) / 2f;
 
         cameraPositions.Clear();
 
@@ -204,7 +202,7 @@ static class NewLevelWindow
         {
             for (int col = 0; col < screenW; col++)
             {
-                var camPos = camTopLeft + camInnerSize * new Vector2(col, row) - camOffset;
+                var camPos = camTopLeft + Camera.StandardSize * new Vector2(col, row) - camOffset;
                 cameraPositions.Add(camPos);
             }
         }
@@ -262,15 +260,14 @@ static class NewLevelWindow
         );
 
         // draw cameras
-        var camInnerSize = Camera.StandardSize * ((Camera.WidescreenSize.X - 2) / Camera.WidescreenSize.X);
-        var camOffset = (Camera.WidescreenSize - camInnerSize) / 2f;
+        var camOffset = (Camera.Size - Camera.StandardSize) / 2f;
         
         // outer border
         foreach (var camPos in CalcCameraPositions(cameraPositions))
         {
             Raylib.DrawRectangleLines(
                 (int)(camPos.X * TileSize), (int)(camPos.Y * TileSize),
-                (int)(Camera.WidescreenSize.X * TileSize), (int)(Camera.WidescreenSize.Y * TileSize),
+                (int)(Camera.Size.X * TileSize), (int)(Camera.Size.Y * TileSize),
                 new Color(0, 255, 0, 255)
             );
         }
@@ -280,7 +277,7 @@ static class NewLevelWindow
         {
             Raylib.DrawRectangleLines(
                 (int)((camPos.X + camOffset.X) * TileSize), (int)((camPos.Y + camOffset.Y) * TileSize),
-                (int)(camInnerSize.X * TileSize), (int)(camInnerSize.Y * TileSize),
+                (int)(Camera.StandardSize.X * TileSize), (int)(Camera.StandardSize.Y * TileSize),
                 new Color(255, 0, 0, 255)
             );
         }
