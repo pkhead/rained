@@ -55,7 +55,7 @@ class CellChangeRecord : IChangeRecord
     }
 }
 
-class CellChangeRecorder
+class CellChangeRecorder : ChangeRecorder
 {
     private LevelCell[,,]? snapshotLayers = null;
     private Dictionary<(int, int, int), Vector2i>? snapshotChains = null;
@@ -63,7 +63,10 @@ class CellChangeRecorder
     public void BeginChange()
     {
         if (snapshotLayers != null)
-            throw new Exception("CellChangeRecorder.BeginChange() called twice");
+        {
+            ValidationError("CellChangeRecorder.BeginChange() called twice");
+            return;
+        }
 
         snapshotLayers = (LevelCell[,,]) RainEd.Instance.Level.Layers.Clone();
 
@@ -144,7 +147,10 @@ class CellChangeRecorder
     public void PushChange()
     {
         if (snapshotLayers is null || snapshotChains is null)
-            throw new Exception("CellChangeRecorder.PushChange() called twice");
+        {
+            ValidationError("CellChangeRecorder.PushChange() called twice");
+            return;
+        }
         
         TryPushChange();
     }

@@ -67,7 +67,7 @@ class CameraChangeRecord : IChangeRecord
     }
 }
 
-class CameraChangeRecorder
+class CameraChangeRecorder : ChangeRecorder
 {
     private readonly List<CameraData> snapshot;
     private bool isRecording = false;
@@ -80,7 +80,10 @@ class CameraChangeRecorder
     public void BeginChange()
     {
         if (isRecording)
-            throw new Exception("CameraChangeRecorder.BeginChange() is already active");
+        {
+            ValidationError("CameraChangeRecorder.BeginChange() is already active");
+            return;
+        }
         
         isRecording = true;
 
@@ -125,7 +128,10 @@ class CameraChangeRecorder
     public void PushChange()
     {
         if (!isRecording)
-            throw new Exception("CameraChangeRecorder.PushChange() called, but recorder is not active");
+        {
+            ValidationError("CameraChangeRecorder.PushChange() called, but recorder is not active");
+            return;
+        }
         
         TryPushChange();
     }

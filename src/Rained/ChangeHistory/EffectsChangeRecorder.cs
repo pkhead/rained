@@ -129,7 +129,7 @@ class EffectConfigChangeRecord : IChangeRecord
     }
 }
 
-class EffectsChangeRecorder
+class EffectsChangeRecorder : ChangeRecorder
 {
     private Effect? activeEffect = null;
     private float[,] snapshot = new float[0,0];
@@ -142,7 +142,10 @@ class EffectsChangeRecorder
     public void BeginMatrixChange(Effect effect)
     {
         if (activeEffect != null)
-            throw new Exception("EffectsChangeRecorder.BeginMatrixChange() called twice");
+        {
+            ValidationError("EffectsChangeRecorder.BeginMatrixChange() called twice");
+            return;
+        }
         
         activeEffect = effect;
         snapshot = (float[,]) activeEffect.Matrix.Clone();
@@ -151,7 +154,10 @@ class EffectsChangeRecorder
     public void PushMatrixChange()
     {
         if (activeEffect == null)
-            throw new Exception("EffectsChangeRecorder.PushMatrixChange() called, but recorder is not active");
+        {
+            ValidationError("EffectsChangeRecorder.PushMatrixChange() called, but recorder is not active");
+            return;
+        }
         
         // check if it had changed
         bool didChange = false;
@@ -185,7 +191,10 @@ class EffectsChangeRecorder
     public void BeginListChange()
     {
         if (oldFxList != null)
-            throw new Exception("EffectsChangeRecorder.BeginListChange() called twice");
+        {
+            ValidationError("EffectsChangeRecorder.BeginListChange() called twice");
+            return;
+        }
 
         EffectsEditor fxEditor = RainEd.Instance.LevelView.GetEditor<EffectsEditor>();
         
@@ -196,7 +205,10 @@ class EffectsChangeRecorder
     public void PushListChange()
     {
         if (oldFxList == null)
-            throw new Exception("EffectsChangeRecorder.PushListChange() called, but recorder is not active");
+        {
+            ValidationError("EffectsChangeRecorder.PushListChange() called, but recorder is not active");
+            return;
+        }
         
         EffectsEditor fxEditor = RainEd.Instance.LevelView.GetEditor<EffectsEditor>();
 

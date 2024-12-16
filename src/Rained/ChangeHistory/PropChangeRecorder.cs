@@ -166,7 +166,7 @@ class PropListChangeRecord : IChangeRecord
     }
 }
 
-class PropChangeRecorder
+class PropChangeRecorder : ChangeRecorder
 {
     private bool isTransformActive = false;
 
@@ -185,7 +185,12 @@ class PropChangeRecorder
 
     public void BeginTransform()
     {
-        if (isTransformActive) throw new Exception("PropChangeRecorder.BeginTransform() was called twice");
+        if (isTransformActive)
+        {
+            ValidationError("PropChangeRecorder.BeginTransform() was called twice");
+            return;
+        }
+
         isTransformActive = true;
 
         var level = RainEd.Instance.Level;
@@ -272,7 +277,8 @@ class PropChangeRecorder
     {
         if (oldProps is null)
         {
-            throw new Exception("PropChangeRecorder.PushListChange() called twice");
+            ValidationError("PropChangeRecorder.PushListChange() called twice");
+            return;
         }
 
         var level = RainEd.Instance.Level;
