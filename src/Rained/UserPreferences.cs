@@ -133,6 +133,8 @@ class UserPreferences
 
     //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.
     public bool HideScreenSize { get; set; }
+    public bool MinimalStatusBar { get; set; } = false;
+    public bool HideEditorSwitch { get; set; } = false;
 
     public enum CameraBorderModeOption : int
     {

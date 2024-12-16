@@ -434,6 +434,26 @@ static class PreferencesWindow
             if (ImGui.Checkbox("Geometry mask mouse decoration", ref geoMaskMouseDecor))
                 prefs.GeometryMaskMouseDecor = geoMaskMouseDecor;
             
+            bool minUi = prefs.MinimalStatusBar;
+            if (ImGui.Checkbox("Minimal status bar", ref minUi))
+                prefs.MinimalStatusBar = minUi;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("This hides certain elements from the status bar.");
+                ImGui.PopTextWrapPos();
+
+                ImGui.End();
+            }
+
+            bool hideEditSwitch = prefs.HideEditorSwitch;
+            if (ImGui.Checkbox("Hide editor switch", ref hideEditSwitch))
+                prefs.HideEditorSwitch = hideEditSwitch;
+            
+            ImGui.Separator();
             
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             

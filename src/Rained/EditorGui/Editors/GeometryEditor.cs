@@ -388,21 +388,24 @@ class GeometryEditor : IEditorMode
 
             ImGui.PopItemWidth();
 
-            // show fill rect hint
-            if (isToolRectActive)
+            // update status bar
+            if (!RainEd.Instance.Preferences.MinimalStatusBar)
             {
-                GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
-                var rectW = rectMaxX - rectMinX + 1;
-                var rectH = rectMaxY - rectMinY + 1;
-                window.WriteStatus($"({rectW}, {rectH})");
-            }
-            else
-            {
-                if (ToolCanRectPlace(selectedTool))
-                    window.WriteStatus("Shift+Drag to fill rect");
-                
-                if (ToolCanFloodFill(selectedTool))
-                    window.WriteStatus(KeyShortcuts.GetShortcutString(KeyShortcut.FloodFill) + "+Click to flood fill");
+                if (isToolRectActive)
+                {
+                    GetRectBounds(out var rectMinX, out var rectMinY, out var rectMaxX, out var rectMaxY);
+                    var rectW = rectMaxX - rectMinX + 1;
+                    var rectH = rectMaxY - rectMinY + 1;
+                    window.WriteStatus($"({rectW}, {rectH})");
+                }
+                else
+                {
+                    if (ToolCanRectPlace(selectedTool))
+                        window.WriteStatus("Shift+Drag to fill rect");
+                    
+                    if (ToolCanFloodFill(selectedTool))
+                        window.WriteStatus(KeyShortcuts.GetShortcutString(KeyShortcut.FloodFill) + "+Click to flood fill");
+                }
             }
         } ImGui.End();
 
