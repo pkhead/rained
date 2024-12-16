@@ -173,17 +173,23 @@ static class PreferencesWindow
     private static Vector3 layerColor2;
     private static Vector3 layerColor3;
     private static Vector3 bgColor;
-    private static Vector3 tileSpec1Color;
-    private static Vector3 tileSpec2Color;
+    private static Vector4 tileSpec1Color;
+    private static Vector4 tileSpec2Color;
     private static float contentScale;
 
     private static void ShowGeneralTab(bool entered)
     {
-        static Vector3 HexColorToVec3(HexColor color) => new(color.R / 255f, color.G / 255f, color.B / 255f);
         static HexColor Vec3ToHexColor(Vector3 vec) => new(
             (byte)(Math.Clamp(vec.X, 0f, 1f) * 255f),
             (byte)(Math.Clamp(vec.Y, 0f, 1f) * 255f),
             (byte)(Math.Clamp(vec.Z, 0f, 1f) * 255f)
+        );
+
+        static HexColorRGBA Vec4ToHexColor(Vector4 vec) => new(
+            (byte)(Math.Clamp(vec.X, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Y, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.Z, 0f, 1f) * 255f),
+            (byte)(Math.Clamp(vec.W, 0f, 1f) * 255f)
         );
 
         var prefs = RainEd.Instance.Preferences;
@@ -192,12 +198,12 @@ static class PreferencesWindow
         {
             if (entered)
             {
-                layerColor1 = HexColorToVec3(prefs.LayerColor1);
-                layerColor2 = HexColorToVec3(prefs.LayerColor2);
-                layerColor3 = HexColorToVec3(prefs.LayerColor3);
-                bgColor = HexColorToVec3(prefs.BackgroundColor);
-                tileSpec1Color = HexColorToVec3(prefs.TileSpec1);
-                tileSpec2Color = HexColorToVec3(prefs.TileSpec2);
+                layerColor1 = prefs.LayerColor1.ToVector3();
+                layerColor2 = prefs.LayerColor2.ToVector3();
+                layerColor3 = prefs.LayerColor3.ToVector3();
+                bgColor = prefs.BackgroundColor.ToVector3();
+                tileSpec1Color = prefs.TileSpec1.ToVector4();
+                tileSpec2Color = prefs.TileSpec2.ToVector4();
             }
 
             ImGui.ColorEdit3("##Layer Color 1", ref layerColor1);
@@ -249,11 +255,11 @@ static class PreferencesWindow
             ImGui.Text("Background Color");
 
             // L1 TILE SPECS
-            ImGui.ColorEdit3("##Tile Specs L1", ref tileSpec1Color);
+            ImGui.ColorEdit4("##Tile Specs L1", ref tileSpec1Color);
             ImGui.SameLine();
             if (ImGui.Button("X##ResetTS1"))
             {
-                tileSpec1Color = new HexColor("#99FF5B").ToVector3();
+                tileSpec1Color = new HexColorRGBA("#99FF5B").ToVector4();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
@@ -261,11 +267,11 @@ static class PreferencesWindow
             ImGui.Text("Tile Specs L1");
 
             // L2 TILE SPECS
-            ImGui.ColorEdit3("##Tile Specs L2", ref tileSpec2Color);
+            ImGui.ColorEdit4("##Tile Specs L2", ref tileSpec2Color);
             ImGui.SameLine();
             if (ImGui.Button("X##ResetTS2"))
             {
-                tileSpec2Color = new HexColor("#61A338").ToVector3();
+                tileSpec2Color = new HexColorRGBA("#61A338").ToVector4();
             }
             ImGui.SetItemTooltip("Reset");
             ImGui.SameLine();
@@ -277,8 +283,8 @@ static class PreferencesWindow
             prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
             prefs.LayerColor3 = Vec3ToHexColor(layerColor3);
             prefs.BackgroundColor = Vec3ToHexColor(bgColor);
-            prefs.TileSpec1 = Vec3ToHexColor(tileSpec1Color);
-            prefs.TileSpec2 = Vec3ToHexColor(tileSpec2Color);
+            prefs.TileSpec1 = Vec4ToHexColor(tileSpec1Color);
+            prefs.TileSpec2 = Vec4ToHexColor(tileSpec2Color);
         }
 
         ImGui.SeparatorText("Display");

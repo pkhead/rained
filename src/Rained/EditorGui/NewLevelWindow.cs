@@ -242,7 +242,7 @@ static class NewLevelWindow
         // draw background color
         Raylib.DrawRectangle(
             0, 0, levelWidth * TileSize, levelHeight * TileSize,
-            RainEd.Instance.Preferences.BackgroundColor.ToRGBA(255)
+            RainEd.Instance.Preferences.BackgroundColor.ToRaylibColor(255)
         );
 
         // draw layers

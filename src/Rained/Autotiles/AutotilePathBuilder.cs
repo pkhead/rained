@@ -561,7 +561,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
     {
         // draw autotile path nodes
         // only drawing lines where the path doesn't connect to another segment
-        var color = RainEd.Instance.Preferences.LayerColor2.ToRGBA(120);
+        var color = RainEd.Instance.Preferences.LayerColor2.ToRaylibColor(120);
         for (int i = 0; i < autotilePath.Count; i++)
         {
             var nodePos = autotilePath[i];

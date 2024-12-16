@@ -109,7 +109,7 @@ class LevelWindow
         }
         else
         {
-            col = RainEd.Instance.Preferences.LayerColor1.ToRGBA(255);
+            col = RainEd.Instance.Preferences.LayerColor1.ToRaylibColor(255);
         }
 
         return new Color(

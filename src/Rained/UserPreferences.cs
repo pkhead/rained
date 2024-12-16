@@ -26,18 +26,72 @@ struct HexColor(byte r = 0, byte g = 0, byte b = 0)
 
     public readonly override string ToString()
     {
-        int combined = (R << 16) | (G << 8) | B;
+        uint combined = ((uint)R << 16) | ((uint)G << 8) | (uint)B;
         return "#" + combined.ToString("X6");
     }
 
-    public readonly Color ToRGBA(byte alpha)
+    public readonly Color ToRaylibColor(byte alpha = 255)
     {
         return new Color(R, G, B, alpha);
+    }
+
+    public readonly Glib.Color ToGlibColor(float alpha = 1f)
+    {
+        return new Glib.Color(R / 255f, G / 255f, B / 255f, alpha);
     }
 
     public readonly System.Numerics.Vector3 ToVector3()
     {
         return new System.Numerics.Vector3(R / 255f, G / 255f, B / 255f);
+    }
+}
+
+record struct HexColorRGBA(byte R = 0, byte G = 0, byte B = 0, byte A = 0)
+{
+    public HexColorRGBA(string hexString) : this(0, 0, 0, 0)
+    {
+        if (hexString[0] != '#')
+            throw new Exception("Hex string does not begin with a #");
+        
+        // compatibility with normal HexColor
+        int color = int.Parse(hexString[1..], System.Globalization.NumberStyles.HexNumber);
+        if (hexString.Length == 7)
+        {
+            R = (byte)((color >> 16) & 0xFF);
+            G = (byte)((color >> 8) & 0xFF);
+            B = (byte)(color & 0xFF);
+            A = 255;
+        }
+        else
+        {
+            R = (byte)((color >> 24) & 0xFF);
+            G = (byte)((color >> 16) & 0xFF);
+            B = (byte)((color >> 8) & 0xFF);
+            A = (byte)(color & 0xFF);
+        }
+        
+
+    }
+
+    public readonly override string ToString()
+    {
+        uint combined = ((uint)R << 24) | ((uint)G << 16) | ((uint)B << 8) | (uint)A;
+        return "#" + combined.ToString("X6");
+    }
+
+    public readonly Color ToRaylibColor()
+    {
+        return new Color(R, G, B, A);
+    }
+
+    public readonly Glib.Color ToGlibColor()
+    {
+        return new Glib.Color(R / 255f, G / 255f, B / 255f, A / 255f);
+    }
+
+    public readonly System.Numerics.Vector4 ToVector4()
+    {
+        return new System.Numerics.Vector4(R / 255f, G / 255f, B / 255f, A / 255f);
     }
 }
 
@@ -311,8 +365,8 @@ class UserPreferences
     public HexColor LayerColor2;
     public HexColor LayerColor3;
     public HexColor BackgroundColor;
-    public HexColor TileSpec1;
-    public HexColor TileSpec2;
+    public HexColorRGBA TileSpec1;
+    public HexColorRGBA TileSpec2;
     
     [JsonPropertyName("layerColor1")]
     public string LayerColor1String { get => LayerColor1.ToString(); set => LayerColor1 = new HexColor(value); }
@@ -323,9 +377,9 @@ class UserPreferences
     [JsonPropertyName("bgColor")]
     public string BackgroundColorString { get => BackgroundColor.ToString(); set => BackgroundColor = new HexColor(value); }
     [JsonPropertyName("tileSpec1")]
-    public string TileSpec1String { get => TileSpec1.ToString(); set => TileSpec1 = new HexColor(value); }
+    public string TileSpec1String { get => TileSpec1.ToString(); set => TileSpec1 = new HexColorRGBA(value); }
     [JsonPropertyName("tileSpec2")]
-    public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColor(value); }
+    public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColorRGBA(value); }
 
     public string Theme { get; set; }
     public string Font { get; set; }
@@ -386,8 +440,8 @@ class UserPreferences
         LayerColor2 = new HexColor("#59ff59");
         LayerColor3 = new HexColor("#ff1e1e");
         BackgroundColor = new HexColor(127, 127, 127);
-        TileSpec1 = new HexColor("#99FF5B");
-        TileSpec2 = new HexColor("#61A338");
+        TileSpec1 = new HexColorRGBA("#99FF5B");
+        TileSpec2 = new HexColorRGBA("#61A338");
 
         RecentFiles = [];
 

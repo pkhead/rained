@@ -622,7 +622,8 @@ class TileRenderer
 
         if (selectedTile.HasSecondLayer)
         {
-            var col = prefs.TileSpec2.ToRGBA(alpha);
+            var col = prefs.TileSpec2.ToRaylibColor();
+            col.A = (byte)(col.A * (alpha / 255f));
 
             for (int x = 0; x < selectedTile.Width; x++)
             {
@@ -640,7 +641,8 @@ class TileRenderer
 
         // first layer
         {
-            var col = prefs.TileSpec1.ToRGBA(alpha);
+            var col = prefs.TileSpec1.ToRaylibColor();
+            col.A = (byte)(col.A * (alpha / 255f));
 
             for (int x = 0; x < selectedTile.Width; x++)
             {
