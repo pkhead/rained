@@ -430,6 +430,10 @@ static class PreferencesWindow
                 ImGui.End();
             }
             
+            bool geoMaskMouseDecor = prefs.GeometryMaskMouseDecor;
+            if (ImGui.Checkbox("Geometry mask mouse decoration", ref geoMaskMouseDecor))
+                prefs.GeometryMaskMouseDecor = geoMaskMouseDecor;
+            
             
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
             

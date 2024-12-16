@@ -761,7 +761,7 @@ class GeometryEditor : IEditorMode
 
         Raylib.EndScissorMode();
 
-        if (window.IsViewportHovered)
+        if (window.IsViewportHovered && RainEd.Instance.Preferences.GeometryMaskMouseDecor)
             RenderCursor();
     }
 

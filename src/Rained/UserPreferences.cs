@@ -127,6 +127,7 @@ class UserPreferences
     public NodeViewFilterData NodeViewFilter { get; set; } = new();
 
     public string GeometryViewMode { get; set; }
+    public bool GeometryMaskMouseDecor { get; set; } = true;
     public string PropSnap { get; set; }
     public bool ShowCameraNumbers { get; set; } = false;
 
