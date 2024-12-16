@@ -21,6 +21,8 @@ class AutotileEditMode : TileEditorMode
 
     public override void Process()
     {
+        base.Process();
+        
         var forcePlace = editor.PlacementFlags.HasFlag(TilePlacementFlags.Force);
         var modifyGeometry = editor.PlacementFlags.HasFlag(TilePlacementFlags.Geometry);
         var window = RainEd.Instance.LevelView;
@@ -29,7 +31,7 @@ class AutotileEditMode : TileEditorMode
         bool endOnClick = RainEd.Instance.Preferences.AutotileMouseMode == UserPreferences.AutotileMouseModeOptions.Click;
 
         // if mouse was pressed
-        if (editor.isToolActive && !editor.wasToolActive && !KeyShortcuts.Active(KeyShortcut.RightMouse))
+        if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
         {
             if (activePathBuilder is null)
             {
@@ -44,6 +46,8 @@ class AutotileEditMode : TileEditorMode
                         AutotileType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
                         _ => null
                     };
+
+                    RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
                 }
             }
             else if (endOnClick)
@@ -53,12 +57,9 @@ class AutotileEditMode : TileEditorMode
         }
 
         // if mouse was released
-        if (!editor.isToolActive && editor.wasToolActive)
+        if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !endOnClick)
         {
-            if (!endOnClick)
-            {
-                deactivate = true;
-            }
+            deactivate = true;
         }
 
         if (activePathBuilder is not null)
@@ -74,6 +75,7 @@ class AutotileEditMode : TileEditorMode
             {
                 activePathBuilder.Finish(window.WorkLayer, forcePlace, modifyGeometry);
                 activePathBuilder = null;
+                RainEd.Instance.LevelView.CellChangeRecorder.TryPushChange();
             }
         }
     }

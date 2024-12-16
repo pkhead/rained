@@ -16,6 +16,8 @@ class TileEditMode : TileEditorMode
     public int SelectedTileGroup { get => selectedTileGroup; set => selectedTileGroup = value; }
     public Tile SelectedTile { get => selectedTile; set => selectedTile = value; }
 
+    private bool placeTiles = false;
+
     // this is used to fix force placement when
     // holding down lmb
     private int lastPlaceX = -1;
@@ -27,6 +29,8 @@ class TileEditMode : TileEditorMode
     private bool removedOnSameCell = false;
     private int lastMouseX = -1;
     private int lastMouseY = -1;
+
+    private bool wasToolActive = false;
 
     private readonly TileCatalogWidget catalogWidget;
     public TileEditMode(TileEditor editor) : base(editor)
@@ -44,6 +48,7 @@ class TileEditMode : TileEditorMode
     {
         base.Focus();
         catalogWidget.ProcessSearch();
+        placeTiles = false;
     }
 
     public override void Unfocus()
@@ -52,18 +57,30 @@ class TileEditMode : TileEditorMode
         lastPlaceX = -1;
         lastPlaceY = -1;
         lastPlaceL = -1;
+
+        wasToolActive = false;
+        placeTiles = false;
     }
 
     public override void Process()
     {
+        base.Process();
+        
         var level = RainEd.Instance.Level;
         var window = RainEd.Instance.LevelView;
+        var placeChainholder = false;
 
         if (lastMouseX != window.MouseCx || lastMouseY != window.MouseCy)
         {
             lastMouseX = window.MouseCx;
             lastMouseY = window.MouseCy;
             removedOnSameCell = false;
+        }
+
+        var isToolActive = LeftMouseDown || RightMouseDown;
+        if (isToolActive && !wasToolActive)
+        {
+            window.CellChangeRecorder.BeginChange();
         }
 
         var forcePlace = editor.PlacementFlags.HasFlag(TilePlacementFlags.Force);
@@ -112,7 +129,7 @@ class TileEditMode : TileEditorMode
                 Color.White
             );
 
-            if (!editor.isToolActive)
+            if (!isToolActive)
             {
                 // place tiles
                 if (rectMode == RectMode.Place)
@@ -181,25 +198,33 @@ class TileEditMode : TileEditorMode
             }
         }
 
-        // check if rect place mode will start
-        else if (editor.isMouseHeldInMode && editor.isToolActive && !editor.wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        else if (isToolActive && !wasToolActive)
         {
-            int rectOffsetX = 0;
-            int rectOffsetY = 0;
-
-            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            // check if rect place mode will start
+            if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
             {
-                rectMode = RectMode.Place;
-                rectOffsetX = -selectedTile.CenterX;
-                rectOffsetY = -selectedTile.CenterY;
-            }
-            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
-            {
-                rectMode = RectMode.Remove;
+                int rectOffsetX = 0;
+                int rectOffsetY = 0;
+
+                if (LeftMouseDown)
+                {
+                    rectMode = RectMode.Place;
+                    rectOffsetX = -selectedTile.CenterX;
+                    rectOffsetY = -selectedTile.CenterY;
+                }
+                else if (RightMouseDown)
+                {
+                    rectMode = RectMode.Remove;
+                }
+
+                if (rectMode != RectMode.Inactive)
+                    rectStart = new CellPosition(window.MouseCx + rectOffsetX, window.MouseCy + rectOffsetY, window.WorkLayer);
             }
 
-            if (rectMode != RectMode.Inactive)
-                rectStart = new CellPosition(window.MouseCx + rectOffsetX, window.MouseCy + rectOffsetY, window.WorkLayer);
+            else // start tile place mode
+            {
+                placeTiles = LeftMouseDown;
+            }
         }
 
         // single-tile place mode
@@ -251,8 +276,10 @@ class TileEditMode : TileEditorMode
             Raylib.EndShaderMode();
 
             // place tile on click
-            if (editor.isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            if (placeTiles)
             {
+                if (!LeftMouseDown) placeTiles = false;
+
                 if (validationStatus == TilePlacementStatus.Success)
                 {
                     // extra if statement to prevent overwriting the already placed tile
@@ -276,6 +303,8 @@ class TileEditMode : TileEditorMode
                         if (selectedTile.Tags.Contains("Chain Holder"))
                         {
                             editor.BeginChainAttach(lastPlaceX, lastPlaceY, lastPlaceL);
+                            placeTiles = false;
+                            placeChainholder = true;
                         }
                     }
                 }
@@ -293,7 +322,7 @@ class TileEditMode : TileEditorMode
             }
 
             // remove material under mouse cursor
-            if (!removedOnSameCell && editor.isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && level.IsInBounds(window.MouseCx, window.MouseCy))
+            if (!removedOnSameCell && RightMouseDown && level.IsInBounds(window.MouseCx, window.MouseCy))
             {
                 ref var cell = ref level.Layers[window.WorkLayer, window.MouseCx, window.MouseCy];
                 if (!cell.HasTile() && !disallowMatOverwrite)
@@ -330,6 +359,22 @@ class TileEditMode : TileEditorMode
         {
             var tileList = selectedTile.Category.Tiles;
             selectedTile = tileList[Util.Mod(tileList.IndexOf(selectedTile) + 1, tileList.Count)];
+        }
+
+        if (!isToolActive && wasToolActive)
+        {
+            window.CellChangeRecorder.TryPushChange();
+            lastPlaceX = -1;
+            lastPlaceY = -1;
+            lastPlaceL = -1;
+            removedOnSameCell = false;
+        }
+
+        wasToolActive = isToolActive;
+
+        if (placeChainholder)
+        {
+            wasToolActive = false;
         }
     }
 

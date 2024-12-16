@@ -125,7 +125,8 @@ class MaterialEditMode : TileEditorMode
     public int SelectedMaterial { get => selectedMaterial; set => selectedMaterial = value; }
     public int SelectedGroup { get => selectedMatGroup; set => selectedMatGroup = value; }
 
-    private MaterialCatalogWidget catalog;
+    private readonly MaterialCatalogWidget catalog;
+    private bool wasToolActive = false;
 
     public MaterialEditMode(TileEditor editor) : base(editor)
     {
@@ -142,18 +143,33 @@ class MaterialEditMode : TileEditorMode
     {
         base.Focus();
         catalog.ProcessSearch();
+        wasToolActive = false;
+    }
+
+    public override void Unfocus()
+    {
+        base.Unfocus();
+        wasToolActive = false;
     }
 
     public override void Process()
     {
+        base.Process();
+        
         var level = RainEd.Instance.Level;
         var window = RainEd.Instance.LevelView;
-
+        
         if (lastMouseX != window.MouseCx || lastMouseY != window.MouseCy)
         {
             lastMouseX = window.MouseCx;
             lastMouseY = window.MouseCy;
             removedOnSameCell = false;
+        }
+
+        var isToolActive = LeftMouseDown || RightMouseDown;
+        if (isToolActive && !wasToolActive)
+        {
+            window.CellChangeRecorder.BeginChange();
         }
 
         var disallowMatOverwrite = editor.PlacementFlags.HasFlag(TilePlacementFlags.SameOnly);
@@ -175,7 +191,7 @@ class MaterialEditMode : TileEditorMode
                 RainEd.Instance.MaterialDatabase.GetMaterial(selectedMaterial).Color
             );
 
-            if (!editor.isToolActive)
+            if (!isToolActive)
             {
                 if (rectMode == RectMode.Place)
                 {
@@ -230,13 +246,13 @@ class MaterialEditMode : TileEditorMode
         }
 
         // check if rect place mode will start
-        else if (editor.isMouseHeldInMode && editor.isToolActive && !editor.wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        else if (/*editor.isMouseHeldInMode &&*/ isToolActive && !wasToolActive && EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
-            if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+            if (LeftMouseDown)
             {
                 rectMode = RectMode.Place;
             }
-            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
+            else if (RightMouseDown)
             {
                 rectMode = RectMode.Remove;
             }
@@ -280,13 +296,10 @@ class MaterialEditMode : TileEditorMode
 
             // place material
             int placeMode = 0;
-            if (editor.isMouseHeldInMode)
-            {
-                if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
-                    placeMode = 1;
-                else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Right))
-                    placeMode = 2;
-            }
+            if (LeftMouseDown)
+                placeMode = 1;
+            else if (RightMouseDown)
+                placeMode = 2;
             
             if (placeMode != 0 && (placeMode == 1 || !removedOnSameCell))
             {
@@ -361,6 +374,14 @@ class MaterialEditMode : TileEditorMode
             var matList = mat.Category.Materials;
             selectedMaterial = matList[Util.Mod(matList.IndexOf(mat) + 1, matList.Count)].ID;
         }
+
+        if (!isToolActive && wasToolActive)
+        {
+            window.CellChangeRecorder.TryPushChange();
+            removedOnSameCell = false;
+        }
+
+        wasToolActive = isToolActive;
     }
 
     public override void DrawToolbar()

@@ -135,6 +135,12 @@ class CellChangeRecorder
         snapshotChains = null;
     }
 
+    public void CancelChange()
+    {
+        snapshotLayers = null;
+        snapshotChains = null;
+    }
+
     public void PushChange()
     {
         if (snapshotLayers is null || snapshotChains is null)

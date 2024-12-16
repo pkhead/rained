@@ -19,8 +19,8 @@ partial class TileEditor : IEditorMode
     public string Name { get => "Tiles"; }
 
     private readonly LevelWindow window;
-    public bool isToolActive = false;
-    public bool wasToolActive = false;
+    private bool isToolActive = false;
+    private bool wasToolActive = false;
 
     private TileEditorMode[] editModes;
     private int currentMode = 0;
@@ -59,6 +59,7 @@ partial class TileEditor : IEditorMode
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
+            window.CellChangeRecorder.CancelChange();
             chainHolderMode = false;
             editModes[currentMode].UndidOrRedid();
         };
@@ -236,12 +237,13 @@ partial class TileEditor : IEditorMode
             {
                 ProcessChainAttach();
                 isMouseHeldInMode = false;
+                editModes[currentMode].ResetInput();
             }
             else
             {
                 if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || KeyShortcuts.Active(KeyShortcut.RightMouse))
                 {
-                    if (!wasToolActive) window.CellChangeRecorder.BeginChange();
+                    //if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                     isToolActive = true;
                 }
 
@@ -255,11 +257,10 @@ partial class TileEditor : IEditorMode
                     isMouseHeldInMode = false;
                 }
                 
-                // render selected tile
                 editModes[currentMode].Process();
 
                 // material and tile eyedropper and removal
-                if (window.IsMouseInLevel()/* && rectMode == RectMode.Inactive*/)
+                if (window.IsMouseInLevel() && editModes[currentMode].CurrentRectMode == TileEditorMode.RectMode.Inactive)
                 {
                     int tileLayer = window.WorkLayer;
                     int tileX = window.MouseCx;
@@ -347,9 +348,9 @@ partial class TileEditor : IEditorMode
             {
                 // process once again in case it does something
                 // when user lets go of mouse
-                editModes[currentMode].Process();
+                //editModes[currentMode].Process();
 
-                window.CellChangeRecorder.PushChange();
+                //window.CellChangeRecorder.PushChange();
                 //lastPlaceX = -1;
                 //lastPlaceY = -1;
                 //lastPlaceL = -1;
@@ -406,6 +407,9 @@ partial class TileEditor : IEditorMode
 
     public void BeginChainAttach(int x, int y, int layer)
     {
-        throw new NotImplementedException();
+        chainHolderMode = true;
+        chainHolderX = x;
+        chainHolderY = y;
+        chainHolderL = layer;
     }
 }
