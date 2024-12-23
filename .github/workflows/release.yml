@@ -19,6 +19,10 @@ jobs:
       contents: write
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - name: Download Linux Artifact
       uses: actions/download-artifact@v4
       with:
