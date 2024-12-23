@@ -16,6 +16,8 @@ jobs:
     steps:
     - name: Build Rained
       uses: ./.github/workflows/build.yml
+      with:
+        full-release: true
     - name: Download Linux Artifact
       uses: actions/download-artifact@v4
       with:
