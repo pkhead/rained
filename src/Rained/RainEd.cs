@@ -6,6 +6,7 @@ using Rained.EditorGui;
 using Rained.Assets;
 using Rained.LevelData;
 using Rained.Rendering;
+using System.Reflection;
 
 namespace Rained;
 
@@ -22,9 +23,25 @@ public class RainEdStartupException : Exception
 /// </summary>
 sealed class RainEd
 {
-    public const string Version = "v2.2.2-dev";
-
+    public static string Version;
     public static RainEd Instance = null!;
+
+    static RainEd()
+    {
+        var asmVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        if (asmVersion is null)
+        {
+            Version = "v0.0.0";
+        }
+        else
+        {
+            Version = $"v{asmVersion.Major}.{asmVersion.Minor}.{asmVersion.Build}";
+        }
+
+        #if !FULL_RELEASE
+        Version += "-dev";
+        #endif
+    }
 
     public bool Running = true; // if false, Boot.cs will close the window
 

@@ -108,8 +108,8 @@ Task("Build Shaders")
         return;
     }
 
-    var lang = useGles ? "gles300" : "gl330";
-    Exec(pythonExec, ["shader-preprocessor.py", lang]);
+    Exec(pythonExec, ["shader-preprocessor.py", "gles300"]);
+    Exec(pythonExec, ["shader-preprocessor.py", "gl330"]);
 });
 
 Task("Build")
@@ -143,6 +143,9 @@ Task("DotNetPublish")
 
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
     buildSettings.Properties.Add("AppDataPath", ["Assembly"]);
+
+    if (HasArgument("full-release"))
+        buildSettings.Properties.Add("FullRelease", ["true"]);
 
     if (useGles)
         buildSettings.Properties.Add("GL", ["ES"]); // use ANGLE

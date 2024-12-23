@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <TargetFramework>net8.0</TargetFramework>
     <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
-    <Version>2.2.2-dev</Version>
+    <Version>2.2.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AppDataPath)'=='Assembly'">
@@ -17,6 +17,10 @@
 
   <PropertyGroup Condition="'$(AppDataPath)'=='AppData'">
     <DefineConstants>DATA_APPDATA</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FullRelease)'!=''">FULL_RELEASE</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup>
