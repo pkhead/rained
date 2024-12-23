@@ -11,17 +11,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    - name: Build Rained
-      uses: ./.github/workflows/build.yml
-      with:
-        full-release: false
+    uses: ./.github/workflows/build.yml
+    with:
+      full-release: false
 
   create_release:
     needs: build
