@@ -8,7 +8,6 @@ on:
 
 jobs:
   create_release:
-    needs: [windows-package, linux-package]
     runs-on: ubuntu-latest
     permissions:
       contents: write
