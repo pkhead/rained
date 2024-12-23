@@ -19,13 +19,14 @@ v2.2.x:
 - optional download from solar's repo
 
 v2.3.0 (or later):
+- Draw tile graphics by sublayer rather than render order
+- material previews (since ludo added it in her build I feel especially pressued to finally add it in)
 - render single camera
 - asset manager crap
 - favorite tiles&props
 - please finally add the geo editing stuff
   - ctrl+C to initiate copy mode... simplifies ui
 - tile prefabs (prefabs tab in tile selector)
-- material previews
 - translation system
 - autotiles
   - option to join only inner tiles
