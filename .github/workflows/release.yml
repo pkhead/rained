@@ -1,12 +1,9 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: Nightly build
+name: Release build
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -29,20 +26,14 @@ jobs:
       with:
         name: win-x64
         path: ./artifacts/
-    - name: Remove Old Release
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: gh release delete nightly --cleanup-tag -y
     - name: Create Release
       uses: softprops/action-gh-release@v2
       id: create_release
       with:
-        draft: false
-        prerelease: true
-        name: "Nightly"
-        tag_name: "nightly"
-        make_latest: false
-        body: Latest in-development build.
+        name: Draft Release
+        draft: true
+        make_latest: true
+        body: Release vX-X-X.
         files: |
           ./artifacts/rained_linux-x64.tar.gz
           ./artifacts/rained_win-x64.zip

@@ -1,0 +1,106 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      full-release:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install MkDocs
+        run: pip install mkdocs-material
+      - name: MkDocs build
+        run: mkdocs build
+      - name: Upload documentation site
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: ./dist/docs
+  
+  linux-package:
+    runs-on: ubuntu-latest
+    needs: [build-docs]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: |
+        cd src/Drizzle
+        dotnet run --project Drizzle.Transpiler
+        cd ../..
+        dotnet restore
+    - name: Get documentation build
+      uses: actions/download-artifact@v4
+      with:
+        name: docs
+        path: ./dist/docs
+    - name: Restore Cake Tool
+      run: dotnet tool restore
+    - name: Linux Package (Full Release)
+      if: ${{ inputs.full-release }}
+      run: dotnet cake --os=linux-x64 --target=Package --full-release
+    - name: Linux Package (Nightly build)
+      if: ${{ !inputs.full-release }}
+      run: dotnet cake --os=linux-x64 --target=Package
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-x64
+        path: ./rained_linux-x64.tar.gz
+  
+  windows-package:
+    runs-on: ubuntu-latest
+    needs: [build-docs]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: |
+        cd src/Drizzle
+        dotnet run --project Drizzle.Transpiler
+        cd ../..
+        dotnet restore
+    - name: Get documentation build
+      uses: actions/download-artifact@v4
+      with:
+        name: docs
+        path: ./dist/docs
+    - name: Restore Cake Tool
+      run: dotnet tool restore
+    - name: Windows Package (Full Release)
+      if: ${{ inputs.full-release }}
+      run: dotnet cake --os=win-x64 --target=Package --full-release
+    - name: Windows Package (Nightly build)
+      if: ${{ !inputs.full-release }}
+      run: dotnet cake --os=win-x64 --target=Package
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: win-x64
+        path: ./rained_win-x64.zip
