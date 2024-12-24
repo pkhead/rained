@@ -19,7 +19,6 @@ v2.2.x:
 - optional download from solar's repo
 
 v2.3.0 (or later):
-- Draw tile graphics by sublayer rather than render order
 - material previews (since ludo added it in her build I feel especially pressued to finally add it in)
 - render single camera
 - asset manager crap

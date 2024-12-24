@@ -451,9 +451,10 @@ partial class Level : IDisposable
 
         return new CellPosition(-1, -1, -1);
     }
-    private class PropDepthSorter : IComparer<Prop>
+
+    public void SortPropsByDepth()
     {
-        int IComparer<Prop>.Compare(Prop? a, Prop? b)
+        Props.Sort(static (Prop a, Prop b) =>
         {
             if (a!.DepthOffset == b!.DepthOffset)
             {
@@ -466,12 +467,7 @@ partial class Level : IDisposable
             {
                 return b!.DepthOffset.CompareTo(a!.DepthOffset);
             }
-        }
-    }
-
-    public void SortPropsByDepth()
-    {
-        Props.Sort(new PropDepthSorter());
+        });
     }
     
     public Vector2 Resize(int newWidth, int newHeight, int anchorX = -1, int anchorY = -1)
