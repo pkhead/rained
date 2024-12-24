@@ -187,6 +187,7 @@ sealed class RainEd
             img.DrawPixel(0, 0, new Color(255, 0, 255, 255));
             img.DrawPixel(1, 1, new Color(255, 0, 255, 255));
             PlaceholderTexture = RlManaged.Texture2D.LoadFromImage(img);
+            PlaceholderTexture.GlibTexture.WrapModeUV = Glib.TextureWrapMode.Repeat;
         }
 
         // load other graphics resources

@@ -162,9 +162,7 @@ class TileRenderer
                             init.Width * Level.TileSize,
                             init.Height * Level.TileSize
                         );
-                        Raylib.BeginShaderMode(Shaders.UvRepeatShader);
                         Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
-                        Raylib.EndShaderMode();
                         continue;
                     }
                     
@@ -406,7 +404,6 @@ class TileRenderer
                         Raylib.EndShaderMode();
                     }
 
-                    Raylib.EndShaderMode();
                     var srcRec = new Rectangle(0f, 0f, 2f, 2f);
                     Raylib.DrawTexturePro(RainEd.Instance.PlaceholderTexture, srcRec, dstRec, Vector2.Zero, 0f, Color.White);
                 }
@@ -449,11 +446,11 @@ class TileRenderer
                             // if rendering palette, R channel represents sublayer
                             // A channel is alpha, as usual
                             Color col = drawColor;
-                            float lf = (float)l / init.LayerCount;
+                            float lf = (float)init.LayerDepths[l] / init.LayerDepth;
 
                             if (renderPalette)
                             {
-                                var paletteIndex = lf * (init.HasSecondLayer ? 2f : 1f) / 3f;
+                                var paletteIndex = init.LayerDepths[l] / 30f;
                                 col = new Color((int)MathF.Round(Math.Clamp(paletteIndex, 0f, 1f) * 255f), 0, 0, drawColor.A);
                             }
                             else

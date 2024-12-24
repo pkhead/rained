@@ -90,6 +90,7 @@ record class PropInit
     public readonly SoftPropRenderInfo? SoftPropRender;
     public readonly int Bevel;
     public readonly int Depth;
+    public readonly int[] LayerDepths;
     public readonly int VariationCount;
     public readonly string[] Notes;
     public readonly RopeInit? Rope;
@@ -131,6 +132,7 @@ record class PropInit
         ColorTreatment = PropColorTreatment.Unspecified;
         Bevel = 0;
         SoftPropRender = null;
+        LayerDepths = [0];
         Name = (string) init.fields["nm"];
         Type = (string) init.fields["tp"] switch
         {
@@ -191,10 +193,14 @@ record class PropInit
             {
                 var list = ((Lingo.List)tempObject).values;
                 layerCount = list.Count;
+                LayerDepths = new int[layerCount];
+                int i = 0;
                 foreach (int n in list.Cast<int>())
                 {
+                    LayerDepths[i++] = Depth;
                     Depth += n;
                 }
+
             }
             else if (init.fields.TryGetValue("depth", out tempObject))
             {
@@ -343,6 +349,7 @@ record class PropInit
 
         layerCount = srcTile.LayerCount;
         Depth = srcTile.LayerDepth;
+        LayerDepths = srcTile.LayerDepths;
         pixelWidth = (srcTile.Width + srcTile.BfTiles * 2) * 20;
         pixelHeight = (srcTile.Height + srcTile.BfTiles * 2) * 20;
         sizeKnown = true;

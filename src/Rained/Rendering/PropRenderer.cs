@@ -105,7 +105,7 @@ class PropRenderer(LevelEditRender renderInfo)
                     {
                         // R channel represents sublayer
                         // A channel is alpha, as usual
-                        float sublayer = (float)depth / prop.PropInit.LayerCount * prop.PropInit.Depth + prop.DepthOffset;
+                        int sublayer = prop.PropInit.LayerDepths[depth] + prop.DepthOffset;
                         rctx.DrawColor = new Glib.Color(Math.Clamp(sublayer / 29f, 0f, 1f), 0f, 0f, alpha / 255f);
                     }
                     else

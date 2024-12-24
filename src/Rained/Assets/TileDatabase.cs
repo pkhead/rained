@@ -25,8 +25,22 @@ class Tile
     public readonly bool HasSecondLayer;
     public readonly int BfTiles = 0;
     public readonly bool CanBeProp;
+
+    /// <summary>
+    /// The number of voxel slices in the image.
+    /// </summary>
     public readonly int LayerCount;
+
+    /// <summary>
+    /// The depth of each voxel slice, interpreted from repeatL.
+    /// </summary>
+    public readonly int[] LayerDepths;
+
+    /// <summary>
+    /// The depth size of the tile. Either 10 or 20.
+    /// </summary>
     public readonly int LayerDepth;
+
     public readonly int VariationCount;
 
     public readonly int CenterX;
@@ -71,29 +85,31 @@ class Tile
         LayerDepth = 10;
 
         // fill requirements table
-        int i = 0;
-        for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < height; y++)
-            {
-                Requirements[x,y] = (sbyte) specs[i];
-                Requirements2[x,y] = -1;
-                i++;
-            }
-        }
-
-        if (specs2 is not null)
-        {
-            LayerDepth = 20;
-            HasSecondLayer = true;
-            
-            i = 0;
+            int i = 0;
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    Requirements2[x, y] = (sbyte) specs2[i];
+                    Requirements[x,y] = (sbyte) specs[i];
+                    Requirements2[x,y] = -1;
                     i++;
+                }
+            }
+
+            if (specs2 is not null)
+            {
+                LayerDepth = 20;
+                HasSecondLayer = true;
+                
+                i = 0;
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        Requirements2[x, y] = (sbyte) specs2[i];
+                        i++;
+                    }
                 }
             }
         }
@@ -109,6 +125,15 @@ class Tile
                 LayerCount = repeatL!.Count;
                 ImageRowCount *= LayerCount;
 
+                // fill LayerDepths list
+                LayerDepths = new int[LayerCount];
+                int depth = 0;
+                for (int i = 0; i < LayerCount; i++)
+                {
+                    LayerDepths[i] = depth;
+                    depth += repeatL![i];
+                }
+
                 if (type == TileType.VoxelStruct || drizzleConfig.VoxelStructRandomDisplaceForTilesAsProps)
                     CanBeProp = true;
 
@@ -116,11 +141,13 @@ class Tile
             
             case TileType.VoxelStructRockType:
             case TileType.VoxelStructSandType:
+                LayerDepths = [0];
                 break;
             
             case TileType.Box:
                 ImageRowCount = height * width + height + bfTiles * 2;
                 ImageYOffset = 0;
+                LayerDepths = [0];
                 break;
         }
 
