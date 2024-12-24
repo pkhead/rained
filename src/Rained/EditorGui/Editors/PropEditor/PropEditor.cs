@@ -352,6 +352,7 @@ partial class PropEditor : IEditorMode
 
         levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
+            Scissor = false,
             DrawProps = true,
             DrawPropsInFront = true,
             ActiveLayer = window.WorkLayer,

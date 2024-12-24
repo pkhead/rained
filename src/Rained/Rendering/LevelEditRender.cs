@@ -711,9 +711,9 @@ class LevelEditRender : IDisposable
             int offset = (l - config.ActiveLayer) * config.LayerOffset;
             Raylib.BeginTextureMode(layerFrames[l]);
 
-            Raylib.EndScissorMode();
+            if (config.Scissor) Raylib.EndScissorMode();
             Raylib.ClearBackground(new Color(0, 0, 0, 0));
-            window.BeginLevelScissorMode();
+            if (config.Scissor) window.BeginLevelScissorMode();
 
             Rlgl.PushMatrix();
                 Rlgl.Translatef(offset, offset, 0f);

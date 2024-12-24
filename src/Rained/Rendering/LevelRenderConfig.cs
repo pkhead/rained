@@ -10,6 +10,7 @@ record struct LevelRenderConfig()
 
     public bool FillWater = false;
     public bool DrawPropsInFront = false;
+    public bool Scissor = true;
 
     /// <summary>
     /// Strength of white-fade. Range: [0, 1]
