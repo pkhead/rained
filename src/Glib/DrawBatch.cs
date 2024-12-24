@@ -171,9 +171,9 @@ internal class DrawBatch
         }
     }
 
-    internal void PushVertex(float x, float y)
+    internal void PushVertex(float x, float y, float z = 0f)
     {
-        var vec = Vector4.Transform(new Vector4(x, y, 0f, 1f), TransformMatrix);
+        var vec = Vector4.Transform(new Vector4(x, y, z, 1f), TransformMatrix);
 
         uint i = (uint)vertexCount * VertexDataSize;
         batchData[i++] = vec.X / vec.W;
@@ -203,7 +203,7 @@ internal class DrawBatch
 
 public class BatchDrawHandle : IDisposable
 {
-    private readonly static Vector2[] verts = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero];
+    private readonly static Vector3[] verts = [Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero];
     private readonly static Vector2[] uvs = [Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero,];
     private readonly static Color[] colors = [Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent, Glib.Color.Transparent];
 
@@ -244,7 +244,7 @@ public class BatchDrawHandle : IDisposable
                 {
                     _batch.DrawColor = colors[i];
                     _batch.UV = uvs[i];
-                    _batch.PushVertex(verts[i].X, verts[i].Y);
+                    _batch.PushVertex(verts[i].X, verts[i].Y, verts[i].Z);
                     _batch.PushIndex(_batch.CurrentIndex++);
                 }
                 break;
@@ -256,19 +256,19 @@ public class BatchDrawHandle : IDisposable
 
                 _batch.DrawColor = colors[0];
                 _batch.UV = uvs[0];
-                _batch.PushVertex(verts[0].X, verts[0].Y);
+                _batch.PushVertex(verts[0].X, verts[0].Y, verts[0].Z);
 
                 _batch.DrawColor = colors[1];
                 _batch.UV = uvs[1];
-                _batch.PushVertex(verts[1].X, verts[1].Y);
+                _batch.PushVertex(verts[1].X, verts[1].Y, verts[1].Z);
 
                 _batch.DrawColor = colors[2];
                 _batch.UV = uvs[2];
-                _batch.PushVertex(verts[2].X, verts[2].Y);
+                _batch.PushVertex(verts[2].X, verts[2].Y, verts[2].Z);
 
                 _batch.DrawColor = colors[3];
                 _batch.UV = uvs[3];
-                _batch.PushVertex(verts[3].X, verts[3].Y);
+                _batch.PushVertex(verts[3].X, verts[3].Y, verts[3].Z);
 
                 int idx = _batch.CurrentIndex;
                 _batch.PushIndex(idx + 0);
@@ -287,11 +287,11 @@ public class BatchDrawHandle : IDisposable
 
                 _batch.DrawColor = colors[0];
                 _batch.UV = uvs[0];
-                _batch.PushVertex(verts[0].X, verts[0].Y);
+                _batch.PushVertex(verts[0].X, verts[0].Y, verts[0].Z);
 
                 _batch.DrawColor = colors[1];
                 _batch.UV = uvs[1];
-                _batch.PushVertex(verts[1].X, verts[1].Y);
+                _batch.PushVertex(verts[1].X, verts[1].Y, verts[1].Z);
 
                 _batch.PushIndex(_batch.CurrentIndex++);
                 _batch.PushIndex(_batch.CurrentIndex++);
@@ -304,13 +304,16 @@ public class BatchDrawHandle : IDisposable
 
     public void Vertex(Vector2 v)
         => Vertex(v.X, v.Y);
+    
+    public void Vertex(Vector3 v)
+        => Vertex(v.X, v.Y, v.Z);
 
-    public void Vertex(float x, float y)
+    public void Vertex(float x, float y, float z = 0f)
     {
         if (IsFull()) Flush();
         uvs[vertIndex] = uv;
         colors[vertIndex] = color;
-        verts[vertIndex] = new Vector2(x, y);
+        verts[vertIndex] = new Vector3(x, y, z);
         vertIndex++;
     }
 
