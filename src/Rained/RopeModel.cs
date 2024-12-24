@@ -257,7 +257,7 @@ class RopeModel
         if (level.IsInBounds(x, y))
             return (int) RainEd.Instance.Level.Layers[layer, x, y].Geo;
         else
-            return 1;
+            return RainEd.Instance.Level.DefaultMedium ? 1 : 0; // originally returned 1
     }
 
     public void Update() 
