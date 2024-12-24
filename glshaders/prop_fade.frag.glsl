@@ -18,5 +18,5 @@ void main()
     if (isTransparent) discard;
 
     vec3 color = mix(texelColor.rgb, vec3(1.0), v_color0.y);
-    fragColor = vec4(color, (1.0 - float(isTransparent)) * v_color0.x) * u_color;
+    fragColor = vec4(color, v_color0.x) * u_color;
 }

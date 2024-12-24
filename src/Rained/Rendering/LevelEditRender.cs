@@ -786,6 +786,34 @@ class LevelEditRender : IDisposable
         if (config.FillWater && level.HasWater && level.IsWaterInFront)
             FillWater();
     }
+
+    public static float GetSublayerZCoord(int sublayer)
+        => Math.Clamp(1f - (sublayer / 29f), 0f, 1f) * 0.9f + 0.1f;
+
+    public static void DrawTextureSublayer(RlManaged.Texture2D rtex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
+    {
+        var tex = rtex.GlibTexture!;
+        var srcRect = new Glib.Rectangle(rSrcRec.Position, rSrcRec.Size);
+        var dstRect = new Glib.Rectangle(rDstRec.Position, rDstRec.Size);
+        var texW = tex.Width;
+        var texH = tex.Height;
+        float z = GetSublayerZCoord(sublayer);
+
+        using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+
+        draw.Color(tint);
+        draw.TexCoord(srcRect.Left / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Left, dstRect.Top, z);
+
+        draw.TexCoord(srcRect.Left / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Left, dstRect.Bottom, z);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Right, dstRect.Bottom, z);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Right, dstRect.Top, z);
+    }
     
     public void Dispose()
     {
