@@ -16,7 +16,6 @@ class TileRenderer
 
     private readonly LevelEditRender renderInfo;
     private readonly HashSet<CellPosition> dirtyHeads = [];
-    private readonly HashSet<int> wasRendered = [];
     private readonly List<TileRender> tileRenders = [];
 
     public TileRenderer(LevelEditRender renderInfo)
@@ -402,6 +401,7 @@ class TileRenderer
                     {
                         curShader = null;
                         Raylib.EndShaderMode();
+                        RainEd.RenderContext.Flags = Glib.RenderFlags.None;
                     }
 
                     var srcRec = new Rectangle(0f, 0f, 2f, 2f);
@@ -412,6 +412,7 @@ class TileRenderer
                     if (curShader != shader)
                     {
                         curShader = shader;
+                        RainEd.RenderContext.Flags = Glib.RenderFlags.DepthTest;
 
                         if (shader == Shaders.PaletteShader)
                             renderInfo.Palette.BeginPaletteShaderMode();
@@ -432,8 +433,7 @@ class TileRenderer
                         // if rendering palette, R channel represents sublayer
                         // A channel is alpha, as usual
                         var col = renderPalette ? new Color(0, 0, 0, (int)drawColor.A) : drawColor;
-
-                        Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, renderPalette ? Color.Black : drawColor);
+                        DrawTextureSublayer(tex, srcRec, dstRec, layer*10 + init.LayerDepths[0], Glib.Color.FromRGBA(col.R, col.G, col.B, col.A));
                     }
 
                     // draw the tile sublayers from back to front
@@ -445,25 +445,24 @@ class TileRenderer
 
                             // if rendering palette, R channel represents sublayer
                             // A channel is alpha, as usual
-                            Color col = drawColor;
-                            float lf = (float)init.LayerDepths[l] / init.LayerDepth;
+                            Glib.Color col = Glib.Color.FromRGBA(drawColor.R, drawColor.G, drawColor.B, drawColor.A);
 
                             if (renderPalette)
                             {
                                 var paletteIndex = init.LayerDepths[l] / 30f;
-                                col = new Color((int)MathF.Round(Math.Clamp(paletteIndex, 0f, 1f) * 255f), 0, 0, drawColor.A);
+                                col = new Glib.Color(Math.Clamp(paletteIndex, 0f, 1f), 0f, 0f, col.A);
                             }
                             else
                             {
                                 // fade to white as the layer is further away
                                 // from the front
-                                float a = lf;
-                                col.R = (byte)(col.R * (1f - a) + (col.R * 0.5) * a);
-                                col.G = (byte)(col.G * (1f - a) + (col.G * 0.5) * a);
-                                col.B = (byte)(col.B * (1f - a) + (col.B * 0.5) * a);
+                                float a = (float)init.LayerDepths[l] / init.LayerDepth;
+                                col.R = col.R * (1f - a) + (col.R * 0.5f) * a;
+                                col.G = col.G * (1f - a) + (col.G * 0.5f) * a;
+                                col.B = col.B * (1f - a) + (col.B * 0.5f) * a;
                             }
 
-                            Raylib.DrawTexturePro(tex, srcRec, dstRec, Vector2.Zero, 0f, col);
+                            DrawTextureSublayer(tex, srcRec, dstRec, layer*10 + init.LayerDepths[l], col);
                         }
 
                     }
@@ -474,6 +473,7 @@ class TileRenderer
         if (curShader != null)
         {
             Raylib.EndShaderMode();
+            RainEd.RenderContext.Flags = Glib.RenderFlags.None;
         }
 
         // highlight tile heads
@@ -505,6 +505,31 @@ class TileRenderer
             }
 
         }
+    }
+
+    private static void DrawTextureSublayer(RlManaged.Texture2D rtex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
+    {
+        var tex = rtex.GlibTexture!;
+        var srcRect = new Glib.Rectangle(rSrcRec.Position, rSrcRec.Size);
+        var dstRect = new Glib.Rectangle(rDstRec.Position, rDstRec.Size);
+        var texW = tex.Width;
+        var texH = tex.Height;
+        float z = Math.Clamp(1f - (sublayer / 29f), 0f, 1f) * 0.9f + 0.1f;
+
+        using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+
+        draw.Color(tint);
+        draw.TexCoord(srcRect.Left / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Left, dstRect.Top, z);
+
+        draw.TexCoord(srcRect.Left / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Left, dstRect.Bottom, z);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Bottom / texH);
+        draw.Vertex(dstRect.Right, dstRect.Bottom, z);
+
+        draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
+        draw.Vertex(dstRect.Right, dstRect.Top, z);
     }
 
     public static Rectangle GetGraphicSublayer(Tile tile, int sublayer, int variation)
