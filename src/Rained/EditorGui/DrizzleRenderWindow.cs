@@ -5,8 +5,8 @@ using System.Diagnostics;
 using DrizzleRender = Rained.Drizzle.DrizzleRender;
 using RenderState = Rained.Drizzle.DrizzleRender.RenderState;
 using System.Runtime.CompilerServices;
-using System.Globalization;
 using Rained.LevelData;
+using System.Runtime.InteropServices;
 namespace Rained.EditorGui;
 
 class DrizzleRenderWindow : IDisposable
@@ -211,14 +211,24 @@ class DrizzleRenderWindow : IDisposable
         }
 
         var doClose = false;
+        bool isPreviewEnabled = false;
 
-        drizzleRenderer?.Update();
+        if (drizzleRenderer is not null)
+        {
+            isPreviewEnabled = drizzleRenderer.PreviewImages is not null && !drizzleRenderer.OnlyGeometry;
+            drizzleRenderer.Update();
+        }
 
         ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f), Vector2.One * 9999f);
-        if (ImGuiExt.BeginPopupModal("Render", ImGuiWindowFlags.AlwaysAutoResize))
+        ImGui.SetNextWindowSizeConstraints(
+            new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f),
+            Vector2.One * 9999f
+        );
+
+        ImGuiWindowFlags windowFlags = 0;
+        if (!isPreviewEnabled) windowFlags |= ImGuiWindowFlags.AlwaysAutoResize;
+        if (ImGuiExt.BeginPopupModal("Render", windowFlags))
         {
-            bool isPreviewEnabled = drizzleRenderer!.PreviewImages is not null && !drizzleRenderer.OnlyGeometry;
             float renderProgress = 0f;
 
             if (drizzleRenderer is not null)
@@ -280,15 +290,39 @@ class DrizzleRenderWindow : IDisposable
                     }
                 }
 
+                
                 int cWidth = previewComposite.Texture.Width;
                 int cHeight = previewComposite.Texture.Height;
-                ImGuiExt.ImageRect(
-                    previewComposite.Texture,
-                    (int)(cWidth / 1.25f), (int)(cHeight / 1.25f),
-                    RainEd.RenderContext.OriginBottomLeft ?
-                        new Rectangle(0, cHeight, cWidth, -cHeight) :
-                        new Rectangle(0f, 0f, cWidth, cHeight)
-                );
+
+                var avail = ImGui.GetContentRegionAvail();
+                if (avail.X > 0 && avail.Y > 0)
+                {
+                    float viewWidth, viewHeight;
+
+                    if ((float)avail.Y / avail.X > (float)cHeight / cWidth)
+                    {
+                        viewWidth = avail.X;
+                        viewHeight = viewWidth * ((float)cHeight / cWidth);
+
+                        var winSize = ImGui.GetWindowSize();
+                        ImGui.SetWindowSize(new Vector2(winSize.X, winSize.Y));
+                    }
+                    else
+                    {
+                        viewHeight = avail.Y;
+                        viewWidth = viewHeight * ((float)cWidth / cHeight);
+                    }
+                    
+                    ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2((avail.X - viewWidth) / 2f, (avail.Y - viewHeight) / 2f));
+                    ImGuiExt.ImageRect(
+                        previewComposite.Texture,
+                        viewWidth, viewHeight,
+                        RainEd.RenderContext.OriginBottomLeft ?
+                            new Rectangle(0, cHeight, cWidth, -cHeight) :
+                            new Rectangle(0f, 0f, cWidth, cHeight)
+                    );
+                }
+
                 ImGui.EndGroup();
             }
             else
