@@ -98,6 +98,7 @@ class MaterialDatabase
         CreateMaterial(     "BulkMetal",           new Color(50,19,190, 255));
         CreateMaterial(     "MassiveBulkMetal",    new Color(255,19,19, 255));
         CreateMaterial(     "Dune Sand",           new Color(255, 255, 100, 255));
+        CreateMaterial(     "Chaotic Greeble",     new Color(100, 100, 100, 255));
 
         // read from init.txt
         RegisterCustomMaterials();

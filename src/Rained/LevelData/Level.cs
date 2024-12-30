@@ -174,7 +174,7 @@ class Effect
     public readonly EffectInit Data;
     public LayerMode Layer = LayerMode.All;
     public bool Is3D = false;
-    public int PlantColor = 1; // 0 = Color1, 1 = Color2, 2 = Dead
+    public int PlantColor; // 0 = Color1, 1 = Color2, 2 = Dead
     public bool AffectGradientsAndDecals = false;
     public int Seed;
 
@@ -195,6 +195,9 @@ class Effect
         
         if (init.useLayers)
             Layer = init.defaultLayer;
+        
+        if (init.usePlantColors)
+            PlantColor = init.defaultPlantColor;
 
         CustomValues = new int[init.customConfigs.Count];
 

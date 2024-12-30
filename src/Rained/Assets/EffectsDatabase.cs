@@ -66,6 +66,7 @@ class EffectInit
     /// Applicable only if useLayers is true.
     /// </summary>
     public Effect.LayerMode defaultLayer = Effect.LayerMode.All;
+    public int defaultPlantColor = 1; // Color2
 
     public readonly List<CustomEffectConfig> customConfigs;
 
@@ -974,6 +975,15 @@ class EffectsDatabase
             });
             CustomConfig("Effect Color", ["EffectColor1", "EffectColor2", "None"], "None");
             CustomConfig("Color Intensity", ["High", "Medium", "Low", "None"], "Medium");
+
+            CreateEffect(new EffectInit("Fingers", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                defaultPlantColor = 2, // Dead
+            });
+            CustomConfig("Finger Thickness", ["Small", "Medium", "FAT", "Random"], "Medium");
+            CustomConfig("Finger Length", ["Short", "Medium", "Tall", "Random"], "Medium");
         }
 
         //////////////////
