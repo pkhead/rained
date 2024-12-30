@@ -26,17 +26,16 @@ static class Log
         List<string> logSetupErrors = [];
 
         var logLatest = Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt");
-        if (File.Exists(logLatest))
+        try
         {
-            try
-            {
+            if (File.Exists(logLatest))
                 File.Delete(logLatest);
-                loggerConfig.WriteTo.File(logLatest, retainedFileCountLimit: 1);
-            }
-            catch (Exception e)
-            {
-                logSetupErrors.Add("Could not write to latest.log.txt: " + e);
-            }
+
+            loggerConfig.WriteTo.File(logLatest, retainedFileCountLimit: 1);
+        }
+        catch (Exception e)
+        {
+            logSetupErrors.Add("Could not write to latest.log.txt: " + e);
         }
 
         loggerConfig.WriteTo.File(

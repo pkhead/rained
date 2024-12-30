@@ -26,6 +26,10 @@ static class LogsWindow
         {
             if (ImGui.Button("Clear"))
                 logs.Clear();
+            
+            ImGui.SameLine();
+            if (ImGui.Button("Show File"))
+                Platform.RevealPath(Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt"));
                 
             ImGui.SameLine();
             ImGui.Checkbox("Wrap", ref wrap);
