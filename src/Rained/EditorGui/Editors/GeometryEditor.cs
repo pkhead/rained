@@ -293,6 +293,8 @@ class GeometryEditor : IEditorMode
         }
     }
 
+    int buttonsPerRow = 4;
+
     public void DrawToolbar()
     {
         Vector4 textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
@@ -328,11 +330,17 @@ class GeometryEditor : IEditorMode
             ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
             ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
+            {
+                float buttonSize = 24f * Boot.PixelIconScale + 4f;
+                buttonsPerRow = (int) (ImGui.GetContentRegionAvail().X / buttonSize);
+                if (buttonsPerRow < 1) buttonsPerRow = 1;
+            }
+
             for (int i = 0; i < (int) Tool.ToolCount; i++)
             {
                 Tool toolEnum = (Tool) i;
 
-                if (i % 4 > 0) ImGui.SameLine();
+                if (i % buttonsPerRow > 0) ImGui.SameLine();
 
                 string toolName = ToolNames[toolEnum];
                 Vector2 texOffset = ToolTextureOffsets[toolEnum];
@@ -609,8 +617,8 @@ class GeometryEditor : IEditorMode
         // WASD navigation
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
         {
-            int toolRow = (int) selectedTool / 4;
-            int toolCol = (int) selectedTool % 4;
+            int toolRow = (int) selectedTool / buttonsPerRow;
+            int toolCol = (int) selectedTool % buttonsPerRow;
             int toolCount = (int) Tool.ToolCount;
             
             if (KeyShortcuts.Activated(KeyShortcut.NavRight))
@@ -620,10 +628,9 @@ class GeometryEditor : IEditorMode
                     toolCol = 0;
                     toolRow = 0;
                 }
-                else if (++toolCol > 4)
+                else if (++toolCol >= buttonsPerRow)
                 {
                     toolCol = 0;
-                    toolRow++;
                 }
             }
 
@@ -632,8 +639,7 @@ class GeometryEditor : IEditorMode
                 toolCol--;
                 if (toolCol < 0)
                 {
-                    toolCol = 3;
-                    toolRow--;
+                    toolCol = buttonsPerRow - 1;
                 }
             }
 
@@ -646,7 +652,7 @@ class GeometryEditor : IEditorMode
             {
                 // if on the last row, wrap back to first row
                 // else, just go to next row
-                if (toolRow == (toolCount-1) / 4)
+                if (toolRow == (toolCount-1) / buttonsPerRow)
                     toolRow = 0;
                 else
                     toolRow++;
@@ -654,10 +660,10 @@ class GeometryEditor : IEditorMode
             
             if (toolRow < 0)
             {
-                toolRow = (toolCount-1) / 4;
+                toolRow = (toolCount-1) / buttonsPerRow;
             }
 
-            selectedTool = (Tool) Math.Clamp(toolRow*4 + toolCol, 0, toolCount-1);
+            selectedTool = (Tool) Math.Clamp(toolRow*buttonsPerRow + toolCol, 0, toolCount-1);
         }
 
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
