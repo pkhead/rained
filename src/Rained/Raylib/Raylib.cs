@@ -48,6 +48,7 @@ static class Raylib
     private static Vector2? lastMousePos = null;
     private static Vector2 mouseDelta = Vector2.Zero;
     private static bool windowShouldClose = false;
+    private static bool eventDrivenExit = false;
 
     public static Glib.Color ToGlibColor(Color color)
     {
@@ -468,6 +469,12 @@ static class Raylib
         lastFrame = window.Time;
         frameStopwatch.Restart();
 
+        if (eventDrivenExit)
+        {
+            frameTime = 0f;
+            eventDrivenExit = false;
+        }
+
         for (int i = 0; i < 3; i++)
         {
             mouseButtonsPressed[i] = false;
@@ -475,7 +482,15 @@ static class Raylib
         }
 
         windowShouldClose = false;
+
+        var oldEvDriven = Boot.Window.IsEventDriven;
         window.PollEvents();
+        if (oldEvDriven && !Boot.Window.IsEventDriven)
+        {
+            Log.Debug("exit event driven");
+            eventDrivenExit = true;
+            frameTime = 0f;
+        }
 
         if (lastMousePos is null)
         {

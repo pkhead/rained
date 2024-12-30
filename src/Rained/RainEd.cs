@@ -83,6 +83,10 @@ sealed class RainEd
     // this is used to set window IsEventDriven to true
     // when the user hasn't interacted with the window in a while
     private float remainingActiveTime = 2f;
+
+    // this is used to make sure window doesn't sleep when
+    // any key is held down
+    private int keysPressed = 0;
     
     private double lastRopeUpdateTime = 0f;
     private float simTimeLeftOver = 0f;
@@ -330,10 +334,16 @@ sealed class RainEd
         lastRopeUpdateTime = Raylib.GetTime();
 
         Boot.Window.KeyDown += (Glib.Key _, int _) =>
+        {
             NeedScreenRefresh();
+            keysPressed++;
+        };
 
         Boot.Window.KeyUp += (Glib.Key _, int _) =>
+        {
             NeedScreenRefresh();
+            keysPressed--;
+        };
 
         Boot.Window.MouseDown += (Glib.MouseButton _) =>
             NeedScreenRefresh();
@@ -747,9 +757,10 @@ sealed class RainEd
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             DebugWindow.IsWindowOpen = !DebugWindow.IsWindowOpen;
         
-        // don't sleep rained if mouse is held down
+        // don't sleep rained if mouse or key is held down
         // for example, the user may be holding down a +/- imgui input, and i'm not quite sure how to detect that.
-        if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
+        if (ImGui.IsMouseDown(ImGuiMouseButton.Left) || ImGui.IsMouseDown(ImGuiMouseButton.Right) || ImGui.IsMouseDown(ImGuiMouseButton.Middle) ||
+            keysPressed > 0)
         {
             NeedScreenRefresh();
         }
@@ -759,13 +770,14 @@ sealed class RainEd
             throw new Exception("Test Exception");
 #endif
         DebugWindow.ShowWindow();
-
+        
         if (remainingActiveTime > 0f)
         {
             remainingActiveTime -= dt;
         }
         else
         {
+            Log.Debug("event driven");
             Boot.Window.IsEventDriven = true;
         }
     }
