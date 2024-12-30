@@ -55,6 +55,8 @@ class DrizzleMassRender
 
     public void Start(IProgress<MassRenderNotification>? progress, CancellationToken? cancel)
     {
+        Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
+        
         var zygote = DrizzleRender.StaticRuntime;
         if (zygote is null)
         {

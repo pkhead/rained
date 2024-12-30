@@ -209,6 +209,9 @@ class DrizzleRender : IDisposable
                 var largeTrashLogFile = Path.Combine(RainEd.Instance.AssetDataPath, "largeTrashLog.txt");
                 if (!File.Exists(largeTrashLogFile))
                     File.Create(largeTrashLogFile).Dispose();
+                
+                // make sure Levels output folder exists
+                Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
 
                 if (staticRuntime is not null)
                 {
@@ -643,6 +646,7 @@ class DrizzleRender : IDisposable
     /// <returns></returns>
     public static void Render(string levelPath)
     {
+        Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
         var levelName = Path.GetFileNameWithoutExtension(levelPath);
         var pathWithoutExt = Path.Combine(Path.GetDirectoryName(levelPath)!, levelName);
 
