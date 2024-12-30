@@ -219,7 +219,7 @@ class DrizzleRender : IDisposable
                 }
                 else
                 {
-                    Log.Information("Initializing Lingo runtime...");
+                    Log.UserLogger.Information("Initializing Lingo runtime...");
 
                     LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
                     LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
@@ -238,7 +238,7 @@ class DrizzleRender : IDisposable
                 }
 
                 Queue.Enqueue(new MessageLevelLoading());
-                Log.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
+                Log.UserLogger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
                 
                 EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
 
@@ -256,7 +256,7 @@ class DrizzleRender : IDisposable
                     }
                     Queue.Enqueue(new MessageRenderGeometryStarted());
 
-                    Log.Information("RENDER: Exporting Geometry...");
+                    Log.UserLogger.Information("RENDER: Exporting Geometry...");
                     movie.newmakelevel(movie.gLoadedName);
                 }
                 else
@@ -274,16 +274,16 @@ class DrizzleRender : IDisposable
                     }
                     Queue.Enqueue(new MessageRenderStarted());
 
-                    Log.Information("RENDER: Begin");
+                    Log.UserLogger.Information("RENDER: Begin");
                     Renderer.DoRender();
                 }
 
-                Log.Information("Render successful!");
+                Log.UserLogger.Information("Render successful!");
                 Queue.Enqueue(new MessageRenderFinished());
             }
             catch (RenderCancelledException)
             {
-                Log.Information("Render was cancelled");
+                Log.UserLogger.Information("Render was cancelled");
                 Queue.Enqueue(new MessageRenderCancelled());
             }
             catch (Exception e)
@@ -514,7 +514,7 @@ class DrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFailed msgFail:
-                    Log.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
+                    Log.UserLogger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
                     thread.Join();
                     state = RenderState.Errored;
                     break;
