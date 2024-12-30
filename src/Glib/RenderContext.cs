@@ -307,7 +307,7 @@ public sealed class RenderContext : IDisposable
         {
             var err = gl.GetError();
             if (err == GLEnum.NoError) break;
-            LogError($"Begin: Uncaught error: {err}");
+            //LogError($"Begin: Uncaught error: {err}");
         }
 
         int width = _mainWindow.PixelWidth;
@@ -356,11 +356,12 @@ public sealed class RenderContext : IDisposable
     internal unsafe void SetViewport(int width, int height)
     {
         gl.Viewport(0, 0, (uint)width, (uint)height);
-        var viewMat =
+        _curMvp = Matrix4x4.CreateOrthographicOffCenter(0f, width, height, 0f, 0.0f, 1.0f);
+        /*var viewMat =
             Matrix4x4.CreateScale(new Vector3(1f / width * 2f, -1f / height * 2f, 1f)) *
             Matrix4x4.CreateTranslation(new Vector3(-1f, 1f, 0f));
 
-        _curMvp = viewMat;
+        _curMvp = viewMat;*/
     }
 
     public void DrawBatch() => _drawBatch.Draw();
@@ -701,6 +702,12 @@ public sealed class RenderContext : IDisposable
         GlUtil.CheckError(gl, "Error in RenderContext.PopFramebuffer");
         return curFramebuffer;
     }
+
+    public void SetRenderFlags(RenderFlags flags) =>
+        Flags |= flags;
+
+    public void ClearRenderFlags(RenderFlags flags) =>
+        Flags &= ~flags;
 
     #region Transform
 
