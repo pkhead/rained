@@ -465,15 +465,19 @@ static class Raylib
 
     public static void BeginDrawing()
     {
-        frameTime = window.Time - lastFrame;
-        lastFrame = window.Time;
-        frameStopwatch.Restart();
-
         if (eventDrivenExit)
         {
-            frameTime = 0f;
             eventDrivenExit = false;
+            //Log.Debug("exit event driven");
         }
+        else
+        {
+            frameTime = window.Time - lastFrame;
+            Debug.Assert(frameTime > 0.0);
+        }
+
+        lastFrame = window.Time;
+        frameStopwatch.Restart();
 
         for (int i = 0; i < 3; i++)
         {
@@ -488,7 +492,6 @@ static class Raylib
         if (oldEvDriven && !Boot.Window.IsEventDriven)
         {
             eventDrivenExit = true;
-            frameTime = 0f;
         }
 
         if (lastMousePos is null)
