@@ -777,7 +777,6 @@ sealed class RainEd
         }
         else
         {
-            Log.Debug("event driven");
             Boot.Window.IsEventDriven = true;
         }
     }

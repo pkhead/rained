@@ -487,7 +487,6 @@ static class Raylib
         window.PollEvents();
         if (oldEvDriven && !Boot.Window.IsEventDriven)
         {
-            Log.Debug("exit event driven");
             eventDrivenExit = true;
             frameTime = 0f;
         }
