@@ -679,7 +679,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            Rained.Log.UserLogger.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
+            Rained.Log.Error("Error while loading image {ImageName}:\n{Exception}", fileName, e);
             obj.image = null;
         }
 
@@ -745,7 +745,7 @@ static class Raylib
             catch (Exception e)
             {
                 if (Rained.RainEd.Instance is not null)
-                    Log.UserLogger.Error("Error exporting image: {Exception}", e.ToString());
+                    Log.Error("Error exporting image: {Exception}", e.ToString());
                 
                 return false;
             }
@@ -896,7 +896,7 @@ static class Raylib
         }
         catch (Exception e)
         {
-            Log.UserLogger.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
+            Log.Error("Error while loading texture {ImageName}:\n{Exception}", fileName, e);
             return new Texture2D()
             {
                 ID = null
