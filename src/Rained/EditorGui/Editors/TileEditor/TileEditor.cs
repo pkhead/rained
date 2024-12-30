@@ -341,6 +341,11 @@ partial class TileEditor : IEditorMode
                 }
             }
         }
+        
+        if (!chainHolderMode)
+        {
+            editModes[currentMode].IdleProcess();
+        }
 
         if (!wasInChainholderMode && !chainHolderMode)
         {

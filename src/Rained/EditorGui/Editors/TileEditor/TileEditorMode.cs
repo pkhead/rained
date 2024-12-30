@@ -77,6 +77,8 @@ abstract class TileEditorMode(TileEditor editor)
             RightMouseDown = false;
     }
 
+    virtual public void IdleProcess() {}
+
     abstract public void DrawToolbar();
 
     public virtual void Focus()

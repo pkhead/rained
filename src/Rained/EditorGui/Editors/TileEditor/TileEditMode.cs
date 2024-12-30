@@ -333,6 +333,27 @@ class TileEditMode : TileEditorMode
             }
         }
 
+        if (!isToolActive && wasToolActive)
+        {
+            window.CellChangeRecorder.TryPushChange();
+            lastPlaceX = -1;
+            lastPlaceY = -1;
+            lastPlaceL = -1;
+            removedOnSameCell = false;
+        }
+
+        wasToolActive = isToolActive;
+
+        if (placeChainholder)
+        {
+            wasToolActive = false;
+        }
+    }
+
+    public override void IdleProcess()
+    {
+        base.IdleProcess();
+
         var tileDb = RainEd.Instance.TileDatabase;
 
         // A/D to change selected group
@@ -359,22 +380,6 @@ class TileEditMode : TileEditorMode
         {
             var tileList = selectedTile.Category.Tiles;
             selectedTile = tileList[Util.Mod(tileList.IndexOf(selectedTile) + 1, tileList.Count)];
-        }
-
-        if (!isToolActive && wasToolActive)
-        {
-            window.CellChangeRecorder.TryPushChange();
-            lastPlaceX = -1;
-            lastPlaceY = -1;
-            lastPlaceL = -1;
-            removedOnSameCell = false;
-        }
-
-        wasToolActive = isToolActive;
-
-        if (placeChainholder)
-        {
-            wasToolActive = false;
         }
     }
 

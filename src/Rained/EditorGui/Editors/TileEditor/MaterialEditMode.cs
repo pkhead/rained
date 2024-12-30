@@ -345,6 +345,19 @@ class MaterialEditMode : TileEditorMode
             }
         }
 
+        if (!isToolActive && wasToolActive)
+        {
+            window.CellChangeRecorder.TryPushChange();
+            removedOnSameCell = false;
+        }
+
+        wasToolActive = isToolActive;
+    }
+
+    public override void IdleProcess()
+    {
+        base.IdleProcess();
+
         var matDb = RainEd.Instance.MaterialDatabase;
         
         // A/D to change selected group
@@ -374,14 +387,6 @@ class MaterialEditMode : TileEditorMode
             var matList = mat.Category.Materials;
             selectedMaterial = matList[Util.Mod(matList.IndexOf(mat) + 1, matList.Count)].ID;
         }
-
-        if (!isToolActive && wasToolActive)
-        {
-            window.CellChangeRecorder.TryPushChange();
-            removedOnSameCell = false;
-        }
-
-        wasToolActive = isToolActive;
     }
 
     public override void DrawToolbar()
