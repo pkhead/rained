@@ -252,7 +252,7 @@ class TokenParser
                 BeginToken();
                 var kw = ReadWord();
 
-                switch (kw)
+                switch (kw.ToLowerInvariant())
                 {
                     case "point":
                         EndToken(TokenType.KeywordPoint);
@@ -271,48 +271,44 @@ class TokenParser
                         break;
 
                     // parse string constants
-                    case "BACKSPACE":
+                    case "backspace":
                         EndToken(TokenType.StringConstant, "\b");
                         break;
                     
-                    case "EMPTY":
+                    case "empty":
                         EndToken(TokenType.StringConstant, string.Empty);
                         break;
                     
-                    case "ENTER":
+                    case "enter":
                         EndToken(TokenType.StringConstant, Environment.NewLine);
                         break;
                     
-                    case "FALSE":
+                    case "false":
                         EndToken(TokenType.IntConstant, 0);
                         break;
                     
-                    case "PI":
+                    case "pi":
                         EndToken(TokenType.FloatConstant, MathF.PI);
                         break;
                     
-                    case "QUOTE":
+                    case "quote":
                         EndToken(TokenType.StringConstant, "\"");
                         break;
                     
-                    case "RETURN":
+                    case "return":
                         EndToken(TokenType.StringConstant, "\r");
                         break;
                     
-                    case "SPACE":
+                    case "space":
                         EndToken(TokenType.StringConstant, " ");
                         break;
                     
-                    case "TAB":
+                    case "tab":
                         EndToken(TokenType.StringConstant, "\t");
                         break;
                     
-                    case "TRUE":
+                    case "true":
                         EndToken(TokenType.IntConstant, 1);
-                        break;
-                    
-                    case "VOID":
-                        EndToken(TokenType.Void);
                         break;
                     
                     default:
