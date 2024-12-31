@@ -353,6 +353,17 @@ sealed class RainEd
 
         Boot.Window.MouseMove += (float x, float y) =>
             NeedScreenRefresh();
+        
+        Boot.Window.MouseScroll += (float dx, float dy) =>
+            NeedScreenRefresh();
+        
+        Boot.Window.SilkWindow.FocusChanged += (bool focused) =>
+        {
+            if (focused)
+            {
+                NeedScreenRefresh();
+            }
+        };
     }
 
     /// <summary>
@@ -778,7 +789,7 @@ sealed class RainEd
         else
         {
             Boot.Window.IsEventDriven = true;
-            //Log.Debug("enter event driven");
+            Log.Debug("enter event driven");
         }
     }
 

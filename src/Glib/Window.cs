@@ -207,6 +207,7 @@ public class Window : IDisposable
     public event Action<float, float>? MouseMove;
     public event Action<MouseButton>? MouseDown;
     public event Action<MouseButton>? MouseUp;
+    public event Action<float, float>? MouseScroll;
 
     private Vector2 _mousePos = Vector2.Zero;
     private readonly List<Key> keyList = []; // The list of currently pressed keys
@@ -288,6 +289,7 @@ public class Window : IDisposable
             mouse.MouseMove += OnMouseMove;
             mouse.MouseDown += OnMouseDown;
             mouse.MouseUp += OnMouseUp;
+            mouse.Scroll += OnMouseWheel;
         }
         
         Load?.Invoke();
@@ -375,6 +377,11 @@ public class Window : IDisposable
         MouseButton? intBtn = GetMouseButtonIndex(button);
         if (intBtn is null) return;
         MouseUp?.Invoke(intBtn.Value);
+    }
+
+    private void OnMouseWheel(IMouse mouse, ScrollWheel scroll)
+    {
+        MouseScroll?.Invoke(scroll.X, scroll.Y);
     }
 
     private void OnUpdate(double dt)

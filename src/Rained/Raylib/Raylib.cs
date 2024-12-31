@@ -468,7 +468,7 @@ static class Raylib
         if (eventDrivenExit)
         {
             eventDrivenExit = false;
-            //Log.Debug("exit event driven");
+            Log.Debug("exit event driven");
         }
         else
         {
