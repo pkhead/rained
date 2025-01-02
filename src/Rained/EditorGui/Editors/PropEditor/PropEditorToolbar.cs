@@ -848,7 +848,7 @@ partial class PropEditor : IEditorMode
                             ImGui.SameLine();
                             ImGui.Button("Simulate");
 
-                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation))
+                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation) && transformMode is null)
                             {
                                 isRopeSimulationActive = true;
 
