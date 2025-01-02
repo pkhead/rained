@@ -220,6 +220,7 @@ class DrizzleRenderWindow : IDisposable
         }
 
         ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        ImGui.SetNextWindowSize(ImGui.GetWindowViewport().Size - new Vector2(40, 40), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSizeConstraints(
             new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f),
             Vector2.One * 9999f
