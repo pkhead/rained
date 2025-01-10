@@ -8,30 +8,33 @@ Bugs:
 - errors when rendering new effects???
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
+- rope segments render under preview (should render above)
 
-v2.2.0:
-- radial menu for view toggle
-- toggle for showing shortcuts in tile editor
-
-v2.2.x:
-- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!!
+Do Soon:
 - effects previews
-- optional download from solar's repo
-
-v2.3.0 (or later):
 - material previews (since ludo added it in her build I feel especially pressued to finally add it in)
 - render single camera
-- asset manager crap
-- favorite tiles&props
-- please finally add the geo editing stuff
-  - ctrl+C to initiate copy mode... simplifies ui
+- geo/tile copy+paste
 - tile prefabs (prefabs tab in tile selector)
+- prop editor lasso select ()
+- toggle for showing shortcuts in tile editor
+
+Do Later:
+- popup menu for view toggle
 - translation system
 - autotiles
   - option to join only inner tiles
   - ability to recognize more than one tile as a direction type
   - cross beams autotile
     - ability to constrain autotile shape into a square
+- optional download from seroen's repo
+- FIX BLENDING OF PROPS IN TILE EDITOR !!!!!! (wait it's broken?)
+
+Do Sometime:
+- asset manager crap
+- favorite tiles&props
+- please finally add the geo editing stuff
+  - ctrl+C to initiate copy mode... simplifies ui
 - method of generating approximated geometry from prop
 - show prop preview over mouse
 
@@ -39,7 +42,6 @@ v2.4.0 (or v3.0.0, depending on the frequency of major updates):
 - Fully FeatuerdWorld editor
 
 Other features:
-- prop editor lasso select ()
 - effects save/load presets/prefabs
 - light map stretch
 - asset manager
