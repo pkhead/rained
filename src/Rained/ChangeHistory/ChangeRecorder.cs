@@ -16,6 +16,7 @@ abstract class ChangeRecorder
         throw new ChangeRecorderException(msg);
         #else
         Log.Error(msg);
+        EditorWindow.ShowNotification("Error occured with change history!");
         #endif
     }
 }
