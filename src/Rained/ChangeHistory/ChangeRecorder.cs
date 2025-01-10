@@ -1,3 +1,5 @@
+using Rained.EditorGui;
+
 namespace Rained.ChangeHistory;
 
 [Serializable]
