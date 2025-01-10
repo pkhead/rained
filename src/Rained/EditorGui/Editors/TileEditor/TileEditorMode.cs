@@ -9,6 +9,7 @@ abstract class TileEditorCatalog
 {
     private string searchQuery = "";
     protected string SearchQuery => searchQuery;
+    public Vector2? WidgetSize = null;
 
     abstract public void ShowGroupList();
     abstract public void ShowAssetList();
@@ -18,15 +19,16 @@ abstract class TileEditorCatalog
     public void Draw()
     {
         var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
-        
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        var widgetWidth = WidgetSize?.X ?? ImGui.GetContentRegionAvail().X;
+
+        ImGui.SetNextItemWidth(widgetWidth);
         if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
         {
             ProcessSearch();
         }
 
-        var halfWidth = ImGui.GetContentRegionAvail().X / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
-        var boxHeight = ImGui.GetContentRegionAvail().Y;
+        var halfWidth = widgetWidth / 2f - ImGui.GetStyle().ItemSpacing.X / 2f;
+        var boxHeight = WidgetSize?.Y ?? ImGui.GetContentRegionAvail().Y;
         if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
         {
             ShowGroupList();

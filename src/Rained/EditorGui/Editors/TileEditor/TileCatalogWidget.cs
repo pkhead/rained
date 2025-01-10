@@ -5,9 +5,16 @@ using Rained.Assets;
 using ImGuiNET;
 using Rained.Rendering;
 
-class TileCatalogWidget(TileEditMode editMode) : TileEditorCatalog
+interface ITileSelectionState
 {
-    private readonly TileEditMode editMode = editMode;
+    public int SelectedTileGroup { get; set; }
+    public Tile? SelectedTile { get; }
+    public void SelectTile(Tile tile);
+}
+
+class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
+{
+    private readonly ITileSelectionState state = selectionState;
     private RlManaged.RenderTexture2D? _hoverPreview = null;
     private readonly List<int> tileSearchResults = [];
 
@@ -55,8 +62,8 @@ class TileCatalogWidget(TileEditMode editMode) : TileEditorCatalog
             var group = tileDb.Categories[i];
             var cursor = ImGui.GetCursorScreenPos();
 
-            if (ImGui.Selectable("  " + group.Name, editMode.SelectedTileGroup == i) || tileSearchResults.Count == 1)
-                editMode.SelectedTileGroup = i;
+            if (ImGui.Selectable("  " + group.Name, state.SelectedTileGroup == i) || tileSearchResults.Count == 1)
+                state.SelectedTileGroup = i;
             
             drawList.AddRectFilled(
                 p_min: cursor,
@@ -70,7 +77,7 @@ class TileCatalogWidget(TileEditMode editMode) : TileEditorCatalog
     {
         var tileDb = RainEd.Instance.TileDatabase;
 
-        var tileList = tileDb.Categories[editMode.SelectedTileGroup].Tiles;
+        var tileList = tileDb.Categories[state.SelectedTileGroup].Tiles;
 
         for (int i = 0; i < tileList.Count; i++)
         {
@@ -80,9 +87,9 @@ class TileCatalogWidget(TileEditMode editMode) : TileEditorCatalog
             if (!tile.Name.Contains(SearchQuery, StringComparison.CurrentCultureIgnoreCase))
                 continue;
             
-            if (ImGui.Selectable(tile.Name, tile == editMode.SelectedTile))
+            if (ImGui.Selectable(tile.Name, tile == state.SelectedTile))
             {
-                editMode.SelectedTile = tile;
+                state.SelectTile(tile);
             }
 
             if (ImGui.IsItemHovered())

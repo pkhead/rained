@@ -296,7 +296,7 @@ partial class TileEditor : IEditorMode
                             {
                                 var tileEdit = GetEditMode<TileEditMode>(out int i);
                                 forceSelection = i;
-                                tileEdit.SelectedTile = tile;
+                                tileEdit.SelectTile(tile);
                                 tileEdit.SelectedTileGroup = tile.Category.Index;
                             }
                         }

@@ -4,8 +4,10 @@ using System.Numerics;
 using ImGuiNET;
 using LevelData;
 using EditorGui;
+using Rained.EditorGui.Editors;
+using Rained.Assets;
 
-class StandardPathAutotile : Autotile
+class StandardPathAutotile : Autotile, ITileSelectionState
 {
     public PathTileTable TileTable;
     public override bool AllowIntersections { get => TileTable.AllowJunctions; }
@@ -20,7 +22,9 @@ class StandardPathAutotile : Autotile
         TileTable = new PathTileTable(ld, lu, rd, ru, vert, horiz);
 
         CheckTiles();
-        ProcessSearch();
+
+        catalogWidget = new TileCatalogWidget(this);
+        catalogWidget.ProcessSearch();
     }
 
     private bool IsInvalid(string tileName, TileType tileType)
@@ -191,6 +195,7 @@ class StandardPathAutotile : Autotile
         if (ImGui.Button(tile, new Vector2(ImGui.GetTextLineHeight() * 10f, 0f)))
         {
             ImGui.OpenPopup("PopupTileSelector");
+            ImGui.SetNextWindowPos(ImGui.GetCursorScreenPos(), ImGuiCond.Appearing);
         }
 
         if (invalid)
@@ -201,29 +206,25 @@ class StandardPathAutotile : Autotile
         ImGui.SameLine();
         ImGui.Text(label);
 
-        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        //ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+        
         if (ImGui.BeginPopup("PopupTileSelector"))
         {
-            ImGui.TextUnformatted("Select Tile");
-            ImGui.Separator();
+            //ImGui.TextUnformatted("Select Tile");
+            //ImGui.Separator();
+            
+            SelectedTile = null;
+            catalogWidget.WidgetSize = new Vector2(
+                ImGui.GetTextLineHeight() * 32f,
+                ImGui.GetTextLineHeight() * 25f
+            );
+            catalogWidget.Draw();
 
-            TileSelectorGui();
-
-            if (selectedTile != null)
+            if (SelectedTile != null)
             {
-                if (CheckDimensions(selectedTile, tileType))
-                {
-                    tile = selectedTile.Name;
-
-                    CanActivate = true;
-                    CheckTiles();
-                }
-                else
-                {
-                    EditorWindow.ShowNotification("Tile dimensions do not match autotile dimensions");
-                }
-
-                selectedTile = null;
+                tile = SelectedTile.Name;
+                CanActivate = true;
+                CheckTiles();
                 ImGui.CloseCurrentPopup();
             }
 
@@ -247,145 +248,23 @@ class StandardPathAutotile : Autotile
         StandardTilePath(TileTable, layer, pathSegments, modifier);
     }
 
+    private TileCatalogWidget catalogWidget;
+    private TileType activeTileType;
+
     // copied from TileEditorToolbar.cs
     private string searchQuery = "";
-    private int selectedTileGroup = 0;
-    private Assets.Tile? selectedTile = null;
+    public int SelectedTileGroup { get; set; }
+    public Tile? SelectedTile { get; private set; }
 
-    // available groups (available = passes search)
-    private readonly List<int> matSearchResults = [];
-    private readonly List<int> tileSearchResults = [];
-
-    private void ProcessSearch()
+    public void SelectTile(Tile tile)
     {
-        var tileDb = RainEd.Instance.TileDatabase;
-        var matDb = RainEd.Instance.MaterialDatabase;
-
-        tileSearchResults.Clear();
-        matSearchResults.Clear();
-
-        // find material groups that have any entires that pass the searchq uery
-        for (int i = 0; i < matDb.Categories.Count; i++)
+        if (CheckDimensions(tile, activeTileType))
         {
-            // if search query is empty, add this group to the results
-            if (searchQuery == "")
-            {
-                matSearchResults.Add(i);
-                continue;
-            }
-
-            // search is not empty, so scan the materials in this group
-            // if there is one material that that passes the search query, the
-            // group gets put in the list
-            // (further searching is done in DrawViewport)
-            for (int j = 0; j < matDb.Categories[i].Materials.Count; j++)
-            {
-                // this material passes the search, so add this group to the search results
-                if (matDb.Categories[i].Materials[j].Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    matSearchResults.Add(i);
-                    break;
-                }
-            }
+            SelectedTile = tile;
         }
-
-        // find groups that have any entries that pass the search query
-        for (int i = 0; i < tileDb.Categories.Count; i++)
+        else
         {
-            // if search query is empty, add this group to the search query
-            if (searchQuery == "")
-            {
-                tileSearchResults.Add(i);
-                continue;
-            }
-
-            // search is not empty, so scan the tiles in this group
-            // if there is one tile that that passes the search query, the
-            // group gets put in the list
-            // (further searching is done in DrawViewport)
-            for (int j = 0; j < tileDb.Categories[i].Tiles.Count; j++)
-            {
-                // this tile passes the search, so add this group to the search results
-                if (tileDb.Categories[i].Tiles[j].Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    tileSearchResults.Add(i);
-                    break;
-                }
-            }
-        }
-    }
-
-    private void TileSelectorGui()
-    {
-        var tileDb = RainEd.Instance.TileDatabase;
-
-        var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
-
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        if (ImGui.InputTextWithHint("##Search", "Search...", ref searchQuery, 128, searchInputFlags))
-        {
-            ProcessSearch();
-        }
-
-        var halfWidth = ImGui.GetTextLineHeight() * 16f;
-        var boxHeight = ImGui.GetTextLineHeight() * 25f;
-        if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
-        {
-            var drawList = ImGui.GetWindowDrawList();
-            float textHeight = ImGui.GetTextLineHeight();
-
-            foreach (var i in tileSearchResults)
-            {
-                var group = tileDb.Categories[i];
-                var cursor = ImGui.GetCursorScreenPos();
-
-                if (ImGui.Selectable("  " + group.Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
-                    selectedTileGroup = i;
-                
-                drawList.AddRectFilled(
-                    p_min: cursor,
-                    p_max: cursor + new Vector2(10f, textHeight),
-                    ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
-                );
-            }
-            
-            ImGui.EndListBox();
-        }
-        
-        // group listing (effects) list box
-        ImGui.SameLine();
-        if (ImGui.BeginListBox("##Tiles", new Vector2(halfWidth, boxHeight)))
-        {
-            var tileList = tileDb.Categories[selectedTileGroup].Tiles;
-
-            for (int i = 0; i < tileList.Count; i++)
-            {
-                var tile = tileList[i];
-
-                // don't show this prop if it doesn't pass search test
-                if (!tile.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
-                    continue;
-                
-                if (ImGui.Selectable(tile.Name))
-                {
-                    selectedTile = tile;
-                }
-
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.BeginTooltip();
-
-                    var found = RainEd.Instance.AssetGraphics.GetTilePreviewTexture(tile, out var previewTexture, out var rect);
-                    if (found && previewTexture is not null && rect is not null)
-                        ImGuiExt.ImageRect(previewTexture, rect.Value.Width, rect.Value.Height, rect.Value);
-                    else
-                        ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16, 16);
-
-                    ImGui.EndTooltip();
-                }
-            }
-            
-            ImGui.EndListBox();
+            EditorWindow.ShowNotification("Tile dimensions do not match autotile dimensions");
         }
     }
 

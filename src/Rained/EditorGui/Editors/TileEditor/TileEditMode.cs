@@ -6,7 +6,7 @@ using Rained.Assets;
 using ImGuiNET;
 using Rained.Rendering;
 
-class TileEditMode : TileEditorMode
+class TileEditMode : TileEditorMode, ITileSelectionState
 {
     public override string TabName => "Tiles";
     
@@ -14,7 +14,11 @@ class TileEditMode : TileEditorMode
     private Tile selectedTile = RainEd.Instance.TileDatabase.Categories[0].Tiles[0];
 
     public int SelectedTileGroup { get => selectedTileGroup; set => selectedTileGroup = value; }
-    public Tile SelectedTile { get => selectedTile; set => selectedTile = value; }
+    public Tile? SelectedTile { get => selectedTile; }
+    public void SelectTile(Tile tile)
+    {
+        selectedTile = tile;
+    }
 
     private bool placeTiles = false;
 
