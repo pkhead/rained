@@ -226,6 +226,10 @@ class LevelNodeData
         dirty = false;
     }
 
+    enum ShortcutContinuationType {
+        None, Straight, Curve
+    }
+
     private bool ProcessShortcut(int x, int y, out Vector2i nodePos, out NodeType type)
     {        
         type = NodeType.Exit;
@@ -234,14 +238,40 @@ class LevelNodeData
         
         int lastX = x;
         int lastY = y;
+        int steps = 0;
+        var visitedCurves = new HashSet<Vector2i>();
 
         while (true)
         {
-            int x3 = x;
-            int y3 = y;
-            if (!NextShortcutPosition(ref x, ref y, lastX, lastY)) break;
-            lastX = x3;
-            lastY = y3;
+            if (++steps > 1000)
+            {
+                Log.Warning("Shortcut tracer steps exceeded!");
+                break;
+            }
+
+            int oldX = x;
+            int oldY = y;
+            var continueType = NextShortcutPosition(ref x, ref y, lastX, lastY);
+            if (continueType == ShortcutContinuationType.None) break;
+
+            // loop detection process -- flags certain cells as visited if there was a curve there.
+            // if it reaches that cell again as a curve, an infinite loop would occur so we need
+            // to stop processing there.
+            if (continueType == ShortcutContinuationType.Curve)
+            {
+                if (visitedCurves.Contains(new Vector2i(oldX, oldY)))
+                {
+                    Log.Debug("Loop detected, escaping...");
+                    return false;
+                }
+                else
+                {
+                    visitedCurves.Add(new Vector2i(oldX, oldY));
+                }
+            }
+
+            lastX = oldX;
+            lastY = oldY;
 
             ref var cell = ref level.Layers[0,x,y];
             
@@ -268,7 +298,7 @@ class LevelNodeData
         return false;
     }
 
-    private bool NextShortcutPosition(ref int x, ref int y, int lastX, int lastY)
+    private ShortcutContinuationType NextShortcutPosition(ref int x, ref int y, int lastX, int lastY)
     {
         // implementation referenced from decompiled game code
         // ShortcutHandler.NextShortcutPosition(IntVector2 pos, IntVector2 lastPos, Room room)
@@ -289,7 +319,7 @@ class LevelNodeData
         {
             x += dx;
             y += dy;
-            return true;
+            return ShortcutContinuationType.Straight;
         }
         else // the shortcut curves here, find out where to go
         {
@@ -300,11 +330,11 @@ class LevelNodeData
                 {
                     x += dir.x;
                     y += dir.y;
-                    return true;
+                    return ShortcutContinuationType.Curve;
                 }
             }
 
-            return false;
+            return ShortcutContinuationType.None;
         }
     }
 
