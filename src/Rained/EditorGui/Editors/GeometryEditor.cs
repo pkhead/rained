@@ -373,9 +373,25 @@ class GeometryEditor : IEditorMode
                 ImGui.PopID();
                 ImGui.PopStyleColor();
             }
-            
+
             ImGui.PopStyleVar(3);
             ImGui.PopStyleColor();
+
+            // tool kbd shortcuts
+            if (KeyShortcuts.Activated(KeyShortcut.ToolWall))
+            {
+                selectedTool = Tool.Wall;
+            }
+
+            if (KeyShortcuts.Activated(KeyShortcut.ToolShortcutDot))
+            {
+                selectedTool = Tool.Shortcut;
+            }
+
+            if (KeyShortcuts.Activated(KeyShortcut.ToolShortcutEntrance))
+            {
+                selectedTool = Tool.ShortcutEntrance;
+            }
 
             // show work layers
             ImGui.Separator();
