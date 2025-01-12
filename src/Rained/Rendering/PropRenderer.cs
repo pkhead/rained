@@ -169,14 +169,21 @@ class PropRenderer(LevelEditRender renderInfo)
                     var segColor = prop.PropInit.Rope!.PreviewColor;
                     segColor.A = (byte)(segColor.A * alpha / 255f);
 
+                    var depthTestEnabled = rctx.Flags.HasFlag(Glib.RenderFlags.DepthTest);
+                    rctx.ClearRenderFlags(Glib.RenderFlags.DepthTest);
+
                     for (int i = 0; i < rope.SegmentCount; i++)
                     {
                         var newPos = rope.GetSmoothSegmentPos(i);
                         var oldPos = rope.GetSmoothLastSegmentPos(i);
                         var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
 
-                        Raylib.DrawCircleV(lerpPos * Level.TileSize, 2f, segColor);
+                        rctx.DrawColor = Raylib.ToGlibColor(segColor);
+                        rctx.DrawCircle(lerpPos * Level.TileSize, 2f, 16);
                     }
+                    
+                    if (depthTestEnabled)
+                        rctx.SetRenderFlags(Glib.RenderFlags.DepthTest);
                 }
             }
         }
