@@ -2,6 +2,7 @@ namespace Rained.EditorGui.Editors;
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
+using Rained.LevelData;
 
 /// <summary>
 /// Operations for copying, pasting, and moving of cells.
@@ -16,7 +17,11 @@ class CellSelection
         SelectRect,
         MoveSelection,
         LassoSelect,
-        MagicWand
+        MagicWand,
+        OpReplace,
+        OpAdd,
+        OpSubtract,
+        OpIntersect
     };
 
     enum SelectionTool
@@ -27,11 +32,11 @@ class CellSelection
         MagicWand
     };
     private SelectionTool curTool = SelectionTool.Rect;
-    static readonly (IconName icon, string name, string tooltip)[] toolInfo = [
-        (IconName.SelectRect, "Rectangle Select", "Select a rectangular area."),
-        (IconName.LassoSelect, "Lasso Select", "Draw an outline of the area you want to select."),
-        (IconName.MoveSelection, "Move Selection", "Move the selection area, but not the cells underneath."),
-        (IconName.MagicWand, "Magic Wand", "Select connected geometry. Like Flood Fill, but for selection."),
+    static readonly (IconName icon, string name)[] toolInfo = [
+        (IconName.SelectRect, "Rectangle Select"),
+        (IconName.LassoSelect, "Lasso Select"),
+        (IconName.MoveSelection, "Move Selection"),
+        (IconName.MagicWand, "Magic Wand"),
     ];
 
     enum SelectionOperator
@@ -42,17 +47,23 @@ class CellSelection
         Intersect
     }
     private SelectionOperator curOp = SelectionOperator.Replace;
-    static readonly (IconName icon, string tooltip)[] operatorInfo = [
-        (IconName.SelectRect, "Replace"),
-        (IconName.LassoSelect, "Add"),
-        (IconName.MoveSelection, "Subtract"),
-        (IconName.MagicWand, "Intersect"),
+    static readonly (IconName icon, string name)[] operatorInfo = [
+        (IconName.OpReplace, "Replace"),
+        (IconName.OpAdd, "Add"),
+        (IconName.OpSubtract, "Subtract"),
+        (IconName.OpIntersect, "Intersect"),
     ];
 
-    // private int selectionMinX;
-    // private int selectionMinY;
-    // private int selectionMaxX;
-    // private int selectionMaxY;
+    private int selectionMinX = 0;
+    private int selectionMinY = 0;
+    private int selectionMaxX = 0;
+    private int selectionMaxY = 0;
+    private bool selectionActive = false;
+
+    // used for mouse drag
+    private bool mouseWasDragging = false;
+    private int selectionStartX = -1;
+    private int selectionStartY = -1;
     // private bool[,] selectionMask;
 
     public CellSelection()
@@ -78,7 +89,15 @@ class CellSelection
             MathF.Floor( (desiredHeight - buttonSize) / 2f ),
             MathF.Floor( (desiredHeight - buttonSize) / 2f )
         );
-        bool pressed = ImGuiExt.ImageButtonRect("##test", icons, buttonSize, buttonSize, GetIconRect(icon));
+
+        var textColorVec4 = ImGui.GetStyle().Colors[(int)ImGuiCol.Text] * 255f;
+        bool pressed = ImGuiExt.ImageButtonRect(
+            "##test",
+            icons,
+            buttonSize, buttonSize,
+            GetIconRect(icon),
+            new Color((int)textColorVec4.X, (int)textColorVec4.Y, (int)textColorVec4.Z, (int)textColorVec4.W)
+        );
 
         ImGui.PopStyleVar();
         return pressed;
@@ -86,18 +105,7 @@ class CellSelection
 
     public void DrawStatusBar()
     {
-        static void ItemTooltipDesc(string tooltip, string desc)
-        {
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.Text(tooltip);
-                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 24f);
-                ImGui.TextDisabled(desc);
-                ImGui.PopTextWrapPos();
-                ImGui.EndTooltip();
-            }
-        }
-
+        // selection mode options
         using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", 4, 0))
         {
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
@@ -110,7 +118,28 @@ class CellSelection
                 {
                     curTool = (SelectionTool)i;
                 }
-                ItemTooltipDesc(info.name, info.tooltip);
+                ImGui.SetItemTooltip(info.name);
+
+                group.EndButton();
+            }
+            ImGui.PopStyleVar();
+        }
+
+        // operator mode options
+        ImGui.SameLine();
+        using (var group = ImGuiExt.ButtonGroup.Begin("Operator Mode", 4, 0))
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
+            for (int i = 0; i < operatorInfo.Length; i++)
+            {
+                group.BeginButton(i, (int)curOp == i);
+
+                ref var info = ref operatorInfo[i];
+                if (IconButton(info.icon))
+                {
+                    curOp = (SelectionOperator)i;
+                }
+                ImGui.SetItemTooltip(info.name);
 
                 group.EndButton();
             }
@@ -118,23 +147,64 @@ class CellSelection
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        if (ImGui.Button("Copy") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
             Active = false;
         
         ImGui.SameLine();
-        if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
             Active = false;
     }
 
     public void Update()
     {
+        // TODO: crosshair cursor
+        
+        // update
+        var view = RainEd.Instance.LevelView;
+        if (view.IsViewportHovered)
+        {
+            if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+            {
+                if (!mouseWasDragging)
+                {
+                    selectionStartX = view.MouseCx;
+                    selectionStartY = view.MouseCy;
+                    selectionActive = true;
+                }
+
+                var endX = view.MouseCx;
+                var endY = view.MouseCy;
+
+                selectionMinX = Math.Min(selectionStartX, endX);
+                selectionMaxX = Math.Max(selectionStartX, endX);
+                selectionMinY = Math.Min(selectionStartY, endY);
+                selectionMaxY = Math.Max(selectionStartY, endY);
+            }
+        }
+
+        mouseWasDragging = EditorWindow.IsMouseDragging(ImGuiMouseButton.Left);
+
+        // draw
         Raylib.BeginShaderMode(Shaders.OutlineMarqueeShader);
 
         Shaders.OutlineMarqueeShader.GlibShader.SetUniform("time", (float)Raylib.GetTime());
         RainEd.Instance.NeedScreenRefresh();
 
-        Raylib.DrawRectangleLines(0, 0, 400, 400, Color.White);
-        
+        // draw selection outline
+        if (selectionActive)
+        {
+            var w = selectionMaxX - selectionMinX + 1;
+            var h = selectionMaxY - selectionMinY + 1;
+            
+            Raylib.DrawRectangleLines(
+                selectionMinX * Level.TileSize,
+                selectionMinY * Level.TileSize,
+                w * Level.TileSize,
+                h * Level.TileSize,
+                Color.White
+            );
+        }
+
         Raylib.EndShaderMode();
     }
 }
