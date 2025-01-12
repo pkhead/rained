@@ -777,7 +777,7 @@ class GeometryEditor : IEditorMode
                                 }
                                 else
                                 {
-                                    Util.Bresenham(lastMouseX, lastMouseY, window.MouseCx, window.MouseCy, (int x, int y) =>
+                                    Rasterization.Bresenham(lastMouseX, lastMouseY, window.MouseCx, window.MouseCy, (int x, int y) =>
                                     {
                                         ActivateTool(selectedTool, x, y, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
                                     });

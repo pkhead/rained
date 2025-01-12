@@ -458,7 +458,7 @@ class CellSelection
             var newPoint = new Vector2i(mouseX, mouseY);
             if (newPoint != points[^1])
             {
-                //Util.Bresenham(points[^1].X, points[^1].Y, newPoint.X, newPoint.Y, (x, y) =>
+                //Rasterization.Bresenham(points[^1].X, points[^1].Y, newPoint.X, newPoint.Y, (x, y) =>
                 //{
                     points.Add(newPoint);
                 //});
@@ -497,7 +497,7 @@ class CellSelection
             /*var lastX = 0;
             var lastY = 0;
             bool first = true;
-            Util.Bresenham(points[^1].X, points[^1].Y, points[0].X, points[0].Y, (x, y) =>
+            Rasterization.Bresenham(points[^1].X, points[^1].Y, points[0].X, points[0].Y, (x, y) =>
             {
                 if (!first)
                 {
