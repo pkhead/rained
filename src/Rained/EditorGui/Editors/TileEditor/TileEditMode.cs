@@ -21,6 +21,7 @@ class TileEditMode : TileEditorMode, ITileSelectionState
     }
 
     private bool placeTiles = false;
+    private bool placeTilesJustStarted = false;
 
     // this is used to fix force placement when
     // holding down lmb
@@ -227,7 +228,8 @@ class TileEditMode : TileEditorMode, ITileSelectionState
 
             else // start tile place mode
             {
-                placeTiles = LeftMouseDown;
+                if (placeTiles = LeftMouseDown)
+                    placeTilesJustStarted = true;
             }
         }
 
@@ -312,10 +314,10 @@ class TileEditMode : TileEditorMode, ITileSelectionState
                         }
                     }
                 }
-                else if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+                else if (placeTilesJustStarted)
                 {
                     string errStr = validationStatus switch {
-                        TilePlacementStatus.OutOfBounds => "Tile is out of bounds",
+                        TilePlacementStatus.OutOfBounds => "Tile root is out of bounds",
                         TilePlacementStatus.Overlap => "Tile is overlapping another",
                         TilePlacementStatus.Geometry => "Tile geometry requirements not met",
                         _ => "Unknown tile placement error"
@@ -323,6 +325,8 @@ class TileEditMode : TileEditorMode, ITileSelectionState
 
                     EditorWindow.ShowNotification(errStr);
                 }
+
+                placeTilesJustStarted = false;
             }
 
             // remove material under mouse cursor
