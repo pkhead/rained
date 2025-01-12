@@ -70,4 +70,7 @@ struct Vector2i
 
     public static Vector2 operator/(Vector2i v, float s)
         => new(v.X / s, v.Y / s);
+    
+    public static explicit operator Vector2(Vector2i v)
+        => new(v.X, v.Y);
 }
