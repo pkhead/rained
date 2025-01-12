@@ -10,33 +10,33 @@ Bugs:
   fix: disable shortcuts while rendering
 - rope segments render under preview (should render above)
 
+v2.3.0:
+  * geo/tile copy+paste (i am currently working on this)
+  - tile & effect prefabs
+  - favorite tiles&props
+  - material previews
+  - render single camera
+  - prop editor lasso select ()
+  - translation system
+  - effects previews
+  - show prop preview over mouse
+  - autotiles
+    - option to join only inner tiles
+    - ability to recognize more than one tile as a direction type
+    - cross beams autotile
+      - ability to constrain autotile shape into a square
+
 Do Soon:
-- effects previews
-- material previews (since ludo added it in her build I feel especially pressued to finally add it in)
-- render single camera
-- geo/tile copy+paste
-- tile prefabs (prefabs tab in tile selector)
-- prop editor lasso select ()
 - toggle for showing shortcuts in tile editor
 
 Do Later:
 - popup menu for view toggle
-- translation system
-- autotiles
-  - option to join only inner tiles
-  - ability to recognize more than one tile as a direction type
-  - cross beams autotile
-    - ability to constrain autotile shape into a square
 - optional download from seroen's repo
 - FIX BLENDING OF PROPS IN TILE EDITOR !!!!!! (wait it's broken?)
 
 Do Sometime:
 - asset manager crap
-- favorite tiles&props
-- please finally add the geo editing stuff
-  - ctrl+C to initiate copy mode... simplifies ui
 - method of generating approximated geometry from prop
-- show prop preview over mouse
 
 v2.4.0 (or v3.0.0, depending on the frequency of major updates):
 - Fully FeatuerdWorld editor
