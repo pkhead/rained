@@ -17,6 +17,7 @@ interface IEditorMode
 
     void DrawToolbar();
     void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames);
+    void DrawStatusBar() {}
 }
 
 enum EditModeEnum

@@ -275,6 +275,8 @@ class LevelWindow
                     ImGui.SameLine();
                 }
 
+                editorModes[selectedMode].DrawStatusBar();
+                ImGui.SameLine();
                 ImGui.TextUnformatted(StatusText);
                 StatusText = string.Empty;
 
@@ -284,6 +286,7 @@ class LevelWindow
                     var mouseText = $"Mouse: ({MouseCx}, {MouseCy})";
                     WriteStatus(zoomText.PadRight(12, ' ') + mouseText);
                 }
+
                 //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
 
 

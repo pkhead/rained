@@ -59,6 +59,8 @@ static class Shaders
     /// </summary>
     public static RlManaged.Shader UvRepeatShader { get; private set; } = null!;
 
+    public static RlManaged.Shader OutlineMarqueeShader { get; private set; } = null!;
+
     public static void LoadShaders()
     {
         EffectsMatrixShader = RlManaged.Shader.Load(null, "effect_matrix.frag");
@@ -72,5 +74,6 @@ static class Shaders
         RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview.frag");
         RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview.frag");
         UvRepeatShader = RlManaged.Shader.Load(null, "uv_repeat.frag");
+        OutlineMarqueeShader = RlManaged.Shader.Load(null, "outline_marquee.frag");
     }
 }

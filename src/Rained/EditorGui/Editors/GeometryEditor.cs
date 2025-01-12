@@ -105,6 +105,7 @@ class GeometryEditor : IEditorMode
     private bool ignoreClick = false;
     private bool isErasing = false;
     private readonly RlManaged.Texture2D toolIcons;
+    private CellSelection? cellSelectionState = null;
 
     // tool rect - for wall/air/inverse/geometry tools
     private bool isToolRectActive;
@@ -413,7 +414,7 @@ class GeometryEditor : IEditorMode
             ImGui.PopItemWidth();
 
             // update status bar
-            if (!RainEd.Instance.Preferences.MinimalStatusBar)
+            if (!RainEd.Instance.Preferences.MinimalStatusBar && cellSelectionState is null)
             {
                 if (isToolRectActive)
                 {
@@ -682,11 +683,27 @@ class GeometryEditor : IEditorMode
             selectedTool = (Tool) Math.Clamp(toolRow*buttonsPerRow + toolCol, 0, toolCount-1);
         }
 
+        // CTRL+C to begin copy mode
+        // CTRL+V to begin paste mode
+        // CTRL+M to begin move mode
+        if (KeyShortcuts.Activated(KeyShortcut.Copy))
+        {
+            cellSelectionState = new CellSelection();
+        }
+
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
         if (ignoreClick)
             isMouseDown = false;
 
-        if (window.IsViewportHovered && mirrorDrag == 0)
+        if (cellSelectionState is not null)
+        {
+            cellSelectionState.Update();
+            if (!cellSelectionState.Active)
+            {
+                cellSelectionState = null;
+            }
+        }
+        else if (window.IsViewportHovered && mirrorDrag == 0)
         {
             // cursor rect mode
             if (isToolRectActive)
@@ -788,6 +805,11 @@ class GeometryEditor : IEditorMode
 
         if (window.IsViewportHovered && RainEd.Instance.Preferences.GeometryMaskMouseDecor)
             RenderCursor();
+    }
+
+    public void DrawStatusBar()
+    {
+        cellSelectionState?.DrawStatusBar();
     }
 
     // render active layer squares near cursor
