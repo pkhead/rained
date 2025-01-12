@@ -115,4 +115,63 @@ static class Rasterization
             }
         }
     }
+
+    public static bool FloodFill(int srcX, int srcY, int mapWidth, int mapHeight, Func<int, int, bool> isSimilar, Action<int, int> plot)
+    {
+        bool IsInBounds(int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < mapWidth && y < mapHeight;
+        }
+        if (!IsInBounds(srcX, srcY)) return true;
+
+        // use a recursive scanline fill algorithm
+        // with a manually-managed stack
+        Stack<(int, int)> fillStack = [];
+        fillStack.Push((srcX, srcY));
+
+        while (fillStack.Count > 0)
+        {
+            if (fillStack.Count > 100000)
+            {
+                Log.UserLogger.Error("Flood fill stack overflow!");
+                return false;
+            }
+
+            (int x, int y) = fillStack.Pop();
+
+            // go to left bounds of this scanline
+            while (IsInBounds(x, y) && isSimilar(x, y))
+                x--;
+
+            x++;
+
+            bool oldAboveEmpty = false;
+            bool oldBelowEmpty = false;
+
+            // go to right bounds of the scanline, spawning new scanlines above or below if detected
+            while (IsInBounds(x, y) && isSimilar(x, y))
+            {
+                bool aboveEmpty = IsInBounds(x, y-1) && isSimilar(x, y-1);
+                bool belowEmpty = IsInBounds(x, y+1) && isSimilar(x, y+1);
+
+                if (aboveEmpty != oldAboveEmpty && aboveEmpty)
+                {
+                    fillStack.Push((x, y-1));
+                }
+
+                if (belowEmpty != oldBelowEmpty && belowEmpty)
+                {
+                    fillStack.Push((x, y+1));
+                }
+
+                oldAboveEmpty = aboveEmpty;
+                oldBelowEmpty = belowEmpty;
+
+                plot(x, y);
+                x++;
+            } 
+        }
+
+        return true;
+    }
 }

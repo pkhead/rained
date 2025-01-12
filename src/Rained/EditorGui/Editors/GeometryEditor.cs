@@ -1117,55 +1117,18 @@ class GeometryEditor : IEditorMode
 
         if (fillGeo == geoMedium) return;
 
-        // use a recursive scanline fill algorithm
-        // with a manually-managed stack
-        Stack<(int, int)> fillStack = [];
-        fillStack.Push((srcX, srcY));
-
-        while (fillStack.Count > 0)
-        {
-            if (fillStack.Count > 100000)
+        Rasterization.FloodFill(
+            srcX, srcY, level.Width, level.Height,
+            isSimilar: (int x, int y) =>
             {
-                Log.UserLogger.Error("Flood fill stack overflow!");
-                EditorWindow.ShowNotification("Stack overflow!");
-                break;
-            }
-
-            (int x, int y) = fillStack.Pop();
-
-            // go to left bounds of this scanline
-            while (level.IsInBounds(x, y) && level.Layers[layer, x, y].Geo == geoMedium)
-                x--;
-
-            x++;
-
-            bool oldAboveEmpty = false;
-            bool oldBelowEmpty = false;
-
-            // go to right bounds of the scanline, spawning new scanlines above or below if detected
-            while (level.IsInBounds(x, y) && level.Layers[layer, x, y].Geo == geoMedium)
+                return level.Layers[layer, x, y].Geo == geoMedium;
+            },
+            plot: (int x, int y) =>
             {
-                bool aboveEmpty = level.IsInBounds(x, y-1) && level.Layers[layer, x, y-1].Geo == geoMedium;
-                bool belowEmpty = level.IsInBounds(x, y+1) && level.Layers[layer, x, y+1].Geo == geoMedium;
-
-                if (aboveEmpty != oldAboveEmpty && aboveEmpty)
-                {
-                    fillStack.Push((x, y-1));
-                }
-
-                if (belowEmpty != oldBelowEmpty && belowEmpty)
-                {
-                    fillStack.Push((x, y+1));
-                }
-
-                oldAboveEmpty = aboveEmpty;
-                oldBelowEmpty = belowEmpty;
-                
                 level.Layers[layer, x, y].Geo = fillGeo;
                 window.InvalidateGeo(x, y, layer);
-                x++;
-            } 
-        }
+            }
+        );
     }
 
     private void ApplyToolRect(bool place)
