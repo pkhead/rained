@@ -224,6 +224,17 @@ class GeometryEditor : IEditorMode
         mirrorOriginY = RainEd.Instance.Level.Height;
     }
 
+    private int ClosestActiveLayer()
+    {
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            if (layerMask[i])
+                return i;
+        }
+
+        return 0;
+    }
+
     public void SavePreferences(UserPreferences prefs)
     {
         switch (layerViewMode)
@@ -697,7 +708,7 @@ class GeometryEditor : IEditorMode
 
         if (cellSelectionState is not null)
         {
-            cellSelectionState.Update();
+            cellSelectionState.Update(ClosestActiveLayer());
             if (!cellSelectionState.Active)
             {
                 cellSelectionState = null;
@@ -1117,7 +1128,7 @@ class GeometryEditor : IEditorMode
 
         if (fillGeo == geoMedium) return;
 
-        Rasterization.FloodFill(
+        bool success = Rasterization.FloodFill(
             srcX, srcY, level.Width, level.Height,
             isSimilar: (int x, int y) =>
             {
@@ -1129,6 +1140,9 @@ class GeometryEditor : IEditorMode
                 window.InvalidateGeo(x, y, layer);
             }
         );
+
+        if (!success)
+            EditorWindow.ShowNotification("Flood fill too large!");
     }
 
     private void ApplyToolRect(bool place)

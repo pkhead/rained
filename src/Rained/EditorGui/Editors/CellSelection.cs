@@ -160,165 +160,52 @@ class CellSelection
             Active = false;
     }
 
-    public void Update()
+    public void Update(int layer)
     {
         // TODO: crosshair cursor
         
         // update
         var view = RainEd.Instance.LevelView;
-        if (view.IsViewportHovered && EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+        if (curTool == SelectionTool.MagicWand)
         {
-            if (!mouseWasDragging)
+            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && curTool == SelectionTool.MagicWand)
             {
-                mouseDragState = curTool switch
+                if (MagicWand(
+                    view.MouseCx, view.MouseCy, layer,
+                    out int minX, out int minY, out int maxX, out int maxY,
+                    out bool[,] mask
+                ))
                 {
-                    SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
-                    SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
-                    _ => throw new UnreachableException("Invalid curTool")
-                };
-
-                if (curOp == SelectionOperator.Replace) selectionActive = false;
-            }
-
-            mouseDragState!.Update(view.MouseCx, view.MouseCy);
-        }
-        else if (mouseWasDragging && mouseDragState is not null)
-        {
-            selectionActive = mouseDragState.Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
-            if (selectionActive)
-            {
-                var oldMinX = selectionMinX;
-                var oldMinY = selectionMinY;
-                var oldMaxX = selectionMaxX;
-                var oldMaxY = selectionMaxY;
-                var oldMask = selectionMask;
-
-                switch (curOp)
-                {
-                    case SelectionOperator.Replace:
-                        selectionMinX = minX;
-                        selectionMinY = minY;
-                        selectionMaxX = maxX;
-                        selectionMaxY = maxY;
-                        selectionMask = mask;
-                        break;
-
-                    case SelectionOperator.Add:
-                    {
-                        selectionMinX = Math.Min(oldMinX, minX);
-                        selectionMinY = Math.Min(oldMinY, minY);
-                        selectionMaxX = Math.Max(oldMaxX, maxX);
-                        selectionMaxY = Math.Max(oldMaxY, maxY);
-                        selectionMask = new bool[selectionMaxY - selectionMinY + 1, selectionMaxX - selectionMinX + 1];
-
-                        // source
-                        int ox = oldMinX - selectionMinX;
-                        int oy = oldMinY - selectionMinY;
-                        int w = oldMaxX - oldMinX + 1;
-                        int h = oldMaxY - oldMinY + 1;
-                        for (int y = 0; y < h; y++)
-                        {
-                            for (int x = 0; x < w; x++)
-                            {
-                                var gx = x + ox;
-                                var gy = y + oy;
-                                selectionMask[gy,gx] = oldMask[y,x];
-                            }
-                        }
-
-                        // dest
-                        ox = minX - selectionMinX;
-                        oy = minY - selectionMinY;
-                        w = maxX - minX + 1;
-                        h = maxY - minY + 1;
-                        for (int y = 0; y < h; y++)
-                        {
-                            for (int x = 0; x < w; x++)
-                            {
-                                var gx = x + ox;
-                                var gy = y + oy;
-                                selectionMask[gy,gx] |= mask[y,x];
-                            }
-                        }
-                        break;
-                    }
-
-                    case SelectionOperator.Subtract:
-                    {
-                        // dest
-                        var oldW = oldMaxX - oldMinX + 1;
-                        var oldH = oldMaxY - oldMinY + 1;
-                        var ox = selectionMinX - minX;
-                        var oy = selectionMinY - minY;
-                        var w = maxX - minX + 1;
-                        var h = maxY - minY + 1;
-
-                        // in source bounds
-                        for (int y = 0; y < oldH; y++)
-                        {
-                            for (int x = 0; x < oldW; x++)
-                            {
-                                var lx = x + ox;
-                                var ly = y + oy;
-                                if (lx >= 0 && ly >= 0 && lx < w && ly < h)
-                                {
-                                    // A  B  OUT
-                                    // 0  0  0
-                                    // 0  1  0
-                                    // 1  0  1
-                                    // 1  1  0
-                                    selectionMask[y,x] &= selectionMask[y,x] ^ mask[ly,lx];
-                                }
-                            }
-                        }
-                        break;
-                    }
-
-                    case SelectionOperator.Intersect:
-                    {
-                        selectionMinX = Math.Max(oldMinX, minX);
-                        selectionMinY = Math.Max(oldMinY, minY);
-                        selectionMaxX = Math.Min(oldMaxX, maxX);
-                        selectionMaxY = Math.Min(oldMaxY, maxY);
-
-                        if (selectionMaxX < selectionMinX || selectionMaxY < selectionMinY)
-                        {
-                            selectionActive = false;
-                            break;
-                        }
-                        
-                        // source
-                        var ox0 = selectionMinX - oldMinX;
-                        var oy0 = selectionMinY - oldMinY;
-                        var w0 = oldMaxX - oldMinX + 1;
-                        var h0 = oldMaxY - oldMinY + 1;
-
-                        // dest
-                        var ox1 = selectionMinX - minX;
-                        var oy1 = selectionMinY - minY;
-                        var w1 = maxX - minX + 1;
-                        var h1 = maxY - minY + 1;
-
-                        // in dest bounds
-                        var newW = selectionMaxX - selectionMinX + 1;
-                        var newH = selectionMaxY - selectionMinY + 1;
-                        for (int y = 0; y < newH; y++)
-                        {
-                            for (int x = 0; x < newW; x++)
-                            {
-                                var x0 = x + ox0;
-                                var y0 = y + oy0;
-                                var x1 = x + ox1;
-                                var y1 = y + oy1;
-
-                                if (!(x0 >= 0 && y0 >= 0 && x1 < w0 && y1 < h0)) continue;
-                                if (!(x1 >= 0 && y1 >= 0 && x1 < w1 && y1 < h1)) continue;
-                                selectionMask[y,x] = oldMask[y0,x0] & mask[y1,x1];
-                            }
-                        }
-                        break;
-                    }
+                    CombineMasks(minX, minY, maxX, maxY, mask);
                 }
+                else selectionActive = false;
+            }
+        }
+        else
+        {
+            if (view.IsViewportHovered && EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
+            {
+                if (!mouseWasDragging)
+                {
+                    mouseDragState = curTool switch
+                    {
+                        SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
+                        SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
+                        _ => throw new UnreachableException("Invalid curTool")
+                    };
+
+                    if (curOp == SelectionOperator.Replace) selectionActive = false;
+                }
+
+                mouseDragState!.Update(view.MouseCx, view.MouseCy);
+            }
+            else if (mouseWasDragging && mouseDragState is not null)
+            {
+                if (mouseDragState.Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
+                {
+                    CombineMasks(minX, minY, maxX, maxY, mask);
+                }
+                else selectionActive = false;
             }
         }
 
@@ -386,6 +273,242 @@ class CellSelection
         }
 
         Raylib.EndShaderMode();
+    }
+
+    private void CombineMasks(int minX, int minY, int maxX, int maxY, bool[,] mask)
+    {
+        var oldMinX = selectionMinX;
+        var oldMinY = selectionMinY;
+        var oldMaxX = selectionMaxX;
+        var oldMaxY = selectionMaxY;
+        var oldMask = selectionMask;
+
+        switch (curOp)
+        {
+            case SelectionOperator.Replace:
+            case SelectionOperator.Add:
+                if (curOp == SelectionOperator.Replace || !selectionActive)
+                {
+                    selectionActive = true;
+                    selectionMinX = minX;
+                    selectionMinY = minY;
+                    selectionMaxX = maxX;
+                    selectionMaxY = maxY;
+                    selectionMask = mask;
+                }
+                else if (curOp == SelectionOperator.Add)
+                {
+                    selectionActive = true;
+                    selectionMinX = Math.Min(oldMinX, minX);
+                    selectionMinY = Math.Min(oldMinY, minY);
+                    selectionMaxX = Math.Max(oldMaxX, maxX);
+                    selectionMaxY = Math.Max(oldMaxY, maxY);
+                    selectionMask = new bool[selectionMaxY - selectionMinY + 1, selectionMaxX - selectionMinX + 1];
+
+                    // source
+                    int ox = oldMinX - selectionMinX;
+                    int oy = oldMinY - selectionMinY;
+                    int w = oldMaxX - oldMinX + 1;
+                    int h = oldMaxY - oldMinY + 1;
+                    for (int y = 0; y < h; y++)
+                    {
+                        for (int x = 0; x < w; x++)
+                        {
+                            var gx = x + ox;
+                            var gy = y + oy;
+                            selectionMask[gy,gx] = oldMask[y,x];
+                        }
+                    }
+
+                    // dest
+                    ox = minX - selectionMinX;
+                    oy = minY - selectionMinY;
+                    w = maxX - minX + 1;
+                    h = maxY - minY + 1;
+                    for (int y = 0; y < h; y++)
+                    {
+                        for (int x = 0; x < w; x++)
+                        {
+                            var gx = x + ox;
+                            var gy = y + oy;
+                            selectionMask[gy,gx] |= mask[y,x];
+                        }
+                    }
+                }
+
+                break;
+
+            case SelectionOperator.Subtract:
+            {
+                if (!selectionActive) break;
+                selectionActive = true;
+
+                // dest
+                var oldW = oldMaxX - oldMinX + 1;
+                var oldH = oldMaxY - oldMinY + 1;
+                var ox = selectionMinX - minX;
+                var oy = selectionMinY - minY;
+                var w = maxX - minX + 1;
+                var h = maxY - minY + 1;
+
+                // in source bounds
+                for (int y = 0; y < oldH; y++)
+                {
+                    for (int x = 0; x < oldW; x++)
+                    {
+                        var lx = x + ox;
+                        var ly = y + oy;
+                        if (lx >= 0 && ly >= 0 && lx < w && ly < h)
+                        {
+                            // A  B  OUT
+                            // 0  0  0
+                            // 0  1  0
+                            // 1  0  1
+                            // 1  1  0
+                            selectionMask[y,x] &= selectionMask[y,x] ^ mask[ly,lx];
+                        }
+                    }
+                }
+                break;
+            }
+
+            case SelectionOperator.Intersect:
+            {
+                if (!selectionActive) break;
+                selectionActive = true;
+
+                selectionMinX = Math.Max(oldMinX, minX);
+                selectionMinY = Math.Max(oldMinY, minY);
+                selectionMaxX = Math.Min(oldMaxX, maxX);
+                selectionMaxY = Math.Min(oldMaxY, maxY);
+                if (selectionMaxX < selectionMinX || selectionMaxY < selectionMinY)
+                {
+                    selectionActive = false;
+                    break;
+                }
+
+                selectionMask = new bool[selectionMaxY - selectionMinY + 1, selectionMaxX - selectionMinX + 1];
+                
+                // source
+                var ox0 = selectionMinX - oldMinX;
+                var oy0 = selectionMinY - oldMinY;
+                var w0 = oldMaxX - oldMinX + 1;
+                var h0 = oldMaxY - oldMinY + 1;
+
+                // dest
+                var ox1 = selectionMinX - minX;
+                var oy1 = selectionMinY - minY;
+                var w1 = maxX - minX + 1;
+                var h1 = maxY - minY + 1;
+
+                // in dest bounds
+                var newW = selectionMaxX - selectionMinX + 1;
+                var newH = selectionMaxY - selectionMinY + 1;
+                for (int y = 0; y < newH; y++)
+                {
+                    for (int x = 0; x < newW; x++)
+                    {
+                        var x0 = x + ox0;
+                        var y0 = y + oy0;
+                        var x1 = x + ox1;
+                        var y1 = y + oy1;
+
+                        if (!(x0 >= 0 && y0 >= 0 && x1 < w0 && y1 < h0)) continue;
+                        if (!(x1 >= 0 && y1 >= 0 && x1 < w1 && y1 < h1)) continue;
+                        selectionMask[y,x] = oldMask[y0,x0] & mask[y1,x1];
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    private static bool MagicWand(int mouseX, int mouseY, int layer, out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] mask)
+    {
+        var level = RainEd.Instance.Level;
+        p_minX = int.MaxValue;
+        p_minY = int.MaxValue;
+        p_maxX = int.MinValue;
+        p_maxY = int.MinValue;
+        if (!level.IsInBounds(mouseX, mouseY)) 
+        {
+            mask = new bool[0,0];
+            return false;
+        }
+
+        var levelMask = new bool[level.Height,level.Width];
+
+        bool isSolidGeo(int x, int y)
+        {
+            return level.Layers[layer, x, y].Geo is
+                GeoType.Solid or
+                GeoType.SlopeRightUp or
+                GeoType.SlopeLeftUp or
+                GeoType.SlopeRightDown or
+                GeoType.SlopeLeftDown or
+                GeoType.Platform;
+        }
+        bool selectGeo = isSolidGeo(mouseX, mouseY);
+
+        var minX = int.MaxValue;
+        var minY = int.MaxValue;
+        var maxX = int.MinValue;
+        var maxY = int.MinValue;
+        var hasValue = false;
+        bool success = Rasterization.FloodFill(
+            mouseX, mouseY, level.Width, level.Height,
+            isSimilar: (int x, int y) =>
+            {
+                return isSolidGeo(x, y) == selectGeo && !levelMask[y,x];
+                //return false;
+            },
+            plot: (int x, int y) =>
+            {
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+                levelMask[y,x] = true;
+                hasValue = true;
+            }
+        );
+
+        if (!success)
+        {
+            EditorWindow.ShowNotification("Magic wand selection too large!");
+            mask = new bool[0,0];
+            return false;
+        }
+
+        if (!hasValue)
+        {
+            mask = new bool[0,0];
+            p_minX = mouseX;
+            p_minY = mouseY;
+            p_maxX = mouseX;
+            p_maxY = mouseY;
+            return false;
+        }
+
+        var aabbW = maxX - minX + 1;
+        var aabbH = maxY - minY + 1;
+        p_minX = minX;
+        p_minY = minY;
+        p_maxX = maxX;
+        p_maxY = maxY;
+        mask = new bool[aabbH,aabbW];
+
+        for (int y = 0; y < aabbH; y++)
+        {
+            for (int x = 0; x < aabbW; x++)
+            {
+                var gx = minX + x;
+                var gy = minY + y;
+                mask[y,x] = levelMask[gy,gx];
+            }
+        }
+
+        return true;
     }
 
     class RectDragState : IMouseDragState
