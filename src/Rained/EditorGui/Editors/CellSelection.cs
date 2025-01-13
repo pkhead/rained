@@ -16,6 +16,7 @@ class CellSelection
     enum IconName
     {
         SelectRect,
+        MoveSelected,
         MoveSelection,
         LassoSelect,
         MagicWand,
@@ -38,6 +39,7 @@ class CellSelection
         (IconName.LassoSelect, "Lasso Select"),
         (IconName.MagicWand, "Magic Wand"),
         (IconName.MoveSelection, "Move Selection"),
+        (IconName.MoveSelected, "Move Selected"),
     ];
 
     enum SelectionOperator
@@ -152,7 +154,7 @@ class CellSelection
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Copy") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
             Active = false;
         
         ImGui.SameLine();

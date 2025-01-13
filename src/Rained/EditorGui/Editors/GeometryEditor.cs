@@ -191,6 +191,7 @@ class GeometryEditor : IEditorMode
         layerMask[1] = false;
         layerMask[2] = false;
         layerMask[window.WorkLayer] = true;
+        cellSelectionState = null;
     }
 
     public void Unload()
@@ -697,7 +698,7 @@ class GeometryEditor : IEditorMode
         // CTRL+C to begin copy mode
         // CTRL+V to begin paste mode
         // CTRL+M to begin move mode
-        if (KeyShortcuts.Activated(KeyShortcut.Copy))
+        if (KeyShortcuts.Activated(KeyShortcut.Select))
         {
             cellSelectionState = new CellSelection();
         }

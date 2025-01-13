@@ -595,6 +595,7 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.Cut);
         ShortcutButton(KeyShortcut.Copy);
         ShortcutButton(KeyShortcut.Paste);
+        ShortcutButton(KeyShortcut.Select);
         ImGui.Separator();
         ShortcutButton(KeyShortcut.New);
         ShortcutButton(KeyShortcut.Open);

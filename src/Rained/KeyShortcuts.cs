@@ -22,6 +22,7 @@ enum KeyShortcut : int
 
     New, Open, Save, SaveAs, CloseFile, CloseAllFiles,
     Cut, Copy, Paste, Undo, Redo,
+    Select,
 
     Render, ExportGeometry,
 
@@ -364,6 +365,7 @@ static class KeyShortcuts
         Register("Cut", KeyShortcut.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
         Register("Copy", KeyShortcut.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
         Register("Paste", KeyShortcut.Paste, ImGuiKey.V, ImGuiModFlags.Ctrl);
+        Register("Select", KeyShortcut.Select, ImGuiKey.E, ImGuiModFlags.Ctrl);
         Register("Undo", KeyShortcut.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl, true);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
