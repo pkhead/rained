@@ -32,6 +32,7 @@ class CellSelection
         Lasso,
         MagicWand,
         MoveSelection,
+        MoveSelected,
     };
     private SelectionTool curTool = SelectionTool.Rect;
     static readonly (IconName icon, string name)[] toolInfo = [
@@ -66,10 +67,14 @@ class CellSelection
 
     // used for mouse drag
     private bool mouseWasDragging = false;
-    private IMouseDragState? mouseDragState = null;
-    interface IMouseDragState
+    private Tool? mouseDragState = null;
+    abstract class Tool
     {
-        public void Update(int mouseX, int mouseY);
+        public abstract void Update(int mouseX, int mouseY);
+    }
+
+    interface ISelectionTool
+    {
         public bool Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
     }
 
@@ -193,21 +198,25 @@ class CellSelection
                     {
                         SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
                         SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
+                        SelectionTool.MoveSelection => new SelectionMoveDragState(this, view.MouseCx, view.MouseCy),
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
-                    if (curOp == SelectionOperator.Replace) selectionActive = false;
+                    if (curOp == SelectionOperator.Replace && mouseDragState is ISelectionTool) selectionActive = false;
                 }
 
                 mouseDragState!.Update(view.MouseCx, view.MouseCy);
             }
             else if (mouseWasDragging && mouseDragState is not null)
             {
-                if (mouseDragState.Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
+                if (mouseDragState is ISelectionTool selTool)
                 {
-                    CombineMasks(minX, minY, maxX, maxY, mask);
+                    if (selTool.Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
+                    {
+                        CombineMasks(minX, minY, maxX, maxY, mask);
+                    }
+                    else selectionActive = false;
                 }
-                else selectionActive = false;
             }
         }
 
@@ -513,7 +522,7 @@ class CellSelection
         return true;
     }
 
-    class RectDragState : IMouseDragState
+    class RectDragState : Tool, ISelectionTool
     {
         private int selectionStartX = -1;
         private int selectionStartY = -1;
@@ -528,7 +537,7 @@ class CellSelection
             selectionStartY = startY;
         }
 
-        public void Update(int mouseX, int mouseY)
+        public override void Update(int mouseX, int mouseY)
         {
             mouseMinX = Math.Min(selectionStartX, mouseX);
             mouseMaxX = Math.Max(selectionStartX, mouseX);
@@ -569,7 +578,7 @@ class CellSelection
         }
     }
 
-    class LassoDragState : IMouseDragState
+    class LassoDragState : Tool, ISelectionTool
     {
         private List<Vector2i> points = [];
 
@@ -578,7 +587,7 @@ class CellSelection
             points.Add(new Vector2i(startX, startY));
         }
         
-        public void Update(int mouseX, int mouseY)
+        public override void Update(int mouseX, int mouseY)
         {
             var newPoint = new Vector2i(mouseX, mouseY);
             if (newPoint != points[^1])
@@ -759,6 +768,31 @@ class CellSelection
             p_maxY = maxY;
             p_mask = mask;
             return true;
+        }
+    }
+
+    class SelectionMoveDragState : Tool
+    {
+        private readonly int offsetX;
+        private readonly int offsetY;
+        private readonly int selW, selH;
+        private readonly CellSelection controller;
+
+        public SelectionMoveDragState(CellSelection controller, int startX, int startY)
+        {
+            this.controller = controller;
+            offsetX = startX - controller.selectionMinX;
+            offsetY = startY - controller.selectionMinY;
+            selW = controller.selectionMaxX - controller.selectionMinX + 1;
+            selH = controller.selectionMaxY - controller.selectionMinY + 1;
+        }
+
+        public override void Update(int mouseX, int mouseY)
+        {
+            controller.selectionMinX = mouseX - offsetX;
+            controller.selectionMinY = mouseY - offsetY;
+            controller.selectionMaxX = controller.selectionMinX + selW - 1;
+            controller.selectionMaxY = controller.selectionMinY + selH - 1;
         }
     }
 }
