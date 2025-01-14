@@ -11,7 +11,7 @@ Bugs:
 - rope segments render under preview (should render above)
 
 v2.3.0:
-  * geo/tile copy+paste (i am currently working on this)
+  * geo/tile copy+paste (i am currently working on this),
   - tile & effect prefabs
   - favorite tiles&props
   - material previews

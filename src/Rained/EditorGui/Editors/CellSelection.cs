@@ -380,6 +380,8 @@ class CellSelection
                         }
                     }
                 }
+
+                CropSelection();
                 break;
             }
 
@@ -429,6 +431,8 @@ class CellSelection
                         selectionMask[y,x] = oldMask[y0,x0] & mask[y1,x1];
                     }
                 }
+
+                CropSelection();
                 break;
             }
         }
@@ -520,6 +524,60 @@ class CellSelection
         }
 
         return true;
+    }
+
+    public void CropSelection()
+    {
+        if (!selectionActive) return;
+
+        int minX = int.MaxValue;
+        int minY = int.MaxValue;
+        int maxX = int.MinValue;
+        int maxY = int.MinValue;
+        bool hasValue = false;
+
+        for (int gy = selectionMinY; gy <= selectionMaxY; gy++)
+        {
+            for (int gx = selectionMinX; gx <= selectionMaxX; gx++)
+            {
+                var x = gx - selectionMinX;
+                var y = gy - selectionMinY;
+                if (selectionMask[y,x])
+                {
+                    hasValue = true;
+                    minX = Math.Min(minX, gx);
+                    minY = Math.Min(minY, gy);
+                    maxX = Math.Max(maxX, gx);
+                    maxY = Math.Max(maxY, gy);
+                }
+            }
+        }
+
+        if (!hasValue)
+        {
+            selectionActive = false;
+            return;
+        }
+
+        var newW = maxX - minX + 1;
+        var newH = maxY - minY + 1;
+        var newMask = new bool[newH, newW];
+
+        for (int y = 0; y < newH; y++)
+        {
+            for (int x = 0; x < newW; x++)
+            {
+                var lx = x + minX - selectionMinX;
+                var ly = y + minY - selectionMinY;
+                newMask[y,x] = selectionMask[ly,lx];
+            }
+        }
+
+        selectionMinX = minX;
+        selectionMinY = minY;
+        selectionMaxX = maxX;
+        selectionMaxY = maxY;
+        selectionMask = newMask;
     }
 
     class RectDragState : Tool, ISelectionTool
