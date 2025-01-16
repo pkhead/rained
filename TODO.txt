@@ -8,7 +8,7 @@ Bugs:
 - errors when rendering new effects???
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
-- rope segments render under preview (should render above)
+- resizing a level such that a shortcut entrance is deleted will enable a crash
 
 Do Soon:
 - effects previews
