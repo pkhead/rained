@@ -18,6 +18,7 @@ class DrizzleRenderWindow : IDisposable
     private RlManaged.Texture2D? previewBlackout2 = null;
     private readonly RlManaged.RenderTexture2D previewComposite;
     private bool needUpdateTextures = false;
+    private readonly string windowId;
 
     private readonly RlManaged.Shader layerPreviewShader;
     private readonly RlManaged.Shader layerPreviewLightShader;
@@ -27,6 +28,9 @@ class DrizzleRenderWindow : IDisposable
 
     public DrizzleRenderWindow(bool onlyGeo)
     {
+        windowId = "Render###" +
+                    ((!onlyGeo && RainEd.Instance.Preferences.ShowRenderPreview) ? "RenderPreview" : "RenderNoPreview");
+        
         try
         {
             var level = RainEd.Instance.Level;            
@@ -204,12 +208,6 @@ class DrizzleRenderWindow : IDisposable
 
     public bool DrawWindow()
     {
-        if (!isOpen)
-        {
-            ImGui.OpenPopup("Render");
-            isOpen = false;
-        }
-
         var doClose = false;
         bool isPreviewEnabled = false;
 
@@ -219,8 +217,17 @@ class DrizzleRenderWindow : IDisposable
             drizzleRenderer.Update();
         }
 
+        if (!isOpen)
+        {
+            ImGui.OpenPopup(windowId);
+            isOpen = false;
+        }
+
         ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
-        ImGui.SetNextWindowSize(ImGui.GetWindowViewport().Size - new Vector2(40, 40), ImGuiCond.FirstUseEver);
+
+        if (isPreviewEnabled)
+            ImGui.SetNextWindowSize(ImGui.GetWindowViewport().Size - new Vector2(40, 40), ImGuiCond.FirstUseEver);
+        
         ImGui.SetNextWindowSizeConstraints(
             new Vector2(0f, ImGui.GetTextLineHeight() * 30.0f),
             Vector2.One * 9999f
@@ -228,7 +235,8 @@ class DrizzleRenderWindow : IDisposable
 
         ImGuiWindowFlags windowFlags = 0;
         if (!isPreviewEnabled) windowFlags |= ImGuiWindowFlags.AlwaysAutoResize;
-        if (ImGuiExt.BeginPopupModal("Render", windowFlags))
+
+        if (ImGuiExt.BeginPopupModal(windowId, windowFlags))
         {
             float renderProgress = 0f;
 
