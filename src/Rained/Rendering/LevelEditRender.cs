@@ -44,6 +44,7 @@ class LevelEditRender : IDisposable
     private readonly EditorGeometryRenderer geoRenderer;
     private readonly TileRenderer tileRenderer;
     private readonly PropRenderer propRenderer;
+    public EditorGeometryRenderer GeometryRenderer => geoRenderer;
 
     private Glib.Mesh? gridMajor = null;
     private Glib.Mesh? gridMinor = null;
