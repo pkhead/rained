@@ -64,6 +64,7 @@ class CellSelection
     private int selectionMaxY = 0;
     private bool selectionActive = false;
     private bool[,] selectionMask = new bool[0,0];
+    private (bool mask, LevelCell cell)[,,]? movingGeometry = null;
 
     // used for mouse drag
     private bool mouseWasDragging = false;
@@ -71,11 +72,12 @@ class CellSelection
     abstract class Tool
     {
         public abstract void Update(int mouseX, int mouseY);
+        //public virtual void Submit() {}
     }
 
     interface ISelectionTool
     {
-        public bool Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
+        public bool ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
     }
 
     public CellSelection()
@@ -128,6 +130,7 @@ class CellSelection
                 ref var info = ref toolInfo[i];
                 if (IconButton(info.icon))
                 {
+                    SubmitMove();
                     curTool = (SelectionTool)i;
                 }
                 ImGui.SetItemTooltip(info.name);
@@ -160,7 +163,10 @@ class CellSelection
 
         ImGui.SameLine();
         if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        {
+            SubmitMove();
             Active = false;
+        }
         
         ImGui.SameLine();
         if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
@@ -199,6 +205,7 @@ class CellSelection
                         SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
                         SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
                         SelectionTool.MoveSelection => new SelectionMoveDragState(this, view.MouseCx, view.MouseCy),
+                        SelectionTool.MoveSelected => new SelectedMoveDragState(this, view.MouseCx, view.MouseCy),
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
@@ -211,7 +218,7 @@ class CellSelection
             {
                 if (mouseDragState is ISelectionTool selTool)
                 {
-                    if (selTool.Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
+                    if (selTool.ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
                     {
                         CombineMasks(minX, minY, maxX, maxY, mask);
                     }
@@ -580,6 +587,41 @@ class CellSelection
         selectionMask = newMask;
     }
 
+    public void SubmitMove()
+    {
+        if (movingGeometry is null)
+            return;
+
+        var level = RainEd.Instance.Level;
+        var renderer = RainEd.Instance.LevelView.Renderer;
+        var geoRenderer = renderer.GeometryRenderer;
+        var selW = selectionMaxX - selectionMinX + 1;
+        var selH = selectionMaxY - selectionMinY + 1;
+
+        // apply moved geometry
+        for (int y = 0; y < selH; y++)
+        {
+            var gy = geoRenderer.OverlayY + y;
+            for (int x = 0; x < selW; x++)
+            {
+                var gx = geoRenderer.OverlayX + x;
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    ref var srcCell = ref movingGeometry[l,x,y];
+                    if (!srcCell.mask) continue;
+
+                    ref var dstCell = ref level.Layers[l,gx,gy];
+                    dstCell.Geo = srcCell.cell.Geo;
+                    dstCell.Objects = srcCell.cell.Objects;
+                    renderer.InvalidateGeo(gx, gy, l);
+                }
+            }
+        }
+
+        movingGeometry = null;
+        geoRenderer.ClearOverlay();
+    }
+
     class RectDragState : Tool, ISelectionTool
     {
         private int selectionStartX = -1;
@@ -613,7 +655,7 @@ class CellSelection
             );
         }
         
-        public bool Apply(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask)
+        public bool ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask)
         {
             minX = mouseMinX;
             maxX = mouseMaxX;
@@ -707,7 +749,7 @@ class CellSelection
             });*/
         }
 
-        public bool Apply(out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] p_mask)
+        public bool ApplySelection(out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] p_mask)
         {
             // calc bounding box of points
             var minX = int.MaxValue;
@@ -849,6 +891,72 @@ class CellSelection
         {
             controller.selectionMinX = mouseX - offsetX;
             controller.selectionMinY = mouseY - offsetY;
+            controller.selectionMaxX = controller.selectionMinX + selW - 1;
+            controller.selectionMaxY = controller.selectionMinY + selH - 1;
+        }
+    }
+
+    class SelectedMoveDragState : Tool
+    {
+        private readonly int offsetX;
+        private readonly int offsetY;
+        private readonly int selW, selH;
+        private readonly CellSelection controller;
+
+        public SelectedMoveDragState(CellSelection controller, int startX, int startY)
+        {
+            this.controller = controller;
+            offsetX = startX - controller.selectionMinX;
+            offsetY = startY - controller.selectionMinY;
+            selW = controller.selectionMaxX - controller.selectionMinX + 1;
+            selH = controller.selectionMaxY - controller.selectionMinY + 1;
+            var level = RainEd.Instance.Level;
+            var renderer = RainEd.Instance.LevelView.Renderer;
+
+            // create geometry overlay array
+            // and clear out selection
+            if (controller.movingGeometry is null)
+            {
+                controller.movingGeometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+                for (int y = 0; y < selH; y++)
+                {
+                    var gy = controller.selectionMinY + y;
+                    for (int x = 0; x < selW; x++)
+                    {
+                        var gx = controller.selectionMinX + x;
+
+                        for (int l = 0; l < Level.LayerCount; l++)
+                        {
+                            ref var srcCell = ref level.Layers[l,gx,gy];
+                            controller.movingGeometry[l,x,y].mask = controller.selectionMask[y,x];
+                            controller.movingGeometry[l,x,y].cell = srcCell;
+
+                            if (controller.selectionMask[y,x])
+                            {
+                                srcCell.Geo = GeoType.Air;
+                                srcCell.Objects = LevelObject.None;
+                                renderer.InvalidateGeo(gx, gy, l);
+                            }
+                        }
+                    }
+                }
+
+                // send it to geo renderer
+                renderer.GeometryRenderer.SetOverlay(
+                    width: selW,
+                    height: selH,
+                    geometry: controller.movingGeometry
+                );
+            }
+        }
+
+        public override void Update(int mouseX, int mouseY)
+        {
+            var geoRenderer = RainEd.Instance.LevelView.Renderer.GeometryRenderer;
+            geoRenderer.OverlayX = mouseX - offsetX;
+            geoRenderer.OverlayY = mouseY - offsetY;
+            controller.selectionMinX = geoRenderer.OverlayX;
+            controller.selectionMinY = geoRenderer.OverlayY;
             controller.selectionMaxX = controller.selectionMinX + selW - 1;
             controller.selectionMaxY = controller.selectionMinY + selH - 1;
         }
