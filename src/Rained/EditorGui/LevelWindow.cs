@@ -187,6 +187,8 @@ class LevelWindow
     {
         foreach (var mode in editorModes)
             mode.ReloadLevel();
+        
+        RainEd.Instance.CurrentTab!.NodeData.Reset();
     }
 
     public void ResetView()
