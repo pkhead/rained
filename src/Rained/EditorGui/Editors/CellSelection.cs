@@ -778,6 +778,8 @@ class CellSelection
         var selW = selectionMaxX - selectionMinX + 1;
         var selH = selectionMaxY - selectionMinY + 1;
 
+        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
+
         // apply moved geometry
         for (int y = 0; y < selH; y++)
         {
@@ -819,6 +821,8 @@ class CellSelection
 
         movingGeometry = null;
         rndr.ClearOverlay();
+
+        RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
     }
 
     public void CancelMove()
@@ -836,6 +840,11 @@ class CellSelection
         selH = selectionMaxY - selectionMinY + 1;
         var level = RainEd.Instance.Level;
         var renderer = RainEd.Instance.LevelView.Renderer;
+
+        if (eraseSource)
+        {
+            RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
+        }
 
         var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
         for (int y = 0; y < selH; y++)
@@ -895,6 +904,11 @@ class CellSelection
                     }
                 }
             }
+        }
+
+        if (eraseSource)
+        {
+            RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
         }
 
         return geometry;
