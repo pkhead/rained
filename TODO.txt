@@ -27,6 +27,9 @@ v2.3.0:
   - translation system
   - effects previews
   - show prop preview over mouse
+  - second layer for keybinds
+  - make brush strength independent of refresh rate
+  - Rotation props (#29)
   - autotiles
     - option to join only inner tiles
     - ability to recognize more than one tile as a direction type
