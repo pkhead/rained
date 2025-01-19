@@ -79,6 +79,10 @@ class CellSelection
     private bool[,] selectionMask = new bool[0,0];
     private (bool mask, LevelCell cell)[,,]? movingGeometry = null;
 
+    private int cancelOrigX = 0;
+    private int cancelOrigY = 0;
+    private (bool mask, LevelCell cell)[,,]? cancelGeoData = null;
+
     // used for mouse drag
     private bool mouseWasDragging = false;
     private Tool? mouseDragState = null;
@@ -783,6 +787,7 @@ class CellSelection
 
     public void SubmitMove()
     {
+        cancelGeoData = null;
         if (movingGeometry is null)
             return;
 
@@ -848,6 +853,37 @@ class CellSelection
         
         movingGeometry = null;
         RainEd.Instance.LevelView.Renderer.ClearOverlay();
+
+        if (cancelGeoData is not null)
+        {
+            var level = RainEd.Instance.Level;
+            var renderer = RainEd.Instance.LevelView.Renderer;
+            var nodeData = RainEd.Instance.CurrentTab!.NodeData;
+
+            var selW = selectionMaxX - selectionMinX + 1;
+            var selH = selectionMaxY - selectionMinY + 1;
+            for (int y = 0; y < selH; y++)
+            {
+                var gy = cancelOrigY + y;
+                for (int x = 0; x < selW; x++)
+                {
+                    var gx = cancelOrigX + x;
+                    for (int l = 0; l < Level.LayerCount; l++)
+                    {
+                        if (!level.IsInBounds(gx, gy)) continue;
+                        if (!cancelGeoData[l,x,y].mask) continue;
+                        level.Layers[l,gx,gy] = cancelGeoData[l,x,y].cell;
+
+                        renderer.InvalidateGeo(gx, gy, l);
+                        if (l == 0) nodeData.InvalidateCell(gx, gy);
+                        if (level.Layers[l,gx,gy].TileHead is not null)
+                            renderer.InvalidateTileHead(gx, gy, l);
+                    }
+                }
+            }
+
+            cancelGeoData = null;
+        }
     }
 
     private (bool mask, LevelCell cell)[,,] MakeCellGroup(out int selW, out int selH, bool eraseSource)
@@ -935,13 +971,36 @@ class CellSelection
 
     private void BeginMove()
     {
+        // create separate copy of selected cells in order for the Cancel operation
+        // to work properly. can't use movingGeometry because it may modify the
+        // data of cells (i.e. tile head references)
+        var level = RainEd.Instance.Level;
+        var selW = selectionMaxX - selectionMinX + 1;
+        var selH = selectionMaxY - selectionMinY + 1;
+        cancelGeoData = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+        cancelOrigX = selectionMinX;
+        cancelOrigY = selectionMinY;
+
+        for (int y = 0; y < selH; y++)
+        {
+            var gy = cancelOrigY + y;
+            for (int x = 0; x < selW; x++)
+            {
+                var gx = cancelOrigX + x;
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    cancelGeoData[l,x,y] = (selectionMask[y,x], level.IsInBounds(gx, gy) ? level.Layers[l,gx,gy] : new LevelCell());
+                }
+            }
+        }
+
         var renderer = RainEd.Instance.LevelView.Renderer;
-        movingGeometry = MakeCellGroup(out int selW, out int selH, true);
+        movingGeometry = MakeCellGroup(out int overlayW, out int overlayH, true);
 
         // send it to geo renderer
         renderer.SetOverlay(
-            width: selW,
-            height: selH,
+            width: overlayW,
+            height: overlayH,
             geometry: movingGeometry
         );
     }
