@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Rained.LevelData;
 
 namespace Rained;
 
@@ -10,8 +12,62 @@ namespace Rained;
 static partial class Platform
 {
     // import win32 MessageBox function
-    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial int OpenClipboard(IntPtr hWndNewOwner);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial int CloseClipboard();
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial int SetClipboardData(uint uFormat, IntPtr hMem);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial nint GetClipboardData(uint uFormat);
+
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    private static partial uint RegisterClipboardFormatW(string lpszFormat);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial int IsClipboardFormatAvailable(uint format);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial int EmptyClipboard();
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial nint GlobalAlloc(uint uFlags, nint dwBytes);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial nint GlobalLock(nint hMem);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial nint GlobalUnlock(nint hMem);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial nint GlobalSize(nint hMem);
+
+    private static void ThrowWin32Error()
+    {
+        throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+        //Marshal.GetPInvokeErrorMessage()
+    }
+
+    private static void ThrowWin32ErrorIfZero(uint value)
+    {
+        if (value == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+    }
+
+    private static void ThrowWin32ErrorIfZero(int value)
+    {
+        if (value == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+    }
+
+    private static void ThrowWin32ErrorIfZero(nint value)
+    {
+        if (value == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+    }
 
     /// <summary>
     /// Display an error message to the user. The application will be blocked until the message is closed.
@@ -256,6 +312,198 @@ static partial class Platform
         }
     }
 
+    #region Clipboard
+    public enum ClipboardDataType
+    {
+        LevelCells
+    }
+
+    private static bool _win32_didRegisterFormats = false;
+    private static uint _win32_levelCellsFmt;
+
+    private const string LevelCellsMimeType = "application/x.rainworld-level-cells";
+
+    private static void Win32RegisterFormats()
+    {
+        if (_win32_didRegisterFormats) return;
+        _win32_levelCellsFmt = RegisterClipboardFormatW(LevelCellsMimeType);
+        ThrowWin32ErrorIfZero(_win32_levelCellsFmt);
+        
+        _win32_didRegisterFormats = true;
+    }
+
+    public static unsafe bool SetClipboard(Glib.Window glibWindow, ClipboardDataType type, ReadOnlySpan<byte> data)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Win32RegisterFormats();
+            var formatId = type switch
+            {
+                ClipboardDataType.LevelCells => _win32_levelCellsFmt,
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            bool isClipboardOpen = false;
+            bool success = false;
+            try
+            {
+                (nint hwnd, _, _) =
+                    glibWindow.SilkWindow.Native?.Win32 ?? throw new Exception("Could not fetch native handles");
+
+                ThrowWin32ErrorIfZero( OpenClipboard(hwnd) );
+                isClipboardOpen = true;
+                
+                ThrowWin32ErrorIfZero( EmptyClipboard() );
+                
+                // create allocation
+                var alloc = GlobalAlloc(0x2, data.Length);
+                ThrowWin32ErrorIfZero( alloc );
+                
+                // copy size of data as well as data itself into allocation
+                {
+                    var allocData = GlobalLock(alloc);
+                    ThrowWin32ErrorIfZero(allocData);
+
+                    fixed (byte* dataPtr = data)
+                        Buffer.MemoryCopy(dataPtr, (void*)allocData, data.Length, data.Length);
+                    
+                    if (GlobalUnlock(alloc) != 0)
+                        ThrowWin32Error();
+                }
+                
+                ThrowWin32ErrorIfZero( SetClipboardData(formatId, alloc) );
+                
+                success = true;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+            }
+            finally
+            {
+                if (isClipboardOpen) CloseClipboard();
+            }
+
+            return success;
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var mimeType = type switch
+            {
+                ClipboardDataType.LevelCells => LevelCellsMimeType,
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            // use xclip to write contents to clipboard
+            try
+            {
+                var proc = Process.Start("xclip", ["-selection", "clip", "-t", mimeType, "-i"]);
+                using (var binStream = new BinaryWriter(proc.StandardInput.BaseStream))
+                {
+                    binStream.Write(data);
+                }
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) return true;
+            }
+            catch {}
+            return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public static unsafe bool GetClipboard(Glib.Window glibWindow, ClipboardDataType type, [NotNullWhen(true)] out byte[]? data)
+    {
+        data = null;
+
+        if (OperatingSystem.IsWindows())
+        {
+            bool isClipboardOpen = false;
+            bool success = false;
+            try
+            {
+                (nint hwnd, _, _) =
+                    glibWindow.SilkWindow.Native?.Win32 ?? throw new Exception("Could not fetch native handles");
+                
+                Win32RegisterFormats();
+                var formatId = type switch
+                {
+                    ClipboardDataType.LevelCells => _win32_levelCellsFmt,
+                    _ => throw new ArgumentOutOfRangeException(nameof(type))
+                };
+                
+                if (IsClipboardFormatAvailable(formatId) == 0)
+                    return false;
+                
+                ThrowWin32ErrorIfZero( OpenClipboard(hwnd) );
+                isClipboardOpen = true;
+
+                // get handle to clipboard data
+                var hGlobal = GetClipboardData(formatId);
+                ThrowWin32ErrorIfZero( hGlobal );
+
+                // obtain data from handle
+                {                    
+                    var allocData = GlobalLock(hGlobal);
+                    ThrowWin32ErrorIfZero( allocData );
+                    
+                    var size = GlobalSize(hGlobal);
+                    ThrowWin32ErrorIfZero(size);
+
+                    data = new byte[size];
+                    fixed (byte* dataPtr = data)
+                        Buffer.MemoryCopy((void*)allocData, dataPtr, data.Length, size);
+                    
+                    if (GlobalUnlock(hGlobal) != 0)
+                        ThrowWin32Error();
+                }
+
+                success = true;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+            }
+            finally
+            {
+                if (isClipboardOpen) CloseClipboard();
+            }
+
+            return success;
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            var mimeType = type switch
+            {
+                ClipboardDataType.LevelCells => LevelCellsMimeType,
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            // use xclip to fetch contents of clipboard
+            try
+            {
+                var proc = Process.Start("xclip", ["-selection", "clip", "-t", mimeType, "-o"]);
+                using (var ms = new MemoryStream())
+                {
+                    proc.StandardOutput.BaseStream.CopyTo(ms);
+                    data = ms.ToArray();
+                }
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) return data.Length > 0;
+            }
+            catch {}
+            return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    #endregion Clipboard
+
+    #region High-precision sleep
     public partial class SleepHandler : IDisposable
     {
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
@@ -326,4 +574,5 @@ static partial class Platform
             GC.SuppressFinalize(this);
         }
     }
+    #endregion High-precision sleep
 }
