@@ -1,5 +1,10 @@
-TODOS FOR NEWEST FEATURE:
-- get undo/redo working
+Selection:
+- selection undo/redo
+- layer masking
+- drag for tile select
+- bounds checking?
+- add buttons to edit menu
+- add select/copy/paste shortcuts to shortcut window
 
 Bugs:
 - undoing while chain holder attach makes a crash .. ???
