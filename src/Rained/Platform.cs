@@ -367,7 +367,8 @@ static partial class Platform
                     fixed (byte* dataPtr = data)
                         Buffer.MemoryCopy(dataPtr, (void*)allocData, data.Length, data.Length);
                     
-                    if (GlobalUnlock(alloc) != 0)
+                    GlobalUnlock(alloc);
+                    if (Marshal.GetLastPInvokeError() != 0)
                         ThrowWin32Error();
                 }
                 
@@ -456,7 +457,8 @@ static partial class Platform
                     fixed (byte* dataPtr = data)
                         Buffer.MemoryCopy((void*)allocData, dataPtr, data.Length, size);
                     
-                    if (GlobalUnlock(hGlobal) != 0)
+                    GlobalUnlock(hGlobal);
+                    if (Marshal.GetLastPInvokeError() != 0)
                         ThrowWin32Error();
                 }
 
