@@ -196,6 +196,7 @@ partial class TileEditor : IEditorMode
 
         if (CellSelection.Instance is not null)
         {
+            CellSelection.Instance.AffectTiles = true;
             CellSelection.Instance.Update(window.WorkLayer);
             if (!CellSelection.Instance.Active)
             {

@@ -56,10 +56,11 @@ class LevelEditRender : IDisposable
     public bool UsePalette = false;
     public PaletteRenderer Palette;
 
-    public int OverlayX { get; set; }
-    public int OverlayY { get; set; }
+    public int OverlayX;
+    public int OverlayY;
     public int OverlayWidth { get; private set; }
     public int OverlayHeight { get; private set; }
+    public bool OverlayAffectTiles;
     public (bool mask, LevelCell cell)[,,]? OverlayGeometry { get; private set; } = null;
     public bool IsOverlayActive => OverlayGeometry is not null;
 
@@ -842,6 +843,36 @@ class LevelEditRender : IDisposable
         OverlayGeometry = null;
         OverlayWidth = 0;
         OverlayHeight = 0;
+    }
+
+    public bool IsWithinOverlay(int x, int y, int layer)
+    {
+        if (!IsOverlayActive) return false;
+
+        if (x >= OverlayX && y >= OverlayY && x < OverlayX + OverlayWidth && y < OverlayY + OverlayHeight)
+        {
+            return OverlayGeometry![layer, x - OverlayX, y - OverlayY].mask;
+        }
+
+        return false;
+    }
+
+    public ref LevelCell GetCellWithOverlay(int x, int y, int layer)
+    {
+        if (IsOverlayActive && x >= OverlayX && y >= OverlayY && x < OverlayX + OverlayWidth && y < OverlayY + OverlayHeight)
+        {
+            ref var c = ref OverlayGeometry![layer, x - OverlayX, y - OverlayY];
+            if (c.mask) return ref c.cell;
+        }
+
+        var level = RainEd.Instance.Level;
+        return ref level.Layers[layer, x, y];
+    }
+
+    public ref LevelCell GetCell(int x, int y, int layer, bool respectOverlay)
+    {
+        if (respectOverlay) return ref GetCellWithOverlay(x, y, layer);
+        return ref RainEd.Instance.Level.Layers[layer, x, y];
     }
     
     public void Dispose()

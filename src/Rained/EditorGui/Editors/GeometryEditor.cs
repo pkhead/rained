@@ -716,6 +716,7 @@ class GeometryEditor : IEditorMode
 
         if (CellSelection.Instance is not null)
         {
+            CellSelection.Instance.AffectTiles = false;
             CellSelection.Instance.Update(ClosestActiveLayer());
             if (!CellSelection.Instance.Active)
             {

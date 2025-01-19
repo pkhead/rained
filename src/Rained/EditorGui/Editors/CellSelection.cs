@@ -14,6 +14,7 @@ class CellSelection
 
     public bool Active { get; private set; } = true;
     public bool PasteMode { get; set; } = false;
+    public bool AffectTiles { get; set; } = true;
 
     private static RlManaged.Texture2D icons = null!;
     enum IconName
@@ -205,8 +206,9 @@ class CellSelection
             curTool = SelectionTool.MoveSelected;
         }
         
-        // update
         var view = RainEd.Instance.LevelView;
+        view.Renderer.OverlayAffectTiles = AffectTiles;
+        
         if (curTool == SelectionTool.MagicWand)
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && curTool == SelectionTool.MagicWand)
@@ -342,20 +344,7 @@ class CellSelection
         }
         else
         {
-            var level = RainEd.Instance.Level;
-            geometryData = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
-            for (int y = 0; y < selH; y++)
-            {
-                var gy = selectionMinY + y;
-                for (int x = 0; x < selW; x++)
-                {
-                    var gx = selectionMinX + x;
-                    for (int l = 0; l < Level.LayerCount; l++)
-                    {
-                        geometryData[l,x,y] = (selectionMask[y,x], level.Layers[l,gx,gy]);
-                    }
-                }
-            }
+            geometryData = MakeCellGroup(out selW, out selH, false);
         }
 
         var serializedData = CellSerialization.SerializeCells(selectionMinX, selectionMinY, selW, selH, geometryData);
@@ -733,6 +722,25 @@ class CellSelection
                     ref var dstCell = ref level.Layers[l,gx,gy];
                     dstCell.Geo = srcCell.cell.Geo;
                     dstCell.Objects = srcCell.cell.Objects;
+
+                    if (AffectTiles)
+                    {
+                        if (srcCell.cell.TileHead is not null)
+                        {
+                            dstCell.TileHead = srcCell.cell.TileHead;
+                            dstCell.TileRootX = gx;
+                            dstCell.TileRootY = gy;
+                            dstCell.TileLayer = l;
+                            rndr.InvalidateTileHead(gx, gy, l);
+                        }
+                        else if (srcCell.cell.HasTile())
+                        {
+                            dstCell.TileRootX = srcCell.cell.TileRootX + rndr.OverlayX;
+                            dstCell.TileRootY = srcCell.cell.TileRootY + rndr.OverlayY;
+                            dstCell.TileLayer = srcCell.cell.TileLayer;
+                        }
+                    }
+
                     rndr.InvalidateGeo(gx, gy, l);
                 }
             }
@@ -749,6 +757,89 @@ class CellSelection
         
         movingGeometry = null;
         RainEd.Instance.LevelView.Renderer.ClearOverlay();
+    }
+
+    private (bool mask, LevelCell cell)[,,] MakeCellGroup(out int selW, out int selH, bool eraseSource)
+    {
+        selW = selectionMaxX - selectionMinX + 1;
+        selH = selectionMaxY - selectionMinY + 1;
+        var level = RainEd.Instance.Level;
+        var renderer = RainEd.Instance.LevelView.Renderer;
+
+        var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+        for (int y = 0; y < selH; y++)
+        {
+            var gy = selectionMinY + y;
+            for (int x = 0; x < selW; x++)
+            {
+                var gx = selectionMinX + x;
+
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    ref var srcCell = ref level.Layers[l,gx,gy];
+                    ref var dstCell = ref geometry[l,x,y];
+                    dstCell.mask = selectionMask[y,x];
+                    dstCell.cell = srcCell;
+
+                    // change tile head references to be relative to the origin
+                    // of the overlay
+                    if (dstCell.cell.HasTile() && dstCell.cell.TileHead is null)
+                    {
+                        dstCell.cell.TileRootX -= selectionMinX;
+                        dstCell.cell.TileRootY -= selectionMinY;
+
+                        // if the tile head is outside of the selection,
+                        // then erase this tile body.
+                        var tx = dstCell.cell.TileRootX;
+                        var ty = dstCell.cell.TileRootY;
+                        if (tx < 0 || ty < 0 ||
+                            tx >= selW || ty >= selH ||
+                            !selectionMask[ty, tx]
+                        )
+                        {
+                            dstCell.cell.TileRootX = -1;
+                            dstCell.cell.TileRootY = -1;
+                            dstCell.cell.TileLayer = -1;
+                        }
+                    }
+
+                    if (eraseSource && selectionMask[y,x])
+                    {
+                        srcCell.Geo = GeoType.Air;
+                        srcCell.Objects = LevelObject.None;
+
+                        if (AffectTiles)
+                        {
+                            bool hadHead = srcCell.TileHead is not null;
+                            srcCell.TileRootX = -1;
+                            srcCell.TileRootY = -1;
+                            srcCell.TileLayer = -1;
+                            srcCell.TileHead = null;
+
+                            if (hadHead)
+                                renderer.InvalidateTileHead(gx, gy, l);
+                        }
+
+                        renderer.InvalidateGeo(gx, gy, l);
+                    }
+                }
+            }
+        }
+
+        return geometry;
+    }
+
+    private void BeginMove()
+    {
+        var renderer = RainEd.Instance.LevelView.Renderer;
+        movingGeometry = MakeCellGroup(out int selW, out int selH, true);
+
+        // send it to geo renderer
+        renderer.SetOverlay(
+            width: selW,
+            height: selH,
+            geometry: movingGeometry
+        );
     }
 
     class RectDragState : Tool, ISelectionTool
@@ -1046,36 +1137,7 @@ class CellSelection
             // and clear out selection
             if (controller.movingGeometry is null)
             {
-                controller.movingGeometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
-                for (int y = 0; y < selH; y++)
-                {
-                    var gy = controller.selectionMinY + y;
-                    for (int x = 0; x < selW; x++)
-                    {
-                        var gx = controller.selectionMinX + x;
-
-                        for (int l = 0; l < Level.LayerCount; l++)
-                        {
-                            ref var srcCell = ref level.Layers[l,gx,gy];
-                            controller.movingGeometry[l,x,y].mask = controller.selectionMask[y,x];
-                            controller.movingGeometry[l,x,y].cell = srcCell;
-
-                            if (controller.selectionMask[y,x])
-                            {
-                                srcCell.Geo = GeoType.Air;
-                                srcCell.Objects = LevelObject.None;
-                                renderer.InvalidateGeo(gx, gy, l);
-                            }
-                        }
-                    }
-                }
-
-                // send it to geo renderer
-                renderer.SetOverlay(
-                    width: selW,
-                    height: selH,
-                    geometry: controller.movingGeometry
-                );
+                controller.BeginMove();
             }
         }
 
