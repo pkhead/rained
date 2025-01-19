@@ -184,12 +184,6 @@ class EditorGeometryRenderer
     private int chunkColCount; // X
     private List<ChunkPos> dirtyChunks;
 
-    public int OverlayX { get; set; }
-    public int OverlayY { get; set; }
-    public int OverlayWidth { get; private set; }
-    public int OverlayHeight { get; private set; }
-    private (bool mask, LevelCell cell)[,,]? overlayGeometry = null;
-
     public EditorGeometryRenderer(LevelEditRender renderer)
     {
         this.renderInfo = renderer;
@@ -244,6 +238,13 @@ class EditorGeometryRenderer
             return cell.Geo != GeoType.Solid || cell.Has(LevelObject.Crack);
         }
 
+        var overlayX = renderInfo.OverlayX;
+        var overlayY = renderInfo.OverlayY;
+        var overlayW = renderInfo.OverlayWidth;
+        var overlayH = renderInfo.OverlayHeight;
+        var overlayGeo = renderInfo.OverlayGeometry;
+        if (!renderInfo.IsOverlayActive) respectOverlay = false;
+
         var level = RainEd.Instance.Level;
         for (int x = subL; x < subR; x++)
         {
@@ -251,11 +252,11 @@ class EditorGeometryRenderer
             {
                 LevelCell c;
                 if (respectOverlay &&
-                    x >= OverlayX && y >= OverlayY && x < OverlayX + OverlayWidth && y < OverlayY + OverlayHeight &&
-                    overlayGeometry![layer, x-OverlayX, y-OverlayY].mask
+                    x >= overlayX && y >= overlayY && x < overlayX + overlayW && y < overlayY + overlayH &&
+                    overlayGeo![layer, x-overlayX, y-overlayY].mask
                 )
                 {
-                    c = overlayGeometry[layer, x-OverlayX, y-OverlayY].cell;
+                    c = overlayGeo[layer, x-overlayX, y-overlayY].cell;
                 }
                 else
                 {
@@ -492,11 +493,11 @@ class EditorGeometryRenderer
         int viewR = (int) Math.Ceiling(renderInfo.ViewBottomRight.X / ChunkWidth);
         int viewB = (int) Math.Ceiling(renderInfo.ViewBottomRight.Y / ChunkHeight);
 
-        bool isOverlayActive = overlayGeometry is not null;
-        var overlayL = OverlayX / ChunkWidth;
-        var overlayT = OverlayY / ChunkHeight;
-        var overlayR = (OverlayX + OverlayWidth - 1) / ChunkWidth;
-        var overlayB = (OverlayY + OverlayHeight - 1) / ChunkHeight;
+        bool isOverlayActive = renderInfo.IsOverlayActive;
+        var overlayL = renderInfo.OverlayX / ChunkWidth;
+        var overlayT = renderInfo.OverlayY / ChunkHeight;
+        var overlayR = (renderInfo.OverlayX + renderInfo.OverlayWidth - 1) / ChunkWidth;
+        var overlayB = (renderInfo.OverlayY + renderInfo.OverlayHeight - 1) / ChunkHeight;
         var imOutput = new ImmediateGeometryOutput(baseColor);
 
         for (int x = Math.Max(viewL, 0); x < Math.Min(viewR, chunkColCount); x++)
@@ -568,26 +569,5 @@ class EditorGeometryRenderer
             MarkNeedsRedraw(new ChunkPos((x+1) / ChunkWidth, y / ChunkHeight, layer));
         if ((y+1) % ChunkHeight == 0)
             MarkNeedsRedraw(new ChunkPos(x / ChunkWidth, (y+1) / ChunkHeight, layer));
-    }
-
-    public void SetOverlay(int width, int height, (bool mask, LevelCell cell)[,,] geometry)
-    {
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");
-        if (geometry.GetLength(0) != Level.LayerCount || geometry.GetLength(1) != width || geometry.GetLength(2) != height)
-            throw new ArgumentException("Invalid dimensions for geometry array.", nameof(geometry));
-        
-        ArgumentNullException.ThrowIfNull(geometry);
-
-        OverlayWidth = width;
-        OverlayHeight = height;
-        overlayGeometry = geometry;
-    }
-
-    public void ClearOverlay()
-    {
-        overlayGeometry = null;
-        OverlayWidth = 0;
-        OverlayHeight = 0;
     }
 }

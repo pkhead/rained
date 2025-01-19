@@ -56,6 +56,13 @@ class LevelEditRender : IDisposable
     public bool UsePalette = false;
     public PaletteRenderer Palette;
 
+    public int OverlayX { get; set; }
+    public int OverlayY { get; set; }
+    public int OverlayWidth { get; private set; }
+    public int OverlayHeight { get; private set; }
+    public (bool mask, LevelCell cell)[,,]? OverlayGeometry { get; private set; } = null;
+    public bool IsOverlayActive => OverlayGeometry is not null;
+
     public LevelEditRender()
     {
         editor = RainEd.Instance;
@@ -814,6 +821,27 @@ class LevelEditRender : IDisposable
 
         draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
         draw.Vertex(dstRect.Right, dstRect.Top, z);
+    }
+
+    public void SetOverlay(int width, int height, (bool mask, LevelCell cell)[,,] geometry)
+    {
+        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
+        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");
+        if (geometry.GetLength(0) != Level.LayerCount || geometry.GetLength(1) != width || geometry.GetLength(2) != height)
+            throw new ArgumentException("Invalid dimensions for geometry array.", nameof(geometry));
+        
+        ArgumentNullException.ThrowIfNull(geometry);
+
+        OverlayWidth = width;
+        OverlayHeight = height;
+        OverlayGeometry = geometry;
+    }
+
+    public void ClearOverlay()
+    {
+        OverlayGeometry = null;
+        OverlayWidth = 0;
+        OverlayHeight = 0;
     }
     
     public void Dispose()

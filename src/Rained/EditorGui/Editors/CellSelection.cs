@@ -387,11 +387,11 @@ class CellSelection
         // set move data
         movingGeometry = data;
 
-        // send it to geo renderer
-        var geoRenderer = RainEd.Instance.LevelView.Renderer.GeometryRenderer;
-        geoRenderer.OverlayX = origX;
-        geoRenderer.OverlayY = origY;
-        geoRenderer.SetOverlay(
+        // send overlay to renderer
+        var rndr = RainEd.Instance.LevelView.Renderer;
+        rndr.OverlayX = origX;
+        rndr.OverlayY = origY;
+        rndr.SetOverlay(
             width: width,
             height: height,
             geometry: movingGeometry
@@ -714,18 +714,17 @@ class CellSelection
             return;
 
         var level = RainEd.Instance.Level;
-        var renderer = RainEd.Instance.LevelView.Renderer;
-        var geoRenderer = renderer.GeometryRenderer;
+        var rndr = RainEd.Instance.LevelView.Renderer;
         var selW = selectionMaxX - selectionMinX + 1;
         var selH = selectionMaxY - selectionMinY + 1;
 
         // apply moved geometry
         for (int y = 0; y < selH; y++)
         {
-            var gy = geoRenderer.OverlayY + y;
+            var gy = rndr.OverlayY + y;
             for (int x = 0; x < selW; x++)
             {
-                var gx = geoRenderer.OverlayX + x;
+                var gx = rndr.OverlayX + x;
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
                     ref var srcCell = ref movingGeometry[l,x,y];
@@ -734,13 +733,13 @@ class CellSelection
                     ref var dstCell = ref level.Layers[l,gx,gy];
                     dstCell.Geo = srcCell.cell.Geo;
                     dstCell.Objects = srcCell.cell.Objects;
-                    renderer.InvalidateGeo(gx, gy, l);
+                    rndr.InvalidateGeo(gx, gy, l);
                 }
             }
         }
 
         movingGeometry = null;
-        geoRenderer.ClearOverlay();
+        rndr.ClearOverlay();
     }
 
     public void CancelMove()
@@ -749,7 +748,7 @@ class CellSelection
             return;
         
         movingGeometry = null;
-        RainEd.Instance.LevelView.Renderer.GeometryRenderer.ClearOverlay();
+        RainEd.Instance.LevelView.Renderer.ClearOverlay();
     }
 
     class RectDragState : Tool, ISelectionTool
@@ -1072,7 +1071,7 @@ class CellSelection
                 }
 
                 // send it to geo renderer
-                renderer.GeometryRenderer.SetOverlay(
+                renderer.SetOverlay(
                     width: selW,
                     height: selH,
                     geometry: controller.movingGeometry
@@ -1082,11 +1081,11 @@ class CellSelection
 
         public override void Update(int mouseX, int mouseY)
         {
-            var geoRenderer = RainEd.Instance.LevelView.Renderer.GeometryRenderer;
-            geoRenderer.OverlayX = mouseX - offsetX;
-            geoRenderer.OverlayY = mouseY - offsetY;
-            controller.selectionMinX = geoRenderer.OverlayX;
-            controller.selectionMinY = geoRenderer.OverlayY;
+            var rndr = RainEd.Instance.LevelView.Renderer;
+            rndr.OverlayX = mouseX - offsetX;
+            rndr.OverlayY = mouseY - offsetY;
+            controller.selectionMinX = rndr.OverlayX;
+            controller.selectionMinY = rndr.OverlayY;
             controller.selectionMaxX = controller.selectionMinX + selW - 1;
             controller.selectionMaxY = controller.selectionMinY + selH - 1;
         }
