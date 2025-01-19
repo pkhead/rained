@@ -1,3 +1,6 @@
+TODOS FOR NEWEST FEATURE:
+- get undo/redo working
+
 Bugs:
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
