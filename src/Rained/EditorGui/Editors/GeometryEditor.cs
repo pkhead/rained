@@ -700,7 +700,8 @@ class GeometryEditor : IEditorMode
         // CTRL+M to begin move mode
         if (KeyShortcuts.Activated(KeyShortcut.Select))
         {
-            cellSelectionState = new CellSelection();
+            cellSelectionState ??= new CellSelection();
+            cellSelectionState.PasteMode = false;
         }
         
         // paste

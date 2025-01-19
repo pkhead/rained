@@ -11,6 +11,7 @@ using System.Diagnostics;
 class CellSelection
 {
     public bool Active { get; private set; } = true;
+    public bool PasteMode { get; set; } = false;
 
     private static RlManaged.Texture2D icons = null!;
     enum IconName
@@ -119,6 +120,24 @@ class CellSelection
 
     public void DrawStatusBar()
     {
+        if (PasteMode)
+        {
+            if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+            {
+                SubmitMove();
+                Active = false;
+            }
+            
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                CancelMove();
+                Active = false;
+            }
+            
+            return;
+        }
+
         // selection mode options
         using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", 4, 0))
         {
@@ -170,12 +189,19 @@ class CellSelection
         
         ImGui.SameLine();
         if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+        {
+            CancelMove();
             Active = false;
+        }
     }
 
     public void Update(int layer)
     {
         // TODO: crosshair cursor
+        if (PasteMode)
+        {
+            curTool = SelectionTool.MoveSelected;
+        }
         
         // update
         var view = RainEd.Instance.LevelView;
@@ -377,7 +403,11 @@ class CellSelection
     {
         if (Platform.GetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, out var serializedCells))
         {
-            inst ??= new CellSelection();
+            inst ??= new CellSelection()
+            {
+                PasteMode = true
+            };
+            inst.curTool = SelectionTool.MoveSelected;
             inst.PasteGeometry(serializedCells);
         }
     }
@@ -709,6 +739,15 @@ class CellSelection
 
         movingGeometry = null;
         geoRenderer.ClearOverlay();
+    }
+
+    public void CancelMove()
+    {
+        if (movingGeometry is null)
+            return;
+        
+        movingGeometry = null;
+        RainEd.Instance.LevelView.Renderer.GeometryRenderer.ClearOverlay();
     }
 
     class RectDragState : Tool, ISelectionTool
