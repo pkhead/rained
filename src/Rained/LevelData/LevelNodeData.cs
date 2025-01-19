@@ -47,6 +47,13 @@ class LevelNodeData
         this.level = level;
 
         // initial update
+        Reset();
+    }
+
+    public void Reset()
+    {
+        shortcutLocsSet.Clear();
+
         for (int y = 0; y < level.Height; y++)
         {
             for (int x = 0; x < level.Width; x++)
