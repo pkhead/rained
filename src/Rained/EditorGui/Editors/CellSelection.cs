@@ -57,7 +57,13 @@ class CellSelection
         Subtract,
         Intersect
     }
+
+    // this is set by ui
     private SelectionOperator curOp = SelectionOperator.Replace;
+
+    // this is set by keyboard controls
+    private SelectionOperator? curOpOverride = null;
+
     static readonly (IconName icon, string name)[] operatorInfo = [
         (IconName.OpReplace, "Replace"),
         (IconName.OpAdd, "Add"),
@@ -176,7 +182,7 @@ class CellSelection
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
             for (int i = 0; i < operatorInfo.Length; i++)
             {
-                group.BeginButton(i, (int)curOp == i);
+                group.BeginButton(i, (int)(curOpOverride ?? curOp) == i);
 
                 ref var info = ref operatorInfo[i];
                 if (IconButton(info.icon))
@@ -215,6 +221,12 @@ class CellSelection
         
         var view = RainEd.Instance.LevelView;
         view.Renderer.OverlayAffectTiles = AffectTiles;
+
+        curOpOverride = null;
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+        {
+            curOpOverride = SelectionOperator.Add;
+        }
 
         if (curTool == SelectionTool.MagicWand)
         {
@@ -261,7 +273,7 @@ class CellSelection
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
-                    if (curOp == SelectionOperator.Replace && mouseDragState is ISelectionTool) selectionActive = false;
+                    if ((curOpOverride ?? curOp) == SelectionOperator.Replace && mouseDragState is ISelectionTool) selectionActive = false;
                 }
 
                 mouseDragState!.Update(view.MouseCx, view.MouseCy);
@@ -432,12 +444,13 @@ class CellSelection
         var oldMaxX = selectionMaxX;
         var oldMaxY = selectionMaxY;
         var oldMask = selectionMask;
+        var op = curOpOverride ?? curOp;
 
-        switch (curOp)
+        switch (op)
         {
             case SelectionOperator.Replace:
             case SelectionOperator.Add:
-                if (curOp == SelectionOperator.Replace || !selectionActive)
+                if (op == SelectionOperator.Replace || !selectionActive)
                 {
                     selectionActive = true;
                     selectionMinX = minX;
@@ -446,7 +459,7 @@ class CellSelection
                     selectionMaxY = maxY;
                     selectionMask = mask;
                 }
-                else if (curOp == SelectionOperator.Add)
+                else if (op == SelectionOperator.Add)
                 {
                     selectionActive = true;
                     selectionMinX = Math.Min(oldMinX, minX);
