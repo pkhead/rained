@@ -32,6 +32,8 @@ v2.3.0:
     - ability to recognize more than one tile as a direction type
     - cross beams autotile
       - ability to constrain autotile shape into a square
+    - expose imgui functions for scripting api
+    - add re-path button (useful for autotiles that do random)
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
@@ -73,10 +75,7 @@ Other features:
     a reference to a tile but some IDs are for placeholders.
 
 Geometry Editor:
-- select and copy/paste
 - show tool preview over mouse
-- select and move geometry (make in conjunction with copy/paste)
-- keyboard shortcut for shortcut & shortcut dots
 
 Light Editor:
 - toggle view shadow plane and occlusion plane
