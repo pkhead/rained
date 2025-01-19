@@ -23,6 +23,17 @@ static class CellSerialization
         public int TileLayer;
         public uint TileIndex;
 
+        public SerializedLevelCell()
+        {
+            Geo = GeoType.Air;
+            Objects = 0;
+            Material = 0;
+            TileRootX = -1;
+            TileRootY = -1;
+            TileLayer = -1;
+            TileIndex = 0;
+        }
+
         public SerializedLevelCell(ref readonly LevelCell cell)
         {
             Geo = cell.Geo;
@@ -35,7 +46,7 @@ static class CellSerialization
         }
     }
 
-    public static unsafe byte[] SerializeCells(int width, int height, (bool mask, LevelCell cell)[,,] geometry)
+    public static unsafe byte[] SerializeCells(int origX, int origY, int width, int height, (bool mask, LevelCell cell)[,,] geometry)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");
@@ -70,8 +81,10 @@ static class CellSerialization
         var stream = new MemoryStream(1 + sizeof(uint) * 3);
         var writer = new BinaryWriter(stream);
 
-        // version number, width, height
+        // version number, pos and size
         writer.Write((byte)0);
+        writer.Write(origX);
+        writer.Write(origY);
         writer.Write((uint)width);
         writer.Write((uint)height);
 
@@ -107,5 +120,74 @@ static class CellSerialization
         }
 
         return stream.ToArray();
+    }
+
+    public static unsafe (bool mask, LevelCell cell)[,,]? DeserializeCells(ReadOnlySpan<byte> data, out int origX, out int origY, out int width, out int height)
+    {
+        origX = 0;
+        origY = 0;
+        width = 0;
+        height = 0;
+
+        using var reader = new BinaryReader(new MemoryStream(data.ToArray()));
+        
+        var version = reader.ReadByte();
+        if (version != 0)
+        {
+            Log.Error("DeserializeCells: Invalid version?");
+            return null;
+        }
+
+        origX = reader.ReadInt32();
+        origY = reader.ReadInt32();
+        width = reader.ReadInt32();
+        height = reader.ReadInt32();
+
+        // read tile database
+        var tileNames = new string[reader.ReadUInt32()];
+        var tileDb = RainEd.Instance.TileDatabase;
+        for (int i = 0; i < tileNames.Length; i++)
+        {
+            var strLen = (int) reader.ReadByte();
+            tileNames[i] = Encoding.UTF8.GetString(reader.ReadBytes(strLen));
+        }
+
+        // cell data
+        // organized layer => x => y, just like the level save format
+        var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, width, height];
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    // get cell mask
+                    bool mask = reader.ReadBoolean();
+
+                    // get cell data
+                    var sc = new SerializedLevelCell();
+                    Span<byte> scDat = new(&sc, Unsafe.SizeOf<SerializedLevelCell>());
+                    reader.Read(scDat);
+
+                    // convert to actual LevelCell
+                    var cell = new LevelCell
+                    {
+                        Geo = sc.Geo,
+                        Objects = sc.Objects,
+                        Material = sc.Material,
+                        TileRootX = sc.TileRootX,
+                        TileRootY = sc.TileRootY,
+                        TileLayer = sc.TileLayer
+                    };
+
+                    if (sc.TileIndex > 0)
+                        cell.TileHead = tileDb.GetTileFromName(tileNames[sc.TileIndex-1]);
+
+                    geometry[l,x,y] = (mask, cell);
+                }
+            }
+        }
+
+        return geometry;
     }
 }
