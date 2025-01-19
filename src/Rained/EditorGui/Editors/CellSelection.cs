@@ -24,6 +24,7 @@ class CellSelection
         MoveSelection,
         LassoSelect,
         MagicWand,
+        TileSelect,
         OpReplace,
         OpAdd,
         OpSubtract,
@@ -35,6 +36,7 @@ class CellSelection
         Rect,
         Lasso,
         MagicWand,
+        TileSelect,
         MoveSelection,
         MoveSelected,
     };
@@ -43,6 +45,7 @@ class CellSelection
         (IconName.SelectRect, "Rectangle Select"),
         (IconName.LassoSelect, "Lasso Select"),
         (IconName.MagicWand, "Magic Wand"),
+        (IconName.TileSelect, "Tile Select"),
         (IconName.MoveSelection, "Move Selection"),
         (IconName.MoveSelected, "Move Selected"),
     ];
@@ -86,7 +89,7 @@ class CellSelection
 
     public CellSelection()
     {
-        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "statusbar.png"));
+        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "selection-icons.png"));
     }
 
     private static Rectangle GetIconRect(IconName icon)
@@ -142,11 +145,15 @@ class CellSelection
         }
 
         // selection mode options
-        using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", 4, 0))
+        // for tile editor mode, Tile Select button appears.
+        using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", AffectTiles ? 5 : 4, 0))
         {
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
             for (int i = 0; i < toolInfo.Length; i++)
             {
+                if (toolInfo[i].icon == IconName.TileSelect && !AffectTiles)
+                    continue;
+                
                 group.BeginButton(i, (int)curTool == i);
 
                 ref var info = ref toolInfo[i];
@@ -208,12 +215,27 @@ class CellSelection
         
         var view = RainEd.Instance.LevelView;
         view.Renderer.OverlayAffectTiles = AffectTiles;
-        
+
         if (curTool == SelectionTool.MagicWand)
         {
-            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && curTool == SelectionTool.MagicWand)
+            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 if (MagicWand(
+                    view.MouseCx, view.MouseCy, layer,
+                    out int minX, out int minY, out int maxX, out int maxY,
+                    out bool[,] mask
+                ))
+                {
+                    CombineMasks(minX, minY, maxX, maxY, mask);
+                }
+                else selectionActive = false;
+            }
+        }
+        else if (curTool == SelectionTool.TileSelect)
+        {
+            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                if (TileSelect(
                     view.MouseCx, view.MouseCy, layer,
                     out int minX, out int minY, out int maxX, out int maxY,
                     out bool[,] mask
@@ -552,6 +574,55 @@ class CellSelection
                 CropSelection();
                 break;
             }
+        }
+    }
+
+    private static bool TileSelect(int mouseX, int mouseY, int layer, out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] mask)
+    {
+        var level = RainEd.Instance.Level;
+        p_minX = int.MaxValue;
+        p_minY = int.MaxValue;
+        p_maxX = int.MinValue;
+        p_maxY = int.MinValue;
+
+        if (level.Layers[layer, mouseX, mouseY].HasTile())
+        {
+            var tileHeadPos = level.GetTileHead(layer, mouseX, mouseY);
+            Assets.Tile? tile = level.Layers[tileHeadPos.Layer, tileHeadPos.X, tileHeadPos.Y].TileHead;
+            if (tile is null)
+            {
+                mask = new bool[0,0];
+                return false;
+            }
+
+            p_minX = tileHeadPos.X - tile.CenterX;
+            p_minY = tileHeadPos.Y - tile.CenterY;
+            p_maxX = p_minX + tile.Width - 1;
+            p_maxY = p_minY + tile.Height - 1;
+            mask = new bool[tile.Height, tile.Width];
+            mask[tile.CenterY, tile.CenterX] = true;
+
+            for (int x = 0; x < tile.Width; x++)
+            {
+                for (int y = 0; y < tile.Height; y++)
+                {
+                    for (int l = 0; l < Level.LayerCount; l++)
+                    {
+                        ref var c = ref level.Layers[l, x + p_minX, y + p_minY];
+                        if (c.TileRootX == tileHeadPos.X && c.TileRootY == tileHeadPos.Y && c.TileLayer == tileHeadPos.Layer)
+                        {
+                            mask[y,x] = true;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        else
+        {
+            mask = new bool[0,0];
+            return false;
         }
     }
 
