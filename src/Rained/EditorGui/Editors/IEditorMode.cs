@@ -3,6 +3,7 @@ namespace Rained.EditorGui.Editors;
 interface IEditorMode
 {
     string Name { get; }
+    bool SupportsCellSelection { get; }
 
     void Load() {}
     void Unload() {}

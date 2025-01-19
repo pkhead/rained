@@ -8,6 +8,8 @@ namespace Rained.EditorGui.Editors;
 partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
+    public bool SupportsCellSelection => false;
+    
     private readonly LevelWindow window;
     
     private readonly List<Prop> selectedProps = new();

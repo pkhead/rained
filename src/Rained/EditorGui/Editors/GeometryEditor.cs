@@ -7,6 +7,7 @@ namespace Rained.EditorGui.Editors;
 class GeometryEditor : IEditorMode
 {
     public string Name { get => "Geometry"; }
+    public bool SupportsCellSelection => true;
 
     private readonly LevelWindow window;
     
@@ -105,7 +106,6 @@ class GeometryEditor : IEditorMode
     private bool ignoreClick = false;
     private bool isErasing = false;
     private readonly RlManaged.Texture2D toolIcons;
-    private CellSelection? cellSelectionState = null;
 
     // tool rect - for wall/air/inverse/geometry tools
     private bool isToolRectActive;
@@ -191,7 +191,6 @@ class GeometryEditor : IEditorMode
         layerMask[1] = false;
         layerMask[2] = false;
         layerMask[window.WorkLayer] = true;
-        cellSelectionState = null;
     }
 
     public void Unload()
@@ -426,7 +425,7 @@ class GeometryEditor : IEditorMode
             ImGui.PopItemWidth();
 
             // update status bar
-            if (!RainEd.Instance.Preferences.MinimalStatusBar && cellSelectionState is null)
+            if (!RainEd.Instance.Preferences.MinimalStatusBar && CellSelection.Instance is null)
             {
                 if (isToolRectActive)
                 {
@@ -695,32 +694,32 @@ class GeometryEditor : IEditorMode
             selectedTool = (Tool) Math.Clamp(toolRow*buttonsPerRow + toolCol, 0, toolCount-1);
         }
 
-        // CTRL+C to begin copy mode
-        // CTRL+V to begin paste mode
-        // CTRL+M to begin move mode
+        // begin selection
         if (KeyShortcuts.Activated(KeyShortcut.Select))
         {
-            cellSelectionState ??= new CellSelection();
-            cellSelectionState.PasteMode = false;
+            CellSelection.Instance ??= new CellSelection();
+            CellSelection.Instance.PasteMode = false;
         }
         
         // paste
         // (copy is handled by CellSelection)
         if (KeyShortcuts.Activated(KeyShortcut.Paste))
         {
+            var cellSelectionState = CellSelection.Instance;
             CellSelection.BeginPaste(ref cellSelectionState);
+            CellSelection.Instance = cellSelectionState;
         }
 
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
         if (ignoreClick)
             isMouseDown = false;
 
-        if (cellSelectionState is not null)
+        if (CellSelection.Instance is not null)
         {
-            cellSelectionState.Update(ClosestActiveLayer());
-            if (!cellSelectionState.Active)
+            CellSelection.Instance.Update(ClosestActiveLayer());
+            if (!CellSelection.Instance.Active)
             {
-                cellSelectionState = null;
+                CellSelection.Instance = null;
             }
         }
         else if (window.IsViewportHovered && mirrorDrag == 0)
@@ -829,7 +828,7 @@ class GeometryEditor : IEditorMode
 
     public void DrawStatusBar()
     {
-        cellSelectionState?.DrawStatusBar();
+        CellSelection.Instance?.DrawStatusBar();
     }
 
     // render active layer squares near cursor

@@ -9,6 +9,8 @@ namespace Rained.EditorGui.Editors;
 class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
+    public bool SupportsCellSelection => false;
+    
     private readonly LevelWindow window;
 
     private List<Camera> selectedCameras; // all selected cameras

@@ -216,6 +216,24 @@ class LevelWindow
         StatusText += text.PadRight(((int)MathF.Floor((text.Length+1) / spaces) + 1) * spaces, ' ');
     }
 
+    public void SwitchMode(int newMode)
+    {
+        if (newMode != selectedMode)
+        {
+            Log.Information("Switch to {Editor} editor", editorModes[newMode].Name);
+            
+            if (!editorModes[newMode].SupportsCellSelection && CellSelection.Instance is not null)
+            {
+                CellSelection.Instance.SubmitMove();
+                CellSelection.Instance = null;
+            }
+
+            editorModes[selectedMode].Unload();
+            selectedMode = newMode;
+            editorModes[selectedMode].Load();
+        }
+    }
+
     public void Render()
     {
         var dt = Raylib.GetFrameTime();
@@ -223,14 +241,7 @@ class LevelWindow
 
         if (queuedEditMode >= 0)
         {
-            if (queuedEditMode != selectedMode)
-            {
-                Log.Information("Switch to {Editor} editor", editorModes[queuedEditMode].Name);
-                editorModes[selectedMode].Unload();
-                selectedMode = queuedEditMode;
-                editorModes[selectedMode].Load();
-            }
-
+            SwitchMode(queuedEditMode);
             queuedEditMode = -1;
         }
         
@@ -326,12 +337,7 @@ class LevelWindow
 
                 // change edit mode if requested
                 if (newEditMode != selectedMode)
-                {
-                    Log.Information("Switch to {Editor} editor", editorModes[newEditMode].Name);
-                    editorModes[selectedMode].Unload();
-                    selectedMode = newEditMode;
-                    editorModes[selectedMode].Load();
-                }
+                    SwitchMode(newEditMode);
 
                 // canvas widget
                 {

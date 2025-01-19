@@ -10,6 +10,8 @@ using System.Diagnostics;
 /// </summary>
 class CellSelection
 {
+    public static CellSelection? Instance { get; set; } = null;
+
     public bool Active { get; private set; } = true;
     public bool PasteMode { get; set; } = false;
 
