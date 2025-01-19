@@ -291,6 +291,95 @@ class CellSelection
         }
 
         Raylib.EndShaderMode();
+
+        // copy
+        // (paste is handled by GeometryEditor, since paste can be done without first entering selection mode)
+        if (KeyShortcuts.Activated(KeyShortcut.Copy) && selectionActive)
+        {
+            CopySelectedGeometry();
+        }
+    }
+
+    private void CopySelectedGeometry()
+    {
+        if (!selectionActive) return;
+
+        var selW = selectionMaxX - selectionMinX + 1;
+        var selH = selectionMaxY - selectionMinY + 1;
+        (bool mask, LevelCell cell)[,,] geometryData;
+
+        if (movingGeometry is not null)
+        {
+            geometryData = movingGeometry;
+        }
+        else
+        {
+            var level = RainEd.Instance.Level;
+            geometryData = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+            for (int y = 0; y < selH; y++)
+            {
+                var gy = selectionMinY + y;
+                for (int x = 0; x < selW; x++)
+                {
+                    var gx = selectionMinX + x;
+                    for (int l = 0; l < Level.LayerCount; l++)
+                    {
+                        geometryData[l,x,y] = (selectionMask[y,x], level.Layers[l,gx,gy]);
+                    }
+                }
+            }
+        }
+
+        var serializedData = CellSerialization.SerializeCells(selectionMinX, selectionMinY, selW, selH, geometryData);
+        Platform.SetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, serializedData);
+    }
+
+    public bool PasteGeometry(byte[] serializedData)
+    {
+        SubmitMove();
+
+        var data = CellSerialization.DeserializeCells(serializedData, out int origX, out int origY, out int width, out int height);
+        if (data is null) return false;
+
+        // set selection data
+        selectionActive = true;
+        selectionMinX = origX;
+        selectionMinY = origY;
+        selectionMaxX = origX + width - 1;
+        selectionMaxY = origY + height - 1;
+        selectionMask = new bool[height,width];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                selectionMask[y,x] = data[0,x,y].mask;
+            }
+        }
+
+        // set move data
+        movingGeometry = data;
+
+        // send it to geo renderer
+        var geoRenderer = RainEd.Instance.LevelView.Renderer.GeometryRenderer;
+        geoRenderer.OverlayX = origX;
+        geoRenderer.OverlayY = origY;
+        geoRenderer.SetOverlay(
+            width: width,
+            height: height,
+            geometry: movingGeometry
+        );
+
+        //File.WriteAllBytes("test.rwc", serializedData);
+        return true;
+    }
+
+    public static void BeginPaste(ref CellSelection? inst)
+    {
+        if (Platform.GetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, out var serializedCells))
+        {
+            inst ??= new CellSelection();
+            inst.PasteGeometry(serializedCells);
+        }
     }
 
     private void CombineMasks(int minX, int minY, int maxX, int maxY, bool[,] mask)
