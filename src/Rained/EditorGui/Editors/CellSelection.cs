@@ -808,6 +808,7 @@ class CellSelection
                     ref var dstCell = ref level.Layers[l,gx,gy];
                     dstCell.Geo = srcCell.cell.Geo;
                     dstCell.Objects = srcCell.cell.Objects;
+                    dstCell.Material = srcCell.cell.Material;
 
                     if (AffectTiles)
                     {
@@ -828,6 +829,8 @@ class CellSelection
                     }
 
                     rndr.InvalidateGeo(gx, gy, l);
+                    if (l == 0)
+                        RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(gx, gy);
                 }
             }
         }
@@ -900,6 +903,7 @@ class CellSelection
                     {
                         srcCell.Geo = GeoType.Air;
                         srcCell.Objects = LevelObject.None;
+                        srcCell.Material = 0;
 
                         if (AffectTiles)
                         {
@@ -914,6 +918,8 @@ class CellSelection
                         }
 
                         renderer.InvalidateGeo(gx, gy, l);
+                        if (l == 0)
+                            RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(gx, gy);
                     }
                 }
             }

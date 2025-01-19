@@ -167,7 +167,7 @@ class LevelEditRender : IDisposable
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                ref var cell = ref Level.Layers[layer, x, y];
+                ref var cell = ref GetCellWithOverlay(x, y, layer);
 
                 // draw object graphics
                 for (int i = 1; i < 32; i++)
@@ -359,7 +359,7 @@ class LevelEditRender : IDisposable
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                ref var cell = ref Level.Layers[0, x, y];
+                ref var cell = ref GetCellWithOverlay(x, y, 0);
 
                 // shortcut entrance changes appearance
                 // based on neighbor Shortcuts
@@ -442,7 +442,7 @@ class LevelEditRender : IDisposable
         {
             for (int y = Math.Max(0, viewT); y < Math.Min(Level.Height, viewB); y++)
             {
-                ref var cell = ref Level.Layers[layer, x, y];
+                ref var cell = ref GetCellWithOverlay(x, y, layer);
 
                 if (!cell.HasTile() && cell.Material != 0 && cell.Geo != GeoType.Air)
                 {
