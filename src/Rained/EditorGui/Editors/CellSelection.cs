@@ -386,7 +386,10 @@ class CellSelection
         }
 
         var serializedData = CellSerialization.SerializeCells(selectionMinX, selectionMinY, selW, selH, geometryData);
-        Platform.SetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, serializedData);
+        if (!Platform.SetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, serializedData))
+        {
+            EditorWindow.ShowNotification("Could not copy!");
+        }
     }
 
     public bool PasteGeometry(byte[] serializedData)

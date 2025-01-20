@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using Rained.LevelData;
 
 namespace Rained;
 
@@ -398,15 +397,21 @@ static partial class Platform
             // use xclip to write contents to clipboard
             try
             {
-                var proc = Process.Start("xclip", ["-selection", "clip", "-t", mimeType, "-i"]);
-                using (var binStream = new BinaryWriter(proc.StandardInput.BaseStream))
+                var proc = Process.Start(new ProcessStartInfo("xclip", ["-selection", "clip", "-t", mimeType])
+                {
+                    RedirectStandardInput = true,
+                });
+                using (var binStream = new BinaryWriter(proc!.StandardInput.BaseStream))
                 {
                     binStream.Write(data);
                 }
                 proc.WaitForExit();
                 if (proc.ExitCode == 0) return true;
             }
-            catch {}
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+            }
             return false;
         }
         else
@@ -486,16 +491,23 @@ static partial class Platform
             // use xclip to fetch contents of clipboard
             try
             {
-                var proc = Process.Start("xclip", ["-selection", "clip", "-t", mimeType, "-o"]);
+                var proc = Process.Start(new ProcessStartInfo("xclip", ["-selection", "clip", "-t", mimeType, "-o"])
+                {
+                    RedirectStandardOutput = true,
+                });
                 using (var ms = new MemoryStream())
                 {
-                    proc.StandardOutput.BaseStream.CopyTo(ms);
+                    proc!.StandardOutput.BaseStream.CopyTo(ms);
                     data = ms.ToArray();
                 }
                 proc.WaitForExit();
                 if (proc.ExitCode == 0) return data.Length > 0;
             }
-            catch {}
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+            }
+
             return false;
         }
         else
