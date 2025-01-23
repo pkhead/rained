@@ -416,7 +416,25 @@ static partial class Platform
         }
         else
         {
-            return false;
+            // I don't know how to implement clipboard api for this platform, just save it
+            // to a file I guess.
+            var fileName = type switch
+            {
+                ClipboardDataType.LevelCells => ".clipcells",
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            try
+            {
+                File.WriteAllBytes(fileName, data.ToArray());
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+                return false;
+            }
+            
+            return true;
         }
     }
 
@@ -480,7 +498,7 @@ static partial class Platform
 
             return success;
         }
-        else if (OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD())
         {
             var mimeType = type switch
             {
@@ -512,6 +530,20 @@ static partial class Platform
         }
         else
         {
+            // I don't know how to implement clipboard api for this platform, just save it
+            // to a file I guess.
+            var fileName = type switch
+            {
+                ClipboardDataType.LevelCells => ".clipcells",
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
+
+            if (File.Exists(fileName))
+            {
+                data = File.ReadAllBytes(fileName);
+                return true;
+            }
+            
             return false;
         }
     }
