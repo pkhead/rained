@@ -156,7 +156,7 @@ class CellSelection
     {
         if (PasteMode)
         {
-            if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+            if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
             {
                 SubmitMove();
                 Active = false;
@@ -219,17 +219,27 @@ class CellSelection
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Apply") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        if (ImGui.Button("Done") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
         {
             SubmitMove();
             Active = false;
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+        ImGui.BeginDisabled(movingGeometry is null);
+        if (ImGui.Button("Cancel"))
         {
             CancelMove();
-            Active = false;
+            ClearSelection();
+        }
+        ImGui.EndDisabled();
+
+        if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+        {
+            bool doExit = movingGeometry is null;
+            CancelMove();
+            ClearSelection();
+            if (doExit) Active = false;
         }
     }
 
