@@ -252,6 +252,7 @@ class CellSelection
             curOpOverride = SelectionOperator.Add;
         }
 
+        var activeOp = curOpOverride ?? curOp;
         if (curTool == SelectionTool.MagicWand)
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
@@ -263,7 +264,7 @@ class CellSelection
                     tmpSelections[activeLayer] = layerSelection;
                     CombineMasks(tmpSelections);
                 }
-                else ClearSelection();
+                else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) selections[activeLayer] = null;
             }
         }
         else if (curTool == SelectionTool.TileSelect)
@@ -277,7 +278,7 @@ class CellSelection
                 {
                     CombineMasks(tmpSelections);
                 }
-                else ClearSelection();
+                else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) ClearSelection();
             }
         }
         else
@@ -295,8 +296,8 @@ class CellSelection
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
-                    if ((curOpOverride ?? curOp) == SelectionOperator.Replace && mouseDragState is ISelectionTool)
-                        ClearSelection();
+                    if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect && mouseDragState is ISelectionTool)
+                        ClearSelection(layerMask);
                 }
 
                 mouseDragState!.Update(view.MouseCx, view.MouseCy, layerMask);
@@ -310,12 +311,23 @@ class CellSelection
                     {
                         CombineMasks(tmpSelections);
                     }
-                    else ClearSelection();
+                    else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) ClearSelection(layerMask);
                 }
             }
         }
 
         mouseWasDragging = EditorWindow.IsMouseDragging(ImGuiMouseButton.Left);
+
+        // update layer colors
+        Span<Color> layerColors = stackalloc Color[3];
+        {
+            var layerCol1 = RainEd.Instance.Preferences.LayerColor1;
+            var layerCol2 = RainEd.Instance.Preferences.LayerColor2;
+            var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
+            layerColors[0] = new Color(255 - layerCol1.R, 255 - layerCol1.G, 255 - layerCol1.B, (byte)255);
+            layerColors[1] = new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)255);
+            layerColors[2] = new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)255);
+        }
 
         // draw
         Raylib.BeginShaderMode(Shaders.OutlineMarqueeShader);
@@ -336,6 +348,10 @@ class CellSelection
                 var h = selection.maxY - selection.minY + 1;
                 Debug.Assert(w > 0 && h > 0);
 
+                var col = layerColors[l];
+                int offsetX = l - activeLayer;
+                int offsetY = l - activeLayer;
+
                 for (int y = 0; y < h; y++)
                 {
                     var gy = selection.minY + y;
@@ -350,35 +366,35 @@ class CellSelection
                         bool bottom = y == h-1 || !selection.mask[y+1,x];
 
                         if (left) Raylib.DrawLine(
-                            gx * Level.TileSize,
-                            gy * Level.TileSize,
-                            gx * Level.TileSize,
-                            (gy+1) * Level.TileSize,
-                            Color.White
+                            offsetX + gx * Level.TileSize,
+                            offsetY + gy * Level.TileSize,
+                            offsetX + gx * Level.TileSize,
+                            offsetY + (gy+1) * Level.TileSize,
+                            col
                         );
 
                         if (right) Raylib.DrawLine(
-                            (gx+1) * Level.TileSize,
-                            gy * Level.TileSize,
-                            (gx+1) * Level.TileSize,
-                            (gy+1) * Level.TileSize,
-                            Color.White
+                            offsetX + (gx+1) * Level.TileSize,
+                            offsetY + gy * Level.TileSize,
+                            offsetX + (gx+1) * Level.TileSize,
+                            offsetY + (gy+1) * Level.TileSize,
+                            col
                         );
 
                         if (top) Raylib.DrawLine(
-                            gx * Level.TileSize,
-                            gy * Level.TileSize,
-                            (gx+1) * Level.TileSize,
-                            gy * Level.TileSize,
-                            Color.White
+                            offsetX + gx * Level.TileSize,
+                            offsetY + gy * Level.TileSize,
+                            offsetX + (gx+1) * Level.TileSize,
+                            offsetY + gy * Level.TileSize,
+                            col
                         );
 
                         if (bottom) Raylib.DrawLine(
-                            gx * Level.TileSize,
-                            (gy+1) * Level.TileSize,
-                            (gx+1) * Level.TileSize,
-                            (gy+1) * Level.TileSize,
-                            Color.White
+                            offsetX + gx * Level.TileSize,
+                            offsetY + (gy+1) * Level.TileSize,
+                            offsetX + (gx+1) * Level.TileSize,
+                            offsetY + (gy+1) * Level.TileSize,
+                            col
                         );
                     }
                 }
@@ -1067,6 +1083,14 @@ class CellSelection
         selections[0] = null;
         selections[1] = null;
         selections[2] = null;
+    }
+
+    public void ClearSelection(ReadOnlySpan<bool> layerMasks)
+    {
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            if (layerMasks[l]) selections[l] = null;
+        }
     }
 
     private void BeginMove()
