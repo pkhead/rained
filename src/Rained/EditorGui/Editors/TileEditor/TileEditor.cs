@@ -196,8 +196,11 @@ partial class TileEditor : IEditorMode
 
         if (CellSelection.Instance is not null)
         {
+            Span<bool> layerMask = [false, false, false];
+            layerMask[window.WorkLayer] = true;
+
             CellSelection.Instance.AffectTiles = true;
-            CellSelection.Instance.Update(window.WorkLayer);
+            CellSelection.Instance.Update(layerMask, window.WorkLayer);
             if (!CellSelection.Instance.Active)
             {
                 CellSelection.Instance = null;

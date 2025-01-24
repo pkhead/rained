@@ -71,12 +71,29 @@ class CellSelection
         (IconName.OpIntersect, "Intersect"),
     ];
 
-    private int selectionMinX = 0;
-    private int selectionMinY = 0;
-    private int selectionMaxX = 0;
-    private int selectionMaxY = 0;
-    private bool selectionActive = false;
-    private bool[,] selectionMask = new bool[0,0];
+    record class LayerSelection
+    {
+        public int minX;
+        public int minY;
+        public int maxX;
+        public int maxY;
+        public bool[,] mask;
+
+        public LayerSelection(int minX, int minY, int maxX, int maxY, bool[,]? mask = null)
+        {
+            this.minX = minX;
+            this.minY = minY;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.mask = mask ?? new bool[maxX - minX + 1, maxY - minY + 1];
+        }
+    }
+
+    private readonly LayerSelection?[] selections = new LayerSelection?[Level.LayerCount];
+    private readonly LayerSelection?[] tmpSelections = new LayerSelection?[Level.LayerCount];
+
+    private int movingW = 0;
+    private int movingH = 0;
     private (bool mask, LevelCell cell)[,,]? movingGeometry = null;
 
     private int cancelOrigX = 0;
@@ -88,13 +105,14 @@ class CellSelection
     private Tool? mouseDragState = null;
     abstract class Tool
     {
-        public abstract void Update(int mouseX, int mouseY);
+        public abstract void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask);
         //public virtual void Submit() {}
     }
 
     interface ISelectionTool
     {
-        public bool ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
+        //public bool ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask);
+        public bool ApplySelection(Span<LayerSelection?> dstSelections, ReadOnlySpan<bool> layerMask);
     }
 
     public CellSelection()
@@ -215,9 +233,11 @@ class CellSelection
         }
     }
 
-    public void Update(int layer)
+    public void Update(ReadOnlySpan<bool> layerMask, int activeLayer)
     {
         // TODO: crosshair cursor
+        Debug.Assert(layerMask.Length == Level.LayerCount);
+
         if (PasteMode)
         {
             curTool = SelectionTool.MoveSelected;
@@ -236,30 +256,28 @@ class CellSelection
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
-                if (MagicWand(
-                    view.MouseCx, view.MouseCy, layer,
-                    out int minX, out int minY, out int maxX, out int maxY,
-                    out bool[,] mask
-                ))
+                var layerSelection = MagicWand(view.MouseCx, view.MouseCy, activeLayer);
+                if (layerSelection is not null)
                 {
-                    CombineMasks(minX, minY, maxX, maxY, mask);
+                    Array.Fill(tmpSelections, null);
+                    tmpSelections[activeLayer] = layerSelection;
+                    CombineMasks(tmpSelections);
                 }
-                else selectionActive = false;
+                else ClearSelection();
             }
         }
         else if (curTool == SelectionTool.TileSelect)
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
+                Array.Fill(tmpSelections, null);
                 if (TileSelect(
-                    view.MouseCx, view.MouseCy, layer,
-                    out int minX, out int minY, out int maxX, out int maxY,
-                    out bool[,] mask
+                    view.MouseCx, view.MouseCy, activeLayer, tmpSelections
                 ))
                 {
-                    CombineMasks(minX, minY, maxX, maxY, mask);
+                    CombineMasks(tmpSelections);
                 }
-                else selectionActive = false;
+                else ClearSelection();
             }
         }
         else
@@ -272,25 +290,27 @@ class CellSelection
                     {
                         SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
                         SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
-                        SelectionTool.MoveSelection => new SelectionMoveDragState(this, view.MouseCx, view.MouseCy),
-                        SelectionTool.MoveSelected => new SelectedMoveDragState(this, view.MouseCx, view.MouseCy),
+                        SelectionTool.MoveSelection => new SelectionMoveDragState(this, view.MouseCx, view.MouseCy, layerMask),
+                        SelectionTool.MoveSelected => new SelectedMoveDragState(this, view.MouseCx, view.MouseCy, layerMask),
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
-                    if ((curOpOverride ?? curOp) == SelectionOperator.Replace && mouseDragState is ISelectionTool) selectionActive = false;
+                    if ((curOpOverride ?? curOp) == SelectionOperator.Replace && mouseDragState is ISelectionTool)
+                        ClearSelection();
                 }
 
-                mouseDragState!.Update(view.MouseCx, view.MouseCy);
+                mouseDragState!.Update(view.MouseCx, view.MouseCy, layerMask);
             }
             else if (mouseWasDragging && mouseDragState is not null)
             {
                 if (mouseDragState is ISelectionTool selTool)
                 {
-                    if (selTool.ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask))
+                    Array.Fill(tmpSelections, null);
+                    if (selTool.ApplySelection(tmpSelections, layerMask))
                     {
-                        CombineMasks(minX, minY, maxX, maxY, mask);
+                        CombineMasks(tmpSelections);
                     }
-                    else selectionActive = false;
+                    else ClearSelection();
                 }
             }
         }
@@ -304,56 +324,63 @@ class CellSelection
         RainEd.Instance.NeedScreenRefresh();
 
         // draw selection outline
-        if (selectionActive)
+        bool isSelectionActive = false;
+        for (int l = 0; l < Level.LayerCount; l++)
         {
-            var w = selectionMaxX - selectionMinX + 1;
-            var h = selectionMaxY - selectionMinY + 1;
-            Debug.Assert(w > 0 && h > 0);
-
-            for (int y = 0; y < h; y++)
+            ref var selection = ref selections[l];
+            if (selection is not null)
             {
-                var gy = selectionMinY + y;
-                for (int x = 0; x < w; x++)
+                isSelectionActive = true;
+
+                var w = selection.maxX - selection.minX + 1;
+                var h = selection.maxY - selection.minY + 1;
+                Debug.Assert(w > 0 && h > 0);
+
+                for (int y = 0; y < h; y++)
                 {
-                    if (!selectionMask[y,x]) continue;
-                    var gx = selectionMinX + x;
+                    var gy = selection.minY + y;
+                    for (int x = 0; x < w; x++)
+                    {
+                        if (!selection.mask[y,x]) continue;
+                        var gx = selection.minX + x;
 
-                    bool left = x == 0 || !selectionMask[y,x-1];
-                    bool right = x == w-1 || !selectionMask[y,x+1];
-                    bool top = y == 0 || !selectionMask[y-1,x];
-                    bool bottom = y == h-1 || !selectionMask[y+1,x];
+                        bool left = x == 0 || !selection.mask[y,x-1];
+                        bool right = x == w-1 || !selection.mask[y,x+1];
+                        bool top = y == 0 || !selection.mask[y-1,x];
+                        bool bottom = y == h-1 || !selection.mask[y+1,x];
 
-                    if (left) Raylib.DrawLine(
-                        gx * Level.TileSize,
-                        gy * Level.TileSize,
-                        gx * Level.TileSize,
-                        (gy+1) * Level.TileSize,
-                        Color.White
-                    );
+                        if (left) Raylib.DrawLine(
+                            gx * Level.TileSize,
+                            gy * Level.TileSize,
+                            gx * Level.TileSize,
+                            (gy+1) * Level.TileSize,
+                            Color.White
+                        );
 
-                    if (right) Raylib.DrawLine(
-                        (gx+1) * Level.TileSize,
-                        gy * Level.TileSize,
-                        (gx+1) * Level.TileSize,
-                        (gy+1) * Level.TileSize,
-                        Color.White
-                    );
+                        if (right) Raylib.DrawLine(
+                            (gx+1) * Level.TileSize,
+                            gy * Level.TileSize,
+                            (gx+1) * Level.TileSize,
+                            (gy+1) * Level.TileSize,
+                            Color.White
+                        );
 
-                    if (top) Raylib.DrawLine(
-                        gx * Level.TileSize,
-                        gy * Level.TileSize,
-                        (gx+1) * Level.TileSize,
-                        gy * Level.TileSize,
-                        Color.White
-                    );
+                        if (top) Raylib.DrawLine(
+                            gx * Level.TileSize,
+                            gy * Level.TileSize,
+                            (gx+1) * Level.TileSize,
+                            gy * Level.TileSize,
+                            Color.White
+                        );
 
-                    if (bottom) Raylib.DrawLine(
-                        gx * Level.TileSize,
-                        (gy+1) * Level.TileSize,
-                        (gx+1) * Level.TileSize,
-                        (gy+1) * Level.TileSize,
-                        Color.White
-                    );
+                        if (bottom) Raylib.DrawLine(
+                            gx * Level.TileSize,
+                            (gy+1) * Level.TileSize,
+                            (gx+1) * Level.TileSize,
+                            (gy+1) * Level.TileSize,
+                            Color.White
+                        );
+                    }
                 }
             }
         }
@@ -362,7 +389,7 @@ class CellSelection
 
         // copy
         // (paste is handled by GeometryEditor, since paste can be done without first entering selection mode)
-        if (KeyShortcuts.Activated(KeyShortcut.Copy) && selectionActive)
+        if (KeyShortcuts.Activated(KeyShortcut.Copy) && isSelectionActive)
         {
             CopySelectedGeometry();
         }
@@ -370,22 +397,24 @@ class CellSelection
 
     private void CopySelectedGeometry()
     {
-        if (!selectionActive) return;
+        if (!IsSelectionActive()) return;
 
-        var selW = selectionMaxX - selectionMinX + 1;
-        var selH = selectionMaxY - selectionMinY + 1;
+        int selX, selY, selW, selH;
         (bool mask, LevelCell cell)[,,] geometryData;
 
         if (movingGeometry is not null)
         {
+            var renderer = RainEd.Instance.LevelView.Renderer;
             geometryData = movingGeometry;
+            (selX, selY) = (renderer.OverlayX, renderer.OverlayY);
+            (selW, selH) = (movingW, movingH);
         }
         else
         {
-            geometryData = MakeCellGroup(out selW, out selH, false);
+            geometryData = MakeCellGroup(out selX, out selY, out selW, out selH, false);
         }
 
-        var serializedData = CellSerialization.SerializeCells(selectionMinX, selectionMinY, selW, selH, geometryData);
+        var serializedData = CellSerialization.SerializeCells(selX, selY, selW, selH, geometryData);
         if (!Platform.SetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, serializedData))
         {
             EditorWindow.ShowNotification("Could not copy!");
@@ -400,22 +429,31 @@ class CellSelection
         if (data is null) return false;
 
         // set selection data
-        selectionActive = true;
-        selectionMinX = origX;
-        selectionMinY = origY;
-        selectionMaxX = origX + width - 1;
-        selectionMaxY = origY + height - 1;
-        selectionMask = new bool[height,width];
-        for (int y = 0; y < height; y++)
+        for (int l = 0; l < Level.LayerCount; l++)
         {
-            for (int x = 0; x < width; x++)
+            var selLayer = new LayerSelection(
+                minX: origX,
+                minY: origY,
+                maxX: origX + width - 1,
+                maxY: origY + height - 1
+            );
+
+            for (int y = 0; y < height; y++)
             {
-                selectionMask[y,x] = data[0,x,y].mask;
+                for (int x = 0; x < width; x++)
+                {
+                    selLayer.mask[y,x] = data[0,x,y].mask;
+                }
             }
+
+            selections[l] = selLayer;
         }
+        CropSelection();
 
         // set move data
         movingGeometry = data;
+        movingW = width;
+        movingH = height;
 
         // send overlay to renderer
         var rndr = RainEd.Instance.LevelView.Renderer;
@@ -444,166 +482,172 @@ class CellSelection
         }
     }
 
-    private void CombineMasks(int minX, int minY, int maxX, int maxY, bool[,] mask)
+    private void CombineMasks(ReadOnlySpan<LayerSelection?> dstSelections)
     {
-        var oldMinX = selectionMinX;
-        var oldMinY = selectionMinY;
-        var oldMaxX = selectionMaxX;
-        var oldMaxY = selectionMaxY;
-        var oldMask = selectionMask;
-        var op = curOpOverride ?? curOp;
-
-        switch (op)
+        for (int l = 0; l < Level.LayerCount; l++)
         {
-            case SelectionOperator.Replace:
-            case SelectionOperator.Add:
-                if (op == SelectionOperator.Replace || !selectionActive)
-                {
-                    selectionActive = true;
-                    selectionMinX = minX;
-                    selectionMinY = minY;
-                    selectionMaxX = maxX;
-                    selectionMaxY = maxY;
-                    selectionMask = mask;
-                }
-                else if (op == SelectionOperator.Add)
-                {
-                    selectionActive = true;
-                    selectionMinX = Math.Min(oldMinX, minX);
-                    selectionMinY = Math.Min(oldMinY, minY);
-                    selectionMaxX = Math.Max(oldMaxX, maxX);
-                    selectionMaxY = Math.Max(oldMaxY, maxY);
-                    selectionMask = new bool[selectionMaxY - selectionMinY + 1, selectionMaxX - selectionMinX + 1];
+            var srcSel = selections[l];
+            var dstSel = dstSelections[l];
+            if (dstSel is null) continue;
 
-                    // source
-                    int ox = oldMinX - selectionMinX;
-                    int oy = oldMinY - selectionMinY;
-                    int w = oldMaxX - oldMinX + 1;
-                    int h = oldMaxY - oldMinY + 1;
-                    for (int y = 0; y < h; y++)
+            var op = curOpOverride ?? curOp;
+
+            switch (op)
+            {
+                case SelectionOperator.Replace:
+                case SelectionOperator.Add:
+                    if (op == SelectionOperator.Replace || srcSel is null)
                     {
-                        for (int x = 0; x < w; x++)
-                        {
-                            var gx = x + ox;
-                            var gy = y + oy;
-                            selectionMask[gy,gx] = oldMask[y,x];
-                        }
+                        selections[l] = new LayerSelection(
+                            dstSel.minX, dstSel.minY,
+                            dstSel.maxX, dstSel.maxY,
+                            dstSel.mask
+                        );
                     }
+                    else if (op == SelectionOperator.Add)
+                    {
+                        var newSel = new LayerSelection(
+                            minX: Math.Min(srcSel.minX, dstSel.minX),
+                            minY: Math.Min(srcSel.minY, dstSel.minY),
+                            maxX: Math.Max(srcSel.maxX, dstSel.maxX),
+                            maxY: Math.Max(srcSel.maxY, dstSel.maxY)
+                        );
+
+                        // source
+                        int ox = srcSel.minX - newSel.minX;
+                        int oy = srcSel.minY - newSel.minY;
+                        int w = srcSel.maxX - srcSel.minX + 1;
+                        int h = srcSel.maxY - srcSel.minY + 1;
+                        for (int y = 0; y < h; y++)
+                        {
+                            for (int x = 0; x < w; x++)
+                            {
+                                var gx = x + ox;
+                                var gy = y + oy;
+                                newSel.mask[gy,gx] = srcSel.mask[y,x];
+                            }
+                        }
+
+                        // dest
+                        ox = dstSel.minX - newSel.minX;
+                        oy = dstSel.minY - newSel.minY;
+                        w = dstSel.maxX - dstSel.minX + 1;
+                        h = dstSel.maxY - dstSel.minY + 1;
+                        for (int y = 0; y < h; y++)
+                        {
+                            for (int x = 0; x < w; x++)
+                            {
+                                var gx = x + ox;
+                                var gy = y + oy;
+                                newSel.mask[gy,gx] |= dstSel.mask[y,x];
+                            }
+                        }
+
+                        selections[l] = newSel;
+                    }
+
+                    break;
+
+                case SelectionOperator.Subtract:
+                {
+                    if (srcSel is null) break;
+
+                    var newSel = new LayerSelection(
+                        minX: srcSel.minX,
+                        minY: srcSel.minY,
+                        maxX: srcSel.maxX,
+                        maxY: srcSel.maxY
+                    );
 
                     // dest
-                    ox = minX - selectionMinX;
-                    oy = minY - selectionMinY;
-                    w = maxX - minX + 1;
-                    h = maxY - minY + 1;
-                    for (int y = 0; y < h; y++)
+                    var oldW = srcSel.maxX - srcSel.minX + 1;
+                    var oldH = srcSel.maxY - srcSel.minY + 1;
+                    var ox = newSel.minX - dstSel.minX;
+                    var oy = newSel.minY - dstSel.minY;
+                    var w = dstSel.maxX - dstSel.minX + 1;
+                    var h = dstSel.maxY - dstSel.minY + 1;
+
+                    // in source bounds
+                    for (int y = 0; y < oldH; y++)
                     {
-                        for (int x = 0; x < w; x++)
+                        for (int x = 0; x < oldW; x++)
                         {
-                            var gx = x + ox;
-                            var gy = y + oy;
-                            selectionMask[gy,gx] |= mask[y,x];
+                            var lx = x + ox;
+                            var ly = y + oy;
+                            if (lx >= 0 && ly >= 0 && lx < w && ly < h)
+                            {
+                                // A  B  OUT
+                                // 0  0  0
+                                // 0  1  0
+                                // 1  0  1
+                                // 1  1  0
+                                newSel.mask[y,x] = srcSel.mask[y,x] & (srcSel.mask[y,x] ^ dstSel.mask[ly,lx]);
+                            }
                         }
                     }
-                }
 
-                break;
-
-            case SelectionOperator.Subtract:
-            {
-                if (!selectionActive) break;
-                selectionActive = true;
-
-                // dest
-                var oldW = oldMaxX - oldMinX + 1;
-                var oldH = oldMaxY - oldMinY + 1;
-                var ox = selectionMinX - minX;
-                var oy = selectionMinY - minY;
-                var w = maxX - minX + 1;
-                var h = maxY - minY + 1;
-
-                // in source bounds
-                for (int y = 0; y < oldH; y++)
-                {
-                    for (int x = 0; x < oldW; x++)
-                    {
-                        var lx = x + ox;
-                        var ly = y + oy;
-                        if (lx >= 0 && ly >= 0 && lx < w && ly < h)
-                        {
-                            // A  B  OUT
-                            // 0  0  0
-                            // 0  1  0
-                            // 1  0  1
-                            // 1  1  0
-                            selectionMask[y,x] &= selectionMask[y,x] ^ mask[ly,lx];
-                        }
-                    }
-                }
-
-                CropSelection();
-                break;
-            }
-
-            case SelectionOperator.Intersect:
-            {
-                if (!selectionActive) break;
-                selectionActive = true;
-
-                selectionMinX = Math.Max(oldMinX, minX);
-                selectionMinY = Math.Max(oldMinY, minY);
-                selectionMaxX = Math.Min(oldMaxX, maxX);
-                selectionMaxY = Math.Min(oldMaxY, maxY);
-                if (selectionMaxX < selectionMinX || selectionMaxY < selectionMinY)
-                {
-                    selectionActive = false;
+                    CropSelection();
                     break;
                 }
 
-                selectionMask = new bool[selectionMaxY - selectionMinY + 1, selectionMaxX - selectionMinX + 1];
-                
-                // source
-                var ox0 = selectionMinX - oldMinX;
-                var oy0 = selectionMinY - oldMinY;
-                var w0 = oldMaxX - oldMinX + 1;
-                var h0 = oldMaxY - oldMinY + 1;
-
-                // dest
-                var ox1 = selectionMinX - minX;
-                var oy1 = selectionMinY - minY;
-                var w1 = maxX - minX + 1;
-                var h1 = maxY - minY + 1;
-
-                // in dest bounds
-                var newW = selectionMaxX - selectionMinX + 1;
-                var newH = selectionMaxY - selectionMinY + 1;
-                for (int y = 0; y < newH; y++)
+                case SelectionOperator.Intersect:
                 {
-                    for (int x = 0; x < newW; x++)
+                    if (srcSel is null) break;
+
+                    var newSel = new LayerSelection(
+                        minX: int.Max(srcSel.minX, dstSel.minX),
+                        minY: int.Max(srcSel.minY, dstSel.minY),
+                        maxX: int.Max(srcSel.maxX, dstSel.maxX),
+                        maxY: int.Max(srcSel.maxY, dstSel.maxY)
+                    );
+
+                    if (newSel.maxX < newSel.minX || newSel.maxY < newSel.minY)
                     {
-                        var x0 = x + ox0;
-                        var y0 = y + oy0;
-                        var x1 = x + ox1;
-                        var y1 = y + oy1;
-
-                        if (!(x0 >= 0 && y0 >= 0 && x1 < w0 && y1 < h0)) continue;
-                        if (!(x1 >= 0 && y1 >= 0 && x1 < w1 && y1 < h1)) continue;
-                        selectionMask[y,x] = oldMask[y0,x0] & mask[y1,x1];
+                        selections[l] = null;
+                        break;
                     }
-                }
+                    
+                    // source
+                    var ox0 = newSel.minX - srcSel.minX;
+                    var oy0 = newSel.minY - srcSel.minY;
+                    var w0 = srcSel.maxX - srcSel.minX + 1;
+                    var h0 = srcSel.maxY - srcSel.minY + 1;
 
-                CropSelection();
-                break;
+                    // dest
+                    var ox1 = newSel.minX - dstSel.minX;
+                    var oy1 = newSel.minY - dstSel.minY;
+                    var w1 = dstSel.maxX - dstSel.minX + 1;
+                    var h1 = dstSel.maxY - dstSel.minY + 1;
+
+                    // in dest bounds
+                    var newW = newSel.maxX - newSel.minX + 1;
+                    var newH = newSel.maxY - newSel.minY + 1;
+                    for (int y = 0; y < newH; y++)
+                    {
+                        for (int x = 0; x < newW; x++)
+                        {
+                            var x0 = x + ox0;
+                            var y0 = y + oy0;
+                            var x1 = x + ox1;
+                            var y1 = y + oy1;
+
+                            if (!(x0 >= 0 && y0 >= 0 && x1 < w0 && y1 < h0)) continue;
+                            if (!(x1 >= 0 && y1 >= 0 && x1 < w1 && y1 < h1)) continue;
+                            newSel.mask[y,x] = srcSel.mask[y0,x0] & dstSel.mask[y1,x1];
+                        }
+                    }
+
+                    CropSelection();
+                    break;
+                }
             }
         }
     }
 
-    private static bool TileSelect(int mouseX, int mouseY, int layer, out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] mask)
+    private static bool TileSelect(int mouseX, int mouseY, int layer, LayerSelection?[] dstSelections)
     {
+        Array.Fill(dstSelections, null);
         var level = RainEd.Instance.Level;
-        p_minX = int.MaxValue;
-        p_minY = int.MaxValue;
-        p_maxX = int.MinValue;
-        p_maxY = int.MinValue;
 
         if (level.Layers[layer, mouseX, mouseY].HasTile())
         {
@@ -611,27 +655,42 @@ class CellSelection
             Assets.Tile? tile = level.Layers[tileHeadPos.Layer, tileHeadPos.X, tileHeadPos.Y].TileHead;
             if (tile is null)
             {
-                mask = new bool[0,0];
                 return false;
             }
 
-            p_minX = tileHeadPos.X - tile.CenterX;
-            p_minY = tileHeadPos.Y - tile.CenterY;
-            p_maxX = p_minX + tile.Width - 1;
-            p_maxY = p_minY + tile.Height - 1;
-            mask = new bool[tile.Height, tile.Width];
-            mask[tile.CenterY, tile.CenterX] = true;
+            var minX = tileHeadPos.X - tile.CenterX;
+            var minY = tileHeadPos.Y - tile.CenterY;
+            var maxX = minX + tile.Width - 1;
+            var maxY = minY + tile.Height - 1;
+            // var mask = new bool[tile.Height, tile.Width];
+            // mask[tile.CenterY, tile.CenterX] = true;
 
-            for (int x = 0; x < tile.Width; x++)
+            dstSelections[layer] = new LayerSelection(
+                minX, minY,
+                maxX, maxY
+            );
+
+            if (tile.HasSecondLayer)
             {
-                for (int y = 0; y < tile.Height; y++)
+                dstSelections[layer+1] = new LayerSelection(
+                    minX, minY,
+                    maxX, maxY
+                );
+            }
+
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                ref var selLayer = ref dstSelections[l];
+                if (selLayer is null) continue;
+
+                for (int x = 0; x < tile.Width; x++)
                 {
-                    for (int l = 0; l < Level.LayerCount; l++)
+                    for (int y = 0; y < tile.Height; y++)
                     {
-                        ref var c = ref level.Layers[l, x + p_minX, y + p_minY];
+                        ref var c = ref level.Layers[l, x + minX, y + minY];
                         if (c.TileRootX == tileHeadPos.X && c.TileRootY == tileHeadPos.Y && c.TileLayer == tileHeadPos.Layer)
                         {
-                            mask[y,x] = true;
+                            selLayer.mask[y,x] = true;
                         }
                     }
                 }
@@ -641,29 +700,23 @@ class CellSelection
         }
         else
         {
-            mask = new bool[0,0];
             return false;
         }
     }
 
-    private static bool MagicWand(int mouseX, int mouseY, int layer, out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] mask)
+    private static LayerSelection? MagicWand(int mouseX, int mouseY, int layer)
     {
         var level = RainEd.Instance.Level;
-        p_minX = int.MaxValue;
-        p_minY = int.MaxValue;
-        p_maxX = int.MinValue;
-        p_maxY = int.MinValue;
         if (!level.IsInBounds(mouseX, mouseY)) 
         {
-            mask = new bool[0,0];
-            return false;
+            return null;
         }
 
         var levelMask = new bool[level.Height,level.Width];
 
-        bool isSolidGeo(int x, int y)
+        bool isSolidGeo(int x, int y, int l)
         {
-            return level.Layers[layer, x, y].Geo is
+            return level.Layers[l, x, y].Geo is
                 GeoType.Solid or
                 GeoType.SlopeRightUp or
                 GeoType.SlopeLeftUp or
@@ -671,7 +724,7 @@ class CellSelection
                 GeoType.SlopeLeftDown or
                 GeoType.Platform;
         }
-        bool selectGeo = isSolidGeo(mouseX, mouseY);
+        bool selectGeo = isSolidGeo(mouseX, mouseY, layer);
 
         var minX = int.MaxValue;
         var minY = int.MaxValue;
@@ -682,7 +735,7 @@ class CellSelection
             mouseX, mouseY, level.Width, level.Height,
             isSimilar: (int x, int y) =>
             {
-                return isSolidGeo(x, y) == selectGeo && !levelMask[y,x];
+                return isSolidGeo(x, y, layer) == selectGeo && !levelMask[y,x];
                 //return false;
             },
             plot: (int x, int y) =>
@@ -699,27 +752,17 @@ class CellSelection
         if (!success)
         {
             EditorWindow.ShowNotification("Magic wand selection too large!");
-            mask = new bool[0,0];
-            return false;
+            return null;
         }
 
         if (!hasValue)
         {
-            mask = new bool[0,0];
-            p_minX = mouseX;
-            p_minY = mouseY;
-            p_maxX = mouseX;
-            p_maxY = mouseY;
-            return false;
+            return null;
         }
 
         var aabbW = maxX - minX + 1;
         var aabbH = maxY - minY + 1;
-        p_minX = minX;
-        p_minY = minY;
-        p_maxX = maxX;
-        p_maxY = maxY;
-        mask = new bool[aabbH,aabbW];
+        var mask = new bool[aabbH,aabbW];
 
         for (int y = 0; y < aabbH; y++)
         {
@@ -731,61 +774,69 @@ class CellSelection
             }
         }
 
-        return true;
+        return new LayerSelection(
+            minX, minY,
+            maxX, maxY,
+            mask
+        );
     }
 
     public void CropSelection()
     {
-        if (!selectionActive) return;
-
-        int minX = int.MaxValue;
-        int minY = int.MaxValue;
-        int maxX = int.MinValue;
-        int maxY = int.MinValue;
-        bool hasValue = false;
-
-        for (int gy = selectionMinY; gy <= selectionMaxY; gy++)
+        for (int l = 0; l < Level.LayerCount; l++)
         {
-            for (int gx = selectionMinX; gx <= selectionMaxX; gx++)
+            ref var selection = ref selections[l];
+            if (selection is null) continue;
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            bool hasValue = false;
+
+            for (int gy = selection.minY; gy <= selection.maxY; gy++)
             {
-                var x = gx - selectionMinX;
-                var y = gy - selectionMinY;
-                if (selectionMask[y,x])
+                for (int gx = selection.minX; gx <= selection.maxX; gx++)
                 {
-                    hasValue = true;
-                    minX = Math.Min(minX, gx);
-                    minY = Math.Min(minY, gy);
-                    maxX = Math.Max(maxX, gx);
-                    maxY = Math.Max(maxY, gy);
+                    var x = gx - selection.minX;
+                    var y = gy - selection.minY;
+                    if (selection.mask[y,x])
+                    {
+                        hasValue = true;
+                        minX = Math.Min(minX, gx);
+                        minY = Math.Min(minY, gy);
+                        maxX = Math.Max(maxX, gx);
+                        maxY = Math.Max(maxY, gy);
+                    }
                 }
             }
-        }
 
-        if (!hasValue)
-        {
-            selectionActive = false;
-            return;
-        }
-
-        var newW = maxX - minX + 1;
-        var newH = maxY - minY + 1;
-        var newMask = new bool[newH, newW];
-
-        for (int y = 0; y < newH; y++)
-        {
-            for (int x = 0; x < newW; x++)
+            if (!hasValue)
             {
-                var lx = x + minX - selectionMinX;
-                var ly = y + minY - selectionMinY;
-                newMask[y,x] = selectionMask[ly,lx];
+                selection = null;
+                return;
             }
-        }
 
-        selectionMinX = minX;
-        selectionMinY = minY;
-        selectionMaxX = maxX;
-        selectionMaxY = maxY;
-        selectionMask = newMask;
+            var newW = maxX - minX + 1;
+            var newH = maxY - minY + 1;
+            var newMask = new bool[newH, newW];
+
+            for (int y = 0; y < newH; y++)
+            {
+                for (int x = 0; x < newW; x++)
+                {
+                    var lx = x + minX - selection.minX;
+                    var ly = y + minY - selection.minY;
+                    newMask[y,x] = selection.mask[ly,lx];
+                }
+            }
+
+            selection.minX = minX;
+            selection.minY = minY;
+            selection.maxX = maxX;
+            selection.maxY = maxY;
+            selection.mask = newMask;
+        }
     }
 
     public void SubmitMove()
@@ -796,16 +847,14 @@ class CellSelection
 
         var level = RainEd.Instance.Level;
         var rndr = RainEd.Instance.LevelView.Renderer;
-        var selW = selectionMaxX - selectionMinX + 1;
-        var selH = selectionMaxY - selectionMinY + 1;
 
         RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
 
         // apply moved geometry
-        for (int y = 0; y < selH; y++)
+        for (int y = 0; y < movingH; y++)
         {
             var gy = rndr.OverlayY + y;
-            for (int x = 0; x < selW; x++)
+            for (int x = 0; x < movingW; x++)
             {
                 var gx = rndr.OverlayX + x;
                 for (int l = 0; l < Level.LayerCount; l++)
@@ -862,13 +911,11 @@ class CellSelection
             var level = RainEd.Instance.Level;
             var renderer = RainEd.Instance.LevelView.Renderer;
             var nodeData = RainEd.Instance.CurrentTab!.NodeData;
-
-            var selW = selectionMaxX - selectionMinX + 1;
-            var selH = selectionMaxY - selectionMinY + 1;
-            for (int y = 0; y < selH; y++)
+            
+            for (int y = 0; y < movingH; y++)
             {
                 var gy = cancelOrigY + y;
-                for (int x = 0; x < selW; x++)
+                for (int x = 0; x < movingW; x++)
                 {
                     var gx = cancelOrigX + x;
                     for (int l = 0; l < Level.LayerCount; l++)
@@ -889,10 +936,27 @@ class CellSelection
         }
     }
 
-    private (bool mask, LevelCell cell)[,,] MakeCellGroup(out int selW, out int selH, bool eraseSource)
+    private (bool mask, LevelCell cell)[,,] MakeCellGroup(out int selX, out int selY, out int selW, out int selH, bool eraseSource)
     {
-        selW = selectionMaxX - selectionMinX + 1;
-        selH = selectionMaxY - selectionMinY + 1;
+        // (selX, selY) = furthest top-left of layer selection
+        selX = int.MaxValue;
+        selY = int.MaxValue;
+        var maxX = int.MinValue;
+        var maxY = int.MinValue;
+
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            ref var sel = ref selections[l];
+            if (sel is null) continue;
+
+            selX = int.Min(selX, sel.minX);
+            selY = int.Min(selY, sel.minY);
+            maxX = int.Max(maxX, sel.maxX);
+            maxY = int.Max(maxY, sel.maxY);
+        }
+
+        selW = maxX - selX + 1;
+        selH = maxY - selY + 1;
         var level = RainEd.Instance.Level;
         var renderer = RainEd.Instance.LevelView.Renderer;
 
@@ -904,24 +968,27 @@ class CellSelection
         var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
         for (int y = 0; y < selH; y++)
         {
-            var gy = selectionMinY + y;
+            var gy = selY + y;
             for (int x = 0; x < selW; x++)
             {
-                var gx = selectionMinX + x;
+                var gx = selX + x;
 
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
+                    ref var sel = ref selections[l];
+                    if (sel is null) continue;
+
                     ref var srcCell = ref level.Layers[l,gx,gy];
                     ref var dstCell = ref geometry[l,x,y];
-                    dstCell.mask = selectionMask[y,x];
+                    dstCell.mask = sel.mask[y,x];
                     dstCell.cell = srcCell;
 
                     // change tile head references to be relative to the origin
                     // of the overlay
                     if (dstCell.cell.HasTile() && dstCell.cell.TileHead is null)
                     {
-                        dstCell.cell.TileRootX -= selectionMinX;
-                        dstCell.cell.TileRootY -= selectionMinY;
+                        dstCell.cell.TileRootX -= selX;
+                        dstCell.cell.TileRootY -= selY;
 
                         // if the tile head is outside of the selection,
                         // then erase this tile body.
@@ -929,7 +996,7 @@ class CellSelection
                         var ty = dstCell.cell.TileRootY;
                         if (tx < 0 || ty < 0 ||
                             tx >= selW || ty >= selH ||
-                            !selectionMask[ty, tx]
+                            !sel.mask[ty, tx]
                         )
                         {
                             dstCell.cell.TileRootX = -1;
@@ -938,7 +1005,7 @@ class CellSelection
                         }
                     }
 
-                    if (eraseSource && selectionMask[y,x])
+                    if (eraseSource && sel.mask[y,x])
                     {
                         srcCell.Geo = GeoType.Air;
                         srcCell.Objects = LevelObject.None;
@@ -972,17 +1039,59 @@ class CellSelection
         return geometry;
     }
 
+    public bool IsSelectionActive()
+    {
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            if (selections[l] is not null)
+                return true;
+        }
+
+        return false;
+    }
+
+    public void ClearSelection()
+    {
+        selections[0] = null;
+        selections[1] = null;
+        selections[2] = null;
+    }
+
     private void BeginMove()
     {
+        if (!IsSelectionActive())
+        {
+            cancelGeoData = null;
+            movingGeometry = null;
+            return;
+        }
+
         // create separate copy of selected cells in order for the Cancel operation
         // to work properly. can't use movingGeometry because it may modify the
         // data of cells (i.e. tile head references)
         var level = RainEd.Instance.Level;
-        var selW = selectionMaxX - selectionMinX + 1;
-        var selH = selectionMaxY - selectionMinY + 1;
+
+        int minX = int.MaxValue;
+        int minY = int.MaxValue;
+        int maxX = int.MinValue;
+        int maxY = int.MinValue;
+
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            ref var sel = ref selections[l];
+            if (sel is null) continue;
+
+            minX = int.Min(minX, sel.minX);
+            minY = int.Min(minY, sel.minY);
+            maxX = int.Max(maxX, sel.maxX);
+            maxY = int.Max(maxY, sel.maxY);
+        }
+
+        var selW = maxX - minX + 1;
+        var selH = maxY - minY + 1;
         cancelGeoData = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
-        cancelOrigX = selectionMinX;
-        cancelOrigY = selectionMinY;
+        cancelOrigX = minX;
+        cancelOrigY = minY;
 
         for (int y = 0; y < selH; y++)
         {
@@ -992,18 +1101,32 @@ class CellSelection
                 var gx = cancelOrigX + x;
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
-                    cancelGeoData[l,x,y] = (selectionMask[y,x], level.IsInBounds(gx, gy) ? level.Layers[l,gx,gy] : new LevelCell());
+                    ref var sel = ref selections[l];
+                    if (sel is null) continue;
+
+                    if (gx >= sel.minX && gy >= sel.minY && gx <= sel.maxX && gy <= sel.maxY && level.IsInBounds(gx, gy))
+                    {
+                        var ly = gy - sel.minY;
+                        var lx = gx - sel.minX;
+                        cancelGeoData[l,x,y] = (sel.mask[ly,lx], level.Layers[l,gx,gy]);
+                    }
+                    else
+                    {
+                        cancelGeoData[l,x,y] = (false, new LevelCell());
+                    }
                 }
             }
         }
 
         var renderer = RainEd.Instance.LevelView.Renderer;
-        movingGeometry = MakeCellGroup(out int overlayW, out int overlayH, true);
+        movingGeometry = MakeCellGroup(out int movingX, out int movingY, out movingW, out movingH, true);
 
         // send it to geo renderer
+        renderer.OverlayX = movingX;
+        renderer.OverlayY = movingY;
         renderer.SetOverlay(
-            width: overlayW,
-            height: overlayH,
+            width: movingW,
+            height: movingH,
             geometry: movingGeometry
         );
     }
@@ -1023,7 +1146,7 @@ class CellSelection
             selectionStartY = startY;
         }
 
-        public override void Update(int mouseX, int mouseY)
+        public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMasks)
         {
             mouseMinX = Math.Min(selectionStartX, mouseX);
             mouseMaxX = Math.Max(selectionStartX, mouseX);
@@ -1041,22 +1164,38 @@ class CellSelection
             );
         }
         
-        public bool ApplySelection(out int minX, out int minY, out int maxX, out int maxY, out bool[,] mask)
+        public bool ApplySelection(Span<LayerSelection?> dstSelections, ReadOnlySpan<bool> layerMask)
         {
-            minX = mouseMinX;
-            maxX = mouseMaxX;
-            minY = mouseMinY;
-            maxY = mouseMaxY;
+            var minX = mouseMinX;
+            var maxX = mouseMaxX;
+            var minY = mouseMinY;
+            var maxY = mouseMaxY;
 
             var w = maxX - minX + 1;
             var h = maxY - minY + 1;
-            mask = new bool[h,w];
+            var mask = new bool[h,w];
 
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
                     mask[y,x] = true;
+                }
+            }
+
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                if (layerMask[l])
+                {
+                    dstSelections[l] = new LayerSelection(
+                        minX, minY,
+                        maxX, maxY,
+                        mask
+                    );
+                }
+                else
+                {
+                    dstSelections[l] = null;
                 }
             }
 
@@ -1073,7 +1212,7 @@ class CellSelection
             points.Add(new Vector2i(startX, startY));
         }
         
-        public override void Update(int mouseX, int mouseY)
+        public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
         {
             var newPoint = new Vector2i(mouseX, mouseY);
             if (newPoint != points[^1])
@@ -1135,7 +1274,7 @@ class CellSelection
             });*/
         }
 
-        public bool ApplySelection(out int p_minX, out int p_minY, out int p_maxX, out int p_maxY, out bool[,] p_mask)
+        public bool ApplySelection(Span<LayerSelection?> dstSelections, ReadOnlySpan<bool> layerMask)
         {
             // calc bounding box of points
             var minX = int.MaxValue;
@@ -1145,11 +1284,9 @@ class CellSelection
 
             if (points.Count == 0)
             {
-                p_minX = 0;
-                p_minY = 0;
-                p_maxX = 0;
-                p_maxY = 0;
-                p_mask = new bool[0,0];
+                for (int l = 0; l < Level.LayerCount; l++)
+                    dstSelections[l] = null;
+                
                 return false;
             }
 
@@ -1248,56 +1385,136 @@ class CellSelection
                 Scanline(y);
             }
 
-            p_minX = minX;
-            p_minY = minY;
-            p_maxX = maxX;
-            p_maxY = maxY;
-            p_mask = mask;
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                if (layerMask[l])
+                {
+                    dstSelections[l] = new LayerSelection(
+                        minX, minY,
+                        maxX, maxY,
+                        mask
+                    );
+                }
+                else
+                {
+                    dstSelections[l] = null;
+                }
+            }
+            
             return true;
         }
     }
 
     class SelectionMoveDragState : Tool
     {
-        private readonly int offsetX;
-        private readonly int offsetY;
-        private readonly int selW, selH;
-        private readonly CellSelection controller;
-
-        public SelectionMoveDragState(CellSelection controller, int startX, int startY)
+        struct LayerInfo
         {
-            this.controller = controller;
-            offsetX = startX - controller.selectionMinX;
-            offsetY = startY - controller.selectionMinY;
-            selW = controller.selectionMaxX - controller.selectionMinX + 1;
-            selH = controller.selectionMaxY - controller.selectionMinY + 1;
+            public bool active;
+            public int offsetX, offsetY;
+            public int selW, selH;
         }
 
-        public override void Update(int mouseX, int mouseY)
+        private readonly LayerInfo[] layerInfo;
+        private readonly CellSelection controller;
+
+        public SelectionMoveDragState(CellSelection controller, int startX, int startY, ReadOnlySpan<bool> layerMask)
         {
-            controller.selectionMinX = mouseX - offsetX;
-            controller.selectionMinY = mouseY - offsetY;
-            controller.selectionMaxX = controller.selectionMinX + selW - 1;
-            controller.selectionMaxY = controller.selectionMinY + selH - 1;
+            this.controller = controller;
+            layerInfo = new LayerInfo[Level.LayerCount];
+
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                ref var sel = ref controller.selections[l];
+                var li = new LayerInfo
+                {
+                    active = layerMask[l] && sel is not null
+                };
+
+                if (sel is not null)
+                {
+                    li.offsetX = startX - sel.minX;
+                    li.offsetY = startY - sel.minY;
+                    li.selW = sel.maxX - sel.minX + 1;
+                    li.selH = sel.maxY - sel.minY + 1;
+                }
+
+                layerInfo[l] = li;
+            }
+        }
+
+        public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
+        {
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                if (!layerInfo[l].active) continue;
+                ref var sel = ref controller.selections[l];
+                if (sel is null) continue;
+
+                sel.minX = mouseX - layerInfo[l].offsetX;
+                sel.minY = mouseY - layerInfo[l].offsetY;
+                sel.maxX = sel.minX + layerInfo[l].selW - 1;
+                sel.maxY = sel.minY + layerInfo[l].selH - 1;
+            }
         }
     }
 
     class SelectedMoveDragState : Tool
     {
-        private readonly int offsetX;
-        private readonly int offsetY;
-        private readonly int selW, selH;
+        struct LayerInfo
+        {
+            public bool active;
+            public int offsetX, offsetY; // local min's offset from global min
+            public int selW, selH; // local size
+        }
+
+        private readonly LayerInfo[] layerInfo;
+        private readonly int offsetX, offsetY; // offset from global min
         private readonly CellSelection controller;
 
-        public SelectedMoveDragState(CellSelection controller, int startX, int startY)
+        public SelectedMoveDragState(CellSelection controller, int startX, int startY, ReadOnlySpan<bool> layerMask)
         {
             this.controller = controller;
-            offsetX = startX - controller.selectionMinX;
-            offsetY = startY - controller.selectionMinY;
-            selW = controller.selectionMaxX - controller.selectionMinX + 1;
-            selH = controller.selectionMaxY - controller.selectionMinY + 1;
-            var level = RainEd.Instance.Level;
-            var renderer = RainEd.Instance.LevelView.Renderer;
+            layerInfo = new LayerInfo[Level.LayerCount];
+
+            int gMinX, gMinY;
+
+            if (controller.IsSelectionActive())
+            {
+                gMinX = gMinY = int.MaxValue;
+                for (int l = 0; l < Level.LayerCount; l++)
+                {
+                    ref var sel = ref controller.selections[l];
+                    if (sel is null) continue;
+
+                    gMinX = int.Min(gMinX, sel.minX);
+                    gMinY = int.Min(gMinY, sel.minY);
+                }
+            }
+            else
+            {
+                gMinX = gMinY = 0;
+            }
+
+            offsetX = startX - gMinX;
+            offsetY = startY - gMinY;
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                ref var sel = ref controller.selections[l];
+                var li = new LayerInfo
+                {
+                    active = layerMask[l] && sel is not null
+                };
+
+                if (sel is not null)
+                {
+                    li.offsetX = sel.minX - gMinX;
+                    li.offsetY = sel.minY - gMinY;
+                    li.selW = sel.maxX - sel.minX + 1;
+                    li.selH = sel.maxY - sel.minY + 1;
+                }
+
+                layerInfo[l] = li;
+            }
 
             // create geometry overlay array
             // and clear out selection
@@ -1307,15 +1524,22 @@ class CellSelection
             }
         }
 
-        public override void Update(int mouseX, int mouseY)
+        public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
         {
             var rndr = RainEd.Instance.LevelView.Renderer;
             rndr.OverlayX = mouseX - offsetX;
             rndr.OverlayY = mouseY - offsetY;
-            controller.selectionMinX = rndr.OverlayX;
-            controller.selectionMinY = rndr.OverlayY;
-            controller.selectionMaxX = controller.selectionMinX + selW - 1;
-            controller.selectionMaxY = controller.selectionMinY + selH - 1;
+
+            for (int l = 0; l < Level.LayerCount; l++)
+            {
+                ref var sel = ref controller.selections[l];
+                if (sel is null) continue;
+
+                sel.minX = rndr.OverlayX + layerInfo[l].offsetX;
+                sel.minY = rndr.OverlayY + layerInfo[l].offsetY;
+                sel.maxX = sel.minX + layerInfo[l].selW - 1;
+                sel.maxY = sel.minY + layerInfo[l].selH - 1;
+            }
         }
     }
 }
