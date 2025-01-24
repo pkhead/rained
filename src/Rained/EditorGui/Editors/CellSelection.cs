@@ -85,7 +85,7 @@ class CellSelection
             this.minY = minY;
             this.maxX = maxX;
             this.maxY = maxY;
-            this.mask = mask ?? new bool[maxX - minX + 1, maxY - minY + 1];
+            this.mask = mask ?? new bool[maxY - minY + 1, maxX - minX + 1];
         }
     }
 
@@ -520,11 +520,11 @@ class CellSelection
                         int h = srcSel.maxY - srcSel.minY + 1;
                         for (int y = 0; y < h; y++)
                         {
+                            var y2 = y + oy;
                             for (int x = 0; x < w; x++)
                             {
-                                var gx = x + ox;
-                                var gy = y + oy;
-                                newSel.mask[gy,gx] = srcSel.mask[y,x];
+                                var x2 = x + ox;
+                                newSel.mask[y2,x2] = srcSel.mask[y,x];
                             }
                         }
 
@@ -535,11 +535,11 @@ class CellSelection
                         h = dstSel.maxY - dstSel.minY + 1;
                         for (int y = 0; y < h; y++)
                         {
+                            var y2 = y + oy;
                             for (int x = 0; x < w; x++)
                             {
-                                var gx = x + ox;
-                                var gy = y + oy;
-                                newSel.mask[gy,gx] |= dstSel.mask[y,x];
+                                var x2 = x + ox;
+                                newSel.mask[y2, x2] |= dstSel.mask[y,x];
                             }
                         }
 
@@ -586,7 +586,7 @@ class CellSelection
                         }
                     }
 
-                    CropSelection();
+                    selections[l] = newSel;
                     break;
                 }
 
@@ -637,11 +637,13 @@ class CellSelection
                         }
                     }
 
-                    CropSelection();
+                    selections[l] = newSel;
                     break;
                 }
             }
         }
+
+        CropSelection();
     }
 
     private static bool TileSelect(int mouseX, int mouseY, int layer, LayerSelection?[] dstSelections)
@@ -965,6 +967,14 @@ class CellSelection
             RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
         }
 
+        static bool GetMaskFromGlobalCoords(ref readonly LayerSelection sel, int x, int y)
+        {
+            if (x >= sel.minX && y >= sel.minY && x <= sel.maxX && y <= sel.maxY)
+                return sel.mask[y - sel.minY, x - sel.minX];
+            else
+                return false;
+        }
+
         var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
         for (int y = 0; y < selH; y++)
         {
@@ -975,12 +985,13 @@ class CellSelection
 
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
-                    ref var sel = ref selections[l];
+                    ref readonly var sel = ref selections[l];
                     if (sel is null) continue;
 
                     ref var srcCell = ref level.Layers[l,gx,gy];
                     ref var dstCell = ref geometry[l,x,y];
-                    dstCell.mask = sel.mask[y,x];
+                    bool selMask = GetMaskFromGlobalCoords(in sel, gx, gy);
+                    dstCell.mask = selMask;
                     dstCell.cell = srcCell;
 
                     // change tile head references to be relative to the origin
@@ -994,9 +1005,10 @@ class CellSelection
                         // then erase this tile body.
                         var tx = dstCell.cell.TileRootX;
                         var ty = dstCell.cell.TileRootY;
+                        var tLayerSel = selections[dstCell.cell.TileLayer];
                         if (tx < 0 || ty < 0 ||
                             tx >= selW || ty >= selH ||
-                            !sel.mask[ty, tx]
+                            !(tLayerSel is not null && GetMaskFromGlobalCoords(in tLayerSel, tx + selX, ty + selY))
                         )
                         {
                             dstCell.cell.TileRootX = -1;
@@ -1005,7 +1017,7 @@ class CellSelection
                         }
                     }
 
-                    if (eraseSource && sel.mask[y,x])
+                    if (eraseSource && selMask)
                     {
                         srcCell.Geo = GeoType.Air;
                         srcCell.Objects = LevelObject.None;
