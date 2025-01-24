@@ -458,7 +458,7 @@ class CellSelection
             {
                 for (int x = 0; x < width; x++)
                 {
-                    selLayer.mask[y,x] = data[0,x,y].mask;
+                    selLayer.mask[y,x] = data[l,x,y].mask;
                 }
             }
 
@@ -687,6 +687,7 @@ class CellSelection
                 minX, minY,
                 maxX, maxY
             );
+            dstSelections[layer]!.mask[tileHeadPos.Y - minY, tileHeadPos.X - minX] = true;
 
             if (tile.HasSecondLayer)
             {
