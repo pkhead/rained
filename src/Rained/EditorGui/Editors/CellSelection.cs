@@ -667,7 +667,7 @@ class CellSelection
         Array.Fill(dstSelections, null);
         var level = RainEd.Instance.Level;
 
-        if (level.Layers[layer, mouseX, mouseY].HasTile())
+        if (level.IsInBounds(mouseX, mouseY) && level.Layers[layer, mouseX, mouseY].HasTile())
         {
             var tileHeadPos = level.GetTileHead(layer, mouseX, mouseY);
             Assets.Tile? tile = level.Layers[tileHeadPos.Layer, tileHeadPos.X, tileHeadPos.Y].TileHead;
@@ -877,6 +877,8 @@ class CellSelection
                 var gx = rndr.OverlayX + x;
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
+                    if (!level.IsInBounds(gx, gy)) continue;
+
                     ref var srcCell = ref movingGeometry[l,x,y];
                     if (!srcCell.mask) continue;
 
@@ -1003,6 +1005,9 @@ class CellSelection
                 {
                     ref readonly var sel = ref selections[l];
                     if (sel is null) continue;
+
+                    if (!level.IsInBounds(gx, gy))
+                        continue;
 
                     ref var srcCell = ref level.Layers[l,gx,gy];
                     ref var dstCell = ref geometry[l,x,y];
