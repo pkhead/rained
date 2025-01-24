@@ -1,8 +1,9 @@
+namespace Rained.EditorGui.Editors;
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
 using Rained.LevelData;
-namespace Rained.EditorGui.Editors;
+using CellSelection = CellEditing.CellSelection;
 
 class GeometryEditor : IEditorMode
 {

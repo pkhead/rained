@@ -1,10 +1,8 @@
-using Rained.Assets;
-using Raylib_cs;
-using System.Numerics;
-using ImGuiNET;
-using Rained.Autotiles;
-using Rained.LevelData;
 namespace Rained.EditorGui.Editors;
+using Raylib_cs;
+using ImGuiNET;
+using Rained.LevelData;
+using CellSelection = CellEditing.CellSelection;
 
 [Flags]
 enum TilePlacementFlags

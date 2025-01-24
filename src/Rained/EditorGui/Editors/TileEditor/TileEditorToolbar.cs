@@ -1,10 +1,11 @@
+namespace Rained.EditorGui.Editors;
 using ImGuiNET;
 using Rained.Assets;
 using Rained.Rendering;
 using Raylib_cs;
 using System.Numerics;
+using CellSelection = CellEditing.CellSelection;
 
-namespace Rained.EditorGui.Editors;
 
 partial class TileEditor : IEditorMode
 {
