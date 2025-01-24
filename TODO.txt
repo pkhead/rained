@@ -1,6 +1,7 @@
 Selection:
 - selection undo/redo
 - drag for tile select
+- ability to move selected in-between layers
 
 Bugs:
 - undoing while chain holder attach makes a crash .. ???
