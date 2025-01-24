@@ -47,7 +47,10 @@ static partial class ShortcutsWindow
             ("[ToggleLayer2]", "Toggle layer 2"),
             ("[ToggleLayer3]", "Toggle layer 3"),
             ("[ToggleMirrorX]", "Toggle Mirror X"),
-            ("[ToggleMirrorY]", "Toggle Mirror Y")
+            ("[ToggleMirrorY]", "Toggle Mirror Y"),
+            ("[Select]", "Begin selection"),
+            ("[Copy]", "Copy"),
+            ("[Paste]", "Paste"),
         ],
 
         // Tile
@@ -69,6 +72,9 @@ static partial class ShortcutsWindow
             ("[TileForcePlacement]+Left Mouse", "Force tile placement"),
             ("[TileForceGeometry]+Left Mouse", "Force tile geometry"),
             ("[TileForceGeometry]+Right Mouse", "Remove tile and geometry"),
+            ("[Select]", "Begin selection"),
+            ("[Copy]", "Copy"),
+            ("[Paste]", "Paste"),
         ],
 
         // Camera

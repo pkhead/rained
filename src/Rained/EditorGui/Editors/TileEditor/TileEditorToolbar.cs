@@ -17,6 +17,10 @@ partial class TileEditor : IEditorMode
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.SetMaterial, "Set Selected Material as Default");
+
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Select, "Select");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy", false, CellSelection.Instance is not null);
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste", false);
     }
 
     private void RenderTileLayers(Tile tile)

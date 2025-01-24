@@ -468,6 +468,13 @@ class GeometryEditor : IEditorMode
             mirrorFlags ^= MirrorFlags.MirrorY;
     }
 
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Select, "Select");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy", false, CellSelection.Instance is not null);
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste", false);
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
