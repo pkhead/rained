@@ -1,10 +1,7 @@
 Selection:
 - selection undo/redo
-- layer masking
 - drag for tile select
-- bounds checking?
-- add buttons to edit menu
-- add select/copy/paste shortcuts to shortcut window
+- ability to move selected in-between layers
 
 Bugs:
 - undoing while chain holder attach makes a crash .. ???

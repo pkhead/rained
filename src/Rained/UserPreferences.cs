@@ -390,6 +390,7 @@ class UserPreferences
     public int RefreshRate { get; set; } = 0;
 
     public Dictionary<string, string> Shortcuts { get; set; }
+    public uint MaxRecentFiles { get; set; } = 20;
     public List<string> RecentFiles { get; set; }
 
     // default user preferences

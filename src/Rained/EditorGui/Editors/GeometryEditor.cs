@@ -1,8 +1,9 @@
+namespace Rained.EditorGui.Editors;
 using Raylib_cs;
 using ImGuiNET;
 using System.Numerics;
 using Rained.LevelData;
-namespace Rained.EditorGui.Editors;
+using CellSelection = CellEditing.CellSelection;
 
 class GeometryEditor : IEditorMode
 {
@@ -468,6 +469,13 @@ class GeometryEditor : IEditorMode
             mirrorFlags ^= MirrorFlags.MirrorY;
     }
 
+    public void ShowEditMenu()
+    {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Select, "Select");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy", false, CellSelection.Instance is not null);
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste", false);
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
@@ -717,7 +725,7 @@ class GeometryEditor : IEditorMode
         if (CellSelection.Instance is not null)
         {
             CellSelection.Instance.AffectTiles = false;
-            CellSelection.Instance.Update(ClosestActiveLayer());
+            CellSelection.Instance.Update(layerMask, ClosestActiveLayer());
             if (!CellSelection.Instance.Active)
             {
                 CellSelection.Instance = null;

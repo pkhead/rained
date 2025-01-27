@@ -1,10 +1,11 @@
+namespace Rained.EditorGui.Editors;
 using ImGuiNET;
 using Rained.Assets;
 using Rained.Rendering;
 using Raylib_cs;
 using System.Numerics;
+using CellSelection = CellEditing.CellSelection;
 
-namespace Rained.EditorGui.Editors;
 
 partial class TileEditor : IEditorMode
 {
@@ -17,6 +18,10 @@ partial class TileEditor : IEditorMode
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.IncreaseBrushSize, "Increase Brush Size");
         //KeyShortcuts.ImGuiMenuItem(KeyShortcut.DecreaseBrushSize, "Decrease Brush Size");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.SetMaterial, "Set Selected Material as Default");
+
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Select, "Select");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy", false, CellSelection.Instance is not null);
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste", false);
     }
 
     private void RenderTileLayers(Tile tile)

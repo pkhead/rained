@@ -1,10 +1,8 @@
-using Rained.Assets;
-using Raylib_cs;
-using System.Numerics;
-using ImGuiNET;
-using Rained.Autotiles;
-using Rained.LevelData;
 namespace Rained.EditorGui.Editors;
+using Raylib_cs;
+using ImGuiNET;
+using Rained.LevelData;
+using CellSelection = CellEditing.CellSelection;
 
 [Flags]
 enum TilePlacementFlags
@@ -196,8 +194,11 @@ partial class TileEditor : IEditorMode
 
         if (CellSelection.Instance is not null)
         {
+            Span<bool> layerMask = [false, false, false];
+            layerMask[window.WorkLayer] = true;
+
             CellSelection.Instance.AffectTiles = true;
-            CellSelection.Instance.Update(window.WorkLayer);
+            CellSelection.Instance.Update(layerMask, window.WorkLayer);
             if (!CellSelection.Instance.Active)
             {
                 CellSelection.Instance = null;
