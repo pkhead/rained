@@ -55,6 +55,10 @@ function Camera:clone() end
 ---@return integer
 function rained.cameras.getCount() end
 
+---Obtain a list of all cameras in the level.
+---@return Camera[]
+function rained.cameras.getCameras() end
+
 ---Get the currently prioritized camera, or nil if unset.
 ---@return Camera?
 function rained.cameras.getPriority() end
@@ -76,13 +80,9 @@ function rained.cameras.newCamera(x, y) end
 ---@param index integer? The index at which the camera will be inserted.
 function rained.cameras.addCamera(camera, index) end
 
----Swap the indices of two cameras.
----@param index1 integer The index of the first camera.
----@param index2 integer The index of the second camera.
-function rained.cameras.swap(index1, index2) end
-
 ---Remove a camera.
 ---@param index integer The index of the camera to remove.
+---@return boolean s True if the camera was in the level and was successfully removed. False if not.
 function rained.cameras.removeCamera(index) end
 
 ---Get an object representing the camera at the given index.

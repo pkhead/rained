@@ -1,6 +1,7 @@
 namespace Rained.LuaScripting.Modules;
 
 using System.Diagnostics;
+using System.Numerics;
 using KeraLua;
 using LevelData;
 using Pidgin;
@@ -10,14 +11,38 @@ static class CameraModule
     private static uint _nextId = 1;
     private static readonly Dictionary<uint, Camera> _refs = [];
     private static readonly Dictionary<Camera, uint> _camIds = [];
-    private static readonly string CameraMt = "RainedCamera";
-    private static readonly string CameraRegistry = "RainedCameraRegistry";
+    private static readonly string CameraMt = "Camera";
+    private static readonly string CameraRegistry = "CAMERA_REGISTRY";
 
     public static void Init(Lua lua, NLua.Lua nlua)
     {
         DefineCamera(lua);
 
         lua.NewTable();
+
+        lua.ModuleFunction("getFullSize", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushNumber(Camera.Size.X);
+            lua.PushNumber(Camera.Size.Y);
+            return 2;
+        });
+
+        lua.ModuleFunction("getWidescreenSize", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushNumber(Camera.WidescreenSize.X);
+            lua.PushNumber(Camera.WidescreenSize.Y);
+            return 2;
+        });
+
+        lua.ModuleFunction("getFullscreenSize", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushNumber(Camera.StandardSize.X);
+            lua.PushNumber(Camera.StandardSize.Y);
+            return 2;
+        });
 
         lua.ModuleFunction("getCount", static (nint luaPtr) => {
             var lua = Lua.FromIntPtr(luaPtr);
@@ -37,6 +62,91 @@ static class CameraModule
                 PushCameraWrapper(lua, cam);
             }
 
+            return 1;
+        });
+
+        lua.ModuleFunction("addCamera", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var cam = GetCameraRef(lua, 1);
+            var level = RainEd.Instance.Level;
+            
+            if (lua.IsNoneOrNil(2))
+            {
+                level.Cameras.Remove(cam);
+                level.Cameras.Add(cam);
+            }
+            else
+            {
+                var idx = (int)lua.ToInteger(2) - 1;
+                if (idx <= 0 || idx > level.Cameras.Count)
+                    lua.ArgumentError(2, "out of range");
+                
+                level.Cameras.Insert(idx, cam);
+            }
+
+            return 0;
+        });
+
+        lua.ModuleFunction("removeCamera", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var cam = GetCameraRef(lua, 1);
+            var level = RainEd.Instance.Level;
+
+            lua.PushBoolean( level.Cameras.Remove(cam) );
+            return 1;
+        });
+
+        lua.ModuleFunction("newCamera", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var initX = (float) lua.OptNumber(1, 1.0);
+            var initY = (float) lua.OptNumber(2, 1.0);
+
+            var cam = new Camera(new Vector2(initX, initY));
+            PushCameraWrapper(lua, cam);
+            return 1;
+        });
+
+        lua.ModuleFunction("getPriority", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var cam = RainEd.Instance.Level.PrioritizedCamera;
+
+            if (cam is null)
+                lua.PushNil();
+            else
+                PushCameraWrapper(lua, cam);
+            
+            return 1;
+        });
+
+        lua.ModuleFunction("setPriority", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            if (lua.IsNoneOrNil(1))
+                RainEd.Instance.Level.PrioritizedCamera = null;
+            else
+            {
+                var cam = GetCameraRef(lua, 1);
+                RainEd.Instance.Level.PrioritizedCamera = cam;
+            }
+
+            return 0;
+        });
+
+        lua.ModuleFunction("getCameras", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var level = RainEd.Instance.Level;
+
+            lua.NewTable();
+            for (int i = 0; i < level.Cameras.Count; i++)
+            {
+                PushCameraWrapper(lua, level.Cameras[i]);
+                lua.RawSetInteger(-2, i + 1);
+            }
             return 1;
         });
 
