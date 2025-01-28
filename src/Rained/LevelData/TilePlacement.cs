@@ -127,7 +127,7 @@ static class TilePlacement
         if (level.IsInBounds(tileRootX, tileRootY))
             validationStatus = level.ValidateTilePlacement(
                 tile,
-                tileRootX, tileRootY, layer,
+                tileRootX - tile.CenterX, tileRootY - tile.CenterY, layer,
                 placeMode != TilePlacementMode.Normal
             );
         else
