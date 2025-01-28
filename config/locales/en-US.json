@@ -1,0 +1,112 @@
+/*
+    Localization key format:
+        Period-separated. All but the last item designates the namespace or sub-namespace.
+        The last item is the key within that namespace.
+    
+    Also, this:
+        "generic": {
+            "ok": "OK",
+            "apply": "Apply",
+            "cancel": "Cancel"
+        }
+    
+    should be equivalent to this:
+        "generic.ok": "OK",
+        "generic.apply": "Apply",
+        "generic.cancel": "Cancel"
+    
+    I will need to come up with a way for substitution to work.
+    For example: Zoom 104%. How can I express this in a generic way?
+    Maybe C-style format strings, like `Zoom %i%%`.
+*/
+
+{
+    "generic": {
+        "ok": "OK",
+        "apply": "Apply",
+        "cancel": "Cancel"
+    },
+
+    "menu.file.name": "File",
+    "menu.file.new": "New",
+    "menu.file.open": "Open",
+    "menu.file.openRecent": "Open Recent",
+    "menu.file.save": "Save",
+    "menu.file.saveAs": "Save As...",
+    "menu.file.close": "Close",
+    "menu.file.closeAll": "Close All",
+    "menu.file.render": "Render...",
+    "menu.file.exportGeometry": "Export Geometry",
+    "menu.file.massRender": "Mass Render...",
+    "menu.file.preferences": "Preferences",
+    "menu.file.quit": "Quit",
+
+    "menu.edit.name": "Edit",
+    "menu.edit.undo": "Undo",
+    "menu.edit.redo": "Redo",
+    "menu.edit.resizeLevel": "Resize Level...",
+    "menu.edit.commands": "Commands",
+
+    "menu.view.name": "View",
+    "menu.view.zoomIn": "Zoom In",
+    "menu.view.zoomOut": "Zoom Out",
+    "menu.view.resetView": "Reset View",
+    "menu.view.showGrid": "Grid",
+    "menu.view.showTiles": "Tiles",
+    "menu.view.showProps": "Props",
+    "menu.view.showCameraBorders": "Camera Borders",
+    "menu.view.showTileGraphics": "Tile Graphics",
+    "menu.view.nodeIndices.groupName": "Node Indices",
+    "menu.view.nodeIndices.show": "Show",
+    "menu.view.nodeIndices.roomExits": "Room Exits",
+    "menu.view.nodeIndices.creatureDens": "Creature Dens",
+    "menu.view.nodeIndices.regionTransports": "Region Transports",
+    "menu.view.nodeIndices.sideExits": "Side Exits",
+    "menu.view.nodeIndices.skyExits": "Sky Exits",
+    "menu.view.nodeIndices.seaExits": "Sea Exits",
+    "menu.view.nodeIndices.hives": "Hives",
+    "menu.view.nodeIndices.garbageHoles": "Garbage Holes",
+    "menu.view.showObscuredBeams": "Obscured Beams",
+    "menu.view.showTileHeads": "Tile Heads",
+    "menu.view.windowKeyboardShortcuts": "Keyboard Shortcuts",
+    "menu.view.windowLogs": "Logs",
+    "menu.view.windowPalettes": "Palettes",
+    "menu.view.tilePreviews.groupName": "Tile Preview",
+    "menu.view.tilePreviews.showGraphics": "Graphics",
+    "menu.view.tilePreviews.showGeometry": "Geometry",
+    "menu.view.tilePreviews.showTooltipGeometry": "Tooltip Geometry",
+    "menu.view.showHome": "Home",
+    "menu.view.showDataFolder": "Show Data Folder...",
+    "menu.view.showRenderFolder": "Show Render Folder...",
+
+    "menu.help.name": "Help",
+    "menu.help.readme": "Readme...",
+    "menu.help.manual": "Manual...",
+    "menu.help.about": "About...",
+
+    "newVersion": "New version available!",
+
+    "home.newLevel": "New Level...",
+    "home.openLevel": "Open Level...",
+    "home.manual": "Manual...",
+    "home.recentLevels": "Recent Levels",
+
+    "newLevel.windowTitle": "New Level",
+
+    "levelSize.levelSize": "Level size",
+    "levelSize.width": "Width",
+    "levelSize.height": "Height",
+    "levelSize.screenWidth": "Screen Width",
+    "levelSize.screenHeight": "Screen Height",
+    "levelSize.anchors": "Anchors",
+    "levelSize.borderTiles": "Border Tiles",
+    "levelSize.borderTilesLeft": "Border Tiles Left",
+    "levelSize.borderTilesTop": "Border Tiles Top",
+    "levelSize.borderTilesRight": "Border Tiles Right",
+    "levelSize.borderTileBottom": "Border Tiles Bottom",
+    "levelSize.noUndoNotice": "Note: This cannot be undone",
+
+    "levelView.windowTitle": "Level",
+    "levelView.editMode": "Edit Mode",
+    "levelView."
+}
