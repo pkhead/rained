@@ -112,6 +112,7 @@ static class LuaInterface
     {
         lua.NewTable();
         RainedModule.Init(lua, luaState);
+        LevelModule.Init(lua, luaState);
         CellsModule.Init(lua, luaState);
         TilesModule.Init(lua, luaState);
 

@@ -282,4 +282,12 @@ static class LuaHelpers
         LuaHelpers.PushLuaFunction(lua, func);
         lua.SetField(-2, funcName);
     }
+
+    public static int ErrorWhere(this Lua lua, string msg, int level)
+    {
+        lua.Where(level);
+        lua.PushString(msg);
+        lua.Concat(2);
+        return lua.Error();
+    }
 }

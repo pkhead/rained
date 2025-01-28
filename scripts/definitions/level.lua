@@ -7,8 +7,13 @@
 ---@field height integer (Read-only) The height of the level.
 ---@field defaultMedium boolean Equates to the "Enclosed Room" switch. True if the level's default geometry is solid, false if it is air. (This option doesn't actually do anything.)
 ---@field hasSunlight boolean True if the light map applies, otherwise the level will be completely enclosed in darkness.
----@field waterHeight integer? The height of the water from the bottom of the level. If nil, the level has no water.
+---@field hasWater boolean True if the level has water, false if not.
+---@field waterLevel integer The height of the water from the bottom of the level.
 ---@field isWaterInFront boolean True if water renders in front of the level. Otherwise, it will render behind the first work layer.
+---@field borderLeft integer
+---@field borderTop integer
+---@field borderRight integer
+---@field borderBottom integer
 rained.level = {}
 
 ---Check if a given coordinate is in the bounds of the level.
