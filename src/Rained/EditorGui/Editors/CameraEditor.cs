@@ -488,7 +488,7 @@ class CameraEditor : IEditorMode
             var text = (RainEd.Instance.Level.Cameras.IndexOf(camera) + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
             
             var txtSize = TextRendering.CalcOutlinedTextSize(text);
-            var scale = 2f / window.ViewZoom;
+            var scale = 2f / window.ViewZoom * Boot.PixelIconScale;
             TextRendering.DrawTextOutlined(
                 text: text,
                 offset: camCenter * Level.TileSize - txtSize / 2f * scale,

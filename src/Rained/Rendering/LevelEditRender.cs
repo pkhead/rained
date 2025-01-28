@@ -228,7 +228,7 @@ class LevelEditRender : IDisposable
 
             rctx.DrawColor = NodeColors[(int)nodeType];
             var txtSize = TextRendering.CalcOutlinedTextSize(text);
-            var scale = 2f / ViewZoom;
+            var scale = 2f / ViewZoom * Boot.PixelIconScale;
             TextRendering.DrawTextOutlined(
                 text: text,
                 offset: pos * Level.TileSize - txtSize / 2f * scale,
