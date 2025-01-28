@@ -2,7 +2,7 @@ using System.Text;
 using NLua;
 using NLua.Exceptions;
 using Rained.EditorGui;
-using Rained.LevelData;
+using Rained.LuaScripting.Modules;
 namespace Rained.LuaScripting;
 
 static class LuaInterface
@@ -115,6 +115,7 @@ static class LuaInterface
         LevelModule.Init(lua, luaState);
         CellsModule.Init(lua, luaState);
         TilesModule.Init(lua, luaState);
+        CameraModule.Init(lua, luaState);
 
         return 1;
     }

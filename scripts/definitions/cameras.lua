@@ -13,7 +13,7 @@ local Camera = {}
 --- - Index 2: Bottom-right
 --- - Index 3: Bottom-left
 ---@param index integer The index of the corner.
----@returns dx number, dy number
+---@return number dx, number dy
 function Camera:getCornerOffset(index) end
 
 ---Set the corner offset of a camera quad.
@@ -26,6 +26,27 @@ function Camera:getCornerOffset(index) end
 ---@param y number The Y offset of the corner.
 function Camera:setCornerOffset(index, x, y) end
 
+---Get the angle and strength of a camera quad corner.
+--- - Index 0: Top-left
+--- - Index 1: Top-right
+--- - Index 2: Bottom-right
+--- - Index 3: Bottom-left
+---@param index integer The index of the corner.
+---@return number angle The angle in radians
+---@return number strength The corner strength. This is the distance from the rest position divided by 4.
+function Camera:getCornerAngle(index) end
+
+---Set the angle and strength of a camera quad corner.
+--- - Index 0: Top-left
+--- - Index 1: Top-right
+--- - Index 2: Bottom-right
+--- - Index 3: Bottom-left
+---@param index integer The index of the corner.
+---@param angle number The angle in radians
+---@param strength number The corner strength. This is the distance from the rest position divided by 4.
+function Camera:setCornerAngle(index, angle, strength) end
+
+
 ---Create a clone of this camera.
 ---@return Camera
 function Camera:clone() end
@@ -34,15 +55,13 @@ function Camera:clone() end
 ---@return integer
 function rained.cameras.getCount() end
 
----Get the index of the currently prioritized camera.
----
----Returns nil if unset.
----@return integer?
+---Get the currently prioritized camera, or nil if unset.
+---@return Camera?
 function rained.cameras.getPriority() end
 
----Set the index of the currently prioritized camera. Pass in nil to unset.
----@param cameraIndex integer?
-function rained.cameras.setPriority(cameraIndex) end
+---Set the currently prioritized camera. Pass in nil to unset.
+---@param camera Camera?
+function rained.cameras.setPriority(camera) end
 
 ---Create a new camera.
 ---@param x number? The X position of the top-left corner of the newly created camera, or nil for a default one.
@@ -68,17 +87,17 @@ function rained.cameras.removeCamera(index) end
 
 ---Get an object representing the camera at the given index.
 ---@param cameraIndex integer The camera index.
----@returns Camera
+---@return Camera
 function rained.cameras.getCamera(cameraIndex) end
 
 ---Returns the full size of all cameras in grid units.
----@returns number, number
+---@return number, number
 function rained.cameras.getFullSize() end
 
 ---Returns the widescreen (16:9) size of all cameras in grid units.
----@returns number, number
+---@return number, number
 function rained.cameras.getWidescreenSize() end
 
 ---Returns the fullscreen (4:3) size of all cameras in grid units.
----@returns number, number
+---@return number, number
 function rained.cameras.getFullscreenSize() end

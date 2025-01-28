@@ -1,4 +1,4 @@
-namespace Rained.LuaScripting;
+namespace Rained.LuaScripting.Modules;
 using KeraLua;
 using LevelData;
 
