@@ -331,7 +331,9 @@ static class KeyShortcuts
 
     public static void InitShortcuts()
     {
-        Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiModFlags.None);
+        Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiModFlags.None,
+            allowedMods: ImGuiModFlags.Ctrl | ImGuiModFlags.Shift | ImGuiModFlags.Alt | ImGuiModFlags.Super
+        );
 
         Register("Environment Editor", KeyShortcut.EnvironmentEditor, ImGuiKey._1, ImGuiModFlags.None);
         Register("Geometry Editor", KeyShortcut.GeometryEditor, ImGuiKey._2, ImGuiModFlags.None);
