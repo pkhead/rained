@@ -99,16 +99,16 @@ static class LevelModule
 
             switch (idx) {
                 case "filePath":
-                    return lua.ErrorWhere("field \"filePath\" is read-only.", 1);
+                    return lua.ErrorWhere("field \"filePath\" is read-only.");
 
                 case "name":
-                    return lua.ErrorWhere("field \"name\" is read-only.", 1);
+                    return lua.ErrorWhere("field \"name\" is read-only.");
 
                 case "width":
-                    return lua.ErrorWhere("field \"width\" is read-only.", 1);
+                    return lua.ErrorWhere("field \"width\" is read-only.");
 
                 case "height":
-                    return lua.ErrorWhere("field \"height\" is read-only.", 1);
+                    return lua.ErrorWhere("field \"height\" is read-only.");
 
                 case "defaultMedium":
                     RainEd.Instance.Level.DefaultMedium = lua.ToBoolean(3);
@@ -147,7 +147,7 @@ static class LevelModule
                     break;
 
                 default:
-                    return lua.Error($"unknown field \"{idx}\"");
+                    return lua.ErrorWhere($"unknown field \"{idx}\"");
             }
             
             return 0;

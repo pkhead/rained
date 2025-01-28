@@ -87,44 +87,7 @@ static class RainedModule
     {
         RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
 
-        lua.PushCFunction(static (nint luaPtr) => {
-            var lua = Lua.FromIntPtr(luaPtr);
-
-            // create exception from first argument (error object)
-            var msg = lua.ToString(1);
-            var arr = msg.Split(':');
-            var exception = new NLua.Exceptions.LuaScriptException(msg, "");
-
-            // this is to ignore C functions in stack traceback
-            int level = 0;
-            if (arr.Length > 1)
-            {
-                while (true)
-                {
-                    LuaDebug ar = new();
-                    if (lua.GetStack(level, ref ar) == 0) break;
-                    if (!lua.GetInfo("S", ref ar)) {
-                        throw new Exception("could not get activation record");
-                    }
-                    
-                    var name = ar.Source;
-                    name = name[0] == '@' ? name[1..] : name;
-                    if (name == arr[0])
-                        break;
-                    
-                    level++;
-                }
-            }
-
-            lua.Traceback(lua, level);
-            exception.Data["Traceback"] = lua.ToString(-1);
-            LuaInterface.HandleException(exception);
-            lua.Pop(1); // remove traceback
-
-            // return original error object?
-            lua.PushCopy(1);
-            return 1;
-        });
+        lua.PushCFunction(LuaHelpers.ErrorHandler);
         lua.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
         lua.PCall(0, 0, -2);
 

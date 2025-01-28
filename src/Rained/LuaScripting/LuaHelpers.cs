@@ -86,7 +86,7 @@ static class LuaHelpers
         }
         catch (LuaErrorException e)
         {
-            return lua.Error(e.Message);
+            return lua.ErrorWhere(e.Message);
         }
         catch (Exception e)
         {
@@ -283,11 +283,60 @@ static class LuaHelpers
         lua.SetField(-2, funcName);
     }
 
-    public static int ErrorWhere(this Lua lua, string msg, int level)
+    public static int ErrorWhere(this Lua lua, string msg, int level = 1)
     {
         lua.Where(level);
         lua.PushString(msg);
         lua.Concat(2);
         return lua.Error();
+    }
+
+    /// <summary>
+    /// Error message handler to be used with lua_pcall.
+    /// </summary>
+    /// <param name="luaPtr"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static int ErrorHandler(nint luaPtr)
+    {
+        var lua = Lua.FromIntPtr(luaPtr);
+
+        // create exception from first argument (error object)
+        var msg = lua.ToString(1);
+        var split = msg.Split(':');
+        var exception = new NLua.Exceptions.LuaScriptException(split.Length >= 3 ? split[2][1..] : msg, "");
+
+        // if error string has stack/position info, begin traceback to where
+        // it is located on the stack rather than actual location where the error
+        // was thrown.
+        int level = 0;
+        if (split.Length > 1)
+        {
+            while (true)
+            {
+                LuaDebug ar = new();
+                if (lua.GetStack(level, ref ar) == 0) break;
+                if (!lua.GetInfo("S", ref ar)) {
+                    Log.Debug("error handler: could not get lua activation record");
+                    break;
+                }
+                
+                var name = ar.Source;
+                name = name[0] == '@' ? name[1..] : name;
+                if (name == split[0])
+                    break;
+                
+                level++;
+            }
+        }
+
+        lua.Traceback(lua, level);
+        exception.Data["Traceback"] = lua.ToString(-1);
+        LuaInterface.HandleException(exception);
+        lua.Pop(1); // remove traceback
+
+        // return original error object?
+        lua.PushCopy(1);
+        return 1;
     }
 }
