@@ -82,7 +82,7 @@ static class LuaHelpers
 
         try
         {
-            return func(Lua.FromIntPtr(luaPtr));
+            return func(lua);
         }
         catch (LuaErrorException e)
         {
@@ -269,5 +269,17 @@ static class LuaHelpers
         allocatedObjects[nextID++] = func;
 
         lua.PushCClosure(callDelegate, 1);
+    }
+
+    public static void ModuleFunction(this Lua lua, string funcName, KeraLua.LuaFunction func)
+    {
+        lua.PushCFunction(func);
+        lua.SetField(-2, funcName);
+    }
+
+    public static void ModuleFunction(this Lua lua, string funcName, LuaHelpers.LuaFunction func)
+    {
+        LuaHelpers.PushLuaFunction(lua, func);
+        lua.SetField(-2, funcName);
     }
 }
