@@ -1,18 +1,12 @@
 namespace Rained.LuaScripting.Modules;
 
-using System.Diagnostics;
 using System.Numerics;
 using KeraLua;
 using LevelData;
-using Pidgin;
 
 static class CameraModule
 {
-    private static uint _nextId = 1;
-    private static readonly Dictionary<uint, Camera> _refs = [];
-    private static readonly Dictionary<Camera, uint> _camIds = [];
-    private static readonly string CameraMt = "Camera";
-    private static readonly string CameraRegistry = "CAMERA_REGISTRY";
+    private static readonly ObjectWrap<Camera> wrap = new("Camera", "CAMERA_REGISTRY");
 
     public static void Init(Lua lua, NLua.Lua nlua)
     {
@@ -59,7 +53,7 @@ static class CameraModule
             else
             {
                 var cam = RainEd.Instance.Level.Cameras[idx];
-                PushCameraWrapper(lua, cam);
+                wrap.PushWrapper(lua, cam);
             }
 
             return 1;
@@ -68,7 +62,7 @@ static class CameraModule
         lua.ModuleFunction("addCamera", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var cam = GetCameraRef(lua, 1);
+            var cam = wrap.GetRef(lua, 1);
             var level = RainEd.Instance.Level;
             
             if (lua.IsNoneOrNil(2))
@@ -91,7 +85,7 @@ static class CameraModule
         lua.ModuleFunction("removeCamera", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var cam = GetCameraRef(lua, 1);
+            var cam = wrap.GetRef(lua, 1);
             var level = RainEd.Instance.Level;
 
             lua.PushBoolean( level.Cameras.Remove(cam) );
@@ -105,7 +99,7 @@ static class CameraModule
             var initY = (float) lua.OptNumber(2, 1.0);
 
             var cam = new Camera(new Vector2(initX, initY));
-            PushCameraWrapper(lua, cam);
+            wrap.PushWrapper(lua, cam);
             return 1;
         });
 
@@ -117,7 +111,7 @@ static class CameraModule
             if (cam is null)
                 lua.PushNil();
             else
-                PushCameraWrapper(lua, cam);
+                wrap.PushWrapper(lua, cam);
             
             return 1;
         });
@@ -129,7 +123,7 @@ static class CameraModule
                 RainEd.Instance.Level.PrioritizedCamera = null;
             else
             {
-                var cam = GetCameraRef(lua, 1);
+                var cam = wrap.GetRef(lua, 1);
                 RainEd.Instance.Level.PrioritizedCamera = cam;
             }
 
@@ -144,7 +138,7 @@ static class CameraModule
             lua.NewTable();
             for (int i = 0; i < level.Cameras.Count; i++)
             {
-                PushCameraWrapper(lua, level.Cameras[i]);
+                wrap.PushWrapper(lua, level.Cameras[i]);
                 lua.RawSetInteger(-2, i + 1);
             }
             return 1;
@@ -154,87 +148,14 @@ static class CameraModule
         lua.SetField(-2, "cameras");
     }
 
-    private static unsafe uint GetCamId(Lua lua, int i)
-    {
-        var ud = (uint*) lua.CheckUserData(1, CameraMt);
-        lua.ArgumentCheck(ud != null, 1, "'camera' expected");
-        return *ud;
-    }
-
-    private static unsafe Camera GetCameraRef(Lua lua, int i)
-    {
-        var ud = (uint*) lua.CheckUserData(1, CameraMt);
-        lua.ArgumentCheck(ud != null, 1, "'camera' expected");
-        return _refs[*ud];
-    }
-
-    private static unsafe void PushCameraWrapper(Lua lua, Camera cam)
-    {
-        if (lua.GetField((int)LuaRegistry.Index, CameraRegistry) != LuaType.Table)
-        {
-            throw new Exception("Problem obtaining camera from registry.");
-        }
-        var camTable = lua.GetTop();
-
-        uint id;
-        if (_camIds.TryGetValue(cam, out id))
-        {
-            var type = lua.RawGetInteger(camTable, id);
-            Debug.Assert(type == LuaType.UserData);
-            lua.Remove(camTable); // remove table
-        }
-        else
-        {
-            id = _nextId++;
-
-            var ud = (uint*) lua.NewIndexedUserData(sizeof(uint), 0);
-            *ud = id;
-            lua.GetMetaTable(CameraMt);
-            lua.SetMetaTable(-2);
-            lua.PushCopy(-1);
-            lua.RawSetInteger(camTable, id);
-            lua.Remove(camTable);
-
-            _camIds.Add(cam, id);
-            _refs.Add(id, cam);
-        }
-    }
-
     public static void DefineCamera(Lua lua)
     {
-        lua.NewTable();
-        lua.NewTable();
-        lua.PushString("v");
-        lua.SetField(-2, "__mode");
-        lua.SetMetaTable(-2);
-        lua.SetField((int)LuaRegistry.Index, CameraRegistry);
-
-        if (!lua.NewMetaTable(CameraMt)) return;
-        Debug.Assert(lua.Type(-1) == LuaType.Table);
-
-        lua.ModuleFunction("__metatable", static (nint luaPtr) =>
-        {
-            var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushString("The metatable is locked.");
-            return 1;
-        });
-
-        lua.ModuleFunction("__gc", static (nint luaPtr) =>
-        {
-            var lua = Lua.FromIntPtr(luaPtr);
-            var id = GetCamId(lua, 1);
-
-            Log.Debug("Camera id {Id} gc", id);
-
-            _camIds.Remove(_refs[id]);
-            _refs.Remove(id);
-            return 0;
-        });
+        wrap.InitMetatable(lua);
 
         lua.ModuleFunction("__index", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var cam = GetCameraRef(lua, 1);
+            var cam = wrap.GetRef(lua, 1);
             var k = lua.CheckString(2);
 
             switch (k)
@@ -259,7 +180,7 @@ static class CameraModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var cam = GetCameraRef(lua, 1);
+                        var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
 
@@ -274,7 +195,7 @@ static class CameraModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var cam = GetCameraRef(lua, 1);
+                        var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
 
@@ -293,7 +214,7 @@ static class CameraModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var cam = GetCameraRef(lua, 1);
+                        var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
 
@@ -307,7 +228,7 @@ static class CameraModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var cam = GetCameraRef(lua, 1);
+                        var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
 
@@ -324,7 +245,7 @@ static class CameraModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var cam = GetCameraRef(lua, 1);
+                        var cam = wrap.GetRef(lua, 1);
 
                         var newCam = new Camera(cam.Position);
                         for (int i = 0; i < 4; i++)
@@ -333,7 +254,7 @@ static class CameraModule
                             newCam.CornerOffsets[i] = cam.CornerOffsets[i];
                         }
                         
-                        PushCameraWrapper(lua, newCam);
+                        wrap.PushWrapper(lua, newCam);
                         return 1;
                     });
                     break;
@@ -349,7 +270,7 @@ static class CameraModule
         lua.ModuleFunction("__newindex", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var cam = GetCameraRef(lua, 1);
+            var cam = wrap.GetRef(lua, 1);
             var k = lua.CheckString(2);
 
             switch (k)
