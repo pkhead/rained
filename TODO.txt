@@ -25,7 +25,8 @@ v2.3.0:
   - effects previews
   - show prop preview over mouse
   - second layer for keybinds
-  - make brush strength independent of refresh rate
+  - make effect brush strength independent of refresh rate
+  - configurable effect strength + visual strength
   - Rotation props (#29)
   - autotiles
     - option to join only inner tiles
