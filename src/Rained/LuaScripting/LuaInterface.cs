@@ -117,6 +117,7 @@ static class LuaInterface
         TilesModule.Init(lua, luaState);
         CameraModule.Init(lua, luaState);
         PropModule.Init(lua, luaState);
+        HistoryModule.Init(lua, luaState);
 
         return 1;
     }

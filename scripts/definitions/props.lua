@@ -74,6 +74,11 @@ function rained.props.newProp(name, vertices) end
 ---@param prop Prop The prop to add.
 function rained.props.addProp(prop) end
 
+---Remove a prop from the level.
+---@param prop Prop The prop to remove.
+---@return boolean s True if the prop had been in the level and was successfully removed. False if not.
+function rained.props.removeProp(prop) end
+
 ---Return a list of all props in the level.
 ---@return Prop[]
 function rained.props.getProps() end

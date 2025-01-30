@@ -19,7 +19,7 @@ static class TilesModule
         // function getTileAt
         nlua.Push(static (int x, int y, int layer) => {
             var level = RainEd.Instance.Level;
-            if (layer < 1 || layer > 3) return null;
+            if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return null;
             var tile = RainEd.Instance.Level.GetTile(level.Layers[layer-1, x, y]);
             return tile?.Name;
@@ -29,7 +29,7 @@ static class TilesModule
         // function hasTileHead
         nlua.Push(static (int x, int y, int layer) => {
             var level = RainEd.Instance.Level;
-            if (layer < 1 || layer > 3) return false;
+            if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return false;
             return level.Layers[layer-1, x, y].TileHead is not null;
         });
@@ -46,7 +46,7 @@ static class TilesModule
                 removeGeo = lua.ToBoolean(4);
             
             var level = RainEd.Instance.Level;
-            if (layer < 1 || layer > 3) return 0;
+            if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return 0;
             level.RemoveTileCell(layer - 1, x, y, removeGeo);
             return 0;

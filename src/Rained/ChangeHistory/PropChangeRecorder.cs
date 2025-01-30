@@ -177,6 +177,7 @@ class PropChangeRecorder : ChangeRecorder
     private Prop[]? oldProps = null;
 
     public bool IsTransformActive { get => isTransformActive; }
+    public override bool Active => isTransformActive || oldProps is not null;
 
     public PropChangeRecorder()
     {
@@ -355,5 +356,11 @@ class PropChangeRecorder : ChangeRecorder
             var changeRecord = new PropSettingsChangeRecord([..targetProps], [..oldList]);
             RainEd.Instance.ChangeHistory.Push(changeRecord);
         }*/
+    }
+
+    // shit
+    public override IChangeRecord? EndChange()
+    {
+        throw new NotImplementedException();
     }
 }

@@ -11,6 +11,7 @@ static class PropModule
 {
     private static readonly ObjectWrap<Prop> wrap = new("Prop", "PROP_REGISTRY");
     private static string[] propColorNames = null!;
+    private static bool _changeRecordDirty = false;
 
     public static void Init(Lua lua, NLua.Lua nlua)
     {
@@ -73,9 +74,30 @@ static class PropModule
             if (!level.Props.Contains(prop))
             {
                 level.Props.Add(prop);
+                _changeRecordDirty = true;
             }
 
             return 0;
+        });
+
+        lua.ModuleFunction("removeProp", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var prop = wrap.GetRef(lua, 1);
+
+            RainEd.Instance.Level.Props.Remove(prop);
+            var propEditor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
+            if (propEditor.SelectedProps.Remove(prop))
+            {
+                _changeRecordDirty = true;
+                lua.PushBoolean(true);
+            }
+            else
+            {
+                lua.PushBoolean(false);
+            }
+
+            return 1;
         });
 
         lua.ModuleFunction("getProps", static (nint luaPtr) =>
@@ -397,20 +419,6 @@ static class PropModule
                 case "customColor":
                     lua.PushString(RainEd.Instance.PropDatabase.PropColors[prop.CustomColor].Name);
                     break;
-
-                case "remove":
-                    lua.PushCFunction(static (nint luaPtr) =>
-                    {
-                        var lua = Lua.FromIntPtr(luaPtr);
-                        var prop = wrap.GetRef(lua, 1);
-
-                        RainEd.Instance.Level.Props.Remove(prop);
-                        var propEditor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
-                        propEditor.SelectedProps.Remove(prop);
-
-                        return 0;
-                    });
-                    break;
                     
                 case "clone":
                     lua.PushCFunction(static (nint luaPtr) =>
@@ -606,36 +614,44 @@ static class PropModule
             switch (k)
             {
                 case "renderOrder":
-                    prop.RenderOrder = (int) lua.CheckInteger(2);
+                    prop.RenderOrder = (int) lua.CheckInteger(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "depthOffset":
-                    prop.DepthOffset = (int) lua.CheckInteger(2);
+                    prop.DepthOffset = (int) lua.CheckInteger(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "seed":
-                    prop.Seed = (int) lua.CheckInteger(2);
+                    prop.Seed = (int) lua.CheckInteger(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "renderTime":
-                    var e = lua.CheckOption(2, null, ["preEffects", "postEffects"]);
+                    var e = lua.CheckOption(3, null, ["preEffects", "postEffects"]);
                     prop.RenderTime = (PropRenderTime) e;
+                    _changeRecordDirty = true;
                     break;
 
                 case "variation":
-                    prop.Variation = (int) lua.CheckInteger(2);
+                    prop.Variation = (int) lua.CheckInteger(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "applyColor":
-                    prop.ApplyColor = lua.ToBoolean(2);
+                    prop.ApplyColor = lua.ToBoolean(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "customDepth":
-                    prop.CustomDepth = (int) lua.CheckInteger(2);
+                    prop.CustomDepth = (int) lua.CheckInteger(3);
+                    _changeRecordDirty = true;
                     break;
 
                 case "customColor":
-                    prop.CustomColor = lua.CheckOption(2, null, propColorNames);
+                    prop.CustomColor = lua.CheckOption(3, null, propColorNames);
+                    _changeRecordDirty = true;
                     break;
                     
                 default:
@@ -646,5 +662,15 @@ static class PropModule
         });
 
         lua.Pop(1);
+    }
+
+    public static void UpdateSettingsSnapshot()
+    {
+        if (_changeRecordDirty)
+        {
+            var changeRecorder = RainEd.Instance.LevelView.GetEditor<PropEditor>().ChangeRecorder;
+            changeRecorder.TakeSettingsSnapshot();
+            _changeRecordDirty = false;
+        }
     }
 }

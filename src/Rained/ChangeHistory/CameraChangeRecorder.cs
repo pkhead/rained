@@ -38,6 +38,7 @@ class CameraChangeRecord : IChangeRecord
 {
     public CameraData[] OldData;
     public CameraData[] NewData;
+    public bool UserCreated = false;
 
     public CameraChangeRecord(CameraData[] oldData, CameraData[] newData)
     {
@@ -48,7 +49,7 @@ class CameraChangeRecord : IChangeRecord
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
-        RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Camera;
+        if (UserCreated) RainEd.Instance.LevelView.EditMode = (int) EditModeEnum.Camera;
 
         var data = useNew ? NewData : OldData;
         if (level.Cameras.Count > data.Length) level.Cameras.RemoveRange(data.Length-1, level.Cameras.Count - data.Length);
@@ -72,12 +73,15 @@ class CameraChangeRecorder : ChangeRecorder
     private readonly List<CameraData> snapshot;
     private bool isRecording = false;
 
+    public override bool Active => isRecording;
+    private bool userCreated;
+
     public CameraChangeRecorder()
     {
         snapshot = new List<CameraData>();
     }
 
-    public void BeginChange()
+    public void BeginChange(bool userCreated = true)
     {
         if (isRecording)
         {
@@ -86,6 +90,7 @@ class CameraChangeRecorder : ChangeRecorder
         }
         
         isRecording = true;
+        this.userCreated = userCreated;
 
         var level = RainEd.Instance.Level;
 
@@ -96,9 +101,10 @@ class CameraChangeRecorder : ChangeRecorder
         }
     }
 
-    public void TryPushChange()
+    public override IChangeRecord? EndChange()
     {
-        if (!isRecording) return;
+        if (!isRecording) return null;
+        IChangeRecord? ret = null;
         var level = RainEd.Instance.Level;
 
         bool camerasChanged = snapshot.Count != level.Cameras.Count;
@@ -118,11 +124,14 @@ class CameraChangeRecorder : ChangeRecorder
             for (int i = 0; i < level.Cameras.Count; i++)
                 newCameraData[i] = new CameraData(level.Cameras[i]);
             
-            var changeRecord = new CameraChangeRecord([..snapshot], newCameraData);
-            RainEd.Instance.ChangeHistory.Push(changeRecord);
+            ret = new CameraChangeRecord([..snapshot], newCameraData)
+            {
+                UserCreated = userCreated
+            };
         }
 
         isRecording = false;
+        return ret;
     }
 
     public void PushChange()

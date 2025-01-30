@@ -139,6 +139,8 @@ class EffectsChangeRecorder : ChangeRecorder
     private Effect? activeConfigEffect = null;
     private EffectConfigData configSnapshot;
 
+    public override bool Active => activeEffect is not null || oldFxList is not null;
+
     public void BeginMatrixChange(Effect effect)
     {
         if (activeEffect != null)
@@ -274,5 +276,11 @@ class EffectsChangeRecorder : ChangeRecorder
 
             UpdateConfigSnapshot();
         }
+    }
+
+    // shit
+    public override IChangeRecord? EndChange()
+    {
+        throw new NotImplementedException();
     }
 }

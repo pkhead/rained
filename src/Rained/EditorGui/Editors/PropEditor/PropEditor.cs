@@ -10,6 +10,7 @@ partial class PropEditor : IEditorMode
     public string Name { get => "Props"; }
     public bool SupportsCellSelection => false;
     public List<Prop> SelectedProps => selectedProps;
+    public ChangeHistory.PropChangeRecorder ChangeRecorder => changeRecorder;
     
     private readonly LevelWindow window;
     

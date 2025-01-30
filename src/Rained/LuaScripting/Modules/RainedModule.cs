@@ -86,12 +86,8 @@ static class RainedModule
 
     private static void RunCommand(Lua lua, int id)
     {
-        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
-
         lua.PushCFunction(_errHandler);
         lua.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
         lua.PCall(0, 0, -2);
-
-        RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
     }
 }

@@ -2,9 +2,11 @@ Selection:
 - selection undo/redo
 - drag for tile select
 - ability to move selected in-between layers
+- universal change recorder for props and level properties
 
 Scripting API 3.0:
 - moving props added with script will cause a change history exception
+- fix log of nlua exception thrown in command run
 
 Bugs:
 - undoing while chain holder attach makes a crash .. ???
