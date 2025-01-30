@@ -3,6 +3,9 @@ Selection:
 - drag for tile select
 - ability to move selected in-between layers
 
+Scripting API 3.0:
+- moving props added with script will cause a change history exception
+
 Bugs:
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
@@ -28,13 +31,15 @@ v2.3.0:
   - make effect brush strength independent of refresh rate
   - configurable effect strength + visual strength
   - Rotation props (#29)
-  - autotiles
-    - option to join only inner tiles
-    - ability to recognize more than one tile as a direction type
-    - cross beams autotile
-      - ability to constrain autotile shape into a square
-    - expose imgui functions for scripting api
-    - add re-path button (useful for autotiles that do random)
+  - scripting system
+    - button to reload scripts
+    - autotiles
+      - option to join only inner tiles
+      - ability to recognize more than one tile as a direction type
+      - cross beams autotile
+        - ability to constrain autotile shape into a square
+      - expose imgui functions for scripting api
+      - add re-path button (useful for autotiles that do random)
 
 Do Soon:
 - toggle for showing shortcuts in tile editor

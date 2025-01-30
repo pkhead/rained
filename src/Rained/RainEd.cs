@@ -221,6 +221,21 @@ sealed class RainEd
             // init autotile catalog
             Autotiles = new AutotileCatalog();
             
+            initPhase = "effects";
+            Log.Information("Initializing effects database...");
+            EffectsDatabase = new EffectsDatabase();
+
+            initPhase = "light brushes";
+            Log.UserLogger.Information("Reading light brushes...");
+            LightBrushDatabase = new LightBrushDatabase();
+
+            initPhase = "props";
+            Log.UserLogger.Information("Reading Props/Init.txt");
+            PropDatabase = new PropDatabase(TileDatabase);
+
+            Log.UserLogger.Information("Asset initialization done!");
+            Log.Information("----- ASSET INIT DONE! -----");
+
             // run lua scripts after initializing the tiles
             // (trying to get lua error messages to show as soon as possible)
             try
@@ -242,21 +257,6 @@ sealed class RainEd
                 Boot.DisplayError("Could not start", displayMsg);
                 throw new RainEdStartupException();
             }
-            
-            initPhase = "effects";
-            Log.Information("Initializing effects database...");
-            EffectsDatabase = new EffectsDatabase();
-
-            initPhase = "light brushes";
-            Log.UserLogger.Information("Reading light brushes...");
-            LightBrushDatabase = new LightBrushDatabase();
-
-            initPhase = "props";
-            Log.UserLogger.Information("Reading Props/Init.txt");
-            PropDatabase = new PropDatabase(TileDatabase);
-
-            Log.UserLogger.Information("Asset initialization done!");
-            Log.Information("----- ASSET INIT DONE! -----");
         }
         #if !DEBUG
         catch (Exception e)

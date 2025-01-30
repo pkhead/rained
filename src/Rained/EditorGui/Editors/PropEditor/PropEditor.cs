@@ -9,6 +9,7 @@ partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
     public bool SupportsCellSelection => false;
+    public List<Prop> SelectedProps => selectedProps;
     
     private readonly LevelWindow window;
     
@@ -950,32 +951,7 @@ partial class PropEditor : IEditorMode
 
             foreach (var srcProp in propsToDup)
             {
-                Prop newProp;
-                if (srcProp.IsAffine)
-                {
-                    newProp = new Prop(srcProp.PropInit, srcProp.Rect.Center + Vector2.One, srcProp.Rect.Size);
-                    newProp.Rect.Rotation = srcProp.Rect.Rotation;
-                }
-                else
-                {
-                    newProp = new Prop(srcProp.PropInit, srcProp.QuadPoints);
-                    newProp.QuadPoints[0] += Vector2.One;
-                    newProp.QuadPoints[1] += Vector2.One;
-                    newProp.QuadPoints[2] += Vector2.One;
-                    newProp.QuadPoints[3] += Vector2.One;
-                }
-
-                // copy other properties to the new prop
-                // (this is the best way to do this)
-                newProp.DepthOffset = srcProp.DepthOffset;
-                newProp.ApplyColor = srcProp.ApplyColor;
-                newProp.CustomColor = srcProp.CustomColor;
-                newProp.CustomDepth = srcProp.CustomDepth;
-                newProp.RenderOrder = srcProp.RenderOrder;
-                newProp.Variation = srcProp.Variation;
-                newProp.Seed = srcProp.Seed;
-                newProp.RenderTime = srcProp.RenderTime;
-
+                Prop newProp = srcProp.Clone();
                 RainEd.Instance.Level.Props.Add(newProp);
                 selectedProps.Add(newProp);
             }

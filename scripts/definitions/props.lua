@@ -2,11 +2,11 @@
 rained.props = {}
 
 ---@class PropRect
----@field x number
----@field y number
+---@field x number The X position of the rectangle's center.
+---@field y number The Y position of the rectangle's center.
 ---@field width number
 ---@field height number
----@field rotation number
+---@field rotation number The rotation of the rectangle in radians.
 
 ---@alias PropRenderTime
 ---| "preEffects",
@@ -58,8 +58,8 @@ function Prop:flipY() end
 
 ---Create a new prop from a rectangle.
 ---@param name string The name of the prop init.
----@param centerX number? The X position of the prop center.
----@param centerY number? The Y position of the prop center.
+---@param centerX number The X position of the prop center.
+---@param centerY number The Y position of the prop center.
 ---@param width number The width of the prop.
 ---@param height number The height of the prop.
 ---@return Prop prop
@@ -78,27 +78,73 @@ function rained.props.addProp(prop) end
 ---@return Prop[]
 function rained.props.getProps() end
 
----Return a list of all selected props in the level.
+---Return a list of all selected props.
 ---@return Prop[]
-function rained.props.getSelectedProps() end
+function rained.props.getSelection() end
 
----Get a list of all available prop names.
+---Deselect all props.
+function rained.props.clearSelection() end
+
+---Select a prop if it isn't already selected.
+---@param prop Prop[] The prop to select.
+function rained.props.addToSelection(prop) end
+
+---Deselect a prop. Does nothing if the prop wasn't selected.
+---@param prop Prop[] The prop to deselect.
+---@return boolean s True if the prop had been selected, false if not.
+function rained.props.removeFromSelection(prop) end
+
+---Get a list of all available prop names, including tile-as-props.
 ---@return string[]
-function rained.prop.getPropCatalog() end
+function rained.props.getPropCatalog() end
 
 ---Get a list of all available prop categories, excluding the "Tiles as Prop" ones.
 ---@return string[]
-function rained.prop.getPropCategories() end
+function rained.props.getPropCategories() end
 
 ---Get a list of all tile categories that contain a tile that can be used as a prop.
 ---@return string[]
-function rained.prop.getTileAsPropCategories() end
+function rained.props.getTileAsPropCategories() end
 
----Get a list of prop inits in the prop category given by name.
+---Get a list of prop init names in the prop category given by name.
 ---@param categoryName string The name of the category.
 ---@return string[]
-function rained.prop.getPropsInCategory(categoryName) end
+function rained.props.getPropsInCategory(categoryName) end
+
+---Get a list of prop init names in the tile-as-prop category given by name.
+---@param categoryName string The name of the tile-as-prop category.
+---@return string[]
+function rained.props.getPropsInTileCategory(categoryName) end
 
 ---Get the list of available custom colors.
 ---@return string[]
-function rained.prop.availableCustomColors() end
+function rained.props.getCustomColors() end
+
+---@alias PropType
+---| "standard"
+---| "variedStandard"
+---| "soft"
+---| "coloredSoft"
+---| "variedSoft"
+---| "simpleDecal"
+---| "variedDecal"
+---| "antimatter"
+---| "rope"
+---| "long"
+
+---@alias PropColorTreatment
+---| "standard"
+---| "bevel"
+
+---@class PropData
+---@field name string The name of the prop init.
+---@field category string The name of the category the prop belongs to. If this is a tile as prop, it will be the name of the tile category it originates from.
+---@field type PropType
+---@field colorTreatment PropColorTreatment?
+---@field variationCount integer
+---@field tileAsProp boolean True if this is a tile-as-prop, false if not.
+
+---Get information about a prop init.
+---@param name string The name of the prop init.
+---@return PropData? data The prop data, or nil if the name is not registered.
+function rained.props.getPropInfo(name) end

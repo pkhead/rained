@@ -1,5 +1,6 @@
 using Rained.Assets;
 using Raylib_cs;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 namespace Rained.Assets;
 
@@ -537,7 +538,7 @@ class PropDatabase
         InitCustomColors();
     }
 
-    public bool TryGetPropFromName(string name, out PropInit? value)
+    public bool TryGetPropFromName(string name, [NotNullWhen(true)] out PropInit? value)
     {
         return allProps.TryGetValue(name, out value);
     }

@@ -6,6 +6,7 @@ static class RainedModule
 {
     private static readonly Dictionary<int, int> registeredCmds = [];
     private const string CommandID = "RainedCommandID";
+    private static readonly LuaFunction _errHandler = new(LuaHelpers.ErrorHandler);
 
     public static void Init(Lua lua, NLua.Lua nLua)
     {
@@ -87,7 +88,7 @@ static class RainedModule
     {
         RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
 
-        lua.PushCFunction(LuaHelpers.ErrorHandler);
+        lua.PushCFunction(_errHandler);
         lua.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
         lua.PCall(0, 0, -2);
 

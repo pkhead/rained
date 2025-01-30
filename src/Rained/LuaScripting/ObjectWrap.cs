@@ -4,33 +4,58 @@ using System.Diagnostics;
 using KeraLua;
 using Rained;
 
-class ObjectWrap<T> where T : notnull
+static class ObjectWrapDatabase
 {
-    private uint _nextId = 1;
-    private readonly string TypeMt;
-    private readonly string RegistryIndex;
+    private static uint _nextId = 1;
+    private static readonly Dictionary<uint, object> refs = [];
+    private static readonly Dictionary<object, uint> objIds = [];
 
-    private static readonly Dictionary<uint, T> _refs = [];
-    private static readonly Dictionary<T, uint> _objIds = [];
-
-    public ObjectWrap(string typeName, string registryIndex)
+    public static uint NextID()
     {
-        TypeMt = typeName;
-        RegistryIndex = registryIndex;
+        return _nextId++;
     }
+
+    public static void Associate(uint id, object obj)
+    {
+        refs.Add(id, obj);
+        objIds.Add(obj, id);
+    }
+
+    public static void Remove(uint id)
+    {
+        objIds.Remove(refs[id]);
+        refs.Remove(id);
+    }
+
+    public static bool TryGetID(object obj, out uint id)
+    {
+        return objIds.TryGetValue(obj, out id);
+    }
+
+    public static object GetObject(uint id)
+    {
+        return refs[id];
+    }
+}
+
+class ObjectWrap<T>(string typeName, string registryIndex) where T : notnull
+{
+    private readonly string TypeMt = typeName;
+    private readonly string RegistryIndex = registryIndex;
 
     public unsafe uint GetID(Lua lua, int i)
     {
-        var ud = (uint*) lua.CheckUserData(1, TypeMt);
-        lua.ArgumentCheck(ud != null, 1, $"{TypeMt} expected");
+        var ud = (uint*) lua.CheckUserData(i, TypeMt);
+        lua.ArgumentCheck(ud != null, i, $"{TypeMt} expected");
         return *ud;
     }
 
     public unsafe T GetRef(Lua lua, int i)
     {
-        var ud = (uint*) lua.CheckUserData(1, TypeMt);
-        lua.ArgumentCheck(ud != null, 1, $"{TypeMt} expected");
-        return _refs[*ud];
+        var ud = (uint*) lua.CheckUserData(i, TypeMt);
+        lua.ArgumentCheck(ud != null, i, $"{TypeMt} expected");
+        if (*ud == 0) lua.ArgumentError(i, $"{TypeMt} instance was disposed");
+        return (T) ObjectWrapDatabase.GetObject(*ud);
     }
 
     /// <summary>
@@ -63,8 +88,7 @@ class ObjectWrap<T> where T : notnull
 
             Log.Debug("{Type} id {Id} gc", TypeMt, id);
 
-            _objIds.Remove(_refs[id]);
-            _refs.Remove(id);
+            ObjectWrapDatabase.Remove(id);
             return 0;
         });
     }
@@ -78,7 +102,7 @@ class ObjectWrap<T> where T : notnull
         var camTable = lua.GetTop();
 
         uint id;
-        if (_objIds.TryGetValue(obj, out id))
+        if (ObjectWrapDatabase.TryGetID(obj, out id))
         {
             var type = lua.RawGetInteger(camTable, id);
             Debug.Assert(type == LuaType.UserData);
@@ -86,7 +110,7 @@ class ObjectWrap<T> where T : notnull
         }
         else
         {
-            id = _nextId++;
+            id = ObjectWrapDatabase.NextID();
 
             var ud = (uint*) lua.NewIndexedUserData(sizeof(uint), 0);
             *ud = id;
@@ -96,8 +120,7 @@ class ObjectWrap<T> where T : notnull
             lua.RawSetInteger(camTable, id);
             lua.Remove(camTable);
 
-            _objIds.Add(obj, id);
-            _refs.Add(id, obj);
+            ObjectWrapDatabase.Associate(id, obj);
         }
     }
 }
