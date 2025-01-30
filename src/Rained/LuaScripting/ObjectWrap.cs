@@ -42,6 +42,7 @@ class ObjectWrap<T>(string typeName, string registryIndex) where T : notnull
 {
     private readonly string TypeMt = typeName;
     private readonly string RegistryIndex = registryIndex;
+    private static LuaFunction? gcDelegate = null;
 
     public unsafe uint GetID(Lua lua, int i)
     {
@@ -81,7 +82,7 @@ class ObjectWrap<T>(string typeName, string registryIndex) where T : notnull
             return 1;
         });
 
-        lua.ModuleFunction("__gc", (nint luaPtr) =>
+        gcDelegate ??= (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var id = GetID(lua, 1);
@@ -90,7 +91,9 @@ class ObjectWrap<T>(string typeName, string registryIndex) where T : notnull
 
             ObjectWrapDatabase.Remove(id);
             return 0;
-        });
+        };
+
+        lua.ModuleFunction("__gc", gcDelegate);
     }
 
     public unsafe void PushWrapper(Lua lua, T obj)
