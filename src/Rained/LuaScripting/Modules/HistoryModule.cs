@@ -67,6 +67,20 @@ static class HistoryModule
             return 1;
         });
 
+        lua.ModuleFunction("undo", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushBoolean( RainEd.Instance.ChangeHistory.Undo() );
+            return 1;
+        });
+
+        lua.ModuleFunction("redo", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushBoolean( RainEd.Instance.ChangeHistory.Redo() );
+            return 1;
+        });
+
         // set rained.history
         lua.SetField(-2, "history");
     }

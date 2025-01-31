@@ -60,10 +60,18 @@ function rained.tiles.getTileInfo(name) end
 ---@param forceModifier ForceModifier
 function rained.tiles.autotilePath(tileTable, layer, segments, forceModifier, startIndex, endIndex) end
 
+---@deprecated
+---**DEPRECATED: Use `rained.tiles.isInstalled` instead**
+---
 ---Check if a tile is installed
 ---@param tileName string The name of the tile to check
 ---@return boolean
 function rained.tiles.hasTile(tileName) end
+
+---Check if a tile is installed
+---@param tileName string The name of the tile to check
+---@return boolean
+function rained.tiles.isInstalled(tileName) end
 
 ---Place a tile in the level.
 ---@param tileName string The name of the tile to place

@@ -56,6 +56,50 @@ function rained.alert(msg) end
 ---@param callback function The action to run on command.
 function rained.registerCommand(name, callback) end
 
+---@class DocumentInfo
+---@field name string
+---@field filePath string
+
+---Get the number of open documents.
+---@return integer count
+function rained.getDocumentCount() end
+
+---Get the name of the document at the given index. Returns nil if there was no document.
+---@param index integer
+---@return string?
+function rained.getDocumentName(index) end
+
+---Get info about the document at the given index. Returns nil if there was no document.
+---@param index integer
+---@return DocumentInfo?
+function rained.getDocumentInfo(index) end
+
+---Get the index of the active document. Nil if the Home tab is selected.
+---@return integer|nil
+function rained.getActiveDocument() end
+
+---Set the active document index. This might take a while.
+---@param index integer The index of the new active document.
+---@return boolean s True on success, false otherwise.
+function rained.setActiveDocument(index) end
+
+---Check if a document is open.
+---@return boolean
+function rained.isDocumentOpen() end
+
+---@alias FileBrowserOpenMode
+---| "write"
+---| "read"
+---| "multiRead"
+---| "directory"
+---| "multiDirectory"
+
+---Open the file browser, blocking the script until the user has either submitted or canceled.
+---@param openMode FileBrowserOpenMode
+---@param filters string[][]?
+---@return string[]|string|nil
+function rained.openFileBrowser(openMode, filters) end
+
 ---@deprecated
 ---**DEPRECATED: Use `rained.level.width` instead.**
 ---

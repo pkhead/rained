@@ -99,6 +99,11 @@ function rained.props.addToSelection(prop) end
 ---@return boolean s True if the prop had been selected, false if not.
 function rained.props.removeFromSelection(prop) end
 
+---Check if a prop is installed
+---@param propName string The name of the prop to check.
+---@return boolean
+function rained.props.isInstalled(propName) end
+
 ---Get a list of all available prop names, including tile-as-props.
 ---@return string[]
 function rained.props.getPropCatalog() end

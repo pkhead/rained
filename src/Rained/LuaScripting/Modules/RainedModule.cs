@@ -55,6 +55,84 @@ static class RainedModule
             return 1;
         });
 
+        lua.ModuleFunction("getDocumentCount", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushInteger(RainEd.Instance.Tabs.Count);
+            return 1;
+        });
+
+        lua.ModuleFunction("getDocumentName", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var idx = (int)lua.CheckInteger(1) - 1;
+            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            {
+                lua.PushNil(); return 1;
+            }
+
+            lua.PushString(RainEd.Instance.Tabs[idx].Name);
+            return 1;
+        });
+
+        lua.ModuleFunction("getDocumentInfo", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var idx = (int)lua.CheckInteger(1) - 1;
+            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            {
+                lua.PushNil(); return 1;
+            }
+
+            var name = RainEd.Instance.Tabs[idx].Name;
+            var filePath = RainEd.Instance.Tabs[idx].FilePath;
+
+            lua.NewTable();
+            lua.PushString(name);
+            lua.SetField(-2, "name");
+            lua.PushString(filePath);
+            lua.SetField(-2, "filePath");
+
+            return 1;
+        });
+
+        lua.ModuleFunction("getActiveDocument", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            if (RainEd.Instance.CurrentTab is not null)
+            {
+                lua.PushInteger(RainEd.Instance.Tabs.IndexOf(RainEd.Instance.CurrentTab) + 1);
+            } else
+            {
+                lua.PushNil();
+            }
+
+            return 1;
+        });
+
+        lua.ModuleFunction("setActiveDocument", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+
+            var idx = (int)lua.CheckInteger(1) - 1;
+            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            {
+                lua.PushBoolean(false);
+                return 1;
+            }
+            
+            RainEd.Instance.CurrentTab = RainEd.Instance.Tabs[idx];
+            lua.PushBoolean(true);
+            return 1;
+        });
+
+        lua.ModuleFunction("isDocumentOpen", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushBoolean(RainEd.Instance.CurrentTab is not null);
+            return 1;
+        });
+
         lua.NewMetaTable(CommandID);
         LuaHelpers.PushLuaFunction(lua, static (Lua lua) =>
         {
@@ -86,8 +164,15 @@ static class RainedModule
 
     private static void RunCommand(Lua lua, int id)
     {
-        lua.PushCFunction(_errHandler);
-        lua.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
-        lua.PCall(0, 0, -2);
+        Lua coro = lua.NewThread();
+        coro.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
+        var status = coro.Resume(null, 0, out _);
+        if (status is not LuaStatus.OK or LuaStatus.Yield)
+        {
+            LuaHelpers.ErrorHandler(coro.Handle);
+        }
+        
+        //lua.PushCFunction(_errHandler);
+        //lua.PCall(0, 0, -2);
     }
 }

@@ -34,3 +34,11 @@ function rained.history.endChange() end
 ---Check if a change is active.
 ---@return boolean
 function rained.history.isChangeActive() end
+
+---Undo. Does nothing if there was nothing to undo.
+---@return boolean s True if there was something to undo, false if not.
+function rained.history.undo() end
+
+---Redo. Does nothing if there was nothing to redo.
+---@return boolean s True if there was something to redo, false if not.
+function rained.history.redo() end

@@ -29,22 +29,24 @@ class ChangeHistory
         undoStack.Push(record);
     }
 
-    public void Undo()
+    public bool Undo()
     {
-        if (undoStack.Count == 0) return;
+        if (undoStack.Count == 0) return false;
         var record = undoStack.Pop();
         redoStack.Push(record);
         record.Apply(false);
         UndidOrRedid?.Invoke();
+        return true;
     }
 
-    public void Redo()
+    public bool Redo()
     {
-        if (redoStack.Count == 0) return;
+        if (redoStack.Count == 0) return false;
         var record = redoStack.Pop();
         undoStack.Push(record);
         record.Apply(true);
         UndidOrRedid?.Invoke();
+        return true;
     }
 
     public void MarkUpToDate()
