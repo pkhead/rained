@@ -282,5 +282,6 @@ static class LuaInterface
     public static void UIUpdate()
     {
         RainedModule.UIUpdate();
+        PropModule.UpdateSettingsSnapshot();
     }
 }
