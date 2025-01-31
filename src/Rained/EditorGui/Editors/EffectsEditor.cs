@@ -457,6 +457,9 @@ class EffectsEditor : IEditorMode
             ActiveLayer = window.WorkLayer
         });
 
+        if (selectedEffect >= level.Effects.Count)
+            selectedEffect = -1;
+
         if (selectedEffect >= 0)
         {
             var effect = level.Effects[selectedEffect];

@@ -3,6 +3,7 @@ Selection:
 - drag for tile select
 - ability to move selected in-between layers
 - universal change recorder for props and level properties
+- effect layer accept lingo names
 
 Scripting API 3.0:
 - moving props added with script will cause a change history exception

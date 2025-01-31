@@ -117,18 +117,20 @@ class UniversalEffectChangeRecorder : ChangeRecorder
         hadChanged:;
 
         // change was detected...
-        var records = new UniversalEffectChangeRecord.EffectRecord[effectChanges.Count];
-        int j = 0;
+        var records = new List<UniversalEffectChangeRecord.EffectRecord>(effectChanges.Count);
         foreach (var (effect, change) in effectChanges)
         {
-            records[j++] = new UniversalEffectChangeRecord.EffectRecord(effect)
+            if (listSnapshot.Contains(effect) || RainEd.Instance.Level.Effects.Contains(effect))
             {
-                configStore = change.config,
-                matrixStore = change.matrix
-            };
+                records.Add(new UniversalEffectChangeRecord.EffectRecord(effect)
+                {
+                    configStore = change.config,
+                    matrixStore = change.matrix
+                });
+            }
         }
 
-        return new UniversalEffectChangeRecord(listChanged ? listSnapshot : null, records);
+        return new UniversalEffectChangeRecord(listChanged ? listSnapshot : null, [..records]);
     }
 
     /// <summary>

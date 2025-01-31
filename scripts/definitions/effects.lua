@@ -10,6 +10,11 @@ local Effect = {}
 ---@return Effect
 function Effect:clone() end
 
+---Get the value of an effect option. Throws an error if the effect does not have the option.
+---@param name string The name of the option.
+---@return boolean|integer|string value
+function Effect:getOption(name) end
+
 ---Set the value of an effect option.
 ---Throws an error if the option doesn't exist or is type-incompatible with the given value.
 ---@param name string The name of the option.
@@ -19,26 +24,24 @@ function Effect:setOption(name, value) end
 ---Set a value in the effect matrix.
 ---@param x integer X position. X = 0 represents the leftmost column of elements.
 ---@param y integer Y position. Y = 0 represents the topmost row of elements.
----@param value number Value in the range 0-1. Will be clamped.
+---@param value number Value in the range 0-100. Will be clamped.
 function Effect:setMatrixValue(x, y, value) end
 
 ---Get a value in the effect matrix. Will throw an error if out of bounds.
 ---@param x integer X position. X = 0 represents the leftmost column of elements.
 ---@param y integer Y position. Y = 0 represents the topmost row of elements.
----@return number
+---@return number value Value in the range 0-100.
 function Effect:getMatrixValue(x, y) end
 
 ---Get the effect matrix as a column-major two-dimensional array.
+---Each element is in the range 0-100.
 ---@return number[][]
 function Effect:getMatrix() end
 
 ---Set the effect matrix to a column-major two dimensional array. Will throw an error
----for a dimension mismatch. Each element will also be clamped to 0-1.
+---for a dimension mismatch. Each element will also be clamped to 0-100.
 ---@param matrix number[][]
 function Effect:setMatrix(matrix) end
-
----Remove this effect from the effect list.
-function Effect:remove() end
 
 ---@alias EffectType
 ---| "boolean",
@@ -59,11 +62,16 @@ function rained.effects.getEffect(index) end
 ---@return string
 function rained.effects.getEffectName(index) end
 
----Remove an effect instace at the given index.
+---Remove an effect instance at the given index.
 ---
 ---Does nothing if there is no effect at that index.
 ---@param index integer The index to remove.
 function rained.effects.removeEffect(index) end
+
+---Remove an effect instance from the list.
+---@param effect Effect The effect instance to remove.
+---@return boolean s True if the effect was already in the list and was removed successfully. False if not.
+function rained.effects.removeEffect(effect) end
 
 ---Add an effect instance at a given index.
 ---If the index is nil, it will be added to the end of the list.
@@ -72,26 +80,44 @@ function rained.effects.removeEffect(index) end
 ---@param index integer? The index at which the effect will be inserted.
 function rained.effects.addEffect(effect, index) end
 
----Create a new effect instance.
+---Create a new effect instance. Throws an error if the given effect was not recognized.
 ---@param effectName string The name of the effect init.
----@return Effect effect The newly created effect, or nil if the name was not recognized.
+---@return Effect effect The newly created effect.
 function rained.effects.newEffect(effectName) end
-
----Get the type of an effect option. Returns nil if the option does not exist.
----@param effectName string The name of the effect.
----@param optionName string The name of the option.
----@return EffectType type, string[]? enumOptions
-function rained.effects.getOptionType(effectName, optionName) end
-
----Get the default value for an effect option. Returns nil if the option does not exist.
----@param effectName string The name of the effect.
----@param optionName string The name of the option.
----@return boolean|integer|string
-function rained.effects.getOptionDefaultValue(effectName, optionName) end
 
 ---Return the index of the selected effect, or nil if none was selected.
 ---@return integer?
 function rained.effects.getSelectedEffect() end
+
+---Check if an effect has a given option.
+---@param effectName string The name of the effect.
+---@param optionName string The name of the option.
+---@return boolean
+function rained.effects.hasOption(effectName, optionName) end
+
+---Get the list of available options for a given effect. Throws an error if the given effect was not recognized.
+---@param effectName string The name of the effect.
+---@return string[]? options The list of options.
+function rained.effects.getOptions(effectName) end
+
+---Get the type of an effect option. Returns nil if the option does not exist.
+---@param effectName string The name of the effect.
+---@param optionName string The name of the option.
+---@return EffectType? type, string[]? enumOptions
+function rained.effects.getOptionType(effectName, optionName) end
+
+---Get the default value for an effect option.
+---
+---Returns nil if the option does not exist or if it is an integer, in which case no default exists.
+---@param effectName string The name of the effect.
+---@param optionName string The name of the option.
+---@return boolean|string|nil default Nil if the option or its default does not exist. Otherwise, the default value for the option.
+function rained.effects.getOptionDefaultValue(effectName, optionName) end
+
+---Check if an effect is installed.
+---@param effectName string The name of the effect.
+---@return boolean
+function rained.effects.isInstalled(effectName) end
 
 ---Get a list of all available effects.
 ---@return string[]

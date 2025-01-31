@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Rained.LevelData;
 namespace Rained.Assets;
 
@@ -1146,7 +1147,7 @@ class EffectsDatabase
         throw new Exception($"Effect '{name}' not found");
     }
 
-    public bool TryGetEffectFromName(string name, out EffectInit? effect)
+    public bool TryGetEffectFromName(string name, [NotNullWhen(true)] out EffectInit? effect)
     {
         foreach (var group in groups)
         {
