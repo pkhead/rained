@@ -237,7 +237,7 @@ static class EditorWindow
                 {
                     ImGui.Separator();
 
-                    if (ImGui.BeginMenu("Commands", fileActive))
+                    if (ImGui.BeginMenu("Commands"))
                     {
                         foreach (RainEd.Command cmd in customCommands)
                         {

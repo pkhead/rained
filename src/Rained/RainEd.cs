@@ -19,6 +19,14 @@ public class RainEdStartupException : Exception
     public RainEdStartupException(string message, Exception inner) : base(message, inner) { }
 }
 
+[Serializable]
+public class NoLevelException : Exception
+{
+    public NoLevelException() { }
+    public NoLevelException(string message) : base(message) { }
+    public NoLevelException(string message, System.Exception inner) : base(message, inner) { }
+}
+
 /// <summary>
 /// The main application.
 /// </summary>
@@ -77,9 +85,29 @@ sealed class RainEd
     private LevelTab? _currentTab = null;
     public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value); }
 
-    public Level Level { get => CurrentTab!.Level; }
-    public LevelWindow LevelView { get => levelView!; }
-    public ChangeHistory.ChangeHistory ChangeHistory { get => CurrentTab!.ChangeHistory; }
+    public Level Level {
+        get
+        {
+            if (CurrentTab is null) throw new NoLevelException();
+            return CurrentTab.Level;
+        }
+    }
+
+    public LevelWindow LevelView {
+        get
+        {
+            if (CurrentTab is null) throw new NoLevelException();
+            return levelView!; 
+        }
+    }
+
+    public ChangeHistory.ChangeHistory ChangeHistory {
+        get
+        {
+            if (CurrentTab is null) throw new NoLevelException();
+            return CurrentTab!.ChangeHistory;
+        }
+    }
 
     // this is used to set window IsEventDriven to true
     // when the user hasn't interacted with the window in a while

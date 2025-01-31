@@ -310,23 +310,14 @@ static class RainedModule
             lua.RawSetInteger(-2, i++);
         }
 
-        var status = lua.Resume(null, 1, out _);
-        if (!(status is LuaStatus.OK or LuaStatus.Yield))
-        {
-            LuaHelpers.ErrorHandler(lua.Handle, -1);
-            return;
-        }
+        LuaHelpers.ResumeCoroutine(lua, null, 1, out _);
     }
 
     private static void RunCommand(Lua lua, int id)
     {
         Lua coro = lua.NewThread();
         coro.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
-        var status = coro.Resume(null, 0, out _);
-        if (!(status is LuaStatus.OK or LuaStatus.Yield))
-        {
-            LuaHelpers.ErrorHandler(coro.Handle, -1);
-        }
+        LuaHelpers.ResumeCoroutine(coro, null, 0, out _);
         
         //lua.PushCFunction(_errHandler);
         //lua.PCall(0, 0, -2);
