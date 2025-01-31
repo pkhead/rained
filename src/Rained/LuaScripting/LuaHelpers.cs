@@ -297,12 +297,13 @@ static class LuaHelpers
     /// <param name="luaPtr"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public static int ErrorHandler(nint luaPtr)
+    public static int ErrorHandler(nint luaPtr, int errObj)
     {
         var lua = Lua.FromIntPtr(luaPtr);
+        if (errObj < 0) errObj = lua.GetTop() - (errObj + 1);
 
         // create exception from first argument (error object)
-        var msg = lua.ToString(1);
+        var msg = lua.ToString(errObj);
         var split = msg.Split(':');
         var exception = new NLua.Exceptions.LuaScriptException(split.Length >= 3 ? split[2][1..] : msg, "");
 

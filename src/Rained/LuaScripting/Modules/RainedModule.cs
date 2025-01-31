@@ -6,7 +6,14 @@ static class RainedModule
 {
     private static readonly Dictionary<int, int> registeredCmds = [];
     private const string CommandID = "RainedCommandID";
-    private static readonly LuaFunction _errHandler = new(LuaHelpers.ErrorHandler);
+    private static readonly string[] fileBrowserOpenMode = ["write", "read", "multiRead", "directory", "multiDirectory"];
+
+    private static int filebrowserCoro = 0;
+    private static FileBrowser? fileBrowser = null;
+
+    private static nint levelFilterUserdata;
+
+    //private static readonly LuaFunction _errHandler = new(LuaHelpers.ErrorHandler);
 
     public static void Init(Lua lua, NLua.Lua nLua)
     {
@@ -160,6 +167,155 @@ static class RainedModule
 
             return 1;
         });
+
+        lua.ModuleFunction("openLevel", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var filePath = lua.CheckString(1);
+            
+            try
+            {
+                RainEd.Instance.LoadLevelThrow(filePath);
+            }
+            catch
+            {
+                lua.ErrorWhere("could not load level " + filePath);
+            }
+
+            return 0;
+        });
+
+        lua.ModuleFunction("newLevel", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var w = (int) lua.CheckInteger(1);
+            var h = (int) lua.CheckInteger(2);
+            var filePath = lua.OptString(3, "");
+
+            RainEd.Instance.OpenLevel(new LevelData.Level(w, h), filePath);
+            return 0;
+        });
+
+        {
+            lua.NewTable();
+
+            levelFilterUserdata = lua.NewIndexedUserData(1, 1);
+            lua.SetField(-2, "level");
+
+            lua.SetField(-2, "fileFilters");
+        }
+
+        lua.ModuleFunction("openFileBrowser", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var openMode = (FileBrowser.OpenMode) lua.CheckOption(1, null, fileBrowserOpenMode);
+            if (!lua.IsNoneOrNil(2)) lua.CheckType(2, LuaType.Table);
+
+            if (lua.PushThread())
+            {
+                return lua.ErrorWhere("cannot call openFileBrowser from non-yieldable thread");
+            }
+
+            List<(string name, bool isRw, string[] ext)> filters = [];
+            int c = (int) lua.Length(2);
+            for (int i = 1; i <= c; i++)
+            {
+                lua.GetInteger(2, i);
+                
+                // hardcoded built-in filters
+                if (lua.IsUserData(-1) && lua.ToUserData(-1) == levelFilterUserdata)
+                {
+                    filters.Add(("Level file", true, null!));
+                    lua.Pop(1);
+                    continue;
+                }
+
+                lua.ArgumentCheck(lua.IsTable(-1), 2, "invalid filters table");
+
+                // get filter name
+                lua.GetInteger(-1, 1);
+                lua.ArgumentCheck(lua.IsString(-1), 2, "invalid filters table");
+                var filterName = lua.ToString(-1);
+                lua.Pop(1);
+
+                // get filter extensions
+                lua.GetInteger(-1, 2);
+
+                if (lua.IsTable(-1))
+                {
+                    int c2 = (int) lua.Length(-1);
+                    string[] filterExts = new string[c2];
+                    int j = 0;
+                    for (int k = 1; k <= c2; k++)
+                    {
+                        lua.GetInteger(-1, k);
+                        lua.ArgumentCheck(lua.IsString(-1), 2, "invalid filters table");
+                        filterExts[j++] = lua.ToString(-1);
+                        lua.Pop(1);
+                    }
+
+                    filters.Add((filterName, false, filterExts));
+                }
+                else
+                {
+                    lua.ArgumentCheck(lua.IsString(-1), 2, "invalid filters table");
+                    var filterExt = lua.ToString(-1);
+                    filters.Add((filterName, false, [filterExt]));
+                }
+
+                lua.Pop(1);
+            }
+
+            fileBrowser = new FileBrowser(openMode, FileBrowserCallback, null);
+            foreach (var (name, isRw, ext) in filters)
+            {
+                if (isRw)
+                {
+                    fileBrowser.AddFilterWithCallback("Level file", static (string path, bool isRw) => isRw, ".txt");
+                    fileBrowser.PreviewCallback ??= (string path, bool isRw) =>
+                    {
+                        if (isRw) return new BrowserLevelPreview(path);
+                        return null;
+                    };
+                }
+                else
+                {
+                    fileBrowser.AddFilter(name, ext);
+                }
+            }
+
+            filebrowserCoro = LuaInterface.LuaState.Ref(LuaRegistry.Index);
+            return lua.YieldK(0, 0, static (nint luaPtr, int status, nint k) =>
+            {
+                return 1;
+            });
+        });
+    }
+
+    private static void FileBrowserCallback(string[] items)
+    {
+        var mLua = LuaInterface.LuaState;
+        mLua.RawGetInteger(LuaRegistry.Index, filebrowserCoro);
+
+        LuaInterface.LuaState.Unref(LuaRegistry.Index, filebrowserCoro);
+        filebrowserCoro = 0;
+
+        var lua = mLua.ToThread(-1);
+
+        lua.NewTable();
+        int i = 1;
+        foreach (var str in items)
+        {
+            lua.PushString(str);
+            lua.RawSetInteger(-2, i++);
+        }
+
+        var status = lua.Resume(null, 1, out _);
+        if (!(status is LuaStatus.OK or LuaStatus.Yield))
+        {
+            LuaHelpers.ErrorHandler(lua.Handle, -1);
+            return;
+        }
     }
 
     private static void RunCommand(Lua lua, int id)
@@ -167,12 +323,17 @@ static class RainedModule
         Lua coro = lua.NewThread();
         coro.RawGetInteger(LuaRegistry.Index, registeredCmds[id]);
         var status = coro.Resume(null, 0, out _);
-        if (status is not LuaStatus.OK or LuaStatus.Yield)
+        if (!(status is LuaStatus.OK or LuaStatus.Yield))
         {
-            LuaHelpers.ErrorHandler(coro.Handle);
+            LuaHelpers.ErrorHandler(coro.Handle, -1);
         }
         
         //lua.PushCFunction(_errHandler);
         //lua.PCall(0, 0, -2);
+    }
+
+    public static void UIUpdate()
+    {
+        FileBrowser.Render(ref fileBrowser);
     }
 }

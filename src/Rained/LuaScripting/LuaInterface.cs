@@ -13,6 +13,7 @@ static class LuaInterface
     
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
+    public static KeraLua.Lua LuaState => luaState.State;
     
     delegate void LuaPrintDelegate(params string[] args);
 
@@ -40,12 +41,18 @@ static class LuaInterface
         LuaHelpers.PushCsFunction(luaState.State, new Action<string, bool?>(AutoRequire));
         luaState.State.SetGlobal("autorequire");
 
-        // add rained module to require preloader
-        // (this is just so that my stupid/smart lua linter doesn't give a bunch of warnings about an undefined global)
-        luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
-        LuaHelpers.PushLuaFunction(luaState.State, loaderDelegate);
-        luaState.State.SetField(-2, "rained");
-        luaState.State.Pop(1); // pop preload table
+        // add modules to require preloader
+        {
+            luaState.State.GetSubTable((int)KeraLua.LuaRegistry.Index, "_PRELOAD");
+
+            LuaHelpers.PushLuaFunction(luaState.State, loaderDelegate);
+            luaState.State.SetField(-2, "rained");
+
+            LuaHelpers.PushLuaFunction(luaState.State, PathModuleLoader);
+            luaState.State.SetField(-2, "path");
+            
+            luaState.State.Pop(1); // pop preload table
+        }
 
         // initialize global variables
         string globalsInit = """
@@ -123,6 +130,81 @@ static class LuaInterface
         return 1;
     }
 
+    private static int PathModuleLoader(KeraLua.Lua lua)
+    {
+        lua.NewTable();
+
+        lua.PushString(Path.DirectorySeparatorChar.ToString());
+        lua.SetField(-2, "dirSeparator");
+
+        lua.ModuleFunction("combine", static (KeraLua.Lua lua) =>
+        {
+            int nargs = lua.GetTop();
+            if (nargs < 2)
+                return lua.ErrorWhere("expected more than one argument");
+
+            string[] args = new string[nargs];
+            for (int i = 1; i <= nargs; i++)
+            {
+                args[i-1] = lua.CheckString(i);
+            }
+
+            try
+            {
+                lua.PushString(Path.Combine(args));
+                return 1;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                return lua.ErrorWhere("could not combine paths");
+            }
+        });
+
+        lua.ModuleFunction("join", static (KeraLua.Lua lua) =>
+        {
+            int nargs = lua.GetTop();
+            if (nargs < 2)
+                return lua.ErrorWhere("expected more than one argument");
+
+            string[] args = new string[nargs];
+            for (int i = 1; i <= nargs; i++)
+            {
+                args[i-1] = lua.CheckString(i);
+            }
+
+            try
+            {
+                lua.PushString(Path.Join(args));
+                return 1;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                return lua.ErrorWhere("could not join paths");
+            }
+        });
+
+        lua.ModuleFunction("dirname", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            var res = Path.GetDirectoryName(path);
+
+            if (res is not null)
+            {
+                lua.PushString(res);
+            }
+            else
+            {
+                lua.PushNil();
+            }
+
+            return 1;
+        });
+
+        return 1;
+    }
+
     private static void AutoRequire(string path, bool? recurse)
     {
         List<string> combineParams = [Boot.AppDataPath, "scripts"];
@@ -195,5 +277,10 @@ static class LuaInterface
         }
 
         LogWarning(stringBuilder.ToString());        
+    }
+
+    public static void UIUpdate()
+    {
+        RainedModule.UIUpdate();
     }
 }

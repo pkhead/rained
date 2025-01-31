@@ -61,24 +61,39 @@ function rained.registerCommand(name, callback) end
 ---@field filePath string
 
 ---Get the number of open documents.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
 ---@return integer count
 function rained.getDocumentCount() end
 
 ---Get the name of the document at the given index. Returns nil if there was no document.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
 ---@param index integer
 ---@return string?
 function rained.getDocumentName(index) end
 
 ---Get info about the document at the given index. Returns nil if there was no document.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
 ---@param index integer
 ---@return DocumentInfo?
 function rained.getDocumentInfo(index) end
 
 ---Get the index of the active document. Nil if the Home tab is selected.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
 ---@return integer|nil
 function rained.getActiveDocument() end
 
 ---Set the active document index. This might take a while.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
 ---@param index integer The index of the new active document.
 ---@return boolean s True on success, false otherwise.
 function rained.setActiveDocument(index) end
@@ -86,6 +101,16 @@ function rained.setActiveDocument(index) end
 ---Check if a document is open.
 ---@return boolean
 function rained.isDocumentOpen() end
+
+---Opens a level from file.
+---@param filePath string The path of the level.
+function rained.openLevel(filePath) end
+
+---Creates and opens a new level.
+---@param width integer The width of the newly created level.
+---@param height integer The height of the newly created level.
+---@param filePath string? The optional file path to associate with the level.
+function rained.newLevel(width, height, filePath) end
 
 ---@alias FileBrowserOpenMode
 ---| "write"
@@ -95,10 +120,22 @@ function rained.isDocumentOpen() end
 ---| "multiDirectory"
 
 ---Open the file browser, blocking the script until the user has either submitted or canceled.
+---
+---A given filter has three formats:
+---1. `{name: string, extWithPeriod: string}`
+---2. `{name: string, extensions: string[]}`
+---3. `rained.fileFilters.level`
+---
 ---@param openMode FileBrowserOpenMode
----@param filters string[][]?
----@return string[]|string|nil
+---@param filters any[]?
+---@return string[]
 function rained.openFileBrowser(openMode, filters) end
+
+rained.fileFilters = {}
+
+---@type userdata
+local ud
+rained.fileFilters.level = ud
 
 ---@deprecated
 ---**DEPRECATED: Use `rained.level.width` instead.**

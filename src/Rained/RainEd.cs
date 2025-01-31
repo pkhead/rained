@@ -7,6 +7,7 @@ using Rained.Assets;
 using Rained.LevelData;
 using Rained.Rendering;
 using System.Reflection;
+using Rained.LuaScripting;
 
 namespace Rained;
 
@@ -72,7 +73,7 @@ sealed class RainEd
     public static readonly string EmergencySaveFolder = Path.Combine(Boot.AppDataPath, "emsavs");
 
     private readonly List<LevelTab> _tabs = [];
-    public IEnumerable<LevelTab> Tabs => _tabs;
+    public List<LevelTab> Tabs => _tabs;
     private LevelTab? _currentTab = null;
     public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value); }
 
@@ -429,41 +430,55 @@ sealed class RainEd
         CurrentTab = tab;
     }
 
-    public void LoadLevel(string path)
-    {        
-        if (!string.IsNullOrEmpty(path))
+    public void LoadLevelThrow(string path)
+    {
+        if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty!", nameof(path));
+        Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
+
+        try
         {
-            Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
+            var loadRes = LevelSerialization.Load(path);
 
-            try
+            if (!loadRes.HadUnrecognizedAssets)
             {
-                var loadRes = LevelSerialization.Load(path);
-
-                if (!loadRes.HadUnrecognizedAssets)
+                var tab = new LevelTab(loadRes.Level, path);
+                _tabs.Add(tab);
+                CurrentTab = tab;
+                Log.Information("Done!");
+                levelView!.LoadView();
+            }
+            else
+            {
+                // level failed to load due to unrecognized assets
+                LevelLoadFailedWindow.LoadResult = loadRes;
+                LevelLoadFailedWindow.IsWindowOpen = true;
+                LevelLoadFailedWindow.LoadAnywayCallback = () =>
                 {
                     var tab = new LevelTab(loadRes.Level, path);
                     _tabs.Add(tab);
                     CurrentTab = tab;
-                    Log.Information("Done!");
                     levelView!.LoadView();
-                }
-                else
-                {
-                    // level failed to load due to unrecognized assets
-                    LevelLoadFailedWindow.LoadResult = loadRes;
-                    LevelLoadFailedWindow.IsWindowOpen = true;
-                    LevelLoadFailedWindow.LoadAnywayCallback = () =>
-                    {
-                        var tab = new LevelTab(loadRes.Level, path);
-                        _tabs.Add(tab);
-                        CurrentTab = tab;
-                        levelView!.LoadView();
-                    };
-                }
+                };
+            }
 
-                // i think it may be useful to add it to the list
-                // even if the level failed to load due to unrecognized assets
-                AddToRecentFiles(path);
+            // i think it may be useful to add it to the list
+            // even if the level failed to load due to unrecognized assets
+            AddToRecentFiles(path);
+        }
+        finally
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+    }
+
+    public void LoadLevel(string path)
+    {        
+        if (!string.IsNullOrEmpty(path))
+        {
+            try
+            {
+                LoadLevelThrow(path);
             }
             catch (Exception e)
             {
@@ -764,6 +779,7 @@ sealed class RainEd
         CurrentTab?.NodeData.Update();
         
         EditorWindow.Render();
+        LuaInterface.UIUpdate();
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             DebugWindow.IsWindowOpen = !DebugWindow.IsWindowOpen;
