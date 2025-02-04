@@ -52,22 +52,22 @@ record PropTransformExt
     }
 }
 
-struct PropSettings(Prop prop)
+record PropSettings(Prop Prop)
 {
-    public int DepthOffset = prop.DepthOffset;
-    public int CustomDepth = prop.CustomDepth;
-    public int CustomColor = prop.CustomColor;
-    public int RenderOrder = prop.RenderOrder;
-    public int Variation = prop.Variation;
-    public int Seed = prop.Seed;
-    public PropRenderTime RenderTime = prop.RenderTime;
-    public bool ApplyColor = prop.ApplyColor;
+    public int DepthOffset = Prop.DepthOffset;
+    public int CustomDepth = Prop.CustomDepth;
+    public int CustomColor = Prop.CustomColor;
+    public int RenderOrder = Prop.RenderOrder;
+    public int Variation = Prop.Variation;
+    public int Seed = Prop.Seed;
+    public PropRenderTime RenderTime = Prop.RenderTime;
+    public bool ApplyColor = Prop.ApplyColor;
 
-    public RopeReleaseMode ReleaseMode = prop.Rope?.ReleaseMode ?? RopeReleaseMode.None;
-    public float PropHeight = prop.IsAffine ? prop.Rect.Size.Y : 0f; // a.k.a. rope flexibility
-    public float RopeThickness = prop.Rope?.Thickness ?? 0f;
+    public RopeReleaseMode ReleaseMode = Prop.Rope?.ReleaseMode ?? RopeReleaseMode.None;
+    public float PropHeight = Prop.IsAffine ? Prop.Rect.Size.Y : 0f; // a.k.a. rope flexibility
+    public float RopeThickness = Prop.Rope?.Thickness ?? 0f;
 
-    public readonly void Apply(Prop prop)
+    public void Apply(Prop prop)
     {
         prop.DepthOffset = DepthOffset;
         prop.CustomDepth = CustomDepth;

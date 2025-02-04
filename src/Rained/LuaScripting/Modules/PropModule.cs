@@ -405,7 +405,7 @@ static class PropModule
                     break;
 
                 case "variation":
-                    lua.PushInteger(prop.Variation);
+                    lua.PushInteger(prop.Variation + 1);
                     break;
 
                 case "applyColor":
@@ -491,6 +491,7 @@ static class PropModule
                         var rotation = (float) lua.ToNumber(-1);
                         lua.Pop(1);
 
+                        TransformChange(prop);
                         prop.Transform.isAffine = true;
                         prop.Transform.rect = new RotatedRect()
                         {
@@ -498,6 +499,7 @@ static class PropModule
                             Size = new Vector2(width, height),
                             Rotation = rotation
                         };
+                        
 
                         return 0;
                     });
@@ -555,6 +557,7 @@ static class PropModule
                             lua.Pop(1); // pop vertex table
                         }
 
+                        TransformChange(prop);
                         prop.Transform.isAffine = false;
                         for (int i = 0; i < 4; i++)
                         {
@@ -572,7 +575,10 @@ static class PropModule
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
                         var prop = wrap.GetRef(lua, 1);
+
+                        TransformChange(prop);
                         prop.ResetTransform();
+
                         return 0;
                     });
                     break;
@@ -582,7 +588,10 @@ static class PropModule
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
                         var prop = wrap.GetRef(lua, 1);
+
+                        TransformChange(prop);
                         prop.FlipX();
+
                         return 0;
                     });
                     break;
@@ -592,7 +601,10 @@ static class PropModule
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
                         var prop = wrap.GetRef(lua, 1);
+
+                        TransformChange(prop);
                         prop.FlipY();
+
                         return 0;
                     });
                     break;
@@ -614,44 +626,48 @@ static class PropModule
             switch (k)
             {
                 case "renderOrder":
+                    SettingsChange(prop);
                     prop.RenderOrder = (int) lua.CheckInteger(3);
-                    _changeRecordDirty = true;
                     break;
 
                 case "depthOffset":
+                    SettingsChange(prop);
                     prop.DepthOffset = (int) lua.CheckInteger(3);
-                    _changeRecordDirty = true;
+                    prop.DepthOffset = Math.Clamp( prop.DepthOffset, 0, 29 );
                     break;
 
                 case "seed":
+                    SettingsChange(prop);
                     prop.Seed = (int) lua.CheckInteger(3);
-                    _changeRecordDirty = true;
+                    prop.Seed = Util.Mod( prop.Seed, 1000 );
                     break;
 
                 case "renderTime":
                     var e = lua.CheckOption(3, null, ["preEffects", "postEffects"]);
+                    SettingsChange(prop);
                     prop.RenderTime = (PropRenderTime) e;
-                    _changeRecordDirty = true;
                     break;
 
                 case "variation":
+                    SettingsChange(prop);
                     prop.Variation = (int) lua.CheckInteger(3);
-                    _changeRecordDirty = true;
+                    prop.Variation = Math.Clamp(prop.Variation, 1, prop.PropInit.VariationCount) - 1;
                     break;
 
                 case "applyColor":
+                    SettingsChange(prop);
                     prop.ApplyColor = lua.ToBoolean(3);
-                    _changeRecordDirty = true;
                     break;
 
                 case "customDepth":
+                    SettingsChange(prop);
                     prop.CustomDepth = (int) lua.CheckInteger(3);
-                    _changeRecordDirty = true;
+                    prop.CustomDepth = Math.Max( 0, prop.CustomDepth  );
                     break;
 
                 case "customColor":
+                    SettingsChange(prop);
                     prop.CustomColor = lua.CheckOption(3, null, propColorNames);
-                    _changeRecordDirty = true;
                     break;
                     
                 default:
@@ -672,5 +688,16 @@ static class PropModule
             changeRecorder.TakeSettingsSnapshot();
             _changeRecordDirty = false;
         }
+    }
+
+    private static void SettingsChange(Prop prop)
+    {
+        HistoryModule.ChangeRecorder.PropRecorder.ChangeSettings(prop);
+        _changeRecordDirty = true;
+    }
+
+    private static void TransformChange(Prop prop)
+    {
+        HistoryModule.ChangeRecorder.PropRecorder.ChangeTransform(prop);
     }
 }

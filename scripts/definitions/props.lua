@@ -15,13 +15,13 @@ rained.props = {}
 ---@class Prop
 ---@field name string (Read-only) The name of the prop init.
 ---@field renderOrder integer
----@field depthOffset integer
----@field seed integer
----@field renderTime PropRenderTime
----@field variation integer
+---@field depthOffset integer The depth offset of the prop. 0 is the first sublayer and 29 is the last.
+---@field seed integer The seed used for graphics generation, in range [0-1000)
+---@field renderTime PropRenderTime Must be either "preEffects" or "postEffects"
+---@field variation integer The variation of the prop used. 1 is the first variation, and the maximum can be deduced from `rained.props.getPropInfo`.
 ---@field applyColor boolean
----@field customDepth integer
----@field customColor string
+---@field customDepth integer The custom depth of the prop. Minimum value is 1.
+---@field customColor string The color of the prop decal used. Must be a string available in `rained.props.getCustomColors`.
 local Prop = {}
 
 ---Remove this prop from the level.
