@@ -641,6 +641,7 @@ static class EffectsModule
                             case "Seed":
                                 ConfigChange(eff);
                                 eff.Seed = (int) lua.ToNumber(ValueIndex);
+                                eff.Seed = Math.Clamp(eff.Seed, 0, 500);
                                 break;
 
                             default:
@@ -661,7 +662,11 @@ static class EffectsModule
                             }
                             else if (eff.Data.customConfigs[configIndex] is CustomEffectInteger intConfig)
                             {
-                                eff.CustomValues[configIndex] = (int) lua.CheckInteger(ValueIndex);
+                                eff.CustomValues[configIndex] = Math.Clamp(
+                                    (int) lua.CheckInteger(ValueIndex),
+                                    intConfig.MinInclusive,
+                                    intConfig.MaxInclusive
+                                );
                             }
                             else throw new UnreachableException();
                         }

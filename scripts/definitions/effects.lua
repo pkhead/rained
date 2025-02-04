@@ -17,6 +17,7 @@ function Effect:getOption(name) end
 
 ---Set the value of an effect option.
 ---Throws an error if the option doesn't exist or is type-incompatible with the given value.
+---For integer-typed options, the value set will be clamped to the set range of that option.
 ---@param name string The name of the option.
 ---@param value boolean|integer|string The value of the option.
 function Effect:setOption(name, value) end
