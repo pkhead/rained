@@ -135,13 +135,22 @@ sealed class RainEd
     /// </summary>
     public readonly RainedVersionInfo? LatestVersionInfo = null;
 
-    public struct Command(string name, Action<int> cb)
+    public struct CommandCreationParameters(string name, Action<int> callback)
+    {
+        public string Name = name;
+        public Action<int> Callback = callback;
+        public bool AutoHistory = true;
+        public bool RequiresLevel = true;
+    }
+
+    public record Command(CommandCreationParameters @params)
     {
         private static int nextID = 0;
 
         public readonly int ID = nextID++;
-        public readonly string Name = name;
-        public readonly Action<int> Callback = cb;
+        public readonly string Name = @params.Name;
+        public readonly Action<int> Callback = @params.Callback;
+        public readonly CommandCreationParameters parameters = @params;
     };
 
     private readonly List<Command> customCommands = [];
@@ -715,9 +724,9 @@ sealed class RainEd
     /// </summary>
     /// <param name="name">The display name of the command.</param>
     /// <param name="cmd">The action to run on command.</param>
-    public int RegisterCommand(string name, Action<int> callback)
+    public int RegisterCommand(CommandCreationParameters @params)
     {
-        var cmd = new Command(name, callback);
+        var cmd = new Command(@params);
         customCommands.Add(cmd);
         return cmd.ID;
     }
@@ -736,6 +745,19 @@ sealed class RainEd
                 break;
             }
         }
+    }
+
+    public Command GetCommand(int id)
+    {
+        for (int i = 0; i < customCommands.Count; i++)
+        {
+            if (customCommands[i].ID == id)
+            {
+                return customCommands[i];
+            }
+        }
+
+        throw new ArgumentException("Unrecognized ID", nameof(id));
     }
 
     private readonly List<Action> deferredActions = [];

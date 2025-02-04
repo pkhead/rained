@@ -150,13 +150,68 @@ static class RainedModule
         lua.Pop(1);
 
         lua.ModuleFunction("registerCommand", static (KeraLua.Lua lua) => {
-            string name = lua.CheckString(1);
-            lua.CheckType(2, KeraLua.LuaType.Function);
+            int argc = lua.GetTop();
+            int cmdId;
 
-            lua.PushCopy(2);
-            int funcRef = lua.Ref(KeraLua.LuaRegistry.Index);
-            int cmdId = RainEd.Instance.RegisterCommand(name, (id) => RunCommand(lua, id));
-            registeredCmds[cmdId] = funcRef;
+            // (info)
+            if (argc == 1)
+            {
+                lua.CheckType(1, LuaType.Table);
+
+                lua.GetField(1, "name");
+                lua.ArgumentCheck(lua.Type(-1) == LuaType.String, 1, "invalid command creation parameters");
+
+                var name = lua.ToString(-1);
+                lua.Pop(1);
+
+                lua.GetField(1, "callback");
+                lua.ArgumentCheck(lua.Type(-1) == LuaType.Function, 1, "invalid command creation parameters");
+
+                int funcRef = lua.Ref(LuaRegistry.Index);
+
+                var cmdInit = new RainEd.CommandCreationParameters(name, (id) => RunCommand(lua, id));
+
+                // check optional fields
+                lua.GetField(1, "autoHistory");
+                if (!lua.IsNoneOrNil(-1))
+                {
+                    cmdInit.AutoHistory = lua.ToBoolean(-1);
+                }
+                lua.Pop(1);
+
+                lua.GetField(1, "requiresLevel");
+                if (!lua.IsNoneOrNil(-1))
+                {
+                    cmdInit.RequiresLevel = lua.ToBoolean(-1);
+                }
+                lua.Pop(1);
+
+                cmdId = RainEd.Instance.RegisterCommand(cmdInit);
+                registeredCmds[cmdId] = funcRef;
+            }
+
+            // depcrecated (name, callback)
+            else if (argc == 2)
+            {
+                string name = lua.CheckString(1);
+                lua.CheckType(2, KeraLua.LuaType.Function);
+
+                lua.PushCopy(2);
+                int funcRef = lua.Ref(KeraLua.LuaRegistry.Index);
+
+                var cmdInit = new RainEd.CommandCreationParameters(name, (id) => RunCommand(lua, id))
+                {
+                    AutoHistory = true,
+                    RequiresLevel = true
+                };
+
+                cmdId = RainEd.Instance.RegisterCommand(cmdInit);
+                registeredCmds[cmdId] = funcRef;
+            }
+            else
+            {
+                return lua.ErrorWhere("invalid call to rained.registerCommand");
+            }
 
             unsafe
             {
@@ -326,5 +381,16 @@ static class RainedModule
     public static void UIUpdate()
     {
         FileBrowser.Render(ref fileBrowser);
+    }
+
+    public static void RemoveAllCallbacks(Lua lua)
+    {
+        foreach (var (cmdId, funcRef) in registeredCmds)
+        {
+            RainEd.Instance.UnregisterCommand(cmdId);
+            lua.Unref(LuaRegistry.Index, funcRef);
+        }
+
+        registeredCmds.Clear();
     }
 }

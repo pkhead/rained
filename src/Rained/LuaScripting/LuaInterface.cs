@@ -106,6 +106,14 @@ static class LuaInterface
         }
     }
 
+    public static void Unload()
+    {
+        RainedModule.RemoveAllCallbacks(luaState.State);
+        TilesModule.RemoveAllAutotiles();
+        luaState.Dispose();
+        luaState = null!;
+    }
+
     public static void HandleException(LuaScriptException e)
     {
         EditorWindow.ShowNotification("Error!");

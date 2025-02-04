@@ -1,6 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
+using NLua.Exceptions;
 namespace Rained.EditorGui;
 
 static class EditorWindow
@@ -200,6 +201,21 @@ static class EditorWindow
                 }
 
                 ImGui.Separator();
+                if (ImGui.MenuItem("Reload Scripts"))
+                {
+                    LuaScripting.LuaInterface.Unload();
+                    
+                    
+                    try
+                    {
+                        LuaScripting.LuaInterface.Initialize();
+                    }
+                    catch (LuaScriptException e)
+                    {
+                        LuaScripting.LuaInterface.HandleException(e);
+                    }
+                }
+
                 if (ImGui.MenuItem("Preferences"))
                 {
                     PreferencesWindow.OpenWindow();

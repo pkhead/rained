@@ -5,6 +5,8 @@ using Autotiles;
 
 static class TilesModule
 {
+    private static readonly List<LuaAutotile> _allAutotiles = [];
+
     public static void Init(Lua lua, NLua.Lua nlua)
     {
         lua.NewTable();
@@ -135,6 +137,8 @@ static class TilesModule
         };
 
         RainEd.Instance.Autotiles.AddAutotile(autotile.autotile, category);
+        _allAutotiles.Add(autotile.autotile);
+        
         // bleh
         LuaInterface.NLuaState.Push(autotile);
         return 1;
@@ -327,5 +331,16 @@ static class TilesModule
         }
 
         return true;
+    }
+
+    public static void RemoveAllAutotiles()
+    {
+        foreach (var autotile in _allAutotiles)
+        {
+            RainEd.Instance.Autotiles.RemoveAutotile(autotile);
+            autotile.Dispose();
+        }
+
+        _allAutotiles.Clear();
     }
 }

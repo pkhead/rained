@@ -5,7 +5,7 @@ using NLua.Exceptions;
 using Rained.Autotiles;
 namespace Rained.LuaScripting;
 
-class LuaAutotile : Autotile
+class LuaAutotile : Autotile, IDisposable
 {
     public LuaAutotile(LuaAutotileInterface wrapper) : base() {
         LuaWrapper = wrapper;
@@ -237,6 +237,13 @@ class LuaAutotile : Autotile
         }
 
         return missingTiles;
+    }
+
+    public void Dispose()
+    {
+        LuaFillPathProcedure?.Dispose();
+        LuaFillRectProcedure?.Dispose();
+        OnOptionChanged?.Dispose();
     }
 }
 

@@ -51,6 +51,16 @@ function rained.getApiVersion() end
 ---@param msg string The message to show
 function rained.alert(msg) end
 
+---@class CommandInfo
+---@field name string The display name of the command.
+---@field callback fun() The function to run when the command is invoked.
+---@field autoHistory boolean? If set to true, the application will automatically group all changes of the action to a single change in the change history. The command should then not call beginChange or endChange. Defaults to true.
+---@field requiresLevel boolean? If set to true, the command will not be able to run if there is no active level. Defaults to true.
+
+---Register a command invokable by the user.
+---@param info CommandInfo Initialization parameters for the command.
+function rained.registerCommand(info) end
+
 ---Register a command invokable by the user.
 ---@param name string The display name of the command.
 ---@param callback function The action to run on command.
