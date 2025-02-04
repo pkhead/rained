@@ -1,14 +1,6 @@
 ---@meta
 rained.tiles = {}
 
----Get the seed used for procedurally generating tile graphics when rendering.
----@return integer seed
-function rained.tiles.getRandomSeed() end
-
----Set the seed used for procedurally generating tile graphics when rendering.
----@param randomSeed integer
-function rained.tiles.setRandomSeed(randomSeed) end
-
 ---Create an autotile
 ---@param name string The name of the autotile.
 ---@param category string? The category to place the autotile in. Defaults to Misc.

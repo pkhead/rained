@@ -10,10 +10,11 @@
 ---@field hasWater boolean True if the level has water, false if not.
 ---@field waterLevel integer The height of the water from the bottom of the level.
 ---@field isWaterInFront boolean True if water renders in front of the level. Otherwise, it will render behind the first work layer.
----@field borderLeft integer
----@field borderTop integer
----@field borderRight integer
----@field borderBottom integer
+---@field tileSeed integer The seed used for procedurally generating tile graphics when rendering. Clamped to the range [0, 400].
+---@field borderLeft integer The offset of the left side of the border from the same side of the level. Clamped to be at least 0.
+---@field borderTop integer The offset of the top side of the border from the same side of the level. Clamped to be at least 0.
+---@field borderRight integer The offset of the right side of the border from the same side of the level. Clamped to be at least 0.
+---@field borderBottom integer The offset of the bottom side of the border from the same side of the level. Clamped to be at least 0.
 rained.level = {}
 
 ---Check if a given coordinate is in the bounds of the level.

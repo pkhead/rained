@@ -68,6 +68,10 @@ static class LevelModule
                 case "isWaterInFront":
                     lua.PushBoolean(RainEd.Instance.Level.IsWaterInFront);
                     break;
+                
+                case "tileSeed":
+                    lua.PushInteger(RainEd.Instance.Level.TileSeed);
+                    break;
 
                 case "borderLeft":
                     lua.PushInteger(RainEd.Instance.Level.BufferTilesLeft);
@@ -129,21 +133,28 @@ static class LevelModule
                 case "isWaterInFront":
                     RainEd.Instance.Level.IsWaterInFront = lua.ToBoolean(3);
                     break;
+                
+                case "tileSeed":
+                    RainEd.Instance.Level.TileSeed = Math.Clamp(
+                        (int) lua.CheckNumber(3),
+                        0, 400
+                    );
+                    break;
 
                 case "borderLeft":
-                    RainEd.Instance.Level.BufferTilesLeft = (int) lua.CheckNumber(3);
+                    RainEd.Instance.Level.BufferTilesLeft = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderTop":
-                    RainEd.Instance.Level.BufferTilesTop = (int) lua.CheckNumber(3);
+                    RainEd.Instance.Level.BufferTilesTop = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
                 
                 case "borderRight":
-                    RainEd.Instance.Level.BufferTilesRight = (int) lua.CheckNumber(3);
+                    RainEd.Instance.Level.BufferTilesRight = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderBottom":
-                    RainEd.Instance.Level.BufferTilesBot = (int) lua.CheckNumber(3);
+                    RainEd.Instance.Level.BufferTilesBot = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 default:
