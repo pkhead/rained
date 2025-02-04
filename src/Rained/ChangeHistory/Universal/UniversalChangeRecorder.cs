@@ -31,8 +31,8 @@ class UniversalChangeRecorder : ChangeRecorder
 {
     public UniversalEffectChangeRecorder EffectRecorder { get; private set; } = new();
     public UniversalPropChangeRecorder PropRecorder { get; private set; } = new();
-
     private readonly CameraChangeRecorder camRecorder = new();
+    private EnvironmentData? propertiesSnapshot = null;
     private LevelComponents activeComponents;
 
     private bool _active = false;
@@ -53,9 +53,9 @@ class UniversalChangeRecorder : ChangeRecorder
         
         if (components.HasFlag(LevelComponents.Props))
             PropRecorder.BeginChange();
-
+        
         if (components.HasFlag(LevelComponents.Properties))
-            throw new NotImplementedException();
+            propertiesSnapshot = EnvironmentChangeRecorder.CreateSnapshot();
         
         _active = true;
     }
@@ -77,8 +77,17 @@ class UniversalChangeRecorder : ChangeRecorder
         if (components.HasFlag(LevelComponents.Props))
             res.props = (UniversalPropChangeRecord?) PropRecorder.EndChange();
         
+        if (components.HasFlag(LevelComponents.Properties))
+        {
+            var newSnapshot = EnvironmentChangeRecorder.CreateSnapshot();
+            if (!newSnapshot.Equals(propertiesSnapshot))
+                res.properties = new EnvironmentChangeRecord(propertiesSnapshot!.Value, newSnapshot);
+
+            propertiesSnapshot = null;
+        }
+        
         _active = false;
-        if (res.cells is null && res.effects is null && res.cameras is null && res.props is null)
+        if (res.cells is null && res.effects is null && res.cameras is null && res.props is null && res.properties is null)
             return null;
         
         return res;
@@ -90,6 +99,7 @@ class UniversalChangeRecorder : ChangeRecorder
         public UniversalEffectChangeRecord? effects;
         public CameraChangeRecord? cameras;
         public UniversalPropChangeRecord? props;
+        public EnvironmentChangeRecord? properties;
 
         public void Apply(bool useNew)
         {
@@ -97,6 +107,7 @@ class UniversalChangeRecorder : ChangeRecorder
             effects?.Apply(useNew);
             cameras?.Apply(useNew);
             props?.Apply(useNew);
+            properties?.Apply(useNew);
         }
     }
 }
