@@ -151,11 +151,7 @@ static class LevelSerialization
                 foreach (Lingo.PropertyList cellData in yv.Cast<Lingo.PropertyList>())
                 {
                     var tp = (string) cellData["tp"];
-                    if (!cellData.TryGetValue("data", out object? dataObj))
-                    {
-                        // wtf???
-                        dataObj = cellData["Data"];
-                    }
+                    var dataObj = cellData["data"];
                     
                     switch (tp)
                     {
@@ -301,11 +297,7 @@ static class LevelSerialization
                     }
 
                     // read effect options
-                    if (!effectData.TryGetValue("options", out object? optionsObj))
-                    {
-                        optionsObj = effectData["Options"]; // wtf??? again???
-                    }
-                    var optionsData = (Lingo.LinearList) optionsObj!;
+                    var optionsData = (Lingo.LinearList) effectData["options"]!;
 
                     foreach (var optionData in optionsData.Cast<Lingo.LinearList>())
                     {
