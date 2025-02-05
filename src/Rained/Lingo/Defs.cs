@@ -78,25 +78,25 @@ public class PropertyList : IDictionary<string, object>
     [Obsolete("fields field is deprecated, as PropertyList itself now can be used like a normal dictionary")]
     public ref readonly Dictionary<string, object> fields => ref _fields;
 
-    private readonly Dictionary<string, object> _fields = [];
+    private readonly Dictionary<string, object> _fields = new(StringComparer.InvariantCultureIgnoreCase);
 
     public object this[string key]
     {
-        get => _fields[key.ToLowerInvariant()];
-        set => _fields[key.ToLowerInvariant()] = value;
+        get => _fields[key];
+        set => _fields[key] = value;
     }
 
     public int Count => _fields.Count;
     public bool IsReadOnly => false;
     public void Clear() => _fields.Clear();
-    public void Add(string key, object value) => _fields.Add(key.ToLowerInvariant(), value);
-    public void Add(KeyValuePair<string, object> pair) => _fields.Add(pair.Key.ToLowerInvariant(), pair.Value);
-    public bool ContainsKey(string key) => _fields.ContainsKey(key.ToLowerInvariant());
-    public bool Contains(KeyValuePair<string, object> pair) => _fields.Contains(new KeyValuePair<string, object>(pair.Key.ToLowerInvariant(), pair.Value));
-    public bool Remove(string key) => _fields.Remove(key.ToLowerInvariant());
-    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => _fields.TryGetValue(key.ToLowerInvariant(), out v);
+    public void Add(string key, object value) => _fields.Add(key, value);
+    public void Add(KeyValuePair<string, object> pair) => _fields.Add(pair.Key, pair.Value);
+    public bool ContainsKey(string key) => _fields.ContainsKey(key);
+    public bool Contains(KeyValuePair<string, object> pair) => _fields.Contains(pair);
+    public bool Remove(string key) => _fields.Remove(key);
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => _fields.TryGetValue(key, out v);
     public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => (_fields as IDictionary<string, object>).CopyTo(array, arrayIndex);
-    public bool Remove(KeyValuePair<string, object> pair) => _fields.Remove(pair.Key.ToLowerInvariant());
+    public bool Remove(KeyValuePair<string, object> pair) => _fields.Remove(pair.Key);
     
     public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => _fields.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
