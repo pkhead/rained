@@ -84,7 +84,7 @@ public class LingoParserUnitTests
         // check value list
         Assert.True(res is not null);
 
-        var valueList = res.values.Cast<int>().ToArray();
+        var valueList = res.Cast<int>().ToArray();
         Assert.True(valueList.Length == 3);
         Assert.True(valueList[0] == 1 && valueList[1] == 2 && valueList[2] == 3);
     }
@@ -98,7 +98,7 @@ public class LingoParserUnitTests
         // check fields
         Assert.True(res is not null);
 
-        Assert.True(res.fields.ContainsKey("foo") && res.fields["foo"] as string == "ab");
-        Assert.True(res.fields.ContainsKey("bar") && res.fields["bar"] as string == "cd");
+        Assert.True(res.ContainsKey("foo") && res["foo"] as string == "ab");
+        Assert.True(res.ContainsKey("bar") && res["bar"] as string == "cd");
     }
 }

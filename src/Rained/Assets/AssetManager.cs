@@ -128,11 +128,11 @@ record CategoryList
             {
                 if (colored)
                 {
-                    if (parser.Read(line[1..]) is not Lingo.List list) continue;
+                    if (parser.Read(line[1..]) is not Lingo.LinearList list) continue;
 
                     Categories.Add(new InitCategory(
-                        name: (string) list.values[0],
-                        color: (Lingo.Color) list.values[1]
+                        name: (string) list[0],
+                        color: (Lingo.Color) list[1]
                     ));
                 }
                 else
@@ -146,12 +146,12 @@ record CategoryList
             // item
             else
             {
-                var data = parser.Read(line) as Lingo.List;
+                var data = parser.Read(line) as Lingo.PropertyList;
 
                 if (data is not null)
                 {
                     var init = new InitData(
-                        name: (string) data.fields["nm"],
+                        name: (string) data["nm"],
                         data: line
                     );
                     AddInit(init);
@@ -321,13 +321,13 @@ record CategoryList
 
                     if (isColored)
                     {
-                        var list = parser.Read(line[1..]) as Lingo.List;
+                        var list = parser.Read(line[1..]) as Lingo.LinearList;
 
                         if (list is not null)
                         {
                             category = new InitCategory(
-                                name: (string) list.values[0],
-                                color: (Lingo.Color) list.values[1]
+                                name: (string) list[0],
+                                color: (Lingo.Color) list[1]
                             );
                         }
                         else
@@ -376,12 +376,12 @@ record CategoryList
                         throw new Exception("Category definition expected, got item definition");
                     }
 
-                    var data = parser.Read(line) as Lingo.List;
+                    var data = parser.Read(line) as Lingo.PropertyList;
 
                     if (data is not null)
                     {
                         var init = new InitData(
-                            name: (string) data.fields["nm"],
+                            name: (string) data["nm"],
                             data: line
                         );
                         

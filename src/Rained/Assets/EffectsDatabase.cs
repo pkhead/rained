@@ -1065,11 +1065,11 @@ class EffectsDatabase
                     continue;
                 }
 
-                var effectInit = (Lingo.List) parsedLine;
+                var effectInit = (Lingo.PropertyList) parsedLine;
                 object? temp;
 
                 // read name field
-                if (!effectInit.fields.TryGetValue("nm", out temp))
+                if (!effectInit.TryGetValue("nm", out temp))
                 {
                     HasErrors = true;
                     LogError(lineNo, "Effect init does not have required field 'nm'.");
@@ -1078,7 +1078,7 @@ class EffectsDatabase
                 string name = (string) temp;
 
                 // read type field
-                if (!effectInit.fields.TryGetValue("tp", out temp))
+                if (!effectInit.TryGetValue("tp", out temp))
                 {
                     HasErrors = true;
                     LogError(lineNo, "Effect init does not have required field 'tp'.");
@@ -1102,10 +1102,10 @@ class EffectsDatabase
                         break;
                 }
 
-                var hasColor = effectInit.fields.TryGetValue("pickColor", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
+                var hasColor = effectInit.TryGetValue("pickColor", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
                 var individual = type == "individual";
                 var wall = type == "wall";
-                var has3D = effectInit.fields.TryGetValue("can3D", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
+                var has3D = effectInit.TryGetValue("can3D", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
 
                 CreateEffect(new EffectInit(name, EffectType.NN) {
                     usePlantColors = hasColor == 1,

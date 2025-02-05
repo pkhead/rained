@@ -1,6 +1,9 @@
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rained.Lingo;
+
+using LinearList = List<object>;
 
 public class ParseException : Exception
 {
@@ -70,44 +73,63 @@ public struct Rectangle
     }
 }
 
-public class PropertyList // : IDictionary<string, object>
+public class PropertyList : IDictionary<string, object>
 {
-    public readonly Dictionary<string, object> fields = [];
+    [Obsolete("fields field is deprecated, as PropertyList itself now can be used like a normal dictionary")]
+    public ref readonly Dictionary<string, object> fields => ref _fields;
+
+    private readonly Dictionary<string, object> _fields = [];
 
     public object this[string key]
     {
-        get => fields[key];
-        set => fields[key.ToLowerInvariant()] = value;
+        get => _fields[key.ToLowerInvariant()];
+        set => _fields[key.ToLowerInvariant()] = value;
     }
 
-    public void Add(string key, object value) => fields.Add(key.ToLowerInvariant(), value);
-    public bool ContainsKey(string key) => fields.ContainsKey(key.ToLowerInvariant());
-    public bool Remove(string key) => fields.Remove(key.ToLowerInvariant());
-    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => fields.TryGetValue(key.ToLowerInvariant(), out v);
+    public int Count => _fields.Count;
+    public bool IsReadOnly => false;
+    public void Clear() => _fields.Clear();
+    public void Add(string key, object value) => _fields.Add(key.ToLowerInvariant(), value);
+    public void Add(KeyValuePair<string, object> pair) => _fields.Add(pair.Key.ToLowerInvariant(), pair.Value);
+    public bool ContainsKey(string key) => _fields.ContainsKey(key.ToLowerInvariant());
+    public bool Contains(KeyValuePair<string, object> pair) => _fields.Contains(new KeyValuePair<string, object>(pair.Key.ToLowerInvariant(), pair.Value));
+    public bool Remove(string key) => _fields.Remove(key.ToLowerInvariant());
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => _fields.TryGetValue(key.ToLowerInvariant(), out v);
+    public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => (_fields as IDictionary<string, object>).CopyTo(array, arrayIndex);
+    public bool Remove(KeyValuePair<string, object> pair) => _fields.Remove(pair.Key.ToLowerInvariant());
+    
+    public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => _fields.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public ICollection<string> Keys => fields.Keys;
-    public ICollection<object> Values => fields.Values;
+    public ICollection<string> Keys => _fields.Keys;
+    public ICollection<object> Values => _fields.Values;
 }
 
-public class LinearList// : IList<object>
+public class LinearList : IList<object>
 {
-    public readonly List<object> values = [];
+    [Obsolete("values field is deprecated, as LinearList itself now can be used like a normal dictionary")]
+    public ref readonly List<object> values => ref _values;
+
+    public readonly List<object> _values = [];
     
     public object this[int index]
     {
-        get => values[index];
-        set => values[index] = value;
+        get => _values[index];
+        set => _values[index] = value;
     }
 
-    public int Count => values.Count;
-    public void Add(object v) => values.Add(v);
-    public int IndexOf(object v) => values.IndexOf(v);
-    public void Insert(int index, object v) => values.Insert(index, v);
-    public void Clear() => values.Clear();
-    public void RemoveAt(int index) => values.RemoveAt(index);
-    public bool Remove(object v) => values.Remove(v);
-    public bool Contains(object v) => values.Contains(v);
+    public int Count => _values.Count;
+    public bool IsReadOnly => false;
+    public void Add(object v) => _values.Add(v);
+    public int IndexOf(object v) => _values.IndexOf(v);
+    public void Insert(int index, object v) => _values.Insert(index, v);
+    public void Clear() => _values.Clear();
+    public void RemoveAt(int index) => _values.RemoveAt(index);
+    public bool Remove(object v) => _values.Remove(v);
+    public bool Contains(object v) => _values.Contains(v);
     public void CopyTo(object[] values, int index) => values.CopyTo(values, index);
+    public IEnumerator<object> GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 enum TokenType

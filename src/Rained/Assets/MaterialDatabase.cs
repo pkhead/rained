@@ -126,10 +126,10 @@ class MaterialDatabase
             }
             else
             {
-                var data = parser.Read(line) as Lingo.List ?? throw new Exception("Malformed material init");
+                var data = parser.Read(line) as Lingo.PropertyList ?? throw new Exception("Malformed material init");
                 
-                var name = (string) data.fields["nm"];
-                var color = (Lingo.Color) data.fields["color"];
+                var name = (string) data["nm"];
+                var color = (Lingo.Color) data["color"];
 
                 CreateMaterial(name, new Color(color.R, color.G, color.B, 255));
             }
