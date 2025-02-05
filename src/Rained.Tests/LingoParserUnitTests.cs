@@ -79,7 +79,7 @@ public class LingoParserUnitTests
     public void ListTest()
     {
         var lingoParser = new LingoParser();
-        var res = lingoParser.Read("[1, 2, 3]") as Rained.Lingo.List;
+        var res = lingoParser.Read("[1, 2, 3]") as Rained.Lingo.LinearList;
         
         // check value list
         Assert.True(res is not null);
@@ -90,10 +90,10 @@ public class LingoParserUnitTests
     }
 
     [Fact]
-    public void SymbolListTest()
+    public void PropertyListTest()
     {
         var lingoParser = new LingoParser();
-        var res = lingoParser.Read("[#foo: \"a\" & \"b\", #bar: \"cd\"]") as Rained.Lingo.List;
+        var res = lingoParser.Read("[#foo: \"a\" & \"b\", #bar: \"cd\"]") as Rained.Lingo.PropertyList;
 
         // check fields
         Assert.True(res is not null);

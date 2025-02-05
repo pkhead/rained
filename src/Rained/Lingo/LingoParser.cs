@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 namespace Rained.Lingo;
@@ -81,11 +82,27 @@ public class LingoParser
             return (float)v * sign;
     }
 
-    // this assumes the open bracket was already popped off
-    private List ParseList()
+    enum ListType { Linear, Property }
+
+    private ListType CheckListType()
     {
-        List list = new();
-        if (PeekToken().Type == TokenType.CloseBracket){
+        // [] = empty linear list
+        // [: = (expect) empty property list
+        // [# ... = (expect) property list
+        // else = (expect) linear list
+        
+        var tok = PeekToken();
+        if (tok.Type is TokenType.Colon or TokenType.Symbol)
+            return ListType.Property;
+
+        return ListType.Linear;
+    }
+
+    // this assumes the open bracket was already popped off
+    private LinearList ParseLinearList()
+    {
+        LinearList list = new();
+        if (PeekToken().Type == TokenType.CloseBracket) {
             PopToken();
             return list;
         }
@@ -93,24 +110,46 @@ public class LingoParser
         while (true)
         {
             var initTok = PeekToken();
-
-            if (initTok.Type == TokenType.Symbol)
-            {
-                PopToken();
-                Expect(TokenType.Colon);
-                object? value = ParseExpression();
-                if (value is not null)
-                    list.fields[(string) initTok.Value!] = value;
-            }
-            else if (initTok.Type != TokenType.Void)
+            
+            if (initTok.Type != TokenType.Void)
             {
                 var value = ParseExpression()!;
-                list.values.Add(value);
+                list.Add(value);
             }
             else
             {
                 PopToken();
             }
+
+            if (PeekToken().Type != TokenType.Comma) break;
+            PopToken();
+        }
+
+        Expect(TokenType.CloseBracket);
+        return list;
+    }
+
+    private PropertyList ParsePropertyList()
+    {
+        PropertyList list = new();
+        if (PeekToken().Type == TokenType.Colon) {
+            PopToken();
+            Expect(TokenType.CloseBracket);
+            return list;
+        }
+
+        while (true)
+        {
+            var initTok = PeekToken();
+            if (initTok.Type is not TokenType.Symbol)
+                throw new ParseException($"{initTok.Line}:{initTok.CharOffset}: Expected Symbol, got {initTok.Type}");
+
+            PopToken();
+            Expect(TokenType.Colon);
+
+            object? value = ParseExpression();
+            if (value is not null)
+                list[(string) initTok.Value!] = value;
 
             if (PeekToken().Type != TokenType.Comma) break;
             PopToken();
@@ -151,7 +190,14 @@ public class LingoParser
             }
             
             case TokenType.OpenBracket:
-                return ParseList();
+            {
+                return CheckListType() switch
+                {
+                    ListType.Linear => ParseLinearList(),
+                    ListType.Property => ParsePropertyList(),
+                    _ => throw new UnreachableException("CheckListType returned invalid value?")
+                };
+            }
             
             case TokenType.KeywordColor:
             {

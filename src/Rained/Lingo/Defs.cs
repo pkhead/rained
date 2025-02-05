@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Rained.Lingo;
 
 public class ParseException : Exception
@@ -68,18 +70,44 @@ public struct Rectangle
     }
 }
 
-public class List
+public class PropertyList // : IDictionary<string, object>
 {
-    public List<object> values = new();
-    public Dictionary<string, object> fields = new(); 
+    public readonly Dictionary<string, object> fields = [];
 
-    public object? GetValueOrNull(string key)
+    public object this[string key]
     {
-        if (fields.TryGetValue(key, out object? v))
-            return v;
-        else
-            return null;
+        get => fields[key];
+        set => fields[key.ToLowerInvariant()] = value;
     }
+
+    public void Add(string key, object value) => fields.Add(key.ToLowerInvariant(), value);
+    public bool ContainsKey(string key) => fields.ContainsKey(key.ToLowerInvariant());
+    public bool Remove(string key) => fields.Remove(key.ToLowerInvariant());
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => fields.TryGetValue(key.ToLowerInvariant(), out v);
+
+    public ICollection<string> Keys => fields.Keys;
+    public ICollection<object> Values => fields.Values;
+}
+
+public class LinearList// : IList<object>
+{
+    public readonly List<object> values = [];
+    
+    public object this[int index]
+    {
+        get => values[index];
+        set => values[index] = value;
+    }
+
+    public int Count => values.Count;
+    public void Add(object v) => values.Add(v);
+    public int IndexOf(object v) => values.IndexOf(v);
+    public void Insert(int index, object v) => values.Insert(index, v);
+    public void Clear() => values.Clear();
+    public void RemoveAt(int index) => values.RemoveAt(index);
+    public bool Remove(object v) => values.Remove(v);
+    public bool Contains(object v) => values.Contains(v);
+    public void CopyTo(object[] values, int index) => values.CopyTo(values, index);
 }
 
 enum TokenType
