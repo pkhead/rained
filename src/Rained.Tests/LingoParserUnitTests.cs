@@ -101,4 +101,37 @@ public class LingoParserUnitTests
         Assert.True(res.ContainsKey("foo") && res["foo"] as string == "ab");
         Assert.True(res.ContainsKey("bar") && res["bar"] as string == "cd");
     }
+
+    [Fact]
+    public void PropertyListCaseInsensitivityTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("[#FoO: \"a\" & \"b\", #BAR: \"cd\"]") as Rained.Lingo.PropertyList;
+
+        // check fields
+        Assert.True(res is not null);
+
+        Assert.True(res.ContainsKey("foo") && res["foo"] as string == "ab");
+        Assert.True(res.ContainsKey("bar") && res["bar"] as string == "cd");
+    }
+
+    [Fact]
+    public void EmptyPropertyListTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("[:]") as Rained.Lingo.PropertyList;
+
+        Assert.NotNull(res);
+        Assert.True(res.Count == 0);
+    }
+
+    [Fact]
+    public void EmptyLinearListTest()
+    {
+        var lingoParser = new LingoParser();
+        var res = lingoParser.Read("[]") as Rained.Lingo.LinearList;
+
+        Assert.NotNull(res);
+        Assert.True(res.Count == 0);
+    }
 }
