@@ -941,7 +941,7 @@ static class LevelSerialization
             if (propInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
                 output.AppendFormat(", #color: {0}", prop.CustomColor + 1);
             
-            if (propInit.VariationCount > 1)
+            if (propInit.Type is PropType.VariedStandard or PropType.VariedSoft or PropType.VariedDecal)
                 output.AppendFormat(", #variation: {0}", prop.Variation + 1);
             
             if (propInit.PropFlags.HasFlag(PropFlags.Colorize))
