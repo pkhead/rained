@@ -1,6 +1,7 @@
 ---@meta
 
 ---@class Level
+---@field cellSize number The size of a cell in screen pixels.
 ---@field filePath string? (Read-only) The path to the level file on disk.
 ---@field name string (Read-only) The name of the level.
 ---@field width integer (Read-only) The width of the level.
@@ -26,12 +27,12 @@ function rained.level.isInBounds(x, y) end
 ---@class ResizeParameters
 ---@field width integer The width of the level in grid units.
 ---@field height integer The height of the level in grid units.
----@field borderLeft integer
----@field borderTop integer
----@field borderRight integer
----@field borderBottom integer
----@field anchorX integer -1, 0, or 1.
----@field anchorY integer -1, 0, or 1.
+---@field borderLeft integer?
+---@field borderTop integer?
+---@field borderRight integer?
+---@field borderBottom integer?
+---@field anchorX integer? -1, 0, or 1.
+---@field anchorY integer? -1, 0, or 1.
 
 ---Resize the level.
 ---@param parameters ResizeParameters The parameters for level resizing.
@@ -49,5 +50,7 @@ function rained.level.screenToCell(screenX, screenY) end
 ---@return number screenX, number screenY
 function rained.level.cellToScreen(x, y) end
 
----Save the level to disk. Will throw an error if the level is not associated with a file on disk.
+---Save the level to disk. If the level is not associated with a file on disk, it will open a file browser
+---asking the user where to save the file. The thread will then be yielded until the user closes the popup.
+---@return string path The path to the saved .txt file, or nil if the user canceled.
 function rained.level.save() end

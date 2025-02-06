@@ -9,7 +9,7 @@ function rained.materials.getDefaultMaterial() end
 ---@return string materialName
 function rained.materials.getDefaultMaterialId() end
 
----Set the default material.
+---Set the default material. Throws an error if the material was unrecognized.
 ---@param material string|integer The name or ID of the material.
 function rained.materials.setDefaultMaterial(material) end
 
@@ -18,7 +18,7 @@ function rained.materials.setDefaultMaterial(material) end
 ---@return boolean
 function rained.materials.isInstalled(matName) end
 
----Get a list of all available materials.
+---Get a list of the names of all available materials.
 ---@return string[]
 function rained.materials.getMaterialCatalog() end
 
@@ -26,7 +26,7 @@ function rained.materials.getMaterialCatalog() end
 ---@return string[]
 function rained.materials.getMaterialCategories() end
 
----Get a list of all materials in a category.
+---Get a list of the names of all materials in a category.
 ---@param categoryName string The name of the category.
 ---@return string[]
 function rained.materials.getMaterialsInCategory(categoryName) end

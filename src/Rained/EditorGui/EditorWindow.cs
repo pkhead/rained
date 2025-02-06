@@ -2,6 +2,7 @@ using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
 using NLua.Exceptions;
+using System.Runtime.CompilerServices;
 namespace Rained.EditorGui;
 
 static class EditorWindow
@@ -426,6 +427,39 @@ static class EditorWindow
         });
     }
 
+    /// <summary>
+    /// Attempts to save the current level. If the level does not yet have an associated
+    /// file path, it will open a file browser and save the file asynchronously. In this case,
+    /// it returns false. Otherwise, it will return true.
+    /// </summary>
+    /// <param name="callback">The optional callback to run when the level was saved. First argument is if the function had been called immediately.</param>
+    /// <returns>True if the level was able to be saved immediately, false if not.</returns>
+    public static bool AsyncSave(Action<string?, bool>? callback = null)
+    {
+        if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
+        {
+            OpenLevelBrowser(FileBrowser.OpenMode.Write, (paths) =>
+            {
+                if (paths.Length > 0)
+                {
+                    SaveLevelCallback(paths[0]);
+                    callback?.Invoke(paths[0], false);
+                }
+                else
+                {
+                    callback?.Invoke(null, false);
+                }
+            });
+            return false;
+        }
+        else
+        {
+            SaveLevelCallback(RainEd.Instance.CurrentFilePath);
+            callback?.Invoke(RainEd.Instance.CurrentFilePath, true);
+            return true;
+        }
+    }
+
     private static void HandleShortcuts()
     {
         if (RainEd.Instance.IsLevelLocked) return;
@@ -445,13 +479,7 @@ static class EditorWindow
 
         if (KeyShortcuts.Activated(KeyShortcut.Save) && fileActive)
         {
-            if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
-                OpenLevelBrowser(FileBrowser.OpenMode.Write, static (paths) =>
-                {
-                    if (paths.Length > 0) SaveLevelCallback(paths[0]);
-                });
-            else
-                SaveLevelCallback(RainEd.Instance.CurrentFilePath);
+            AsyncSave();
         }
 
         if (KeyShortcuts.Activated(KeyShortcut.SaveAs) && fileActive)

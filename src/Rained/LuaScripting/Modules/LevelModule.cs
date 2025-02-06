@@ -1,6 +1,10 @@
 namespace Rained.LuaScripting.Modules;
+
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using KeraLua;
 using LevelData;
+using Rained.EditorGui;
 
 static class LevelModule
 {
@@ -8,12 +12,149 @@ static class LevelModule
     {
         lua.NewTable();
 
+        lua.PushNumber(Level.TileSize);
+        lua.SetField(-2, "cellSize");
+
         lua.ModuleFunction("isInBounds", static (nint luaPtr) => {
             var lua = Lua.FromIntPtr(luaPtr);
             var x = (int) lua.CheckNumber(1);
             var y = (int) lua.CheckNumber(2);
             lua.PushBoolean(RainEd.Instance.Level.IsInBounds(x, y));
             return 1;
+        });
+
+        lua.ModuleFunction("screenToCell", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var screenX = lua.CheckNumber(1);
+            var screenY = lua.CheckNumber(2);
+
+            lua.PushNumber(screenX / Level.TileSize);
+            lua.PushNumber(screenY / Level.TileSize);
+            return 2;
+        });
+
+        lua.ModuleFunction("cellToScreen", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var screenX = lua.CheckNumber(1);
+            var screenY = lua.CheckNumber(2);
+
+            lua.PushNumber(screenX * Level.TileSize);
+            lua.PushNumber(screenY * Level.TileSize);
+            return 2;
+        });
+
+        lua.ModuleFunction("resize", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Table);
+
+            int GetInteger(string name)
+            {
+                int v;
+                lua.GetField(1, name);
+                lua.ArgumentCheck(lua.IsInteger(-1), 1, "invalid ResizeParameters");
+                v = (int)lua.ToInteger(-1);
+                lua.Pop(1);
+
+                return v;
+            }
+
+            int GetIntegerOpt(string name, int opt)
+            {
+                int v;
+                lua.GetField(1, name);
+                
+                if (lua.IsNoneOrNil(-1))
+                {
+                    v = opt;
+                }
+                else
+                {
+                    lua.ArgumentCheck(lua.IsInteger(-1), 1, "invalid ResizeParameters");
+                    v = (int)lua.ToInteger(-1);
+                }
+
+                lua.Pop(1);
+                return v;
+            }
+
+            var level = RainEd.Instance.Level;
+            int width = GetInteger("width");
+            int height = GetInteger("height");
+            int borderLeft = GetIntegerOpt("borderLeft", level.BufferTilesLeft);
+            int borderTop = GetIntegerOpt("borderTop", level.BufferTilesTop);
+            int borderRight = GetIntegerOpt("borderRight", level.BufferTilesRight);
+            int borderBottom = GetIntegerOpt("borderBottom", level.BufferTilesBot);
+            int anchorX = GetIntegerOpt("anchorX", -1);
+            int anchorY = GetIntegerOpt("anchorY", -1);
+
+            if (width < 0) lua.ArgumentError(1, "width must be greater than or equal to 0");
+            if (height < 0) lua.ArgumentError(1, "width must be greater than or equal to 0");
+            if (borderLeft < 0) lua.ArgumentError(1, "borderLeft must be greater than or equal to 0");
+            if (borderTop < 0) lua.ArgumentError(1, "borderTop must be greater than or equal to 0");
+            if (borderRight < 0) lua.ArgumentError(1, "borderRight must be greater than or equal to 0");
+            if (borderBottom < 0) lua.ArgumentError(1, "borderBottom must be greater than or equal to 0");
+
+            if (anchorX < -1 || anchorX > 1) lua.ArgumentError(1, "anchorX must be -1, 0, or 1");
+            if (anchorY < -1 || anchorY > 1) lua.ArgumentError(1, "anchorY must be -1, 0, or 1");
+
+            RainEd.Instance.ResizeLevel(width, height, anchorX, anchorY);
+
+            level.BufferTilesLeft = borderLeft;
+            level.BufferTilesTop = borderTop;
+            level.BufferTilesRight = borderRight;
+            level.BufferTilesBot = borderBottom;
+
+            return 0;
+        });
+
+        lua.ModuleFunction("save", static (nint luaPtr) =>
+        {
+            var coro = Lua.FromIntPtr(luaPtr);
+            if (!coro.IsYieldable) return coro.ErrorWhere("attempt to called rained.level.save from a non-yieldable context");
+
+            int? coroRef = null;
+            string? path = null;
+
+            bool immediate = EditorWindow.AsyncSave((string? p, bool immediate) =>
+            {
+                path = p;
+                if (immediate) return;
+                if (coroRef is null) throw new Exception("referenced coroutine is null");
+
+                var lua = LuaInterface.LuaState;
+                lua.RawGetInteger(LuaRegistry.Index, coroRef.Value);
+                lua.Unref(LuaRegistry.Index, coroRef.Value);
+
+                lua.PushString(RainEd.Instance.CurrentFilePath);
+                LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
+            });
+
+            if (immediate)
+            {
+                coro.PushString(path!);
+                return 1;
+            }
+            else
+            {
+                coro.PushThread();
+                coroRef = coro.Ref(LuaRegistry.Index);
+
+                var handle = GCHandle.Alloc(null);
+                LuaKFunction kfunc = (nint luaPtr, int status, nint k) =>
+                {
+                    handle.Free();
+                    coro.PushString(path!);
+                    return 1;
+                };
+
+                handle.Target = kfunc;
+                Debug.Assert(handle.IsAllocated);
+                
+                return coro.YieldK(0, 0, kfunc);
+            }
         });
 
         // set metatable

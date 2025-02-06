@@ -130,6 +130,7 @@ static class LuaInterface
         LevelModule.Init(lua, luaState);
         CellsModule.Init(lua, luaState);
         TilesModule.Init(lua, luaState);
+        MaterialsModule.Init(lua, luaState);
         EffectsModule.Init(lua, luaState);
         CameraModule.Init(lua, luaState);
         PropModule.Init(lua, luaState);
