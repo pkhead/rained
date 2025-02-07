@@ -73,12 +73,17 @@ public class Window : IDisposable
     unsafe static Window()
     {
         var glfw = Glfw.GetApi();
-        
-        //GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
-        //    glfw.Context.GetProcAddress("glfwGetWindowContentScale");
 
-        //GlfwSetWindowContentScaleCallback = (delegate*<WindowHandle*, nint, void>)
-        //    glfw.Context.GetProcAddress("glfwSetWindowContentScaleCallback");
+        var versionStr = glfw.GetVersionString();
+        Console.WriteLine("GLFW version: " + versionStr);
+        
+        Console.WriteLine("Getting proc addresses...");
+        GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
+           glfw.Context.GetProcAddress("glfwGetWindowContentScale");
+
+        GlfwSetWindowContentScaleCallback = (delegate*<WindowHandle*, nint, void>)
+           glfw.Context.GetProcAddress("glfwSetWindowContentScaleCallback");
+        Console.WriteLine("Successfully got proc addresses");
     }
 
     /// <summary>
@@ -106,9 +111,18 @@ public class Window : IDisposable
                 {
                     float xScale = 1f;
                     float yScale = 1f;
+
+                    Console.WriteLine("Attempt run GlfwGetWindowContentScale");
                     GlfwGetWindowContentScale(glfwWindow, &xScale, &yScale);
-                    //if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
-                    //    throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                    if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
+                    {
+                        Console.WriteLine("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                    }
+                    else
+                    {
+                        Console.WriteLine("success");
+                    }
+                       //throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
                     
                     return new Vector2(xScale, yScale);
                 }
@@ -264,9 +278,17 @@ public class Window : IDisposable
             {
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
+
+                Console.WriteLine("Attempt run GlfwSetWindowContentScaleCallback");
                 GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
                 if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
-                    throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                {
+                    Console.WriteLine("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
+                }
+                else
+                {
+                    Console.WriteLine("success");
+                }
             }
         }
         
