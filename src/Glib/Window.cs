@@ -67,18 +67,18 @@ public class Window : IDisposable
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
     public bool IsEventDriven { get => window.IsEventDriven; set => window.IsEventDriven = value; }
 
-    private static readonly unsafe delegate*<WindowHandle*, float*, float*, void> GlfwGetWindowContentScale;
-    private static readonly unsafe delegate*<WindowHandle*, nint, void> GlfwSetWindowContentScaleCallback;
+    private static readonly unsafe delegate*<WindowHandle*, float*, float*, void> GlfwGetWindowContentScale = null;
+    private static readonly unsafe delegate*<WindowHandle*, nint, void> GlfwSetWindowContentScaleCallback = null;
 
     unsafe static Window()
     {
         var glfw = Glfw.GetApi();
         
-        GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
-            glfw.Context.GetProcAddress("glfwGetWindowContentScale");
+        //GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
+        //    glfw.Context.GetProcAddress("glfwGetWindowContentScale");
 
-        GlfwSetWindowContentScaleCallback = (delegate*<WindowHandle*, nint, void>)
-            glfw.Context.GetProcAddress("glfwSetWindowContentScaleCallback");
+        //GlfwSetWindowContentScaleCallback = (delegate*<WindowHandle*, nint, void>)
+        //    glfw.Context.GetProcAddress("glfwSetWindowContentScaleCallback");
     }
 
     /// <summary>
@@ -260,7 +260,7 @@ public class Window : IDisposable
         {
             var glfwWindow = Silk.NET.Windowing.Glfw.GlfwWindowing.GetHandle(window);
 
-            if (glfwWindow is not null && GlfwSetWindowContentScaleCallback != null)
+            if (glfwWindow is not null && GlfwSetWindowContentScaleCallback is not null)
             {
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
