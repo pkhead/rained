@@ -84,44 +84,41 @@ class LargeTexture : IDisposable
             return;
         }
 
-        int i = 0;
+        var gridL = (int)(srcRect.Left / gridSize);
+        var gridR = (int)(srcRect.Right / gridSize);
+        var gridT = (int)(srcRect.Top / gridSize);
+        var gridB = (int)(srcRect.Bottom / gridSize);
 
-        // convert srcRect to normalized uv space
-        srcRect.X /= width;
-        srcRect.Y /= height;
-        srcRect.Width /= width;
-        srcRect.Height /= height;
-
-        var gridL = (int)(srcRect.Left * cols);
-        var gridR = (int)(srcRect.Right * cols);
-        var gridT = (int)(srcRect.Top * rows);
-        var gridB = (int)(srcRect.Bottom * rows);
-
-        var gridSizeF = (float)gridSize / height;
         for (int row = gridT; row <= gridB; row++)
         {
-            float rf = (float)row / rows;
-            var srcV0 = (srcRect.Top - rf) / gridSizeF;
-            var srcV1 = (srcRect.Bottom - rf) / gridSizeF;
+            if (row < 0 || row >= rows) continue;
+
+            float rf = (float)row * gridSize;
+            var srcV0 = (srcRect.Top - rf) / gridSize;
+            var srcV1 = (srcRect.Bottom - rf) / gridSize;
             srcV0 = Math.Max(srcV0, 0f);
             srcV1 = Math.Min(srcV1, 1f);
-
+            
             for (int col = gridL; col <= gridR; col++)
             {
-                float cf = (float)col / cols;
-                var srcU0 = (srcRect.Left - cf) / gridSizeF;
-                var srcU1 = (srcRect.Right - cf) / gridSizeF;
+                if (col < 0 || col >= cols) continue;
+
+                float cf = (float)col * gridSize;
+                var srcU0 = (srcRect.Left - cf) / gridSize;
+                var srcU1 = (srcRect.Right - cf) / gridSize;
                 srcU0 = Math.Max(srcU0, 0f);
                 srcU1 = Math.Min(srcU1, 1f);
                 
-                if (srcU0 >= 0f && srcU1 >= 0f && srcV0 <= 1f && srcV1 <= 1f)
+                if (srcU0 >= 0f && srcV0 >= 0f && srcU1 <= 1f && srcV1 <= 1f)
                 {
-                    var tex = textures[i];
+                    var tex = textures[row * cols + col];
 
-                    var dstX0 = (cf + srcU0 * gridSizeF) * dstRect.Width;
-                    var dstY0 = (rf + srcV0 * gridSizeF) * dstRect.Height;
-                    var dstX1 = (cf + srcU1 * gridSizeF) * dstRect.Width;
-                    var dstY1 = (rf + srcV1 * gridSizeF) * dstRect.Height;
+                    var gv = (cf + srcU0 * gridSize - srcRect.X) / srcRect.Width;
+                    var gu = (rf + srcV0 * gridSize - srcRect.Y) / srcRect.Height;
+                    var dstX = dstRect.X + dstRect.Width * gv;
+                    var dstY = dstRect.Y + dstRect.Height * gu;
+                    var dstW = (srcU1 - srcU0) * (gridSize / srcRect.Width) * dstRect.Width;
+                    var dstH = (srcV1 - srcV0) * (gridSize / srcRect.Height) * dstRect.Height;
 
                     drawTexture(
                         texture: tex,
@@ -131,8 +128,7 @@ class LargeTexture : IDisposable
                             (srcU1 - srcU0) * gridSize,
                             (srcV1 - srcV0) * gridSize
                         ),
-                        //srcRect: new Glib.Rectangle(0f, 0f, tex.Width, tex.Height),
-                        dstRect: new Glib.Rectangle(dstX0, dstY0, dstX1 - dstX0, dstY1 - dstY0)
+                        dstRect: new Glib.Rectangle(dstX, dstY, dstW, dstH)
                     );
 
                 }

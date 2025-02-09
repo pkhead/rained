@@ -129,31 +129,49 @@ class PropRenderer(LevelEditRender renderInfo)
                         var dx = transformQuads[1] - transformQuads[0];
                         var dy = transformQuads[3] - transformQuads[0];
 
+                        // quads is for LargeTexture debugging
+                        //var quads = new List<(Vector2 a, Vector2 b, Vector2 c, Vector2 d)>();
+                        
                         propTexture.DrawRectangle(srcRect, new Rectangle(0f, 0f, 1f, 1f), (tex, sr, dr) =>
                         {
                             using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
-                            Vector2 vec;
+                            Vector2 a, b, c, d;
 
                             // top-left
-                            vec = transformQuads[0] + dx * dr.Left + dy * dr.Top;
+                            a = transformQuads[0] + dx * dr.Left + dy * dr.Top;
                             batch.TexCoord(sr.Left / tex.Width, sr.Top / tex.Height);
-                            batch.Vertex(vec.X, vec.Y, z);
+                            batch.Vertex(a.X, a.Y, z);
 
                             // bottom-left
-                            vec = transformQuads[0] + dx * dr.Left + dy * dr.Bottom;
+                            b = transformQuads[0] + dx * dr.Left + dy * dr.Bottom;
                             batch.TexCoord(sr.Left / tex.Width, sr.Bottom / tex.Height);
-                            batch.Vertex(vec.X, vec.Y, z);
+                            batch.Vertex(b.X, b.Y, z);
 
                             // bottom-right
-                            vec = transformQuads[0] + dx * dr.Right + dy * dr.Bottom;
+                            c = transformQuads[0] + dx * dr.Right + dy * dr.Bottom;
                             batch.TexCoord(sr.Right / tex.Width, sr.Bottom / tex.Height);
-                            batch.Vertex(vec.X, vec.Y, z);
+                            batch.Vertex(c.X, c.Y, z);
 
                             // top-right
-                            vec = transformQuads[0] + dx * dr.Right + dy * dr.Top;
+                            d = transformQuads[0] + dx * dr.Right + dy * dr.Top;
                             batch.TexCoord(sr.Right / tex.Width, sr.Top / tex.Height);
-                            batch.Vertex(vec.X, vec.Y, z);
+                            batch.Vertex(d.X, d.Y, z);
+
+                            //quads.Add((a, b, c, d));
                         });
+
+                        // var oldShader = rctx.Shader;
+                        // rctx.Shader = null;
+                        // foreach (var q in quads)
+                        // {
+                        //     rctx.UseGlLines = true;
+                        //     rctx.DrawColor = Glib.Color.Black;
+                        //     rctx.DrawLine(q.a, q.b);
+                        //     rctx.DrawLine(q.b, q.c);
+                        //     rctx.DrawLine(q.c, q.d);
+                        //     rctx.DrawLine(q.d, q.a);
+                        // }
+                        // rctx.Shader = oldShader;
                     }
                     else
                     {
