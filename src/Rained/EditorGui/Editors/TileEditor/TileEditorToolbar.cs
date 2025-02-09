@@ -46,7 +46,7 @@ partial class TileEditor : IEditorMode
                 totalTileWidth * 20, totalTileHeight * 20
             );
 
-            Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, drawCol);
+            tileTexture.DrawRectangle(srcRec, dstRec, drawCol);
         }
 
         // draw voxel tile
@@ -69,7 +69,7 @@ partial class TileEditor : IEditorMode
                     A = 255
                 };
 
-                Raylib.DrawTexturePro(tileTexture, srcRec, dstRec, Vector2.Zero, 0f, col);
+                tileTexture.DrawRectangle(srcRec, dstRec, col);
             }
         }
 

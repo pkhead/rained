@@ -7,6 +7,7 @@ using Raylib_cs;
 class PropRenderer(LevelEditRender renderInfo)
 {
     private readonly LevelEditRender renderInfo = renderInfo;
+    private readonly Vector2[] _transformQuads = new Vector2[4];
 
     public void RenderLayer(int srcLayer, int alpha)
     {
@@ -36,7 +37,7 @@ class PropRenderer(LevelEditRender renderInfo)
             renderPalette = false;
         }
 
-        Span<Vector2> transformQuads = stackalloc Vector2[4];
+        var transformQuads = _transformQuads;
         foreach (var prop in level.Props)
         {
             // don't draw prop if outside of the specified layer
@@ -59,7 +60,6 @@ class PropRenderer(LevelEditRender renderInfo)
 
             // get prop texture, or the placeholder texture if it couldn't be loaded
             var propTexture = RainEd.Instance.AssetGraphics.GetPropTexture(prop.PropInit);
-            var displayTexture = propTexture ?? RainEd.Instance.PlaceholderTexture;
 
             var variation = prop.Variation == -1 ? 0 : prop.Variation;
             var depthOffset = Math.Max(0, prop.DepthOffset - srcDepth);
@@ -70,6 +70,8 @@ class PropRenderer(LevelEditRender renderInfo)
                 rctx.Shader = null;
                 rctx.ClearRenderFlags(Glib.RenderFlags.DepthTest);
                 var srcRect = new Rectangle(Vector2.Zero, 2.0f * Vector2.One);
+
+                var displayTexture = RainEd.Instance.PlaceholderTexture;
 
                 using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture);
                         
@@ -91,7 +93,7 @@ class PropRenderer(LevelEditRender renderInfo)
             }
             else
             {
-                SetupPropShader(prop, renderPalette, displayTexture);
+                SetupPropShader(prop, renderPalette, propTexture.Width, propTexture.Height);
                 rctx.SetRenderFlags(Glib.RenderFlags.DepthTest);
 
                 // draw each sublayer of the prop
@@ -115,43 +117,52 @@ class PropRenderer(LevelEditRender renderInfo)
                     {
                         rctx.DrawColor = new Glib.Color(alpha / 255f, whiteFade, 0f, 0f);
                     }
-                    
-                    using (var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, displayTexture.GlibTexture))
+
+                    var z = LevelEditRender.GetSublayerZCoord(sublayer);
+                    if (prop.IsAffine)
                     {
-                        var z = LevelEditRender.GetSublayerZCoord(sublayer);
-                        
                         transformQuads[0] = quad[0] * Level.TileSize;
                         transformQuads[1] = quad[1] * Level.TileSize;
                         transformQuads[2] = quad[2] * Level.TileSize;
                         transformQuads[3] = quad[3] * Level.TileSize;
 
-                        if (prop.IsAffine)
+                        var dx = transformQuads[1] - transformQuads[0];
+                        var dy = transformQuads[3] - transformQuads[0];
+
+                        propTexture.DrawRectangle(srcRect, new Rectangle(0f, 0f, 1f, 1f), (tex, sr, dr) =>
                         {
+                            using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+                            Vector2 vec;
+
                             // top-left
-                            batch.TexCoord(srcRect.X / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                            batch.Vertex(transformQuads[0].X, transformQuads[0].Y, z);
+                            vec = transformQuads[0] + dx * dr.Left + dy * dr.Top;
+                            batch.TexCoord(sr.Left / tex.Width, sr.Top / tex.Height);
+                            batch.Vertex(vec.X, vec.Y, z);
 
                             // bottom-left
-                            batch.TexCoord(srcRect.X / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                            batch.Vertex(transformQuads[3].X, transformQuads[3].Y, z);
+                            vec = transformQuads[0] + dx * dr.Left + dy * dr.Bottom;
+                            batch.TexCoord(sr.Left / tex.Width, sr.Bottom / tex.Height);
+                            batch.Vertex(vec.X, vec.Y, z);
 
                             // bottom-right
-                            batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, (srcRect.Y + srcRect.Height) / displayTexture.Height);
-                            batch.Vertex(transformQuads[2].X, transformQuads[2].Y, z);
+                            vec = transformQuads[0] + dx * dr.Right + dy * dr.Bottom;
+                            batch.TexCoord(sr.Right / tex.Width, sr.Bottom / tex.Height);
+                            batch.Vertex(vec.X, vec.Y, z);
 
-                            // top right
-                            batch.TexCoord((srcRect.X + srcRect.Width) / displayTexture.Width, srcRect.Y / displayTexture.Height);
-                            batch.Vertex(transformQuads[1].X, transformQuads[1].Y, z);
-                        }
-                        else
-                        {
-                            DrawDeformedMesh(batch, transformQuads, z, new Rectangle(
-                                srcRect.X / displayTexture.Width,
-                                srcRect.Y / displayTexture.Height,
-                                srcRect.Width / displayTexture.Width,
-                                srcRect.Height / displayTexture.Height)
-                            );
-                        };
+                            // top-right
+                            vec = transformQuads[0] + dx * dr.Right + dy * dr.Top;
+                            batch.TexCoord(sr.Right / tex.Width, sr.Top / tex.Height);
+                            batch.Vertex(vec.X, vec.Y, z);
+                        });
+                    }
+                    else
+                    {
+                        // DrawDeformedMesh(batch, transformQuads, z, new Rectangle(
+                        //     srcRect.X / displayTexture.Width,
+                        //     srcRect.Y / displayTexture.Height,
+                        //     srcRect.Width / displayTexture.Width,
+                        //     srcRect.Height / displayTexture.Height)
+                        // );
                     }
                 }
             }
@@ -192,7 +203,7 @@ class PropRenderer(LevelEditRender renderInfo)
         rctx.Flags = oldRenderFlags;
     }
 
-    private void SetupPropShader(Prop prop, bool renderPalette, Texture2D displayTexture)
+    private void SetupPropShader(Prop prop, bool renderPalette, int texWidth, int texHeight)
     {
         var rctx = RainEd.RenderContext;
         var quad = prop.QuadPoints;
@@ -242,7 +253,7 @@ class PropRenderer(LevelEditRender renderInfo)
             if (rctx.Shader.HasUniform("u_paletteTex"))
                 rctx.Shader.SetUniform("u_paletteTex", renderInfo.Palette.Texture);
             if (rctx.Shader.HasUniform("v4_textureSize"))
-                rctx.Shader.SetUniform("v4_textureSize", new Vector4(displayTexture.Width, displayTexture.Height, 0f, 0f));
+                rctx.Shader.SetUniform("v4_textureSize", new Vector4(texWidth, texHeight, 0f, 0f));
             
             if (rctx.Shader.HasUniform("v4_bevelData"))
             {

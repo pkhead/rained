@@ -799,29 +799,38 @@ class LevelEditRender : IDisposable
     public static float GetSublayerZCoord(int sublayer)
         => Math.Clamp(1f - (sublayer / 29f), 0f, 1f) * 0.9f + 0.1f;
 
-    public static void DrawTextureSublayer(RlManaged.Texture2D rtex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
+    public static void DrawTextureSublayer(LargeTexture tex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
     {
-        var tex = rtex.GlibTexture!;
-        var srcRect = new Glib.Rectangle(rSrcRec.Position, rSrcRec.Size);
-        var dstRect = new Glib.Rectangle(rDstRec.Position, rDstRec.Size);
-        var texW = tex.Width;
-        var texH = tex.Height;
         float z = GetSublayerZCoord(sublayer);
 
-        using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+        tex.DrawRectangle(rSrcRec, new Rectangle(0f, 0f, 1f, 1f), (subtex, sr, dr) =>
+        {
+            using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, subtex);
+            var dstSize = rDstRec.Size;
+            var dstPos = rDstRec.Position;
 
-        draw.Color(tint);
-        draw.TexCoord(srcRect.Left / texW, srcRect.Top / texH);
-        draw.Vertex(dstRect.Left, dstRect.Top, z);
+            Vector2 vec;
+            var texW = subtex.Width;
+            var texH = subtex.Height;
 
-        draw.TexCoord(srcRect.Left / texW, srcRect.Bottom / texH);
-        draw.Vertex(dstRect.Left, dstRect.Bottom, z);
+            draw.Color(tint);
 
-        draw.TexCoord(srcRect.Right / texW, srcRect.Bottom / texH);
-        draw.Vertex(dstRect.Right, dstRect.Bottom, z);
+            vec = dstPos + dstSize * new Vector2(dr.Left, dr.Top);
+            draw.TexCoord(sr.Left / texW, sr.Top / texH);
+            draw.Vertex(vec.X, vec.Y, z);
 
-        draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
-        draw.Vertex(dstRect.Right, dstRect.Top, z);
+            vec = dstPos + dstSize * new Vector2(dr.Left, dr.Bottom);
+            draw.TexCoord(sr.Left / texW, sr.Bottom / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+
+            vec = dstPos + dstSize * new Vector2(dr.Right, dr.Bottom);
+            draw.TexCoord(sr.Right / texW, sr.Bottom / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+
+            vec = dstPos + dstSize * new Vector2(dr.Right, dr.Top);
+            draw.TexCoord(sr.Right / texW, sr.Top / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+        });
     }
 
     public void SetOverlay(int width, int height, (bool mask, LevelCell cell)[,,] geometry)

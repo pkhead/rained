@@ -39,8 +39,9 @@ class LargeTexture : IDisposable
             return;
         }
 
-        cols = image.Width / gridSize;
-        rows = image.Height / gridSize;
+        // image size divided by grid size, rounded up
+        cols = (image.Width + gridSize - 1) / gridSize;
+        rows = (image.Height + gridSize - 1) / gridSize;
         textures = new Glib.Texture[cols * rows];
         int i = 0;
 
@@ -69,9 +70,9 @@ class LargeTexture : IDisposable
             tex.Dispose();
     }
 
-    private delegate void TextureDraw(Glib.Texture texture, Glib.Rectangle srcRect, Glib.Rectangle dstRect);
+    public delegate void TextureDrawMethod(Glib.Texture texture, Glib.Rectangle srcRect, Glib.Rectangle dstRect);
 
-    private void DrawRectangle(Glib.Rectangle srcRect, Glib.Rectangle dstRect, TextureDraw drawTexture)
+    public void DrawRectangle(Glib.Rectangle srcRect, Glib.Rectangle dstRect, TextureDrawMethod drawTexture)
     {
         if (textures.Length == 1)
         {
@@ -103,7 +104,7 @@ class LargeTexture : IDisposable
             var srcV0 = (srcRect.Top - rf) / gridSizeF;
             var srcV1 = (srcRect.Bottom - rf) / gridSizeF;
             srcV0 = Math.Max(srcV0, 0f);
-            srcV1 = Math.Max(srcV1, 1f);
+            srcV1 = Math.Min(srcV1, 1f);
 
             for (int col = gridL; col <= gridR; col++)
             {
@@ -111,7 +112,7 @@ class LargeTexture : IDisposable
                 var srcU0 = (srcRect.Left - cf) / gridSizeF;
                 var srcU1 = (srcRect.Right - cf) / gridSizeF;
                 srcU0 = Math.Max(srcU0, 0f);
-                srcU1 = Math.Max(srcU1, 1f);
+                srcU1 = Math.Min(srcU1, 1f);
                 
                 if (srcU0 >= 0f && srcU1 >= 0f && srcV0 <= 1f && srcV1 <= 1f)
                 {
@@ -130,6 +131,7 @@ class LargeTexture : IDisposable
                             (srcU1 - srcU0) * gridSize,
                             (srcV1 - srcV0) * gridSize
                         ),
+                        //srcRect: new Glib.Rectangle(0f, 0f, tex.Width, tex.Height),
                         dstRect: new Glib.Rectangle(dstX0, dstY0, dstX1 - dstX0, dstY1 - dstY0)
                     );
 
@@ -137,6 +139,9 @@ class LargeTexture : IDisposable
             }
         }
     }
+
+    public void DrawRectangle(Rectangle srcRect, Rectangle dstRect, TextureDrawMethod drawTexture)
+        => DrawRectangle(Raylib.ToGlibRectangle(srcRect), Raylib.ToGlibRectangle(dstRect), drawTexture);
 
     public void DrawRectangle(Glib.Rectangle srcRect, Glib.Rectangle dstRect)
     {
@@ -150,7 +155,7 @@ class LargeTexture : IDisposable
         rctx.DrawColor = Raylib.ToGlibColor(color);
         DrawRectangle(
             new Glib.Rectangle(srcRec.Position, srcRec.Size),
-            new Glib.Rectangle(srcRec.Position, srcRec.Size)
+            new Glib.Rectangle(dstRec.Position, dstRec.Size)
         );
     }
 
