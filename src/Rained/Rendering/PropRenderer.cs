@@ -119,19 +119,15 @@ class PropRenderer(LevelEditRender renderInfo)
                     }
 
                     var z = LevelEditRender.GetSublayerZCoord(sublayer);
+                    transformQuads[0] = quad[0] * Level.TileSize;
+                    transformQuads[1] = quad[1] * Level.TileSize;
+                    transformQuads[2] = quad[2] * Level.TileSize;
+                    transformQuads[3] = quad[3] * Level.TileSize;
+                    var dx = transformQuads[1] - transformQuads[0];
+                    var dy = transformQuads[3] - transformQuads[0];
+
                     if (prop.IsAffine)
-                    {
-                        transformQuads[0] = quad[0] * Level.TileSize;
-                        transformQuads[1] = quad[1] * Level.TileSize;
-                        transformQuads[2] = quad[2] * Level.TileSize;
-                        transformQuads[3] = quad[3] * Level.TileSize;
-
-                        var dx = transformQuads[1] - transformQuads[0];
-                        var dy = transformQuads[3] - transformQuads[0];
-
-                        // quads is for LargeTexture debugging
-                        //var quads = new List<(Vector2 a, Vector2 b, Vector2 c, Vector2 d)>();
-                        
+                    {   
                         propTexture.DrawRectangle(srcRect, new Rectangle(0f, 0f, 1f, 1f), (tex, sr, dr) =>
                         {
                             using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
@@ -156,31 +152,71 @@ class PropRenderer(LevelEditRender renderInfo)
                             d = transformQuads[0] + dx * dr.Right + dy * dr.Top;
                             batch.TexCoord(sr.Right / tex.Width, sr.Top / tex.Height);
                             batch.Vertex(d.X, d.Y, z);
-
-                            //quads.Add((a, b, c, d));
                         });
-
-                        // var oldShader = rctx.Shader;
-                        // rctx.Shader = null;
-                        // foreach (var q in quads)
-                        // {
-                        //     rctx.UseGlLines = true;
-                        //     rctx.DrawColor = Glib.Color.Black;
-                        //     rctx.DrawLine(q.a, q.b);
-                        //     rctx.DrawLine(q.b, q.c);
-                        //     rctx.DrawLine(q.c, q.d);
-                        //     rctx.DrawLine(q.d, q.a);
-                        // }
-                        // rctx.Shader = oldShader;
                     }
                     else
                     {
-                        // DrawDeformedMesh(batch, transformQuads, z, new Rectangle(
-                        //     srcRect.X / displayTexture.Width,
-                        //     srcRect.Y / displayTexture.Height,
-                        //     srcRect.Width / displayTexture.Width,
-                        //     srcRect.Height / displayTexture.Height)
-                        // );
+                        var singleTex = propTexture.SingleTexture;
+                        if (singleTex is not null)
+                        {
+                            using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, singleTex);
+                            DrawDeformedMesh(batch, transformQuads, z, new Rectangle(
+                                srcRect.X / singleTex.Width,
+                                srcRect.Y / singleTex.Height,
+                                srcRect.Width / singleTex.Width,
+                                srcRect.Height / singleTex.Height)
+                            );
+                        }
+                        else
+                        {
+                            // quads is for LargeTexture debugging
+                            // var dbgQuads = new List<(Vector2 a, Vector2 b, Vector2 c, Vector2 d)>();
+                            propTexture.DrawRectangle(srcRect, new Rectangle(0f, 0f, 1f, 1f), (tex, sr, dr) =>
+                            {
+                                using var batch = rctx.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+                                var quad = transformQuads;
+
+                                var u = dr.Left;
+                                var v = dr.Top;
+                                var nextU = dr.Right;
+                                var nextV = dr.Bottom;
+                                
+                                Vector2 uPos0 = Vector2.Lerp(quad[0], quad[1], u);
+                                Vector2 uPos1 = Vector2.Lerp(quad[3], quad[2], u);
+                                Vector2 nextUPos0 = Vector2.Lerp(quad[0], quad[1], nextU);
+                                Vector2 nextUPos1 = Vector2.Lerp(quad[3], quad[2], nextU);
+
+                                Vector2 vPos0 = Vector2.Lerp(uPos0, uPos1, v);
+                                Vector2 vPos1 = Vector2.Lerp(uPos0, uPos1, nextV);
+                                Vector2 vPos2 = Vector2.Lerp(nextUPos0, nextUPos1, nextV);
+                                Vector2 vPos3 = Vector2.Lerp(nextUPos0, nextUPos1, v);
+
+                                ReadOnlySpan<Vector2> q = [
+                                    new Vector2(vPos0.X, vPos0.Y),
+                                    new Vector2(vPos3.X, vPos3.Y),
+                                    new Vector2(vPos2.X, vPos2.Y),
+                                    new Vector2(vPos1.X, vPos1.Y),
+                                ];
+
+                                var imgSize = new Vector2(tex.Width, tex.Height);
+                                DrawDeformedMesh(batch, q, z, new Rectangle(sr.Position / imgSize, sr.Size / imgSize));
+
+                                // dbgQuads.Add((q[0], q[1], q[2], q[3]));
+                            });
+
+                            // var oldShader = rctx.Shader;
+                            // rctx.Shader = null;
+                            // foreach (var q in dbgQuads)
+                            // {
+                            //     rctx.UseGlLines = true;
+                            //     rctx.DrawColor = Glib.Color.Black;
+                            //     rctx.DrawLine(q.a, q.b);
+                            //     rctx.DrawLine(q.b, q.c);
+                            //     rctx.DrawLine(q.c, q.d);
+                            //     rctx.DrawLine(q.d, q.a);
+                            // }
+                            // rctx.Shader = oldShader;
+                        }
                     }
                 }
             }

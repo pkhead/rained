@@ -18,6 +18,8 @@ class LargeTexture : IDisposable
 
     public int Width => width;
     public int Height => height;
+    public bool IsSingle => textures.Length == 1;
+    public Glib.Texture? SingleTexture => IsSingle ? textures[0] : null;
 
     public LargeTexture(Glib.Image gimage)
     {
