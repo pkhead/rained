@@ -283,12 +283,21 @@ partial class PropEditor : IEditorMode
                         dstRec = new Rectangle(Vector2.Zero, prop.Width * 20f, prop.Height * 20f);
                     }
 
-                    Raylib.DrawTexturePro(
-                        propTexture ?? RainEd.Instance.PlaceholderTexture,
-                        srcRect, dstRec,
-                        Vector2.Zero, 0f,
-                        new Color(255, (int)(whiteFade * 255f), 0, 0)
-                    );
+                    var drawColor = new Color(255, (int)(whiteFade * 255f), 0, 0);
+
+                    if (propTexture is not null)
+                    {
+                        propTexture.DrawRectangle(srcRect, dstRec, drawColor);
+                    }
+                    else
+                    {
+                        Raylib.DrawTexturePro(
+                            RainEd.Instance.PlaceholderTexture,
+                            srcRect, dstRec,
+                            Vector2.Zero, 0f,
+                            drawColor   
+                        );
+                    }
                 }
             }
             Raylib.EndShaderMode();
