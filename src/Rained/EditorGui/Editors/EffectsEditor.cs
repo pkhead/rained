@@ -441,6 +441,52 @@ class EffectsEditor : IEditorMode
         return 1.0f - (MathF.Sqrt(dx*dx + dy*dy) / bsize);
     }
 
+    private float timeStacker = 0f;
+    private void BrushUpdate(bool isFirstTick, int bcx, int bcy, int bsize, float brushFac)
+    {
+        const int BrushTickRate = 60;
+
+        var level = RainEd.Instance.Level;
+        var effect = level.Effects[selectedEffect];
+        var bLeft = bcx - bsize;
+        var bTop = bcy - bsize;
+        var bRight = bcx + bsize;
+        var bBot = bcy + bsize;
+
+        var brushStrength = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
+        if (effect.Data.binary) brushStrength = 100000000f;
+        
+        if (isFirstTick) timeStacker += 1f;
+        timeStacker += Raylib.GetFrameTime() * BrushTickRate;
+
+        if (timeStacker >= 1f)
+        {
+            if (isFirstTick || new Vector2i(bcx, bcy) != lastBrushPos)
+            {
+                var origX = bcx;
+                var origY = bcy;
+
+                for (int x = bLeft; x <= bRight; x++)
+                {
+                    for (int y = bTop; y <= bBot; y++)
+                    {
+                        if (!level.IsInBounds(x, y)) continue;
+                        var brushP = GetBrushPower(origX, origY, bsize, x, y);
+
+                        if (brushP > 0f)
+                        {
+                            effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
+                        }
+                    }
+                }
+            }
+
+            lastBrushPos.X = bcx;
+            lastBrushPos.Y = bcy;
+            timeStacker %= 1f;
+        }
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         window.BeginLevelScissorMode();
@@ -463,9 +509,6 @@ class EffectsEditor : IEditorMode
 
             var bsize = brushSize;
             if (effect.Data.single) bsize = 1;
-
-            var brushStrength = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 100f : 10f;
-            if (effect.Data.binary) brushStrength = 100000000f;
 
             float brushFac = 0.0f;
             int bcx = window.MouseCx;
@@ -509,28 +552,7 @@ class EffectsEditor : IEditorMode
                     if (!wasToolActive) changeRecorder.BeginMatrixChange(effect);
                     isToolActive = true;
 
-                    if (strokeStart || new Vector2i(bcx, bcy) != lastBrushPos)
-                    {
-                        var origX = bcx;
-                        var origY = bcy;
-
-                        for (int x = bLeft; x <= bRight; x++)
-                        {
-                            for (int y = bTop; y <= bBot; y++)
-                            {
-                                if (!level.IsInBounds(x, y)) continue;
-                                var brushP = GetBrushPower(origX, origY, bsize, x, y);
-
-                                if (brushP > 0f)
-                                {
-                                    effect.Matrix[x,y] = Math.Clamp(effect.Matrix[x,y] + brushStrength * brushP * brushFac, 0f, 100f);                            
-                                }
-                            }
-                        }
-
-                        lastBrushPos.X = bcx;
-                        lastBrushPos.Y = bcy;
-                    }
+                    BrushUpdate(strokeStart, bcx, bcy, bsize, brushFac); 
                 }
             }
 
