@@ -28,6 +28,7 @@ static partial class ShortcutsWindow
             ("5", "Edit light"),
             ("6", "Edit effects"),
             ("7", "Edit props"),
+            ("[SelectEditor]", "Editor mode radial menu"),
         ],
 
         // Environment
