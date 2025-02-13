@@ -28,7 +28,6 @@ v2.3.0:
   - effects previews
   - show prop preview over mouse
   - second layer for keybinds
-  - make brush strength independent of refresh rate
   - Rotation props (#29)
   - autotiles
     - option to join only inner tiles
@@ -87,7 +86,6 @@ Light Editor:
 Effects Editor:
 - WASD navigation
 - only store the pixels that changed in the matrix
-- make brush density not dependent on refresh rate
 
 Prop Editor:
 - do tile as prop depth change based on if specs2 is active?
