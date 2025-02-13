@@ -22,6 +22,9 @@ class EffectsEditor : IEditorMode
     private RlManaged.Image matrixImage;
 
     private int brushSize = 4;
+    private float userBrushStrength = 1f;
+    private const float BrushStrengthMin = 0.1f;
+    private const float BrushStrengthMax = 10.0f;
     private Vector2i lastBrushPos = new();
     private bool isToolActive = false;
 
@@ -289,6 +292,22 @@ class EffectsEditor : IEditorMode
                     changeRecorder.PushListChange();
                 }
 
+                {
+                    ImGui.SameLine();
+
+                    var sliderRight = ImGui.GetCursorPosX() - ImGui.GetStyle().ItemSpacing.X;
+                    ImGui.NewLine();
+
+                    ImGui.SetNextItemWidth(sliderRight - ImGui.GetCursorPosX());
+                    ImGui.SliderFloat("Brush Strength", ref userBrushStrength, BrushStrengthMin, BrushStrengthMax, "%.1fx", ImGuiSliderFlags.AlwaysClamp);
+
+                    // middle- or right-click to reset brush strength
+                    if (ImGui.IsItemClicked(ImGuiMouseButton.Middle) || ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                        userBrushStrength = 1f;
+                }
+
+                ImGui.Separator();
+
                 if (effect.Data.deprecated)
                     ImGui.TextDisabled("This effect is deprecated!");
 
@@ -471,7 +490,7 @@ class EffectsEditor : IEditorMode
                     for (int y = bTop; y <= bBot; y++)
                     {
                         if (!level.IsInBounds(x, y)) continue;
-                        var brushP = GetBrushPower(origX, origY, bsize, x, y);
+                        var brushP = GetBrushPower(origX, origY, bsize, x, y) * userBrushStrength;
 
                         if (brushP > 0f)
                         {
@@ -535,6 +554,14 @@ class EffectsEditor : IEditorMode
                         brushSize -= 1;
                     
                     brushSize = Math.Clamp(brushSize, 1, 10);
+                }
+
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
+                {
+                    window.OverrideMouseWheel = true;
+                    userBrushStrength -= Raylib.GetMouseWheelMove();
+
+                    userBrushStrength = Math.Clamp(userBrushStrength, BrushStrengthMin, BrushStrengthMax);
                 }
 
                 bool strokeStart = EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) || EditorWindow.IsMouseClicked(ImGuiMouseButton.Right);

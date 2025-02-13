@@ -111,6 +111,7 @@ static partial class ShortcutsWindow
             ("Right Mouse", "Erase effect"),
             ("Shift+Mouse Wheel", "Change brush size"),
             ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change brush size"),
+            ("Ctrl+Mouse Wheel", "Change brush strength"),
         ],
 
         // Props
