@@ -313,7 +313,7 @@ partial class PropEditor : IEditorMode
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
-            if (prop.Rope is not null) prop.Rope.Simulate = false;
+            if (prop.Rope is not null) prop.Rope.Simulate = 0;
         }
 
         SelectorToolbar();
@@ -425,7 +425,14 @@ partial class PropEditor : IEditorMode
                             // redundant skip Tiles as props categories
                             if (group.IsTileCategory) continue; // skip Tiles as props categories
 
-                            if (ImGui.Selectable(group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                            var cursor = ImGui.GetCursorScreenPos();
+                            ImGui.GetWindowDrawList().AddRectFilled(
+                                p_min: cursor,
+                                p_max: cursor + new Vector2(10f, ImGui.GetTextLineHeight()),
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
+                            );
+
+                            if (ImGui.Selectable("  " + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
                             {
                                 if (i != selectedPropGroup)
                                 {
@@ -451,11 +458,13 @@ partial class PropEditor : IEditorMode
                             // don't show this prop if it doesn't pass search test
                             if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
-                            
+
+                            if (prop.Rope != null) ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.5f, 0.5f, 1f));
                             if (ImGui.Selectable(prop.Name, i == selectedPropIdx))
                             {
                                 selectedPropIdx = i;
                             }
+                            if (prop.Rope != null) ImGui.PopStyleColor();
 
                             if (ImGui.BeginItemTooltip())
                             {
@@ -819,11 +828,24 @@ partial class PropEditor : IEditorMode
                         foreach (var p in selectedProps)
                             ropes.Add(p.Rope!);
                         
-                        MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
 
                         if (selectedProps.Count == 1)
                         {
                             var prop = selectedProps[0];
+
+                            {
+                                var _oldReleaseFlags = (int) prop.Rope!.ReleaseMode;
+                                var _releaseFlags = (int) prop.Rope!.ReleaseMode;
+                                if (ImGuiExt.ButtonFlags("##Release", ["Left", "Right"], ref _releaseFlags))
+                                    if (_releaseFlags == 3) {
+                                        if (_oldReleaseFlags == 1) _releaseFlags = 2;
+                                        if (_oldReleaseFlags == 2) _releaseFlags = 1;
+                                    }
+                                    prop.Rope!.ReleaseMode = (RopeReleaseMode) _releaseFlags;
+                            }
+                            ImGui.SameLine();
+                            ImGui.Text("Release");
+                            // MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
 
                             // thickness
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
@@ -868,7 +890,23 @@ partial class PropEditor : IEditorMode
                                 }
 
                                 foreach (var prop in selectedProps)
-                                    prop.Rope!.Simulate = true;
+                                    prop.Rope!.Simulate = 1;
+                            }
+
+                            ImGui.SameLine();
+                            ImGui.Button("Simulate x 10");
+                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation) && transformMode is null)
+                            {
+                                isRopeSimulationActive = true;
+
+                                if (!wasRopeSimulationActive)
+                                {
+                                    changeRecorder.BeginTransform();
+                                    Log.Information("Begin rope simulation");
+                                }
+
+                                foreach (var prop in selectedProps)
+                                    prop.Rope!.Simulate = 10;
                             }
                         }
                     }

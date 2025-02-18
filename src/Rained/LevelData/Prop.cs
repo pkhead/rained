@@ -96,7 +96,7 @@ class PropRope
     private readonly PropInit init; 
     private RopeModel? model;
     public RopeReleaseMode ReleaseMode;
-    public bool Simulate;
+    public int Simulate;
     public Vector2 PointA = Vector2.Zero;
     public Vector2 PointB = Vector2.Zero;
     public float Width;
@@ -127,7 +127,7 @@ class PropRope
 
         this.init = init;
         ReleaseMode = RopeReleaseMode.None;
-        Simulate = false;
+        Simulate = 0;
         Width = init.Height;
         
         lastPointA = PointA;
@@ -179,7 +179,7 @@ class PropRope
         lastPointB = PointB;
         lastWidth = Width;
         
-        if (Simulate)
+        for (int i = 0; i < Simulate; i++)
         {
             model!.Update();
         }
