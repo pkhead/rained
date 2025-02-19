@@ -237,6 +237,26 @@ class PropRenderer(LevelEditRender renderInfo)
                     var depthTestEnabled = rctx.Flags.HasFlag(Glib.RenderFlags.DepthTest);
                     rctx.ClearRenderFlags(Glib.RenderFlags.DepthTest);
 
+                    for (int i = 1; i < rope.SegmentCount; i++)
+                    {
+                        var newPos = rope.GetSmoothSegmentPos(i);
+                        var oldPos = rope.GetSmoothLastSegmentPos(i);
+                        var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
+                        var prevNewPos = rope.GetSmoothSegmentPos(i - 1);
+                        var prevOldPos = rope.GetSmoothLastSegmentPos(i - 1);
+                        var prevLerpPos = (prevNewPos - prevOldPos) * prop.Rope.SimulationTimeRemainder + prevOldPos;
+
+                        rctx.DrawColor = Raylib.ToGlibColor(segColor);
+                        rctx.DrawColor.R *= 0.5f;
+                        rctx.DrawColor.G *= 0.5f;
+                        rctx.DrawColor.B *= 0.5f;
+                        rctx.UseGlLines = false;
+                        rctx.LineWidth = 3;
+                        rctx.DrawLine(lerpPos * Level.TileSize, prevLerpPos * Level.TileSize);
+                        rctx.UseGlLines = true;
+                        rctx.LineWidth = 1;
+                    }
+
                     for (int i = 0; i < rope.SegmentCount; i++)
                     {
                         var newPos = rope.GetSmoothSegmentPos(i);

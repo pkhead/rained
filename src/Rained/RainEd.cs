@@ -821,7 +821,7 @@ sealed class RainEd
 
         foreach (var prop in level.Props)
         {
-            if (prop.Rope is not null && prop.Rope.Simulate)
+            if (prop.Rope is not null && (prop.Rope.Simulate > 0))
                 prop.Rope.SimulationTimeRemainder = simTimeLeftOver;
         }
     }

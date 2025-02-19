@@ -290,20 +290,20 @@ class GeometryEditor : IEditorMode
         rectMaxY = Math.Max(my, toolRectY);
 
         // constrain to square
-        if (selectedTool == Tool.Slope)
-        {
-            int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
+        // if (selectedTool == Tool.Slope)
+        // {
+        //     int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
 
-            int startX = toolRectX;
-            int startY = toolRectY;
-            int endX = startX + size * (mx - toolRectX >= 0 ? 1 : -1);
-            int endY = startY + size * (my - toolRectY >= 0 ? 1 : -1);
+        //     int startX = toolRectX;
+        //     int startY = toolRectY;
+        //     int endX = startX + size * (mx - toolRectX >= 0 ? 1 : -1);
+        //     int endY = startY + size * (my - toolRectY >= 0 ? 1 : -1);
 
-            rectMinX = Math.Min(startX, endX);
-            rectMaxX = Math.Max(startX, endX);
-            rectMinY = Math.Min(startY, endY);
-            rectMaxY = Math.Max(startY, endY);
-        }
+        //     rectMinX = Math.Min(startX, endX);
+        //     rectMaxX = Math.Max(startX, endX);
+        //     rectMinY = Math.Min(startY, endY);
+        //     rectMaxY = Math.Max(startY, endY);
+        // }
     }
 
     int buttonsPerRow = 4;
@@ -929,6 +929,23 @@ class GeometryEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
 
+        static bool IsSlope(Level level, int l, int x, int y, int dir)
+        {
+            if (x < 0 || y < 0) return false;
+            if (x >= level.Width || y >= level.Height) return false;
+
+            GeoType type = level.Layers[l, x, y].Geo;
+
+            if (type == GeoType.Solid) return true;
+
+            if (dir == 0 && (type == GeoType.SlopeRightUp || type == GeoType.SlopeRightDown)) return true;
+            if (dir == 1 && (type == GeoType.SlopeLeftUp || type == GeoType.SlopeLeftDown)) return true;
+            if (dir == 2 && (type == GeoType.SlopeLeftDown || type == GeoType.SlopeRightDown)) return true;
+            if (dir == 3 && (type == GeoType.SlopeLeftUp || type == GeoType.SlopeRightUp)) return true;
+
+            return false;
+        }
+
         static bool IsSolid(Level level, int l, int x, int y)
         {
             if (x < 0 || y < 0) return false;
@@ -940,25 +957,26 @@ class GeometryEditor : IEditorMode
         int possibleConfigs = 0;
 
         // figure out how to orient the slope using solid neighbors
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
+
+        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1) && !IsSlope(level, layer, tx + 1, ty, 0) && !IsSlope(level, layer, tx, ty - 1, 3))
         {
             newType = GeoType.SlopeRightUp;
             possibleConfigs++;
         }
         
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1) && !IsSlope(level, layer, tx - 1, ty, 1) && !IsSlope(level, layer, tx, ty - 1, 3))
         {
             newType = GeoType.SlopeLeftUp;
             possibleConfigs++;
         }
         
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
+        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1) && !IsSlope(level, layer, tx + 1, ty, 0) && !IsSlope(level, layer, tx, ty + 1, 2))
         {
             newType = GeoType.SlopeRightDown;
             possibleConfigs++;
         }
         
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
+        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1) && !IsSlope(level, layer, tx - 1, ty, 1) && !IsSlope(level, layer, tx, ty + 1, 2))
         {
             newType = GeoType.SlopeLeftDown;
             possibleConfigs++;
@@ -1008,14 +1026,20 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.ShortcutEntrance:
-                    if (layer == 0 && pressed)
-                        cell.Geo = cell.Geo == GeoType.ShortcutEntrance ? GeoType.Air : GeoType.ShortcutEntrance;
+                    if (layer != 0) break;
+
+                    if (pressed) toolPlaceMode = cell.Geo == GeoType.ShortcutEntrance;
+
+                    if (toolPlaceMode) {
+                        if (cell.Geo == GeoType.ShortcutEntrance) cell.Geo = GeoType.Air;
+                    } else {
+                        cell.Geo = GeoType.ShortcutEntrance;
+                    }
+
                     break;
                 
                 case Tool.Slope:
                 {
-                    if (!pressed) break;
-                    
                     var slopeType = CalcPossibleSlopeType(tx, ty, layer);
                     if (slopeType != GeoType.Air)
                     {
@@ -1168,27 +1192,11 @@ class GeometryEditor : IEditorMode
 
         if (place)
         {
-            // hardcoded slope handler...
-            // but eh, i'm the only one who will modify this code anyway.
-            if (selectedTool == Tool.Slope)
+            for (int x = rectMinX; x <= rectMaxX; x++)
             {
-                for (int i = 0; i < 3; i++)
+                for (int y = rectMinY; y <= rectMaxY; y++)
                 {
-                    if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
-                }
-            }
-
-            // apply the rect to the tool by
-            // applying the tool at every cell
-            // in the rectangle.
-            else
-            {
-                for (int x = rectMinX; x <= rectMaxX; x++)
-                {
-                    for (int y = rectMinY; y <= rectMaxY; y++)
-                    {
-                        ActivateTool(selectedTool, x, y, true);
-                    }
+                    ActivateTool(selectedTool, x, y, true);
                 }
             }
         }
@@ -1213,6 +1221,7 @@ class GeometryEditor : IEditorMode
         return level.Layers[l,x,y].Geo == GeoType.Solid;
     }
 
+    /*
     private void RectSlope(int layer, int rectLf, int rectTp, int rectRt, int rectBt)
     {
         if (rectRt - rectLf != rectBt - rectTp)
@@ -1346,4 +1355,5 @@ class GeometryEditor : IEditorMode
             }
         }
     }
+    */
 }
