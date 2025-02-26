@@ -183,6 +183,7 @@ class UserPreferences
     public string GeometryViewMode { get; set; }
     public bool GeometryMaskMouseDecor { get; set; } = true;
     public string PropSnap { get; set; }
+    public float FastSimulationSpeed { get; set; } = 5f;
     public bool ShowCameraNumbers { get; set; } = false;
 
     //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.

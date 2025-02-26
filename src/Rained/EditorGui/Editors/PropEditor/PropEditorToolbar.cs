@@ -923,7 +923,7 @@ partial class PropEditor : IEditorMode
                             ImGui.Button("Fast");
                             if (ImGui.IsItemActive() && transformMode is null)
                             {
-                                simSpeed = 10f;
+                                simSpeed = RainEd.Instance.Preferences.FastSimulationSpeed;
                             }
 
                             if (simSpeed > 0f)

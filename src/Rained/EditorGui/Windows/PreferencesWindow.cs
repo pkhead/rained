@@ -565,6 +565,18 @@ static class PreferencesWindow
                 """
             );
 
+            ImGui.Separator();
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            var simSpeed = prefs.FastSimulationSpeed;
+            if (ImGui.SliderFloat("Fast simulation speed", ref simSpeed, 1f, 20f, "%.0fx"))
+            {
+                prefs.FastSimulationSpeed = simSpeed;
+            }
+
+            ImGui.PopItemWidth();
+
             //bool multiViewport = prefs.ImGuiMultiViewport;
             //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
             //    prefs.ImGuiMultiViewport = multiViewport;
