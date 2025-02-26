@@ -860,31 +860,11 @@ partial class PropEditor : IEditorMode
                         foreach (var p in selectedProps)
                             ropes.Add(p.Rope!);
                         
+                        MultiselectSwitchInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", ["None", "Left", "Right"]);
 
                         if (selectedProps.Count == 1)
                         {
                             var prop = selectedProps[0];
-                            
-                            {
-                                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
-
-                                var oldReleaseFlags = (int) prop.Rope!.ReleaseMode;
-                                var releaseFlags = (int) prop.Rope!.ReleaseMode;
-                                if (ImGuiExt.ButtonFlags("##Release", ["Left", "Right"], ref releaseFlags))
-                                {
-                                    if (releaseFlags == 3) {
-                                        if (oldReleaseFlags == 1) releaseFlags = 2;
-                                        if (oldReleaseFlags == 2) releaseFlags = 1;
-                                    }
-                                    prop.Rope!.ReleaseMode = (RopeReleaseMode) releaseFlags;
-                                }
-
-                                ImGui.SameLine();
-                                ImGui.Text("Release");
-                                ImGui.PopStyleVar();
-                            }
-                            
-                            // MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
 
                             // thickness
                             if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
