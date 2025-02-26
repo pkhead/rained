@@ -162,7 +162,7 @@ partial class PropEditor : IEditorMode
         foreach (var prop in RainEd.Instance.Level.Props)
         {
             if (prop.Rope is not null)
-                prop.Rope.Simulate = 0;
+                prop.Rope.SimulationSpeed = 0f;
         }
 
         isRopeSimulationActive = false;

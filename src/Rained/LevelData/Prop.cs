@@ -96,7 +96,13 @@ class PropRope
     private readonly PropInit init; 
     private RopeModel? model;
     public RopeReleaseMode ReleaseMode;
-    public int Simulate;
+
+    /// <summary>
+    /// The speed at which the rope is being simulated.
+    /// If set to 0, simulation will be deactivated.
+    /// </summary>
+    public float SimulationSpeed;
+
     public Vector2 PointA = Vector2.Zero;
     public Vector2 PointB = Vector2.Zero;
     public float Width;
@@ -119,7 +125,7 @@ class PropRope
     // this is set by RainEd's UpdateRopeSimulation. it is important that I set this per prop
     // and is only updated while it is simulating, so that ropes don't
     // jitter while their simulation is paused
-    public float SimulationTimeRemainder = 0f;
+    public float SimulationTimeStacker = 0f;
 
     public PropRope(PropInit init)
     {
@@ -127,7 +133,7 @@ class PropRope
 
         this.init = init;
         ReleaseMode = RopeReleaseMode.None;
-        Simulate = 0;
+        SimulationSpeed = 0;
         Width = init.Height;
         
         lastPointA = PointA;
@@ -178,10 +184,11 @@ class PropRope
         lastPointA = PointA;
         lastPointB = PointB;
         lastWidth = Width;
-        
-        for (int i = 0; i < Simulate; i++)
+
+        while (SimulationTimeStacker >= 1f)
         {
             model!.Update();
+            SimulationTimeStacker -= 1f;
         }
     }
 }

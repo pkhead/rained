@@ -237,31 +237,33 @@ class PropRenderer(LevelEditRender renderInfo)
                     var depthTestEnabled = rctx.Flags.HasFlag(Glib.RenderFlags.DepthTest);
                     rctx.ClearRenderFlags(Glib.RenderFlags.DepthTest);
 
+                    rctx.DrawColor = Raylib.ToGlibColor(segColor);
+                    rctx.DrawColor.R *= 0.5f;
+                    rctx.DrawColor.G *= 0.5f;
+                    rctx.DrawColor.B *= 0.5f;
+                    rctx.UseGlLines = false;
+                    rctx.LineWidth = 3f;
+
+                    // draw lines between the segments
                     for (int i = 1; i < rope.SegmentCount; i++)
                     {
-                        var newPos = rope.GetSmoothSegmentPos(i);
-                        var oldPos = rope.GetSmoothLastSegmentPos(i);
-                        var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
-                        var prevNewPos = rope.GetSmoothSegmentPos(i - 1);
-                        var prevOldPos = rope.GetSmoothLastSegmentPos(i - 1);
-                        var prevLerpPos = (prevNewPos - prevOldPos) * prop.Rope.SimulationTimeRemainder + prevOldPos;
+                        var newPosA = rope.GetSmoothSegmentPos(i);
+                        var oldPosA = rope.GetSmoothLastSegmentPos(i);
+                        var lerpPosA = (newPosA - oldPosA) * prop.Rope.SimulationTimeStacker + oldPosA;
 
-                        rctx.DrawColor = Raylib.ToGlibColor(segColor);
-                        rctx.DrawColor.R *= 0.5f;
-                        rctx.DrawColor.G *= 0.5f;
-                        rctx.DrawColor.B *= 0.5f;
-                        rctx.UseGlLines = false;
-                        rctx.LineWidth = 3;
-                        rctx.DrawLine(lerpPos * Level.TileSize, prevLerpPos * Level.TileSize);
-                        rctx.UseGlLines = true;
-                        rctx.LineWidth = 1;
+                        var newPosB = rope.GetSmoothSegmentPos(i - 1);
+                        var oldPosB = rope.GetSmoothLastSegmentPos(i - 1);
+                        var lerpPosB = (newPosB - oldPosB) * prop.Rope.SimulationTimeStacker + oldPosB;
+
+                        rctx.DrawLine(lerpPosA * Level.TileSize, lerpPosB * Level.TileSize);
                     }
 
+                    // draw segment points
                     for (int i = 0; i < rope.SegmentCount; i++)
                     {
                         var newPos = rope.GetSmoothSegmentPos(i);
                         var oldPos = rope.GetSmoothLastSegmentPos(i);
-                        var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeRemainder + oldPos;
+                        var lerpPos = (newPos - oldPos) * prop.Rope.SimulationTimeStacker + oldPos;
 
                         rctx.DrawColor = Raylib.ToGlibColor(segColor);
                         rctx.DrawCircle(lerpPos * Level.TileSize, 2f, 16);
