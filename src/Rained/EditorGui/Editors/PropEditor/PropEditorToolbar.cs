@@ -491,12 +491,10 @@ partial class PropEditor : IEditorMode
                             if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
 
-                            if (prop.Rope != null) ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.5f, 1f, 1f, 1f));
                             if (ImGui.Selectable(prop.Name, i == selectedPropIdx))
                             {
                                 selectedPropIdx = i;
                             }
-                            if (prop.Rope != null) ImGui.PopStyleColor();
 
                             if (ImGui.BeginItemTooltip())
                             {
