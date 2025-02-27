@@ -56,17 +56,13 @@ static class TilePlacement
                 if (!force)
                 {
                     // check first layer geometry
-                    if (specInt == -1) continue;
-                    if (level.GetClamped(layer, gx, gy).Geo != (GeoType) specInt)
+                    if (specInt >= 0 && level.GetClamped(layer, gx, gy).Geo != (GeoType) specInt)
                         return TilePlacementStatus.Geometry;
 
                     // check second layer geometry
                     // if we are on layer 3, there is no second layer
                     // all checks pass
-                    if (layer == 2) continue;
-                    
-                    if (spec2Int == -1) continue;
-                    if (level.GetClamped(layer + 1, gx, gy).Geo != (GeoType) spec2Int)
+                    if (layer < 2 && spec2Int >= 0 && level.GetClamped(layer + 1, gx, gy).Geo != (GeoType) spec2Int)
                         return TilePlacementStatus.Geometry;
                 }
             }
