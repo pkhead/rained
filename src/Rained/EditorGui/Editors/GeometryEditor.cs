@@ -929,63 +929,52 @@ class GeometryEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
 
-        static bool IsSlope(Level level, int l, int x, int y, int dir)
+        static GeoType GetGeoOrAir(int l, int x, int y)
         {
-            if (x < 0 || y < 0) return false;
-            if (x >= level.Width || y >= level.Height) return false;
-
-            GeoType type = level.Layers[l, x, y].Geo;
-
-            if (type == GeoType.Solid) return true;
-
-            if (dir == 0 && (type == GeoType.SlopeRightUp || type == GeoType.SlopeRightDown)) return true;
-            if (dir == 1 && (type == GeoType.SlopeLeftUp || type == GeoType.SlopeLeftDown)) return true;
-            if (dir == 2 && (type == GeoType.SlopeLeftDown || type == GeoType.SlopeRightDown)) return true;
-            if (dir == 3 && (type == GeoType.SlopeLeftUp || type == GeoType.SlopeRightUp)) return true;
-
-            return false;
+            var level = RainEd.Instance.Level;
+            if (x < 0 || y < 0) return GeoType.Air;
+            if (x >= level.Width || y >= level.Height) return GeoType.Air;
+            return level.Layers[l,x,y].Geo;
         }
 
-        static bool IsSolid(Level level, int l, int x, int y)
+        static bool Equals(ReadOnlySpan<GeoType> a, ReadOnlySpan<GeoType> b)
         {
-            if (x < 0 || y < 0) return false;
-            if (x >= level.Width || y >= level.Height) return false;
-            return level.Layers[l,x,y].Geo == GeoType.Solid;
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
         }
 
         GeoType newType = GeoType.Air;
-        int possibleConfigs = 0;
+
+        // L,R,T,B
+        Span<GeoType> cells = [
+            GetGeoOrAir(layer, tx - 1, ty),
+            GetGeoOrAir(layer, tx + 1, ty),
+            GetGeoOrAir(layer, tx, ty - 1),
+            GetGeoOrAir(layer, tx, ty + 1),
+        ];
 
         // figure out how to orient the slope using solid neighbors
-
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1) && !IsSlope(level, layer, tx + 1, ty, 0) && !IsSlope(level, layer, tx, ty - 1, 3))
+        if (Equals(cells, [GeoType.Solid, GeoType.Air, GeoType.Air, GeoType.Solid]))
         {
             newType = GeoType.SlopeRightUp;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1) && !IsSlope(level, layer, tx - 1, ty, 1) && !IsSlope(level, layer, tx, ty - 1, 3))
+        else if (Equals(cells, [GeoType.Air, GeoType.Solid, GeoType.Air, GeoType.Solid]))
         {
             newType = GeoType.SlopeLeftUp;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1) && !IsSlope(level, layer, tx + 1, ty, 0) && !IsSlope(level, layer, tx, ty + 1, 2))
+        else if (Equals(cells, [GeoType.Solid, GeoType.Air, GeoType.Solid, GeoType.Air]))
         {
             newType = GeoType.SlopeRightDown;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1) && !IsSlope(level, layer, tx - 1, ty, 1) && !IsSlope(level, layer, tx, ty + 1, 2))
+        else if (Equals(cells, [GeoType.Air, GeoType.Solid, GeoType.Solid, GeoType.Air]))
         {
             newType = GeoType.SlopeLeftDown;
-            possibleConfigs++;
         }
-
-        if (possibleConfigs == 1)
-            return newType;
-            
-        return GeoType.Air;
+        
+        return newType;
     }
 
     private void ActivateToolSingleTile(Tool tool, int tx, int ty, bool pressed)
