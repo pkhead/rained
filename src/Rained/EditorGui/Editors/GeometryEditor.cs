@@ -110,6 +110,7 @@ class GeometryEditor : IEditorMode
 
     // tool rect - for wall/air/inverse/geometry tools
     private bool isToolRectActive;
+    private bool altRect = false;
     private int toolRectX;
     private int toolRectY;
     private int lastMouseX, lastMouseY;
@@ -269,6 +270,15 @@ class GeometryEditor : IEditorMode
         };
     }
 
+    private static bool ToolCanAltRect(Tool tool)
+    {
+        return tool switch
+        {
+            Tool.Slope => true,
+            _ => false,
+        };
+    }
+
     private static bool ToolCanFloodFill(Tool tool)
     {
         return tool switch
@@ -290,20 +300,20 @@ class GeometryEditor : IEditorMode
         rectMaxY = Math.Max(my, toolRectY);
 
         // constrain to square
-        // if (selectedTool == Tool.Slope)
-        // {
-        //     int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
+        if (altRect && selectedTool == Tool.Slope)
+        {
+            int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
 
-        //     int startX = toolRectX;
-        //     int startY = toolRectY;
-        //     int endX = startX + size * (mx - toolRectX >= 0 ? 1 : -1);
-        //     int endY = startY + size * (my - toolRectY >= 0 ? 1 : -1);
+            int startX = toolRectX;
+            int startY = toolRectY;
+            int endX = startX + size * (mx - toolRectX >= 0 ? 1 : -1);
+            int endY = startY + size * (my - toolRectY >= 0 ? 1 : -1);
 
-        //     rectMinX = Math.Min(startX, endX);
-        //     rectMaxX = Math.Max(startX, endX);
-        //     rectMinY = Math.Min(startY, endY);
-        //     rectMaxY = Math.Max(startY, endY);
-        // }
+            rectMinX = Math.Min(startX, endX);
+            rectMaxX = Math.Max(startX, endX);
+            rectMinY = Math.Min(startY, endY);
+            rectMaxY = Math.Max(startY, endY);
+        }
     }
 
     int buttonsPerRow = 4;
@@ -442,6 +452,9 @@ class GeometryEditor : IEditorMode
                     
                     if (ToolCanFloodFill(selectedTool))
                         window.WriteStatus(KeyShortcuts.GetShortcutString(KeyShortcut.FloodFill) + "+Click to flood fill");
+                    
+                    if (selectedTool == Tool.Slope)
+                        window.WriteStatus("Q+Drag to make big slope");
                 }
             }
         } ImGui.End();
@@ -784,6 +797,14 @@ class GeometryEditor : IEditorMode
                         if (isClicked && EditorWindow.IsKeyDown(ImGuiKey.ModShift) && ToolCanRectPlace(selectedTool))
                         {
                             isToolRectActive = true;
+                            altRect = false;
+                            toolRectX = window.MouseCx;
+                            toolRectY = window.MouseCy;
+                        }
+                        else if (isClicked && EditorWindow.IsMouseDown(ImGuiMouseButton.Left) && EditorWindow.IsKeyDown(ImGuiKey.Q) && ToolCanAltRect(selectedTool))
+                        {
+                            isToolRectActive = true;
+                            altRect = true;
                             toolRectX = window.MouseCx;
                             toolRectY = window.MouseCy;
                         }
@@ -854,7 +875,7 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private int GetMirroredPositions(int tx, int ty, Span<(int x, int y)> positions)
+    private int GetMirroredPositions(int tx, int ty, ref Span<(int x, int y)> positions)
     {
         int count = 1;
         positions[0] = (tx, ty);
@@ -887,7 +908,7 @@ class GeometryEditor : IEditorMode
         var level = RainEd.Instance.Level;
 
         Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
-        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
+        int mirrorCount = GetMirroredPositions(tx, ty, ref mirrorPositions);
 
         for (int i = 0; i < mirrorCount; i++)
         {
@@ -914,7 +935,7 @@ class GeometryEditor : IEditorMode
     private void ActivateTool(Tool tool, int tx, int ty, bool pressed)
     {
         Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
-        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
+        int mirrorCount = GetMirroredPositions(tx, ty, ref mirrorPositions);
 
         for (int i = 0; i < mirrorCount; i++)
         {
@@ -1181,11 +1202,22 @@ class GeometryEditor : IEditorMode
 
         if (place)
         {
-            for (int x = rectMinX; x <= rectMaxX; x++)
+            if (altRect && selectedTool == Tool.Slope)
             {
-                for (int y = rectMinY; y <= rectMaxY; y++)
+                if (selectedTool == Tool.Slope)
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
+                    }
+            }
+            else
+            {
+                for (int x = rectMinX; x <= rectMaxX; x++)
                 {
-                    ActivateTool(selectedTool, x, y, true);
+                    for (int y = rectMinY; y <= rectMaxY; y++)
+                    {
+                        ActivateTool(selectedTool, x, y, true);
+                    }
                 }
             }
         }
@@ -1210,7 +1242,6 @@ class GeometryEditor : IEditorMode
         return level.Layers[l,x,y].Geo == GeoType.Solid;
     }
 
-    /*
     private void RectSlope(int layer, int rectLf, int rectTp, int rectRt, int rectBt)
     {
         if (rectRt - rectLf != rectBt - rectTp)
@@ -1344,5 +1375,4 @@ class GeometryEditor : IEditorMode
             }
         }
     }
-    */
 }
