@@ -66,6 +66,37 @@ enum KeyShortcut : int
 
 static class KeyShortcuts
 {
+    public static readonly string CtrlName;
+    public static readonly string ShiftName;
+    public static readonly string AltName;
+    public static readonly string SuperName;
+
+    static KeyShortcuts()
+    {
+        ShiftName = "Shift";
+
+        if (OperatingSystem.IsMacOS())
+        {
+            CtrlName = "Cmd";
+            AltName = "Option";
+            SuperName = "Ctrl";
+        }
+        else
+        {
+            CtrlName = "Ctrl";
+            AltName = "Alt";
+
+            if (OperatingSystem.IsWindows())
+            {
+                SuperName = "Win";
+            }
+            else
+            {
+                SuperName = "Super";
+            }
+        }
+    }
+
     private class KeyShortcutBinding
     {
         public readonly KeyShortcut ID;
@@ -109,16 +140,16 @@ static class KeyShortcuts
             var str = new List<string>();
 
             if (Mods.HasFlag(ImGuiModFlags.Ctrl))
-                str.Add("Ctrl");
+                str.Add(CtrlName);
             
             if (Mods.HasFlag(ImGuiModFlags.Shift))
-                str.Add("Shift");
+                str.Add(ShiftName);
             
             if (Mods.HasFlag(ImGuiModFlags.Alt))
-                str.Add("Alt");
+                str.Add(AltName);
             
             if (Mods.HasFlag(ImGuiModFlags.Super))
-                str.Add("Super");
+                str.Add(SuperName);
             
             str.Add(ImGui.GetKeyName(Key));
 

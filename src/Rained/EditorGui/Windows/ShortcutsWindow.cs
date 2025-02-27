@@ -16,7 +16,7 @@ static partial class ShortcutsWindow
             ("Scroll Wheel", "Zoom"),
             ("[ViewZoomIn]/[ViewZoomOut]", "Zoom In/Out"),
             ("Middle Mouse", "Pan"),
-            ("Alt+Left Mouse", "Pan"),
+            ("<Alt>+Left Mouse", "Pan"),
             ("[Undo]", "Undo"),
             ("[Redo]", "Redo"),
             ("[Render]", "Render"),
@@ -112,7 +112,7 @@ static partial class ShortcutsWindow
             ("Right Mouse", "Erase effect"),
             ("Shift+Mouse Wheel", "Change brush size"),
             ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change brush size"),
-            ("Ctrl+Mouse Wheel", "Change brush strength"),
+            ("<Ctrl>+Mouse Wheel", "Change brush strength"),
         ],
 
         // Props
@@ -201,7 +201,10 @@ static partial class ShortcutsWindow
             for (int i = 0; i < tabData.Length; i++)
             {
                 var tuple = tabData[i];
-                var str = ShortcutRegex().Replace(tuple.Item1, ShortcutEvaluator);
+
+                string str;
+                str = ShortcutRegex().Replace(tuple.Item1, ShortcutEvaluator);
+                str = ModifierRegex().Replace(str, ModifierEvaluator);
 
                 ImGui.TableNextRow();
                 ImGui.TableSetColumnIndex(0);
@@ -220,6 +223,30 @@ static partial class ShortcutsWindow
         return KeyShortcuts.GetShortcutString(shortcutId);
     }
 
+    private static string ModifierEvaluator(Match match)
+    {
+        var modifierName = match.Value[1..^1];
+
+        switch (modifierName)
+        {
+            case "Ctrl":
+                return KeyShortcuts.CtrlName;
+            
+            case "Alt":
+                return KeyShortcuts.AltName;
+
+            case "Super":
+                return KeyShortcuts.SuperName;
+
+            default:
+                Log.Error("ShortcutsWindow: unknown modifier name " + modifierName);
+                return "<error>";
+        }
+    }
+
     [GeneratedRegex("\\[(\\w+?)\\]")]
     private static partial Regex ShortcutRegex();
+
+    [GeneratedRegex("\\<(\\w+?)\\>")]
+    private static partial Regex ModifierRegex();
 }
