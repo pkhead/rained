@@ -110,6 +110,7 @@ class GeometryEditor : IEditorMode
 
     // tool rect - for wall/air/inverse/geometry tools
     private bool isToolRectActive;
+    private bool altRect = false;
     private int toolRectX;
     private int toolRectY;
     private int lastMouseX, lastMouseY;
@@ -269,6 +270,15 @@ class GeometryEditor : IEditorMode
         };
     }
 
+    private static bool ToolCanAltRect(Tool tool)
+    {
+        return tool switch
+        {
+            Tool.Slope => true,
+            _ => false,
+        };
+    }
+
     private static bool ToolCanFloodFill(Tool tool)
     {
         return tool switch
@@ -290,7 +300,7 @@ class GeometryEditor : IEditorMode
         rectMaxY = Math.Max(my, toolRectY);
 
         // constrain to square
-        if (selectedTool == Tool.Slope)
+        if (altRect && selectedTool == Tool.Slope)
         {
             int size = Math.Max(Math.Abs(mx - toolRectX), Math.Abs(my - toolRectY));
 
@@ -442,6 +452,9 @@ class GeometryEditor : IEditorMode
                     
                     if (ToolCanFloodFill(selectedTool))
                         window.WriteStatus(KeyShortcuts.GetShortcutString(KeyShortcut.FloodFill) + "+Click to flood fill");
+                    
+                    if (selectedTool == Tool.Slope)
+                        window.WriteStatus("Q+Drag to make big slope");
                 }
             }
         } ImGui.End();
@@ -784,6 +797,14 @@ class GeometryEditor : IEditorMode
                         if (isClicked && EditorWindow.IsKeyDown(ImGuiKey.ModShift) && ToolCanRectPlace(selectedTool))
                         {
                             isToolRectActive = true;
+                            altRect = false;
+                            toolRectX = window.MouseCx;
+                            toolRectY = window.MouseCy;
+                        }
+                        else if (isClicked && EditorWindow.IsMouseDown(ImGuiMouseButton.Left) && EditorWindow.IsKeyDown(ImGuiKey.Q) && ToolCanAltRect(selectedTool))
+                        {
+                            isToolRectActive = true;
+                            altRect = true;
                             toolRectX = window.MouseCx;
                             toolRectY = window.MouseCy;
                         }
@@ -854,7 +875,7 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private int GetMirroredPositions(int tx, int ty, Span<(int x, int y)> positions)
+    private int GetMirroredPositions(int tx, int ty, ref Span<(int x, int y)> positions)
     {
         int count = 1;
         positions[0] = (tx, ty);
@@ -887,7 +908,7 @@ class GeometryEditor : IEditorMode
         var level = RainEd.Instance.Level;
 
         Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
-        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
+        int mirrorCount = GetMirroredPositions(tx, ty, ref mirrorPositions);
 
         for (int i = 0; i < mirrorCount; i++)
         {
@@ -914,7 +935,7 @@ class GeometryEditor : IEditorMode
     private void ActivateTool(Tool tool, int tx, int ty, bool pressed)
     {
         Span<(int x, int y)> mirrorPositions = stackalloc (int x, int y)[4];
-        int mirrorCount = GetMirroredPositions(tx, ty, mirrorPositions);
+        int mirrorCount = GetMirroredPositions(tx, ty, ref mirrorPositions);
 
         for (int i = 0; i < mirrorCount; i++)
         {
@@ -929,45 +950,52 @@ class GeometryEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
 
-        static bool IsSolid(Level level, int l, int x, int y)
+        static GeoType GetGeoOrAir(int l, int x, int y)
         {
-            if (x < 0 || y < 0) return false;
-            if (x >= level.Width || y >= level.Height) return false;
-            return level.Layers[l,x,y].Geo == GeoType.Solid;
+            var level = RainEd.Instance.Level;
+            if (x < 0 || y < 0) return GeoType.Air;
+            if (x >= level.Width || y >= level.Height) return GeoType.Air;
+            return level.Layers[l,x,y].Geo;
+        }
+
+        static bool Equals(ReadOnlySpan<GeoType> a, ReadOnlySpan<GeoType> b)
+        {
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
         }
 
         GeoType newType = GeoType.Air;
-        int possibleConfigs = 0;
+
+        // L,R,T,B
+        Span<GeoType> cells = [
+            GetGeoOrAir(layer, tx - 1, ty),
+            GetGeoOrAir(layer, tx + 1, ty),
+            GetGeoOrAir(layer, tx, ty - 1),
+            GetGeoOrAir(layer, tx, ty + 1),
+        ];
 
         // figure out how to orient the slope using solid neighbors
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty+1))
+        if (Equals(cells, [GeoType.Solid, GeoType.Air, GeoType.Air, GeoType.Solid]))
         {
             newType = GeoType.SlopeRightUp;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty+1))
+        else if (Equals(cells, [GeoType.Air, GeoType.Solid, GeoType.Air, GeoType.Solid]))
         {
             newType = GeoType.SlopeLeftUp;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx-1, ty) && IsSolid(level, layer, tx, ty-1))
+        else if (Equals(cells, [GeoType.Solid, GeoType.Air, GeoType.Solid, GeoType.Air]))
         {
             newType = GeoType.SlopeRightDown;
-            possibleConfigs++;
         }
-        
-        if (IsSolid(level, layer, tx+1, ty) && IsSolid(level, layer, tx, ty-1))
+        else if (Equals(cells, [GeoType.Air, GeoType.Solid, GeoType.Solid, GeoType.Air]))
         {
             newType = GeoType.SlopeLeftDown;
-            possibleConfigs++;
         }
-
-        if (possibleConfigs == 1)
-            return newType;
-            
-        return GeoType.Air;
+        
+        return newType;
     }
 
     private void ActivateToolSingleTile(Tool tool, int tx, int ty, bool pressed)
@@ -1008,14 +1036,20 @@ class GeometryEditor : IEditorMode
                     break;
 
                 case Tool.ShortcutEntrance:
-                    if (layer == 0 && pressed)
-                        cell.Geo = cell.Geo == GeoType.ShortcutEntrance ? GeoType.Air : GeoType.ShortcutEntrance;
+                    if (layer != 0) break;
+
+                    if (pressed) toolPlaceMode = cell.Geo == GeoType.ShortcutEntrance;
+
+                    if (toolPlaceMode) {
+                        if (cell.Geo == GeoType.ShortcutEntrance) cell.Geo = GeoType.Air;
+                    } else {
+                        cell.Geo = GeoType.ShortcutEntrance;
+                    }
+
                     break;
                 
                 case Tool.Slope:
                 {
-                    if (!pressed) break;
-                    
                     var slopeType = CalcPossibleSlopeType(tx, ty, layer);
                     if (slopeType != GeoType.Air)
                     {
@@ -1168,19 +1202,14 @@ class GeometryEditor : IEditorMode
 
         if (place)
         {
-            // hardcoded slope handler...
-            // but eh, i'm the only one who will modify this code anyway.
-            if (selectedTool == Tool.Slope)
+            if (altRect && selectedTool == Tool.Slope)
             {
-                for (int i = 0; i < 3; i++)
-                {
-                    if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
-                }
+                if (selectedTool == Tool.Slope)
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (layerMask[i]) RectSlope(i, rectMinX, rectMinY, rectMaxX, rectMaxY);
+                    }
             }
-
-            // apply the rect to the tool by
-            // applying the tool at every cell
-            // in the rectangle.
             else
             {
                 for (int x = rectMinX; x <= rectMaxX; x++)

@@ -89,8 +89,6 @@ sealed class RainEd
     private int keysPressed = 0;
     
     private double lastRopeUpdateTime = 0f;
-    private float simTimeLeftOver = 0f;
-    public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
     /// <summary>
     /// This is true whenever Rained is in a temporary state where level editing
@@ -796,33 +794,15 @@ sealed class RainEd
     public void UpdateRopeSimulation()
     {
         var level = CurrentTab!.Level;
-        double nowTime = Raylib.GetTime();
-        double stepTime = 1.0 / 30.0;
-
-        for (int i = 0; nowTime >= lastRopeUpdateTime + stepTime; i++)
-        {
-            lastRopeUpdateTime += stepTime;
-            
-            // tick rope simulation
-            foreach (var prop in level.Props)
-            {
-                prop.TickRopeSimulation();
-            }
-
-            // break if too many iterations in one frame
-            if (i == 8)
-            {
-                lastRopeUpdateTime += stepTime * Math.Floor(nowTime - lastRopeUpdateTime);
-                break;
-            }
-        }
-
-        simTimeLeftOver = (float)((nowTime - lastRopeUpdateTime) / stepTime);
+        const float TickRate = 30f;
 
         foreach (var prop in level.Props)
         {
-            if (prop.Rope is not null && prop.Rope.Simulate)
-                prop.Rope.SimulationTimeRemainder = simTimeLeftOver;
+            var rope = prop.Rope;
+            if (rope is null) continue;
+
+            rope.SimulationTimeStacker += Raylib.GetFrameTime() * TickRate * rope.SimulationSpeed;
+            prop.TickRopeSimulation();
         }
     }
 }
