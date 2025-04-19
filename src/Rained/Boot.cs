@@ -107,6 +107,12 @@ namespace Rained
                 Log.Setup(logToStdout);
             }
 
+            // setup window logger
+            Glib.Window.ErrorCallback = (string msg) =>
+            {
+                Log.Error("[Window] " + msg);
+            };
+
             // setup GL logger
             RenderContext.Log = (LogLevel logLevel, string msg) =>
             {
