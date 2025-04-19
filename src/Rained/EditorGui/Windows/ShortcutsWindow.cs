@@ -28,6 +28,7 @@ static partial class ShortcutsWindow
             ("5", "Edit light"),
             ("6", "Edit effects"),
             ("7", "Edit props"),
+            ("[SelectEditor]", "Editor mode radial menu"),
         ],
 
         // Environment
@@ -111,6 +112,7 @@ static partial class ShortcutsWindow
             ("Right Mouse", "Erase effect"),
             ("Shift+Mouse Wheel", "Change brush size"),
             ("[DecreaseBrushSize]/[IncreaseBrushSize]", "Change brush size"),
+            ("Ctrl+Mouse Wheel", "Change brush strength"),
         ],
 
         // Props
