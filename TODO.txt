@@ -92,3 +92,28 @@ Prop Editor:
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
+
+Tile graphics atlasing:
+
+Regular colors you already know
+rgb(255,0,0) —> shadow
+rgb(0,255,0) —> midtone
+rgb(0,0,255) —> highlight
+rgb(255,255,0) —> same as midtone, only used in color2 window
+
+Dark colors, they always use the non-sunlit part of the palette and also use the front of it. Used by platforms and roof houses.
+rgb(150,0,0) —> dark shadow
+rgb(0,150,0) —> dark midtone
+rgb(0,0,150) —> dark highlight
+
+The regular effect colors, they fade to midtone color
+rgb(255,0,255) —> color A
+rgb(0,255,255) —> color B
+
+There’s more though! There’s versions for highlight and shadow as well. (as in they fade to that color instead of midtone)
+rgb(255,150,255) —> highlight color A
+rgb(150,255,255) —> highlight color B
+rgb(150,0,150) —> shadow color A
+rgb(0,150,150) —> shadow color B
+
+What’s the gigantic singular case you might then ask? Any color rgb(x,255,150) turns into batfly hive white, fading from I think it’s midtone to white based on the red channel
