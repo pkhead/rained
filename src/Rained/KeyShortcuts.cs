@@ -251,13 +251,13 @@ static class KeyShortcuts
         {
             var modStr = keyStr[i];
             
-            if (modStr == "Ctrl")
+            if (modStr == CtrlName)
                 mods |= ImGuiModFlags.Ctrl;
-            else if (modStr == "Alt")
+            else if (modStr == AltName)
                 mods |= ImGuiModFlags.Alt;
-            else if (modStr == "Shift")
+            else if (modStr == ShiftName)
                 mods |= ImGuiModFlags.Shift;
-            else if (modStr == "Super")
+            else if (modStr == SuperName)
                 mods |= ImGuiModFlags.Super;
             else
                 throw new Exception($"Unknown modifier key '{modStr}'");
