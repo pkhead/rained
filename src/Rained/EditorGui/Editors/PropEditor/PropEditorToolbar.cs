@@ -414,7 +414,11 @@ partial class PropEditor : IEditorMode
 
             // snapping
             ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
-            ImGui.Combo("Snap", ref snappingMode, "Off\00.5x\01x");
+            {
+                int snapModeInt = (int) snappingMode;
+                if (ImGui.Combo("Snap", ref snapModeInt, "Off\00.25x\00.5x\01x\0"))
+                    snappingMode = (PropSnapMode) snapModeInt;
+            }
             
             // flags for search bar
             var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
