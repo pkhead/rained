@@ -693,6 +693,7 @@ static class PreferencesWindow
         ImGui.SeparatorText("Props");
         ShortcutButton(KeyShortcut.ToggleVertexMode);
         ShortcutButton(KeyShortcut.RopeSimulation);
+        ShortcutButton(KeyShortcut.RopeSimulationFast);
         ShortcutButton(KeyShortcut.ResetSimulation);
         ShortcutButton(KeyShortcut.RotatePropCCW);
         ShortcutButton(KeyShortcut.RotatePropCW);

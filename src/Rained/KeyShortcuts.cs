@@ -51,7 +51,7 @@ enum KeyShortcut : int
     CameraSnapX, CameraSnapY,
 
     // Props
-    ToggleVertexMode, RopeSimulation, ResetSimulation,
+    ToggleVertexMode, RopeSimulation, RopeSimulationFast, ResetSimulation,
 
     // View settings shortcuts
     ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
@@ -463,6 +463,7 @@ static class KeyShortcuts
         // Prop Editor
         Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);
         Register("Rope Simulation", KeyShortcut.RopeSimulation, ImGuiKey.Space, ImGuiModFlags.None);
+        Register("Rope Simulation Fast", KeyShortcut.RopeSimulationFast, ImGuiKey.Space, ImGuiModFlags.Shift);
         Register("Reset Rope Simulation", KeyShortcut.ResetSimulation, ImGuiKey.None, ImGuiModFlags.None);
         
         Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.None);

@@ -924,14 +924,14 @@ partial class PropEditor : IEditorMode
                             ImGui.SameLine();
                             ImGui.Button("Simulate");
 
-                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation) && transformMode is null)
+                            if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation)) && transformMode is null)
                             {
                                 simSpeed = 1f;
                             }
 
                             ImGui.SameLine();
                             ImGui.Button("Fast");
-                            if (ImGui.IsItemActive() && transformMode is null)
+                            if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulationFast)) && transformMode is null)
                             {
                                 simSpeed = RainEd.Instance.Preferences.FastSimulationSpeed;
                             }
