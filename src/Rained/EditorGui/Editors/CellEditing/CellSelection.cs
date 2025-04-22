@@ -30,7 +30,13 @@ class CellSelection
         OpReplace,
         OpAdd,
         OpSubtract,
-        OpIntersect
+        OpIntersect,
+        MoveSelectedBackward,
+        MoveSelectedForward,
+        MoveSelectionBackward,
+        MoveSelectionForward,
+        Done,
+        Cancel,
     };
 
     private SelectionTool curTool = SelectionTool.Rect;
@@ -104,13 +110,16 @@ class CellSelection
         );
 
         var textColorVec4 = ImGui.GetStyle().Colors[(int)ImGuiCol.Text] * 255f;
+
+        ImGui.PushID((int) icon);
         bool pressed = ImGuiExt.ImageButtonRect(
-            "##test",
+            "##IconButton",
             icons,
             buttonSize, buttonSize,
             GetIconRect(icon),
             new Color((int)textColorVec4.X, (int)textColorVec4.Y, (int)textColorVec4.Z, (int)textColorVec4.W)
         );
+        ImGui.PopID();
 
         ImGui.PopStyleVar();
         return pressed;
@@ -181,6 +190,31 @@ class CellSelection
             }
             ImGui.PopStyleVar();
         }
+
+        // layer movement buttons
+        ImGui.SameLine();
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
+        {
+            ImGui.BeginDisabled(!IsSelectionActive());
+
+            var alt = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+
+            if (IconButton(alt ? IconName.MoveSelectionBackward : IconName.MoveSelectedBackward))
+            {
+                MoveSelectionLayer(1, !alt);
+            }
+            ImGui.SetItemTooltip(alt ? "Move Selection Backward" : "Move Selected Backward");
+
+            ImGui.SameLine();
+
+            if (IconButton(alt ? IconName.MoveSelectionForward : IconName.MoveSelectedForward)) {
+                MoveSelectionLayer(-1, !alt);
+            }
+            ImGui.SetItemTooltip(alt ? "Move Selection Forward" : "Move Selected Forward");
+
+            ImGui.EndDisabled();
+        }
+        ImGui.PopStyleVar();
 
         ImGui.SameLine();
         if (ImGui.Button("Done") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
@@ -691,6 +725,88 @@ class CellSelection
             selection.maxX = maxX;
             selection.maxY = maxY;
             selection.mask = newMask;
+        }
+    }
+
+    private void CopyLayer(int dstLayer, int srcLayer)
+    {
+        Debug.Assert(movingGeometry is not null);
+
+        for (int y = 0; y < movingH; y++)
+        {
+            for (int x = 0; x < movingW; x++)
+            {
+                movingGeometry[dstLayer,x,y] = movingGeometry[srcLayer,x,y];
+            }
+        }
+    }
+
+    private void CopyLayer((bool mask, LevelCell cell)[,] dstLayer, int srcLayer)
+    {
+        Debug.Assert(movingGeometry is not null);
+
+        for (int y = 0; y < movingH; y++)
+        {
+            for (int x = 0; x < movingW; x++)
+            {
+                dstLayer[x,y] = movingGeometry[srcLayer,x,y];
+            }
+        }
+    }
+
+    private void CopyLayer(int dstLayer, (bool mask, LevelCell cell)[,] srcLayer)
+    {
+        Debug.Assert(movingGeometry is not null);
+
+        for (int y = 0; y < movingH; y++)
+        {
+            for (int x = 0; x < movingW; x++)
+            {
+                movingGeometry[dstLayer,x,y] = srcLayer[x,y];
+            }
+        }
+    }
+
+    private void MoveSelectionLayer(int direction, bool moveGeometry)
+    {
+        if (!IsSelectionActive()) return;
+
+        if (movingGeometry is null)
+        {
+            BeginMove();
+        }
+        Debug.Assert(movingGeometry is not null);
+
+        // move backward
+        if (direction > 0)
+        {
+            if (moveGeometry) {
+                var tempLayer = new (bool mask, LevelCell cell)[movingW, movingH];
+                CopyLayer(tempLayer, 2);
+                CopyLayer(2, 1);
+                CopyLayer(1, 0);
+                CopyLayer(0, tempLayer);
+            }
+
+            var tempSel = selections[2];
+            selections[2] = selections[1];
+            selections[1] = selections[0];
+            selections[0] = tempSel;
+        }
+        // move forward
+        else if (direction < 0) {
+            if (moveGeometry) {
+                var tempLayer = new (bool mask, LevelCell cell)[movingW, movingH];
+                CopyLayer(tempLayer, 0);
+                CopyLayer(0, 1);
+                CopyLayer(1, 2);
+                CopyLayer(2, tempLayer);
+            }
+
+            var tempSel = selections[0];
+            selections[0] = selections[1];
+            selections[1] = selections[2];
+            selections[2] = tempSel;
         }
     }
 
