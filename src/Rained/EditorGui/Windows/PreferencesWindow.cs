@@ -696,6 +696,7 @@ static class PreferencesWindow
         ShortcutButton(KeyShortcut.ResetSimulation);
         ShortcutButton(KeyShortcut.RotatePropCCW);
         ShortcutButton(KeyShortcut.RotatePropCW);
+        ShortcutButton(KeyShortcut.ChangePropSnapping);
     }
 
     private static readonly List<string> availableThemes = [];

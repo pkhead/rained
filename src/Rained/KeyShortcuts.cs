@@ -57,6 +57,7 @@ enum KeyShortcut : int
     ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
     ToggleViewCameras, ToggleViewGraphics, ToggleViewNodeIndices,
     RotatePropCW, RotatePropCCW,
+    ChangePropSnapping,
 
     /// <summary>
     /// Do not bind - this is just the number of shortcut IDs
@@ -466,6 +467,8 @@ static class KeyShortcuts
         
         Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.None);
         Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiModFlags.None);
+
+        Register("Change Prop Snapping", KeyShortcut.ChangePropSnapping, ImGuiKey.R, ImGuiModFlags.None);
 
         // View options
         Register("View Grid", KeyShortcut.ToggleViewGrid, ImGuiKey.G, ImGuiModFlags.Ctrl);

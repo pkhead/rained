@@ -402,6 +402,12 @@ partial class PropEditor : IEditorMode
     {
         var propDb = RainEd.Instance.PropDatabase;
 
+        if (KeyShortcuts.Activated(KeyShortcut.ChangePropSnapping))
+        {
+            // cycle through the four prop snap modes
+            snappingMode = (PropSnapMode) (((int)snappingMode + 1) % 4);
+        }
+
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // work layer
