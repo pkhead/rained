@@ -352,7 +352,14 @@ class DrizzleRender : IDisposable
         threadState = new RenderThread(filePath, OnlyGeometry, prioCam);
         threadState.StatusChanged += StatusChanged;
         Configuration.Default.PreferContiguousImageBuffers = true;
-        thread = new Thread(new ThreadStart(threadState.ThreadProc))
+
+        // MacOS has a smaller stack size by default,
+        // so i need to make it bigger on that platform.
+        int maxStackSize = 0; // 0 = use default stack size
+        if (OperatingSystem.IsMacOS())
+            maxStackSize = 1024 * 1024; // 1 MiB
+
+        thread = new Thread(new ThreadStart(threadState.ThreadProc), maxStackSize)
         {
             CurrentCulture = Thread.CurrentThread.CurrentCulture
         };
