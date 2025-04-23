@@ -5,6 +5,12 @@ using System.Numerics;
 using Rained.LevelData;
 using System.Diagnostics;
 
+struct MaskedCell(bool mask, LevelCell cell)
+{
+    public bool mask = mask;
+    public LevelCell cell = cell;
+}
+
 /// <summary>
 /// Operations for copying, pasting, and moving of cells.
 /// </summary>
@@ -75,11 +81,17 @@ class CellSelection
 
     private int movingW = 0;
     private int movingH = 0;
-    private (bool mask, LevelCell cell)[,,]? movingGeometry = null;
+    private MaskedCell[,,]? movingGeometry = null;
+
+    public int CutoutX => RainEd.Instance.LevelView.Renderer.OverlayX;
+    public int CutoutY => RainEd.Instance.LevelView.Renderer.OverlayY;
+    public int CutoutWidth => movingW;
+    public int CutoutHeight => movingH;
+    public MaskedCell[,,]? ActiveCutout => movingGeometry; 
 
     private int cancelOrigX = 0;
     private int cancelOrigY = 0;
-    private (bool mask, LevelCell cell)[,,]? cancelGeoData = null;
+    private MaskedCell[,,]? cancelGeoData = null;
 
     // used for mouse drag
     private bool mouseWasDragging = false;
@@ -424,7 +436,7 @@ class CellSelection
         if (!IsSelectionActive()) return;
 
         int selX, selY, selW, selH;
-        (bool mask, LevelCell cell)[,,] geometryData;
+        MaskedCell[,,] geometryData;
 
         if (movingGeometry is not null)
         {
@@ -741,7 +753,7 @@ class CellSelection
         }
     }
 
-    private void CopyLayer((bool mask, LevelCell cell)[,] dstLayer, int srcLayer)
+    private void CopyLayer(MaskedCell[,] dstLayer, int srcLayer)
     {
         Debug.Assert(movingGeometry is not null);
 
@@ -754,7 +766,7 @@ class CellSelection
         }
     }
 
-    private void CopyLayer(int dstLayer, (bool mask, LevelCell cell)[,] srcLayer)
+    private void CopyLayer(int dstLayer, MaskedCell[,] srcLayer)
     {
         Debug.Assert(movingGeometry is not null);
 
@@ -781,7 +793,7 @@ class CellSelection
         if (direction > 0)
         {
             if (moveGeometry) {
-                var tempLayer = new (bool mask, LevelCell cell)[movingW, movingH];
+                var tempLayer = new MaskedCell[movingW, movingH];
                 CopyLayer(tempLayer, 2);
                 CopyLayer(2, 1);
                 CopyLayer(1, 0);
@@ -796,7 +808,7 @@ class CellSelection
         // move forward
         else if (direction < 0) {
             if (moveGeometry) {
-                var tempLayer = new (bool mask, LevelCell cell)[movingW, movingH];
+                var tempLayer = new MaskedCell[movingW, movingH];
                 CopyLayer(tempLayer, 0);
                 CopyLayer(0, 1);
                 CopyLayer(1, 2);
@@ -909,7 +921,7 @@ class CellSelection
         }
     }
 
-    private (bool mask, LevelCell cell)[,,] MakeCellGroup(out int selX, out int selY, out int selW, out int selH, bool eraseSource)
+    private MaskedCell[,,] MakeCellGroup(out int selX, out int selY, out int selW, out int selH, bool eraseSource)
     {
         // (selX, selY) = furthest top-left of layer selection
         selX = int.MaxValue;
@@ -946,7 +958,7 @@ class CellSelection
                 return false;
         }
 
-        var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+        var geometry = new MaskedCell[Level.LayerCount, selW, selH];
         for (int y = 0; y < selH; y++)
         {
             var gy = selY + y;
@@ -1083,7 +1095,7 @@ class CellSelection
 
         var selW = maxX - minX + 1;
         var selH = maxY - minY + 1;
-        cancelGeoData = new (bool mask, LevelCell cell)[Level.LayerCount, selW, selH];
+        cancelGeoData = new MaskedCell[Level.LayerCount, selW, selH];
         cancelOrigX = minX;
         cancelOrigY = minY;
 
@@ -1102,11 +1114,11 @@ class CellSelection
                     {
                         var ly = gy - sel.minY;
                         var lx = gx - sel.minX;
-                        cancelGeoData[l,x,y] = (sel.mask[ly,lx], level.Layers[l,gx,gy]);
+                        cancelGeoData[l,x,y] = new MaskedCell(sel.mask[ly,lx], level.Layers[l,gx,gy]);
                     }
                     else
                     {
-                        cancelGeoData[l,x,y] = (false, new LevelCell());
+                        cancelGeoData[l,x,y] = new MaskedCell(false, new LevelCell());
                     }
                 }
             }

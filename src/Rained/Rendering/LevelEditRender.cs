@@ -4,6 +4,7 @@ using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
 using ImGuiNET;
+using Rained.EditorGui.Editors.CellEditing;
 namespace Rained.Rendering;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
@@ -61,7 +62,7 @@ class LevelEditRender : IDisposable
     public int OverlayWidth { get; private set; }
     public int OverlayHeight { get; private set; }
     public bool OverlayAffectTiles;
-    public (bool mask, LevelCell cell)[,,]? OverlayGeometry { get; private set; } = null;
+    public MaskedCell[,,]? OverlayGeometry { get; private set; } = null;
     public bool IsOverlayActive => OverlayGeometry is not null;
 
     public LevelEditRender()
@@ -833,7 +834,7 @@ class LevelEditRender : IDisposable
         });
     }
 
-    public void SetOverlay(int width, int height, (bool mask, LevelCell cell)[,,] geometry)
+    public void SetOverlay(int width, int height, MaskedCell[,,] geometry)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");
