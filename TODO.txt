@@ -18,6 +18,7 @@ Bugs:
   fix: disable shortcuts while rendering
 
 v2.3.0:
+  - Lightmap stretch (ditto) & move
   * geo/tile copy+paste (i am currently working on this),
   - tile & effect prefabs
   - favorite tiles&props
