@@ -144,8 +144,8 @@ record class PropInit
             "simpleDecal" => PropType.SimpleDecal,
             "variedDecal" => PropType.VariedDecal,
             "antimatter" => PropType.Antimatter,
-            "rope" => PropType.Rope,
-            "long" => PropType.Long,
+            "rope" or "customRope" => PropType.Rope,
+            "long" or "customLong" => PropType.Long,
             _ => throw new Exception("Invalid prop init")
         };
 
