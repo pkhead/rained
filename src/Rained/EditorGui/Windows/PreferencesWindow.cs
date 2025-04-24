@@ -66,7 +66,7 @@ static class PreferencesWindow
                 case WatcherChangeTypes.Renamed:
                     Log.Debug("Drizzle config renamed/moved");
 
-                    if (!e.FullPath.Equals(activeDrizzleConfig.FilePath, StringComparison.InvariantCultureIgnoreCase))
+                    if (!Util.ArePathsEquivalent(e.FullPath, activeDrizzleConfig.FilePath))
                     {
                         activeDrizzleConfig = null;
                         drizzleConfigWatcher.Dispose();
