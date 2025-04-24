@@ -98,17 +98,21 @@ class LightBrushDatabase
         }
 
         // load drizzle light data
-        foreach (var filePath in Directory.GetFileSystemEntries(Path.Combine(RainEd.Instance.AssetDataPath, "Lights")))
+        var lightsDir = Path.Combine(RainEd.Instance.AssetDataPath, "Lights");
+        if (Directory.Exists(lightsDir))
         {
-            var brush = LoadBrush(filePath);
+            foreach (var filePath in Directory.GetFileSystemEntries(lightsDir))
+            {
+                var brush = LoadBrush(filePath);
 
-            if (brush is null)
-            {
-                Log.UserLogger.Error("Could not load light brush " + filePath);
-            }
-            else
-            {
-                lightBrushes.Add(brush.Value);
+                if (brush is null)
+                {
+                    Log.UserLogger.Error("Could not load light brush " + filePath);
+                }
+                else
+                {
+                    lightBrushes.Add(brush.Value);
+                }
             }
         }
     }

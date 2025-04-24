@@ -72,7 +72,7 @@ class AssetGraphicsProvider
     {
         var combined = Path.Combine(directory, fileName);
 
-        if ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && !File.Exists(combined))
+        if (Util.IsFileSystemCaseSensitive && !File.Exists(combined))
         {
             foreach (var filePath in Directory.GetFiles(directory))
             {

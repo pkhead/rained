@@ -1,7 +1,6 @@
 Selection:
 - selection undo/redo
 - drag for tile select
-- ability to move selected in-between layers
 
 LargeTexture:
 - large texture for lightmap
