@@ -77,6 +77,9 @@ class DrizzleConfiguration
 
     [StringName("Dark Slime fix")]
     public bool DarkSlimeFix { get; set; } = true;
+    
+    [StringName("Sky roots fix")]
+    public bool SkyRootsFix { get; set; } = false;
 
     private static PropertyInfo? GetPropertyByKey(string key)
     {
@@ -186,6 +189,8 @@ class DrizzleConfiguration
 
         return true;
     }
+
+    public bool Reload() => LoadPreferences();
 
     public void SavePreferences()
     {

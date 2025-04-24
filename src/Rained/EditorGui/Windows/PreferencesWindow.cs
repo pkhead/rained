@@ -26,11 +26,72 @@ static class PreferencesWindow
 
     private static KeyShortcut activeShortcut = KeyShortcut.None;
     private static DrizzleConfiguration? activeDrizzleConfig = null;
+    private static FileSystemWatcher? drizzleConfigWatcher = null;
 
     private static bool openPopupCmd = false;
     public static void OpenWindow()
     {
         openPopupCmd = true;
+    }
+
+    private static void SetUpDrizzleConfig()
+    {
+        activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
+            
+        drizzleConfigWatcher?.Dispose();
+        drizzleConfigWatcher = new FileSystemWatcher(Path.GetDirectoryName(activeDrizzleConfig.FilePath)!, "*.txt");
+        drizzleConfigWatcher.NotifyFilter |= NotifyFilters.LastWrite | NotifyFilters.FileName;
+
+        drizzleConfigWatcher.Changed += (object sender, FileSystemEventArgs e) =>
+        {
+            if (e.Name != "editorConfig.txt") return;
+
+            switch (e.ChangeType)
+            {
+                case WatcherChangeTypes.Deleted:
+                    Log.Debug("Drizzle config deleted");
+
+                    activeDrizzleConfig = null;
+                    drizzleConfigWatcher.Dispose();
+                    SetUpDrizzleConfig();
+                    break;
+
+                case WatcherChangeTypes.Changed:
+                    Log.Debug("Drizzle config changed");
+
+                    if (File.Exists(activeDrizzleConfig.FilePath))
+                        activeDrizzleConfig.Reload();
+                    break;
+
+                case WatcherChangeTypes.Renamed:
+                    Log.Debug("Drizzle config renamed/moved");
+
+                    if (!e.FullPath.Equals(activeDrizzleConfig.FilePath, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        activeDrizzleConfig = null;
+                        drizzleConfigWatcher.Dispose();
+                        SetUpDrizzleConfig();
+                    }
+                    break;
+            }
+        };
+
+        drizzleConfigWatcher.Renamed += (object sender, RenamedEventArgs e) =>
+        {
+            if (
+                e.OldFullPath.Equals(activeDrizzleConfig.FilePath, StringComparison.InvariantCultureIgnoreCase) &&
+                !e.FullPath.Equals(activeDrizzleConfig.FilePath, StringComparison.InvariantCultureIgnoreCase)
+            )
+            {
+                Log.Debug("Drizzle config renamed/moved");
+                
+                activeDrizzleConfig = null;
+                drizzleConfigWatcher.Dispose();
+                SetUpDrizzleConfig();
+            }
+        };
+
+        drizzleConfigWatcher.EnableRaisingEvents = true;
     }
 
     public static void ShowWindow()
@@ -51,14 +112,18 @@ static class PreferencesWindow
         // keep track of this, as i want to clear some data
         // when the following tabs are no longer shown
         bool showAssetsTab = false;
-        bool showRenderSettingsTab = false;
+
+        if (justOpened)
+        {
+            SetUpDrizzleConfig();
+        }
 
         if (isWindowOpen)
         {
+            var lastNavTab = selectedNavTab;
+
             if (ImGui.Begin(WindowName, ref isWindowOpen, ImGuiWindowFlags.NoDocking))
             {
-                var lastNavTab = selectedNavTab;
-
                 // show navigation sidebar
                 ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
                 {
@@ -96,13 +161,25 @@ static class PreferencesWindow
                     
                     case NavTabEnum.Drizzle:
                         ShowDrizzleTab();
-                        showRenderSettingsTab = true;
                         break;
                 }
 
                 ImGui.EndChild();
             }
             ImGui.End();
+
+            if (!isWindowOpen)
+            {
+                showAssetsTab = false;
+                activeDrizzleConfig = null;
+                drizzleConfigWatcher?.Dispose();
+                drizzleConfigWatcher = null;
+            }
+
+            if (!showAssetsTab && lastNavTab == NavTabEnum.Assets)
+            {
+                AssetManagerGUI.Unload();
+            }
         }
         else
         {
@@ -156,16 +233,6 @@ static class PreferencesWindow
                     }
                 }
             }
-        }
-
-        if (!showAssetsTab)
-        {
-            AssetManagerGUI.Unload();
-        }
-
-        if (!showRenderSettingsTab)
-        {
-            activeDrizzleConfig = null;
         }
     }
 
@@ -565,6 +632,26 @@ static class PreferencesWindow
                 """
             );
 
+            // sky roots fix
+            {
+                var skyRootsFix = activeDrizzleConfig!.SkyRootsFix;
+                if (ImGui.Checkbox("Require in-bounds effects by default", ref skyRootsFix))
+                {
+                    activeDrizzleConfig.SkyRootsFix = skyRootsFix;
+                    activeDrizzleConfig.SavePreferences();
+                }
+
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                if (ImGui.BeginItemTooltip())
+                {
+                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                    ImGui.TextWrapped("This will set the value of the \"Require In-Bounds\" effect property for any newly created effects or effects from levels made before this option was added. This is an alias for the \"Sky roots fix\" option in the Drizzle page.");
+                    ImGui.PopTextWrapPos();
+                    ImGui.EndTooltip();
+                }
+            }
+
             ImGui.Separator();
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
@@ -780,8 +867,6 @@ static class PreferencesWindow
 
     private static void ShowDrizzleTab()
     {
-        activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
-
         static void ConfigCheckbox(string key)
         {
             bool v = activeDrizzleConfig!.GetConfig(key);
@@ -852,5 +937,16 @@ static class PreferencesWindow
         ConfigCheckbox("Large trash debug log");
         ConfigCheckbox("Rough Rock spreads more");
         ConfigCheckbox("Dark Slime fix");
+        ConfigCheckbox("Sky roots fix");
+
+        ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+            ImGui.TextWrapped("This will set the value of the \"Require In-Bounds\" effect property for any newly created effects or effects from levels made before this option was added. This is an alias for the \"Require in-bounds effects by default\" option in the General page.");
+            ImGui.PopTextWrapPos();
+            ImGui.EndTooltip();
+        }
     }
 }

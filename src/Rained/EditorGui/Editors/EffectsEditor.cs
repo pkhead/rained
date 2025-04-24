@@ -419,6 +419,12 @@ class EffectsEditor : IEditorMode
                     }
                 }
 
+                if (effect.Data.optionalInBounds)
+                {
+                    if (ImGui.Checkbox("Require In-Bounds", ref effect.RequireInBounds))
+                        hadChanged = true;
+                }
+
                 // seed
                 ImGui.SliderInt("Seed", ref effect.Seed, 0, 500);
                 if (ImGui.IsItemDeactivatedAfterEdit())
