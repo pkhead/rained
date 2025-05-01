@@ -26,8 +26,6 @@ class AppSetup
     private FileBrowser? fileBrowser = null;
     private Task? downloadTask = null;
 
-    private bool _debugAddUserAgent = false;
-
     private const string StartupText = """
     Welcome to the Rained setup screen! Please configure the location of the Rain World level editor data folder.
 
@@ -141,15 +139,6 @@ class AppSetup
         if (ImGui.Button("Download Data"))
         {
             setupState = SetupState.Downloading;
-            _debugAddUserAgent = false;
-            downloadTask = DownloadData();
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("download data w/ user-agent"))
-        {
-            setupState = SetupState.Downloading;
-            _debugAddUserAgent = true;
             downloadTask = DownloadData();
         }
 
@@ -294,8 +283,8 @@ class AppSetup
             downloadStage = 1;
             using (var client = new HttpClient())
             {
-                if (_debugAddUserAgent)
-                    client.DefaultRequestHeaders.Add("user-agent", Util.HttpUserAgent);
+                client.DefaultRequestHeaders.Add("user-agent", Util.HttpUserAgent);
+                client.Timeout = Timeout.InfiniteTimeSpan;
 
                 using var outputStream = File.OpenWrite(tempZipFile);
                 
