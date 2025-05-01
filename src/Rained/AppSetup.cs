@@ -26,6 +26,8 @@ class AppSetup
     private FileBrowser? fileBrowser = null;
     private Task? downloadTask = null;
 
+    private bool _debugAddUserAgent = false;
+
     private const string StartupText = """
     Welcome to the Rained setup screen! Please configure the location of the Rain World level editor data folder.
 
@@ -139,6 +141,15 @@ class AppSetup
         if (ImGui.Button("Download Data"))
         {
             setupState = SetupState.Downloading;
+            _debugAddUserAgent = false;
+            downloadTask = DownloadData();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("download data w/ user-agent"))
+        {
+            setupState = SetupState.Downloading;
+            _debugAddUserAgent = true;
             downloadTask = DownloadData();
         }
 
@@ -189,12 +200,40 @@ class AppSetup
 
         ImGui.ProgressBar(downloadProgress, new Vector2(ImGui.GetTextLineHeight() * 50.0f, 0.0f));
 
-        // when download is complete, signal app launch
-        if (downloadTask is not null && downloadTask.IsCompletedSuccessfully)
+        // when task has ended,
+        // go ahead if it was successful.
+        // else, show an error message.
+        if (downloadTask is not null && downloadTask.IsCompleted)
         {
-            downloadTask = null;
-            callbackRes = Path.Combine(Boot.AppDataPath, "Data");
-            setupState = SetupState.Finished;
+            if (downloadTask.IsCompletedSuccessfully)
+            {
+                downloadTask = null;
+                callbackRes = Path.Combine(Boot.AppDataPath, "Data");
+                setupState = SetupState.Finished;
+            }
+            else
+            {
+                ImGuiExt.EnsurePopupIsOpen("Error");
+                ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                {
+                    if (downloadTask.IsFaulted)
+                        ImGui.Text(downloadTask.Exception.Message);
+
+                    else
+                        ImGui.Text("The operation was aborted.");
+                    
+                    ImGui.Separator();
+                    if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                    {
+                        ImGui.CloseCurrentPopup();
+                        downloadTask = null;
+                        setupState = SetupState.SetupChoice;
+                    }
+
+                    ImGui.EndPopup();
+                }
+            }
         }
     }
 
@@ -255,8 +294,11 @@ class AppSetup
             downloadStage = 1;
             using (var client = new HttpClient())
             {
-                using var outputStream = File.OpenWrite(tempZipFile);
+                if (_debugAddUserAgent)
+                    client.DefaultRequestHeaders.Add("user-agent", Util.HttpUserAgent);
 
+                using var outputStream = File.OpenWrite(tempZipFile);
+                
                 var response = await client.GetAsync("https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip");
                 response.EnsureSuccessStatusCode();
                 
@@ -325,6 +367,11 @@ class AppSetup
                     downloadProgress = (float)processedEntries / entryCount; 
                 }
             }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
         finally
         {

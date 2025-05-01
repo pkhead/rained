@@ -64,4 +64,16 @@ static class Util
         else
             return pathA.Equals(pathB, StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// The user agent to use for HTTP requests.
+    /// </summary>
+    public static string HttpUserAgent;
+
+    static Util()
+    {
+        var os = Environment.OSVersion.ToString();
+        var clr = Environment.Version.ToString();
+        HttpUserAgent = $"Mozilla/4.0 (compatible; MSIE 6.0; {os}; .NET CLR {clr};)";
+    }
 }
