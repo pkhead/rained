@@ -58,6 +58,9 @@ static class AssetManagerGUI
             var drawList = ImGui.GetWindowDrawList();
             float textHeight = ImGui.GetTextLineHeight();
 
+            const string leftPadding = "  ";
+            float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
             for (int i = 0; i < categories.Count; i++)
             {
                 var group = categories[i];
@@ -68,7 +71,7 @@ static class AssetManagerGUI
                     var cursor = ImGui.GetCursorScreenPos();
                     
                     // pad beginning of selectable to reserve space for the color square
-                    if (ImGui.Selectable("  " + group.Name, i == selected))
+                    if (ImGui.Selectable(leftPadding + group.Name, i == selected))
                     {
                         if (selected != i)
                             groupIndex = 0;
@@ -80,7 +83,7 @@ static class AssetManagerGUI
                     var col = group.Color.Value;
                     drawList.AddRectFilled(
                         p_min: cursor,
-                        p_max: cursor + new Vector2(10f, textHeight),
+                        p_max: cursor + new Vector2(colorWidth, textHeight),
                         ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
                     );
                 }

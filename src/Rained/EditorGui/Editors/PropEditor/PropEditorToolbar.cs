@@ -462,6 +462,9 @@ partial class PropEditor : IEditorMode
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in searchResults)
                         {
                             // redundant skip Tiles as props categories
@@ -470,11 +473,11 @@ partial class PropEditor : IEditorMode
                             var cursor = ImGui.GetCursorScreenPos();
                             ImGui.GetWindowDrawList().AddRectFilled(
                                 p_min: cursor,
-                                p_max: cursor + new Vector2(10f, ImGui.GetTextLineHeight()),
+                                p_max: cursor + new Vector2(colorWidth, ImGui.GetTextLineHeight()),
                                 ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
 
-                            if (ImGui.Selectable("  " + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                            if (ImGui.Selectable(leftPadding + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
                             {
                                 if (i != selectedPropGroup)
                                 {
@@ -544,10 +547,13 @@ partial class PropEditor : IEditorMode
                         var drawList = ImGui.GetWindowDrawList();
                         float textHeight = ImGui.GetTextLineHeight();
 
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in tileSearchResults)
                         {
                             var cursor = ImGui.GetCursorScreenPos();
-                            if (ImGui.Selectable("  " + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            if (ImGui.Selectable(leftPadding + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                             {
                                 if (i != selectedTileGroup)
                                 {
@@ -559,7 +565,7 @@ partial class PropEditor : IEditorMode
                             // draw color square
                             drawList.AddRectFilled(
                                 p_min: cursor,
-                                p_max: cursor + new Vector2(10f, textHeight),
+                                p_max: cursor + new Vector2(colorWidth, textHeight),
                                 ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
