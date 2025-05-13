@@ -346,6 +346,9 @@ static class LevelSerialization
                                 case "Affect Gradients and Decals":
                                     effect.AffectGradientsAndDecals = optionIndex == 0;
                                     break;
+                                case "Require In-Bounds":
+                                    effect.RequireInBounds = optionIndex == 0;
+                                    break;
                                 default:
                                 {
                                     int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
@@ -776,6 +779,11 @@ static class LevelSerialization
             if (effect.Data.useDecalAffect)
             {
                 output.AppendFormat(", [\"Affect Gradients and Decals\", [\"Yes\", \"No\"], \"{0}\"]", effect.AffectGradientsAndDecals ? "Yes": "No");
+            }
+
+            if (effect.Data.optionalInBounds)
+            {
+                output.AppendFormat(", [\"Require In-Bounds\", [\"Yes\", \"No\"], \"{0}\"]", effect.RequireInBounds ? "Yes" : "No");
             }
 
             // custom options

@@ -59,6 +59,7 @@ class EffectInit
     public bool usePlantColors = false;
     public bool useDecalAffect = false;
     public bool decalAffectDefault = false;
+    public bool optionalInBounds = false;
     public bool deprecated = false;
     
     /// <summary>
@@ -283,7 +284,7 @@ class EffectsDatabase
             CreateEffect(new EffectInit("Root Grass", EffectType.NN)
             {
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
             });
 
             CreateEffect(new EffectInit("Seed Pods", EffectType.NN)
@@ -296,7 +297,8 @@ class EffectsDatabase
             {
                 crossScreen = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Cacti", EffectType.NN)
@@ -315,7 +317,7 @@ class EffectsDatabase
             {
                 crossScreen = true,
                 useLayers = true,
-            
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Grass", EffectType.NN)
@@ -331,7 +333,8 @@ class EffectsDatabase
             {
                 crossScreen = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Horse Tails", EffectType.NN)
@@ -356,21 +359,24 @@ class EffectsDatabase
             {
                 crossScreen = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Rollers", EffectType.NN)
             {
                 crossScreen = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Garbage Spirals", EffectType.NN)
             {
                 crossScreen = true,
                 useLayers = true,
-                usePlantColors = true
+                usePlantColors = true,
+                optionalInBounds = true,
             });
 
             /////////////
@@ -381,12 +387,14 @@ class EffectsDatabase
             {
                 crossScreen = true,
                 useLayers = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Shadow Plants", EffectType.NN)
             {
                 crossScreen = true,
                 useLayers = true,
+                optionalInBounds = true,
             });
         }
 
@@ -511,21 +519,24 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Colored Thick Roots", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Colored Shadow Plants", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Colored Lighthouse Flowers", EffectType.NN)
@@ -546,7 +557,8 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Foliage", EffectType.NN)
@@ -591,21 +603,24 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Small Springs", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Mini Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Clovers", EffectType.StandardErosion)
@@ -765,28 +780,32 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Right Facing Kelp", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Mixed Facing Kelp", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Bubble Grower", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Moss Wall", EffectType.NN)
@@ -818,7 +837,8 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
             CustomConfig("Color Intensity", "Medium", ["High", "Medium", "Low", "None", "Random"]);
             CustomConfig("Fruit Density", "None", ["High", "Medium", "Low", "None"]);
@@ -834,21 +854,24 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Leaf Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Meat Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Hyacinths", EffectType.NN)
@@ -880,14 +903,16 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Horror Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
         }
 
@@ -900,7 +925,8 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
         }
 
@@ -913,21 +939,24 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Grass Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Fancy Growers", EffectType.NN)
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
         }
 
@@ -995,7 +1024,8 @@ class EffectsDatabase
             {
                 useLayers = true,
                 usePlantColors = true,
-                crossScreen = true
+                crossScreen = true,
+                optionalInBounds = true,
             });
 
             CreateEffect(new EffectInit("Og Grass", EffectType.NN)
@@ -1010,8 +1040,19 @@ class EffectsDatabase
                 usePlantColors = true,
                 crossScreen = true,
                 binary = true,
+                single = true,
+                optionalInBounds = true,
+            });
+
+            CreateEffect(new EffectInit("Head Lamp", EffectType.NN)
+            {
+                useLayers = true,
+                usePlantColors = true,
+                defaultPlantColor = 2, // Dead
+                binary = true,
                 single = true
             });
+            CustomConfig("Lamp Color", ["Color1", "Color2", "Dead"], "Dead");
         }
 
         RegisterCustomEffects();
@@ -1093,7 +1134,10 @@ class EffectsDatabase
                     case "grower":
                     case "hanger":
                     case "clinger":
+                    case "standardClinger":
                     case "individual":
+                    case "individualHanger":
+                    case "individualClinger":
                     case "wall":
                         break;
                     
@@ -1106,6 +1150,7 @@ class EffectsDatabase
                 var individual = type == "individual";
                 var wall = type == "wall";
                 var has3D = effectInit.TryGetValue("can3D", out temp) ? Lingo.LingoNumber.AsInt(temp) : 0;
+                var isPlantType = type == "grower" || type == "hanger" || type == "clinger";
 
                 CreateEffect(new EffectInit(name, EffectType.NN) {
                     usePlantColors = hasColor == 1,
@@ -1113,11 +1158,12 @@ class EffectsDatabase
                     binary = individual,
                     single = individual,
                     defaultLayer = individual ? Effect.LayerMode.First : Effect.LayerMode.All,
-                    crossScreen = type == "grower" || type == "hanger" || type == "clinger",
+                    crossScreen = isPlantType,
+                    optionalInBounds = isPlantType,
                     use3D = wall && has3D == 2
                 });
 
-                if (type == "clinger")
+                if (type == "clinger" || type == "standardClinger")
                     CustomConfig("Side", ["Left", "Right", "Random"], "Random");
             }
         }

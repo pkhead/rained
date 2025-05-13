@@ -1,1 +1,1 @@
-[#nm:"HeliconiaAB", #tp:"hanger", #vars:6, #pxlSz:point(40, 20), #initRotVar:0, #segmentRotVar:0, #segmentRotPull:0, #segmentMoveAmt:20, #effectFadeOut:1, #forceGrad:1, #tipGraf:"HeliconiaABTip", #tipVars:4, #tipPxlSz:point(40, 14), #tipMoveAmt:14][#nm:"HeliconiaBA", #tp:"hanger", #vars:6, #pxlSz:point(40, 20), #initRotVar:0, #segmentRotVar:0, #segmentRotPull:0, #segmentMoveAmt:20, #effectFadeOut:1, #forceGrad:1, #tipGraf:"HeliconiaBATip", #tipVars:4, #tipPxlSz:point(40, 14), #tipMoveAmt:14]
+

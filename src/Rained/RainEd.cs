@@ -505,10 +505,10 @@ sealed class RainEd
             // if the old level was an emergency save and the user
             // saved it to a non-emergency save file, delete the
             // old file as it is no longer necessary.
-            var oldParentFolder = Path.GetDirectoryName(oldFilePath);
+            var oldParentFolder = Path.GetDirectoryName(oldFilePath)!;
             var newParentFolder = Path.GetDirectoryName(CurrentTab.FilePath);
 
-            if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
+            if (Util.ArePathsEquivalent(oldParentFolder, EmergencySaveFolder) && !Util.ArePathsEquivalent(newParentFolder, EmergencySaveFolder))
             {
                 File.Delete(oldFilePath);
                 File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");

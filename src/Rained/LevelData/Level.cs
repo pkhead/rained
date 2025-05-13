@@ -177,6 +177,7 @@ class Effect
     public int PlantColor; // 0 = Color1, 1 = Color2, 2 = Dead
     public bool AffectGradientsAndDecals = false;
     public int Seed;
+    public bool RequireInBounds;
 
     private int width, height;
     public int Width { get => width; }
@@ -184,6 +185,23 @@ class Effect
     public float[,] Matrix;
 
     public int[] CustomValues;
+
+    private static bool? _skyRootsFixOption = null;
+    private static DateTime lastWriteTime;
+    private static bool GetSkyRootsFixConfig()
+    {
+        string path = Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt");
+
+        if (_skyRootsFixOption is null || File.GetLastWriteTime(path) > lastWriteTime)
+        {
+            Log.Information("Reload sky roots fix option");
+            var config = DrizzleConfiguration.LoadConfiguration(path);
+            lastWriteTime = File.GetLastWriteTime(path);
+            _skyRootsFixOption = config.SkyRootsFix;
+        }
+
+        return _skyRootsFixOption.Value;
+    }
 
     public Effect(Level level, EffectInit init)
     {
@@ -198,6 +216,9 @@ class Effect
         
         if (init.usePlantColors)
             PlantColor = init.defaultPlantColor;
+
+        if (init.optionalInBounds)
+            RequireInBounds = GetSkyRootsFixConfig();
 
         CustomValues = new int[init.customConfigs.Count];
 

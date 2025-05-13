@@ -869,7 +869,7 @@ class GeometryEditor : IEditorMode
 
         for (int i = 0; i < 3; i++)
         {
-            var pos = mousePos + new Vector2(i * 8f, 0f);
+            var pos = mousePos + new Vector2(i * 8f * Boot.WindowScale, 0f);
             var col = new Vector4(LayerColors[i].R / 255f, LayerColors[i].G / 255f, LayerColors[i].B / 255f, layerMask[i] ? 1f : 0.2f);
             drawList.AddRectFilled(pos, pos + Vector2.One * 6f * Boot.WindowScale, ImGui.ColorConvertFloat4ToU32(col));
         }
