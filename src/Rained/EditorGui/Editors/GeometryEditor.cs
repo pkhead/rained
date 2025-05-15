@@ -741,6 +741,7 @@ class GeometryEditor : IEditorMode
             CellSelection.Instance.Update(layerMask, ClosestActiveLayer());
             if (!CellSelection.Instance.Active)
             {
+                CellSelection.Instance.Deactivate();
                 CellSelection.Instance = null;
             }
         }

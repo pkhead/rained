@@ -226,6 +226,7 @@ class LevelWindow
             if (!editorModes[newMode].SupportsCellSelection && CellSelection.Instance is not null)
             {
                 CellSelection.Instance.SubmitMove();
+                CellSelection.Instance.Deactivate();
                 CellSelection.Instance = null;
             }
 

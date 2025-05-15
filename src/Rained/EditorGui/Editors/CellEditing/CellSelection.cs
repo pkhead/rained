@@ -4,6 +4,7 @@ using ImGuiNET;
 using System.Numerics;
 using Rained.LevelData;
 using System.Diagnostics;
+using Rained.ChangeHistory;
 
 struct MaskedCell(bool mask, LevelCell cell)
 {
@@ -97,9 +98,12 @@ class CellSelection
     private bool mouseWasDragging = false;
     private SelectToolState? mouseDragState = null;
 
+    private CellSelectionChangeRecorder changeRecorder;
+
     public CellSelection()
     {
         icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "selection-icons.png"));
+        changeRecorder = new CellSelectionChangeRecorder();
     }
 
     private static Rectangle GetIconRect(IconName icon)
@@ -247,8 +251,12 @@ class CellSelection
         if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
         {
             bool doExit = movingGeometry is null;
+
+            changeRecorder.BeginChange();
             CancelMove();
             ClearSelection();
+            changeRecorder.PushChange();
+            
             if (doExit) Active = false;
         }
     }
@@ -277,6 +285,8 @@ class CellSelection
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
+                changeRecorder.BeginChange();
+
                 var layerSelection = StaticSelectionTools.MagicWand(view.MouseCx, view.MouseCy, activeLayer);
                 if (layerSelection is not null)
                 {
@@ -285,12 +295,16 @@ class CellSelection
                     CombineMasks(tmpSelections);
                 }
                 else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) selections[activeLayer] = null;
+
+                changeRecorder.PushChange();
             }
         }
         else if (curTool == SelectionTool.TileSelect)
         {
             if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
             {
+                changeRecorder.BeginChange();
+
                 Array.Fill(tmpSelections, null);
                 if (StaticSelectionTools.TileSelect(
                     view.MouseCx, view.MouseCy, activeLayer, tmpSelections
@@ -299,6 +313,8 @@ class CellSelection
                     CombineMasks(tmpSelections);
                 }
                 else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) ClearSelection();
+
+                changeRecorder.PushChange();
             }
         }
         else
@@ -307,6 +323,8 @@ class CellSelection
             {
                 if (!mouseWasDragging)
                 {
+                    changeRecorder.BeginChange();
+                    
                     mouseDragState = curTool switch
                     {
                         SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
@@ -333,6 +351,8 @@ class CellSelection
                     }
                     else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) ClearSelection(layerMask);
                 }
+                
+                changeRecorder.PushChange();
             }
         }
 
@@ -1135,5 +1155,104 @@ class CellSelection
             height: movingH,
             geometry: movingGeometry
         );
+    }
+
+    public void CopyState(LayerSelection?[] selections, out MaskedCell[,,]? cutout, out int cutoutX, out int cutoutY, out int cutoutW, out int cutoutH)
+    {
+        // save selection state
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            selections[i] = null;
+            var srcSel = Selections[i];
+
+            if (srcSel is not null)
+            {
+                selections[i] = new LayerSelection(
+                    srcSel.minX, srcSel.minY,
+                    srcSel.maxX, srcSel.maxY,
+                    (bool[,]) srcSel.mask.Clone()
+                );
+            }
+        }
+
+        // copy geometry cutout, if active
+        MaskedCell[,,]? srcCutout = ActiveCutout;
+        cutout = null;
+        cutoutX = 0;
+        cutoutY = 0;
+        cutoutW = 0;
+        cutoutH = 0;
+
+        if (srcCutout is not null)
+        {
+            cutoutX = CutoutX;
+            cutoutY = CutoutY;
+            cutoutW = CutoutWidth;
+            cutoutH = CutoutHeight;
+            cutout = (MaskedCell[,,]) srcCutout.Clone();
+        }
+    }
+
+    public void ApplyState(LayerSelection?[] selections, MaskedCell[,,]? cutout, int cutoutX, int cutoutY, int cutoutW, int cutoutH)
+    {
+        // apply selection state
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            var srcSel = selections[i];
+
+            if (srcSel is not null)
+            {
+                Selections[i] = new LayerSelection(
+                    srcSel.minX, srcSel.minY,
+                    srcSel.maxX, srcSel.maxY,
+                    srcSel.mask
+                );
+            }
+            else
+            {
+                Selections[i] = null;
+            }
+        }
+
+        // apply geometry cutout, if active
+        var rndr = RainEd.Instance.LevelView.Renderer;
+        rndr.OverlayAffectTiles = AffectTiles;
+        
+        if (cutout is not null) {
+            movingGeometry = cutout;
+            movingW = cutoutW;
+            movingH = cutoutH;
+
+            rndr.OverlayX = cutoutX;
+            rndr.OverlayY = cutoutY;
+            rndr.SetOverlay(movingW, movingH, movingGeometry);
+        }
+        else
+        {
+            RainEd.Instance.LevelView.Renderer.ClearOverlay();
+        }
+    }
+
+    public void Deactivate()
+    {
+        bool isEmpty = true;
+        for (int i = 0; i < Level.LayerCount; i++)
+        {
+            if (selections[i] is not null)
+            {
+                isEmpty = false;
+                break;
+            }
+        }
+
+        if (!isEmpty)
+            changeRecorder.BeginChange(true);
+
+        ClearSelection();
+        RainEd.Instance.LevelView.Renderer.ClearOverlay();
+        movingGeometry = null;
+
+        if (!isEmpty)
+            changeRecorder.PushChange();
     }
 }

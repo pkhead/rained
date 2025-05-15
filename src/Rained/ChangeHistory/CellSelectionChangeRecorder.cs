@@ -1,29 +1,57 @@
-using System.Diagnostics;
 using System.Numerics;
+using Rained.EditorGui.Editors;
 using Rained.EditorGui.Editors.CellEditing;
-using Rained.LevelData;
 
 namespace Rained.ChangeHistory;
 
-class CellSelectionChangeRecord : IChangeRecord
+struct CellSelectionData(Vector2i cutoutPos, Vector2i cutoutSize, MaskedCell[,,]? cutout, LayerSelection?[]? selections)
 {
-    public Vector2i oldCutoutPos;
-    public Vector2i newCutoutPos;
+    public Vector2i cutoutPos = cutoutPos;
+    public Vector2i cutoutSize = cutoutSize;
+    public MaskedCell[,,]? cutout = cutout;
+    public LayerSelection?[] selections = selections is null ? new LayerSelection?[3] : selections;
+}
 
-    public MaskedCell[,,]? cutout;
-    public int cutoutWidth, cutoutHeight;
-
-    public LayerSelection?[] oldSelections = new LayerSelection?[3];
-    public LayerSelection?[] newSelections = new LayerSelection?[3];
-
-    public CellSelectionChangeRecord()
-    {
-        
-    }
+// usually the pattern was to store both the old state and the state at which the change record was pushed.
+// however I realized i can just make it only store one snapshot of the state, and swap the current state
+// and the stored state when apply is called. since, you know, you can't undo/redo something more than once.
+class CellSelectionChangeRecord(
+    CellSelectionData data
+) : IChangeRecord
+{
+    public CellSelectionData data = data;
+    public int? editMode;
 
     public void Apply(bool useNew)
     {
+        CellSelection.Instance ??= new CellSelection();
+        CellSelection.Instance.AffectTiles = editMode == (int)EditModeEnum.Tile;
 
+        // update edit mode
+        if (editMode is not null)
+            (RainEd.Instance.LevelView.EditMode, editMode) = (editMode.Value, RainEd.Instance.LevelView.EditMode);
+
+        // swap selection state between current and stored
+        Vector2i tmpCutoutPos = new Vector2i();
+        Vector2i tmpCutoutSize = new Vector2i();
+        MaskedCell[,,]? tmpCutout;
+        LayerSelection?[] tmpSelections = new LayerSelection?[3];
+
+        CellSelection.Instance.CopyState(
+            tmpSelections,
+            out tmpCutout, out tmpCutoutPos.X, out tmpCutoutPos.Y, out tmpCutoutSize.X, out tmpCutoutSize.Y
+        );
+
+        CellSelection.Instance.ApplyState(
+            data.selections,
+            data.cutout, data.cutoutPos.X, data.cutoutPos.Y,
+            data.cutoutSize.X, data.cutoutSize.Y
+        );
+
+        data.selections = tmpSelections;
+        data.cutout = tmpCutout;
+        data.cutoutPos = tmpCutoutPos;
+        data.cutoutSize = tmpCutoutSize;
     }
 }
 
@@ -32,46 +60,18 @@ class CellSelectionChangeRecorder : ChangeRecorder
     LayerSelection?[] tempSelections = new LayerSelection?[3];
     MaskedCell[,,]? tempCutout;
     int cutoutX, cutoutY, cutoutW, cutoutH;
+    bool _active = false;
 
-    private void CopyState(CellSelection cellSel, LayerSelection?[] selections, out MaskedCell[,,]? cutout, out int cutoutX, out int cutoutY, out int cutoutW, out int cutoutH)
+    int? editMode = null;
+
+    public void BeginChange(bool saveEditMode = false)
     {
-        ArgumentNullException.ThrowIfNull(cellSel);
-
-        for (int i = 0; i < Level.LayerCount; i++)
+        if (_active)
         {
-            selections[i] = null;
-            var srcSel = cellSel.Selections[i];
-
-            if (srcSel is not null)
-            {
-                selections[i] = new LayerSelection(
-                    srcSel.minX, srcSel.minY,
-                    srcSel.maxX, srcSel.maxY,
-                    (bool[,]) srcSel.mask.Clone()
-                );
-            }
+            ValidationError("CellSelectionChangeRecorder.BeginChange when already active");
+            return;
         }
 
-        // copy geometry cutout, if active
-        MaskedCell[,,]? srcCutout = cellSel.ActiveCutout;
-        cutout = null;
-        cutoutX = 0;
-        cutoutY = 0;
-        cutoutW = 0;
-        cutoutH = 0;
-
-        if (srcCutout is not null)
-        {
-            cutoutX = cellSel.CutoutX;
-            cutoutY = cellSel.CutoutY;
-            cutoutW = cellSel.CutoutWidth;
-            cutoutH = cellSel.CutoutHeight;
-            cutout = (MaskedCell[,,]) srcCutout.Clone();
-        }
-    }
-
-    public void BeginChange()
-    {
         var cellSel = CellSelection.Instance;
         if (cellSel is null)
         {
@@ -79,11 +79,38 @@ class CellSelectionChangeRecorder : ChangeRecorder
             return;
         }
 
-        CopyState(cellSel, tempSelections, out tempCutout, out cutoutX, out cutoutY, out cutoutW, out cutoutH);
+        editMode = saveEditMode ? RainEd.Instance.LevelView.EditMode : null;
+
+        cellSel.CopyState(tempSelections, out tempCutout, out cutoutX, out cutoutY, out cutoutW, out cutoutH);
+        _active = true;
     }
 
     public void TryPushChange()
     {
-        //CopyState(cellSel, tempSelections, out tempCutout);
+        if (_active)
+        {
+            var data = new CellSelectionData(
+                new Vector2i(cutoutX, cutoutY), new Vector2i(cutoutW, cutoutH),
+                tempCutout,
+                (LayerSelection?[]) tempSelections.Clone()
+            );
+
+            RainEd.Instance.ChangeHistory.Push(new CellSelectionChangeRecord(data)
+            {
+                editMode = editMode
+            });
+            _active = false;
+        }
+    }
+
+    public void PushChange()
+    {
+        if (!_active)
+        {
+            ValidationError("CellSelectionChangeRecorder.PushChange when not active");
+            return;
+        }
+
+        TryPushChange();
     }
 }

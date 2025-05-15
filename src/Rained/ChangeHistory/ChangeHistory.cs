@@ -15,6 +15,9 @@ class ChangeHistory
     public event Action? Cleared = null;
     public event Action? UndidOrRedid = null; // WTF DO I CALL THIS!?!?
 
+    public int UndoStackCount => undoStack.Count;
+    public int RedoStackCount => redoStack.Count;
+
     public void Clear()
     {
         undoStack.Clear();
