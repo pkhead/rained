@@ -147,7 +147,7 @@ static class ImGuiExt
         return false;
     }
 
-    private static nint TextureID(Texture texture) => Boot.ImGuiController!.UseTexture(texture);
+    public static nint TextureID(Texture texture) => Boot.ImGuiController!.UseTexture(texture);
 
     public static void Image(Texture texture, Glib.Color color)
     {

@@ -206,13 +206,13 @@ class TileDatabase
             // read header
             if (line[0] == '-')
             {
-                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                if (lingoParser.Read(line[1..]) is not Lingo.LinearList header)
                 {
                     Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     return;
                 }
 
-                curGroup = new TileCategory((string) header.values[0], (Lingo.Color) header.values[1])
+                curGroup = new TileCategory((string) header[0], (Lingo.Color) header[1])
                 {
                     Index = groupIndex
                 };
@@ -239,29 +239,29 @@ class TileDatabase
                     return;
                 }
                 
-                var tileInit = (Lingo.List) parsedLine;
+                var tileInit = (Lingo.PropertyList) parsedLine;
 
                 object? tempValue = null;
-                var name = (string) tileInit.fields["nm"];
-                var tp = (string) tileInit.fields["tp"];
-                var size = (Vector2) tileInit.fields["sz"];
-                var specsData = (Lingo.List) tileInit.fields["specs"];
-                var bfTiles = Lingo.LingoNumber.AsInt(tileInit.fields["bfTiles"]);
-                Lingo.List? specs2Data = null;
-                Lingo.List? repeatLayerList =
-                    tileInit.fields.TryGetValue("repeatL", out tempValue) ? (Lingo.List) tempValue : null;
+                var name = (string) tileInit["nm"];
+                var tp = (string) tileInit["tp"];
+                var size = (Vector2) tileInit["sz"];
+                var specsData = (Lingo.LinearList) tileInit["specs"];
+                var bfTiles = Lingo.LingoNumber.AsInt(tileInit["bfTiles"]);
+                Lingo.LinearList? specs2Data = null;
+                Lingo.LinearList? repeatLayerList =
+                    tileInit.TryGetValue("repeatL", out tempValue) ? (Lingo.LinearList) tempValue : null;
                 int rnd =
-                    tileInit.fields.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
+                    tileInit.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
                 
-                if (tileInit.fields.TryGetValue("specs2", out tempValue) && tempValue is Lingo.List specs2List)
+                if (tileInit.TryGetValue("specs2", out tempValue) && tempValue is Lingo.LinearList specs2List)
                 {
                     specs2Data = specs2List;
                 }
 
-                List<int>? repeatL = repeatLayerList?.values.Cast<int>().ToList();
-                List<int> specs = specsData.values.Cast<int>().ToList();
-                List<int>? specs2 = specs2Data?.values.Cast<int>().ToList();
-                List<string> tags = ((Lingo.List)tileInit.fields["tags"]).values.Cast<string>().ToList();
+                List<int>? repeatL = repeatLayerList?.Cast<int>().ToList();
+                List<int> specs = specsData.Cast<int>().ToList();
+                List<int>? specs2 = specs2Data?.Cast<int>().ToList();
+                List<string> tags = ((Lingo.LinearList)tileInit["tags"]).Cast<string>().ToList();
 
                 TileType tileType = tp switch
                 {

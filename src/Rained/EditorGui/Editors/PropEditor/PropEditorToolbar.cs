@@ -163,6 +163,38 @@ partial class PropEditor : IEditorMode
         }
     }
 
+    private static void MultiselectSwitchInput<T, E>(List<T> items, string label, string fieldName, ReadOnlySpan<string> values) where E : Enum
+    {
+        var field = typeof(T).GetField(fieldName)!;
+        object targetV = field.GetValue(items[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < items.Count; i++)
+        {
+            if (!field.GetValue(items[i])!.Equals(targetV))
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        int selected = isSame ? (int)targetV : -1;
+
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+
+        if (ImGuiExt.ButtonSwitch(label, values, ref selected))
+        {
+            E e = (E) Convert.ChangeType(selected, ((E)targetV).GetTypeCode());
+            foreach (var item in items)
+                field.SetValue(item, e);
+        }
+
+        ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
+        ImGui.PopStyleVar();
+        ImGui.Text(label);
+    }
+
     private void MultiselectListInput<T>(string label, string fieldName, List<T> list)
     {
         var field = typeof(Prop).GetField(fieldName)!;
@@ -283,12 +315,21 @@ partial class PropEditor : IEditorMode
                         dstRec = new Rectangle(Vector2.Zero, prop.Width * 20f, prop.Height * 20f);
                     }
 
-                    Raylib.DrawTexturePro(
-                        propTexture ?? RainEd.Instance.PlaceholderTexture,
-                        srcRect, dstRec,
-                        Vector2.Zero, 0f,
-                        new Color(255, (int)(whiteFade * 255f), 0, 0)
-                    );
+                    var drawColor = new Color(255, (int)(whiteFade * 255f), 0, 0);
+
+                    if (propTexture is not null)
+                    {
+                        propTexture.DrawRectangle(srcRect, dstRec, drawColor);
+                    }
+                    else
+                    {
+                        Raylib.DrawTexturePro(
+                            RainEd.Instance.PlaceholderTexture,
+                            srcRect, dstRec,
+                            Vector2.Zero, 0f,
+                            drawColor   
+                        );
+                    }
                 }
             }
             Raylib.EndShaderMode();
@@ -304,7 +345,7 @@ partial class PropEditor : IEditorMode
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
-            if (prop.Rope is not null) prop.Rope.Simulate = false;
+            if (prop.Rope is not null) prop.Rope.SimulationSpeed = 0f;
         }
 
         SelectorToolbar();
@@ -361,6 +402,12 @@ partial class PropEditor : IEditorMode
     {
         var propDb = RainEd.Instance.PropDatabase;
 
+        if (KeyShortcuts.Activated(KeyShortcut.ChangePropSnapping))
+        {
+            // cycle through the four prop snap modes
+            snappingMode = (PropSnapMode) (((int)snappingMode + 1) % 4);
+        }
+
         if (ImGui.Begin("Props", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // work layer
@@ -373,7 +420,11 @@ partial class PropEditor : IEditorMode
 
             // snapping
             ImGui.SetNextItemWidth(ImGui.GetTextLineHeightWithSpacing() * 4f);
-            ImGui.Combo("Snap", ref snappingMode, "Off\00.5x\01x");
+            {
+                int snapModeInt = (int) snappingMode;
+                if (ImGui.Combo("Snap", ref snapModeInt, "Off\00.25x\00.5x\01x\0"))
+                    snappingMode = (PropSnapMode) snapModeInt;
+            }
             
             // flags for search bar
             var searchInputFlags = ImGuiInputTextFlags.AutoSelectAll | ImGuiInputTextFlags.EscapeClearsAll;
@@ -411,12 +462,22 @@ partial class PropEditor : IEditorMode
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in searchResults)
                         {
                             // redundant skip Tiles as props categories
                             if (group.IsTileCategory) continue; // skip Tiles as props categories
 
-                            if (ImGui.Selectable(group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                            var cursor = ImGui.GetCursorScreenPos();
+                            ImGui.GetWindowDrawList().AddRectFilled(
+                                p_min: cursor,
+                                p_max: cursor + new Vector2(colorWidth, ImGui.GetTextLineHeight()),
+                                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
+                            );
+
+                            if (ImGui.Selectable(leftPadding + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
                             {
                                 if (i != selectedPropGroup)
                                 {
@@ -442,7 +503,7 @@ partial class PropEditor : IEditorMode
                             // don't show this prop if it doesn't pass search test
                             if (!prop.Name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase))
                                 continue;
-                            
+
                             if (ImGui.Selectable(prop.Name, i == selectedPropIdx))
                             {
                                 selectedPropIdx = i;
@@ -486,10 +547,13 @@ partial class PropEditor : IEditorMode
                         var drawList = ImGui.GetWindowDrawList();
                         float textHeight = ImGui.GetTextLineHeight();
 
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in tileSearchResults)
                         {
                             var cursor = ImGui.GetCursorScreenPos();
-                            if (ImGui.Selectable("  " + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            if (ImGui.Selectable(leftPadding + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                             {
                                 if (i != selectedTileGroup)
                                 {
@@ -501,7 +565,7 @@ partial class PropEditor : IEditorMode
                             // draw color square
                             drawList.AddRectFilled(
                                 p_min: cursor,
-                                p_max: cursor + new Vector2(10f, textHeight),
+                                p_max: cursor + new Vector2(colorWidth, textHeight),
                                 ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
@@ -810,7 +874,7 @@ partial class PropEditor : IEditorMode
                         foreach (var p in selectedProps)
                             ropes.Add(p.Rope!);
                         
-                        MultiselectEnumInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", RopeReleaseModeNames);
+                        MultiselectSwitchInput<PropRope, RopeReleaseMode>(ropes, "Release", "ReleaseMode", ["None", "Left", "Right"]);
 
                         if (selectedProps.Count == 1)
                         {
@@ -830,6 +894,22 @@ partial class PropEditor : IEditorMode
                                 if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
                                     changeRecorder.PushSettingsChanges();
                             }
+                        } else if (selectedProps.Count > 1) {
+                            var prop = selectedProps[0];
+
+                            var _oldReleaseFlags = (int) prop.Rope!.ReleaseMode;
+                            var _releaseFlags = (int) prop.Rope!.ReleaseMode;
+                            if (ImGuiExt.ButtonFlags("##Release", ["Left", "Right"], ref _releaseFlags)) {
+                                if (_releaseFlags == 3) {
+                                    if (_oldReleaseFlags == 1) _releaseFlags = 2;
+                                    if (_oldReleaseFlags == 2) _releaseFlags = 1;
+                                }
+                                foreach (var newProp in selectedProps) {
+                                    newProp.Rope!.ReleaseMode = (RopeReleaseMode) _releaseFlags;
+                                }
+                            }
+                            ImGui.SameLine();
+                            ImGui.Text("Release");
                         }
 
                         // rope simulation controls
@@ -845,10 +925,24 @@ partial class PropEditor : IEditorMode
                                 changeRecorder.PushChanges();
                             }
 
+                            var simSpeed = 0f;
+
                             ImGui.SameLine();
                             ImGui.Button("Simulate");
 
-                            if (ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation) && transformMode is null)
+                            if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation)) && transformMode is null)
+                            {
+                                simSpeed = 1f;
+                            }
+
+                            ImGui.SameLine();
+                            ImGui.Button("Fast");
+                            if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulationFast)) && transformMode is null)
+                            {
+                                simSpeed = RainEd.Instance.Preferences.FastSimulationSpeed;
+                            }
+
+                            if (simSpeed > 0f)
                             {
                                 isRopeSimulationActive = true;
 
@@ -859,7 +953,7 @@ partial class PropEditor : IEditorMode
                                 }
 
                                 foreach (var prop in selectedProps)
-                                    prop.Rope!.Simulate = true;
+                                    prop.Rope!.SimulationSpeed = simSpeed;
                             }
                         }
                     }

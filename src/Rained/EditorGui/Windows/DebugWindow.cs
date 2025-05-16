@@ -26,6 +26,13 @@ static class DebugWindow
             ImGui.TextUnformatted("Loaded tile graphics: " + RainEd.Instance.AssetGraphics.TileTextureCount);
             ImGui.TextUnformatted("Loaded prop graphics: " + RainEd.Instance.AssetGraphics.PropTextureCount);
             ImGui.TextUnformatted($"Total texture memory: {(float)Glib.RenderContext.Instance!.TotalTextureMemory / 1000000} mb");
+
+            if (RainEd.Instance.CurrentTab?.Level is not null)
+            {
+                ImGui.TextUnformatted("Undo stack cnt: " + RainEd.Instance.ChangeHistory.UndoStackCount);
+                ImGui.TextUnformatted("Redo stack cnt: " + RainEd.Instance.ChangeHistory.RedoStackCount);
+            }
+            
             ImGui.Checkbox("Show demo window", ref _showDemoWindow);
 
             if (ImGui.Button("GC"))

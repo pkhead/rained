@@ -99,13 +99,15 @@ class CellChangeRecorder : ChangeRecorder
             {
                 for (int y = 0; y < level.Height; y++)
                 {
-                    if (!snapshotLayers[l,x,y].Equals(level.Layers[l,x,y]))
+                    if (!snapshotLayers[l, x, y].Equals(level.Layers[l, x, y]))
                     {
                         changes.CellChanges.Add(new CellChangeRecord.CellChange()
                         {
-                            X = x, Y = y, Layer = l,
-                            OldState = snapshotLayers[l,x,y],
-                            NewState = level.Layers[l,x,y]
+                            X = x,
+                            Y = y,
+                            Layer = l,
+                            OldState = snapshotLayers[l, x, y],
+                            NewState = level.Layers[l, x, y]
                         });
                     }
                 }

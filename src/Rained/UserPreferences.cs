@@ -183,6 +183,7 @@ class UserPreferences
     public string GeometryViewMode { get; set; }
     public bool GeometryMaskMouseDecor { get; set; } = true;
     public string PropSnap { get; set; }
+    public float FastSimulationSpeed { get; set; } = 5f;
     public bool ShowCameraNumbers { get; set; } = false;
 
     //public bool ResizeShowScreenSize { get; set; } // whoops, i set this to false - but now i want it true by default.
@@ -388,6 +389,7 @@ class UserPreferences
     public bool ImGuiMultiViewport { get; set; }
     public bool Vsync { get; set; } = false;
     public int RefreshRate { get; set; } = 0;
+    public string GeometryIcons { get; set; } = "Rained";
 
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;

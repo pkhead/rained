@@ -1,4 +1,9 @@
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+
 namespace Rained.Lingo;
+
+using LinearList = List<object>;
 
 public class ParseException : Exception
 {
@@ -68,18 +73,63 @@ public struct Rectangle
     }
 }
 
-public class List
+public class PropertyList : IDictionary<string, object>
 {
-    public List<object> values = new();
-    public Dictionary<string, object> fields = new(); 
+    [Obsolete("fields field is deprecated, as PropertyList itself now can be used like a normal dictionary")]
+    public ref readonly Dictionary<string, object> fields => ref _fields;
 
-    public object? GetValueOrNull(string key)
+    private readonly Dictionary<string, object> _fields = new(StringComparer.InvariantCultureIgnoreCase);
+
+    public object this[string key]
     {
-        if (fields.TryGetValue(key, out object? v))
-            return v;
-        else
-            return null;
+        get => _fields[key];
+        set => _fields[key] = value;
     }
+
+    public int Count => _fields.Count;
+    public bool IsReadOnly => false;
+    public void Clear() => _fields.Clear();
+    public void Add(string key, object value) => _fields.Add(key, value);
+    public void Add(KeyValuePair<string, object> pair) => _fields.Add(pair.Key, pair.Value);
+    public bool ContainsKey(string key) => _fields.ContainsKey(key);
+    public bool Contains(KeyValuePair<string, object> pair) => _fields.Contains(pair);
+    public bool Remove(string key) => _fields.Remove(key);
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? v) => _fields.TryGetValue(key, out v);
+    public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => (_fields as IDictionary<string, object>).CopyTo(array, arrayIndex);
+    public bool Remove(KeyValuePair<string, object> pair) => _fields.Remove(pair.Key);
+    
+    public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => _fields.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public ICollection<string> Keys => _fields.Keys;
+    public ICollection<object> Values => _fields.Values;
+}
+
+public class LinearList : IList<object>
+{
+    [Obsolete("values field is deprecated, as LinearList itself now can be used like a normal dictionary")]
+    public ref readonly List<object> values => ref _values;
+
+    public readonly List<object> _values = [];
+    
+    public object this[int index]
+    {
+        get => _values[index];
+        set => _values[index] = value;
+    }
+
+    public int Count => _values.Count;
+    public bool IsReadOnly => false;
+    public void Add(object v) => _values.Add(v);
+    public int IndexOf(object v) => _values.IndexOf(v);
+    public void Insert(int index, object v) => _values.Insert(index, v);
+    public void Clear() => _values.Clear();
+    public void RemoveAt(int index) => _values.RemoveAt(index);
+    public bool Remove(object v) => _values.Remove(v);
+    public bool Contains(object v) => _values.Contains(v);
+    public void CopyTo(object[] values, int index) => values.CopyTo(values, index);
+    public IEnumerator<object> GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 enum TokenType

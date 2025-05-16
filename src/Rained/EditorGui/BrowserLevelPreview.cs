@@ -47,7 +47,7 @@ class BrowserLevelPreview : FileBrowserPreview
         if (string.IsNullOrEmpty(geoData)) return null;
 
         var parser = new Lingo.LingoParser();
-        if (parser.Read(geoData) is not Lingo.List geoList) return null;
+        if (parser.Read(geoData) is not Lingo.LinearList geoList) return null;
 
         List<Vector3> vertices = [];
         List<Glib.Color> colors = []; 
@@ -55,23 +55,23 @@ class BrowserLevelPreview : FileBrowserPreview
         int levelWidth = 0;
         int levelHeight = 0;
 
-        levelWidth = geoList.values.Count;
+        levelWidth = geoList.Count;
         for (int x = 0; x < levelWidth; x++)
         {
-            var listX = (Lingo.List) geoList.values[x];
-            levelHeight = listX.values.Count;
+            var listX = (Lingo.LinearList) geoList[x];
+            levelHeight = listX.Count;
 
             for (int y = 0; y < levelHeight; y++)
             {
-                var listY = (Lingo.List) listX.values[y];
+                var listY = (Lingo.LinearList) listX[y];
 
                 for (int l = 2; l >= 0; l--)
                 {
-                    var cellData = (Lingo.List) listY.values[l];
-                    var geoValue = (GeoType) Lingo.LingoNumber.AsInt(cellData.values[0]);
+                    var cellData = (Lingo.LinearList) listY[l];
+                    var geoValue = (GeoType) Lingo.LingoNumber.AsInt(cellData[0]);
 
                     LevelObject objects = 0;
-                    foreach (var v in ((Lingo.List) cellData.values[1]).values.Cast<int>())
+                    foreach (var v in ((Lingo.LinearList) cellData[1]).Cast<int>())
                     {
                         objects |= (LevelObject) (1 << (v-1));
                     }

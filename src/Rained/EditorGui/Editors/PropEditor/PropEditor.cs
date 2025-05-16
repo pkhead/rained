@@ -11,6 +11,14 @@ partial class PropEditor : IEditorMode
     public bool SupportsCellSelection => false;
     public List<Prop> SelectedProps => selectedProps;
     public ChangeHistory.PropChangeRecorder ChangeRecorder => changeRecorder;
+
+    private enum PropSnapMode
+    {
+        None,
+        Quarter,
+        Half,
+        Whole
+    }
     
     private readonly LevelWindow window;
     
@@ -22,7 +30,7 @@ partial class PropEditor : IEditorMode
     private bool isWarpMode = false;
     private Vector2 prevMousePos;
     private Vector2 dragStartPos;
-    private int snappingMode = 1; // 0 = off, 1 = precise snap, 2 = snap to grid
+    private PropSnapMode snappingMode = PropSnapMode.Whole; // 0 = off, 1 = precise snap, 2 = snap to grid
     
     private int initDepth = -1; // the depth of the last selected prop(s)
     private bool isDoubleClick = false; // if mouse double clicks, wait until mouse release to open the selector popup
@@ -105,15 +113,19 @@ partial class PropEditor : IEditorMode
         switch (RainEd.Instance.Preferences.PropSnap)
         {
             case "off":
-                snappingMode = 0;
+                snappingMode = PropSnapMode.None;
+                break;
+
+            case "0.25x":
+                snappingMode = PropSnapMode.Quarter;
                 break;
             
             case "0.5x":
-                snappingMode = 1;
+                snappingMode = PropSnapMode.Half;
                 break;
             
             case "1x":
-                snappingMode = 2;
+                snappingMode = PropSnapMode.Whole;
                 break;
 
             default:
@@ -138,11 +150,13 @@ partial class PropEditor : IEditorMode
 
     public void SavePreferences(UserPreferences prefs)
     {
-        if (snappingMode == 0)
+        if (snappingMode == PropSnapMode.None)
             prefs.PropSnap = "off";
-        else if (snappingMode == 1)
+        else if (snappingMode == PropSnapMode.Quarter)
+            prefs.PropSnap = "0.25x";
+        else if (snappingMode == PropSnapMode.Half)
             prefs.PropSnap = "0.5x";
-        else if (snappingMode == 2)
+        else if (snappingMode == PropSnapMode.Whole)
             prefs.PropSnap = "1x";
         else
             Log.Error("Invalid prop snap mode {SnapMode}", snappingMode);
@@ -164,7 +178,7 @@ partial class PropEditor : IEditorMode
         foreach (var prop in RainEd.Instance.Level.Props)
         {
             if (prop.Rope is not null)
-                prop.Rope.Simulate = false;
+                prop.Rope.SimulationSpeed = 0f;
         }
 
         isRopeSimulationActive = false;
@@ -185,6 +199,18 @@ partial class PropEditor : IEditorMode
         bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
         bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
         return !(hasNeg && hasPos);
+    }
+
+    private static float GetSnapValue(PropSnapMode mode)
+    {
+        return mode switch
+        {
+            PropSnapMode.None => 0f,
+            PropSnapMode.Quarter => 0.25f,
+            PropSnapMode.Half => 0.5f,
+            PropSnapMode.Whole => 1.0f,
+            _ => 0f,
+        };
     }
 
     private static Vector2 Snap(Vector2 vector, float snap)
@@ -488,7 +514,7 @@ partial class PropEditor : IEditorMode
                         BeginTransformMode(new ScaleTransformMode(
                             handleId: i,
                             props: selectedProps,
-                            snap: snappingMode / 2f
+                            snap: GetSnapValue(snappingMode)
                         ));
                     }
                 }
@@ -530,7 +556,7 @@ partial class PropEditor : IEditorMode
                 {
                     BeginTransformMode(new MoveTransformMode(
                         props: selectedProps,
-                        snap: snappingMode / 2f,
+                        snap: GetSnapValue(snappingMode),
                         mouseDown: false
                     ));
                     isModeMouseDown = false;
@@ -563,7 +589,7 @@ partial class PropEditor : IEditorMode
                                 BeginTransformMode(new WarpTransformMode(
                                     handleId: i,
                                     prop: selectedProps[0],
-                                    snap: snappingMode / 2f
+                                    snap: GetSnapValue(snappingMode)
                                 ));
                             }
                         }
@@ -590,7 +616,7 @@ partial class PropEditor : IEditorMode
                                 BeginTransformMode(new LongTransformMode(
                                     handleId: i,
                                     prop: prop,
-                                    snap: snappingMode / 2f
+                                    snap: GetSnapValue(snappingMode)
                                 ));
                             }
                         }
@@ -796,7 +822,7 @@ partial class PropEditor : IEditorMode
 
                         BeginTransformMode(new MoveTransformMode(
                             selectedProps,
-                            snappingMode / 2f,
+                            GetSnapValue(snappingMode),
                             mouseDown: true
                         ));
                     }
@@ -858,7 +884,7 @@ partial class PropEditor : IEditorMode
 
                 var createPos = window.MouseCellFloat;
                 
-                var snap = snappingMode / 2f;
+                var snap = GetSnapValue(snappingMode);
                 if (snap > 0)
                 {
                     createPos.X = MathF.Round(createPos.X / snap) * snap;

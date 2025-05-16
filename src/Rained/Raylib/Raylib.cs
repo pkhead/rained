@@ -33,6 +33,9 @@ static class Raylib
     public static Window GlibWindow => window;
 
     // what the hell was ray on when he decided to make his apis take angles in degrees
+    // actually i learned opengl 1.x functions use degreesd instead of radians,
+    // that's probably why.
+    // What the hell was sgi on when they decided to make their apis take angles in degrees.
     private const float DEG2RAD = 1.0f / 180.0f * MathF.PI;
 
     static readonly bool[] mouseButtonsDown = [false, false, false];
@@ -53,6 +56,11 @@ static class Raylib
     public static Glib.Color ToGlibColor(Color color)
     {
         return Glib.Color.FromRGBA(color.R, color.G, color.B, color.A);
+    }
+
+    public static Glib.Rectangle ToGlibRectangle(Rectangle rec)
+    {
+        return new Glib.Rectangle(rec.X, rec.Y, rec.Width, rec.Height);
     }
 
     private static readonly Dictionary<KeyboardKey, Glib.Key> keyMap = new()

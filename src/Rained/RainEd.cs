@@ -57,7 +57,6 @@ sealed class RainEd
     public static Glib.Window Window => Boot.Window;
     public static Glib.RenderContext RenderContext => Glib.RenderContext.Instance!;
 
-    public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private LevelWindow? levelView;
 
     private readonly string prefFilePath;
@@ -118,8 +117,6 @@ sealed class RainEd
     private int keysPressed = 0;
     
     private double lastRopeUpdateTime = 0f;
-    private float simTimeLeftOver = 0f;
-    public float SimulationTimeRemainder { get => simTimeLeftOver; }
 
     /// <summary>
     /// This is true whenever Rained is in a temporary state where level editing
@@ -235,6 +232,8 @@ sealed class RainEd
         // load other graphics resources
         Shaders.LoadShaders();
         TextRendering.GenerateOutlineFont();
+        GeometryIcons.Init();
+        GeometryIcons.CurrentSet = Preferences.GeometryIcons;
 
         // run the update checker
         var versionCheckTask = Task.Run(UpdateChecker.FetchLatestVersion);
@@ -311,8 +310,6 @@ sealed class RainEd
 
         if (TileDatabase.HasErrors || PropDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
-
-        LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {
@@ -559,10 +556,10 @@ sealed class RainEd
             // if the old level was an emergency save and the user
             // saved it to a non-emergency save file, delete the
             // old file as it is no longer necessary.
-            var oldParentFolder = Path.GetDirectoryName(oldFilePath);
+            var oldParentFolder = Path.GetDirectoryName(oldFilePath)!;
             var newParentFolder = Path.GetDirectoryName(CurrentTab.FilePath);
 
-            if (oldParentFolder == EmergencySaveFolder && newParentFolder != EmergencySaveFolder)
+            if (Util.ArePathsEquivalent(oldParentFolder, EmergencySaveFolder) && !Util.ArePathsEquivalent(newParentFolder, EmergencySaveFolder))
             {
                 File.Delete(oldFilePath);
                 File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
@@ -862,33 +859,15 @@ sealed class RainEd
     public void UpdateRopeSimulation()
     {
         var level = CurrentTab!.Level;
-        double nowTime = Raylib.GetTime();
-        double stepTime = 1.0 / 30.0;
-
-        for (int i = 0; nowTime >= lastRopeUpdateTime + stepTime; i++)
-        {
-            lastRopeUpdateTime += stepTime;
-            
-            // tick rope simulation
-            foreach (var prop in level.Props)
-            {
-                prop.TickRopeSimulation();
-            }
-
-            // break if too many iterations in one frame
-            if (i == 8)
-            {
-                lastRopeUpdateTime += stepTime * Math.Floor(nowTime - lastRopeUpdateTime);
-                break;
-            }
-        }
-
-        simTimeLeftOver = (float)((nowTime - lastRopeUpdateTime) / stepTime);
+        const float TickRate = 30f;
 
         foreach (var prop in level.Props)
         {
-            if (prop.Rope is not null && prop.Rope.Simulate)
-                prop.Rope.SimulationTimeRemainder = simTimeLeftOver;
+            var rope = prop.Rope;
+            if (rope is null) continue;
+
+            rope.SimulationTimeStacker += Raylib.GetFrameTime() * TickRate * rope.SimulationSpeed;
+            prop.TickRopeSimulation();
         }
     }
 }

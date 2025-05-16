@@ -56,6 +56,8 @@ public class Window : IDisposable
     private double deltaTime = 0.0;
     public double DeltaTime => deltaTime;
 
+    public static Action<string>? ErrorCallback;
+
     public int Width { get => window.Size.X; }
     public int Height { get => window.Size.Y; }
     public int PixelWidth { get => window.FramebufferSize.X; }
@@ -73,6 +75,8 @@ public class Window : IDisposable
     unsafe static Window()
     {
         var glfw = Glfw.GetApi();
+
+        glfw.SetErrorCallback(GlfwErrorCallback);
         
         GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
             glfw.Context.GetProcAddress("glfwGetWindowContentScale");
@@ -265,8 +269,6 @@ public class Window : IDisposable
                 _glfwContentScaleChangedCallback = UnsafeOnContentScaleChanged;
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
                 GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
-                if (Glfw.GetApi().GetError(out byte *desc) != ErrorCode.NoError)
-                    throw new Exception("GLFW error: " + SilkMarshal.PtrToString((nint)desc, NativeStringEncoding.UTF8));
             }
         }
         
@@ -413,6 +415,11 @@ public class Window : IDisposable
     private unsafe void UnsafeOnContentScaleChanged(nint _, float xscale, float yscale)
     {
         ContentScaleChanged?.Invoke(new Vector2(xscale, yscale));
+    }
+
+    private static void GlfwErrorCallback(Silk.NET.GLFW.ErrorCode error, string description)
+    {
+        ErrorCallback?.Invoke(description);
     }
 
     public void SetSize(int width, int height)

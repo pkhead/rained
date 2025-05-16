@@ -1,7 +1,8 @@
 Selection:
-- selection undo/redo
 - drag for tile select
-- ability to move selected in-between layers
+
+LargeTexture:
+- large texture for lightmap
 
 Scripting API 3.0:
 - fix log of nlua exception thrown in command run
@@ -19,19 +20,15 @@ Bugs:
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
 
-v2.3.0:
-  * geo/tile copy+paste (i am currently working on this),
+v2.4.0:
   - tile & effect prefabs
   - favorite tiles&props
   - material previews
   - render single camera
-  - prop editor lasso select ()
   - translation system
   - effects previews
   - show prop preview over mouse
   - second layer for keybinds
-  - make effect brush strength independent of refresh rate
-  - configurable effect strength + visual strength
   - Rotation props (#29)
   - scripting system
     - button to reload scripts
@@ -42,6 +39,11 @@ v2.3.0:
         - ability to constrain autotile shape into a square
       - expose imgui functions for scripting api
       - add re-path button (useful for autotiles that do random)
+
+v2.3.0:
+  - Lightmap stretch (ditto) & move
+  - prop editor lasso select
+  - prop editor copy + paste
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
@@ -55,19 +57,17 @@ Do Sometime:
 - asset manager crap
 - method of generating approximated geometry from prop
 
-v2.4.0 (or v3.0.0, depending on the frequency of major updates):
+v3.0.0:
 - Fully FeatuerdWorld editor
 
 Other features:
-- effects save/load presets/prefabs
-- light map stretch
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
   - fix merging
   - can select certain packs from solar repo?
 - autosave
-- optimize tile deform rendering
+- optimize tile deform rendering (use vertex shader)
 - prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
@@ -92,10 +92,34 @@ Light Editor:
 Effects Editor:
 - WASD navigation
 - only store the pixels that changed in the matrix
-- make brush density not dependent on refresh rate
 
 Prop Editor:
 - do tile as prop depth change based on if specs2 is active?
 - More tiles are located in startUp.lingo... also check out initDRInternal in comEditorUtils.lingo
 - correct flipping of multiple props or freeform props
   freeform props should flip about the center of the AABB
+
+Tile graphics atlasing:
+
+Regular colors you already know
+rgb(255,0,0) —> shadow
+rgb(0,255,0) —> midtone
+rgb(0,0,255) —> highlight
+rgb(255,255,0) —> same as midtone, only used in color2 window
+
+Dark colors, they always use the non-sunlit part of the palette and also use the front of it. Used by platforms and roof houses.
+rgb(150,0,0) —> dark shadow
+rgb(0,150,0) —> dark midtone
+rgb(0,0,150) —> dark highlight
+
+The regular effect colors, they fade to midtone color
+rgb(255,0,255) —> color A
+rgb(0,255,255) —> color B
+
+There’s more though! There’s versions for highlight and shadow as well. (as in they fade to that color instead of midtone)
+rgb(255,150,255) —> highlight color A
+rgb(150,255,255) —> highlight color B
+rgb(150,0,150) —> shadow color A
+rgb(0,150,150) —> shadow color B
+
+What’s the gigantic singular case you might then ask? Any color rgb(x,255,150) turns into batfly hive white, fading from I think it’s midtone to white based on the red channel

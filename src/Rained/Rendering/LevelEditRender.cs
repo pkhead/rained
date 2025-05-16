@@ -4,6 +4,7 @@ using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
 using ImGuiNET;
+using Rained.EditorGui.Editors.CellEditing;
 namespace Rained.Rendering;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
 
@@ -61,7 +62,7 @@ class LevelEditRender : IDisposable
     public int OverlayWidth { get; private set; }
     public int OverlayHeight { get; private set; }
     public bool OverlayAffectTiles;
-    public (bool mask, LevelCell cell)[,,]? OverlayGeometry { get; private set; } = null;
+    public MaskedCell[,,]? OverlayGeometry { get; private set; } = null;
     public bool IsOverlayActive => OverlayGeometry is not null;
 
     public LevelEditRender()
@@ -176,7 +177,7 @@ class LevelEditRender : IDisposable
                     if (cell.Has(objType) && !Level.ShortcutObjects.Contains(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
-                            editor.LevelGraphicsTexture,
+                            GeometryIcons.RenderTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
                             color
@@ -397,7 +398,7 @@ class LevelEditRender : IDisposable
                     }
                     
                     Raylib.DrawTextureRec(
-                        editor.LevelGraphicsTexture,
+                        GeometryIcons.RenderTexture,
                         new Rectangle(texX*20, texY*20, 20, 20),
                         new Vector2(x, y) * Level.TileSize,
                         color
@@ -410,7 +411,7 @@ class LevelEditRender : IDisposable
                     if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
-                            editor.LevelGraphicsTexture,
+                            GeometryIcons.RenderTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
                             Level.IsInBorder(x, y) ? color : new Color(255, 0, 0, 255)
@@ -459,7 +460,7 @@ class LevelEditRender : IDisposable
         // draw chains from chain holders
         foreach (var (k, v) in RainEd.Instance.Level.ChainData)
         {
-            if (k.Item1 != layer) break;
+            if (k.Item1 != layer) continue;
             var cellPos = new Vector2(k.Item2, k.Item3);
             var chainEnd = new Vector2(v.X, v.Y);
 
@@ -799,32 +800,41 @@ class LevelEditRender : IDisposable
     public static float GetSublayerZCoord(int sublayer)
         => Math.Clamp(1f - (sublayer / 29f), 0f, 1f) * 0.9f + 0.1f;
 
-    public static void DrawTextureSublayer(RlManaged.Texture2D rtex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
+    public static void DrawTextureSublayer(LargeTexture tex, Rectangle rSrcRec, Rectangle rDstRec, int sublayer, Glib.Color tint)
     {
-        var tex = rtex.GlibTexture!;
-        var srcRect = new Glib.Rectangle(rSrcRec.Position, rSrcRec.Size);
-        var dstRect = new Glib.Rectangle(rDstRec.Position, rDstRec.Size);
-        var texW = tex.Width;
-        var texH = tex.Height;
         float z = GetSublayerZCoord(sublayer);
 
-        using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, tex);
+        tex.DrawRectangle(rSrcRec, new Rectangle(0f, 0f, 1f, 1f), (subtex, sr, dr) =>
+        {
+            using var draw = RainEd.RenderContext.BeginBatchDraw(Glib.BatchDrawMode.Quads, subtex);
+            var dstSize = rDstRec.Size;
+            var dstPos = rDstRec.Position;
 
-        draw.Color(tint);
-        draw.TexCoord(srcRect.Left / texW, srcRect.Top / texH);
-        draw.Vertex(dstRect.Left, dstRect.Top, z);
+            Vector2 vec;
+            var texW = subtex.Width;
+            var texH = subtex.Height;
 
-        draw.TexCoord(srcRect.Left / texW, srcRect.Bottom / texH);
-        draw.Vertex(dstRect.Left, dstRect.Bottom, z);
+            draw.Color(tint);
 
-        draw.TexCoord(srcRect.Right / texW, srcRect.Bottom / texH);
-        draw.Vertex(dstRect.Right, dstRect.Bottom, z);
+            vec = dstPos + dstSize * new Vector2(dr.Left, dr.Top);
+            draw.TexCoord(sr.Left / texW, sr.Top / texH);
+            draw.Vertex(vec.X, vec.Y, z);
 
-        draw.TexCoord(srcRect.Right / texW, srcRect.Top / texH);
-        draw.Vertex(dstRect.Right, dstRect.Top, z);
+            vec = dstPos + dstSize * new Vector2(dr.Left, dr.Bottom);
+            draw.TexCoord(sr.Left / texW, sr.Bottom / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+
+            vec = dstPos + dstSize * new Vector2(dr.Right, dr.Bottom);
+            draw.TexCoord(sr.Right / texW, sr.Bottom / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+
+            vec = dstPos + dstSize * new Vector2(dr.Right, dr.Top);
+            draw.TexCoord(sr.Right / texW, sr.Top / texH);
+            draw.Vertex(vec.X, vec.Y, z);
+        });
     }
 
-    public void SetOverlay(int width, int height, (bool mask, LevelCell cell)[,,] geometry)
+    public void SetOverlay(int width, int height, MaskedCell[,,] geometry)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");

@@ -49,10 +49,7 @@ static class UpdateChecker
             BaseAddress = new Uri("https://api.github.com/"),
         };
 
-        var os = Environment.OSVersion.ToString();
-        var clr = Environment.Version.ToString();
-
-        client.DefaultRequestHeaders.Add("user-agent", $"Mozilla/4.0 (compatible; MSIE 6.0; {os}; .NET CLR {clr};)");
+        client.DefaultRequestHeaders.Add("user-agent", Util.HttpUserAgent);
 
         using var response = await client.GetAsync("repos/pkhead/rained/releases/latest");
         response.EnsureSuccessStatusCode();

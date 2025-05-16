@@ -201,6 +201,7 @@ partial class TileEditor : IEditorMode
             CellSelection.Instance.Update(layerMask, window.WorkLayer);
             if (!CellSelection.Instance.Active)
             {
+                CellSelection.Instance.Deactivate();
                 CellSelection.Instance = null;
             }
         }

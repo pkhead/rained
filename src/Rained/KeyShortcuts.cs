@@ -51,12 +51,13 @@ enum KeyShortcut : int
     CameraSnapX, CameraSnapY,
 
     // Props
-    ToggleVertexMode, RopeSimulation, ResetSimulation,
+    ToggleVertexMode, RopeSimulation, RopeSimulationFast, ResetSimulation,
 
     // View settings shortcuts
     ToggleViewGrid, ToggleViewTiles, ToggleViewProps,
     ToggleViewCameras, ToggleViewGraphics, ToggleViewNodeIndices,
     RotatePropCW, RotatePropCCW,
+    ChangePropSnapping,
 
     /// <summary>
     /// Do not bind - this is just the number of shortcut IDs
@@ -66,6 +67,37 @@ enum KeyShortcut : int
 
 static class KeyShortcuts
 {
+    public static readonly string CtrlName;
+    public static readonly string ShiftName;
+    public static readonly string AltName;
+    public static readonly string SuperName;
+
+    static KeyShortcuts()
+    {
+        ShiftName = "Shift";
+
+        if (OperatingSystem.IsMacOS())
+        {
+            CtrlName = "Cmd";
+            AltName = "Option";
+            SuperName = "Ctrl";
+        }
+        else
+        {
+            CtrlName = "Ctrl";
+            AltName = "Alt";
+
+            if (OperatingSystem.IsWindows())
+            {
+                SuperName = "Win";
+            }
+            else
+            {
+                SuperName = "Super";
+            }
+        }
+    }
+
     private class KeyShortcutBinding
     {
         public readonly KeyShortcut ID;
@@ -109,16 +141,16 @@ static class KeyShortcuts
             var str = new List<string>();
 
             if (Mods.HasFlag(ImGuiModFlags.Ctrl))
-                str.Add("Ctrl");
+                str.Add(CtrlName);
             
             if (Mods.HasFlag(ImGuiModFlags.Shift))
-                str.Add("Shift");
+                str.Add(ShiftName);
             
             if (Mods.HasFlag(ImGuiModFlags.Alt))
-                str.Add("Alt");
+                str.Add(AltName);
             
             if (Mods.HasFlag(ImGuiModFlags.Super))
-                str.Add("Super");
+                str.Add(SuperName);
             
             str.Add(ImGui.GetKeyName(Key));
 
@@ -220,13 +252,13 @@ static class KeyShortcuts
         {
             var modStr = keyStr[i];
             
-            if (modStr == "Ctrl")
+            if (modStr == CtrlName)
                 mods |= ImGuiModFlags.Ctrl;
-            else if (modStr == "Alt")
+            else if (modStr == AltName)
                 mods |= ImGuiModFlags.Alt;
-            else if (modStr == "Shift")
+            else if (modStr == ShiftName)
                 mods |= ImGuiModFlags.Shift;
-            else if (modStr == "Super")
+            else if (modStr == SuperName)
                 mods |= ImGuiModFlags.Super;
             else
                 throw new Exception($"Unknown modifier key '{modStr}'");
@@ -431,10 +463,13 @@ static class KeyShortcuts
         // Prop Editor
         Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);
         Register("Rope Simulation", KeyShortcut.RopeSimulation, ImGuiKey.Space, ImGuiModFlags.None);
+        Register("Rope Simulation Fast", KeyShortcut.RopeSimulationFast, ImGuiKey.Space, ImGuiModFlags.Shift);
         Register("Reset Rope Simulation", KeyShortcut.ResetSimulation, ImGuiKey.None, ImGuiModFlags.None);
         
         Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.None);
         Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiModFlags.None);
+
+        Register("Change Prop Snapping", KeyShortcut.ChangePropSnapping, ImGuiKey.R, ImGuiModFlags.None);
 
         // View options
         Register("View Grid", KeyShortcut.ToggleViewGrid, ImGuiKey.G, ImGuiModFlags.Ctrl);

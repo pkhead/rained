@@ -29,58 +29,58 @@ static class LevelSerialization
         var lingoParser = new Lingo.LingoParser();
            
         // obtain level data from lines
-        Lingo.List levelGeometry = (Lingo.List)
+        Lingo.LinearList levelGeometry = (Lingo.LinearList)
             (lingoParser.Read(levelData[0]) ?? throw new Exception("No geometry data"));
         
-        Lingo.List levelTileData = (Lingo.List)
+        Lingo.PropertyList levelTileData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
         
-        Lingo.List levelEffectData = (Lingo.List)
+        Lingo.PropertyList levelEffectData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[2]) ?? throw new Exception("No effects data"));
 
-        Lingo.List levelLightData = (Lingo.List)
+        Lingo.PropertyList levelLightData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[3]) ?? throw new Exception("No light data"));
         
-        Lingo.List levelMiscData = (Lingo.List)
+        Lingo.PropertyList levelMiscData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[4]) ?? throw new Exception("No misc data"));
         
-        Lingo.List levelProperties = (Lingo.List)
+        Lingo.PropertyList levelProperties = (Lingo.PropertyList)
             (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
         
         // it is valid for these lines to be omitted
         // i assume these were features not present in older versions of the RWLE
-        Lingo.List? levelCameraData = null;
-        Lingo.List? levelWaterData = null;
-        Lingo.List? levelPropData = null;
+        Lingo.PropertyList? levelCameraData = null;
+        Lingo.PropertyList? levelWaterData = null;
+        Lingo.PropertyList? levelPropData = null;
         
         if (levelData.Length >= 7)
-            levelCameraData = lingoParser.Read(levelData[6]) as Lingo.List;
+            levelCameraData = lingoParser.Read(levelData[6]) as Lingo.PropertyList;
         
         if (levelData.Length >= 8)
-            levelWaterData = lingoParser.Read(levelData[7]) as Lingo.List;
+            levelWaterData = lingoParser.Read(levelData[7]) as Lingo.PropertyList;
 
         if (levelData.Length >= 9)
-            levelPropData = lingoParser.Read(levelData[8]) as Lingo.List;
+            levelPropData = lingoParser.Read(levelData[8]) as Lingo.PropertyList;
 
         // get level dimensions
-        Vector2 levelSize = (Vector2) levelProperties.fields["size"];
-        Lingo.List extraTiles = (Lingo.List) levelProperties.fields["extraTiles"];
+        Vector2 levelSize = (Vector2) levelProperties["size"];
+        Lingo.LinearList extraTiles = (Lingo.LinearList) levelProperties["extraTiles"];
 
         var level = new Level((int)levelSize.X, (int)levelSize.Y)
         {
-            BufferTilesLeft = Lingo.LingoNumber.AsInt(extraTiles.values[0]),
-            BufferTilesTop = Lingo.LingoNumber.AsInt(extraTiles.values[1]),
-            BufferTilesRight = Lingo.LingoNumber.AsInt(extraTiles.values[2]),
-            BufferTilesBot = Lingo.LingoNumber.AsInt(extraTiles.values[3]),
-            DefaultMedium = Lingo.LingoNumber.AsInt(levelMiscData.fields["defaultTerrain"]) != 0
+            BufferTilesLeft = Lingo.LingoNumber.AsInt(extraTiles[0]),
+            BufferTilesTop = Lingo.LingoNumber.AsInt(extraTiles[1]),
+            BufferTilesRight = Lingo.LingoNumber.AsInt(extraTiles[2]),
+            BufferTilesBot = Lingo.LingoNumber.AsInt(extraTiles[3]),
+            DefaultMedium = Lingo.LingoNumber.AsInt(levelMiscData["defaultTerrain"]) != 0
         };
 
         // read tile seed and light type
         {
-            var seed = Lingo.LingoNumber.AsInt(levelProperties.fields["tileSeed"]);
+            var seed = Lingo.LingoNumber.AsInt(levelProperties["tileSeed"]);
             level.TileSeed = seed;
 
-            if (levelProperties.fields.TryGetValue("light", out object? objLight))
+            if (levelProperties.TryGetValue("light", out object? objLight))
             {
                 var light = Lingo.LingoNumber.AsInt(objLight);
                 level.HasSunlight = light != 0;
@@ -94,18 +94,18 @@ static class LevelSerialization
         // read level geometry
         int x, y, z;
         x = 0;
-        foreach (var xv in levelGeometry.values.Cast<Lingo.List>())
+        foreach (var xv in levelGeometry.Cast<Lingo.LinearList>())
         {
             y = 0;
-            foreach (var yv in xv.values.Cast<Lingo.List>())
+            foreach (var yv in xv.Cast<Lingo.LinearList>())
             {
                 z = 0;
-                foreach (var cellData in yv.values.Cast<Lingo.List>())
+                foreach (var cellData in yv.Cast<Lingo.LinearList>())
                 {
-                    level.Layers[z,x,y].Geo = (GeoType) Lingo.LingoNumber.AsInt(cellData.values[0]);
+                    level.Layers[z,x,y].Geo = (GeoType) Lingo.LingoNumber.AsInt(cellData[0]);
                     
-                    var flags = (Lingo.List) cellData.values[1];
-                    foreach (int flag in flags.values.Cast<int>())
+                    var flags = (Lingo.LinearList) cellData[1];
+                    foreach (int flag in flags.Cast<int>())
                     {
                         if (flag != 4)
                             level.Layers[z,x,y].Add((LevelObject) (1 << (flag-1)));
@@ -119,11 +119,11 @@ static class LevelSerialization
         }
 
         // read tile data
-        Lingo.List tileMatrix = (Lingo.List) levelTileData.fields["tlMatrix"];
+        Lingo.LinearList tileMatrix = (Lingo.LinearList) levelTileData["tlMatrix"];
 
         // get default material
         {
-            var defaultMat = (string) levelTileData.fields["defaultMaterial"];
+            var defaultMat = (string) levelTileData["defaultMaterial"];
             var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(defaultMat);
 
             if (matInfo is not null)
@@ -142,20 +142,16 @@ static class LevelSerialization
 
         // read tile matrix
         x = 0;
-        foreach (var xv in tileMatrix.values.Cast<Lingo.List>())
+        foreach (var xv in tileMatrix.Cast<Lingo.LinearList>())
         {
             y = 0;
-            foreach (var yv in xv.values.Cast<Lingo.List>())
+            foreach (var yv in xv.Cast<Lingo.LinearList>())
             {
                 z = 0;
-                foreach (Lingo.List cellData in yv.values.Cast<Lingo.List>())
+                foreach (Lingo.PropertyList cellData in yv.Cast<Lingo.PropertyList>())
                 {
-                    var tp = (string) cellData.fields["tp"];
-                    if (!cellData.fields.TryGetValue("data", out object? dataObj))
-                    {
-                        // wtf???
-                        dataObj = cellData.fields["Data"];
-                    }
+                    var tp = (string) cellData["tp"];
+                    var dataObj = cellData["data"];
                     
                     switch (tp)
                     {
@@ -184,9 +180,9 @@ static class LevelSerialization
 
                         case "tileBody":
                         {
-                            var data = (Lingo.List) dataObj;
-                            var pos = (Vector2) data.values[0];
-                            var layer = Lingo.LingoNumber.AsInt(data.values[1]);
+                            var data = (Lingo.LinearList) dataObj;
+                            var pos = (Vector2) data[0];
+                            var layer = Lingo.LingoNumber.AsInt(data[1]);
 
                             level.Layers[z,x,y].TileRootX = (int)pos.X - 1;
                             level.Layers[z,x,y].TileRootY = (int)pos.Y - 1;
@@ -196,9 +192,9 @@ static class LevelSerialization
 
                         case "tileHead":
                         {
-                            var data = (Lingo.List) dataObj;
-                            var tileID = (Vector2) data.values[0];
-                            var name = (string) data.values[1];
+                            var data = (Lingo.LinearList) dataObj;
+                            var tileID = (Vector2) data[0];
+                            var name = (string) data[1];
 
                             if (!RainEd.Instance.TileDatabase.HasTile(name))
                             {
@@ -214,9 +210,9 @@ static class LevelSerialization
                                 ref var cell = ref level.Layers[z,x,y]; 
                                 cell.TileHead = tile;
 
-                                if (tile.Tags.Contains("Chain Holder") && data.values.Count > 2 && data.values[2] as string != "NONE")
+                                if (tile.Tags.Contains("Chain Holder") && data.Count > 2 && data[2] as string != "NONE")
                                 {
-                                    var chainPos = (Vector2) data.values[2];
+                                    var chainPos = (Vector2) data[2];
                                     level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
                                 }
                             }
@@ -236,11 +232,11 @@ static class LevelSerialization
 
         // read effects data
         {
-            var effectsList = (Lingo.List) levelEffectData.fields["effects"];
-            foreach (var effectData in effectsList.values.Cast<Lingo.List>())
+            var effectsList = (Lingo.LinearList) levelEffectData["effects"];
+            foreach (var effectData in effectsList.Cast<Lingo.PropertyList>())
             {
-                var nameStr = (string) effectData.fields["nm"];
-                var type = (string) effectData.fields["tp"];
+                var nameStr = (string) effectData["nm"];
+                var type = (string) effectData["tp"];
 
                 if (!RainEd.Instance.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
                 {
@@ -264,7 +260,7 @@ static class LevelSerialization
                     };
 
                     // check type
-                    if (requiredType != (string) effectData.fields["tp"])
+                    if (requiredType != (string) effectData["tp"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                     
                     // check crossScreen
@@ -272,27 +268,27 @@ static class LevelSerialization
                     // that may or may not have missing data
                     /*
                     int crossScreen = effect.Data.crossScreen ? 1 : 0;
-                    if (crossScreen != (int) effectData.fields["crossScreen"])
+                    if (crossScreen != (int) effectData["crossScreen"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
 
                     // check repeats
                     if (effect.Data.type == EffectType.StandardErosion)
                     {
-                        if (effect.Data.repeats != (int) effectData.fields["repeats"])
+                        if (effect.Data.repeats != (int) effectData["repeats"])
                             throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                         
-                        if (effect.Data.affectOpenAreas != (float) effectData.fields["affectOpenAreas"])
+                        if (effect.Data.affectOpenAreas != (float) effectData["affectOpenAreas"])
                             throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                     }
                     */
                     
                     // read effect matrix
-                    var mtrxData = (Lingo.List) effectData.fields["mtrx"];
+                    var mtrxData = (Lingo.LinearList) effectData["mtrx"];
                     x = 0;
-                    foreach (var xv in mtrxData.values.Cast<Lingo.List>())
+                    foreach (var xv in mtrxData.Cast<Lingo.LinearList>())
                     {
                         y = 0;
-                        foreach (var vo in xv.values)
+                        foreach (var vo in xv)
                         {
                             effect.Matrix[x,y] = Lingo.LingoNumber.AsFloat(vo);
                             y++;
@@ -301,31 +297,27 @@ static class LevelSerialization
                     }
 
                     // read effect options
-                    if (!effectData.fields.TryGetValue("options", out object? optionsObj))
-                    {
-                        optionsObj = effectData.fields["Options"]; // wtf??? again???
-                    }
-                    var optionsData = (Lingo.List) optionsObj!;
+                    var optionsData = (Lingo.LinearList) effectData["options"]!;
 
-                    foreach (var optionData in optionsData.values.Cast<Lingo.List>())
+                    foreach (var optionData in optionsData.Cast<Lingo.LinearList>())
                     {
-                        var optionName = (string) optionData.values[0];
+                        var optionName = (string) optionData[0];
 
                         if (optionName == "Seed")
                         {
-                            var value = Lingo.LingoNumber.AsInt(optionData.values[2]);
+                            var value = Lingo.LingoNumber.AsInt(optionData[2]);
                             effect.Seed = value;
                         }
                         else if (optionName != "Delete/Move")
                         {
                             // the list of options are stored in the level file
                             // alongside the selected option as a string
-                            var optionValues = ((Lingo.List) optionData.values[1]).values.Cast<string>().ToList();
+                            var optionValues = ((Lingo.LinearList) optionData[1]).Cast<string>().ToList();
                             var optionIndex = 0;
 
                             if (optionValues.Count > 0)
                             {
-                                var selectedValue = (string) optionData.values[2];
+                                var selectedValue = (string) optionData[2];
                                 optionIndex = optionValues.IndexOf(selectedValue);
                                 
                                 if (optionIndex == -1)
@@ -354,6 +346,9 @@ static class LevelSerialization
                                 case "Affect Gradients and Decals":
                                     effect.AffectGradientsAndDecals = optionIndex == 0;
                                     break;
+                                case "Require In-Bounds":
+                                    effect.RequireInBounds = optionIndex == 0;
+                                    break;
                                 default:
                                 {
                                     int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
@@ -365,7 +360,7 @@ static class LevelSerialization
                                     {
                                         if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
                                         {
-                                            effect.CustomValues[cfgIndex] = Lingo.LingoNumber.AsInt(optionData.values[2]);
+                                            effect.CustomValues[cfgIndex] = Lingo.LingoNumber.AsInt(optionData[2]);
                                         }
                                         else
                                         {
@@ -385,25 +380,25 @@ static class LevelSerialization
         // read camear data
         if (levelCameraData is not null)
         {
-            var camerasList = (Lingo.List) levelCameraData.fields["cameras"];
+            var camerasList = (Lingo.LinearList) levelCameraData["cameras"];
 
-            foreach (Vector2 cameraPos in camerasList.values.Cast<Vector2>())
+            foreach (Vector2 cameraPos in camerasList.Cast<Vector2>())
             {
                 level.Cameras.Add(new Camera(new Vector2(cameraPos.X / 20f, cameraPos.Y / 20f)));
             }
 
-            if (levelCameraData.fields.TryGetValue("quads", out object? quadsListData))
+            if (levelCameraData.TryGetValue("quads", out object? quadsListData))
             {
-                var quadsList = (Lingo.List) quadsListData!;
+                var quadsList = (Lingo.LinearList) quadsListData!;
                 int camIndex = 0;
-                foreach (Lingo.List quad in quadsList.values.Cast<Lingo.List>())
+                foreach (Lingo.LinearList quad in quadsList.Cast<Lingo.LinearList>())
                 {
-                    var ptsList = quad.values.Cast<Lingo.List>().ToArray();
+                    var ptsList = quad.Cast<Lingo.LinearList>().ToArray();
                     
                     for (int i = 0; i < 4; i++)
                     {
-                        var angle = Lingo.LingoNumber.AsFloat(ptsList[i].values[0]);
-                        var offset = Lingo.LingoNumber.AsFloat(ptsList[i].values[1]);
+                        var angle = Lingo.LingoNumber.AsFloat(ptsList[i][0]);
+                        var offset = Lingo.LingoNumber.AsFloat(ptsList[i][1]);
 
                         // i did not think this through
                         // although, i'm not sure how to do Newtonsoft.Json-esque
@@ -422,8 +417,8 @@ static class LevelSerialization
         // read water data
         if (levelWaterData is not null)
         {
-            var waterLevel = Lingo.LingoNumber.AsInt(levelWaterData.fields["waterLevel"]);
-            var waterInFront = Lingo.LingoNumber.AsInt(levelWaterData.fields["waterInFront"]);
+            var waterLevel = Lingo.LingoNumber.AsInt(levelWaterData["waterLevel"]);
+            var waterInFront = Lingo.LingoNumber.AsInt(levelWaterData["waterInFront"]);
 
             if (waterLevel >= 0)
             {
@@ -455,8 +450,8 @@ static class LevelSerialization
 
         // read light parameters
         {
-            var angle = Lingo.LingoNumber.AsFloat(levelLightData.fields["lightAngle"]);
-            var offset = Lingo.LingoNumber.AsFloat(levelLightData.fields["flatness"]);
+            var angle = Lingo.LingoNumber.AsFloat(levelLightData["lightAngle"]);
+            var offset = Lingo.LingoNumber.AsFloat(levelLightData["flatness"]);
             level.LightAngle = angle / 180f * MathF.PI;
             level.LightDistance = offset;
         }
@@ -465,16 +460,16 @@ static class LevelSerialization
         if (levelPropData is not null)
         {
             var propDb = RainEd.Instance.PropDatabase;
-            var propsList = (Lingo.List) levelPropData.fields["props"];
+            var propsList = (Lingo.LinearList) levelPropData["props"];
             List<Vector2> pointList = [];
             
-            foreach (var propData in propsList.values.Cast<Lingo.List>())
+            foreach (var propData in propsList.Cast<Lingo.LinearList>())
             {
-                var depth = Lingo.LingoNumber.AsInt(propData.values[0]);
-                var name = (string) propData.values[1];
-                var quadCornersData = (Lingo.List) propData.values[3];
-                var moreData = (Lingo.List) propData.values[4];
-                var settingsData = (Lingo.List) moreData.fields["settings"];
+                var depth = Lingo.LingoNumber.AsInt(propData[0]);
+                var name = (string) propData[1];
+                var quadCornersData = (Lingo.LinearList) propData[3];
+                var moreData = (Lingo.PropertyList) propData[4];
+                var settingsData = (Lingo.PropertyList) moreData["settings"];
 
                 // create prop
                 if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
@@ -490,7 +485,7 @@ static class LevelSerialization
                     Prop prop;
 
                     pointList.Clear();
-                    foreach (var pt in quadCornersData.values.Cast<Vector2>())
+                    foreach (var pt in quadCornersData.Cast<Vector2>())
                     {
                         pointList.Add(pt / 16f);
                     }
@@ -498,9 +493,9 @@ static class LevelSerialization
                     prop = new Prop(propInit, pointList.ToArray())
                     {
                         DepthOffset = -depth,
-                        RenderOrder = Lingo.LingoNumber.AsInt(settingsData.fields["renderorder"]),
-                        Seed = Lingo.LingoNumber.AsInt(settingsData.fields["seed"]),
-                        RenderTime = (PropRenderTime) Lingo.LingoNumber.AsInt(settingsData.fields["renderTime"])
+                        RenderOrder = Lingo.LingoNumber.AsInt(settingsData["renderorder"]),
+                        Seed = Lingo.LingoNumber.AsInt(settingsData["seed"]),
+                        RenderTime = (PropRenderTime) Lingo.LingoNumber.AsInt(settingsData["renderTime"])
                     };
 
                     prop.TryConvertToAffine();
@@ -509,10 +504,10 @@ static class LevelSerialization
                     // read rope points if needed
                     if (propInit.Rope is not null)
                     {
-                        var pointsData = (Lingo.List) moreData.fields["points"];
+                        var pointsData = (Lingo.LinearList) moreData["points"];
                         pointList.Clear();
 
-                        foreach (var pt in pointsData.values.Cast<Vector2>())
+                        foreach (var pt in pointsData.Cast<Vector2>())
                         {
                             pointList.Add(pt / 20f);
                         }
@@ -522,27 +517,27 @@ static class LevelSerialization
 
                     // read optional settings
                     object? tempObject;
-                    if (settingsData.fields.TryGetValue("customDepth", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("customDepth", out tempObject) && tempObject is not null)
                     {
                         prop.CustomDepth = Lingo.LingoNumber.AsInt(tempObject);
                     }
 
-                    if (settingsData.fields.TryGetValue("color", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("color", out tempObject) && tempObject is not null)
                     {
                         prop.CustomColor = Lingo.LingoNumber.AsInt(tempObject) - 1;
                     }
 
-                    if (settingsData.fields.TryGetValue("variation", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("variation", out tempObject) && tempObject is not null)
                     {
                         prop.Variation = Lingo.LingoNumber.AsInt(tempObject) - 1;
                     }
 
-                    if (settingsData.fields.TryGetValue("applyColor", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("applyColor", out tempObject) && tempObject is not null)
                     {
                         prop.ApplyColor = Lingo.LingoNumber.AsInt(tempObject) != 0;
                     }
 
-                    if (settingsData.fields.TryGetValue("release", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("release", out tempObject) && tempObject is not null)
                     {
                         if (prop.Rope is not null)
                         {
@@ -561,7 +556,7 @@ static class LevelSerialization
                         }
                     }
 
-                    if (settingsData.fields.TryGetValue("thickness", out tempObject) && tempObject is not null)
+                    if (settingsData.TryGetValue("thickness", out tempObject) && tempObject is not null)
                     {
                         if (prop.Rope is not null && prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                         {
@@ -786,6 +781,11 @@ static class LevelSerialization
                 output.AppendFormat(", [\"Affect Gradients and Decals\", [\"Yes\", \"No\"], \"{0}\"]", effect.AffectGradientsAndDecals ? "Yes": "No");
             }
 
+            if (effect.Data.optionalInBounds)
+            {
+                output.AppendFormat(", [\"Require In-Bounds\", [\"Yes\", \"No\"], \"{0}\"]", effect.RequireInBounds ? "Yes" : "No");
+            }
+
             // custom options
             for (int cfgIndex = 0; cfgIndex < effect.CustomValues.Length; cfgIndex++)
             {
@@ -941,7 +941,7 @@ static class LevelSerialization
             if (propInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
                 output.AppendFormat(", #color: {0}", prop.CustomColor + 1);
             
-            if (propInit.VariationCount > 1)
+            if (propInit.Type is PropType.VariedStandard or PropType.VariedSoft or PropType.VariedDecal)
                 output.AppendFormat(", #variation: {0}", prop.Variation + 1);
             
             if (propInit.PropFlags.HasFlag(PropFlags.Colorize))

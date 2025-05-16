@@ -1,20 +1,21 @@
 namespace Rained.Assets;
 
 using ImGuiNET;
+using Rained.Rendering;
 using Raylib_cs;
 using RectpackSharp;
 
 class AssetGraphicsProvider
 {
-    record class CachedTexture(RlManaged.Texture2D? Texture)
+    record class CachedTexture(LargeTexture? Texture)
     {
-        private readonly RlManaged.Texture2D? texture = Texture;
+        private readonly LargeTexture? texture = Texture;
         private long lastAccess = Environment.TickCount64;
 
-        public RlManaged.Texture2D? Texture => texture;
+        public LargeTexture? Texture => texture;
         public long LastAccess => lastAccess;
 
-        public RlManaged.Texture2D? Obtain()
+        public LargeTexture? Obtain()
         {
             lastAccess = Environment.TickCount64;
             return Texture;
@@ -71,7 +72,7 @@ class AssetGraphicsProvider
     {
         var combined = Path.Combine(directory, fileName);
 
-        if ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && !File.Exists(combined))
+        if (Util.IsFileSystemCaseSensitive && !File.Exists(combined))
         {
             foreach (var filePath in Directory.GetFiles(directory))
             {
@@ -91,7 +92,7 @@ class AssetGraphicsProvider
     /// </summary>
     /// <param name="assetName">The name of the asset.</param>
     /// <returns>The prop texture, or null if the graphics file was invalid or not found.</returns>
-    public RlManaged.Texture2D? GetPropTexture(string assetName)
+    public LargeTexture? GetPropTexture(string assetName)
     {
         if (propTexCache.TryGetValue(assetName, out CachedTexture? texture))
             return texture.Obtain();
@@ -109,7 +110,7 @@ class AssetGraphicsProvider
         if (Raylib.IsImageReady(srcImage))
         {
             CropImage(srcImage);
-            texture = new CachedTexture(RlManaged.Texture2D.LoadFromImage(srcImage));
+            texture = new CachedTexture(new LargeTexture(srcImage));
         }
         else
         {
@@ -127,7 +128,7 @@ class AssetGraphicsProvider
     /// </summary>
     /// <param name="propInit">The prop init whose data is used to obtain the texture.</param>
     /// <returns>The prop/tile texture, or null if the graphics file was invalid or not found.</returns>
-    public RlManaged.Texture2D? GetPropTexture(PropInit propInit)
+    public LargeTexture? GetPropTexture(PropInit propInit)
     {
         if (propInit.PropFlags.HasFlag(PropFlags.Tile))
             return GetTileTexture(propInit.Name);
@@ -140,7 +141,7 @@ class AssetGraphicsProvider
     /// </summary>
     /// <param name="assetName">The name of the tile asset.</param>
     /// <returns>The tile texture, or null if the graphics file was invalid or not found.</returns>
-    public RlManaged.Texture2D? GetTileTexture(string assetName)
+    public LargeTexture? GetTileTexture(string assetName)
     {
         if (tileTexCache.TryGetValue(assetName, out CachedTexture? texture))
             return texture.Obtain();
@@ -159,7 +160,7 @@ class AssetGraphicsProvider
         if (Raylib.IsImageReady(srcImage))
         {
             CropImage(srcImage);
-            texture = new CachedTexture(RlManaged.Texture2D.LoadFromImage(srcImage));
+            texture = new CachedTexture(new LargeTexture(srcImage));
         }
         else
         {

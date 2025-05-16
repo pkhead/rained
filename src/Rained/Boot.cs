@@ -14,10 +14,13 @@ namespace Rained
         // find the location of the app data folder
 #if DATA_ASSEMBLY
         public static string AppDataPath = AppContext.BaseDirectory;
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #elif DATA_APPDATA
         public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #else
         public static string AppDataPath = Directory.GetCurrentDirectory();
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #endif
 
         public const int DefaultWindowWidth = 1200;
@@ -106,6 +109,12 @@ namespace Rained
 
                 Log.Setup(logToStdout);
             }
+
+            // setup window logger
+            Glib.Window.ErrorCallback = (string msg) =>
+            {
+                Log.Error("[Window] " + msg);
+            };
 
             // setup GL logger
             RenderContext.Log = (LogLevel logLevel, string msg) =>

@@ -189,12 +189,40 @@ class AppSetup
 
         ImGui.ProgressBar(downloadProgress, new Vector2(ImGui.GetTextLineHeight() * 50.0f, 0.0f));
 
-        // when download is complete, signal app launch
-        if (downloadTask is not null && downloadTask.IsCompletedSuccessfully)
+        // when task has ended,
+        // go ahead if it was successful.
+        // else, show an error message.
+        if (downloadTask is not null && downloadTask.IsCompleted)
         {
-            downloadTask = null;
-            callbackRes = Path.Combine(Boot.AppDataPath, "Data");
-            setupState = SetupState.Finished;
+            if (downloadTask.IsCompletedSuccessfully)
+            {
+                downloadTask = null;
+                callbackRes = Path.Combine(Boot.AppDataPath, "Data");
+                setupState = SetupState.Finished;
+            }
+            else
+            {
+                ImGuiExt.EnsurePopupIsOpen("Error");
+                ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+                {
+                    if (downloadTask.IsFaulted)
+                        ImGui.Text(downloadTask.Exception.Message);
+
+                    else
+                        ImGui.Text("The operation was aborted.");
+                    
+                    ImGui.Separator();
+                    if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                    {
+                        ImGui.CloseCurrentPopup();
+                        downloadTask = null;
+                        setupState = SetupState.SetupChoice;
+                    }
+
+                    ImGui.EndPopup();
+                }
+            }
         }
     }
 
@@ -255,8 +283,11 @@ class AppSetup
             downloadStage = 1;
             using (var client = new HttpClient())
             {
-                using var outputStream = File.OpenWrite(tempZipFile);
+                client.DefaultRequestHeaders.Add("user-agent", Util.HttpUserAgent);
+                client.Timeout = Timeout.InfiniteTimeSpan;
 
+                using var outputStream = File.OpenWrite(tempZipFile);
+                
                 var response = await client.GetAsync("https://github.com/SlimeCubed/Drizzle.Data/archive/refs/heads/community.zip");
                 response.EnsureSuccessStatusCode();
                 
@@ -325,6 +356,11 @@ class AppSetup
                     downloadProgress = (float)processedEntries / entryCount; 
                 }
             }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
         finally
         {

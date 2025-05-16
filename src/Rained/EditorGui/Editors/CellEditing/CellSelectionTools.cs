@@ -34,6 +34,7 @@ record class LayerSelection
 abstract class SelectToolState
 {
     public abstract void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask);
+    public abstract void Close();
 }
 
 interface IApplySelection
@@ -190,11 +191,19 @@ class RectDragState : SelectToolState, IApplySelection
     private int mouseMaxX = 0;
     private int mouseMinY = 0;
     private int mouseMaxY = 0;
+    private readonly CellSelection controller;
 
-    public RectDragState(int startX, int startY)
+    public RectDragState(CellSelection controller, int startX, int startY)
     {
+        this.controller = controller;
+        controller.ChangeRecorder.BeginChange();
         selectionStartX = startX;
         selectionStartY = startY;
+    }
+
+    public override void Close()
+    {
+        controller.ChangeRecorder.PushChange();
     }
 
     public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMasks)
@@ -256,11 +265,19 @@ class RectDragState : SelectToolState, IApplySelection
 
 class LassoDragState : SelectToolState, IApplySelection
 {
-    private List<Vector2i> points = [];
+    private readonly List<Vector2i> points = [];
+    private readonly CellSelection controller;
 
-    public LassoDragState(int startX, int startY)
+    public LassoDragState(CellSelection controller, int startX, int startY)
     {
+        this.controller = controller;
         points.Add(new Vector2i(startX, startY));
+        controller.ChangeRecorder.BeginChange();
+    }
+
+    public override void Close()
+    {
+        controller.ChangeRecorder.PushChange();
     }
     
     public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
@@ -270,7 +287,7 @@ class LassoDragState : SelectToolState, IApplySelection
         {
             //Rasterization.Bresenham(points[^1].X, points[^1].Y, newPoint.X, newPoint.Y, (x, y) =>
             //{
-                points.Add(newPoint);
+            points.Add(newPoint);
             //});
         }
 
@@ -281,7 +298,7 @@ class LassoDragState : SelectToolState, IApplySelection
 
         for (int i = 1; i < points.Count; i++)
         {
-            var ptA = points[i-1];
+            var ptA = points[i - 1];
             var ptB = points[i];
 
             rctx.DrawLine(
@@ -471,6 +488,8 @@ class SelectionMoveDragState : SelectToolState
     public SelectionMoveDragState(CellSelection controller, int startX, int startY, ReadOnlySpan<bool> layerMask)
     {
         this.controller = controller;
+        controller.ChangeRecorder.BeginChange();
+
         layerInfo = new LayerInfo[Level.LayerCount];
 
         for (int l = 0; l < Level.LayerCount; l++)
@@ -491,6 +510,11 @@ class SelectionMoveDragState : SelectToolState
 
             layerInfo[l] = li;
         }
+    }
+
+    public override void Close()
+    {
+        controller.ChangeRecorder.PushChange();
     }
 
     public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
@@ -525,6 +549,7 @@ class SelectedMoveDragState : SelectToolState
     public SelectedMoveDragState(CellSelection controller, int startX, int startY, ReadOnlySpan<bool> layerMask)
     {
         this.controller = controller;
+
         layerInfo = new LayerInfo[Level.LayerCount];
 
         int gMinX, gMinY;
@@ -574,6 +599,9 @@ class SelectedMoveDragState : SelectToolState
             controller.BeginMove();
         }
     }
+
+    public override void Close()
+    {}
 
     public override void Update(int mouseX, int mouseY, ReadOnlySpan<bool> layerMask)
     {

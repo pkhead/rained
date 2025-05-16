@@ -124,7 +124,7 @@ record class PropInit
     public float Height { get => PixelHeight / 20f; }
     public int LayerCount { get => layerCount; }
 
-    public PropInit(PropCategory category, Lingo.List init)
+    public PropInit(PropCategory category, Lingo.PropertyList init)
     {
         object? tempObject; // used with TryGetValue on init list
         var randVar = false; // if the prop will be placed with a random variation
@@ -134,8 +134,8 @@ record class PropInit
         Bevel = 0;
         SoftPropRender = null;
         LayerDepths = [0];
-        Name = (string) init.fields["nm"];
-        Type = (string) init.fields["tp"] switch
+        Name = (string) init["nm"];
+        Type = (string) init["tp"] switch
         {
             "standard" => PropType.Standard,
             "variedStandard" => PropType.VariedStandard,
@@ -145,8 +145,8 @@ record class PropInit
             "simpleDecal" => PropType.SimpleDecal,
             "variedDecal" => PropType.VariedDecal,
             "antimatter" => PropType.Antimatter,
-            "rope" => PropType.Rope,
-            "long" => PropType.Long,
+            "rope" or "customRope" => PropType.Rope,
+            "long" or "customLong" => PropType.Long,
             _ => throw new Exception("Invalid prop init")
         };
 
@@ -154,7 +154,7 @@ record class PropInit
         if (Type == PropType.Rope)
         {
             Rope = new RopeInit(init);
-            Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
+            Depth = Lingo.LingoNumber.AsInt(init["depth"]);
             VariationCount = 1;
             layerCount = 1;
         }
@@ -162,7 +162,7 @@ record class PropInit
         // initialize long-type prop
         else if (Type == PropType.Long)
         {
-            Depth = Lingo.LingoNumber.AsInt(init.fields["depth"]);
+            Depth = Lingo.LingoNumber.AsInt(init["depth"]);
             VariationCount = 1;
             layerCount = 1;
         }
@@ -171,14 +171,14 @@ record class PropInit
         else
         {
             // obtain size of image cel
-            if (init.fields.TryGetValue("pxlSize", out tempObject))
+            if (init.TryGetValue("pxlSize", out tempObject))
             {
                 var pxlSize = (Vector2) tempObject;
                 pixelWidth = (int) pxlSize.X;
                 pixelHeight = (int) pxlSize.Y;
                 sizeKnown = true;
             }
-            else if (init.fields.TryGetValue("sz", out tempObject))
+            else if (init.TryGetValue("sz", out tempObject))
             {
                 var sz = (Vector2) tempObject;
                 pixelWidth = (int)sz.X * 20;
@@ -190,9 +190,9 @@ record class PropInit
             Depth = 0;
             layerCount = 1;
             
-            if (init.fields.TryGetValue("repeatL", out tempObject))
+            if (init.TryGetValue("repeatL", out tempObject))
             {
-                var list = ((Lingo.List)tempObject).values;
+                var list = ((Lingo.LinearList)tempObject);
                 layerCount = list.Count;
                 LayerDepths = new int[layerCount];
                 int i = 0;
@@ -203,7 +203,7 @@ record class PropInit
                 }
 
             }
-            else if (init.fields.TryGetValue("depth", out tempObject))
+            else if (init.TryGetValue("depth", out tempObject))
             {
                 Depth = Lingo.LingoNumber.AsInt(tempObject);
             }
@@ -211,24 +211,24 @@ record class PropInit
             // variation count
             VariationCount = 1;
 
-            if (init.fields.TryGetValue("vars", out tempObject))
+            if (init.TryGetValue("vars", out tempObject))
             {
                 VariationCount = Lingo.LingoNumber.AsInt(tempObject);
             }
 
-            if (init.fields.TryGetValue("random", out tempObject))
+            if (init.TryGetValue("random", out tempObject))
             {
                 randVar = Lingo.LingoNumber.AsInt(tempObject) != 0;   
             }
         }
 
         // read notes
-        var tags = ((Lingo.List)init.fields["tags"]).values.Cast<string>();
+        var tags = ((Lingo.LinearList)init["tags"]).Cast<string>();
 
         PropFlags = 0;
-        if (init.fields.TryGetValue("notes", out tempObject))
+        if (init.TryGetValue("notes", out tempObject))
         {
-            var notes = ((Lingo.List)tempObject).values;
+            var notes = ((Lingo.LinearList)tempObject);
             Notes = notes.Cast<string>().ToArray();
         }
         else
@@ -239,13 +239,13 @@ record class PropInit
         // post effects recommended when colorized note
         if (Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
-            if (init.fields.TryGetValue("colorize", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
+            if (init.TryGetValue("colorize", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
             {
                 PropFlags |= PropFlags.Colorize;
             }
         }
         // set flags
-        if (init.fields.TryGetValue("colorTreatment", out tempObject))
+        if (init.TryGetValue("colorTreatment", out tempObject))
         {
             var treatmentVal = (string)tempObject;
 
@@ -254,7 +254,7 @@ record class PropInit
                 ColorTreatment = PropColorTreatment.Bevel;
                 PropFlags |= PropFlags.ProcedurallyShaded;
 
-                if (init.fields.TryGetValue("bevel", out var bevelObj))
+                if (init.TryGetValue("bevel", out var bevelObj))
                 {
                     Bevel = (int)bevelObj;
                 }
@@ -268,12 +268,12 @@ record class PropInit
         // is procedurally shaded?
         if (Type == PropType.Soft || Type == PropType.VariedSoft || Type == PropType.ColoredSoft)
         {
-            if (init.fields.TryGetValue("selfShade", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
+            if (init.TryGetValue("selfShade", out tempObject) && Lingo.LingoNumber.AsInt(tempObject) != 0)
             {
                 PropFlags |= PropFlags.ProcedurallyShaded;
             }
 
-            if (init.fields.TryGetValue("contourExp", out var contourExp) && init.fields.TryGetValue("highLightBorder", out var hl) && init.fields.TryGetValue("shadowBorder", out var sh))
+            if (init.TryGetValue("contourExp", out var contourExp) && init.TryGetValue("highLightBorder", out var hl) && init.TryGetValue("shadowBorder", out var sh))
             {
                 SoftPropRender = new SoftPropRenderInfo(
                     Lingo.LingoNumber.AsFloat(contourExp),
@@ -441,25 +441,25 @@ record RopeInit
     public readonly Color PreviewColor;
     public readonly int PreviewInterval;
 
-    public RopeInit(Lingo.List init)
+    public RopeInit(Lingo.PropertyList init)
     {
-        var previewColor = (Lingo.Color)init.fields["previewColor"];
+        var previewColor = (Lingo.Color)init["previewColor"];
 
-        CollisionDepth = Lingo.LingoNumber.AsInt(init.fields["collisionDepth"]);
-        PreviewInterval = Lingo.LingoNumber.AsInt(init.fields["previewEvery"]);
+        CollisionDepth = Lingo.LingoNumber.AsInt(init["collisionDepth"]);
+        PreviewInterval = Lingo.LingoNumber.AsInt(init["previewEvery"]);
         PreviewColor = new Color(previewColor.R, previewColor.G, previewColor.B, 255);
         PhysicalProperties = new RopePhysicalProperties()
         {
-            segmentLength = Lingo.LingoNumber.AsFloat(init.fields["segmentLength"]),
-            grav = Lingo.LingoNumber.AsFloat(init.fields["grav"]),
-            stiff = Lingo.LingoNumber.AsInt(init.fields["stiff"]) == 1,
-            friction = Lingo.LingoNumber.AsFloat(init.fields["friction"]),
-            airFric = Lingo.LingoNumber.AsFloat(init.fields["airFric"]),
-            segRad = Lingo.LingoNumber.AsFloat(init.fields["segRad"]),
-            rigid = Lingo.LingoNumber.AsFloat(init.fields["rigid"]),
-            edgeDirection = Lingo.LingoNumber.AsFloat(init.fields["edgeDirection"]),
-            selfPush = Lingo.LingoNumber.AsFloat(init.fields["selfPush"]),
-            sourcePush = Lingo.LingoNumber.AsFloat(init.fields["sourcePush"])
+            segmentLength = Lingo.LingoNumber.AsFloat(init["segmentLength"]),
+            grav = Lingo.LingoNumber.AsFloat(init["grav"]),
+            stiff = Lingo.LingoNumber.AsInt(init["stiff"]) == 1,
+            friction = Lingo.LingoNumber.AsFloat(init["friction"]),
+            airFric = Lingo.LingoNumber.AsFloat(init["airFric"]),
+            segRad = Lingo.LingoNumber.AsFloat(init["segRad"]),
+            rigid = Lingo.LingoNumber.AsFloat(init["rigid"]),
+            edgeDirection = Lingo.LingoNumber.AsFloat(init["edgeDirection"]),
+            selfPush = Lingo.LingoNumber.AsFloat(init["selfPush"]),
+            sourcePush = Lingo.LingoNumber.AsFloat(init["sourcePush"])
         };
     }
 }
@@ -599,13 +599,13 @@ class PropDatabase
             // read header
             if (line[0] == '-')
             {
-                if (lingoParser.Read(line[1..]) is not Lingo.List header)
+                if (lingoParser.Read(line[1..]) is not Lingo.LinearList header)
                 {
                     Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     continue;
                 }
 
-                currentCategory = new PropCategory(catIndex++, (string) header.values[0], (Lingo.Color) header.values[1]);
+                currentCategory = new PropCategory(catIndex++, (string) header[0], (Lingo.Color) header[1]);
                 Categories.Add(currentCategory);
             }
 
@@ -614,7 +614,7 @@ class PropDatabase
             {
                 if (currentCategory is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
                 
-                Lingo.List? propData = null;
+                Lingo.PropertyList? propData = null;
                 try // curse you Wryak
                 {
                     var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
@@ -632,13 +632,13 @@ class PropDatabase
                         continue;
                     }
 
-                    var propInit = new PropInit(currentCategory, (Lingo.List) parsedLine);
+                    var propInit = new PropInit(currentCategory, (Lingo.PropertyList) parsedLine);
                     currentCategory.Props.Add(propInit);
                     AddPropToIndex(lineNo, propInit);
                 }
                 catch (Exception e)
                 {
-                    var name = propData is null ? "Unknown Prop" : (string) propData.fields["nm"];
+                    var name = propData is null ? "Unknown Prop" : (string) propData["nm"];
                     Log.UserLogger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
                 }
             }
@@ -727,13 +727,13 @@ class PropDatabase
 
             if (line[0] == '-')
             {
-                var headerData = (Lingo.List)lingoParser.Read(line[1..])!;
-                curGroup = new PropCategory(catIndex++, (string)headerData.values[0], (Lingo.Color)headerData.values[1]);
+                var headerData = (Lingo.LinearList)lingoParser.Read(line[1..])!;
+                curGroup = new PropCategory(catIndex++, (string)headerData[0], (Lingo.Color)headerData[1]);
                 Categories.Add(curGroup);
             }
             else
             {
-                var ropeData = (Lingo.List)lingoParser.Read(line)!;
+                var ropeData = (Lingo.PropertyList)lingoParser.Read(line)!;
                 var propInit = new PropInit(curGroup!, ropeData);
                 curGroup!.Props.Add(propInit);
                 AddPropToIndex(-1, propInit);
@@ -753,10 +753,10 @@ class PropDatabase
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
-            var colData = (Lingo.List) (lingoParser.Read(line) ?? throw new Exception("Malformed propColors.txt"));
+            var colData = (Lingo.LinearList) (lingoParser.Read(line) ?? throw new Exception("Malformed propColors.txt"));
 
-            var name = (string) colData.values[0];
-            var lingoCol = (Lingo.Color) colData.values[1];
+            var name = (string) colData[0];
+            var lingoCol = (Lingo.Color) colData[1];
 
             PropColors.Add(new PropColor()
             {

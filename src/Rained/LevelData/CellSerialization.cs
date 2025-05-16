@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Rained.EditorGui.Editors.CellEditing;
 
 namespace Rained.LevelData;
 
@@ -46,7 +47,7 @@ static class CellSerialization
         }
     }
 
-    public static unsafe byte[] SerializeCells(int origX, int origY, int width, int height, (bool mask, LevelCell cell)[,,] geometry)
+    public static unsafe byte[] SerializeCells(int origX, int origY, int width, int height, MaskedCell[,,] geometry)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be greater than 0.");
         if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be greater than 0.");
@@ -122,7 +123,7 @@ static class CellSerialization
         return stream.ToArray();
     }
 
-    public static unsafe (bool mask, LevelCell cell)[,,]? DeserializeCells(ReadOnlySpan<byte> data, out int origX, out int origY, out int width, out int height)
+    public static unsafe MaskedCell[,,]? DeserializeCells(ReadOnlySpan<byte> data, out int origX, out int origY, out int width, out int height)
     {
         origX = 0;
         origY = 0;
@@ -154,7 +155,7 @@ static class CellSerialization
 
         // cell data
         // organized layer => x => y, just like the level save format
-        var geometry = new (bool mask, LevelCell cell)[Level.LayerCount, width, height];
+        var geometry = new MaskedCell[Level.LayerCount, width, height];
         for (int l = 0; l < Level.LayerCount; l++)
         {
             for (int x = 0; x < width; x++)
@@ -183,7 +184,7 @@ static class CellSerialization
                     if (sc.TileIndex > 0)
                         cell.TileHead = tileDb.GetTileFromName(tileNames[sc.TileIndex-1]);
 
-                    geometry[l,x,y] = (mask, cell);
+                    geometry[l,x,y] = new MaskedCell(mask, cell);
                 }
             }
         }
