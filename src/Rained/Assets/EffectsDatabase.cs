@@ -61,12 +61,17 @@ class EffectInit
     public bool decalAffectDefault = false;
     public bool optionalInBounds = false;
     public bool deprecated = false;
-    
+
+    private static readonly Effect.LayerMode[] defaultAvailableLayers = [
+        Effect.LayerMode.All, Effect.LayerMode.First, Effect.LayerMode.Second, Effect.LayerMode.Third, Effect.LayerMode.FirstAndSecond, Effect.LayerMode.SecondAndThird
+    ];
+
     /// <summary>
     /// The default layer configuration for a newly created effect.
     /// Applicable only if useLayers is true.
     /// </summary>
     public Effect.LayerMode defaultLayer = Effect.LayerMode.All;
+    public Effect.LayerMode[] availableLayers = defaultAvailableLayers;
     public int defaultPlantColor = 1; // Color2
 
     public readonly List<CustomEffectConfig> customConfigs;
@@ -983,6 +988,7 @@ class EffectsDatabase
             {
                 useLayers = true,
                 defaultLayer = Effect.LayerMode.First,
+                availableLayers = [Effect.LayerMode.First, Effect.LayerMode.Second, Effect.LayerMode.FirstAndSecond],
                 usePlantColors = true,
                 crossScreen = true
             });

@@ -321,7 +321,7 @@ class EffectsEditor : IEditorMode
                 {
                     if (ImGui.BeginCombo("Layers", layerModeNames[(int) effect.Layer]))
                     {
-                        for (int i = 0; i < layerModeNames.Length; i++)
+                        foreach (int i in effect.Data.availableLayers.Select(v => (int)v))
                         {
                             bool isSelected = i == (int) effect.Layer;
                             if (ImGui.Selectable(layerModeNames[i], isSelected))
