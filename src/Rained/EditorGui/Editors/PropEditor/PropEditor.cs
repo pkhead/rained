@@ -985,5 +985,38 @@ partial class PropEditor : IEditorMode
 
             changeRecorder.PushListChange();
         }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Copy))
+        {
+            if (selectedProps.Count > 0)
+            {
+                var data = PropSerialization.SerializeProps([..selectedProps]);
+                if (data is not null)
+                {
+                    Platform.SetClipboard(Boot.Window, Platform.ClipboardDataType.Props, data);
+                }
+            }
+        }
+
+        if (KeyShortcuts.Activated(KeyShortcut.Paste))
+        {
+            if (Platform.GetClipboard(Boot.Window, Platform.ClipboardDataType.Props, out byte[]? data))
+            {
+                var props = PropSerialization.DeserializeProps(data);
+                if (props is not null && props.Length > 0)
+                {
+                    ChangeRecorder.BeginListChange();
+
+                    selectedProps.Clear();
+                    foreach (var p in props)
+                    {
+                        selectedProps.Add(p);
+                        RainEd.Instance.Level.Props.Add(p);
+                    }
+
+                    ChangeRecorder.PushListChange();
+                }
+            }
+        }
     }
 }

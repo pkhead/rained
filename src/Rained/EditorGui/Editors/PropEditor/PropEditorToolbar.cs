@@ -1062,6 +1062,11 @@ partial class PropEditor : IEditorMode
 
     public void ShowEditMenu()
     {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy");
+
+        // TODO: grey this out if prop clipboard data is not available
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste");
+
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Selected Prop(s)");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Prop(s)");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleVertexMode, "Toggle Vertex Edit");

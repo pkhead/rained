@@ -5,7 +5,7 @@ using Rained.EditorGui.Editors.CellEditing;
 namespace Rained.LevelData;
 
 /// <summary>
-/// Binary serialization of a cell array.
+/// Binary serialization of a cell array, used for the clipboard.
 /// </summary>
 static class CellSerialization
 {
