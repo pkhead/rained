@@ -214,7 +214,7 @@ class CellSelection
         {
             ImGui.BeginDisabled(!IsSelectionActive());
 
-            var alt = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+            var alt = EditorWindow.IsKeyDown(ImGuiKey.ModShift) && movingGeometry is null;
 
             if (IconButton(alt ? IconName.MoveSelectionBackward : IconName.MoveSelectedBackward))
             {
@@ -241,13 +241,19 @@ class CellSelection
         }
         
         ImGui.SameLine();
-        ImGui.BeginDisabled(movingGeometry is null);
         if (ImGui.Button("Cancel"))
         {
-            CancelMove();
-            ClearSelection();
+            if (movingGeometry is null)
+            {
+                SubmitMove();
+                Active = false;
+            }
+            else
+            {
+                CancelMove();
+                ClearSelection();
+            }
         }
-        ImGui.EndDisabled();
 
         if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
         {
