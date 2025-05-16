@@ -35,8 +35,8 @@ v2.4.0:
 
 v2.3.0:
   - Lightmap stretch (ditto) & move
-  * geo/tile copy+paste (i am currently working on this),
-  - prop editor lasso select ()
+  - prop editor lasso select
+  - prop editor copy + paste
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
