@@ -44,6 +44,7 @@ v2.3.0:
   - Lightmap stretch (ditto) & move
   - prop editor lasso select
   - prop editor copy + paste
+  - light editor rotation/scale sliders
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
