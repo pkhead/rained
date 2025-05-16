@@ -151,6 +151,85 @@ static class CellsModule
         });
         lua.SetField(-2, "setObjects");
 
+        // function hasObject
+        LuaHelpers.PushLuaFunction(lua, static (Lua lua) =>
+        {
+            int nargs = lua.GetTop();
+            int x = (int) lua.CheckNumber(1);
+            int y = (int) lua.CheckNumber(2);
+            int layer = (int) lua.CheckInteger(3) - 1;
+
+            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
+
+            LevelObject objs = 0;
+            for (int i = 4; i <= nargs; i++)
+            {
+                int v = (int)lua.CheckInteger(i);
+                if (v > 0)
+                    objs |= (LevelObject)(1 << (v - 1));
+            }
+
+            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            lua.PushBoolean((int)(cell.Objects | ~objs) == ~0);
+            return 1;
+        });
+        lua.SetField(-2, "hasObject");
+
+        // function addObject
+        LuaHelpers.PushLuaFunction(lua, static (Lua lua) =>
+        {
+            int nargs = lua.GetTop();
+            int x = (int) lua.CheckNumber(1);
+            int y = (int) lua.CheckNumber(2);
+            int layer = (int) lua.CheckInteger(3) - 1;
+
+            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
+
+            LevelObject objs = 0;
+            for (int i = 4; i <= nargs; i++)
+            {
+                int v = (int)lua.CheckInteger(i);
+                if (v > 0)
+                    objs |= (LevelObject)(1 << (v - 1));
+            }
+
+            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            cell.Objects |= objs;
+            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
+            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            return 0;
+        });
+        lua.SetField(-2, "addObject");
+
+        // function removeObject
+        LuaHelpers.PushLuaFunction(lua, static (Lua lua) =>
+        {
+            int nargs = lua.GetTop();
+            int x = (int) lua.CheckNumber(1);
+            int y = (int) lua.CheckNumber(2);
+            int layer = (int) lua.CheckInteger(3) - 1;
+
+            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
+
+            LevelObject objs = 0;
+            for (int i = 4; i <= nargs; i++)
+            {
+                int v = (int)lua.CheckInteger(i);
+                if (v > 0)
+                    objs |= (LevelObject)(1 << (v - 1));
+            }
+
+            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            cell.Objects &= ~objs;
+            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
+            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            return 0;
+        });
+        lua.SetField(-2, "removeObject");
+
         // function getTileData
         LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
         {

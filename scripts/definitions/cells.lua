@@ -57,6 +57,28 @@ function rained.cells.getObjects(x, y, layer) end
 ---@param objects integer[] The list of objects.
 function rained.cells.setObjects(x, y, layer, objects) end
 
+---Test if a given cell has the given objects.
+---@param x integer
+---@param y integer
+---@param layer integer
+---@param ... integer Objects to check for
+---@return boolean result
+function rained.cells.hasObject(x, y, layer, ...) end
+
+---Add objects to a cell
+---@param x integer
+---@param y integer
+---@param layer integer
+---@param ... integer The objects to add
+function rained.cells.addObject(x, y, layer, ...) end
+
+---Remove objects from a cell
+---@param x integer
+---@param y integer
+---@param layer integer
+---@param ... integer The objects to remove
+function rained.cells.removeObject(x, y, layer, ...) end
+
 ---Get the tile data of a cell
 ---@param x integer
 ---@param y integer
