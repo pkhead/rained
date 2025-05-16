@@ -45,18 +45,20 @@ static class ConfigDirectory
     public static IEnumerable<string> EnumerateFiles(string? relativePath = null)
     {
         var (configPath, assetsPath) = ParseRelativePath(relativePath);
-        if (!Directory.Exists(configPath)) return Directory.EnumerateFiles(assetsPath);
+        var assetEnum = Directory.Exists(assetsPath) ? Directory.EnumerateFiles(assetsPath) : [];
+        if (!Directory.Exists(configPath)) return assetEnum;
         return Directory.EnumerateFiles(configPath).Concat(
-            Directory.EnumerateFiles(assetsPath).Where(x => FileFilter(configPath, assetsPath, x))
+            assetEnum.Where(x => FileFilter(configPath, assetsPath, x))
         );
     }
 
     public static IEnumerable<string> EnumerateFiles(string? relativePath, string searchPattern)
     {
         var (configPath, assetsPath) = ParseRelativePath(relativePath);
-        if (!Directory.Exists(configPath)) return Directory.EnumerateFiles(assetsPath, searchPattern);
+        var assetEnum = Directory.Exists(assetsPath) ? Directory.EnumerateFiles(assetsPath, searchPattern) : [];
+        if (!Directory.Exists(configPath)) return assetEnum;
         return Directory.EnumerateFiles(configPath, searchPattern).Concat(
-            Directory.EnumerateFiles(assetsPath, searchPattern).Where(
+            assetEnum.Where(
                 x => FileFilter(configPath, assetsPath, x)
             )
         );
