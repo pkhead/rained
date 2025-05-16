@@ -32,6 +32,7 @@
 
 # level editor assets/data
 /Data
+/effects.json
 
 # rained-generated files
 /config/preferences.json

@@ -39,6 +39,13 @@
     <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
     <ProjectReference Include="../Drizzle/Drizzle.Ported/Drizzle.Ported.csproj" />
+    <ProjectReference Include="../DrizzleExport/DrizzleExport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="../../effects.json">
+      <LogicalName>Rained.embed.%(FileName)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   
   <!--

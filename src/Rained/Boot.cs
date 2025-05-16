@@ -53,8 +53,15 @@ namespace Rained
 
             if (bootOptions.Render)
                 LaunchRenderer();
+            else if (bootOptions.EffectExportOutput is not null)
+                LaunchDrizzleExport(bootOptions.EffectExportOutput);
             else
                 LaunchEditor();
+        }
+
+        private static void LaunchDrizzleExport(string path)
+        {
+            DrizzleExport.DrizzleEffectExport.Export(Drizzle.AssetDataPath.GetPath(), Path.Combine(AppDataPath, "assets", "drizzle-cast"), path);
         }
 
         private static void LaunchRenderer()
