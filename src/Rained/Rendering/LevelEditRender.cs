@@ -460,7 +460,7 @@ class LevelEditRender : IDisposable
         // draw chains from chain holders
         foreach (var (k, v) in RainEd.Instance.Level.ChainData)
         {
-            if (k.Item1 != layer) break;
+            if (k.Item1 != layer) continue;
             var cellPos = new Vector2(k.Item2, k.Item3);
             var chainEnd = new Vector2(v.X, v.Y);
 
