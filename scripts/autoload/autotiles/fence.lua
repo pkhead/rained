@@ -1,4 +1,4 @@
--- setup autotile data
+-- authors: pkhead, LudoCrypt
 -- setup autotile data
 local autotile = rained.tiles.createAutotile("Fence")
 autotile.type = "rect"
@@ -56,17 +56,18 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
         poleOffset = math.floor((boxWidth - fit) / 2)
     end
 
-    cols = {}
-
-    -- place poles
+    -- calculate pole positions
+    local cols = {}
     for x = left + math.max(0, poleOffset), right, poleSpacing do
-        cols[#cols + 1] = x
+        cols[#cols+1] = x
     end
 
-    ci = 1
+    -- place barbed wires
+    local ci = 1
     for x = left, right do
-        isPole = false
-        if (x == cols[ci]) then
+        -- is this column a pole?
+        local isPole = false
+        if x == cols[ci] then
             ci = ci + 1
             isPole = true
         end
@@ -87,6 +88,4 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
             rained.tiles.placeTile(isPole and "fence with pole" or "fence", x, y, layer, forceModifier)
         end
     end
-
-
 end
