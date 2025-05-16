@@ -382,7 +382,7 @@ static class EditorWindow
             {
                 if (ImGui.MenuItem("Readme..."))
                 {
-                    Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.md"));
+                    Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.txt"));
                 }
 
                 if (ImGui.MenuItem("Manual..."))
