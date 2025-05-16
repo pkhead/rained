@@ -424,7 +424,7 @@ static class RainedModule
         FileBrowser.Render(ref fileBrowser);
     }
 
-    public static void RemoveAllCallbacks(Lua lua)
+    public static void RemoveAllCommands(Lua lua)
     {
         foreach (var (cmdId, funcRef) in registeredCmds)
         {

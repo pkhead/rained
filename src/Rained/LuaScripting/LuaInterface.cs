@@ -108,7 +108,8 @@ static class LuaInterface
 
     public static void Unload()
     {
-        RainedModule.RemoveAllCallbacks(luaState.State);
+        RainedModule.RemoveAllCommands(luaState.State);
+        LuaCallback.RemoveAllCallbacks();
         TilesModule.RemoveAllAutotiles();
         luaState.Dispose();
         luaState = null!;
