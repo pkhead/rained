@@ -258,7 +258,8 @@ static class EditorWindow
                     {
                         foreach (RainEd.Command cmd in customCommands)
                         {
-                            if (ImGui.MenuItem(cmd.Name))
+                            bool enabled = RainEd.Instance.CurrentTab?.Level is not null || !cmd.parameters.RequiresLevel;
+                            if (ImGui.MenuItem(cmd.Name, enabled))
                             {
                                 cmd.Callback(cmd.ID);
                             }
