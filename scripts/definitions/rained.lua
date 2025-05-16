@@ -169,3 +169,11 @@ function rained.getLevelHeight() end
 ---@param y integer
 ---@return boolean
 function rained.isInBounds(x, y) end
+
+---@class CallbackHandle
+---@field disconnect fun(self:CallbackHandle) Disconnect the callback handle.
+
+---Register a callback to be ran per frame.
+---@param func function The function to run on every frame.
+---@return CallbackHandle handle The callback handle.
+function rained.onUpdate(func) end

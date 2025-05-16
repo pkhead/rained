@@ -10,11 +10,11 @@ static class LuaInterface
     public const int VersionMajor = 3;
     public const int VersionMinor = 0;
     public const int VersionRevision = 0;
-    
+
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
     public static KeraLua.Lua LuaState => luaState.State;
-    
+
     delegate void LuaPrintDelegate(params string[] args);
 
     private static LuaHelpers.LuaFunction loaderDelegate = new(RainedLoader);
@@ -31,10 +31,10 @@ static class LuaInterface
         LuaHelpers.Init(luaState.State);
 
         luaState["print"] = new LuaPrintDelegate(LuaPrint);
-        luaState["warn"] = new LuaPrintDelegate(LuaWarning); 
+        luaState["warn"] = new LuaPrintDelegate(LuaWarning);
 
         // configure package.path
-        var package = (LuaTable) luaState["package"];
+        var package = (LuaTable)luaState["package"];
         package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua");
 
         // global functions
@@ -50,7 +50,7 @@ static class LuaInterface
 
             LuaHelpers.PushLuaFunction(luaState.State, PathModuleLoader);
             luaState.State.SetField(-2, "path");
-            
+
             luaState.State.Pop(1); // pop preload table
         }
 
@@ -125,6 +125,8 @@ static class LuaInterface
 
     private static int RainedLoader(KeraLua.Lua lua)
     {
+        LuaCallback.InitType(lua);
+
         lua.NewTable();
         RainedModule.Init(lua, luaState);
         LevelModule.Init(lua, luaState);
@@ -155,7 +157,7 @@ static class LuaInterface
             string[] args = new string[nargs];
             for (int i = 1; i <= nargs; i++)
             {
-                args[i-1] = lua.CheckString(i);
+                args[i - 1] = lua.CheckString(i);
             }
 
             try
@@ -179,7 +181,7 @@ static class LuaInterface
             string[] args = new string[nargs];
             for (int i = 1; i <= nargs; i++)
             {
-                args[i-1] = lua.CheckString(i);
+                args[i - 1] = lua.CheckString(i);
             }
 
             try
@@ -218,7 +220,7 @@ static class LuaInterface
     {
         List<string> combineParams = [Boot.AppDataPath, "scripts"];
         combineParams.AddRange(path.Split('.'));
-        var filePath = Path.Combine([..combineParams]);
+        var filePath = Path.Combine([.. combineParams]);
 
         if (!Directory.Exists(filePath))
             throw new Exception($"path '{path}' does not exist");
@@ -285,12 +287,17 @@ static class LuaInterface
             stringBuilder.Append(' ', 8 - str.Length % 8);
         }
 
-        LogWarning(stringBuilder.ToString());        
+        LogWarning(stringBuilder.ToString());
     }
 
     public static void UIUpdate()
     {
         RainedModule.UIUpdate();
         PropModule.UpdateSettingsSnapshot();
+    }
+
+    public static void Update(float dt)
+    {
+        RainedModule.UpdateCallback(dt);
     }
 }

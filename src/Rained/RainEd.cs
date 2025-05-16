@@ -827,6 +827,7 @@ sealed class RainEd
         
         EditorWindow.Render();
         LuaInterface.UIUpdate();
+        LuaInterface.Update(dt);
 
         if (ImGui.IsKeyPressed(ImGuiKey.F1))
             DebugWindow.IsWindowOpen = !DebugWindow.IsWindowOpen;

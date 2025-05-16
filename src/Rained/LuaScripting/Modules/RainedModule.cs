@@ -5,6 +5,7 @@ using Rained.EditorGui;
 static class RainedModule
 {
     private static readonly Dictionary<int, int> registeredCmds = [];
+    private static readonly List<LuaCallback> updateCallbacks = [];
     private const string CommandID = "RainedCommandID";
     private static readonly string[] fileBrowserOpenMode = ["write", "read", "multiRead", "directory", "multiDirectory"];
 
@@ -18,14 +19,16 @@ static class RainedModule
     public static void Init(Lua lua, NLua.Lua nLua)
     {
         // function rained.getVersion
-        lua.ModuleFunction("getVersion", static (nint luaPtr) => {
+        lua.ModuleFunction("getVersion", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
             lua.PushString(RainEd.Version);
             return 1;
         });
 
         // function rained.getApiVersion
-        lua.ModuleFunction("getApiVersion", static (nint luaPtr) => {
+        lua.ModuleFunction("getApiVersion", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
             lua.PushInteger(LuaInterface.VersionMajor);
             lua.PushInteger(LuaInterface.VersionMinor);
@@ -33,7 +36,8 @@ static class RainedModule
             return 3;
         });
 
-        lua.ModuleFunction("alert", static (nint luaPtr) => {
+        lua.ModuleFunction("alert", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
 
             lua.PushCopy(1);
@@ -42,22 +46,25 @@ static class RainedModule
             return 0;
         });
 
-        lua.ModuleFunction("getLevelWidth", static (nint luaPtr) => {
+        lua.ModuleFunction("getLevelWidth", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
             lua.PushInteger(RainEd.Instance.Level.Width);
             return 1;
         });
 
-        lua.ModuleFunction("getLevelHeight", static (nint luaPtr) => {
+        lua.ModuleFunction("getLevelHeight", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
             lua.PushInteger(RainEd.Instance.Level.Height);
             return 1;
         });
 
-        lua.ModuleFunction("isInBounds", static (nint luaPtr) => {
+        lua.ModuleFunction("isInBounds", static (nint luaPtr) =>
+        {
             var lua = Lua.FromIntPtr(luaPtr);
-            var x = (int) lua.CheckNumber(1);
-            var y = (int) lua.CheckNumber(2);
+            var x = (int)lua.CheckNumber(1);
+            var y = (int)lua.CheckNumber(2);
             lua.PushBoolean(RainEd.Instance.Level.IsInBounds(x, y));
             return 1;
         });
@@ -73,7 +80,7 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
             {
                 lua.PushNil(); return 1;
             }
@@ -86,7 +93,7 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
             {
                 lua.PushNil(); return 1;
             }
@@ -109,7 +116,8 @@ static class RainedModule
             if (RainEd.Instance.CurrentTab is not null)
             {
                 lua.PushInteger(RainEd.Instance.Tabs.IndexOf(RainEd.Instance.CurrentTab) + 1);
-            } else
+            }
+            else
             {
                 lua.PushNil();
             }
@@ -122,12 +130,12 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
 
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx >+ RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
             {
                 lua.PushBoolean(false);
                 return 1;
             }
-            
+
             RainEd.Instance.CurrentTab = RainEd.Instance.Tabs[idx];
             lua.PushBoolean(true);
             return 1;
@@ -149,7 +157,8 @@ static class RainedModule
         lua.SetField(-2, "__metatable");
         lua.Pop(1);
 
-        lua.ModuleFunction("registerCommand", static (KeraLua.Lua lua) => {
+        lua.ModuleFunction("registerCommand", static (KeraLua.Lua lua) =>
+        {
             int argc = lua.GetTop();
             int cmdId;
 
@@ -215,7 +224,7 @@ static class RainedModule
 
             unsafe
             {
-                var ud = (int*) lua.NewUserData(sizeof(int));
+                var ud = (int*)lua.NewUserData(sizeof(int));
                 lua.SetMetaTable(CommandID);
                 *ud = cmdId;
             }
@@ -227,7 +236,7 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var filePath = lua.CheckString(1);
-            
+
             try
             {
                 RainEd.Instance.LoadLevelThrow(filePath);
@@ -243,8 +252,8 @@ static class RainedModule
         lua.ModuleFunction("newLevel", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var w = (int) lua.CheckInteger(1);
-            var h = (int) lua.CheckInteger(2);
+            var w = (int)lua.CheckInteger(1);
+            var h = (int)lua.CheckInteger(2);
             var filePath = lua.OptString(3, "");
 
             RainEd.Instance.OpenLevel(new LevelData.Level(w, h), filePath);
@@ -263,7 +272,7 @@ static class RainedModule
         lua.ModuleFunction("openFileBrowser", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var openMode = (FileBrowser.OpenMode) lua.CheckOption(1, null, fileBrowserOpenMode);
+            var openMode = (FileBrowser.OpenMode)lua.CheckOption(1, null, fileBrowserOpenMode);
             if (!lua.IsNoneOrNil(2)) lua.CheckType(2, LuaType.Table);
 
             if (lua.PushThread())
@@ -272,11 +281,11 @@ static class RainedModule
             }
 
             List<(string name, bool isRw, string[] ext)> filters = [];
-            int c = (int) lua.Length(2);
+            int c = (int)lua.Length(2);
             for (int i = 1; i <= c; i++)
             {
                 lua.GetInteger(2, i);
-                
+
                 // hardcoded built-in filters
                 if (lua.IsUserData(-1) && lua.ToUserData(-1) == levelFilterUserdata)
                 {
@@ -298,7 +307,7 @@ static class RainedModule
 
                 if (lua.IsTable(-1))
                 {
-                    int c2 = (int) lua.Length(-1);
+                    int c2 = (int)lua.Length(-1);
                     string[] filterExts = new string[c2];
                     int j = 0;
                     for (int k = 1; k <= c2; k++)
@@ -345,6 +354,38 @@ static class RainedModule
                 return 1;
             });
         });
+
+        lua.ModuleFunction("onUpdate", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) =>
+                {
+                    updateCallbacks.Remove(cb);
+                }
+            };
+            updateCallbacks.Add(cb);
+            
+            return 1;
+        });
+    }
+
+    public static void UpdateCallback(float dt)
+    {
+        if (updateCallbacks.Count > 0)
+        {
+            RainEd.Instance.NeedScreenRefresh();
+        }
+        
+        foreach (var cb in updateCallbacks)
+        {
+            cb.LuaState.PushNumber(dt);
+            cb.Invoke(1);
+        }
     }
 
     private static void FileBrowserCallback(string[] items)

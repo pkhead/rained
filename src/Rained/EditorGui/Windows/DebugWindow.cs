@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 using ImGuiNET;
+using Rained.LuaScripting;
 namespace Rained.EditorGui;
 
 static class DebugWindow
@@ -26,6 +27,8 @@ static class DebugWindow
             ImGui.TextUnformatted("Loaded tile graphics: " + RainEd.Instance.AssetGraphics.TileTextureCount);
             ImGui.TextUnformatted("Loaded prop graphics: " + RainEd.Instance.AssetGraphics.PropTextureCount);
             ImGui.TextUnformatted($"Total texture memory: {(float)Glib.RenderContext.Instance!.TotalTextureMemory / 1000000} mb");
+            ImGui.TextUnformatted($"Lua memory: {LuaInterface.LuaState.GarbageCollector(KeraLua.LuaGC.Count, 0)} KiB");
+            ImGui.TextUnformatted($"C# memory: {GC.GetTotalMemory(false) / 1024} KiB");
 
             if (RainEd.Instance.CurrentTab?.Level is not null)
             {
