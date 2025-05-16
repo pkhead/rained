@@ -59,20 +59,42 @@ namespace Rained
 
         private static void LaunchRenderer()
         {
-            if (string.IsNullOrEmpty(bootOptions.LevelToLoad))
+            if (bootOptions.Files.Count == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("error: ");
                 Console.ResetColor();
 
-                Console.WriteLine("The level path was not given");
+                Console.WriteLine("The level path(s) were not given");
                 Environment.ExitCode = 2;
                 return;
             }
 
+            // setup serilog
+            {
+                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
+                #if DEBUG
+                logToStdout = true;
+                #endif
+
+                Log.Setup(false);
+            }
+
             try
             {
-                Drizzle.DrizzleRender.Render(bootOptions.LevelToLoad);
+                // single-file render
+                if (bootOptions.Files.Count == 1 && !Directory.Exists(bootOptions.Files[0]))
+                {
+                    Log.Information("====== Standalone render ======");
+                    Drizzle.DrizzleRender.Render(bootOptions.Files[0]);
+                }
+
+                // mass render
+                else
+                {
+                    Log.Information("====== Standalone mass render ======");
+                    Drizzle.DrizzleMassRender.ConsoleRender([..bootOptions.Files], bootOptions.RenderThreads);
+                }
             }
             catch (Drizzle.DrizzleRenderException e)
             {
@@ -306,7 +328,7 @@ namespace Rained
 
                 try
                 {
-                    app = new(assetDataPath, bootOptions.LevelToLoad);
+                    app = new(assetDataPath, bootOptions.Files);
                 }
                 catch (RainEdStartupException)
                 {

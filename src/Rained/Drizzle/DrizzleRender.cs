@@ -653,7 +653,6 @@ class DrizzleRender : IDisposable
     /// <returns></returns>
     public static void Render(string levelPath)
     {
-        Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
         var levelName = Path.GetFileNameWithoutExtension(levelPath);
         var pathWithoutExt = Path.Combine(Path.GetDirectoryName(levelPath)!, levelName);
 
@@ -667,37 +666,16 @@ class DrizzleRender : IDisposable
             throw new DrizzleRenderException($"The file '{pathWithoutExt + ".png"}' does not exist!");
         }
 
-        var prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
-        string dataPath;
-
-        if (Boot.Options.DrizzleDataPath is not null)
-        {
-            dataPath = Boot.Options.DrizzleDataPath;
-        }
-        else
-        {
-            // read preferences in order to get the data directory
-            if (File.Exists(prefFilePath))
-            {
-                var prefs = UserPreferences.LoadFromFile(prefFilePath);
-                dataPath = prefs.DataPath;
-            }
-            else
-            {
-                throw new Exception("preferences.json was not found");
-            }
-        }
-
-        if (!Directory.Exists(dataPath))
-        {
-            throw new DrizzleRenderException($"The data directory {dataPath} does not exist.");
-        }
+        string dataPath = AssetDataPath.GetPath();
 
         // create large trash log file, in case user decided to have it enabled
         // otherwise drizzle will not work
         var largeTrashLogFile = Path.Combine(dataPath, "largeTrashLog.txt");
         if (!File.Exists(largeTrashLogFile))
             File.Create(largeTrashLogFile).Dispose();
+
+        // ensure output directory exists
+        Directory.CreateDirectory(Path.Combine(dataPath, "Levels"));
 
         LingoRuntime runtime;
 

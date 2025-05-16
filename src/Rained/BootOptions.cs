@@ -32,12 +32,14 @@ partial class BootOptions
     public readonly bool ConsoleAttached = false;
     public readonly string AppDataPath = Boot.AppDataPath;
     public readonly string? DrizzleDataPath = null;
-    public readonly string LevelToLoad = "";
+    public readonly List<string> Files = [];
 
     public readonly bool NoSplashScreen = false;
     public readonly bool ShowOgscule = false;
     public readonly bool LogToStdout = false;
     public readonly bool Render = false;
+    public readonly int RenderThreads = int.Max(1, Environment.ProcessorCount - 1);
+    public readonly string? EffectExportOutput = null;
 
     private static void PrintHelpMessage()
     {
@@ -46,16 +48,22 @@ partial class BootOptions
         Usage:
             Rained [-v | --version]
             Rained [-h | --help]
-            Rained [options...] [level path]
+            Rained [options...] [level paths...]
         
-        --help                  Show this help screen
-        --version -v            Print out version
-        --render -r             Render the given level and exit
-        --log-to-stdout         Print logs to the standard output stream instead of to a file
-        --no-splash-screen      Do not show the splash screen when starting
-        --app-data <path>       Run with app data directory at <path>
-        --data <path>           Run with the Drizzle data directory at <path>
-        --ogscule               the intrusive thoughts defeated me
+        --help                      Show this help screen
+        --version -v                Print out version
+
+        --render -r                 Render the given levels and exit
+        --threads -t <count>        Optional max degree of parallelism to use when rendering.
+                                    The default is the number of available cores minus one.
+                                    Zero means it will be unbound.
+
+        --log-to-stdout             Print logs to the standard output stream instead of to a file
+        --no-splash-screen          Do not show the splash screen when starting
+        --app-data <path>           Run with app data directory at <path>
+        --data <path>               Run with the Drizzle data directory at <path>
+
+        --export-effects <path>     Export Drizzle effect data to a .json file
         """
         );
     }
@@ -145,6 +153,26 @@ partial class BootOptions
                 continue;
             }
 
+            if (str == "--threads" || str == "-t")
+            {
+                i++;
+                if (int.TryParse(args[i], out int v) && v >= 0)
+                {
+                    RenderThreads = v;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("error: ");
+                    Console.ResetColor();
+                    Console.WriteLine($"thread count is not a positive integer!");
+                    Environment.ExitCode = 2;
+                    ContinueBoot = false;
+                }
+
+                continue;
+            }
+
             // the intrusive thoughts defeated me
             if (str == "--ogscule")
             {
@@ -153,8 +181,17 @@ partial class BootOptions
                 continue;
             }
 
-            if (string.IsNullOrEmpty(LevelToLoad) && str[0] != '-')
-                LevelToLoad = str;
+            if (str == "--export-effects")
+            {
+                i++;
+                EffectExportOutput = args[i];
+                continue;
+            }
+
+            if (str[0] != '-')
+            {
+                Files.Add(str);
+            }
 
             else
             {

@@ -153,7 +153,7 @@ sealed class RainEd
     private readonly List<Command> customCommands = [];
     public List<Command> CustomCommands { get => customCommands; }
     
-    public RainEd(string? assetData, string levelPath = "") {
+    public RainEd(string? assetData, IEnumerable<string> levelPaths) {
         if (Instance != null)
             throw new Exception("Attempt to create more than one RainEd instance");
         
@@ -329,15 +329,13 @@ sealed class RainEd
         PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
 
         // level boot load
-        if (levelPath.Length > 0)
+        foreach (var path in levelPaths)
         {
-            Log.Information("Boot load " + levelPath);
-            LoadLevel(levelPath);
+            Log.Information("Boot load " + path);
+            LoadLevel(path);
         }
-        else
-        {
-            EditorWindow.RequestLoadEmergencySave();
-        }
+        
+        EditorWindow.RequestLoadEmergencySave();
 
         // force gc. i just added this to try to collect
         // the now-garbage asset image data, as they have
