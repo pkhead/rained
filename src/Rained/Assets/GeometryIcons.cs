@@ -12,7 +12,7 @@ class GeometryIcons
     static string[] setList = null!;
     static string curSet = null!;
 
-    public static string[] Sets => Sets;
+    public static string[] Sets => setList;
     public static string CurrentSet
     {
         get => curSet;

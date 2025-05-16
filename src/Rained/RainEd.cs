@@ -195,6 +195,7 @@ sealed class RainEd
         Shaders.LoadShaders();
         TextRendering.GenerateOutlineFont();
         GeometryIcons.Init();
+        GeometryIcons.CurrentSet = Preferences.GeometryIcons;
 
         // run the update checker
         var versionCheckTask = Task.Run(UpdateChecker.FetchLatestVersion);

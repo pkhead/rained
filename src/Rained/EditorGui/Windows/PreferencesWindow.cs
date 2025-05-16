@@ -1,5 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
+using Rained.Assets;
 using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
@@ -529,9 +530,29 @@ static class PreferencesWindow
             ImGui.Separator();
             
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            // geo icon set
+            var geometryIcons = prefs.GeometryIcons;
+            if (ImGui.BeginCombo("Geometry icon set", geometryIcons))
+            {
+                foreach (var str in GeometryIcons.Sets)
+                {
+                    var isSelected = str == geometryIcons;
+                    if (ImGui.Selectable(str, isSelected))
+                    {
+                        GeometryIcons.CurrentSet = str;
+                        prefs.GeometryIcons = GeometryIcons.CurrentSet;
+                    }
+
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
+            }
             
             // camera border view mode
-            var camBorderMode = (int) prefs.CameraBorderMode;
+                var camBorderMode = (int) prefs.CameraBorderMode;
             if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
                 prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
             

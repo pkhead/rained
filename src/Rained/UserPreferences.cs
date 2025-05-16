@@ -389,6 +389,7 @@ class UserPreferences
     public bool ImGuiMultiViewport { get; set; }
     public bool Vsync { get; set; } = false;
     public int RefreshRate { get; set; } = 0;
+    public string GeometryIcons { get; set; } = "Rained";
 
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;
