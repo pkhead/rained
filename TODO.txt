@@ -1,12 +1,10 @@
 Selection:
-- selection undo/redo
 - drag for tile select
 
 LargeTexture:
 - large texture for lightmap
 
 Bugs:
-- custom ropes and longs are not implemented
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
@@ -17,14 +15,11 @@ Bugs:
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
 
-v2.3.0:
-  - Lightmap stretch (ditto) & move
-  * geo/tile copy+paste (i am currently working on this),
+v2.4.0:
   - tile & effect prefabs
   - favorite tiles&props
   - material previews
   - render single camera
-  - prop editor lasso select ()
   - translation system
   - effects previews
   - show prop preview over mouse
@@ -38,6 +33,11 @@ v2.3.0:
     - expose imgui functions for scripting api
     - add re-path button (useful for autotiles that do random)
 
+v2.3.0:
+  - Lightmap stretch (ditto) & move
+  * geo/tile copy+paste (i am currently working on this),
+  - prop editor lasso select ()
+
 Do Soon:
 - toggle for showing shortcuts in tile editor
 
@@ -50,19 +50,17 @@ Do Sometime:
 - asset manager crap
 - method of generating approximated geometry from prop
 
-v2.4.0 (or v3.0.0, depending on the frequency of major updates):
+v3.0.0:
 - Fully FeatuerdWorld editor
 
 Other features:
-- effects save/load presets/prefabs
-- light map stretch
 - asset manager
   - can rearrange the order of stuff in asset manager
   - can change color in asset manager
   - fix merging
   - can select certain packs from solar repo?
 - autosave
-- optimize tile deform rendering
+- optimize tile deform rendering (use vertex shader)
 - prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
