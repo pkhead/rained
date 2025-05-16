@@ -4,6 +4,7 @@ using ImGuiNET;
 using System.Numerics;
 using Rained.LevelData;
 using CellSelection = CellEditing.CellSelection;
+using Rained.Assets;
 
 class GeometryEditor : IEditorMode
 {
@@ -70,29 +71,29 @@ class GeometryEditor : IEditorMode
 
     private static readonly Dictionary<Tool, Vector2> ToolTextureOffsets = new()
     {
-        { Tool.Wall,            new(1, 0) },
-        { Tool.Air,             new(2, 0) },
-        { Tool.Inverse,         new(0, 0) },
-        { Tool.Slope,           new(3, 0) },
-        { Tool.Platform,        new(0, 1) },
-        { Tool.Rock,            new(1, 1) },
-        { Tool.Spear,           new(2, 1) },
-        { Tool.Crack,           new(3, 1) },
-        { Tool.HorizontalBeam,  new(0, 2) },
-        { Tool.VerticalBeam,    new(1, 2) },
-        { Tool.Glass,           new(2, 2) },
-        { Tool.ShortcutEntrance,new(3, 2) },
-        { Tool.Shortcut,        new(0, 3) },
-        { Tool.CreatureDen,     new(1, 3) },
+        { Tool.Wall,            new(0, 0) },
+        { Tool.Air,             new(1, 0) },
+        { Tool.Inverse,         new(2, 0) },
+        { Tool.Glass,           new(3, 0) },
+        { Tool.Slope,           new(0, 1) },
+        { Tool.Platform,        new(1, 1) },
+        { Tool.HorizontalBeam,  new(2, 1) },
+        { Tool.VerticalBeam,    new(3, 1) },
+        { Tool.Rock,            new(0, 2) },
+        { Tool.Spear,           new(1, 2) },
+        { Tool.Crack,           new(2, 2) },
+        { Tool.Waterfall,       new(3, 2) },
+        { Tool.ShortcutEntrance,new(0, 3) },
+        { Tool.Shortcut,        new(1, 3) },
         { Tool.Entrance,        new(2, 3) },
-        { Tool.Hive,            new(3, 3) },
-        { Tool.ForbidFlyChain,  new(0, 4) },
-        { Tool.Waterfall,       new(2, 4) },
-        { Tool.WhackAMoleHole,  new(3, 4) },
-        { Tool.ScavengerHole,   new(0, 5) },
-        { Tool.GarbageWorm,     new(1, 5) },
-        { Tool.WormGrass,       new(2, 5) },
-        { Tool.CopyBackwards,   new(3, 5) }
+        { Tool.CreatureDen,     new(3, 3) },
+        { Tool.WhackAMoleHole,  new(0, 4) },
+        { Tool.ScavengerHole,   new(1, 4) },
+        { Tool.Hive,            new(2, 4) },
+        { Tool.ForbidFlyChain,  new(3, 4) },
+        { Tool.GarbageWorm,     new(0, 5) },
+        { Tool.WormGrass,       new(1, 5) },
+        { Tool.CopyBackwards,   new(2, 5) }
     };
 
     private static readonly Color[] LayerColors =
@@ -106,7 +107,6 @@ class GeometryEditor : IEditorMode
     private bool isToolActive = false;
     private bool ignoreClick = false;
     private bool isErasing = false;
-    private readonly RlManaged.Texture2D toolIcons;
 
     // tool rect - for wall/air/inverse/geometry tools
     private bool isToolRectActive;
@@ -139,14 +139,13 @@ class GeometryEditor : IEditorMode
     }
 
     public GeometryEditor(LevelWindow levelView)
-    {
+    {        
         layerMask = new bool[3];
         layerMask[0] = true;
         mirrorOriginX = RainEd.Instance.Level.Width;
         mirrorOriginY = RainEd.Instance.Level.Height;
 
         window = levelView;
-        toolIcons = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","tool-icons.png"));
 
         switch (RainEd.Instance.Preferences.GeometryViewMode)
         {
@@ -383,7 +382,7 @@ class GeometryEditor : IEditorMode
                 ImGui.PushID(i);
                 
                 // create tool button, select if clicked
-                if (ImGuiExt.ImageButtonRect("ToolButton", toolIcons, 24 * Boot.PixelIconScale, 24 * Boot.PixelIconScale, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
+                if (ImGuiExt.ImageButtonRect("ToolButton", GeometryIcons.ToolbarTexture, 24 * Boot.PixelIconScale, 24 * Boot.PixelIconScale, new Rectangle(texOffset.X * 24, texOffset.Y * 24, 24, 24), textColor))
                 {
                     selectedTool = toolEnum;
                 }

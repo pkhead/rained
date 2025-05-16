@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
+using Rained.Assets;
 namespace Rained.EditorGui;
 
 class LevelResizeWindow
@@ -142,7 +143,7 @@ class LevelResizeWindow
 
                         if (ImGuiExt.ImageButtonRect(
                             "##button",
-                            RainEd.Instance.LevelGraphicsTexture, 20 * Boot.PixelIconScale, 20 * Boot.PixelIconScale,
+                            GeometryIcons.RenderTexture, 20 * Boot.PixelIconScale, 20 * Boot.PixelIconScale,
                             new Rectangle(textureX * 20, textureY * 20, 20, 20),
                             textColor
                         ))

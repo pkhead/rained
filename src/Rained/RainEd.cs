@@ -48,7 +48,6 @@ sealed class RainEd
     public static Glib.Window Window => Boot.Window;
     public static Glib.RenderContext RenderContext => Glib.RenderContext.Instance!;
 
-    public readonly RlManaged.Texture2D LevelGraphicsTexture;
     private LevelWindow? levelView;
 
     private readonly string prefFilePath;
@@ -195,6 +194,7 @@ sealed class RainEd
         // load other graphics resources
         Shaders.LoadShaders();
         TextRendering.GenerateOutlineFont();
+        GeometryIcons.Init();
 
         // run the update checker
         var versionCheckTask = Task.Run(UpdateChecker.FetchLatestVersion);
@@ -271,8 +271,6 @@ sealed class RainEd
 
         if (TileDatabase.HasErrors || PropDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
-
-        LevelGraphicsTexture = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","level-graphics.png"));
 
         if (Preferences.StaticDrizzleLingoRuntime)
         {

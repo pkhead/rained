@@ -40,23 +40,25 @@ static class ConfigDirectory
         return (configPath, assetsPath);
     }
 
+    private static bool FileFilter(string configPath, string assetsPath, string x) => !File.Exists(Path.Combine(configPath, Path.GetRelativePath(assetsPath, x)));
+
     public static IEnumerable<string> EnumerateFiles(string? relativePath = null)
     {
         var (configPath, assetsPath) = ParseRelativePath(relativePath);
+        if (!Directory.Exists(configPath)) return Directory.EnumerateFiles(assetsPath);
         return Directory.EnumerateFiles(configPath).Concat(
-            Directory.EnumerateFiles(assetsPath).Where(
-                x => !File.Exists(Path.Combine(configPath, Path.GetRelativePath(assetsPath, x))
-            ))
+            Directory.EnumerateFiles(assetsPath).Where(x => FileFilter(configPath, assetsPath, x))
         );
     }
 
     public static IEnumerable<string> EnumerateFiles(string? relativePath, string searchPattern)
     {
         var (configPath, assetsPath) = ParseRelativePath(relativePath);
+        if (!Directory.Exists(configPath)) return Directory.EnumerateFiles(assetsPath, searchPattern);
         return Directory.EnumerateFiles(configPath, searchPattern).Concat(
             Directory.EnumerateFiles(assetsPath, searchPattern).Where(
-                x => !File.Exists(Path.Combine(configPath, Path.GetRelativePath(assetsPath, x))
-            ))
+                x => FileFilter(configPath, assetsPath, x)
+            )
         );
     }
 

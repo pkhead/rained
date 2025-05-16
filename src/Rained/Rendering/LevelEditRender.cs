@@ -177,7 +177,7 @@ class LevelEditRender : IDisposable
                     if (cell.Has(objType) && !Level.ShortcutObjects.Contains(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
-                            editor.LevelGraphicsTexture,
+                            GeometryIcons.RenderTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
                             color
@@ -398,7 +398,7 @@ class LevelEditRender : IDisposable
                     }
                     
                     Raylib.DrawTextureRec(
-                        editor.LevelGraphicsTexture,
+                        GeometryIcons.RenderTexture,
                         new Rectangle(texX*20, texY*20, 20, 20),
                         new Vector2(x, y) * Level.TileSize,
                         color
@@ -411,7 +411,7 @@ class LevelEditRender : IDisposable
                     if (cell.Has(objType) && ObjectTextureOffsets.TryGetValue(objType, out Vector2 offset))
                     {
                         Raylib.DrawTextureRec(
-                            editor.LevelGraphicsTexture,
+                            GeometryIcons.RenderTexture,
                             new Rectangle(offset.X * 20, offset.Y * 20, 20, 20),
                             new Vector2(x, y) * Level.TileSize,
                             Level.IsInBorder(x, y) ? color : new Color(255, 0, 0, 255)
