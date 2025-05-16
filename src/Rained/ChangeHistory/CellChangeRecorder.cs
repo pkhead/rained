@@ -75,11 +75,11 @@ class CellChangeRecorder : ChangeRecorder
             snapshotChains[k] = v;
     }
 
-    public void TryPushChange()
+    public CellChangeRecord? EndChange()
     {
         if (snapshotLayers is null || snapshotChains is null)
-            return;
-        
+            return null;
+
         var changes = new CellChangeRecord()
         {
             EditMode = RainEd.Instance.LevelView.EditMode
@@ -93,13 +93,15 @@ class CellChangeRecorder : ChangeRecorder
             {
                 for (int y = 0; y < level.Height; y++)
                 {
-                    if (!snapshotLayers[l,x,y].Equals(level.Layers[l,x,y]))
+                    if (!snapshotLayers[l, x, y].Equals(level.Layers[l, x, y]))
                     {
                         changes.CellChanges.Add(new CellChangeRecord.CellChange()
                         {
-                            X = x, Y = y, Layer = l,
-                            OldState = snapshotLayers[l,x,y],
-                            NewState = level.Layers[l,x,y]
+                            X = x,
+                            Y = y,
+                            Layer = l,
+                            OldState = snapshotLayers[l, x, y],
+                            NewState = level.Layers[l, x, y]
                         });
                     }
                 }
@@ -131,11 +133,22 @@ class CellChangeRecorder : ChangeRecorder
             }
         }
 
-        if (changes.CellChanges.Count > 0 || changes.ChainHolderChanges.Count > 0)
-            RainEd.Instance.ChangeHistory.Push(changes);
-
         snapshotLayers = null;
         snapshotChains = null;
+
+        if (changes.CellChanges.Count > 0 || changes.ChainHolderChanges.Count > 0)
+            return changes;
+
+        return null;
+    }
+
+    public void TryPushChange()
+    {
+        var change = EndChange();
+        if (change is not null)
+        {
+            RainEd.Instance.ChangeHistory.Push(change);
+        }
     }
 
     public void CancelChange()

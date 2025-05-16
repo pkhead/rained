@@ -98,7 +98,8 @@ class CellSelection
     private bool mouseWasDragging = false;
     private SelectToolState? mouseDragState = null;
 
-    private CellSelectionChangeRecorder changeRecorder;
+    private readonly CellSelectionChangeRecorder changeRecorder;
+    public CellSelectionChangeRecorder ChangeRecorder => changeRecorder;
 
     public CellSelection()
     {
@@ -252,10 +253,8 @@ class CellSelection
         {
             bool doExit = movingGeometry is null;
 
-            changeRecorder.BeginChange();
             CancelMove();
             ClearSelection();
-            changeRecorder.PushChange();
             
             if (doExit) Active = false;
         }
@@ -323,12 +322,10 @@ class CellSelection
             {
                 if (!mouseWasDragging)
                 {
-                    changeRecorder.BeginChange();
-                    
                     mouseDragState = curTool switch
                     {
-                        SelectionTool.Rect => new RectDragState(view.MouseCx, view.MouseCy),
-                        SelectionTool.Lasso => new LassoDragState(view.MouseCx, view.MouseCy),
+                        SelectionTool.Rect => new RectDragState(this, view.MouseCx, view.MouseCy),
+                        SelectionTool.Lasso => new LassoDragState(this, view.MouseCx, view.MouseCy),
                         SelectionTool.MoveSelection => new SelectionMoveDragState(this, view.MouseCx, view.MouseCy, layerMask),
                         SelectionTool.MoveSelected => new SelectedMoveDragState(this, view.MouseCx, view.MouseCy, layerMask),
                         _ => throw new UnreachableException("Invalid curTool")
@@ -351,8 +348,9 @@ class CellSelection
                     }
                     else if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect) ClearSelection(layerMask);
                 }
-                
-                changeRecorder.PushChange();
+
+                mouseDragState.Close();
+                mouseDragState = null;
             }
         }
 
@@ -851,8 +849,6 @@ class CellSelection
         var level = RainEd.Instance.Level;
         var rndr = RainEd.Instance.LevelView.Renderer;
 
-        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
-
         // apply moved geometry
         for (int y = 0; y < movingH; y++)
         {
@@ -864,10 +860,10 @@ class CellSelection
                 {
                     if (!level.IsInBounds(gx, gy)) continue;
 
-                    ref var srcCell = ref movingGeometry[l,x,y];
+                    ref var srcCell = ref movingGeometry[l, x, y];
                     if (!srcCell.mask) continue;
 
-                    ref var dstCell = ref level.Layers[l,gx,gy];
+                    ref var dstCell = ref level.Layers[l, gx, gy];
                     dstCell.Geo = srcCell.cell.Geo;
                     dstCell.Objects = srcCell.cell.Objects;
                     dstCell.Material = srcCell.cell.Material;
@@ -900,14 +896,15 @@ class CellSelection
         movingGeometry = null;
         rndr.ClearOverlay();
 
-        RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
+        changeRecorder.PushChange();
+        // RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
     }
 
     public void CancelMove()
     {
         if (movingGeometry is null)
             return;
-        
+
         movingGeometry = null;
         RainEd.Instance.LevelView.Renderer.ClearOverlay();
 
@@ -916,7 +913,7 @@ class CellSelection
             var level = RainEd.Instance.Level;
             var renderer = RainEd.Instance.LevelView.Renderer;
             var nodeData = RainEd.Instance.CurrentTab!.NodeData;
-            
+
             for (int y = 0; y < movingH; y++)
             {
                 var gy = cancelOrigY + y;
@@ -926,12 +923,12 @@ class CellSelection
                     for (int l = 0; l < Level.LayerCount; l++)
                     {
                         if (!level.IsInBounds(gx, gy)) continue;
-                        if (!cancelGeoData[l,x,y].mask) continue;
-                        level.Layers[l,gx,gy] = cancelGeoData[l,x,y].cell;
+                        if (!cancelGeoData[l, x, y].mask) continue;
+                        level.Layers[l, gx, gy] = cancelGeoData[l, x, y].cell;
 
                         renderer.InvalidateGeo(gx, gy, l);
                         if (l == 0) nodeData.InvalidateCell(gx, gy);
-                        if (level.Layers[l,gx,gy].TileHead is not null)
+                        if (level.Layers[l, gx, gy].TileHead is not null)
                             renderer.InvalidateTileHead(gx, gy, l);
                     }
                 }
@@ -939,6 +936,8 @@ class CellSelection
 
             cancelGeoData = null;
         }
+
+        changeRecorder.CancelChange();
     }
 
     private MaskedCell[,,] MakeCellGroup(out int selX, out int selY, out int selW, out int selH, bool eraseSource)
@@ -964,11 +963,6 @@ class CellSelection
         selH = maxY - selY + 1;
         var level = RainEd.Instance.Level;
         var renderer = RainEd.Instance.LevelView.Renderer;
-
-        if (eraseSource)
-        {
-            RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
-        }
 
         static bool GetMaskFromGlobalCoords(ref readonly LayerSelection sel, int x, int y)
         {
@@ -1049,10 +1043,10 @@ class CellSelection
             }
         }
 
-        if (eraseSource)
-        {
-            RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
-        }
+        // if (eraseSource)
+        // {
+        //     RainEd.Instance.LevelView.CellChangeRecorder.PushChange();
+        // }
 
         return geometry;
     }
@@ -1091,6 +1085,8 @@ class CellSelection
             movingGeometry = null;
             return;
         }
+
+        changeRecorder.BeginChangeWithGeo();
 
         // create separate copy of selected cells in order for the Cancel operation
         // to work properly. can't use movingGeometry because it may modify the
@@ -1245,14 +1241,18 @@ class CellSelection
             }
         }
 
-        if (!isEmpty)
+        bool logChange = !isEmpty && movingGeometry is null;
+
+        if (logChange)
             changeRecorder.BeginChange(true);
+
+        SubmitMove();
 
         ClearSelection();
         RainEd.Instance.LevelView.Renderer.ClearOverlay();
         movingGeometry = null;
 
-        if (!isEmpty)
+        if (logChange)
             changeRecorder.PushChange();
     }
 }

@@ -21,6 +21,7 @@ class CellSelectionChangeRecord(
 {
     public CellSelectionData data = data;
     public int? editMode;
+    public CellChangeRecord? cellChangeRecord;
 
     public void Apply(bool useNew)
     {
@@ -52,6 +53,11 @@ class CellSelectionChangeRecord(
         data.cutout = tmpCutout;
         data.cutoutPos = tmpCutoutPos;
         data.cutoutSize = tmpCutoutSize;
+
+        if (cellChangeRecord is not null)
+        {
+            cellChangeRecord.Apply(useNew);
+        }
     }
 }
 
@@ -63,6 +69,7 @@ class CellSelectionChangeRecorder : ChangeRecorder
     bool _active = false;
 
     int? editMode = null;
+    bool trackGeo;
 
     public void BeginChange(bool saveEditMode = false)
     {
@@ -82,6 +89,30 @@ class CellSelectionChangeRecorder : ChangeRecorder
         editMode = saveEditMode ? RainEd.Instance.LevelView.EditMode : null;
 
         cellSel.CopyState(tempSelections, out tempCutout, out cutoutX, out cutoutY, out cutoutW, out cutoutH);
+        trackGeo = false;
+        _active = true;
+    }
+
+    public void BeginChangeWithGeo()
+    {
+        if (_active)
+        {
+            ValidationError("CellSelectionChangeRecorder.BeginChange when already active");
+            return;
+        }
+
+        var cellSel = CellSelection.Instance;
+        if (cellSel is null)
+        {
+            ValidationError("Selection mode is not active!");
+            return;
+        }
+
+        editMode = null;
+
+        cellSel.CopyState(tempSelections, out tempCutout, out cutoutX, out cutoutY, out cutoutW, out cutoutH);
+        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
+        trackGeo = true;
         _active = true;
     }
 
@@ -92,12 +123,13 @@ class CellSelectionChangeRecorder : ChangeRecorder
             var data = new CellSelectionData(
                 new Vector2i(cutoutX, cutoutY), new Vector2i(cutoutW, cutoutH),
                 tempCutout,
-                (LayerSelection?[]) tempSelections.Clone()
+                (LayerSelection?[])tempSelections.Clone()
             );
 
             RainEd.Instance.ChangeHistory.Push(new CellSelectionChangeRecord(data)
             {
-                editMode = editMode
+                editMode = editMode,
+                cellChangeRecord = trackGeo ? RainEd.Instance.LevelView.CellChangeRecorder.EndChange() : null
             });
             _active = false;
         }
@@ -112,5 +144,10 @@ class CellSelectionChangeRecorder : ChangeRecorder
         }
 
         TryPushChange();
+    }
+
+    public void CancelChange()
+    {
+        _active = false;
     }
 }
