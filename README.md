@@ -39,13 +39,22 @@ git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-Compile Drizzle
+#### Building Drizzle
+These steps only need to be followed on the initial build or if you have updated Drizzle.
+
+Compile Drizzle:
 ```bash
 cd src/Drizzle
 dotnet run --project Drizzle.Transpiler
 ```
 
-Back to the root directory, build and run Rained
+Back to root directory, export some Drizzle data for Rained to build with:
+```bash
+dotnet run --project src/DrizzleExport.Console effects src/Rained/effects.json
+```
+
+#### Building Rained
+From the root directory, build and run Rained
 ```bash
 # only needs to be run once
 dotnet tool restore
