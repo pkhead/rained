@@ -50,7 +50,7 @@ dotnet run --project Drizzle.Transpiler
 
 Back to root directory, export some Drizzle data for Rained to build with:
 ```bash
-dotnet run --project src/DrizzleExport.Console effects src/Rained/effects.json
+dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
 ```
 
 #### Building Rained
