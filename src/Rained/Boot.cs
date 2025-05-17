@@ -107,7 +107,7 @@ namespace Rained
                 if (bootOptions.Files.Count == 1 && !Directory.Exists(bootOptions.Files[0]))
                 {
                     Log.Information("====== Standalone render ======");
-                    Drizzle.DrizzleRender.Render(bootOptions.Files[0]);
+                    Drizzle.DrizzleRender.ConsoleRender(bootOptions.Files[0]);
                 }
 
                 // mass render

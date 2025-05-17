@@ -311,12 +311,6 @@ sealed class RainEd
         if (TileDatabase.HasErrors || PropDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
 
-        if (Preferences.StaticDrizzleLingoRuntime)
-        {
-            Log.Information("Initializing Lingo runtime...");
-            Drizzle.DrizzleRender.InitStaticRuntime();
-        }
-
         UpdateTitle();
 
         // apply window preferences
