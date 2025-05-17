@@ -390,6 +390,7 @@ class UserPreferences
     public bool Vsync { get; set; } = true;
     public int RefreshRate { get; set; } = 0;
     public string GeometryIcons { get; set; } = "Rained";
+    public bool SaveFileBackups { get; set; } = true;
 
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;

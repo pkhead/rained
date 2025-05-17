@@ -540,6 +540,27 @@ sealed class RainEd
         {
             string oldFilePath = CurrentTab!.FilePath;
 
+            // store backup of level
+            if (Preferences.SaveFileBackups)
+            {
+                var levelPath = path;
+                var pngPath = Path.ChangeExtension(path, "png");
+
+                if (File.Exists(levelPath))
+                {
+                    var backupFile = levelPath + ".1";
+                    File.Delete(backupFile);
+                    File.Move(levelPath, backupFile);
+                }
+
+                if (File.Exists(pngPath))
+                {
+                    var backupFile = pngPath + ".1";
+                    File.Delete(backupFile);
+                    File.Move(pngPath, backupFile);
+                }
+            }
+
             LevelSerialization.SaveLevelTextFile(Level, path);
             LevelSerialization.SaveLevelLightMap(Level, path);
 

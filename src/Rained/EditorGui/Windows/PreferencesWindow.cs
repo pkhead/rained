@@ -700,6 +700,12 @@ static class PreferencesWindow
                 }
             }
 
+            var saveBackups = prefs.SaveFileBackups;
+            if (ImGui.Checkbox("Save backups of files", ref saveBackups))
+            {
+                prefs.SaveFileBackups = saveBackups;
+            }
+
             ImGui.Separator();
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
