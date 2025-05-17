@@ -8,7 +8,7 @@ namespace DrizzleExport;
 
 public static class DrizzleEffectExport
 {
-    class Effect(string name, string type)
+    public class Effect(string name, string type)
     {
         public required string Name { get; set; } = name;
         public required string Type { get; set; } = type;
@@ -16,25 +16,19 @@ public static class DrizzleEffectExport
         public bool Binary { get; set; } = false;
         public bool Single { get; set; } = false;
 
+        // only used by standard erosion type
+        public int? Repeats { get; set; } = null;
+        public double? AffectOpenAreas { get; set; } = null;
+
         public double FillWith { get; set; } = 0f;
 
         public List<object[]> Properties { get; set; } = [];
     };
 
-    class EffectNN(string name) : Effect(name, "nn")
-    {
-    }
-
-    class EffectStandardErosion(string name) : Effect(name, "standardErosion")
-    {
-        public int Repeats { get; set; } = 0;
-        public double AffectOpenAreas { get; set; } = 0;
-    }
-
-    class EffectGroup(string name)
+    public class EffectGroup(string name)
     {
         public string Name { get; set; } = name;
-        public List<Effect> Effects { get; } = [];
+        public Effect[] Effects { get; set; } = [];
     }
 
     public static void Export(string dataPath, string castPath, string outPath)
@@ -55,11 +49,13 @@ public static class DrizzleEffectExport
         var gEEprops = (LingoPropertyList) movieScript.gEEprops;
 
         var effectsList = (LingoList) gEEprops["effects"]!;
+        List<Effect> groupEffectList = [];
 
         foreach (var group in movieScript.gEffects.Cast<LingoPropertyList>())
         {
             var jsonGroup = new EffectGroup(group["nm"]);
             gEEprops["emPos"]!.loch = groupIndex;
+            groupEffectList.Clear();
 
             var effectIndex = 1;
             foreach (var effect in ((LingoList)group["efs"]!).Cast<LingoPropertyList>())
@@ -69,24 +65,19 @@ public static class DrizzleEffectExport
                 effectsEditor.neweffect();
                 var instance = (LingoPropertyList) effectsList.List[^1]!;
 
-                Effect? jsonEffect = null;
-                if (instance["tp"] == "nn")
+                var jsonEffect = new Effect(instance["nm"], instance["tp"]);
+                if (instance["tp"] == "standardErosion")
                 {
-                    jsonEffect = new EffectNN(instance["nm"]);
+                    jsonEffect.Repeats = instance["repeats"]!.IntValue;
+                    jsonEffect.AffectOpenAreas = instance["affectOpenAreas"]!.DecimalValue;
                 }
-                else if (instance["tp"] == "standardErosion")
-                {
-                    var stdErosion = new EffectStandardErosion(instance["nm"]);
-                    stdErosion.Repeats = instance["repeats"]!.IntValue;
-                    stdErosion.AffectOpenAreas = instance["affectOpenAreas"]!.DecimalValue;
-                    jsonEffect = stdErosion;
-                }
-                else
+                else if (instance["tp"] != "nn")
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write("error: ");
                     Console.ResetColor();
                     Console.WriteLine("invalid effect type " + instance["tp"]?.ToString() ?? "null");
+                    jsonEffect = null;
                 }
 
                 if (jsonEffect is not null)
@@ -126,17 +117,15 @@ public static class DrizzleEffectExport
                     jsonEffect.Binary = instance["mtrx"]![2][2].DecimalValue >= 100;
                     jsonEffect.Single = gEEprops["brushSize"]!.DecimalValue == 1;
 
-                    jsonGroup.Effects.Add(jsonEffect);
+                    groupEffectList.Add(jsonEffect);
                 }
-
-                Console.WriteLine(instance);
 
                 effectIndex++;
             }
 
+            jsonGroup.Effects = [..groupEffectList];
             groups.Add(jsonGroup);
 
-            Console.WriteLine(group);
             groupIndex++;
         }
 
