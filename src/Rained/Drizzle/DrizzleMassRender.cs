@@ -78,8 +78,8 @@ class DrizzleMassRender
         TaskScheduler? scheduler = null;
         if (OperatingSystem.IsMacOS())
         {
-            // 1 MiB of stack space
-            scheduler = _customScheduler ??= new StackSizeTaskScheduler(64, 1024 * 1024);
+            // 2 MiB of stack space
+            scheduler = _customScheduler ??= new StackSizeTaskScheduler(64, 1024 * 1024 * 2);
         }
 
         var parallelOptions = new ParallelOptions

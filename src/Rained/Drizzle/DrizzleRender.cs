@@ -357,7 +357,7 @@ class DrizzleRender : IDisposable
         // so i need to make it bigger on that platform.
         int maxStackSize = 0; // 0 = use default stack size
         if (OperatingSystem.IsMacOS())
-            maxStackSize = 1024 * 1024; // 1 MiB
+            maxStackSize = 1024 * 1024 * 2; // 2 MiB
 
         thread = new Thread(new ThreadStart(threadState.ThreadProc), maxStackSize)
         {
