@@ -329,11 +329,19 @@ sealed class RainEd
         PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
 
         // level boot load
-        foreach (var path in levelPaths)
+        // defer this to next frame, because loading lightmap requires gpu stuff,
+        // and at this point the first frame hasn't been set up yet, so opengl state
+        // hadn't been initialized, so interfacing with opengl at this point results in
+        // undefined behavior.
+        var levelsToLoad = levelPaths.ToArray();
+        DeferToNextFrame(() =>
         {
-            Log.Information("Boot load " + path);
-            LoadLevel(path);
-        }
+            foreach (var path in levelsToLoad)
+            {
+                Log.Information("Boot load " + path);
+                LoadLevel(path);
+            }
+        });
         
         EditorWindow.RequestLoadEmergencySave();
 
