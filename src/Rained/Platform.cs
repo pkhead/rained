@@ -399,6 +399,7 @@ static partial class Platform
             var mimeType = type switch
             {
                 ClipboardDataType.LevelCells => LevelCellsMimeType,
+                ClipboardDataType.Props => PropMimeType,
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
 
@@ -513,6 +514,7 @@ static partial class Platform
             var mimeType = type switch
             {
                 ClipboardDataType.LevelCells => LevelCellsMimeType,
+                ClipboardDataType.Props => PropMimeType,
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
 
