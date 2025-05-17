@@ -6,6 +6,7 @@ using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
 using Glib;
+using System.Diagnostics;
 
 namespace Rained
 {
@@ -48,7 +49,7 @@ namespace Rained
             set
             {
                 _refreshRate = int.Max(1, value);
-                Raylib.SetTargetFPS(_refreshRate);
+                // Raylib.SetTargetFPS(_refreshRate);
             }
         }
 
@@ -311,7 +312,7 @@ namespace Rained
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 //Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
-                //Raylib.SetTargetFPS(240);
+                Raylib.SetTargetFPS(0);
                 //Raylib.SetExitKey(KeyboardKey.Null);
 
                 {
@@ -387,37 +388,66 @@ namespace Rained
                         RefreshRate = app.Preferences.RefreshRate;
                     }
 
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
+                    long timeAccum = 0;
+                    long lastTime = stopwatch.ElapsedTicks;
+                    Raylib.WaitTime(0.001);
+
                     while (app.Running)
                     {
-                        // update fonts if scale changed or reload was requested
-                        var io = ImGui.GetIO();
-                        if (WindowScale != curWindowScale || Fonts.FontReloadQueued)
+                        long targetFrameLen = Stopwatch.Frequency / _refreshRate;
+                        var dt = stopwatch.ElapsedTicks - lastTime;
+                        lastTime = stopwatch.ElapsedTicks;
+                        // Debug.Assert(dt > 0);
+                        dt = Math.Max(0, dt);
+
+                        const double EpsilonMs = 0.0002;
+                        if (Math.Abs(dt - targetFrameLen) < Stopwatch.Frequency * EpsilonMs)
+                            dt = targetFrameLen;
+                        else if (Math.Abs(dt - targetFrameLen*2) < Stopwatch.Frequency * EpsilonMs)
+                            dt = targetFrameLen*2;
+                        else if (Math.Abs(dt - targetFrameLen/2) < Stopwatch.Frequency * EpsilonMs)
+                            dt = targetFrameLen/2;
+
+                        timeAccum += dt;
+                        for (int i = 0; i < 3 && timeAccum >= targetFrameLen; i++)
                         {
-                            Fonts.FontReloadQueued = false;
-                            curWindowScale = WindowScale;
-                            Fonts.ReloadFonts(app.Preferences.FontSize);
-                            ImGuiController!.RecreateFontDeviceTexture();
+                            if (!app.Running) break;
+
+                            // update fonts if scale changed or reload was requested
+                            var io = ImGui.GetIO();
+                            if (WindowScale != curWindowScale || Fonts.FontReloadQueued)
+                            {
+                                Fonts.FontReloadQueued = false;
+                                curWindowScale = WindowScale;
+                                Fonts.ReloadFonts(app.Preferences.FontSize);
+                                ImGuiController!.RecreateFontDeviceTexture();
+                            }
+
+                            Raylib.BeginDrawing();
+                            PixelIconScale = (int) curWindowScale;
+
+                            // save style sizes and scale to dpi before rendering
+                            // restore it back to normal afterwards
+                            // (this is so the style editor works)
+                            unsafe
+                            {
+                                ImGuiExt.StoreStyle();
+                                ImGui.GetStyle().ScaleAllSizes(curWindowScale);
+
+                                ImGuiController!.Update(Raylib.GetFrameTime());
+                                app.Draw(Raylib.GetFrameTime());
+
+                                ImGuiController!.Render();
+                                ImGuiExt.LoadStyle();
+                            }
+                            
+                            Raylib.EndDrawing();
+                            timeAccum -= targetFrameLen;
                         }
 
-                        Raylib.BeginDrawing();
-                        PixelIconScale = (int) curWindowScale;
-
-                        // save style sizes and scale to dpi before rendering
-                        // restore it back to normal afterwards
-                        // (this is so the style editor works)
-                        unsafe
-                        {
-                            ImGuiExt.StoreStyle();
-                            ImGui.GetStyle().ScaleAllSizes(curWindowScale);
-
-                            ImGuiController!.Update(Raylib.GetFrameTime());
-                            app.Draw(Raylib.GetFrameTime());
-
-                            ImGuiController!.Render();
-                            ImGuiExt.LoadStyle();
-                        }
-                        
-                        Raylib.EndDrawing();
+                        Raylib.WaitTime(0.001);
                     }
 
                     Log.Information("Shutting down Rained...");
