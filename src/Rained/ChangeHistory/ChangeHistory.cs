@@ -20,6 +20,15 @@ class ChangeHistory
 
     public void Clear()
     {
+        foreach (var v in undoStack)
+        {
+            if (v is IDisposable a) a.Dispose();
+        }
+        foreach (var v in redoStack)
+        {
+            if (v is IDisposable a) a.Dispose();
+        }
+
         undoStack.Clear();
         redoStack.Clear();
 
@@ -28,6 +37,11 @@ class ChangeHistory
     
     public void Push(IChangeRecord record)
     {
+        foreach (var v in redoStack)
+        {
+            if (v is IDisposable a) a.Dispose();
+        }
+        
         redoStack.Clear();
         undoStack.Push(record);
     }

@@ -169,6 +169,22 @@ class LightMap : IDisposable
         );
     }
 
+    public static void UpdateWarpShaderUniforms(ReadOnlySpan<Vector2> warpPoints)
+    {
+        var w = RainEd.Instance.Level.LightMap.Width;
+        var h = RainEd.Instance.Level.LightMap.Height;
+        var shader = Shaders.LightStretchShader;
+
+        shader.GlibShader.SetUniform("u_vert_ab", new Vector4(
+            warpPoints[3].X / w, 1f - warpPoints[3].Y / h,
+            warpPoints[2].X / w, 1f - warpPoints[2].Y / h
+        ));
+        shader.GlibShader.SetUniform("u_vert_cd", new Vector4(
+            warpPoints[1].X / w, 1f - warpPoints[1].Y / h,
+            warpPoints[0].X / w, 1f - warpPoints[0].Y / h
+        ));
+    }
+
     public RlManaged.Image GetImage()
     {
         //var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);

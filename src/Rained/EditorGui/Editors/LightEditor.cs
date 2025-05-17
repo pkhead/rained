@@ -409,9 +409,6 @@ class LightEditor : IEditorMode
             levelBoundsH - level.LightMap.Height
         );
 
-        isCursorEnabled = true;
-        isDrawing = false;
-
         // draw light background (solid white)
         if (level.LightMap.IsLoaded)
         {
@@ -460,6 +457,8 @@ class LightEditor : IEditorMode
     {
         var wasCursorEnabled = isCursorEnabled;
         var wasDrawing = isDrawing;
+        isCursorEnabled = true;
+        isDrawing = false;
 
         var prefs = RainEd.Instance.Preferences;
         var level = RainEd.Instance.Level;
@@ -634,21 +633,6 @@ class LightEditor : IEditorMode
         }
     }
 
-    private void UpdateWarpShaderUniforms(RlManaged.Shader shader)
-    {
-        var w = RainEd.Instance.Level.LightMap.Width;
-        var h = RainEd.Instance.Level.LightMap.Height;
-
-        shader.GlibShader.SetUniform("u_vert_ab", new Vector4(
-            warpPoints[3].X / w, 1f - warpPoints[3].Y / h,
-            warpPoints[2].X / w, 1f - warpPoints[2].Y / h
-        ));
-        shader.GlibShader.SetUniform("u_vert_cd", new Vector4(
-            warpPoints[1].X / w, 1f - warpPoints[1].Y / h,
-            warpPoints[0].X / w, 1f - warpPoints[0].Y / h
-        ));
-    }
-
     private void ProcessWarpMode(Vector2 lightMapOffset, RlManaged.RenderTexture2D mainFrame)
     {
         var level = RainEd.Instance.Level;
@@ -666,7 +650,7 @@ class LightEditor : IEditorMode
 
         Raylib.BeginTextureMode(tmpFramebuffer);
         Raylib.BeginShaderMode(Shaders.LightStretchShader);
-        UpdateWarpShaderUniforms(Shaders.LightStretchShader);
+        LightMap.UpdateWarpShaderUniforms(warpPoints);
         RlExt.DrawRenderTexture(level.LightMap.RenderTexture!, 0, 0, Color.White);
         // Raylib.EndShaderMode();
         
@@ -758,6 +742,8 @@ class LightEditor : IEditorMode
         {
             warpModeSubmit = false;
 
+            var imgClone = RlManaged.Image.Copy(level.LightMap.GetImage());
+
             Rlgl.PushMatrix();
             Rlgl.LoadIdentity();
 
@@ -769,6 +755,7 @@ class LightEditor : IEditorMode
 
             Rlgl.PopMatrix();
 
+            changeRecorder!.PushWarpChange(imgClone, warpPoints);
             warpMode = false;
         }
     }
