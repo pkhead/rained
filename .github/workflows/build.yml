@@ -48,6 +48,7 @@ jobs:
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
+        dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:
@@ -86,6 +87,7 @@ jobs:
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
+        dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:
