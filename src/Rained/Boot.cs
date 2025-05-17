@@ -32,6 +32,7 @@ namespace Rained
         public static Glib.Window Window => window;
         public static Glib.ImGui.ImGuiController? ImGuiController { get; private set; }
 
+
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
 
@@ -40,6 +41,18 @@ namespace Rained
         
         // this is just the window scale, floored.
         public static int PixelIconScale { get; set; } = 1;
+
+        private static int _refreshRate = 60;
+        public static int RefreshRate {
+            get => _refreshRate;
+            set
+            {
+                _refreshRate = int.Max(1, value);
+                Raylib.SetTargetFPS(_refreshRate);
+            }
+        }
+
+        public static int DefaultRefreshRate => window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
 
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
 
@@ -361,11 +374,18 @@ namespace Rained
                 {
                     Fonts.SetFont(app.Preferences.Font);
 
+                    // setup vsync state
+                    Window.VSync = app.Preferences.Vsync;
+
                     // set initial target fps
-                    var refreshRate = window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
-                    if (app.Preferences.RefreshRate == 0)
-                        app.Preferences.RefreshRate = refreshRate;
-                    Raylib.SetTargetFPS(app.Preferences.RefreshRate);
+                    if (Window.VSync || app.Preferences.RefreshRate == 0)
+                    {
+                        RefreshRate = DefaultRefreshRate;
+                    }
+                    else
+                    {
+                        RefreshRate = app.Preferences.RefreshRate;
+                    }
 
                     while (app.Running)
                     {

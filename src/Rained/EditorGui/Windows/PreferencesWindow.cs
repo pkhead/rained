@@ -436,7 +436,15 @@ static class PreferencesWindow
             {
                 bool vsync = Boot.Window.VSync;
                 if (ImGui.Checkbox("Vsync", ref vsync))
+                {
                     Boot.Window.VSync = vsync;
+                    prefs.Vsync = vsync;
+
+                    if (vsync)
+                    {
+                        Boot.RefreshRate = Boot.DefaultRefreshRate;
+                    }
+                }
                 
                 if (!vsync)
                 {
@@ -444,12 +452,30 @@ static class PreferencesWindow
 
                     ImGui.SetNextItemWidth(ImGui.GetFontSize() * 8.0f);
 
+                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
                     var refreshRate = prefs.RefreshRate;
-                    if (ImGui.SliderInt("Refresh rate", ref refreshRate, 30, 240))
+                    if (ImGui.SliderInt("###Refresh rate", ref refreshRate, 30, 240))
                     {
                         prefs.RefreshRate = refreshRate;
-                        Raylib.SetTargetFPS(prefs.RefreshRate);
                     }
+
+                    if (ImGui.IsItemDeactivatedAfterEdit())
+                    {
+                        Boot.RefreshRate = prefs.RefreshRate;
+                        prefs.RefreshRate = Boot.RefreshRate;
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.PopStyleVar();
+                    if (ImGui.Button("X###refreshratereset"))
+                    {
+                        Boot.RefreshRate = Boot.DefaultRefreshRate;
+                        prefs.RefreshRate = Boot.RefreshRate;
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.Text("Refresh rate");
                 }
             }
 
