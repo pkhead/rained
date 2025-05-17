@@ -130,9 +130,49 @@ class EffectsDatabase
         var jsonGroups = JsonSerializer.Deserialize<DrizzleExport.DrizzleEffectExport.EffectGroup[]>(stream, jsonOptions)
             ?? throw new Exception("Internal effects JSON is invalid");
         
+        string? lastGroupBaseName = null;
+        int lastGroupNumber = 1;
+
         foreach (var group in jsonGroups)
         {
-            BeginGroup(group.Name);
+            var groupName = group.Name.Trim();
+
+            // find start index of suffix digit
+            var groupNameDigitIdx = -1;
+            if (groupName.Length > 2)
+            {
+                for (int i = groupName.Length - 2; i >= 0; i--)
+                {
+                    if (char.IsDigit(groupName[i+1]) && !char.IsDigit(groupName[i]))
+                    {
+                        groupNameDigitIdx = i+1;
+                        break;
+                    }
+                }
+
+            }
+
+            // if suffix digit exists, only make a new group if base name changed
+            if (groupNameDigitIdx != -1)
+            {
+                var groupNumber = int.Parse(groupName[groupNameDigitIdx..]);
+                var baseName = groupName[..groupNameDigitIdx].TrimEnd();
+
+                if (lastGroupBaseName is null || baseName != lastGroupBaseName || groupNumber != lastGroupNumber+1)
+                {
+                    BeginGroup(groupName);
+                }
+
+                lastGroupNumber = groupNumber;
+                lastGroupBaseName = baseName;
+            }
+            else
+            {
+                BeginGroup(groupName);
+                lastGroupBaseName = groupName;
+                lastGroupNumber = 1;
+            }
+
             foreach (var effect in group.Effects)
             {
                 // read effect properties
