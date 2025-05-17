@@ -155,6 +155,7 @@ class EffectsEditor : IEditorMode
             {
                 foreach (int i in groupsPassingSearch)
                 {
+                    if (fxDatabase.Groups[i].name == "_deprecated_") continue;
                     if (ImGui.Selectable(fxDatabase.Groups[i].name, i == selectedGroup) || groupsPassingSearch.Count == 1)
                         selectedGroup = i;
                 }
@@ -171,7 +172,7 @@ class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
-                    if (effectData.deprecated) continue; // ignore deprecated effects
+                    // if (effectData.deprecated) continue; // ignore deprecated effects
 
                     if (searchQuery != "" && !effectData.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase)) continue;
 
