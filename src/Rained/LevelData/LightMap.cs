@@ -2,6 +2,7 @@ using Raylib_cs;
 using System.Numerics;
 using Rained.EditorGui;
 using Rained.Assets;
+using System.Diagnostics;
 namespace Rained.LevelData;
 
 struct BrushAtom
@@ -17,7 +18,10 @@ struct BrushAtom
 
 class LightMap : IDisposable
 {
+    private static bool UseHardwareAcceleration => RainEd.Instance is not null;
+
     private RlManaged.RenderTexture2D? lightmapRt;
+    private RlManaged.Image? _lightmapImage;
     private int width;
     private int height;
 
@@ -32,17 +36,25 @@ class LightMap : IDisposable
         width = levelWidth * 20 + 300;
         height = levelHeight * 20 + 300;
 
-        if (width >= Glib.Texture.MaxSize || height >= Glib.Texture.MaxSize)
-        {
-            Log.UserLogger.Error("Lightmap too large to be loaded.");
-            lightmapRt = null;
-            return;
-        }
-
         // create light map render texture
-        lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
-        using var image = Glib.Image.FromColor(width, height, Glib.Color.Black);
-        lightmapRt.Texture.ID!.UpdateFromImage(image);
+        if (UseHardwareAcceleration)
+        {
+            if (width >= Glib.Texture.MaxSize || height >= Glib.Texture.MaxSize)
+            {
+                Log.UserLogger.Error("Lightmap too large to be loaded.");
+                lightmapRt = null;
+                return;
+            }
+
+            lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
+            using var image = Glib.Image.FromColor(width, height, Glib.Color.Black);
+            lightmapRt.Texture.ID!.UpdateFromImage(image);
+        }
+        else
+        {
+            var glibImage = Glib.Image.FromColor(width, height, Glib.Color.White, Glib.PixelFormat.Grayscale);
+            _lightmapImage = new RlManaged.Image(new Image() { image = glibImage });
+        }
     }
 
     public LightMap(int levelWidth, int levelHeight, Image lightMapImage)
@@ -53,7 +65,7 @@ class LightMap : IDisposable
         using var croppedLightMap = RlManaged.Image.Copy(lightMapImage);
         AssetGraphicsProvider.CropImage(croppedLightMap);
 
-        using var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
+        var finalImage = RlManaged.Image.GenColor(width, height, Color.White);
 
         if (croppedLightMap.Width != width || croppedLightMap.Height != height)
         {
@@ -72,27 +84,44 @@ class LightMap : IDisposable
         );
 
         // get light map as a texture
-        using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
-
-        // put into a render texture
-        if (width >= Glib.Texture.MaxSize || height >= Glib.Texture.MaxSize)
+        if (UseHardwareAcceleration)
         {
-            Log.UserLogger.Error("Lightmap too large to be loaded.");
-            lightmapRt = null;
-            return;
-        }
+            using var lightmapTex = RlManaged.Texture2D.LoadFromImage(finalImage);
+            finalImage.Dispose();
 
-        lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
-        Raylib.BeginTextureMode(lightmapRt);
-        Raylib.ClearBackground(Color.Black);
-        Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
-        Raylib.EndTextureMode();
+            // put into a render texture
+            if (width >= Glib.Texture.MaxSize || height >= Glib.Texture.MaxSize)
+            {
+                Log.UserLogger.Error("Lightmap too large to be loaded.");
+                lightmapRt = null;
+                return;
+            }
+
+            lightmapRt = RlManaged.RenderTexture2D.Load(width, height);
+            Raylib.BeginTextureMode(lightmapRt);
+            Raylib.ClearBackground(Color.Black);
+            Raylib.DrawTexture(lightmapTex, 0, 0, Color.White);
+            Raylib.EndTextureMode();
+        }
+        else
+        {
+            _lightmapImage = finalImage;
+        }
     }
 
     public void Dispose()
     {
-        lightmapRt?.Dispose();
-        lightmapRt = null!;
+        if (lightmapRt is not null)
+        {
+            lightmapRt.Dispose();
+            lightmapRt = null!;
+        }
+
+        if (_lightmapImage is not null)
+        {
+            _lightmapImage.Dispose();
+            _lightmapImage = null;
+        }
     }
 
     public void Resize(int newWidth, int newHeight, int dstOriginX, int dstOriginY)
@@ -103,48 +132,61 @@ class LightMap : IDisposable
         dstOriginX *= 20;
         dstOriginY *= 20;
 
-        if (newWidth >= Glib.Texture.MaxSize || newHeight >= Glib.Texture.MaxSize)
+        if (UseHardwareAcceleration)
         {
-            Log.UserLogger.Error("Lightmap too large to be loaded.");
-            lightmapRt = null;
+            if (newWidth >= Glib.Texture.MaxSize || newHeight >= Glib.Texture.MaxSize)
+            {
+                Log.UserLogger.Error("Lightmap too large to be loaded.");
+                lightmapRt = null;
+            }
+            else
+            {
+                using var lightMapImage = GetImage();
+                
+                // vertical flip dest rect (idk why i need to do this it worked before)
+                //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
+
+                // put into a render texture
+                // resize light map image
+                Raylib.ImageResizeCanvas(
+                    ref lightMapImage.Ref(),
+                    newWidth, newHeight,
+                    dstOriginX, dstOriginY,
+                    Color.White
+                );
+
+                Raylib.ImageFlipVertical(lightMapImage);
+
+                // get light map as a texture
+                var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
+
+                lightmapRt?.Dispose();
+                lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
+
+                Raylib.BeginTextureMode(lightmapRt);
+                Raylib.ClearBackground(Color.Black);
+
+                // texture is loaded upside down...
+                Raylib.DrawTexturePro(
+                    lightmapTex,
+                    new Rectangle(0f, lightmapTex.Height, lightmapTex.Width, -lightmapTex.Height),
+                    new Rectangle(0f, 0f, lightmapTex.Width, lightmapTex.Height),
+                    Vector2.Zero, 0f,
+                    Color.White
+                );
+
+                Raylib.EndTextureMode();
+            }
         }
         else
         {
-            using var lightMapImage = GetImage();
-            
-            // vertical flip dest rect (idk why i need to do this it worked before)
-            //dstOriginY = newHeight - dstOriginY - lightMapImage.Height;
-
-            // put into a render texture
-            // resize light map image
+            Debug.Assert(_lightmapImage is not null);
             Raylib.ImageResizeCanvas(
-                ref lightMapImage.Ref(),
+                ref _lightmapImage.Ref(),
                 newWidth, newHeight,
                 dstOriginX, dstOriginY,
                 Color.White
             );
-
-            Raylib.ImageFlipVertical(lightMapImage);
-
-            // get light map as a texture
-            var lightmapTex = RlManaged.Texture2D.LoadFromImage(lightMapImage);
-
-            lightmapRt?.Dispose();
-            lightmapRt = RlManaged.RenderTexture2D.Load(newWidth, newHeight);
-
-            Raylib.BeginTextureMode(lightmapRt);
-            Raylib.ClearBackground(Color.Black);
-
-            // texture is loaded upside down...
-            Raylib.DrawTexturePro(
-                lightmapTex,
-                new Rectangle(0f, lightmapTex.Height, lightmapTex.Width, -lightmapTex.Height),
-                new Rectangle(0f, 0f, lightmapTex.Width, lightmapTex.Height),
-                Vector2.Zero, 0f,
-                Color.White
-            );
-
-            Raylib.EndTextureMode();
         }
 
         width = newWidth;
@@ -153,11 +195,17 @@ class LightMap : IDisposable
 
     public void RaylibBeginTextureMode()
     {
+        if (!UseHardwareAcceleration)
+            throw new InvalidOperationException("Lightmap storage is not on the GPU!");
+        
         Raylib.BeginTextureMode(lightmapRt!);
     }
 
     public static void DrawAtom(BrushAtom atom)
     {
+        if (!UseHardwareAcceleration)
+            throw new NotImplementedException("LightMap.DrawAtom is not implemented in software mode");
+
         var tex = RainEd.Instance.LightBrushDatabase.Brushes[atom.brush].Texture;
         Raylib.DrawTexturePro(
             tex,
@@ -187,6 +235,9 @@ class LightMap : IDisposable
 
     public RlManaged.Image GetImage()
     {
+        if (!UseHardwareAcceleration)
+            return RlManaged.Image.Copy(_lightmapImage!);
+        
         //var img = RlManaged.Image.LoadFromTexture(lightmapRt.Texture);
         if (lightmapRt is null) throw new InvalidOperationException("Lightmap texture could not be loaded");
         if (lightmapRt.Texture.ID is not Glib.ReadableTexture tex) throw new InvalidOperationException("Lightmap texture is not a ReadableTexture");
