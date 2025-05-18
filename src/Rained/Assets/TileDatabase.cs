@@ -11,6 +11,8 @@ public enum TileType : byte
     VoxelStructRandomDisplaceHorizontal = 3,
     Box = 4,
     VoxelStructSandType = 5,
+    VoxelStructSeamlessHorizontal,
+    VoxelStructSeamlessVertical
 }
 
 class Tile
@@ -122,6 +124,8 @@ class Tile
             case TileType.VoxelStruct:
             case TileType.VoxelStructRandomDisplaceHorizontal:
             case TileType.VoxelStructRandomDisplaceVertical:
+            case TileType.VoxelStructSeamlessHorizontal:
+            case TileType.VoxelStructSeamlessVertical:
                 LayerCount = repeatL!.Count;
                 ImageRowCount *= LayerCount;
 
@@ -271,6 +275,8 @@ class TileDatabase
                     "voxelStructRandomDisplaceHorizontal" => TileType.VoxelStructRandomDisplaceHorizontal,
                     "voxelStructRandomDisplaceVertical" => TileType.VoxelStructRandomDisplaceVertical,
                     "box" => TileType.Box,
+                    "voxelStructSeamlessHorizontal" => TileType.VoxelStructSeamlessHorizontal,
+                    "voxelStructSeamlessVertical" => TileType.VoxelStructSeamlessVertical,
                     _ => throw new Exception($"Invalid tile type '{tp}'")
                 };
 
