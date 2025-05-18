@@ -34,7 +34,7 @@ static class LevelSerialization
             TileDatabase = RainEd.Instance.TileDatabase,
             EffectsDatabase = RainEd.Instance.EffectsDatabase,
             PropDatabase = RainEd.Instance.PropDatabase,
-            ActiveWorkLayer = RainEd.Instance.LevelView.WorkLayer
+            ActiveWorkLayer = RainEd.Instance.CurrentTab is not null ? RainEd.Instance.LevelView.WorkLayer : 0
         };
     }
 
