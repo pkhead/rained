@@ -2,6 +2,7 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using Rained.LevelData;
+using System.Runtime.CompilerServices;
 
 namespace Rained.EditorGui.Editors;
 
@@ -28,52 +29,77 @@ class LightEditor : IEditorMode
     private int hoveredVertexIndex = -1;
     private RlManaged.RenderTexture2D? tmpFramebuffer;
 
-    private ChangeHistory.LightChangeRecorder? changeRecorder = null;
+    // Bleh
+    // I think i need to change how the EditorMode classes work.
+    // specifically, to make a unique set of each per document.
+    // instead of using the same one across multiple documents.
+    private readonly ConditionalWeakTable<Level, ChangeHistory.LightChangeRecorder> changeRecorders = [];
 
     public LightEditor(LevelWindow window)
     {
         this.window = window;
-        ReloadLevel();
+        // ReloadLevel();
 
         RainEd.Instance.ChangeHistory.Cleared += ReloadLevel;
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
-            changeRecorder?.UpdateParametersSnapshot();
+            if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+                changeRecorder.UpdateParametersSnapshot();
         };
     }
 
+    public void LevelCreated(Level level)
+    {
+        ChangeHistory.LightChangeRecorder changeRecorder;
+        if (level.LightMap.IsLoaded)
+            changeRecorder = new ChangeHistory.LightChangeRecorder(level.LightMap.GetImage());
+        else
+            changeRecorder = new ChangeHistory.LightChangeRecorder(null);
+
+        changeRecorders.AddOrUpdate(level, changeRecorder);
+    }
+
+    public void LevelClosed(Level level)
+    {
+        changeRecorders.Remove(level);
+    }
+
     public void ReloadLevel()
-    {   
-        changeRecorder?.Dispose();
+    {
+        if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+            changeRecorder?.Dispose();
+        
         tmpFramebuffer?.Dispose();
         tmpFramebuffer = null;
 
-        if (RainEd.Instance.Level.LightMap.IsLoaded)
-        {
-            changeRecorder = new ChangeHistory.LightChangeRecorder(RainEd.Instance.Level.LightMap.GetImage());
-        }
+        var level = RainEd.Instance.Level;
+        if (level.LightMap.IsLoaded)
+            changeRecorder = new ChangeHistory.LightChangeRecorder(level.LightMap.GetImage());
         else
-        {
             changeRecorder = new ChangeHistory.LightChangeRecorder(null);
-        }
 
-        changeRecorder.UpdateParametersSnapshot();
+        changeRecorders.AddOrUpdate(RainEd.Instance.Level, changeRecorder);
+        changeRecorder?.UpdateParametersSnapshot();
     }
+
+    public void ChangeLevel(Level newLevel) {}
 
     public void Load()
     {
         if (!RainEd.Instance.Level.LightMap.IsLoaded)
             EditorWindow.ShowNotification("The lightmap is too large to be loaded.");
 
-        changeRecorder?.ClearStrokeData();
+        if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+            changeRecorder.ClearStrokeData();
     }
 
     public void Unload()
     {
         if (isChangingParameters)
         {
-            changeRecorder?.PushParameterChanges();
+            if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+                changeRecorder.PushParameterChanges();
             isChangingParameters = false;
         }
 
@@ -86,6 +112,9 @@ class LightEditor : IEditorMode
 
         tmpFramebuffer?.Dispose();
         tmpFramebuffer = null;
+
+        warpMode = false;
+        warpModeSubmit = false;
     }
 
     public void ShowEditMenu()
@@ -122,6 +151,7 @@ class LightEditor : IEditorMode
         var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
         var prefs = RainEd.Instance.Preferences;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -462,6 +492,7 @@ class LightEditor : IEditorMode
 
         var prefs = RainEd.Instance.Preferences;
         var level = RainEd.Instance.Level;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
 
         var shader = Shaders.LevelLightShader;
         Raylib.BeginShaderMode(shader);
@@ -636,6 +667,7 @@ class LightEditor : IEditorMode
     private void ProcessWarpMode(Vector2 lightMapOffset, RlManaged.RenderTexture2D mainFrame)
     {
         var level = RainEd.Instance.Level;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
 
         // render stretched lightmap into intermediary framebuffer
 
