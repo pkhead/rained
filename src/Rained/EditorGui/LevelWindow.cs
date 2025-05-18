@@ -192,6 +192,26 @@ class LevelWindow
         RainEd.Instance.CurrentTab!.NodeData.Reset();
     }
 
+    public void ChangeLevel(Level newLevel)
+    {
+        foreach (var mode in editorModes)
+            mode.ChangeLevel(newLevel);
+        
+        RainEd.Instance.CurrentTab!.NodeData.Reset();
+    }
+
+    public void LevelCreated(Level level)
+    {
+        foreach (var mode in editorModes)
+            mode.LevelCreated(level);
+    }
+
+    public void LevelClosed(Level level)
+    {
+        foreach (var mode in editorModes)
+            mode.LevelClosed(level);
+    }
+
     public void ResetView()
     {
         ViewOffset = Vector2.Zero;

@@ -8,6 +8,7 @@ using Rained.LevelData;
 using Rained.Rendering;
 using System.Reflection;
 using Rained.LuaScripting;
+using System.Diagnostics;
 
 namespace Rained;
 
@@ -82,7 +83,7 @@ sealed class RainEd
     private readonly List<LevelTab> _tabs = [];
     public List<LevelTab> Tabs => _tabs;
     private LevelTab? _currentTab = null;
-    public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value); }
+    public LevelTab? CurrentTab { get => _currentTab; set => SwitchTab(value, false); }
 
     public Level Level {
         get
@@ -452,14 +453,15 @@ sealed class RainEd
     {
         var tab = new LevelTab();
         _tabs.Add(tab);
-        CurrentTab = tab;
+
+        SwitchTab(tab, true);
     }
 
     public void OpenLevel(Level level, string filePath = "")
     {
         var tab = new LevelTab(level, filePath);
         _tabs.Add(tab);
-        CurrentTab = tab;
+        SwitchTab(tab, true);
     }
 
     public void LoadLevelThrow(string path)
@@ -475,9 +477,9 @@ sealed class RainEd
             {
                 var tab = new LevelTab(loadRes.Level, path);
                 _tabs.Add(tab);
-                CurrentTab = tab;
                 Log.Information("Done!");
-                levelView!.LoadView();
+
+                SwitchTab(tab, true);
             }
             else
             {
@@ -489,7 +491,6 @@ sealed class RainEd
                     var tab = new LevelTab(loadRes.Level, path);
                     _tabs.Add(tab);
                     CurrentTab = tab;
-                    levelView!.LoadView();
                 };
             }
 
@@ -666,7 +667,7 @@ sealed class RainEd
         Log.Information("Resizing level...");
         IsLevelLocked = true;
 
-        levelView.FlushDirty();
+        levelView!.FlushDirty();
         var dstOrigin = level.Resize(newWidth, newHeight, anchorX, anchorY);
 
         levelView.ReloadLevel();
@@ -679,7 +680,7 @@ sealed class RainEd
         IsLevelLocked = false;
     }
 
-    private void SwitchTab(LevelTab? tab)
+    private void SwitchTab(LevelTab? tab, bool newLevel)
     {
         if (tab == _currentTab) return;
         if (tab is not null && !_tabs.Contains(tab))
@@ -688,15 +689,24 @@ sealed class RainEd
         _currentTab = tab;
         if (_currentTab is not null)
         {
-            levelView ??= new LevelWindow();
-            levelView.ReloadLevel();
-            levelView.Renderer.ReloadLevel();
+            var needInitLevelView = levelView is null;
+
+            if (newLevel)
+            {
+                levelView ??= new LevelWindow();
+                levelView.LevelCreated(_currentTab.Level);
+            }
+
+            levelView!.ChangeLevel(_currentTab.Level);
+            levelView!.Renderer.ReloadLevel();
+            if (needInitLevelView) levelView!.LoadView();
             UpdateTitle();
         }
     }
 
     public bool CloseTab(LevelTab tab)
     {
+        levelView?.LevelClosed(tab.Level);
         tab.Dispose();
         return _tabs.Remove(tab);
     }
