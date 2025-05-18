@@ -559,7 +559,7 @@ class LevelEditRender : IDisposable
         // make it fall off at a better rate.
         var opacity = MathF.Sqrt(Math.Clamp(ViewZoom, 0f, 1f));
         rctx.Shader = Shaders.GridShader.GlibShader;
-        rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * (50f/255f));
+        rctx.DrawColor = new Glib.Color(1f, 1f, 1f, opacity * RainEd.Instance.Preferences.GridOpacity);
         if (gridMinor.GetIndexVertexCount() > 0) rctx.Draw(gridMinor);
         if (gridMajor.GetIndexVertexCount() > 0) rctx.Draw(gridMajor);
         rctx.Shader = null;
