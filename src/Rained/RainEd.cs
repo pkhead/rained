@@ -466,7 +466,7 @@ sealed class RainEd
         SwitchTab(tab, true);
     }
 
-    public LevelLoadResult LoadLevelThrow(string path)
+    public LevelLoadResult LoadLevelThrow(string path, bool showLevelLoadFailPopup = true)
     {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty!", nameof(path));
         Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
@@ -475,7 +475,7 @@ sealed class RainEd
         {
             var loadRes = LevelSerialization.Load(path);
 
-            if (!loadRes.HadUnrecognizedAssets)
+            if (!loadRes.HadUnrecognizedAssets || !showLevelLoadFailPopup)
             {
                 var tab = new LevelTab(loadRes.Level, path);
                 _tabs.Add(tab);

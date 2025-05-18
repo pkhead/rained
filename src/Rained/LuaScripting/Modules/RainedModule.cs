@@ -1,6 +1,7 @@
 namespace Rained.LuaScripting.Modules;
 using KeraLua;
 using Rained.EditorGui;
+using Rained.LevelData;
 
 static class RainedModule
 {
@@ -34,6 +35,13 @@ static class RainedModule
             lua.PushInteger(LuaInterface.VersionMinor);
             lua.PushInteger(LuaInterface.VersionRevision);
             return 3;
+        });
+
+        lua.ModuleFunction("isBatchMode", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushBoolean(RainEd.Instance is null);
+            return 1;
         });
 
         lua.ModuleFunction("alert", static (nint luaPtr) =>
@@ -236,14 +244,60 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var filePath = lua.CheckString(1);
-
+            LevelLoadResult res;
             try
             {
-                RainEd.Instance.LoadLevelThrow(filePath);
+                res = RainEd.Instance.LoadLevelThrow(filePath, showLevelLoadFailPopup: false);
             }
             catch
             {
                 lua.ErrorWhere("could not load level " + filePath);
+                return 0;
+            }
+            
+            if (res.HadUnrecognizedAssets)
+            {
+                lua.NewTable();
+                lua.PushBoolean(true);
+                lua.SetField(-2, "hadUnrecognizedAssets");
+
+                // materials list
+                lua.NewTable();
+                for (int i = 0; i < res.UnrecognizedMaterials.Length; i++)
+                {
+                    lua.PushString(res.UnrecognizedMaterials[i]);
+                    lua.RawSetInteger(-2, i+1);
+                }
+                lua.SetField(-2, "unrecognizedMaterials");
+
+                // tiles list
+                lua.NewTable();
+                for (int i = 0; i < res.UnrecognizedTiles.Length; i++)
+                {
+                    lua.PushString(res.UnrecognizedTiles[i]);
+                    lua.RawSetInteger(-2, i+1);
+                }
+                lua.SetField(-2, "unrecognizedTiles");
+
+                // effects list
+                lua.NewTable();
+                for (int i = 0; i < res.UnrecognizedEffects.Length; i++)
+                {
+                    lua.PushString(res.UnrecognizedEffects[i]);
+                    lua.RawSetInteger(-2, i+1);
+                }
+                lua.SetField(-2, "unrecognizedEffects");
+
+                // props list
+                lua.NewTable();
+                for (int i = 0; i < res.UnrecognizedProps.Length; i++)
+                {
+                    lua.PushString(res.UnrecognizedProps[i]);
+                    lua.RawSetInteger(-2, i+1);
+                }
+                lua.SetField(-2, "unrecognizedProps");
+
+                return 1;
             }
 
             return 0;
