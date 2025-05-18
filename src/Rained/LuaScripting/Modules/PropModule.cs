@@ -69,7 +69,7 @@ static class PropModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
 
             if (!level.Props.Contains(prop))
             {
@@ -85,7 +85,7 @@ static class PropModule
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
 
-            LuaInterface.Host.Level.Props.Remove(prop);
+            LuaInterface.Host.LevelCheck(lua).Props.Remove(prop);
             if (LuaInterface.Host.SelectedProps.Remove(prop))
             {
                 _changeRecordDirty = true;
@@ -105,7 +105,7 @@ static class PropModule
             lua.NewTable();
 
             int i = 1;
-            foreach (var prop in LuaInterface.Host.Level.Props)
+            foreach (var prop in LuaInterface.Host.LevelCheck(lua).Props)
             {
                 wrap.PushWrapper(lua, prop);
                 lua.RawSetInteger(-2, i);

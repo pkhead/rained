@@ -19,7 +19,7 @@ static class LevelModule
             var lua = Lua.FromIntPtr(luaPtr);
             var x = (int) lua.CheckNumber(1);
             var y = (int) lua.CheckNumber(2);
-            lua.PushBoolean(LuaInterface.Host.Level.IsInBounds(x, y));
+            lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).IsInBounds(x, y));
             return 1;
         });
 
@@ -80,7 +80,7 @@ static class LevelModule
                 return v;
             }
 
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
             int width = GetInteger("width");
             int height = GetInteger("height");
             int borderLeft = GetIntegerOpt("borderLeft", level.BufferTilesLeft);
@@ -196,51 +196,51 @@ static class LevelModule
                     break;
 
                 case "width":
-                    lua.PushInteger(LuaInterface.Host.Level.Width);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Width);
                     break;
 
                 case "height":
-                    lua.PushInteger(LuaInterface.Host.Level.Height);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Height);
                     break;
 
                 case "defaultMedium":
-                    lua.PushBoolean(LuaInterface.Host.Level.DefaultMedium);
+                    lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).DefaultMedium);
                     break;
 
                 case "hasSunlight":
-                    lua.PushBoolean(LuaInterface.Host.Level.HasSunlight);
+                    lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).HasSunlight);
                     break;
 
                 case "hasWater":
-                    lua.PushBoolean(LuaInterface.Host.Level.HasWater);
+                    lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).HasWater);
                     break;
 
                 case "waterLevel":
-                    lua.PushInteger(LuaInterface.Host.Level.WaterLevel);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).WaterLevel);
                     break;
 
                 case "isWaterInFront":
-                    lua.PushBoolean(LuaInterface.Host.Level.IsWaterInFront);
+                    lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).IsWaterInFront);
                     break;
                 
                 case "tileSeed":
-                    lua.PushInteger(LuaInterface.Host.Level.TileSeed);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).TileSeed);
                     break;
 
                 case "borderLeft":
-                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesLeft);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).BufferTilesLeft);
                     break;
 
                 case "borderTop":
-                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesTop);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).BufferTilesTop);
                     break;
                 
                 case "borderRight":
-                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesRight);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).BufferTilesRight);
                     break;
 
                 case "borderBottom":
-                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesBot);
+                    lua.PushInteger(LuaInterface.Host.LevelCheck(lua).BufferTilesBot);
                     break;
 
                 default:
@@ -270,46 +270,46 @@ static class LevelModule
                     return lua.ErrorWhere("field \"height\" is read-only.");
 
                 case "defaultMedium":
-                    LuaInterface.Host.Level.DefaultMedium = lua.ToBoolean(3);
+                    LuaInterface.Host.LevelCheck(lua).DefaultMedium = lua.ToBoolean(3);
                     break;
 
                 case "hasSunlight":
-                    LuaInterface.Host.Level.HasSunlight = lua.ToBoolean(3);
+                    LuaInterface.Host.LevelCheck(lua).HasSunlight = lua.ToBoolean(3);
                     break;
 
                 case "hasWater":
-                    LuaInterface.Host.Level.HasWater = lua.ToBoolean(3);
+                    LuaInterface.Host.LevelCheck(lua).HasWater = lua.ToBoolean(3);
                     break;
 
                 case "waterLevel":
-                    LuaInterface.Host.Level.WaterLevel = int.Max(0, (int) lua.CheckNumber(3));
+                    LuaInterface.Host.LevelCheck(lua).WaterLevel = int.Max(0, (int) lua.CheckNumber(3));
                     break;
 
                 case "isWaterInFront":
-                    LuaInterface.Host.Level.IsWaterInFront = lua.ToBoolean(3);
+                    LuaInterface.Host.LevelCheck(lua).IsWaterInFront = lua.ToBoolean(3);
                     break;
                 
                 case "tileSeed":
-                    LuaInterface.Host.Level.TileSeed = Math.Clamp(
+                    LuaInterface.Host.LevelCheck(lua).TileSeed = Math.Clamp(
                         (int) lua.CheckNumber(3),
                         0, 400
                     );
                     break;
 
                 case "borderLeft":
-                    LuaInterface.Host.Level.BufferTilesLeft = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.LevelCheck(lua).BufferTilesLeft = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderTop":
-                    LuaInterface.Host.Level.BufferTilesTop = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.LevelCheck(lua).BufferTilesTop = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
                 
                 case "borderRight":
-                    LuaInterface.Host.Level.BufferTilesRight = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.LevelCheck(lua).BufferTilesRight = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderBottom":
-                    LuaInterface.Host.Level.BufferTilesBot = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.LevelCheck(lua).BufferTilesBot = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 default:

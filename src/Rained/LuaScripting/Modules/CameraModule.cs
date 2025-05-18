@@ -40,7 +40,7 @@ static class CameraModule
 
         lua.ModuleFunction("getCount", static (nint luaPtr) => {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(LuaInterface.Host.Level.Cameras.Count);
+            lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Cameras.Count);
             return 1;
         });
 
@@ -48,11 +48,11 @@ static class CameraModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var idx = (int) lua.CheckNumber(1) - 1;
-            if (idx < 0 || idx >= LuaInterface.Host.Level.Cameras.Count)
+            if (idx < 0 || idx >= LuaInterface.Host.LevelCheck(lua).Cameras.Count)
                 lua.PushNil();
             else
             {
-                var cam = LuaInterface.Host.Level.Cameras[idx];
+                var cam = LuaInterface.Host.LevelCheck(lua).Cameras[idx];
                 wrap.PushWrapper(lua, cam);
             }
 
@@ -63,7 +63,7 @@ static class CameraModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var cam = wrap.GetRef(lua, 1);
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
             
             if (lua.IsNoneOrNil(2))
             {
@@ -86,7 +86,7 @@ static class CameraModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var cam = wrap.GetRef(lua, 1);
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
 
             lua.PushBoolean( level.Cameras.Remove(cam) );
             return 1;
@@ -106,7 +106,7 @@ static class CameraModule
         lua.ModuleFunction("getPriority", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var cam = LuaInterface.Host.Level.PrioritizedCamera;
+            var cam = LuaInterface.Host.LevelCheck(lua).PrioritizedCamera;
 
             if (cam is null)
                 lua.PushNil();
@@ -120,11 +120,11 @@ static class CameraModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             if (lua.IsNoneOrNil(1))
-                LuaInterface.Host.Level.PrioritizedCamera = null;
+                LuaInterface.Host.LevelCheck(lua).PrioritizedCamera = null;
             else
             {
                 var cam = wrap.GetRef(lua, 1);
-                LuaInterface.Host.Level.PrioritizedCamera = cam;
+                LuaInterface.Host.LevelCheck(lua).PrioritizedCamera = cam;
             }
 
             return 0;
@@ -133,7 +133,7 @@ static class CameraModule
         lua.ModuleFunction("getCameras", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
 
             lua.NewTable();
             for (int i = 0; i < level.Cameras.Count; i++)
@@ -170,7 +170,7 @@ static class CameraModule
 
                 case "index":
                 {
-                    var idx = LuaInterface.Host.Level.Cameras.IndexOf(cam);
+                    var idx = LuaInterface.Host.LevelCheck(lua).Cameras.IndexOf(cam);
                     if (idx == -1) lua.PushNil();
                     else lua.PushInteger(idx + 1);
                     break;

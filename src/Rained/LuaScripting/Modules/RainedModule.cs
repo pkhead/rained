@@ -66,14 +66,14 @@ static class RainedModule
         lua.ModuleFunction("getLevelWidth", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(LuaInterface.Host.Level.Width);
+            lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Width);
             return 1;
         });
 
         lua.ModuleFunction("getLevelHeight", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(LuaInterface.Host.Level.Height);
+            lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Height);
             return 1;
         });
 
@@ -82,7 +82,7 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
             var x = (int)lua.CheckNumber(1);
             var y = (int)lua.CheckNumber(2);
-            lua.PushBoolean(LuaInterface.Host.Level.IsInBounds(x, y));
+            lua.PushBoolean(LuaInterface.Host.LevelCheck(lua).IsInBounds(x, y));
             return 1;
         });
 

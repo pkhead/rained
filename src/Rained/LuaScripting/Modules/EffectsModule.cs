@@ -22,14 +22,14 @@ static class EffectsModule
         lua.ModuleFunction("getCount", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(LuaInterface.Host.Level.Effects.Count);
+            lua.PushInteger(LuaInterface.Host.LevelCheck(lua).Effects.Count);
             return 1;
         });
 
         lua.ModuleFunction("getEffect", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var effects = LuaInterface.Host.Level.Effects;
+            var effects = LuaInterface.Host.LevelCheck(lua).Effects;
 
             var idx = (int) lua.CheckInteger(1) - 1;
             if (idx < 0 || idx >= effects.Count) return lua.ArgumentError(1, "index is out of range");
@@ -41,7 +41,7 @@ static class EffectsModule
         lua.ModuleFunction("getEffectName", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var effects = LuaInterface.Host.Level.Effects;
+            var effects = LuaInterface.Host.LevelCheck(lua).Effects;
 
             var idx = (int) lua.CheckInteger(1) - 1;
             if (idx < 0 || idx >= effects.Count) return lua.ArgumentError(1, "index is out of range");
@@ -53,7 +53,7 @@ static class EffectsModule
         lua.ModuleFunction("removeEffect", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var effects = LuaInterface.Host.Level.Effects;
+            var effects = LuaInterface.Host.LevelCheck(lua).Effects;
             
             if (lua.IsUserData(1))
             {
@@ -74,7 +74,7 @@ static class EffectsModule
         lua.ModuleFunction("addEffect", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var effects = LuaInterface.Host.Level.Effects;
+            var effects = LuaInterface.Host.LevelCheck(lua).Effects;
             var eff = wrap.GetRef(lua, 1);
             var idx = (int) lua.OptInteger(2, effects.Count + 1) - 1;
             if (idx < 0 || idx > effects.Count) return lua.ArgumentError(2, "index is out of range");
@@ -95,7 +95,7 @@ static class EffectsModule
             if (!LuaInterface.Host.EffectsDatabase.TryGetEffectFromName(effectName, out var init))
                 return lua.ArgumentError(1, $"effect {effectName} does not exist");
             
-            var eff = new Effect(LuaInterface.Host.Level, init);
+            var eff = new Effect(LuaInterface.Host.LevelCheck(lua), init);
             wrap.PushWrapper(lua, eff);
             return 1;
         });
@@ -452,7 +452,7 @@ static class EffectsModule
 
                 case "index":
                 {
-                    var idx = LuaInterface.Host.Level.Effects.IndexOf(eff);
+                    var idx = LuaInterface.Host.LevelCheck(lua).Effects.IndexOf(eff);
                     if (idx == -1) lua.PushNil();
                     else lua.PushInteger(idx + 1);
                     break;
@@ -464,7 +464,7 @@ static class EffectsModule
                         var lua = Lua.FromIntPtr(luaPtr);
                         var eff = wrap.GetRef(lua, 1);
 
-                        var clone = new Effect(LuaInterface.Host.Level, eff.Data)
+                        var clone = new Effect(LuaInterface.Host.LevelCheck(lua), eff.Data)
                         {
                             AffectGradientsAndDecals = eff.AffectGradientsAndDecals,
                             Is3D = eff.Is3D,
@@ -684,7 +684,7 @@ static class EffectsModule
                         var v = (float) lua.CheckNumber(4);
                         v = float.Clamp(v, 0f, 100f);
 
-                        if (!LuaInterface.Host.Level.IsInBounds(x, y))
+                        if (!LuaInterface.Host.LevelCheck(lua).IsInBounds(x, y))
                             return 0;
 
                         HistoryModule.ChangeRecorder.EffectRecorder.ChangeMatrix(eff);
@@ -702,7 +702,7 @@ static class EffectsModule
                         var x = (int) lua.CheckInteger(2);
                         var y = (int) lua.CheckInteger(3);
 
-                        if (!LuaInterface.Host.Level.IsInBounds(x, y))
+                        if (!LuaInterface.Host.LevelCheck(lua).IsInBounds(x, y))
                         {
                             lua.PushNil();
                             return 1;
@@ -738,7 +738,7 @@ static class EffectsModule
                     lua.PushCFunction(static (nint luaPtr) =>
                     {
                         var lua = Lua.FromIntPtr(luaPtr);
-                        var level = LuaInterface.Host.Level;
+                        var level = LuaInterface.Host.LevelCheck(lua);
                         var eff = wrap.GetRef(lua, 1);
 
                         // matrix validation

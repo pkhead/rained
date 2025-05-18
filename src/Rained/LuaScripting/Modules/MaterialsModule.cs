@@ -13,7 +13,7 @@ static class MaterialsModule
         lua.ModuleFunction("getDefaultMaterial", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matId = LuaInterface.Host.Level.DefaultMaterial;
+            var matId = LuaInterface.Host.LevelCheck(lua).DefaultMaterial;
             var matName = LuaInterface.Host.MaterialDatabase.GetMaterial(matId).Name;
             lua.PushString(matName);
             return 1;
@@ -22,7 +22,7 @@ static class MaterialsModule
         lua.ModuleFunction("getDefaultMaterialId", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matId = LuaInterface.Host.Level.DefaultMaterial;
+            var matId = LuaInterface.Host.LevelCheck(lua).DefaultMaterial;
             lua.PushInteger(matId);
             return 1;
         });
@@ -37,7 +37,7 @@ static class MaterialsModule
                 var matId = (int) lua.CheckInteger(1);
                 if (matId >= matDb.Materials.Length) return lua.ErrorWhere("unknown material " + matId);
 
-                LuaInterface.Host.Level.DefaultMaterial = matId;
+                LuaInterface.Host.LevelCheck(lua).DefaultMaterial = matId;
             }
             else
             {
@@ -45,7 +45,7 @@ static class MaterialsModule
                 var matInfo = matDb.GetMaterial(matName);
                 if (matInfo is null) return lua.ErrorWhere($"unknown material '{matName}'");
 
-                LuaInterface.Host.Level.DefaultMaterial = matInfo.ID;
+                LuaInterface.Host.LevelCheck(lua).DefaultMaterial = matInfo.ID;
             }
 
             return 0;

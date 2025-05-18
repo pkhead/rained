@@ -20,17 +20,17 @@ static class TilesModule
 
         // function getTileAt
         nlua.Push(static (int x, int y, int layer) => {
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck();
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return null;
-            var tile = LuaInterface.Host.Level.GetTile(level.Layers[layer-1, x, y]);
+            var tile = LuaInterface.Host.LevelCheck().GetTile(level.Layers[layer-1, x, y]);
             return tile?.Name;
         });
         lua.SetField(-2, "getTileAt");
 
         // function hasTileHead
         nlua.Push(static (int x, int y, int layer) => {
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck();
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return false;
             return level.Layers[layer-1, x, y].TileHead is not null;
@@ -47,7 +47,7 @@ static class TilesModule
             if (!lua.IsNoneOrNil(4))
                 removeGeo = lua.ToBoolean(4);
             
-            var level = LuaInterface.Host.Level;
+            var level = LuaInterface.Host.LevelCheck(lua);
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return 0;
             level.RemoveTileCell(layer - 1, x, y, removeGeo);
@@ -291,7 +291,7 @@ static class TilesModule
     {
         result = null;
 
-        var level = LuaInterface.Host.Level;
+        var level = LuaInterface.Host.LevelCheck();
         var placeMode = TilePlacementMode.Normal;
         
         // validate arguments

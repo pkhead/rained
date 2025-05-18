@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using KeraLua;
 using Rained.Assets;
 using Rained.EditorGui;
 using Rained.EditorGui.Editors;
@@ -43,11 +45,32 @@ interface IAPIHost
     public int SelectedEffect { get; set; }
     public List<Prop> SelectedProps { get; }
 
-    public Level Level { get; }
+    public Level? Level { get; }
     public MaterialDatabase MaterialDatabase { get; }
     public TileDatabase TileDatabase { get; }
     public EffectsDatabase EffectsDatabase { get; }
     public PropDatabase PropDatabase { get; }
+}
+
+static class APIHostExtensions
+{
+    public static Level LevelCheck(this IAPIHost host, Lua lua)
+    {
+        var lvl = host.Level;
+        if (lvl is null)
+        {
+            lua.ErrorWhere("a level is not active");
+            throw new UnreachableException("lua.ErrorWhere was skipped?");
+        }
+        return lvl;
+    }
+
+    public static Level LevelCheck(this IAPIHost host)
+    {
+        var lvl = host.Level
+            ?? throw new LuaHelpers.LuaErrorException("a level is not active");
+        return lvl;
+    }
 }
 
 class APIGuiHost : IAPIHost
@@ -152,18 +175,12 @@ class APIGuiHost : IAPIHost
         }
     }
 
-    public void InvalidateCell(int x, int y, int layer)
-    {
-        
-        if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
-    }
-
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
         RainEd.Instance.ResizeLevel(newWidth, newHeight, anchorX, anchorY);
     }
 
-    public Level Level => RainEd.Instance.CurrentTab?.Level ?? throw new NoLevelException("No level document is active!");
+    public Level? Level => RainEd.Instance.CurrentTab?.Level;
     public MaterialDatabase MaterialDatabase => RainEd.Instance.MaterialDatabase;
     public TileDatabase TileDatabase => RainEd.Instance.TileDatabase;
     public EffectsDatabase EffectsDatabase => RainEd.Instance.EffectsDatabase;
@@ -209,8 +226,8 @@ class APIBatchHost : IAPIHost
         }
     }
 
-    private List<Document> _documents = [];
-    private Stack<Document> _documentOpenStack = [];
+    private readonly List<Document> _documents = [];
+    private readonly Stack<Document> _documentOpenStack = [];
     private int _activeDocument = -1;
 
     private readonly List<RainEd.Command> _commands = [];
@@ -358,8 +375,8 @@ class APIBatchHost : IAPIHost
         var path = (overridePath ?? doc.FilePath)
             ?? throw new Exception("cannot save a document with no path in batch mode");
         
-        LevelSerialization.SaveLevelTextFile(Level, path, _hostData);
-        LevelSerialization.SaveLevelLightMap(Level, path);
+        LevelSerialization.SaveLevelTextFile(Level!, path, _hostData);
+        LevelSerialization.SaveLevelLightMap(Level!, path);
 
         if (doc.FilePath != overridePath)
         {
@@ -377,12 +394,6 @@ class APIBatchHost : IAPIHost
     public void RemoveAutotile(Rained.Autotiles.Autotile autotile)
     {
         // no-op
-    }
-
-    public void InvalidateGeo(int x, int y, int layer)
-    {
-        RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-        if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
     }
 
     public int RegisterCommand(RainEd.CommandCreationParameters cmdInit)
@@ -422,10 +433,10 @@ class APIBatchHost : IAPIHost
 
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)
     {
-        Level.Resize(newWidth, newHeight, anchorX, anchorY);
+        Level!.Resize(newWidth, newHeight, anchorX, anchorY);
     }
 
-    public Level Level => ActiveDocument == -1 ? throw new NoLevelException() : _documents[ActiveDocument].Level;
+    public Level? Level => ActiveDocument == -1 ? null : _documents[ActiveDocument].Level;
     public MaterialDatabase MaterialDatabase { get; private set; }
     public TileDatabase TileDatabase { get; private set; }
     public EffectsDatabase EffectsDatabase { get; private set; }
