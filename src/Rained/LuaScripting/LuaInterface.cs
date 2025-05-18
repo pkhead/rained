@@ -22,7 +22,7 @@ static class LuaInterface
 
     public static IAPIHost Host { get; private set; } = null!;
 
-    public static void Initialize(IAPIHost host)
+    public static void Initialize(IAPIHost host, bool runAutoloads)
     {
         Host = host;
 
@@ -102,11 +102,14 @@ static class LuaInterface
         // 2. they could have just saved the function from the debug library into the registry
         // ...
         luaState.DoString("import = nil");
-
-        luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
-        if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
+        
+        if (runAutoloads)
         {
-            luaState.DoString("autorequire('autoload', true)");
+            luaState.DoFile(Path.Combine(scriptsPath, "init.lua"));
+            if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
+            {
+                luaState.DoString("autorequire('autoload', true)");
+            }
         }
     }
 
@@ -121,7 +124,8 @@ static class LuaInterface
 
     public static void HandleException(LuaScriptException e)
     {
-        EditorWindow.ShowNotification("Error!");
+        if (Host.IsGui)
+            EditorWindow.ShowNotification("Error!");
 
         Exception actualException = e.IsNetException ? e.InnerException! : e;
         string? stackTrace = actualException.Data["Traceback"] as string;
@@ -252,47 +256,39 @@ static class LuaInterface
         }
     }
 
-    public static void LogInfo(string msg)
-    {
-        Log.UserLogger.Information("[lua] " + msg);
-    }
-
-    public static void LogWarning(string msg)
-    {
-        Log.UserLogger.Warning("[lua] " + msg);
-    }
-
     public static void LogError(string msg)
     {
-        Log.UserLogger.Error("[lua] " + msg);
+        Host.Error(msg);
     }
 
     private static void LuaPrint(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
-        foreach (var v in args)
+        for (int i = 0; i < args.Length; i++)
         {
+            var v = args[i];
             var str = v is null ? "nil" : v.ToString()!;
             stringBuilder.Append(str);
-            stringBuilder.Append(' ', 8 - str.Length % 8);
+            if (i < args.Length - 1) stringBuilder.Append(' ', 8 - str.Length % 8);
         }
 
-        LogInfo(stringBuilder.ToString());
+        Host.Print(stringBuilder.ToString());
     }
 
     private static void LuaWarning(params object[] args)
     {
         StringBuilder stringBuilder = new();
 
-        foreach (var v in args)
+        for (int i = 0; i < args.Length; i++)
         {
+            var v = args[i];
             var str = v is null ? "nil" : v.ToString()!;
             stringBuilder.Append(str);
-            stringBuilder.Append(' ', 8 - str.Length % 8);
+            if (i < args.Length - 1) stringBuilder.Append(' ', 8 - str.Length % 8);
         }
 
-        LogWarning(stringBuilder.ToString());
+        Host.Warn(stringBuilder.ToString());
     }
 
     public static void UIUpdate()

@@ -338,7 +338,7 @@ class EffectsDatabase
     private void RegisterCustomEffects()
     {
         var lingoParser = new Lingo.LingoParser();
-        var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Effects", "Init.txt");
+        var initFile = Path.Combine(AssetDataPath.GetPath(), "Effects", "Init.txt");
 
         if (!File.Exists(initFile))
         {

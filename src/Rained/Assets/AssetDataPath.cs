@@ -1,4 +1,4 @@
-namespace Rained.Drizzle;
+namespace Rained.Assets;
 
 /// <summary>
 /// Class used for obtaining the asset data path without the need for loading the editor.
@@ -36,13 +36,13 @@ class AssetDataPath
             }
             else
             {
-                throw new Exception("preferences.json was not found");
+                throw new FileNotFoundException("preferences.json was not found");
             }
         }
 
         if (!Directory.Exists(dataPath))
         {
-            throw new DrizzleRenderException($"The data directory {dataPath} does not exist.");
+            throw new DirectoryNotFoundException($"The data directory {dataPath} does not exist.");
         }
 
         _cachedDataPath = dataPath;

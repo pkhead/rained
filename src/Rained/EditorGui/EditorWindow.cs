@@ -208,7 +208,7 @@ static class EditorWindow
                     
                     try
                     {
-                        LuaScripting.LuaInterface.Initialize(new LuaScripting.APIGuiHost());
+                        LuaScripting.LuaInterface.Initialize(new LuaScripting.APIGuiHost(), true);
                     }
                     catch (LuaScriptException e)
                     {

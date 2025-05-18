@@ -6,7 +6,7 @@ using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
 using Glib;
-using System.Diagnostics;
+using Rained.LuaScripting;
 
 namespace Rained
 {
@@ -65,17 +65,67 @@ namespace Rained
             if (!bootOptions.ContinueBoot)
                 return;
 
-            if (bootOptions.Render)
-                LaunchRenderer();
-            else if (bootOptions.EffectExportOutput is not null)
+            if (bootOptions.EffectExportOutput is not null)
+            {
                 LaunchDrizzleExport(bootOptions.EffectExportOutput);
+            }
+            else if (bootOptions.Render || bootOptions.Scripts.Count > 0)
+            {
+                LaunchBatch();
+            }
             else
+            {
                 LaunchEditor();
+            }
         }
 
         private static void LaunchDrizzleExport(string path)
         {
-            DrizzleExport.DrizzleEffectExport.Export(Drizzle.AssetDataPath.GetPath(), Path.Combine(AppDataPath, "assets", "drizzle-cast"), path);
+            DrizzleExport.DrizzleEffectExport.Export(Assets.AssetDataPath.GetPath(), Path.Combine(AppDataPath, "assets", "drizzle-cast"), path);
+        }
+
+        private static void LaunchBatch()
+        {
+            // setup serilog
+            {
+                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
+                #if DEBUG
+                logToStdout = true;
+                #endif
+
+                Log.Setup(
+                    logToStdout: false,
+                    userLoggerToStdout: false
+                );
+            }
+
+            if (bootOptions.Scripts.Count > 0 || !bootOptions.NoAutoloads)
+            {
+                var app = new APIBatchHost();
+                LuaInterface.Initialize(app, !bootOptions.NoAutoloads);
+                
+                var lua = LuaInterface.LuaState;
+                foreach (var path in bootOptions.Scripts)
+                {
+                    if (lua.LoadFile(path) != KeraLua.LuaStatus.OK)
+                    {
+                        LuaInterface.Host.Error(lua.ToString(-1));
+                    }
+                    else
+                    {
+                        lua.PushCFunction(static (nint luaPtr) =>
+                        {
+                            LuaHelpers.ErrorHandler(luaPtr, 1);
+                            return 0;
+                        });
+                        lua.PushCopy(-2);
+                        lua.PCall(0, 0, -2);
+                    }
+                }
+            }
+
+            if (bootOptions.Render)
+                LaunchRenderer();
         }
 
         private static void LaunchRenderer()
@@ -89,16 +139,6 @@ namespace Rained
                 Console.WriteLine("The level path(s) were not given");
                 Environment.ExitCode = 2;
                 return;
-            }
-
-            // setup serilog
-            {
-                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
-                #if DEBUG
-                logToStdout = true;
-                #endif
-
-                Log.Setup(false);
             }
 
             try
@@ -150,7 +190,10 @@ namespace Rained
                 logToStdout = true;
                 #endif
 
-                Log.Setup(logToStdout);
+                Log.Setup(
+                    logToStdout: logToStdout,
+                    userLoggerToStdout: false
+                );
             }
 
             // setup window logger

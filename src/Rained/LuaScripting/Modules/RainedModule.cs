@@ -19,6 +19,15 @@ static class RainedModule
 
     public static void Init(Lua lua, NLua.Lua nLua)
     {
+        // init script parameters
+        lua.NewTable();
+        foreach (var (k, v) in Boot.Options.ScriptParameters)
+        {
+            lua.PushString(v);
+            lua.SetField(-2, k);
+        }
+        lua.SetField(-2, "scriptParams");
+
         // function rained.getVersion
         lua.ModuleFunction("getVersion", static (nint luaPtr) =>
         {

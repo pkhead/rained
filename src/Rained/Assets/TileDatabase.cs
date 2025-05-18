@@ -186,7 +186,7 @@ class TileDatabase
 
     public TileDatabase()
     {
-        var drizzleConfig = DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
+        var drizzleConfig = DrizzleConfiguration.LoadConfiguration(Path.Combine(AssetDataPath.GetPath(), "editorConfig.txt"));
         Categories = [];
         
         var lingoParser = new Lingo.LingoParser();
@@ -308,7 +308,7 @@ class TileDatabase
 
         // read Init.txt
         int lineNo = 1;
-        foreach (var line in File.ReadLines(Path.Combine(RainEd.Instance.AssetDataPath, "Graphics", "Init.txt")))
+        foreach (var line in File.ReadLines(Path.Combine(AssetDataPath.GetPath(), "Graphics", "Init.txt")))
         {
             ProcessLine(line, lineNo++);
         }

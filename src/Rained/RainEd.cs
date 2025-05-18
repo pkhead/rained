@@ -273,12 +273,10 @@ sealed class RainEd
 
             Log.UserLogger.Information("Asset initialization done!");
             Log.Information("----- ASSET INIT DONE! -----");
-
-            // run lua scripts after initializing the tiles
-            // (trying to get lua error messages to show as soon as possible)
+            
             try
             {
-                LuaScripting.LuaInterface.Initialize(new APIGuiHost());
+                LuaScripting.LuaInterface.Initialize(new APIGuiHost(), !Boot.Options.NoAutoloads);
             }
             catch (LuaScriptException e)
             {

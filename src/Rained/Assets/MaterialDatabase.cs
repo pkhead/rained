@@ -109,7 +109,7 @@ class MaterialDatabase
     private void RegisterCustomMaterials()
     {
         var parser = new Lingo.LingoParser();
-        var initFile = Path.Combine(RainEd.Instance.AssetDataPath, "Materials", "Init.txt");
+        var initFile = Path.Combine(AssetDataPath.GetPath(), "Materials", "Init.txt");
         if (!File.Exists(initFile))
         {
             Log.UserLogger.Warning("Materials/Init.txt not found");

@@ -585,7 +585,7 @@ class PropDatabase
     private void InitProps(TileDatabase tileDatabase)
     {
         // read prop init file
-        var initFilePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", "Init.txt");
+        var initFilePath = Path.Combine(AssetDataPath.GetPath(), "Props", "Init.txt");
         var lingoParser = new Lingo.LingoParser();
         int lineNo = 0;
 
@@ -746,7 +746,7 @@ class PropDatabase
     private void InitCustomColors()
     {
         // read propColors.txt
-        var initFilePath = Path.Combine(RainEd.Instance.AssetDataPath, "Props", "propColors.txt");
+        var initFilePath = Path.Combine(AssetDataPath.GetPath(), "Props", "propColors.txt");
         var lingoParser = new Lingo.LingoParser();
 
         foreach (var line in File.ReadLines(initFilePath))

@@ -62,6 +62,8 @@ OBJECT_TYPE = {
 ---@field unrecognizedEffects string[]?
 ---@field unrecognizedProps string[]?
 
+rained.scriptParams = {}
+
 ---Get the current application version.
 ---@return string version The version number as a string 
 function rained.getVersion() end
@@ -74,7 +76,8 @@ function rained.getApiVersion() end
 ---it was opened normally and so is in GUI mode.
 ---
 ---Due to the lack of a GUI, several things are different in batch mode:
---- - commands, autotiles, history, and onUpdate are no-ops
+--- - commands, autotiles, and onUpdate are no-ops
+--- - the history module will not be defined
 --- - alert will instead print messages to stdout.
 ---@return boolean isConsole
 function rained.isBatchMode() end

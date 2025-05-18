@@ -229,6 +229,53 @@ class APIBatchHost : IAPIHost
         }
     }
 
+    public APIBatchHost()
+    {
+        string initPhase = "[unknown asset load phase]";
+
+        // #if !DEBUG
+        try
+        // #endif
+        {
+            DrizzleCast.Initialize();
+            
+            initPhase = "materials";
+            Log.Information("Reading Materials/Init.txt");
+            MaterialDatabase = new Assets.MaterialDatabase();
+
+            initPhase = "tiles";
+            Log.Information("Reading Graphics/Init.txt...");
+            TileDatabase = new Assets.TileDatabase();
+            
+            initPhase = "effects";
+            Log.Information("Initializing effects database...");
+            EffectsDatabase = new EffectsDatabase();
+
+            initPhase = "props";
+            Log.Information("Reading Props/Init.txt");
+            PropDatabase = new PropDatabase(TileDatabase);
+
+            Log.Information("Asset initialization done!");
+            Log.Information("----- ASSET INIT DONE! -----");
+        }
+        // #if !DEBUG
+        catch (Exception e)
+        {
+            Log.Error(e.ToString());
+
+            if (e is RainEdStartupException)
+                throw;
+
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"error while loading {initPhase}:");
+            Console.ResetColor();
+            Console.WriteLine(e);
+            
+            throw new RainEdStartupException();
+        }
+        // #endif
+    }
+
     public void Print(string msg)
     {
         Log.Information("[lua] " + msg);
@@ -280,7 +327,7 @@ class APIBatchHost : IAPIHost
 
     public LevelLoadResult OpenLevel(string filePath)
     {
-        var loadRes = LevelSerialization.Load(filePath);
+        var loadRes = LevelSerialization.Load(Path.GetFullPath(filePath));
         var tab = new Document(loadRes.Level, filePath);
         _documents.Add(tab);
         ActiveDocument = _documents.Count - 1;
@@ -289,7 +336,7 @@ class APIBatchHost : IAPIHost
 
     public void NewLevel(int width, int height, string? filePath)
     {
-        var tab = new Document(new Level(width, height), filePath);
+        var tab = new Document(new Level(width, height), filePath is not null ? Path.GetFullPath(filePath) : null);
         _documents.Add(tab);
         ActiveDocument = _documents.Count - 1;
     }
@@ -297,9 +344,8 @@ class APIBatchHost : IAPIHost
     public bool AsyncSaveActiveDocument(EditorWindow.AsyncSaveCallback? callback, string? overridePath)
     {
         var doc = _documents[ActiveDocument];
-        var path = overridePath ?? doc.FilePath;
-        if (path is null)
-            throw new Exception("cannot save a document with no path in batch mode");
+        var path = (overridePath ?? doc.FilePath)
+            ?? throw new Exception("cannot save a document with no path in batch mode");
         
         LevelSerialization.SaveLevelTextFile(Level, path);
         LevelSerialization.SaveLevelLightMap(Level, path);
@@ -369,10 +415,10 @@ class APIBatchHost : IAPIHost
     }
 
     public Level Level => _documents[ActiveDocument].Level;
-    public MaterialDatabase MaterialDatabase => RainEd.Instance.MaterialDatabase;
-    public TileDatabase TileDatabase => RainEd.Instance.TileDatabase;
-    public EffectsDatabase EffectsDatabase => RainEd.Instance.EffectsDatabase;
-    public PropDatabase PropDatabase => RainEd.Instance.PropDatabase;
+    public MaterialDatabase MaterialDatabase { get; private set; }
+    public TileDatabase TileDatabase { get; private set; }
+    public EffectsDatabase EffectsDatabase { get; private set; }
+    public PropDatabase PropDatabase { get; private set; }
     public int SelectedEffect
     {
         get => _documents[_activeDocument].SelectedEffect;
