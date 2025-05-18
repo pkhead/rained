@@ -117,6 +117,11 @@ namespace Rained
                     }
                 }
             }
+            else
+            {
+                // this would have been loaded by APIBatchHost ctor
+                Assets.DrizzleCast.Initialize();
+            }
 
             if (bootOptions.Render)
                 LaunchRenderer();
