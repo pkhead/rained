@@ -363,6 +363,22 @@ static class PreferencesWindow
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Grid Opacity");
 
+            // spec opacity
+            float specOpacity = prefs.TileSpecOpacity;
+            if (ImGui.SliderFloat("##Tile Specs Opacity", ref specOpacity, 0f, 1f))
+            {
+                prefs.TileSpecOpacity = specOpacity;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetTILESPEC"))
+            {
+                prefs.TileSpecOpacity = UserPreferences.DefaultTileSpecOpacity;
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Tile Specs Opacity");
+
             // update layer colors in preferences class
             prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
             prefs.LayerColor2 = Vec3ToHexColor(layerColor2);

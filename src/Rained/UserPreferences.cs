@@ -381,8 +381,13 @@ class UserPreferences
     public string TileSpec1String { get => TileSpec1.ToString(); set => TileSpec1 = new HexColorRGBA(value); }
     [JsonPropertyName("tileSpec2")]
     public string TileSpec2String { get => TileSpec2.ToString(); set => TileSpec2 = new HexColorRGBA(value); }
+
     public static float DefaultGridOpacity = 0.2f;
     public float GridOpacity { get; set; } = DefaultGridOpacity;
+
+    public static float DefaultTileSpecOpacity = 1.0f;
+    public float TileSpecOpacity { get; set; } = DefaultTileSpecOpacity;
+
 
     public string Theme { get; set; }
     public string Font { get; set; }
