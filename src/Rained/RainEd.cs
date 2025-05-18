@@ -278,7 +278,7 @@ sealed class RainEd
             // (trying to get lua error messages to show as soon as possible)
             try
             {
-                LuaScripting.LuaInterface.Initialize();
+                LuaScripting.LuaInterface.Initialize(new APIGuiHost());
             }
             catch (LuaScriptException e)
             {
@@ -466,7 +466,7 @@ sealed class RainEd
         SwitchTab(tab, true);
     }
 
-    public void LoadLevelThrow(string path)
+    public LevelLoadResult LoadLevelThrow(string path)
     {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty!", nameof(path));
         Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
@@ -499,6 +499,8 @@ sealed class RainEd
             // i think it may be useful to add it to the list
             // even if the level failed to load due to unrecognized assets
             AddToRecentFiles(path);
+
+            return loadRes;
         }
         finally
         {

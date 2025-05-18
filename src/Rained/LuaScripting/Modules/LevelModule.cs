@@ -115,22 +115,31 @@ static class LevelModule
             var coro = Lua.FromIntPtr(luaPtr);
             if (!coro.IsYieldable) return coro.ErrorWhere("attempt to called rained.level.save from a non-yieldable context");
 
+            string? overridePath = null;
+            if (!coro.IsNoneOrNil(1))
+            {
+                overridePath = Path.GetFullPath(coro.ToString(1));
+            }
+
             int? coroRef = null;
             string? path = null;
 
-            bool immediate = EditorWindow.AsyncSave((string? p, bool immediate) =>
-            {
-                path = p;
-                if (immediate) return;
-                if (coroRef is null) throw new Exception("referenced coroutine is null");
+            bool immediate = EditorWindow.AsyncSave(
+                overridePath: overridePath,
+                callback: (string? p, bool immediate) =>
+                {
+                    path = p;
+                    if (immediate) return;
+                    if (coroRef is null) throw new Exception("referenced coroutine is null");
 
-                var lua = LuaInterface.LuaState;
-                lua.RawGetInteger(LuaRegistry.Index, coroRef.Value);
-                lua.Unref(LuaRegistry.Index, coroRef.Value);
+                    var lua = LuaInterface.LuaState;
+                    lua.RawGetInteger(LuaRegistry.Index, coroRef.Value);
+                    lua.Unref(LuaRegistry.Index, coroRef.Value);
 
-                lua.PushString(RainEd.Instance.CurrentFilePath);
-                LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
-            });
+                    lua.PushString(RainEd.Instance.CurrentFilePath);
+                    LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
+                }
+            );
 
             if (immediate)
             {

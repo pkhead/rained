@@ -20,8 +20,12 @@ static class LuaInterface
     private static LuaHelpers.LuaFunction loaderDelegate = new(RainedLoader);
     private static string scriptsPath = null!;
 
-    public static void Initialize()
+    public static IAPIHost Host { get; private set; } = null!;
+
+    public static void Initialize(IAPIHost host)
     {
+        Host = host;
+
         scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
 
         luaState = new Lua()

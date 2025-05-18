@@ -206,10 +206,9 @@ static class EditorWindow
                 {
                     LuaScripting.LuaInterface.Unload();
                     
-                    
                     try
                     {
-                        LuaScripting.LuaInterface.Initialize();
+                        LuaScripting.LuaInterface.Initialize(new LuaScripting.APIGuiHost());
                     }
                     catch (LuaScriptException e)
                     {
@@ -428,16 +427,20 @@ static class EditorWindow
         });
     }
 
+    public delegate void AsyncSaveCallback(string? path, bool immediate);
+
     /// <summary>
-    /// Attempts to save the current level. If the level does not yet have an associated
-    /// file path, it will open a file browser and save the file asynchronously. In this case,
-    /// it returns false. Otherwise, it will return true.
+    /// Attempts to save the current level to the optional overridePath parameter. If not specified,
+    /// it will use the already-associated file path for the level. If that doesn't exist either,
+    /// it will return false, open the GUI file browser, and run the given callback if the user
+    /// submitted to or canceled the prompt.
     /// </summary>
-    /// <param name="callback">The optional callback to run when the level was saved. First argument is if the function had been called immediately.</param>
+    /// <param name="callback">The optional callback to run if the file browser was opened.</param>
+    /// <param name="overridePath">The path to save the level to.</param>
     /// <returns>True if the level was able to be saved immediately, false if not.</returns>
-    public static bool AsyncSave(Action<string?, bool>? callback = null)
+    public static bool AsyncSave(AsyncSaveCallback? callback = null, string? overridePath = null)
     {
-        if (RainEd.Instance.CurrentTab!.IsTemporaryFile)
+        if (RainEd.Instance.CurrentTab!.IsTemporaryFile && string.IsNullOrEmpty(overridePath))
         {
             OpenLevelBrowser(FileBrowser.OpenMode.Write, (paths) =>
             {
@@ -455,8 +458,9 @@ static class EditorWindow
         }
         else
         {
-            SaveLevelCallback(RainEd.Instance.CurrentFilePath);
-            callback?.Invoke(RainEd.Instance.CurrentFilePath, true);
+            var path = overridePath ?? RainEd.Instance.CurrentFilePath;
+            SaveLevelCallback(path);
+            callback?.Invoke(path, true);
             return true;
         }
     }
