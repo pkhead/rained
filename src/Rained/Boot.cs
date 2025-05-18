@@ -107,7 +107,7 @@ namespace Rained
                 if (bootOptions.Files.Count == 1 && !Directory.Exists(bootOptions.Files[0]))
                 {
                     Log.Information("====== Standalone render ======");
-                    Drizzle.DrizzleRender.Render(bootOptions.Files[0]);
+                    Drizzle.DrizzleRender.ConsoleRender(bootOptions.Files[0]);
                 }
 
                 // mass render
@@ -388,66 +388,50 @@ namespace Rained
                         RefreshRate = app.Preferences.RefreshRate;
                     }
 
-                    var stopwatch = new Stopwatch();
-                    stopwatch.Start();
-                    long timeAccum = 0;
-                    long lastTime = stopwatch.ElapsedTicks;
-                    Raylib.WaitTime(0.001);
-
                     while (app.Running)
                     {
-                        long targetFrameLen = Stopwatch.Frequency / _refreshRate;
-                        var dt = stopwatch.ElapsedTicks - lastTime;
-                        lastTime = stopwatch.ElapsedTicks;
-                        // Debug.Assert(dt > 0);
-                        dt = Math.Max(0, dt);
-
-                        const double EpsilonMs = 0.0002;
-                        if (Math.Abs(dt - targetFrameLen) < Stopwatch.Frequency * EpsilonMs)
-                            dt = targetFrameLen;
-                        else if (Math.Abs(dt - targetFrameLen*2) < Stopwatch.Frequency * EpsilonMs)
-                            dt = targetFrameLen*2;
-                        else if (Math.Abs(dt - targetFrameLen/2) < Stopwatch.Frequency * EpsilonMs)
-                            dt = targetFrameLen/2;
-
-                        timeAccum += dt;
-                        for (int i = 0; i < 3 && timeAccum >= targetFrameLen; i++)
+                        // for some reason on MacOS, turning on vsync just... doesn't?
+                        // I should probably just have framelimiting be able to work with vsync
+                        // in place, since it's possible a user's drivers don't listen to vsync on/off requests,
+                        // but... whatever.
+                        if (Window.VSync && !OperatingSystem.IsMacOS())
                         {
-                            if (!app.Running) break;
-
-                            // update fonts if scale changed or reload was requested
-                            var io = ImGui.GetIO();
-                            if (WindowScale != curWindowScale || Fonts.FontReloadQueued)
-                            {
-                                Fonts.FontReloadQueued = false;
-                                curWindowScale = WindowScale;
-                                Fonts.ReloadFonts(app.Preferences.FontSize);
-                                ImGuiController!.RecreateFontDeviceTexture();
-                            }
-
-                            Raylib.BeginDrawing();
-                            PixelIconScale = (int) curWindowScale;
-
-                            // save style sizes and scale to dpi before rendering
-                            // restore it back to normal afterwards
-                            // (this is so the style editor works)
-                            unsafe
-                            {
-                                ImGuiExt.StoreStyle();
-                                ImGui.GetStyle().ScaleAllSizes(curWindowScale);
-
-                                ImGuiController!.Update(Raylib.GetFrameTime());
-                                app.Draw(Raylib.GetFrameTime());
-
-                                ImGuiController!.Render();
-                                ImGuiExt.LoadStyle();
-                            }
-                            
-                            Raylib.EndDrawing();
-                            timeAccum -= targetFrameLen;
+                            Raylib.SetTargetFPS(0);
+                        }
+                        else
+                        {
+                            Raylib.SetTargetFPS(_refreshRate);
                         }
 
-                        Raylib.WaitTime(0.001);
+                        // update fonts if scale changed or reload was requested
+                        var io = ImGui.GetIO();
+                        if (WindowScale != curWindowScale || Fonts.FontReloadQueued)
+                        {
+                            Fonts.FontReloadQueued = false;
+                            curWindowScale = WindowScale;
+                            Fonts.ReloadFonts(app.Preferences.FontSize);
+                            ImGuiController!.RecreateFontDeviceTexture();
+                        }
+
+                        Raylib.BeginDrawing();
+                        PixelIconScale = (int) curWindowScale;
+
+                        // save style sizes and scale to dpi before rendering
+                        // restore it back to normal afterwards
+                        // (this is so the style editor works)
+                        unsafe
+                        {
+                            ImGuiExt.StoreStyle();
+                            ImGui.GetStyle().ScaleAllSizes(curWindowScale);
+
+                            ImGuiController!.Update(Raylib.GetFrameTime());
+                            app.Draw(Raylib.GetFrameTime());
+
+                            ImGuiController!.Render();
+                            ImGuiExt.LoadStyle();
+                        }
+                        
+                        Raylib.EndDrawing();
                     }
 
                     Log.Information("Shutting down Rained...");

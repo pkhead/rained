@@ -33,7 +33,7 @@ class MassRenderProcessWindow
         //renderTask = null!;
         renderTask = Task.Run(() =>
         {
-            renderProcess.Start(prog, ct);
+            renderProcess.AppStart(prog, ct);
         }, ct);
     }
 

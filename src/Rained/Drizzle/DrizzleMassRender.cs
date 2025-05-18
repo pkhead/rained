@@ -41,33 +41,20 @@ class DrizzleMassRender
         }
     }
 
-    static LingoRuntime MakeZygoteRuntime()
-    {
-        Configuration.Default.PreferContiguousImageBuffers = true;
-        LingoRuntime.MovieBasePath = AssetDataPath.GetPath() + Path.DirectorySeparatorChar;
-        LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-
-        var runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-        runtime.Init();
-
-        EditorRuntimeHelpers.RunStartup(runtime);
-
-        return runtime;
-    }
-
     static TaskScheduler? _customScheduler = null;
 
-    public void Start(IProgress<MassRenderNotification>? progress, CancellationToken? cancel)
+    public void AppStart(IProgress<MassRenderNotification>? progress, CancellationToken? cancel)
     {
-        Directory.CreateDirectory(Path.Combine(AssetDataPath.GetPath(), "Levels"));
-        
-        var zygote = DrizzleRender.StaticRuntime;
-        if (zygote is null)
-        {
-            Log.Information("Initializing zygote runtime...");
-            zygote = MakeZygoteRuntime();
-        }
+        var useStatic = RainEd.Instance.Preferences.StaticDrizzleLingoRuntime;
+        if (DrizzleManager.NeedsCreateRuntime(useStatic))
+            Log.UserLogger.Information("Initializing Drizzle...");
+        var zygote = DrizzleManager.GetRuntime(useStatic);
 
+        ProcessStart(zygote, progress, cancel);
+    }
+
+    private void ProcessStart(LingoRuntime zygote, IProgress<MassRenderNotification>? progress, CancellationToken? cancel)
+    {
         cancel?.ThrowIfCancellationRequested();
 
         Log.Information("Starting render of {LevelCount} levels", levelPaths.Length);
@@ -78,8 +65,8 @@ class DrizzleMassRender
         TaskScheduler? scheduler = null;
         if (OperatingSystem.IsMacOS())
         {
-            // 1 MiB of stack space
-            scheduler = _customScheduler ??= new StackSizeTaskScheduler(64, 1024 * 1024);
+            // 2 MiB of stack space
+            scheduler = _customScheduler ??= new StackSizeTaskScheduler(64, 1024 * 1024 * 2);
         }
 
         var parallelOptions = new ParallelOptions
@@ -282,7 +269,9 @@ class DrizzleMassRender
         Console.WriteLine("Initializing zygote runtime...");
         try
         {
-            massRender.Start(prog, cancelSource.Token);
+            Directory.CreateDirectory(Path.Combine(AssetDataPath.GetPath(), "Levels"));
+            var zygote = DrizzleManager.GetRuntime(false);
+            massRender.ProcessStart(zygote, prog, cancelSource.Token);
         }
         catch (OperationCanceledException)
         {

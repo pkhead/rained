@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Rained.Assets;
+using Rained.Drizzle;
 using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
@@ -699,6 +700,12 @@ static class PreferencesWindow
                 }
             }
 
+            var saveBackups = prefs.SaveFileBackups;
+            if (ImGui.Checkbox("Save backups of files", ref saveBackups))
+            {
+                prefs.SaveFileBackups = saveBackups;
+            }
+
             ImGui.Separator();
 
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
@@ -929,24 +936,30 @@ static class PreferencesWindow
         bool boolRef;
         var prefs = RainEd.Instance.Preferences;
 
+        ImGui.BeginDisabled(DrizzleManager.StaticRuntime is null);
+        if (ImGui.Button("Discard Drizzle runtime"))
+            DrizzleManager.DisposeStaticRuntime();
+        ImGui.EndDisabled();
+
         // static lingo runtime
         {
             boolRef = prefs.StaticDrizzleLingoRuntime;
-            if (ImGui.Checkbox("Initialize Drizzle on app startup", ref boolRef))
+            if (ImGui.Checkbox("Persistent Drizzle runtime", ref boolRef))
+            {
                 prefs.StaticDrizzleLingoRuntime = boolRef;
+                if (!boolRef)
+                    DrizzleManager.DisposeStaticRuntime();
+            }
             
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             ImGui.SetItemTooltip(
                 """
-                This will run the Drizzle runtime initialization
-                process once, when the app starts. This results
-                in a longer startup time and more idle RAM
-                usage, but will decrease the time it takes to
-                start a render.
-
-                This option requires a restart in order to
-                take effect.    
+                This will keep a Drizzle runtime in the background
+                after a render, instead of discarding it and
+                recreating a new one on the next render. This
+                results in more idle RAM usage, but will decrease
+                the time it takes for subsequent renders.
                 """);
         }
 

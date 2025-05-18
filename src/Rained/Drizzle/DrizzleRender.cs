@@ -173,9 +173,6 @@ class DrizzleRender : IDisposable
     private record MessageDoCancel : ThreadMessage;
     private record MessageReceievePreview(RenderPreview Preview) : ThreadMessage;
 
-    private static LingoRuntime? staticRuntime = null; 
-    public static LingoRuntime? StaticRuntime => staticRuntime;
-
     private class RenderThread
     {
         public ConcurrentQueue<ThreadMessage> Queue;
@@ -203,6 +200,7 @@ class DrizzleRender : IDisposable
             try
             {
                 LingoRuntime runtime;
+                var useStatic = RainEd.Instance.Preferences.StaticDrizzleLingoRuntime;
 
                 // create large trash log file, in case user decided to have it enabled
                 // otherwise drizzle will not work
@@ -213,21 +211,9 @@ class DrizzleRender : IDisposable
                 // make sure Levels output folder exists
                 Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
 
-                if (staticRuntime is not null)
-                {
-                    runtime = staticRuntime;
-                }
-                else
-                {
-                    Log.UserLogger.Information("Initializing Lingo runtime...");
-
-                    LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-                    LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-                    
-                    runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-                    runtime.Init();
-                    EditorRuntimeHelpers.RunStartup(runtime);
-                }
+                if (DrizzleManager.NeedsCreateRuntime(useStatic))
+                    Log.UserLogger.Information("Initializing Drizzle...");
+                runtime = DrizzleManager.GetRuntime(useStatic);
 
                 // process user cancel if cancelled while init
                 // drizzle runtime
@@ -356,8 +342,8 @@ class DrizzleRender : IDisposable
         // MacOS has a smaller stack size by default,
         // so i need to make it bigger on that platform.
         int maxStackSize = 0; // 0 = use default stack size
-        if (OperatingSystem.IsMacOS())
-            maxStackSize = 1024 * 1024; // 1 MiB
+        if (DrizzleManager.UseCustomStackSize)
+            maxStackSize = DrizzleManager.ThreadStackSize;
 
         thread = new Thread(new ThreadStart(threadState.ThreadProc), maxStackSize)
         {
@@ -369,17 +355,6 @@ class DrizzleRender : IDisposable
     public void Dispose()
     {
         PreviewImages?.Dispose();
-    }
-
-    public static void InitStaticRuntime()
-    {
-        Configuration.Default.PreferContiguousImageBuffers = true;
-        LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-        LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-
-        staticRuntime = new LingoRuntime(typeof(MovieScript).Assembly);
-        staticRuntime.Init();
-        EditorRuntimeHelpers.RunStartup(staticRuntime);
     }
 
     private void StatusChanged(RenderStatus status)
@@ -651,7 +626,7 @@ class DrizzleRender : IDisposable
     /// </summary>
     /// <param name="levelPath">The path of the level to render</param>
     /// <returns></returns>
-    public static void Render(string levelPath)
+    public static void ConsoleRender(string levelPath)
     {
         var levelName = Path.GetFileNameWithoutExtension(levelPath);
         var pathWithoutExt = Path.Combine(Path.GetDirectoryName(levelPath)!, levelName);
@@ -678,23 +653,8 @@ class DrizzleRender : IDisposable
         Directory.CreateDirectory(Path.Combine(dataPath, "Levels"));
 
         LingoRuntime runtime;
-
-        if (staticRuntime is not null)
-        {
-            runtime = staticRuntime;
-        }
-        else
-        {
-            Console.WriteLine("Initializing Lingo runtime...");
-
-            Configuration.Default.PreferContiguousImageBuffers = true;
-            LingoRuntime.MovieBasePath = dataPath + Path.DirectorySeparatorChar;
-            LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-            
-            runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-            runtime.Init();
-            EditorRuntimeHelpers.RunStartup(runtime);
-        }
+        Console.WriteLine("Initializing Lingo runtime...");
+        runtime = DrizzleManager.GetRuntime(false);
 
         EditorRuntimeHelpers.RunLoadLevel(runtime, levelPath);
 

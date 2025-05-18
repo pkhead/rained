@@ -312,12 +312,6 @@ sealed class RainEd
         if (TileDatabase.HasErrors || PropDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
 
-        if (Preferences.StaticDrizzleLingoRuntime)
-        {
-            Log.Information("Initializing Lingo runtime...");
-            Drizzle.DrizzleRender.InitStaticRuntime();
-        }
-
         UpdateTitle();
 
         // apply window preferences
@@ -330,11 +324,19 @@ sealed class RainEd
         PaletteWindow.IsWindowOpen = Preferences.ShowPaletteWindow;
 
         // level boot load
-        foreach (var path in levelPaths)
+        // defer this to next frame, because loading lightmap requires gpu stuff,
+        // and at this point the first frame hasn't been set up yet, so opengl state
+        // hadn't been initialized, so interfacing with opengl at this point results in
+        // undefined behavior.
+        var levelsToLoad = levelPaths.ToArray();
+        DeferToNextFrame(() =>
         {
-            Log.Information("Boot load " + path);
-            LoadLevel(path);
-        }
+            foreach (var path in levelsToLoad)
+            {
+                Log.Information("Boot load " + path);
+                LoadLevel(path);
+            }
+        });
         
         EditorWindow.RequestLoadEmergencySave();
 
@@ -538,6 +540,27 @@ sealed class RainEd
         try
         {
             string oldFilePath = CurrentTab!.FilePath;
+
+            // store backup of level
+            if (Preferences.SaveFileBackups)
+            {
+                var levelPath = path;
+                var pngPath = Path.ChangeExtension(path, "png");
+
+                if (File.Exists(levelPath))
+                {
+                    var backupFile = levelPath + ".1";
+                    File.Delete(backupFile);
+                    File.Move(levelPath, backupFile);
+                }
+
+                if (File.Exists(pngPath))
+                {
+                    var backupFile = pngPath + ".1";
+                    File.Delete(backupFile);
+                    File.Move(pngPath, backupFile);
+                }
+            }
 
             LevelSerialization.SaveLevelTextFile(Level, path);
             LevelSerialization.SaveLevelLightMap(Level, path);
