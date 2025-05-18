@@ -39,6 +39,29 @@ OBJECT_TYPE = {
     SCAVENGER_HOLE = 21
 }
 
+---@alias FileBrowserOpenMode
+---| "write"
+---| "read"
+---| "multiRead"
+---| "directory"
+---| "multiDirectory"
+
+---@class CallbackHandle
+---@field disconnect fun(self:CallbackHandle) Disconnect the callback handle.
+
+---@class CommandInfo
+---@field name string The display name of the command.
+---@field callback fun() The function to run when the command is invoked.
+---@field autoHistory boolean? If set to true, the application will automatically group all changes of the action to a single change in the change history. The command should then not call beginChange or endChange. Defaults to true.
+---@field requiresLevel boolean? If set to true, the command will not be able to run if there is no active level. Defaults to true.
+
+---@class LevelLoadDiagnostics
+---@field hadUnrecognizedAssets boolean
+---@field unrecognizedMaterials string[]?
+---@field unrecognizedTiles string[]?
+---@field unrecognizedEffects string[]?
+---@field unrecognizedProps string[]?
+
 ---Get the current application version.
 ---@return string version The version number as a string 
 function rained.getVersion() end
@@ -47,15 +70,18 @@ function rained.getVersion() end
 ---@return integer major, integer minor, integer revision
 function rained.getApiVersion() end
 
+---Returns true if Rained is in CLI/batch mode, and false if
+---it was opened normally and so is in GUI mode.
+---
+---Due to the lack of a GUI, several things are different in batch mode:
+--- - commands, autotiles, history, and onUpdate are no-ops
+--- - alert will instead print messages to stdout.
+---@return boolean isConsole
+function rained.isBatchMode() end
+
 ---Show a notification to the user.
 ---@param msg string The message to show
 function rained.alert(msg) end
-
----@class CommandInfo
----@field name string The display name of the command.
----@field callback fun() The function to run when the command is invoked.
----@field autoHistory boolean? If set to true, the application will automatically group all changes of the action to a single change in the change history. The command should then not call beginChange or endChange. Defaults to true.
----@field requiresLevel boolean? If set to true, the command will not be able to run if there is no active level. Defaults to true.
 
 ---Register a command invokable by the user.
 ---@param info CommandInfo Initialization parameters for the command.
@@ -108,12 +134,21 @@ function rained.getActiveDocument() end
 ---@return boolean s True on success, false otherwise.
 function rained.setActiveDocument(index) end
 
+---Close a document without saving.
+---
+---Do note that documents are ordered based on the time they were opened, not
+---the order that they appear in the user's tab list.
+---@param index integer The index of the document to close.
+function rained.closeDocument(index) end
+
 ---Check if a document is open.
 ---@return boolean
 function rained.isDocumentOpen() end
 
----Opens a level from file.
----@param filePath string The path of the level.
+---Opens a level from file. Returns diagnostic information if there were problems loading the level
+---but it could be opened regardless, but nil if successful.
+---@param filePath string The file path to the level txt file.
+---@return LevelLoadDiagnostics? diagnostics Table containing diagnostic information if there were problems loading the level.
 function rained.openLevel(filePath) end
 
 ---Creates and opens a new level.
@@ -121,13 +156,6 @@ function rained.openLevel(filePath) end
 ---@param height integer The height of the newly created level.
 ---@param filePath string? The optional file path to associate with the level.
 function rained.newLevel(width, height, filePath) end
-
----@alias FileBrowserOpenMode
----| "write"
----| "read"
----| "multiRead"
----| "directory"
----| "multiDirectory"
 
 ---Open the file browser, blocking the script until the user has either submitted or canceled.
 ---
@@ -169,9 +197,6 @@ function rained.getLevelHeight() end
 ---@param y integer
 ---@return boolean
 function rained.isInBounds(x, y) end
-
----@class CallbackHandle
----@field disconnect fun(self:CallbackHandle) Disconnect the callback handle.
 
 ---Register a callback to be ran per frame.
 ---@param func function The function to run on every frame.
