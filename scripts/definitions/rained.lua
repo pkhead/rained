@@ -82,6 +82,18 @@ function rained.getApiVersion() end
 ---@return boolean isConsole
 function rained.isBatchMode() end
 
+---Get the path of Rained's asset directory.
+---@return string path
+function rained.getAssetDirectory() end
+
+---Get the path of Rained's config directory.
+---@return string path
+function rained.getConfigDirectory() end
+
+---Get the path of Drizzle data directory.
+---@return string path
+function rained.getDataDirectory() end
+
 ---Show a notification to the user.
 ---@param msg string The message to show
 function rained.alert(msg) end
@@ -202,6 +214,22 @@ function rained.getLevelHeight() end
 function rained.isInBounds(x, y) end
 
 ---Register a callback to be ran per frame.
----@param func function The function to run on every frame.
+---@param func fun(dt:number) The function to run on every frame.
 ---@return CallbackHandle handle The callback handle.
 function rained.onUpdate(func) end
+
+---Register a callback to be ran before a level render starts.
+---@param func fun(sourceTxt:string) The function to run.
+---@return CallbackHandle handle The callback handle.
+function rained.onPreRender(func) end
+
+---Register a callback to be ran after the completion of a level render.
+---@param func fun(sourceTxt:string, destTxt:string, destPngs:...) The function to run.
+---@return CallbackHandle handle The callback handle.
+function rained.onPostRender(func) end
+
+---Register a callback to be ran when a level render fails.
+---If the error reason is nil, that means the render was canceled.
+---@param func fun(sourceTxt:string, reason:string?) The function to run.
+---@return CallbackHandle handle The callback handle.
+function rained.onRenderFailure(func) end

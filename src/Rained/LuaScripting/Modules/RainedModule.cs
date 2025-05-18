@@ -6,7 +6,6 @@ using Rained.LevelData;
 static class RainedModule
 {
     private static readonly Dictionary<int, int> registeredCmds = [];
-    private static readonly List<LuaCallback> updateCallbacks = [];
     private const string CommandID = "RainedCommandID";
     private static readonly string[] fileBrowserOpenMode = ["write", "read", "multiRead", "directory", "multiDirectory"];
 
@@ -14,8 +13,11 @@ static class RainedModule
     private static FileBrowser? fileBrowser = null;
 
     private static nint levelFilterUserdata;
-
-    //private static readonly LuaFunction _errHandler = new(LuaHelpers.ErrorHandler);
+    
+    private static readonly List<LuaCallback> updateCallbacks = [];
+    private static readonly List<LuaCallback> preRenderCallbacks = [];
+    private static readonly List<LuaCallback> postRenderCallbacks = [];
+    private static readonly List<LuaCallback> renderFailCallbacks = [];
 
     public static void Init(Lua lua, NLua.Lua nLua)
     {
@@ -456,6 +458,48 @@ static class RainedModule
             
             return 1;
         });
+
+        lua.ModuleFunction("onPreRender", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => preRenderCallbacks.Remove(cb)
+            };
+            preRenderCallbacks.Add(cb);
+            
+            return 1;
+        });
+
+        lua.ModuleFunction("onPostRender", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => postRenderCallbacks.Remove(cb)
+            };
+            postRenderCallbacks.Add(cb);
+            
+            return 1;
+        });
+
+        lua.ModuleFunction("onRenderFailure", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => renderFailCallbacks.Remove(cb)
+            };
+            renderFailCallbacks.Add(cb);
+            
+            return 1;
+        });
     }
 
     public static void UpdateCallback(float dt)
@@ -469,6 +513,45 @@ static class RainedModule
         {
             cb.LuaState.PushNumber(dt);
             cb.Invoke(1);
+        }
+    }
+
+    public static void PreRenderCallback(string sourceTxt)
+    {
+        foreach (var cb in preRenderCallbacks)
+        {
+            cb.LuaState.PushString(sourceTxt);
+            cb.Invoke(1);
+        }
+    }
+
+    public static void PostRenderCallback(string sourceTxt, string dstTxt, params string[] dstPngs)
+    {
+        foreach (var cb in postRenderCallbacks)
+        {
+            cb.LuaState.PushString(sourceTxt);
+            cb.LuaState.PushString(dstTxt);
+            foreach (var png in dstPngs)
+            {
+                cb.LuaState.PushString(png);
+            }
+
+            cb.Invoke(2 + dstPngs.Length);
+        }
+    }
+
+    public static void RenderFailureCallback(string sourceTxt, string? errorReason)
+    {
+        foreach (var cb in renderFailCallbacks)
+        {
+            cb.LuaState.PushString(sourceTxt);
+
+            if (errorReason is not null)
+                cb.LuaState.PushString(errorReason);
+            else
+                cb.LuaState.PushNil();
+            
+            cb.Invoke(2);
         }
     }
 
