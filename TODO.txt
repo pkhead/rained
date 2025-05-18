@@ -41,13 +41,14 @@ v2.4.0:
       - add re-path button (useful for autotiles that do random)
 
 v2.3.0:
-  - Lightmap stretch (ditto) & move
+  - prop editor Edit > Z-Translate
   - prop editor lasso select
   - light editor rotation/scale sliders
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
 - lua imgui interface
+- tile graphics ludo's seamless tile types?
 
 Do Later:
 - popup menu for view toggle
