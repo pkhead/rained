@@ -214,6 +214,7 @@ class APIBatchHost : IAPIHost
     private int _activeDocument = -1;
 
     private readonly List<RainEd.Command> _commands = [];
+    private readonly LevelSerializationParams _hostData;
 
     public int DocumentCount => _documents.Count;
     public int ActiveDocument
@@ -223,7 +224,8 @@ class APIBatchHost : IAPIHost
         {
             if (_activeDocument != value)
             {
-                _documentOpenStack.Push(_documents[_activeDocument]);
+                if (_activeDocument != -1)
+                    _documentOpenStack.Push(_documents[_activeDocument]);
                 _activeDocument = value;
             }
         }
@@ -274,6 +276,15 @@ class APIBatchHost : IAPIHost
             throw new RainEdStartupException();
         }
         // #endif
+
+        _hostData = new LevelSerializationParams
+        {
+            MaterialDatabase = MaterialDatabase,
+            TileDatabase = TileDatabase,
+            EffectsDatabase = EffectsDatabase,
+            PropDatabase = PropDatabase,
+            ActiveWorkLayer = 0
+        };
     }
 
     public void Print(string msg)
@@ -327,7 +338,7 @@ class APIBatchHost : IAPIHost
 
     public LevelLoadResult OpenLevel(string filePath)
     {
-        var loadRes = LevelSerialization.Load(Path.GetFullPath(filePath));
+        var loadRes = LevelSerialization.Load(Path.GetFullPath(filePath), _hostData);
         var tab = new Document(loadRes.Level, filePath);
         _documents.Add(tab);
         ActiveDocument = _documents.Count - 1;
@@ -347,7 +358,7 @@ class APIBatchHost : IAPIHost
         var path = (overridePath ?? doc.FilePath)
             ?? throw new Exception("cannot save a document with no path in batch mode");
         
-        LevelSerialization.SaveLevelTextFile(Level, path);
+        LevelSerialization.SaveLevelTextFile(Level, path, _hostData);
         LevelSerialization.SaveLevelLightMap(Level, path);
 
         if (doc.FilePath != overridePath)
@@ -414,7 +425,7 @@ class APIBatchHost : IAPIHost
         Level.Resize(newWidth, newHeight, anchorX, anchorY);
     }
 
-    public Level Level => _documents[ActiveDocument].Level;
+    public Level Level => ActiveDocument == -1 ? throw new NoLevelException() : _documents[ActiveDocument].Level;
     public MaterialDatabase MaterialDatabase { get; private set; }
     public TileDatabase TileDatabase { get; private set; }
     public EffectsDatabase EffectsDatabase { get; private set; }

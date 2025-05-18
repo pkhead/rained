@@ -176,6 +176,7 @@ static class LevelModule
 
         lua.ModuleFunction("__index", static (nint luaPtr) => {
             var lua = Lua.FromIntPtr(luaPtr);
+            LuaHelpers.LevelCheck(lua);
             var idx = lua.ToString(2);
 
             switch (idx) {
@@ -252,6 +253,7 @@ static class LevelModule
 
         lua.ModuleFunction("__newindex", static (nint luaPtr) => {
             var lua = Lua.FromIntPtr(luaPtr);
+            LuaHelpers.LevelCheck(lua);
             var idx = lua.ToString(2);
 
             switch (idx) {

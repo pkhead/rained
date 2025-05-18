@@ -338,7 +338,7 @@ static class LuaHelpers
         lua.Pop(1); // remove traceback
 
         // return original error object?
-        lua.PushCopy(1);
+        // lua.PushCopy(1);
         return 1;
     }
 
@@ -363,6 +363,49 @@ static class LuaHelpers
             ErrorHandler(lua.Handle, -1);
             results = 0;
             return LuaStatus.ErrRun;
+        }
+    }
+
+    public static LuaStatus Call(Lua lua, int arguments, int results)
+    {
+        lua.PushCFunction(static (nint luaPtr) =>
+        {
+            ErrorHandler(luaPtr, 1);
+            return 1;
+        });
+
+        lua.Insert(-arguments - 2);
+        try
+        {
+            LuaStatus stat = lua.PCall(arguments, results, -arguments - 2);
+            if (stat == LuaStatus.ErrRun)
+            {
+                lua.Remove(-2); // pop the error handler, keeping the original error object
+            }
+            else
+            {
+                lua.Remove(-(results + 1)); // pop the error handler
+            }
+            return stat;
+        }
+        catch (NoLevelException)
+        {
+            lua.Where(1);
+            lua.PushString("a level is not loaded");
+            lua.Concat(2);
+            ErrorHandler(lua.Handle, -1);
+            return LuaStatus.ErrRun;
+        }
+    }
+
+    public static void LevelCheck(Lua lua)
+    {
+        if (LuaInterface.Host.ActiveDocument == -1)
+        {
+            lua.Where(1);
+            lua.PushString("a level is not loaded");
+            lua.Concat(2);
+            lua.Error();
         }
     }
 }

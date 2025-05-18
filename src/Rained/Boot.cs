@@ -113,13 +113,7 @@ namespace Rained
                     }
                     else
                     {
-                        lua.PushCFunction(static (nint luaPtr) =>
-                        {
-                            LuaHelpers.ErrorHandler(luaPtr, 1);
-                            return 0;
-                        });
-                        lua.PushCopy(-2);
-                        lua.PCall(0, 0, -2);
+                        LuaHelpers.Call(lua, 0, 0);
                     }
                 }
             }
