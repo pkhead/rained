@@ -15,10 +15,10 @@ static class PropModule
 
     public static void Init(Lua lua, NLua.Lua nlua)
     {
-        propColorNames = new string[RainEd.Instance.PropDatabase.PropColors.Count];
+        propColorNames = new string[LuaInterface.Host.PropDatabase.PropColors.Count];
 
         int i = 0;
-        foreach (var col in RainEd.Instance.PropDatabase.PropColors)
+        foreach (var col in LuaInterface.Host.PropDatabase.PropColors)
         {
             propColorNames[i++] = col.Name;
         }
@@ -31,7 +31,7 @@ static class PropModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var initName = lua.CheckString(1);
-            if (!RainEd.Instance.PropDatabase.TryGetPropFromName(initName, out var init))
+            if (!LuaInterface.Host.PropDatabase.TryGetPropFromName(initName, out var init))
             {
                 return lua.ArgumentError(1, $"unrecognized prop '{initName}'");
             }
@@ -69,7 +69,7 @@ static class PropModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
-            var level = RainEd.Instance.Level;
+            var level = LuaInterface.Host.Level;
 
             if (!level.Props.Contains(prop))
             {
@@ -85,9 +85,8 @@ static class PropModule
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
 
-            RainEd.Instance.Level.Props.Remove(prop);
-            var propEditor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
-            if (propEditor.SelectedProps.Remove(prop))
+            LuaInterface.Host.Level.Props.Remove(prop);
+            if (LuaInterface.Host.SelectedProps.Remove(prop))
             {
                 _changeRecordDirty = true;
                 lua.PushBoolean(true);
@@ -106,7 +105,7 @@ static class PropModule
             lua.NewTable();
 
             int i = 1;
-            foreach (var prop in RainEd.Instance.Level.Props)
+            foreach (var prop in LuaInterface.Host.Level.Props)
             {
                 wrap.PushWrapper(lua, prop);
                 lua.RawSetInteger(-2, i);
@@ -122,7 +121,7 @@ static class PropModule
             lua.NewTable();
 
             int i = 1;
-            foreach (var prop in RainEd.Instance.LevelView.GetEditor<PropEditor>().SelectedProps)
+            foreach (var prop in LuaInterface.Host.SelectedProps)
             {
                 wrap.PushWrapper(lua, prop);
                 lua.RawSetInteger(-2, i);
@@ -135,19 +134,17 @@ static class PropModule
         lua.ModuleFunction("clearSelection", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var editor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
-            editor.SelectedProps.Clear();
+            LuaInterface.Host.SelectedProps.Clear();
             return 0;
         });
 
         lua.ModuleFunction("addToSelection", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var editor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
             var prop = wrap.GetRef(lua, 1);
 
-            if (!editor.SelectedProps.Contains(prop))
-                editor.SelectedProps.Add(prop);
+            if (!LuaInterface.Host.SelectedProps.Contains(prop))
+                LuaInterface.Host.SelectedProps.Add(prop);
             
             return 0;
         });
@@ -155,17 +152,16 @@ static class PropModule
         lua.ModuleFunction("removeFromSelection", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var editor = RainEd.Instance.LevelView.GetEditor<PropEditor>();
             var prop = wrap.GetRef(lua, 1);
             
-            lua.PushBoolean( editor.SelectedProps.Remove(prop) );
+            lua.PushBoolean( LuaInterface.Host.SelectedProps.Remove(prop) );
             return 1;
         });
 
         lua.ModuleFunction("getPropCatalog", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
 
             lua.NewTable();
             int i = 1;
@@ -185,7 +181,7 @@ static class PropModule
         lua.ModuleFunction("getPropCategories", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
 
             lua.NewTable();
             int i = 1;
@@ -203,7 +199,7 @@ static class PropModule
         lua.ModuleFunction("getTileAsPropCategories", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
 
             lua.NewTable();
             int i = 1;
@@ -219,7 +215,7 @@ static class PropModule
         lua.ModuleFunction("getPropsInCategory", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
             var catName = lua.CheckString(1);
 
             foreach (var cat in propDb.Categories)
@@ -247,7 +243,7 @@ static class PropModule
         lua.ModuleFunction("getPropsInTileCategory", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
             var catName = lua.CheckString(1);
 
             foreach (var cat in propDb.TileCategories)
@@ -274,7 +270,7 @@ static class PropModule
         lua.ModuleFunction("getCustomColors", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = LuaInterface.Host.PropDatabase;
             
             lua.NewTable();
             int i = 1;
@@ -290,7 +286,7 @@ static class PropModule
         lua.ModuleFunction("getPropInfo", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            if (!RainEd.Instance.PropDatabase.TryGetPropFromName(lua.CheckString(1), out PropInit? init))
+            if (!LuaInterface.Host.PropDatabase.TryGetPropFromName(lua.CheckString(1), out PropInit? init))
             {
                 lua.PushNil();
                 return 1;
@@ -417,7 +413,7 @@ static class PropModule
                     break;
 
                 case "customColor":
-                    lua.PushString(RainEd.Instance.PropDatabase.PropColors[prop.CustomColor].Name);
+                    lua.PushString(LuaInterface.Host.PropDatabase.PropColors[prop.CustomColor].Name);
                     break;
                     
                 case "clone":

@@ -19,7 +19,7 @@ static class LevelModule
             var lua = Lua.FromIntPtr(luaPtr);
             var x = (int) lua.CheckNumber(1);
             var y = (int) lua.CheckNumber(2);
-            lua.PushBoolean(RainEd.Instance.Level.IsInBounds(x, y));
+            lua.PushBoolean(LuaInterface.Host.Level.IsInBounds(x, y));
             return 1;
         });
 
@@ -80,7 +80,7 @@ static class LevelModule
                 return v;
             }
 
-            var level = RainEd.Instance.Level;
+            var level = LuaInterface.Host.Level;
             int width = GetInteger("width");
             int height = GetInteger("height");
             int borderLeft = GetIntegerOpt("borderLeft", level.BufferTilesLeft);
@@ -100,7 +100,7 @@ static class LevelModule
             if (anchorX < -1 || anchorX > 1) lua.ArgumentError(1, "anchorX must be -1, 0, or 1");
             if (anchorY < -1 || anchorY > 1) lua.ArgumentError(1, "anchorY must be -1, 0, or 1");
 
-            RainEd.Instance.ResizeLevel(width, height, anchorX, anchorY);
+            LuaInterface.Host.ResizeLevel(width, height, anchorX, anchorY);
 
             level.BufferTilesLeft = borderLeft;
             level.BufferTilesTop = borderTop;
@@ -136,7 +136,7 @@ static class LevelModule
                     lua.RawGetInteger(LuaRegistry.Index, coroRef.Value);
                     lua.Unref(LuaRegistry.Index, coroRef.Value);
 
-                    lua.PushString(RainEd.Instance.CurrentFilePath);
+                    lua.PushString(LuaInterface.Host.GetDocumentFilePath(LuaInterface.Host.ActiveDocument));
                     LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
                 }
             );
@@ -180,63 +180,66 @@ static class LevelModule
 
             switch (idx) {
                 case "filePath":
-                    if (string.IsNullOrEmpty(RainEd.Instance.CurrentFilePath)) {
+                {
+                    var fp = LuaInterface.Host.GetDocumentFilePath(LuaInterface.Host.ActiveDocument);
+                    if (string.IsNullOrEmpty(fp)) {
                         lua.PushNil();
                     } else {
-                        lua.PushString(RainEd.Instance.CurrentFilePath);
+                        lua.PushString(fp);
                     }
                     break;
+                }
 
                 case "name":
-                    lua.PushString(RainEd.Instance.CurrentTab!.Name);
+                    lua.PushString(LuaInterface.Host.GetDocumentName(LuaInterface.Host.ActiveDocument));
                     break;
 
                 case "width":
-                    lua.PushInteger(RainEd.Instance.Level.Width);
+                    lua.PushInteger(LuaInterface.Host.Level.Width);
                     break;
 
                 case "height":
-                    lua.PushInteger(RainEd.Instance.Level.Height);
+                    lua.PushInteger(LuaInterface.Host.Level.Height);
                     break;
 
                 case "defaultMedium":
-                    lua.PushBoolean(RainEd.Instance.Level.DefaultMedium);
+                    lua.PushBoolean(LuaInterface.Host.Level.DefaultMedium);
                     break;
 
                 case "hasSunlight":
-                    lua.PushBoolean(RainEd.Instance.Level.HasSunlight);
+                    lua.PushBoolean(LuaInterface.Host.Level.HasSunlight);
                     break;
 
                 case "hasWater":
-                    lua.PushBoolean(RainEd.Instance.Level.HasWater);
+                    lua.PushBoolean(LuaInterface.Host.Level.HasWater);
                     break;
 
                 case "waterLevel":
-                    lua.PushInteger(RainEd.Instance.Level.WaterLevel);
+                    lua.PushInteger(LuaInterface.Host.Level.WaterLevel);
                     break;
 
                 case "isWaterInFront":
-                    lua.PushBoolean(RainEd.Instance.Level.IsWaterInFront);
+                    lua.PushBoolean(LuaInterface.Host.Level.IsWaterInFront);
                     break;
                 
                 case "tileSeed":
-                    lua.PushInteger(RainEd.Instance.Level.TileSeed);
+                    lua.PushInteger(LuaInterface.Host.Level.TileSeed);
                     break;
 
                 case "borderLeft":
-                    lua.PushInteger(RainEd.Instance.Level.BufferTilesLeft);
+                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesLeft);
                     break;
 
                 case "borderTop":
-                    lua.PushInteger(RainEd.Instance.Level.BufferTilesTop);
+                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesTop);
                     break;
                 
                 case "borderRight":
-                    lua.PushInteger(RainEd.Instance.Level.BufferTilesRight);
+                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesRight);
                     break;
 
                 case "borderBottom":
-                    lua.PushInteger(RainEd.Instance.Level.BufferTilesBot);
+                    lua.PushInteger(LuaInterface.Host.Level.BufferTilesBot);
                     break;
 
                 default:
@@ -265,46 +268,46 @@ static class LevelModule
                     return lua.ErrorWhere("field \"height\" is read-only.");
 
                 case "defaultMedium":
-                    RainEd.Instance.Level.DefaultMedium = lua.ToBoolean(3);
+                    LuaInterface.Host.Level.DefaultMedium = lua.ToBoolean(3);
                     break;
 
                 case "hasSunlight":
-                    RainEd.Instance.Level.HasSunlight = lua.ToBoolean(3);
+                    LuaInterface.Host.Level.HasSunlight = lua.ToBoolean(3);
                     break;
 
                 case "hasWater":
-                    RainEd.Instance.Level.HasWater = lua.ToBoolean(3);
+                    LuaInterface.Host.Level.HasWater = lua.ToBoolean(3);
                     break;
 
                 case "waterLevel":
-                    RainEd.Instance.Level.WaterLevel = int.Max(0, (int) lua.CheckNumber(3));
+                    LuaInterface.Host.Level.WaterLevel = int.Max(0, (int) lua.CheckNumber(3));
                     break;
 
                 case "isWaterInFront":
-                    RainEd.Instance.Level.IsWaterInFront = lua.ToBoolean(3);
+                    LuaInterface.Host.Level.IsWaterInFront = lua.ToBoolean(3);
                     break;
                 
                 case "tileSeed":
-                    RainEd.Instance.Level.TileSeed = Math.Clamp(
+                    LuaInterface.Host.Level.TileSeed = Math.Clamp(
                         (int) lua.CheckNumber(3),
                         0, 400
                     );
                     break;
 
                 case "borderLeft":
-                    RainEd.Instance.Level.BufferTilesLeft = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.Level.BufferTilesLeft = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderTop":
-                    RainEd.Instance.Level.BufferTilesTop = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.Level.BufferTilesTop = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
                 
                 case "borderRight":
-                    RainEd.Instance.Level.BufferTilesRight = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.Level.BufferTilesRight = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 case "borderBottom":
-                    RainEd.Instance.Level.BufferTilesBot = Math.Max( 0, (int) lua.CheckNumber(3) );
+                    LuaInterface.Host.Level.BufferTilesBot = Math.Max( 0, (int) lua.CheckNumber(3) );
                     break;
 
                 default:

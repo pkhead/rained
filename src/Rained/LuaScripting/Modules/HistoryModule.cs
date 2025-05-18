@@ -12,6 +12,9 @@ static class HistoryModule
 
     public static void Init(Lua lua, NLua.Lua nlua)
     {
+        // don't define history module if in batch mode
+        if (!LuaInterface.Host.IsGui) return;
+
         lua.NewTable();
 
         lua.ModuleFunction("beginChange", static (nint luaPtr) =>

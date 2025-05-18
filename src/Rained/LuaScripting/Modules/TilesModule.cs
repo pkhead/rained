@@ -20,17 +20,17 @@ static class TilesModule
 
         // function getTileAt
         nlua.Push(static (int x, int y, int layer) => {
-            var level = RainEd.Instance.Level;
+            var level = LuaInterface.Host.Level;
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return null;
-            var tile = RainEd.Instance.Level.GetTile(level.Layers[layer-1, x, y]);
+            var tile = LuaInterface.Host.Level.GetTile(level.Layers[layer-1, x, y]);
             return tile?.Name;
         });
         lua.SetField(-2, "getTileAt");
 
         // function hasTileHead
         nlua.Push(static (int x, int y, int layer) => {
-            var level = RainEd.Instance.Level;
+            var level = LuaInterface.Host.Level;
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return false;
             return level.Layers[layer-1, x, y].TileHead is not null;
@@ -47,7 +47,7 @@ static class TilesModule
             if (!lua.IsNoneOrNil(4))
                 removeGeo = lua.ToBoolean(4);
             
-            var level = RainEd.Instance.Level;
+            var level = LuaInterface.Host.Level;
             if (layer < 1 || layer > 3) throw new LuaHelpers.LuaErrorException("invald layer " + layer);
             if (!level.IsInBounds(x, y)) return 0;
             level.RemoveTileCell(layer - 1, x, y, removeGeo);
@@ -63,8 +63,8 @@ static class TilesModule
         LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
         {
             var tileName = lua.CheckString(1);
-            if (!RainEd.Instance.TileDatabase.HasTile(tileName)) return 0;
-            var tileData = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+            if (!LuaInterface.Host.TileDatabase.HasTile(tileName)) return 0;
+            var tileData = LuaInterface.Host.TileDatabase.GetTileFromName(tileName);
 
             lua.NewTable();
             lua.PushString(tileData.Name); // name
@@ -136,7 +136,7 @@ static class TilesModule
             Name = name
         };
 
-        RainEd.Instance.Autotiles.AddAutotile(autotile.autotile, category);
+        LuaInterface.Host.AddAutotile(autotile.autotile, category);
         _allAutotiles.Add(autotile.autotile);
         
         // bleh
@@ -291,7 +291,7 @@ static class TilesModule
     {
         result = null;
 
-        var level = RainEd.Instance.Level;
+        var level = LuaInterface.Host.Level;
         var placeMode = TilePlacementMode.Normal;
         
         // validate arguments
@@ -307,12 +307,12 @@ static class TilesModule
         }
         if (layer < 1 || layer > 3)
             throw new Exception($"invalid layer {layer}");
-        if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+        if (!LuaInterface.Host.TileDatabase.HasTile(tileName))
             throw new Exception($"tile '{tileName}' is not recognized");
         layer--; // layer is 1-based in the lua code
         
         // begin placement
-        var tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+        var tile = LuaInterface.Host.TileDatabase.GetTileFromName(tileName);
 
         var validationStatus = level.SafePlaceTile(tile, layer, x, y, placeMode);
         switch (validationStatus)
@@ -337,7 +337,7 @@ static class TilesModule
     {
         foreach (var autotile in _allAutotiles)
         {
-            RainEd.Instance.Autotiles.RemoveAutotile(autotile);
+            LuaInterface.Host.RemoveAutotile(autotile);
             autotile.Dispose();
         }
 

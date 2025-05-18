@@ -13,8 +13,8 @@ static class MaterialsModule
         lua.ModuleFunction("getDefaultMaterial", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matId = RainEd.Instance.Level.DefaultMaterial;
-            var matName = RainEd.Instance.MaterialDatabase.GetMaterial(matId).Name;
+            var matId = LuaInterface.Host.Level.DefaultMaterial;
+            var matName = LuaInterface.Host.MaterialDatabase.GetMaterial(matId).Name;
             lua.PushString(matName);
             return 1;
         });
@@ -22,7 +22,7 @@ static class MaterialsModule
         lua.ModuleFunction("getDefaultMaterialId", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matId = RainEd.Instance.Level.DefaultMaterial;
+            var matId = LuaInterface.Host.Level.DefaultMaterial;
             lua.PushInteger(matId);
             return 1;
         });
@@ -30,14 +30,14 @@ static class MaterialsModule
         lua.ModuleFunction("setDefaultMaterial", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
             
             if (lua.IsInteger(1))
             {
                 var matId = (int) lua.CheckInteger(1);
                 if (matId >= matDb.Materials.Length) return lua.ErrorWhere("unknown material " + matId);
 
-                RainEd.Instance.Level.DefaultMaterial = matId;
+                LuaInterface.Host.Level.DefaultMaterial = matId;
             }
             else
             {
@@ -45,7 +45,7 @@ static class MaterialsModule
                 var matInfo = matDb.GetMaterial(matName);
                 if (matInfo is null) return lua.ErrorWhere($"unknown material '{matName}'");
 
-                RainEd.Instance.Level.DefaultMaterial = matInfo.ID;
+                LuaInterface.Host.Level.DefaultMaterial = matInfo.ID;
             }
 
             return 0;
@@ -54,7 +54,7 @@ static class MaterialsModule
         lua.ModuleFunction("isInstalled", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
             var matName = lua.CheckString(1);
 
             var matInfo = matDb.GetMaterial(matName);
@@ -65,7 +65,7 @@ static class MaterialsModule
         lua.ModuleFunction("getMaterialCatalog", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
 
             lua.NewTable();
             int i = 1;
@@ -81,7 +81,7 @@ static class MaterialsModule
         lua.ModuleFunction("getMaterialCategories", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
 
             lua.NewTable();
             int i = 1;
@@ -97,7 +97,7 @@ static class MaterialsModule
         lua.ModuleFunction("getMaterialsInCategory", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
             var catName = lua.CheckString(1);
 
             foreach (var cat in matDb.Categories)
@@ -123,7 +123,7 @@ static class MaterialsModule
         lua.ModuleFunction("getMaterialId", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
             var matName = lua.CheckString(1);
 
             var matInfo = matDb.GetMaterial(matName);
@@ -136,7 +136,7 @@ static class MaterialsModule
         lua.ModuleFunction("getMaterialName", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var matDb = RainEd.Instance.MaterialDatabase;
+            var matDb = LuaInterface.Host.MaterialDatabase;
             var matId = (int) lua.CheckInteger(1);
 
             var matInfo = matDb.GetMaterial(matId);

@@ -40,7 +40,7 @@ static class RainedModule
         lua.ModuleFunction("isBatchMode", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushBoolean(RainEd.Instance is null);
+            lua.PushBoolean(!LuaInterface.Host.IsGui);
             return 1;
         });
 
@@ -49,7 +49,7 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
 
             lua.PushCopy(1);
-            EditorWindow.ShowNotification(lua.ToString(-1));
+            LuaInterface.Host.Alert(lua.ToString(-1));
             lua.Pop(1);
             return 0;
         });
@@ -57,14 +57,14 @@ static class RainedModule
         lua.ModuleFunction("getLevelWidth", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(RainEd.Instance.Level.Width);
+            lua.PushInteger(LuaInterface.Host.Level.Width);
             return 1;
         });
 
         lua.ModuleFunction("getLevelHeight", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(RainEd.Instance.Level.Height);
+            lua.PushInteger(LuaInterface.Host.Level.Height);
             return 1;
         });
 
@@ -73,14 +73,14 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
             var x = (int)lua.CheckNumber(1);
             var y = (int)lua.CheckNumber(2);
-            lua.PushBoolean(RainEd.Instance.Level.IsInBounds(x, y));
+            lua.PushBoolean(LuaInterface.Host.Level.IsInBounds(x, y));
             return 1;
         });
 
         lua.ModuleFunction("getDocumentCount", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushInteger(RainEd.Instance.Tabs.Count);
+            lua.PushInteger(LuaInterface.Host.DocumentCount);
             return 1;
         });
 
@@ -88,12 +88,12 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +LuaInterface.Host.DocumentCount)
             {
                 lua.PushNil(); return 1;
             }
 
-            lua.PushString(RainEd.Instance.Tabs[idx].Name);
+            lua.PushString(LuaInterface.Host.GetDocumentName(idx));
             return 1;
         });
 
@@ -101,13 +101,13 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +LuaInterface.Host.DocumentCount)
             {
                 lua.PushNil(); return 1;
             }
 
-            var name = RainEd.Instance.Tabs[idx].Name;
-            var filePath = RainEd.Instance.Tabs[idx].FilePath;
+            var name = LuaInterface.Host.GetDocumentName(idx);
+            var filePath = LuaInterface.Host.GetDocumentFilePath(idx);
 
             lua.NewTable();
             lua.PushString(name);
@@ -121,9 +121,9 @@ static class RainedModule
         lua.ModuleFunction("getActiveDocument", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            if (RainEd.Instance.CurrentTab is not null)
+            if (LuaInterface.Host.ActiveDocument != -1)
             {
-                lua.PushInteger(RainEd.Instance.Tabs.IndexOf(RainEd.Instance.CurrentTab) + 1);
+                lua.PushInteger(LuaInterface.Host.ActiveDocument + 1);
             }
             else
             {
@@ -138,13 +138,13 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
 
             var idx = (int)lua.CheckInteger(1) - 1;
-            if (idx < 0 || idx > +RainEd.Instance.Tabs.Count)
+            if (idx < 0 || idx > +LuaInterface.Host.DocumentCount)
             {
                 lua.PushBoolean(false);
                 return 1;
             }
 
-            RainEd.Instance.CurrentTab = RainEd.Instance.Tabs[idx];
+            LuaInterface.Host.ActiveDocument = idx;
             lua.PushBoolean(true);
             return 1;
         });
@@ -152,7 +152,7 @@ static class RainedModule
         lua.ModuleFunction("isDocumentOpen", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushBoolean(RainEd.Instance.CurrentTab is not null);
+            lua.PushBoolean(LuaInterface.Host.ActiveDocument != -1);
             return 1;
         });
 
@@ -203,7 +203,7 @@ static class RainedModule
                 }
                 lua.Pop(1);
 
-                cmdId = RainEd.Instance.RegisterCommand(cmdInit);
+                cmdId = LuaInterface.Host.RegisterCommand(cmdInit);
                 registeredCmds[cmdId] = funcRef;
             }
 
@@ -222,7 +222,7 @@ static class RainedModule
                     RequiresLevel = true
                 };
 
-                cmdId = RainEd.Instance.RegisterCommand(cmdInit);
+                cmdId = LuaInterface.Host.RegisterCommand(cmdInit);
                 registeredCmds[cmdId] = funcRef;
             }
             else
@@ -247,7 +247,7 @@ static class RainedModule
             LevelLoadResult res;
             try
             {
-                res = RainEd.Instance.LoadLevelThrow(filePath, showLevelLoadFailPopup: false);
+                res = LuaInterface.Host.OpenLevel(filePath);
             }
             catch
             {
@@ -310,7 +310,7 @@ static class RainedModule
             var h = (int)lua.CheckInteger(2);
             var filePath = lua.OptString(3, "");
 
-            RainEd.Instance.OpenLevel(new LevelData.Level(w, h), filePath);
+            LuaInterface.Host.NewLevel(w, h, filePath);
             return 0;
         });
 
@@ -482,7 +482,7 @@ static class RainedModule
     {
         foreach (var (cmdId, funcRef) in registeredCmds)
         {
-            RainEd.Instance.UnregisterCommand(cmdId);
+            LuaInterface.Host.UnregisterCommand(cmdId);
             lua.Unref(LuaRegistry.Index, funcRef);
         }
 

@@ -12,9 +12,9 @@ static class CellsModule
         nlua.Push(static (int x, int y, int layer) =>
         {
             layer--;
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
-            return (int) RainEd.Instance.Level.Layers[layer, x, y].Geo;
+            return (int) LuaInterface.Host.Level.Layers[layer, x, y].Geo;
         });
         lua.SetField(-2, "getGeo");
 
@@ -22,12 +22,11 @@ static class CellsModule
         nlua.Push(static (int x, int y, int layer, int geoType) =>
         {
             layer--;
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return;
             if (layer < 0 || layer > 2) throw new Exception("invald layer " + (layer+1));
             if (geoType < 0 || geoType == 8 || geoType > 9) throw new Exception("invalid geo type " + geoType);
-            RainEd.Instance.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
-            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            LuaInterface.Host.Level.Layers[layer, x, y].Geo = (GeoType) geoType;
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Geometry);
         });
         lua.SetField(-2, "setGeo");
 
@@ -35,12 +34,12 @@ static class CellsModule
         nlua.Push(static (int x, int y, int layer) =>
         {
             layer--;
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return null;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return null;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            var idx = RainEd.Instance.Level.Layers[layer, x, y].Material;
+            var idx = LuaInterface.Host.Level.Layers[layer, x, y].Material;
             if (idx == 0) return null;
-            return RainEd.Instance.MaterialDatabase.GetMaterial(idx)?.Name;
+            return LuaInterface.Host.MaterialDatabase.GetMaterial(idx)?.Name;
         });
         lua.SetField(-2, "getMaterial");
 
@@ -55,7 +54,7 @@ static class CellsModule
             int matId;
             if (matName is not null)
             {
-                var mat = RainEd.Instance.MaterialDatabase.GetMaterial(matName);
+                var mat = LuaInterface.Host.MaterialDatabase.GetMaterial(matName);
                 if (mat is null)
                     return lua.ArgumentError(4, $"'{matName}' is not a recognized material");
                 matId = mat.ID;
@@ -65,9 +64,10 @@ static class CellsModule
                 matId = 0;
             }
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
-            RainEd.Instance.Level.Layers[layer, x, y].Material = matId;
+            LuaInterface.Host.Level.Layers[layer, x, y].Material = matId;
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Material);
             return 0;
         });
         lua.SetField(-2, "setMaterial");
@@ -80,9 +80,9 @@ static class CellsModule
             var layer = (int) lua.CheckNumber(3) - 1;
             var matId = (int) lua.CheckNumber(4);
             
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
-            RainEd.Instance.Level.Layers[layer, x, y].Material = matId;
+            LuaInterface.Host.Level.Layers[layer, x, y].Material = matId;
             return 0;
         });
         lua.SetField(-2, "setMaterialId");
@@ -91,10 +91,10 @@ static class CellsModule
         nlua.Push(static (int x, int y, int layer) =>
         {
             layer--;
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            return RainEd.Instance.Level.Layers[layer, x, y].Material;
+            return LuaInterface.Host.Level.Layers[layer, x, y].Material;
         });
         lua.SetField(-2, "getMaterialId");
 
@@ -106,10 +106,10 @@ static class CellsModule
             int layer = (int) lua.CheckInteger(3) - 1;
 
             lua.NewTable();
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 1;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 1;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            ref var cell = ref LuaInterface.Host.Level.Layers[layer, x, y];
             for (int i = 1; i < 32; i++)
             {
                 if (cell.Has((LevelObject)(1 << (i-1))))
@@ -131,7 +131,7 @@ static class CellsModule
             int layer = (int) lua.CheckInteger(3) - 1;
             lua.CheckType(4, KeraLua.LuaType.Table);
             
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             LevelObject objects = 0;
@@ -143,9 +143,8 @@ static class CellsModule
                 objects |= (LevelObject)(1 << (k-1));
             }
 
-            RainEd.Instance.Level.Layers[layer, x, y].Objects = objects;
-            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            LuaInterface.Host.Level.Layers[layer, x, y].Objects = objects;
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
 
             return 0;
         });
@@ -159,7 +158,7 @@ static class CellsModule
             int y = (int) lua.CheckNumber(2);
             int layer = (int) lua.CheckInteger(3) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             LevelObject objs = 0;
@@ -170,7 +169,7 @@ static class CellsModule
                     objs |= (LevelObject)(1 << (v - 1));
             }
 
-            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            ref var cell = ref LuaInterface.Host.Level.Layers[layer, x, y];
             lua.PushBoolean((int)(cell.Objects | ~objs) == ~0);
             return 1;
         });
@@ -184,7 +183,7 @@ static class CellsModule
             int y = (int) lua.CheckNumber(2);
             int layer = (int) lua.CheckInteger(3) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             LevelObject objs = 0;
@@ -195,10 +194,9 @@ static class CellsModule
                     objs |= (LevelObject)(1 << (v - 1));
             }
 
-            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            ref var cell = ref LuaInterface.Host.Level.Layers[layer, x, y];
             cell.Objects |= objs;
-            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
             return 0;
         });
         lua.SetField(-2, "addObject");
@@ -211,7 +209,7 @@ static class CellsModule
             int y = (int) lua.CheckNumber(2);
             int layer = (int) lua.CheckInteger(3) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             LevelObject objs = 0;
@@ -222,10 +220,9 @@ static class CellsModule
                     objs |= (LevelObject)(1 << (v - 1));
             }
 
-            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            ref var cell = ref LuaInterface.Host.Level.Layers[layer, x, y];
             cell.Objects &= ~objs;
-            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
             return 0;
         });
         lua.SetField(-2, "removeObject");
@@ -237,10 +234,10 @@ static class CellsModule
             int y = (int) lua.CheckNumber(2);
             int layer = (int) lua.CheckInteger(3) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            ref var cell = ref RainEd.Instance.Level.Layers[layer, x, y];
+            ref var cell = ref LuaInterface.Host.Level.Layers[layer, x, y];
 
             if (cell.TileHead is not null)
                 lua.PushString(cell.TileHead.Name);
@@ -277,21 +274,21 @@ static class CellsModule
             if (!lua.IsNoneOrNil(4))
                 tileName = lua.CheckString(4);
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             Assets.Tile? tile = null;
 
             if (tileName is not null)
             {
-                if (!RainEd.Instance.TileDatabase.HasTile(tileName))
+                if (!LuaInterface.Host.TileDatabase.HasTile(tileName))
                     throw new LuaHelpers.LuaErrorException($"tile '{tileName}' does not exist");
                 
-                tile = RainEd.Instance.TileDatabase.GetTileFromName(tileName);
+                tile = LuaInterface.Host.TileDatabase.GetTileFromName(tileName);
             }
 
-            RainEd.Instance.Level.SetTileHead(layer, x, y, tile);
-            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(x, y, layer);
+            LuaInterface.Host.Level.SetTileHead(layer, x, y, tile);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.TileHead);
 
             return 0;
         });
@@ -308,21 +305,21 @@ static class CellsModule
             int tileRootY = (int) lua.CheckNumber(5);
             int tileLayer = (int) lua.CheckInteger(6) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            if (!RainEd.Instance.Level.IsInBounds(tileRootX, tileRootY) || tileLayer < 0 || tileLayer > 2)
+            if (!LuaInterface.Host.Level.IsInBounds(tileRootX, tileRootY) || tileLayer < 0 || tileLayer > 2)
                 throw new LuaHelpers.LuaErrorException("target tile root is out of bounds");
             
             // invalidate old tile head
-            var cell = RainEd.Instance.Level.Layers[layer, x, y];
+            var cell = LuaInterface.Host.Level.Layers[layer, x, y];
             if (cell.TileRootX != -1)
             {
-                RainEd.Instance.LevelView.Renderer.InvalidateTileHead(cell.TileRootX, cell.TileRootY, cell.TileLayer);    
+                LuaInterface.Host.InvalidateCell(cell.TileRootX, cell.TileRootY, cell.TileLayer, CellDirtyFlags.TileHead);
             }
 
-            RainEd.Instance.Level.SetTileRoot(layer, x, y, tileRootX, tileRootY, tileLayer);
-            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(tileRootX, tileRootY, tileLayer);
+            LuaInterface.Host.Level.SetTileRoot(layer, x, y, tileRootX, tileRootY, tileLayer);
+            LuaInterface.Host.InvalidateCell(tileRootX, tileRootY, tileLayer, CellDirtyFlags.TileHead);
 
             return 0;
         });
@@ -335,11 +332,11 @@ static class CellsModule
             int y = (int) lua.CheckNumber(2);
             int layer = (int) lua.CheckInteger(3) - 1;
 
-            if (!RainEd.Instance.Level.IsInBounds(x, y)) return 0;
+            if (!LuaInterface.Host.Level.IsInBounds(x, y)) return 0;
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
-            RainEd.Instance.Level.ClearTileRoot(layer, x, y);
-            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(x, y, layer);
+            LuaInterface.Host.Level.ClearTileRoot(layer, x, y);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.TileHead);
             
             return 0;
         });
