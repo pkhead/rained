@@ -52,6 +52,27 @@ static class RainedModule
             lua.PushBoolean(!LuaInterface.Host.IsGui);
             return 1;
         });
+        
+        lua.ModuleFunction("getAssetDirectory", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushString(Path.Combine(Boot.AppDataPath, "assets"));
+            return 1;
+        });
+
+        lua.ModuleFunction("getConfigDirectory", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushString(Boot.ConfigPath);
+            return 1;
+        });
+
+        lua.ModuleFunction("getDataDirectory", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.PushString(Rained.Assets.AssetDataPath.GetPath());
+            return 1;
+        });
 
         lua.ModuleFunction("alert", static (nint luaPtr) =>
         {

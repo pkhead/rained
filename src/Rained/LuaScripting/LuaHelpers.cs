@@ -26,6 +26,7 @@ static class LuaHelpers
     
     private const string FuncWrapperMetatable = "luahelpers_delegate";
     private const string FuncMetatable = "luahelpers_function";
+    private const string UserDataMetatable = "luahelpers_userdata";
 
     private static int nextID = 1;
     private static readonly Dictionary<int, object> allocatedObjects = [];
@@ -36,6 +37,8 @@ static class LuaHelpers
 
     private static readonly KeraLua.LuaFunction wrapperGcDelegate = new KeraLua.LuaFunction(WrapperGCDelegate);
     private static readonly KeraLua.LuaFunction wrapperCallDelegate = new KeraLua.LuaFunction(WrapperCallDelegate);
+
+    private static readonly KeraLua.LuaFunction userdataGcDelegate = new KeraLua.LuaFunction(UserDataGCDelegate);
 
     public static void Init(Lua lua)
     {
@@ -52,6 +55,16 @@ static class LuaHelpers
         // create wrapper metatable
         lua.NewMetaTable(FuncWrapperMetatable);
         lua.PushCFunction(wrapperGcDelegate);
+        lua.SetField(-2, "__gc");
+
+        lua.PushCFunction(mtDelegate);
+        lua.SetField(-2, "__metatable");
+
+        lua.Pop(1);
+
+        // create userdata metatable
+        lua.NewMetaTable(UserDataMetatable);
+        lua.PushCFunction(gcDelegate);
         lua.SetField(-2, "__gc");
 
         lua.PushCFunction(mtDelegate);
@@ -270,6 +283,32 @@ static class LuaHelpers
         allocatedObjects[nextID++] = func;
 
         lua.PushCClosure(callDelegate, 1);
+    }
+
+    public static unsafe void PushClosureWithUserdata(Lua lua, object userdata, KeraLua.LuaFunction func)
+    {
+        int* userData = (int*) lua.NewUserData(sizeof(int));
+        *userData = nextID;
+
+        lua.GetMetaTable(UserDataMetatable);
+        lua.SetMetaTable(-2);
+        allocatedObjects[nextID++] = userdata;
+
+        lua.PushCClosure(func, 1);
+    }
+
+    private static unsafe int UserDataGCDelegate(nint luaPtr)
+    {
+        Lua lua = Lua.FromIntPtr(luaPtr)!;
+        int id = *((int*)lua.CheckUserData(1, UserDataMetatable));
+        allocatedObjects.Remove(id);
+        return 0;
+    }
+
+    public static unsafe object GetUserData(Lua lua)
+    {
+        int id = *((int*)lua.CheckUserData(Lua.UpValueIndex(1), UserDataMetatable));
+        return allocatedObjects[id];
     }
 
     public static void ModuleFunction(this Lua lua, string funcName, KeraLua.LuaFunction func)

@@ -56,6 +56,11 @@ static class LuaInterface
             luaState.State.SetField(-2, "path");
 
             luaState.State.Pop(1); // pop preload table
+
+            // extend os library
+            luaState.State.GetGlobal("os");
+            FileSystemFunctions(luaState.State);
+            luaState.State.Pop(1);
         }
 
         // initialize global variables
@@ -150,18 +155,196 @@ static class LuaInterface
         return 1;
     }
 
+    private static void FileSystemFunctions(KeraLua.Lua lua)
+    {
+        lua.ModuleFunction("getcwd", static (KeraLua.Lua lua) =>
+        {
+            lua.PushString(Directory.GetCurrentDirectory());
+            return 1;
+        });
+
+        lua.ModuleFunction("list", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+
+            string filter;
+            if (lua.IsNoneOrNil(2)) filter = "*";
+            else                    filter = lua.ToString(2);
+
+            IEnumerator<string> enumerator;
+            try
+            {
+                enumerator = Directory.EnumerateFileSystemEntries(path, filter).GetEnumerator() ?? throw new NullReferenceException();
+            }
+            catch (Exception e)
+            {
+                Log.Information("path.list error: " + e);
+                return lua.ErrorWhere("could not list entries of " + path);
+            }
+
+            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
+            {
+                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                if (enumr.MoveNext())
+                {
+                    lua.PushString(enumr.Current);
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            });
+            return 1;
+        });
+
+        lua.ModuleFunction("listfiles", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+
+            string filter;
+            if (lua.IsNoneOrNil(2)) filter = "*";
+            else                    filter = lua.ToString(2);
+
+            IEnumerator<string> enumerator;
+            try
+            {
+                enumerator = Directory.EnumerateFiles(path, filter).GetEnumerator() ?? throw new NullReferenceException();
+            }
+            catch (Exception e)
+            {
+                Log.Information("path.list error: " + e);
+                return lua.ErrorWhere("could not list files of " + path);
+            }
+
+            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
+            {
+                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                if (enumr.MoveNext())
+                {
+                    lua.PushString(enumr.Current);
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            });
+            return 1;
+        });
+
+        lua.ModuleFunction("listdirs", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+
+            string filter;
+            if (lua.IsNoneOrNil(2)) filter = "*";
+            else                    filter = lua.ToString(2);
+
+            IEnumerator<string> enumerator;
+            try
+            {
+                enumerator = Directory.EnumerateDirectories(path, filter).GetEnumerator() ?? throw new NullReferenceException();
+            }
+            catch (Exception e)
+            {
+                Log.Information("path.list error: " + e);
+                return lua.ErrorWhere("could not list subdirectories of " + path);
+            }
+
+            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
+            {
+                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                if (enumr.MoveNext())
+                {
+                    lua.PushString(enumr.Current);
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            });
+            return 1;
+        });
+    }
+
+    // this is based off the python os.path module
     private static int PathModuleLoader(KeraLua.Lua lua)
     {
         lua.NewTable();
 
         lua.PushString(Path.DirectorySeparatorChar.ToString());
-        lua.SetField(-2, "dirSeparator");
+        lua.SetField(-2, "sep");
 
-        lua.ModuleFunction("combine", static (KeraLua.Lua lua) =>
+        // FileSystemFunctions(lua);
+
+        lua.ModuleFunction("abspath", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.GetFullPath(path));
+            return 1;
+        });
+
+        lua.ModuleFunction("basename", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.GetFileName(path));
+            return 1;
+        });
+
+        lua.ModuleFunction("dirname", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            var res = Path.GetDirectoryName(path);
+
+            if (res is not null)
+                lua.PushString(res);
+            else
+                lua.PushNil();
+
+            return 1;
+        });
+
+        lua.ModuleFunction("exists", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushBoolean(Path.Exists(path));
+            return 1;
+        });
+
+        lua.ModuleFunction("isfile", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushBoolean(File.Exists(path));
+            return 1;
+        });
+
+        lua.ModuleFunction("isdir", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushBoolean(Directory.Exists(path));
+            return 1;
+        });
+        
+        lua.ModuleFunction("isabs", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushBoolean(Path.IsPathFullyQualified(path));
+            return 1;
+        });
+
+        lua.ModuleFunction("join", static (KeraLua.Lua lua) =>
         {
             int nargs = lua.GetTop();
-            if (nargs < 2)
-                return lua.ErrorWhere("expected more than one argument");
+            if (nargs == 0)
+            {
+                lua.PushString("");
+                return 1;
+            }
 
             string[] args = new string[nargs];
             for (int i = 1; i <= nargs; i++)
@@ -176,49 +359,56 @@ static class LuaInterface
             }
             catch (Exception e)
             {
-                Log.Error(e.Message);
+                Log.Error("path.join error: " + e.Message);
                 return lua.ErrorWhere("could not combine paths");
             }
         });
 
-        lua.ModuleFunction("join", static (KeraLua.Lua lua) =>
-        {
-            int nargs = lua.GetTop();
-            if (nargs < 2)
-                return lua.ErrorWhere("expected more than one argument");
-
-            string[] args = new string[nargs];
-            for (int i = 1; i <= nargs; i++)
-            {
-                args[i - 1] = lua.CheckString(i);
-            }
-
-            try
-            {
-                lua.PushString(Path.Join(args));
-                return 1;
-            }
-            catch (Exception e)
-            {
-                Log.Error(e.Message);
-                return lua.ErrorWhere("could not join paths");
-            }
-        });
-
-        lua.ModuleFunction("dirname", static (KeraLua.Lua lua) =>
+        lua.ModuleFunction("normcase", static (KeraLua.Lua lua) =>
         {
             var path = lua.CheckString(1);
-            var res = Path.GetDirectoryName(path);
-
-            if (res is not null)
-            {
-                lua.PushString(res);
-            }
+            if (OperatingSystem.IsWindows())
+                lua.PushString(path.Replace('/', '\\').ToLowerInvariant());
             else
-            {
-                lua.PushNil();
-            }
+                lua.PushString(path);
+            return 1;
+        });
 
+        lua.ModuleFunction("normpath", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.GetRelativePath(Directory.GetCurrentDirectory(), Path.GetFullPath(path)));
+            return 1;
+        });
+
+        lua.ModuleFunction("relpath", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            var start = lua.CheckString(2);
+            lua.PushString(Path.GetRelativePath(start, path));
+            return 1;
+        });
+
+        lua.ModuleFunction("split", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.GetDirectoryName(path) ?? "");
+            lua.PushString(Path.GetFileName(path));
+            return 2;
+        });
+
+        lua.ModuleFunction("splitext", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.ChangeExtension(path, null));
+            lua.PushString(Path.GetExtension(path));
+            return 2;
+        });
+
+        lua.ModuleFunction("getext", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            lua.PushString(Path.GetExtension(path));
             return 1;
         });
 
