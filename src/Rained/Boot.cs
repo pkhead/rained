@@ -107,14 +107,7 @@ namespace Rained
                 var lua = LuaInterface.LuaState;
                 foreach (var path in bootOptions.Scripts)
                 {
-                    if (lua.LoadFile(path) != KeraLua.LuaStatus.OK)
-                    {
-                        LuaInterface.Host.Error(lua.ToString(-1));
-                    }
-                    else
-                    {
-                        LuaHelpers.Call(lua, 0, 0);
-                    }
+                    LuaHelpers.DoFile(lua, path);
                 }
             }
             else

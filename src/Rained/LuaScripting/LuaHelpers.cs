@@ -344,32 +344,40 @@ static class LuaHelpers
 
         // create exception from first argument (error object)
         var msg = lua.ToString(errObj);
-        var split = msg.Split(':');
-        var exception = new NLua.Exceptions.LuaScriptException(split.Length >= 3 ? split[2][1..] : msg, "");
+        var exceptionMsg = msg;
 
         // if error string has stack/position info, begin traceback to where
         // it is located on the stack rather than actual location where the error
         // was thrown.
         int level = 0;
-        if (split.Length > 1)
+        string source = "";
+        if (msg.Contains(':'))
         {
-            while (true)
+            for (int i = 0;; i++)
             {
                 LuaDebug ar = new();
-                if (lua.GetStack(level, ref ar) == 0) break;
-                if (!lua.GetInfo("S", ref ar)) {
+                if (lua.GetStack(i, ref ar) == 0) break;
+                if (!lua.GetInfo("Sl", ref ar)) {
                     Log.Debug("error handler: could not get lua activation record");
                     break;
                 }
                 
                 var name = ar.Source;
-                name = name[0] == '@' ? name[1..] : name;
-                if (name == split[0])
+                name = (name[0] == '@' || name[0] == '=') ? name[1..] : name;
+                if (name == "[C]") continue;
+
+                var testStr = name + ":" + ar.CurrentLine + ": ";
+                if (msg.Length >= testStr.Length && msg[..testStr.Length] == testStr)
+                {
+                    exceptionMsg = msg[testStr.Length..];
+                    level = i;
+                    source = name;
                     break;
-                
-                level++;
+                }
             }
         }
+
+        var exception = new NLua.Exceptions.LuaScriptException(exceptionMsg, source);
 
         lua.Traceback(lua, level);
         exception.Data["Traceback"] = lua.ToString(-1);
@@ -434,6 +442,34 @@ static class LuaHelpers
             lua.Concat(2);
             ErrorHandler(lua.Handle, -1);
             return LuaStatus.ErrRun;
+        }
+    }
+
+    public static LuaStatus DoFile(Lua lua, string path)
+    {
+        var stat = lua.LoadFile(path);
+        if (stat != KeraLua.LuaStatus.OK)
+        {
+            LuaInterface.Host.Error(lua.ToString(-1));
+            return stat;
+        }
+        else
+        {
+            return Call(lua, 0, 0);
+        }
+    }
+
+    public static LuaStatus DoString(Lua lua, string str, string? name = null)
+    {
+        var stat = name is not null ? lua.LoadString(str, name) : lua.LoadString(str);
+        if (stat != KeraLua.LuaStatus.OK)
+        {
+            LuaInterface.Host.Error(lua.ToString(-1));
+            return stat;
+        }
+        else
+        {
+            return Call(lua, 0, 0);
         }
     }
 
