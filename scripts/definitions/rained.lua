@@ -224,7 +224,7 @@ function rained.onUpdate(func) end
 function rained.onPreRender(func) end
 
 ---Register a callback to be ran after the completion of a level render.
----@param func fun(sourceTxt:string, destTxt:string, destPngs:...) The function to run.
+---@param func fun(sourceTxt:string, destTxt:string, destPngs:string[]) The function to run.
 ---@return CallbackHandle handle The callback handle.
 function rained.onPostRender(func) end
 

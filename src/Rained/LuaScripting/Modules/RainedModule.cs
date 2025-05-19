@@ -529,14 +529,18 @@ static class RainedModule
     {
         foreach (var cb in postRenderCallbacks)
         {
-            cb.LuaState.PushString(sourceTxt);
-            cb.LuaState.PushString(dstTxt);
-            foreach (var png in dstPngs)
+            var lua = cb.LuaState;
+            lua.PushString(sourceTxt);
+            lua.PushString(dstTxt);
+
+            lua.NewTable();
+            for (int i = 0; i < dstPngs.Length; i++)
             {
-                cb.LuaState.PushString(png);
+                lua.PushString(dstPngs[i]);
+                lua.RawSetInteger(-2, i+1);
             }
 
-            cb.Invoke(2 + dstPngs.Length);
+            cb.Invoke(3);
         }
     }
 
