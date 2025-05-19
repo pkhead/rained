@@ -144,11 +144,12 @@ static partial class ImGuiModule
                             assert default_value == "null"
                             func_parameters.append(f"(lua.IsNoneOrNil({param_idx}) ? null : &{local_name})")
                             meta_params.append(MetaParameter("boolean?", arg_name))
-                            extra_pushes.append(f"lua.PushBoolean({local_name} != 0);\n")
-                            meta_returns.append(MetaParameter("boolean", arg_name))
                         else:
                             func_parameters.append(f"&{local_name}")
                             meta_params.append(MetaParameter("boolean", arg_name))
+                        
+                        extra_pushes.append(f"lua.PushBoolean({local_name} != 0);\n")
+                        meta_returns.append(MetaParameter("boolean", arg_name))
                         
                         func_def.append(f"lua.ToBoolean({param_idx}) ? (byte)1 : (byte)0;\n")
                         
