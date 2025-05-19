@@ -15,3 +15,5 @@ if not rained.isBatchMode() then
     local maj, min, rev = rained.getApiVersion()
     print(("Rained API version: %s.%s.%s"):format(maj, min, rev))
 end
+
+require("rendercopy")
