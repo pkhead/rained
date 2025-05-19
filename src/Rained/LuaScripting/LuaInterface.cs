@@ -163,6 +163,45 @@ static class LuaInterface
             return 1;
         });
 
+        lua.ModuleFunction("mkdir", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+
+            try
+            {
+                Directory.CreateDirectory(path);
+            }
+            catch (Exception e)
+            {
+                Log.Error("os.mkdir: " + e.Message);
+                return lua.ErrorWhere("could not create directory: " + e.Message);
+            }
+
+            return 1;
+        });
+
+        lua.ModuleFunction("rmdir", static (KeraLua.Lua lua) =>
+        {
+            var path = lua.CheckString(1);
+            var recursive = false;
+            if (!lua.IsNoneOrNil(2))
+            {
+                recursive = lua.ToBoolean(2);
+            }
+
+            try
+            {
+                Directory.Delete(path, recursive);
+            }
+            catch (Exception e)
+            {
+                Log.Error("os.mkdir: " + e.Message);
+                return lua.ErrorWhere("could not remove directory: " + e.Message);
+            }
+
+            return 1;
+        });
+
         lua.ModuleFunction("list", static (KeraLua.Lua lua) =>
         {
             var path = lua.CheckString(1);
