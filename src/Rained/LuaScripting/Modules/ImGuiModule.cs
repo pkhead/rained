@@ -103,7 +103,25 @@ static partial class ImGuiModule
     {
         lua.NewTable();
 
-        GeneratedFuncs(lua);
+        if (!LuaInterface.Host.IsGui)
+        {
+            lua.NewTable();
+            lua.ModuleFunction("__index", static (Lua lua) =>
+            {
+                return lua.ErrorWhere("cannot use imgui module in batch mode", 2);
+            });
+            lua.ModuleFunction("__metatable", static (Lua lua) =>
+            {
+                lua.PushString("The metatable is locked.");
+                return 1;
+            });
+
+            lua.SetMetaTable(-2);
+        }
+        else
+        {
+            GeneratedFuncs(lua);
+        }
 
         // foreach (var (k, v) in _overrides)
         // {
