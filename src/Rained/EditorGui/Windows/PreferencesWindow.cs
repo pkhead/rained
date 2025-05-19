@@ -19,10 +19,11 @@ static class PreferencesWindow
         Shortcuts = 1,
         Theme = 2,
         Assets = 3,
-        Drizzle = 4
+        Drizzle = 4,
+        Scripts = 5
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle", "Scripts"];
     private readonly static string[] RendererNames = ["Direct3D 11", "Direct3D 12", "OpenGL", "Vulkan"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
@@ -131,6 +132,10 @@ static class PreferencesWindow
                 {
                     for (int i = 0; i < NavTabs.Length; i++)
                     {
+                        // don't show scripts tab if there are no scripts with preferences guis
+                        if (i == (int)NavTabEnum.Scripts && !LuaScripting.Modules.GuiModule.HasPreferencesCallbacks)
+                            continue;
+                        
                         if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
                         {
                             selectedNavTab = (NavTabEnum)i;
@@ -163,6 +168,10 @@ static class PreferencesWindow
                     
                     case NavTabEnum.Drizzle:
                         ShowDrizzleTab();
+                        break;
+
+                    case NavTabEnum.Scripts:
+                        LuaScripting.Modules.GuiModule.PrefsHook();
                         break;
                 }
 

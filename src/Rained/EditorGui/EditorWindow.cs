@@ -221,6 +221,8 @@ static class EditorWindow
                     PreferencesWindow.OpenWindow();
                 }
 
+                LuaScripting.Modules.GuiModule.MenuHook("file");
+
                 ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))
                 {
@@ -267,6 +269,8 @@ static class EditorWindow
                         ImGui.EndMenu();
                     }
                 }
+
+                LuaScripting.Modules.GuiModule.MenuHook("edit");
 
                 ImGui.Separator();
                 if (fileActive)
@@ -384,6 +388,9 @@ static class EditorWindow
                     homeTab = true;
                     switchToHomeTab = true;
                 }
+
+                LuaScripting.Modules.GuiModule.MenuHook("view");
+
                 ImGui.Separator();
                 
                 if (ImGui.MenuItem("Show Data Folder..."))
@@ -411,6 +418,8 @@ static class EditorWindow
                 {
                     AboutWindow.IsWindowOpen = true;
                 }
+
+                LuaScripting.Modules.GuiModule.MenuHook("help");
                 
                 ImGui.EndMenu();
             }
