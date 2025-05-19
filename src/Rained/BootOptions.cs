@@ -73,7 +73,8 @@ partial class BootOptions
                                     arguments can appear.
         --param <name=value>        Parameter to pass to all scripts.
 
-        --export-effects <path>     Export Drizzle effect data to a .json file.
+        --export-effects <path>     Export Drizzle effect data to a .json file and exit.
+                                    Does not start the GUI or run scripts.
         """
         );
     }
