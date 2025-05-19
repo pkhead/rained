@@ -176,12 +176,7 @@ static class MassRenderWindow
         // obviously quite slow. hashset not viable because I want them to be in order of submission.
         files.AddRange(levelPaths.Where(x => !files.Contains(x.Path)).Select(x => x.Path));
 
-        var massRender = new DrizzleMassRender(
-            [..files],
-            parallelismLimit
-        );
-
-        massRenderProc = new MassRenderProcessWindow(massRender);
+        massRenderProc = new MassRenderProcessWindow([..files], parallelismLimit);
     }
 
     private static void FileCallback(string[] paths)

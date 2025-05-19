@@ -206,15 +206,6 @@ class DrizzleRender : IDisposable
             {
                 useStatic = RainEd.Instance.Preferences.StaticDrizzleLingoRuntime;
 
-                // create large trash log file, in case user decided to have it enabled
-                // otherwise drizzle will not work
-                var largeTrashLogFile = Path.Combine(RainEd.Instance.AssetDataPath, "largeTrashLog.txt");
-                if (!File.Exists(largeTrashLogFile))
-                    File.Create(largeTrashLogFile).Dispose();
-                
-                // make sure Levels output folder exists
-                Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
-
                 if (DrizzleManager.NeedsCreateRuntime(useStatic))
                     Log.UserLogger.Information("Initializing Drizzle...");
                 runtime = DrizzleManager.GetRuntime(useStatic);
@@ -720,15 +711,6 @@ class DrizzleRender : IDisposable
         }
 
         string dataPath = AssetDataPath.GetPath();
-
-        // create large trash log file, in case user decided to have it enabled
-        // otherwise drizzle will not work
-        var largeTrashLogFile = Path.Combine(dataPath, "largeTrashLog.txt");
-        if (!File.Exists(largeTrashLogFile))
-            File.Create(largeTrashLogFile).Dispose();
-
-        // ensure output directory exists
-        Directory.CreateDirectory(Path.Combine(dataPath, "Levels"));
 
         LingoRuntime runtime;
         Console.WriteLine("Initializing Lingo runtime...");

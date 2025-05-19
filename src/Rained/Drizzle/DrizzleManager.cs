@@ -98,8 +98,19 @@ static class DrizzleManager
 
     private static LingoRuntime CreateRuntime()
     {
+        var dataPath = AssetDataPath.GetPath();
+
+        // create large trash log file, in case user decided to have it enabled
+        // otherwise drizzle will not work
+        var largeTrashLogFile = Path.Combine(dataPath, "largeTrashLog.txt");
+        if (!File.Exists(largeTrashLogFile))
+            File.Create(largeTrashLogFile).Dispose();
+
+        // ensure output directory exists
+        Directory.CreateDirectory(Path.Combine(dataPath, "Levels"));
+
         SixLabors.ImageSharp.Configuration.Default.PreferContiguousImageBuffers = true;
-        LingoRuntime.MovieBasePath = AssetDataPath.GetPath() + Path.DirectorySeparatorChar;
+        LingoRuntime.MovieBasePath = dataPath + Path.DirectorySeparatorChar;
         LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
 
         var runtime = new LingoRuntime(typeof(MovieScript).Assembly);
