@@ -55,6 +55,9 @@ static class LuaInterface
             LuaHelpers.PushLuaFunction(luaState.State, PathModuleLoader);
             luaState.State.SetField(-2, "path");
 
+            LuaHelpers.PushLuaFunction(luaState.State, ImGuiModule.Loader);
+            luaState.State.SetField(-2, "imgui");
+
             luaState.State.Pop(1); // pop preload table
 
             // extend os library
