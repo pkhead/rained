@@ -16,6 +16,7 @@ class LightEditor : IEditorMode
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
     private int selectedBrush = 0;
+    private bool brushPreview = false; // true when user is changing brush parameters through slider
 
     private bool isCursorEnabled = true;
     private bool isDrawing = false;
@@ -151,6 +152,7 @@ class LightEditor : IEditorMode
         var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
         var prefs = RainEd.Instance.Preferences;
+        brushPreview = false;
         changeRecorders.TryGetValue(level, out var changeRecorder);
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
@@ -230,6 +232,13 @@ class LightEditor : IEditorMode
                 brushSize = new(50f, 70f);
                 brushRotation = 0f;
             }
+
+            var rotInRadians = Util.Mod(brushRotation, 360f) / 180f * MathF.PI;
+            ImGui.DragFloat2("Size", ref brushSize, 2f, 1f, float.PositiveInfinity, "%.0f px", ImGuiSliderFlags.AlwaysClamp);
+            if (ImGui.IsItemActive()) brushPreview = true;
+            if (ImGui.SliderAngle("Rotation", ref rotInRadians, 0f, 360f))
+                brushRotation = rotInRadians / MathF.PI * 180f;
+            if (ImGui.IsItemActive()) brushPreview = true;
 
             ImGui.BeginChild("BrushCatalog", ImGui.GetContentRegionAvail());
             {
@@ -427,6 +436,16 @@ class LightEditor : IEditorMode
         );*/
     }
 
+    private static Vector2 CalcCastOffset()
+    {
+        var level = RainEd.Instance.Level;
+        var correctedAngle = level.LightAngle + MathF.PI / 2f;
+        return new(
+            -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
+            -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
+        );
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = RainEd.Instance.Level;
@@ -483,6 +502,45 @@ class LightEditor : IEditorMode
         }
     }
 
+    private void RenderCursor(Texture2D tex, Vector2 mpos, bool cast)
+    {
+        var screenSize = brushSize / window.ViewZoom;
+
+        // cast of brush preview
+        if (cast)
+        {
+            var castOffset = CalcCastOffset();
+            Raylib.DrawTexturePro(
+                tex,
+                new Rectangle(0, 0, tex.Width, tex.Height),
+                new Rectangle(
+                    mpos.X * Level.TileSize + castOffset.X,
+                    mpos.Y * Level.TileSize + castOffset.Y,
+                    screenSize.X, screenSize.Y
+                ),
+                screenSize / 2f,
+                brushRotation,
+                new Color(0, 0, 0, 80)
+            );
+        }
+        else
+        {
+            // draw preview on occlusion plane
+            Raylib.DrawTexturePro(
+                tex,
+                new Rectangle(0, 0, tex.Width, tex.Height),
+                new Rectangle(
+                    mpos.X * Level.TileSize,
+                    mpos.Y * Level.TileSize,
+                    screenSize.X, screenSize.Y
+                ),
+                screenSize / 2f,
+                brushRotation,
+                new Color(255, 0, 0, 100)
+            );
+        }
+    }
+    
     private void ProcessBrushMode(Vector2 lightMapOffset, RlManaged.RenderTexture2D mainFrame)
     {
         var wasCursorEnabled = isCursorEnabled;
@@ -498,11 +556,7 @@ class LightEditor : IEditorMode
         Raylib.BeginShaderMode(shader);
 
         // render cast
-        var correctedAngle = level.LightAngle + MathF.PI / 2f;
-        Vector2 castOffset = new(
-            -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
-            -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
-        );
+        var castOffset = CalcCastOffset();
 
         RlExt.DrawRenderTextureV(level.LightMap.RenderTexture!, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
 
@@ -549,34 +603,11 @@ class LightEditor : IEditorMode
             else
             {
                 // cast of brush preview
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    new Rectangle(
-                        mpos.X * Level.TileSize + castOffset.X,
-                        mpos.Y * Level.TileSize + castOffset.Y,
-                        screenSize.X, screenSize.Y
-                    ),
-                    screenSize / 2f,
-                    brushRotation,
-                    new Color(0, 0, 0, 80)
-                );
-                
+                RenderCursor(tex, mpos, true);
                 DrawOcclusionPlane();
 
                 // draw preview on on occlusion plane
-                Raylib.DrawTexturePro(
-                    tex,
-                    new Rectangle(0, 0, tex.Width, tex.Height),
-                    new Rectangle(
-                        mpos.X * Level.TileSize,
-                        mpos.Y * Level.TileSize,
-                        screenSize.X, screenSize.Y
-                    ),
-                    screenSize / 2f,
-                    brushRotation,
-                    new Color(255, 0, 0, 100)
-                );
+                RenderCursor(tex, mpos, false);
             }
 
             switch (prefs.LightEditorControlScheme)
@@ -633,7 +664,12 @@ class LightEditor : IEditorMode
         }
         else
         {
+            var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
+            var mpos = (window.Renderer.ViewTopLeft + window.Renderer.ViewBottomRight) / 2;
+
+            if (brushPreview) RenderCursor(tex, mpos, false);
             DrawOcclusionPlane();
+            if (brushPreview) RenderCursor(tex, mpos, true);
         }
 
         Raylib.EndShaderMode();
@@ -692,11 +728,7 @@ class LightEditor : IEditorMode
         Raylib.BeginShaderMode(Shaders.LevelLightShader);
 
         // render cast
-        var correctedAngle = level.LightAngle + MathF.PI / 2f;
-        Vector2 castOffset = new(
-            -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
-            -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
-        );
+        var castOffset = CalcCastOffset();
         RlExt.DrawRenderTextureV(tmpFramebuffer, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
 
         // render occlusion plane
