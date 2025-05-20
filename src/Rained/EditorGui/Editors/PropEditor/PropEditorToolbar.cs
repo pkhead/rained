@@ -27,6 +27,11 @@ partial class PropEditor : IEditorMode
     private RlManaged.RenderTexture2D previewTexture = null!;
     private PropInit? curPropPreview = null;
 
+    private int zTranslateValue = 0;
+    private bool zTranslateActive = false;
+    private bool zTranslateWrap = false;
+    private Dictionary<Prop, int> zTranslateDepths = [];
+
     // search results only process groups because i'm too lazy to have
     // it also process the resulting props
     // plus, i don't think it's much of an optimization concern because then
@@ -760,8 +765,11 @@ partial class PropEditor : IEditorMode
                 {
                     ImGui.Text("Selected multiple props");
                 }
-                
-                if (ImGui.Button("Reset Transform"))
+
+                var btnSize = new Vector2(ImGuiExt.ButtonGroup.CalcItemWidth(ImGui.GetContentRegionAvail().X, 4), 0);
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+
+                if (ImGui.Button("Reset", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
@@ -770,7 +778,7 @@ partial class PropEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Flip X"))
+                if (ImGui.Button("Flip X", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
@@ -779,13 +787,61 @@ partial class PropEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Flip Y"))
+                if (ImGui.Button("Flip Y", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
                             prop.FlipY();
                     changeRecorder.PushChanges();
                 }
+
+                ImGui.SameLine();
+                if (ImGui.Button("Depth Move", btnSize))
+                {
+                    ImGui.OpenPopup("ZTranslate");
+                    zTranslateValue = 0;
+                    zTranslateDepths.Clear();
+                    foreach (var prop in selectedProps)
+                        zTranslateDepths.Add(prop, prop.DepthOffset);
+                }
+
+                zTranslateActive = false;
+                if (ImGui.BeginPopup("ZTranslate"))
+                {
+                    zTranslateActive = true;
+                    ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 20f);
+                    ImGui.SliderInt("##depth", ref zTranslateValue, -29, 29);
+                    ImGui.PopItemWidth();
+
+                    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
+                    ImGui.Checkbox("Wrap around", ref zTranslateWrap);
+                    ImGui.PopStyleVar();
+
+                    if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out var btn))
+                    {
+                        zTranslateActive = false;
+
+                        if (btn == 0)
+                        {
+                            changeRecorder.BeginTransform();
+                            foreach (var prop in selectedProps)
+                            {
+                                prop.DepthOffset += zTranslateValue;
+                                if (zTranslateWrap)
+                                    prop.DepthOffset = Util.Mod(prop.DepthOffset, 30);
+                                else
+                                    prop.DepthOffset = Math.Clamp(prop.DepthOffset, 0, 29);
+                            }
+                            changeRecorder.PushChanges();
+                        }
+
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    ImGui.EndPopup();
+                }
+
+                ImGui.PopStyleVar();
 
                 ImGui.PushItemWidth(Math.Max(
                     ImGui.GetTextLineHeightWithSpacing() * 12f,

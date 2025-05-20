@@ -378,6 +378,19 @@ partial class PropEditor : IEditorMode
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
 
+        // z translate preview
+        if (zTranslateActive)
+        {
+            foreach (var prop in selectedProps)
+            {
+                prop.DepthOffset += zTranslateValue;
+                if (zTranslateWrap)
+                    prop.DepthOffset = Util.Mod(prop.DepthOffset, 30);
+                else
+                    prop.DepthOffset = Math.Clamp(prop.DepthOffset, 0, 29);
+            }
+        }
+
         level.SortPropsByDepth();
 
         levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
@@ -391,6 +404,13 @@ partial class PropEditor : IEditorMode
         levelRender.RenderGrid();
         levelRender.RenderBorder();
         levelRender.RenderCameraBorders();
+
+        // done z translate preview
+        if (zTranslateActive)
+        {
+            foreach (var prop in selectedProps)
+                prop.DepthOffset = zTranslateDepths[prop];
+        }
         
         // highlight selected props
         if (isWarpMode)
@@ -450,7 +470,7 @@ partial class PropEditor : IEditorMode
         }
 
         // prop transform gizmos
-        if (selectedProps.Count > 0 && !isRopeSimulationActive)
+        if (selectedProps.Count > 0 && !isRopeSimulationActive && !zTranslateActive)
         {
             bool canWarp = transformMode is WarpTransformMode ||
                 (isWarpMode && selectedProps.Count == 1);
@@ -673,7 +693,7 @@ partial class PropEditor : IEditorMode
         }
 
         // in prop transform mode
-        if (!isModeMouseDown && !isRopeSimulationActive)
+        if (!isModeMouseDown && !isRopeSimulationActive && !zTranslateActive)
         {
             // in default mode
             PropSelectUpdate();
