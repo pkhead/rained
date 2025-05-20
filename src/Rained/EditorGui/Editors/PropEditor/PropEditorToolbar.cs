@@ -86,6 +86,7 @@ partial class PropEditor : IEditorMode
     {
         var field = typeof(Prop).GetField(fieldName)!;
         var targetV = (int)field.GetValue(selectedProps[0])!;
+        var style = ImGui.GetStyle();
 
         bool isSame = true;
         for (int i = 1; i < selectedProps.Count; i++)
@@ -97,10 +98,17 @@ partial class PropEditor : IEditorMode
             }
         }
 
+        bool depthOffsetInput = fieldName == nameof(Prop.DepthOffset);
+        if (depthOffsetInput)
+        {
+            var w = ImGui.CalcItemWidth() - ImGui.GetFrameHeight() * 2 - style.ItemInnerSpacing.X * 2;
+            ImGui.PushItemWidth(w);
+        }
+        
         if (isSame)
         {
             int v = (int) field.GetValue(selectedProps[0])!;
-            if (ImGui.SliderInt(label, ref v, v_min, v_max, format, flags))
+            if (ImGui.SliderInt(depthOffsetInput ? "##"+label : label, ref v, v_min, v_max, format, flags))
             {
                 foreach (var prop in selectedProps)
                     field.SetValue(prop, v);
@@ -109,7 +117,7 @@ partial class PropEditor : IEditorMode
         else
         {
             int v = int.MinValue;
-            if (ImGui.SliderInt(label, ref v, v_min, v_max, string.Empty, flags))
+            if (ImGui.SliderInt(depthOffsetInput ? "##"+label : label, ref v, v_min, v_max, string.Empty, flags))
             {
                 foreach (var prop in selectedProps)
                     field.SetValue(prop, v);
@@ -117,8 +125,44 @@ partial class PropEditor : IEditorMode
         }
 
         if (ImGui.IsItemDeactivatedAfterEdit())
-        {
             changeRecorder.PushSettingsChanges();
+
+        if (depthOffsetInput)
+        {
+            // decrement/increment input
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, style.ItemInnerSpacing);
+
+            ImGui.PushButtonRepeat(true);
+            bool fast = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+            var delta = fast ? 10 : 1;
+
+            ImGui.SameLine();
+            if (ImGui.Button(fast ? "<" : "-", Vector2.One * ImGui.GetFrameHeight()))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, Math.Max(0, (int)field.GetValue(prop)! - delta));
+            }
+
+            if (ImGui.IsItemDeactivated())
+                changeRecorder.PushSettingsChanges();
+
+            ImGui.SameLine();
+            if (ImGui.Button(fast ? ">" : "+", Vector2.One * ImGui.GetFrameHeight()))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, Math.Min(Level.LayerCount*10-1, (int)field.GetValue(prop)! + delta));
+            }
+
+            if (ImGui.IsItemDeactivated())
+                changeRecorder.PushSettingsChanges();
+
+            ImGui.PopButtonRepeat();
+
+            ImGui.SameLine();
+            ImGui.Text(label);
+
+            ImGui.PopStyleVar();
+            ImGui.PopItemWidth();
         }
     }
 
