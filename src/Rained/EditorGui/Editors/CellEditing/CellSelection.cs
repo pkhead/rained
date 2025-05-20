@@ -144,72 +144,58 @@ class CellSelection
 
     public void DrawStatusBar()
     {
-        if (PasteMode)
+        if (!PasteMode)
         {
-            if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+            // selection mode options
+            // for tile editor mode, Tile Select button appears.
+            using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", AffectTiles ? 5 : 4, 0))
             {
-                SubmitMove();
-                Active = false;
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
+                for (int i = 0; i < toolInfo.Length; i++)
+                {
+                    if (toolInfo[i].icon == IconName.TileSelect && !AffectTiles)
+                        continue;
+                    
+                    group.BeginButton(i, (int)curTool == i);
+
+                    ref var info = ref toolInfo[i];
+                    if (IconButton(info.icon))
+                    {
+                        SubmitMove();
+                        curTool = (SelectionTool)i;
+                    }
+                    ImGui.SetItemTooltip(info.name);
+
+                    group.EndButton();
+                }
+                ImGui.PopStyleVar();
             }
-            
+
+            // operator mode options
             ImGui.SameLine();
-            if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            using (var group = ImGuiExt.ButtonGroup.Begin("Operator Mode", 4, 0))
             {
-                CancelMove();
-                Active = false;
-            }
-            
-            return;
-        }
-
-        // selection mode options
-        // for tile editor mode, Tile Select button appears.
-        using (var group = ImGuiExt.ButtonGroup.Begin("Selection Mode", AffectTiles ? 5 : 4, 0))
-        {
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
-            for (int i = 0; i < toolInfo.Length; i++)
-            {
-                if (toolInfo[i].icon == IconName.TileSelect && !AffectTiles)
-                    continue;
-                
-                group.BeginButton(i, (int)curTool == i);
-
-                ref var info = ref toolInfo[i];
-                if (IconButton(info.icon))
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
+                for (int i = 0; i < operatorInfo.Length; i++)
                 {
-                    SubmitMove();
-                    curTool = (SelectionTool)i;
+                    group.BeginButton(i, (int)(curOpOverride ?? curOp) == i);
+
+                    ref var info = ref operatorInfo[i];
+                    if (IconButton(info.icon))
+                    {
+                        curOp = (SelectionOperator)i;
+                    }
+                    ImGui.SetItemTooltip(info.name);
+
+                    group.EndButton();
                 }
-                ImGui.SetItemTooltip(info.name);
-
-                group.EndButton();
+                ImGui.PopStyleVar();
             }
-            ImGui.PopStyleVar();
-        }
 
-        // operator mode options
-        ImGui.SameLine();
-        using (var group = ImGuiExt.ButtonGroup.Begin("Operator Mode", 4, 0))
-        {
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
-            for (int i = 0; i < operatorInfo.Length; i++)
-            {
-                group.BeginButton(i, (int)(curOpOverride ?? curOp) == i);
-
-                ref var info = ref operatorInfo[i];
-                if (IconButton(info.icon))
-                {
-                    curOp = (SelectionOperator)i;
-                }
-                ImGui.SetItemTooltip(info.name);
-
-                group.EndButton();
-            }
-            ImGui.PopStyleVar();
+            ImGui.SameLine(); // same line for layer movement buttons
         }
 
         // layer movement buttons
-        ImGui.SameLine();
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
         {
             ImGui.BeginDisabled(!IsSelectionActive());
@@ -233,36 +219,55 @@ class CellSelection
         }
         ImGui.PopStyleVar();
 
-        ImGui.SameLine();
-        if (ImGui.Button("Done") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+        if (!PasteMode)
         {
-            SubmitMove();
-            Active = false;
-        }
-        
-        ImGui.SameLine();
-        if (ImGui.Button("Cancel"))
-        {
-            if (movingGeometry is null)
+            ImGui.SameLine();
+            if (ImGui.Button("Done") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
             {
                 SubmitMove();
                 Active = false;
             }
-            else
+            
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
             {
+                if (movingGeometry is null)
+                {
+                    SubmitMove();
+                    Active = false;
+                }
+                else
+                {
+                    CancelMove();
+                    ClearSelection();
+                }
+            }
+
+            if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                bool doExit = movingGeometry is null;
+
                 CancelMove();
                 ClearSelection();
+                
+                if (doExit) Active = false;
             }
         }
-
-        if (EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+        else
         {
-            bool doExit = movingGeometry is null;
-
-            CancelMove();
-            ClearSelection();
+            ImGui.SameLine();
+            if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+            {
+                SubmitMove();
+                Active = false;
+            }
             
-            if (doExit) Active = false;
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                CancelMove();
+                Active = false;
+            }
         }
     }
 
