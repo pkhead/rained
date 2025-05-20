@@ -9,7 +9,8 @@ namespace ImGuiNET;
 [Flags]
 enum ButtonGroupOptions : uint
 {
-    Vertical = 1
+    Vertical = 1,
+    ShowID = 2
 }
 
 static class ImGuiExt
@@ -448,6 +449,14 @@ static class ImGuiExt
             group.EndButton();
         }
 
+        if (groupOptions.HasFlag(ButtonGroupOptions.ShowID))
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+            ImGui.SameLine();
+            ImGui.Text(id);
+            ImGui.PopStyleVar();
+        }
+
         return returnValue;
     }
 
@@ -472,6 +481,14 @@ static class ImGuiExt
                 returnValue = true;
             }
             group.EndButton();
+        }
+
+        if (groupOptions.HasFlag(ButtonGroupOptions.ShowID))
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+            ImGui.SameLine();
+            ImGui.Text(id);
+            ImGui.PopStyleVar();
         }
 
         return returnValue;

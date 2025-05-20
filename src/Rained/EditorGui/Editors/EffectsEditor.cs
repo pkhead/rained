@@ -79,7 +79,7 @@ class EffectsEditor : IEditorMode
 
     private static readonly string[] plantColorNames =
     [
-        "Color1", "Color2", "Dead"
+        "1", "2", "X"
     ];
 
     private bool doDeleteCurrent = false;
@@ -354,26 +354,10 @@ class EffectsEditor : IEditorMode
                 // plant color property
                 if (effect.Data.usePlantColors)
                 {
-                    if (ImGui.BeginCombo("Color", plantColorNames[effect.PlantColor]))
+                    if (ImGuiExt.ButtonSwitch("Color", plantColorNames, ref effect.PlantColor, ButtonGroupOptions.ShowID))
                     {
-                        for (int i = 0; i < plantColorNames.Length; i++)
-                        {
-                            bool isSelected = i == effect.PlantColor;
-                            if (ImGui.Selectable(plantColorNames[i], isSelected))
-                            {
-                                effect.PlantColor = i;
-                                hadChanged = true;
-                            }
-                            
-                            if (isSelected)
-                                ImGui.SetItemDefaultFocus();
-                        }
-
-                        ImGui.EndCombo();
-                    }
-
-                    if (ImGui.IsItemEdited())
                         hadChanged = true;
+                    }
                 }
 
                 // affect colors and gradients
@@ -392,22 +376,32 @@ class EffectsEditor : IEditorMode
                     // string config
                     if (configInfo is CustomEffectString strConfig)
                     {
-                        if (ImGui.BeginCombo(strConfig.Name, strConfig.Options[configValue]))
+                        if (strConfig.IsColorOption)
                         {
-                            for (int i = 0; i < strConfig.Options.Length; i++)
+                            if (ImGuiExt.ButtonSwitch(strConfig.Name, plantColorNames, ref configValue, ButtonGroupOptions.ShowID))
                             {
-                                bool isSelected = i == configValue;
-                                if (ImGui.Selectable(strConfig.Options[i], isSelected))
+                                hadChanged = true;
+                            }
+                        }
+                        else
+                        {
+                            if (ImGui.BeginCombo(strConfig.Name, strConfig.Options[configValue]))
+                            {
+                                for (int i = 0; i < strConfig.Options.Length; i++)
                                 {
-                                    configValue = i;
-                                    hadChanged = true;
+                                    bool isSelected = i == configValue;
+                                    if (ImGui.Selectable(strConfig.Options[i], isSelected))
+                                    {
+                                        configValue = i;
+                                        hadChanged = true;
+                                    }
+
+                                    if (isSelected)
+                                        ImGui.SetItemDefaultFocus();
                                 }
 
-                                if (isSelected)
-                                    ImGui.SetItemDefaultFocus();
+                                ImGui.EndCombo();
                             }
-
-                            ImGui.EndCombo();
                         }
                     }
 

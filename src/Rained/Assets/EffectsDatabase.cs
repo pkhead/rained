@@ -24,10 +24,14 @@ record CustomEffectString : CustomEffectConfig
     public readonly string Default;
     public readonly string[] Options;
 
+    public readonly bool IsColorOption;
+
     public CustomEffectString(string name, string defaultOption, string[] options) : base(name)
     {
         Default = defaultOption;
         Options = options;
+
+        IsColorOption = Options.Length == 3 && Options[0] == "Color1" && Options[1] == "Color2" && Options[2] == "Dead";
     }
 }
 
