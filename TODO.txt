@@ -10,6 +10,9 @@ Scripting API 3.0:
 - effect layer accept lingo names
 
 Bugs:
+- PASTING FROM BEFORE ENTERING CELL SELECTION WILL CRASH!!
+- HOW COME ONLY SELECTION ADD OPERATION WORKS?
+
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
