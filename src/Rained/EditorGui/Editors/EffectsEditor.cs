@@ -15,6 +15,7 @@ class EffectsEditor : IEditorMode
     private int selectedGroup = 0;
     private int selectedEffect = -1;
     private string searchQuery = string.Empty;
+    private bool doInsertAfter = false;
 
     public int SelectedEffect { get => selectedEffect; set => selectedEffect = value; }
 
@@ -107,6 +108,7 @@ class EffectsEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
         var fxDatabase = RainEd.Instance.EffectsDatabase;
+        doInsertAfter = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -192,6 +194,7 @@ class EffectsEditor : IEditorMode
         {
             if (ImGui.BeginListBox("##EffectStack", ImGui.GetContentRegionAvail()))
             {
+                var effectInsertPreviewIndex = doInsertAfter ? selectedEffect+1 : selectedEffect;;
                 if (level.Effects.Count == 0)
                 {
                     ImGui.TextDisabled("(no effects)");
@@ -667,10 +670,33 @@ class EffectsEditor : IEditorMode
 
     private void AddEffect(EffectInit init)
     {
-        changeRecorder.BeginListChange();
         var level = RainEd.Instance.Level;
-        selectedEffect = level.Effects.Count;
-        level.Effects.Add(new Effect(level, init));
+        changeRecorder.BeginListChange();
+
+        var newEffect = new Effect(level, init);
+        if (selectedEffect != -1)
+        {
+            // shift: insert after selected effect
+            // no shift: insert before selected effect
+            if (doInsertAfter)
+                level.Effects.Insert(++selectedEffect, newEffect);
+            else
+                level.Effects.Insert(selectedEffect, newEffect);
+        }
+        else
+        {
+            if (doInsertAfter)
+            {
+                level.Effects.Add(newEffect);
+                selectedEffect = level.Effects.Count - 1;
+            }
+            else
+            {
+                level.Effects.Insert(0, newEffect);
+                selectedEffect = 0;
+            }
+        }
+        
         changeRecorder.PushListChange();
     }
 }
