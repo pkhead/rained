@@ -1,21 +1,19 @@
 --[[
     This is a helper script which will automatically copy render files to
     a user-defined target directory.
-
-    Create a file named rendercopy.conf in the config folder, and
-    write the path to the directory you want rendered level files to be
-    copied to.
     
-    I suppose I should make this file more documented. I would also like
-    if there was a GUI for this in the editor, but I have yet to implement
-    a GUI API...
+    Configure this in the preferences window.
 --]]
+
 local path = require("path")
 local imgui = require("imgui")
 
+-- location to copy files to
 local copyDir = nil
+-- enable/disable flag
 local isEnabled = false
 
+-- helper function to open file, and error on failure
 local function openFile(p, mode)
     local f = io.open(p, mode)
     if not f then
@@ -24,6 +22,7 @@ local function openFile(p, mode)
     return f
 end
 
+-- helper function to copy file a to b
 local function copyFile(a, b)
     local fileA = io.open(a, "rb")
     if not fileA then
@@ -43,6 +42,7 @@ local function copyFile(a, b)
     fileB:close()
 end
 
+-- render hook
 rained.onPostRender(function(src, dstGeo, pngPaths)
     if not isEnabled then
         return
@@ -68,8 +68,8 @@ end)
 local configFilePath = path.join(rained.getConfigDirectory(), "rendercopy.conf")
 if path.isfile(configFilePath) then
     local f = openFile(configFilePath, "r")
-    copyDir = f:read("l")
-    isEnabled = f:read("l") == "true"
+    copyDir = f:read("l") -- first line: copy directory
+    isEnabled = f:read("l") == "true" -- second line: enable flag
     f:close()
 
     if not path.isdir(copyDir) then
@@ -80,7 +80,14 @@ end
 
 -- the gui
 if not rained.isBatchMode() then
+    -- update config file with current settings
     local function updateFile()
+        -- sanity check?
+        if not path.isdir(copyDir) then
+            warn("rendercopy: " .. copyDir .. " does not exist!")
+            copyDir = nil
+        end
+        
         local f = openFile(configFilePath, "w")
         f:write(copyDir)
         f:write("\n")
@@ -89,6 +96,7 @@ if not rained.isBatchMode() then
         f:close()
     end
 
+    -- preferences ui
     rained.gui.prefsHook(function()
         imgui.SeparatorText("RenderCopy")
 
