@@ -42,16 +42,10 @@ v2.4.0:
   - prop editor lasso select
 
 v2.3.0:
-  - prop editor Edit > Z-Translate
   - light editor rotation/scale sliders
-  - custom keybind drizzle bug. two options:
-      1. make a PR for the fix (but I may need to discuss better solutions with other maintainers before being able to ship it)
-      2. detect if custom keybinds are on before rendering. if it is on, ask user if they want to turn it off or something.
-          (or maybe turn it off temporarily and turn it back on after render)
 
 Do Soon:
 - toggle for showing shortcuts in tile editor
-- lua imgui interface
 - tile graphics ludo's seamless tile types?
 
 Do Later:
