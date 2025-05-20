@@ -41,9 +41,6 @@ v2.4.0:
       - add re-path button (useful for autotiles that do random)
   - prop editor lasso select
 
-v2.3.0:
-  - light editor rotation/scale sliders
-
 Do Soon:
 - toggle for showing shortcuts in tile editor
 - tile graphics ludo's seamless tile types?
