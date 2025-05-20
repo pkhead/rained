@@ -357,6 +357,12 @@ static class ImGuiExt
 
         private bool verticalLayout;
 
+        public static float CalcItemWidth(float totalWidth, int count)
+        {
+            var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+            return (totalWidth + itemSpacing.X * (1 - count)) / count;
+        }
+
         public static ButtonGroup Begin(string id, int buttonCount, ButtonGroupOptions opts)
         {
             var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
@@ -378,7 +384,7 @@ static class ImGuiExt
             }
             else
             {
-                itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - buttonCount)) / buttonCount, 0f);
+                itemSize = new Vector2(CalcItemWidth(ImGui.CalcItemWidth(), buttonCount), 0f);
             }
 
             return new ButtonGroup()
