@@ -700,8 +700,6 @@ partial class PropEditor : IEditorMode
 
     private void OptionsToolbar()
     {
-        var propDb = RainEd.Instance.PropDatabase;
-
         if (ImGui.Begin("Prop Options", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // prop transformation mode
@@ -894,22 +892,6 @@ partial class PropEditor : IEditorMode
                                 if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
                                     changeRecorder.PushSettingsChanges();
                             }
-                        } else if (selectedProps.Count > 1) {
-                            var prop = selectedProps[0];
-
-                            var _oldReleaseFlags = (int) prop.Rope!.ReleaseMode;
-                            var _releaseFlags = (int) prop.Rope!.ReleaseMode;
-                            if (ImGuiExt.ButtonFlags("##Release", ["Left", "Right"], ref _releaseFlags)) {
-                                if (_releaseFlags == 3) {
-                                    if (_oldReleaseFlags == 1) _releaseFlags = 2;
-                                    if (_oldReleaseFlags == 2) _releaseFlags = 1;
-                                }
-                                foreach (var newProp in selectedProps) {
-                                    newProp.Rope!.ReleaseMode = (RopeReleaseMode) _releaseFlags;
-                                }
-                            }
-                            ImGui.SameLine();
-                            ImGui.Text("Release");
                         }
 
                         // rope simulation controls
