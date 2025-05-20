@@ -485,6 +485,8 @@ class CellSelection
     {
         SubmitMove();
 
+        changeRecorder.BeginChangeWithGeo();
+
         var data = CellSerialization.DeserializeCells(serializedData, out int origX, out int origY, out int width, out int height);
         if (data is null) return false;
 
@@ -529,16 +531,15 @@ class CellSelection
         return true;
     }
 
-    public static void BeginPaste(ref CellSelection? inst)
+    public static void BeginPaste()
     {
         if (Platform.GetClipboard(Boot.Window, Platform.ClipboardDataType.LevelCells, out var serializedCells))
         {
-            inst ??= new CellSelection()
-            {
-                PasteMode = true
-            };
-            inst.curTool = SelectionTool.MoveSelected;
-            inst.PasteGeometry(serializedCells);
+            Instance ??= new CellSelection();
+            Instance.PasteMode = true;
+
+            Instance.curTool = SelectionTool.MoveSelected;
+            Instance.PasteGeometry(serializedCells);
         }
     }
 

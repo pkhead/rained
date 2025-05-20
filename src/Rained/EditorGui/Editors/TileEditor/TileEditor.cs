@@ -187,9 +187,7 @@ partial class TileEditor : IEditorMode
         // (copy is handled by CellSelection)
         if (KeyShortcuts.Activated(KeyShortcut.Paste))
         {
-            var cellSelectionState = CellSelection.Instance;
-            CellSelection.BeginPaste(ref cellSelectionState);
-            CellSelection.Instance = cellSelectionState;
+            CellSelection.BeginPaste();
         }
 
         if (CellSelection.Instance is not null)

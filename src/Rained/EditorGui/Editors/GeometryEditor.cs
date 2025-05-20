@@ -725,9 +725,7 @@ class GeometryEditor : IEditorMode
         // (copy is handled by CellSelection)
         if (KeyShortcuts.Activated(KeyShortcut.Paste))
         {
-            var cellSelectionState = CellSelection.Instance;
-            CellSelection.BeginPaste(ref cellSelectionState);
-            CellSelection.Instance = cellSelectionState;
+            CellSelection.BeginPaste();
         }
 
         bool isMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
