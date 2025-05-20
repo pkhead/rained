@@ -247,6 +247,8 @@ class LightEditor : IEditorMode
                 ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
                 int i = 0;
+                int cols = (int)(ImGui.GetContentRegionAvail().X / (64 * Boot.WindowScale + 4));
+                if (cols == 0) cols = 1;
                 foreach (var brush in RainEd.Instance.LightBrushDatabase.Brushes)
                 {
                     var texture = brush.Texture;
@@ -277,8 +279,7 @@ class LightEditor : IEditorMode
                     ImGui.PopID();
 
                     i++;
-
-                    if (!(i % 3 == 0)) ImGui.SameLine();
+                    if (!(i % cols == 0)) ImGui.SameLine();
                 }
 
                 ImGui.PopStyleVar(2);
@@ -637,14 +638,14 @@ class LightEditor : IEditorMode
 
                 case UserPreferences.LightEditorControlSchemeOption.Keyboard:
                 {
-                    var rotSpeed = Raylib.GetFrameTime() * 60f;
+                    var rotSpeed = Raylib.GetFrameTime() * 120f;
 
                     if (KeyShortcuts.Active(KeyShortcut.RotateBrushCW))
                         brushRotation += rotSpeed;
                     if (KeyShortcuts.Active(KeyShortcut.RotateBrushCCW))
                         brushRotation -= rotSpeed;
                     
-                    var scaleSpeed = Raylib.GetFrameTime() * 60f;
+                    var scaleSpeed = Raylib.GetFrameTime() * 120f;
 
                     if (KeyShortcuts.Active(KeyShortcut.NavRight))
                         brushSize.X += scaleSpeed;
