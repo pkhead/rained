@@ -511,6 +511,10 @@ static class AssetManagerGUI
     {
         assetManager ??= new AssetManager();
 
+        ImGui.BeginDisabled();
+        ImGui.TextWrapped("Note: I don't think this feature works too well. For now, it's better to edit inits manually.");
+        ImGui.EndDisabled();
+        
         ImGui.Text("Any changes here require a restart in order to take effect.");
         ImGui.Separator();
 
