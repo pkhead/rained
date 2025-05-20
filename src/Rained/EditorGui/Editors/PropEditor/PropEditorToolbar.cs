@@ -787,7 +787,10 @@ partial class PropEditor : IEditorMode
                     changeRecorder.PushChanges();
                 }
 
-                ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
+                ImGui.PushItemWidth(Math.Max(
+                    ImGui.GetTextLineHeightWithSpacing() * 12f,
+                    ImGui.GetContentRegionAvail().X - ImGui.GetTextLineHeightWithSpacing() * 8f
+                ));
                 MultiselectDragInt("Render Order", "RenderOrder", 0.02f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
