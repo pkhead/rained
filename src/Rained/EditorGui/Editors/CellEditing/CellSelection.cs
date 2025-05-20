@@ -95,6 +95,8 @@ class CellSelection
     private int cancelOrigY = 0;
     private MaskedCell[,,]? cancelGeoData = null;
 
+    private int lastMouseX, lastMouseY;
+
     // used for mouse drag
     private bool mouseWasDragging = false;
     private SelectToolState? mouseDragState = null;
@@ -285,6 +287,22 @@ class CellSelection
         }
     }
 
+    private bool IsMouseInSelectedArea(int activeLayer)
+    {
+        var layer = selections[activeLayer];
+        if (layer is null) return false;
+
+        var mx = RainEd.Instance.LevelView.MouseCx;
+        var my = RainEd.Instance.LevelView.MouseCy;
+        if (mx < layer.minX || my < layer.minY || mx > layer.maxX || my > layer.maxY)
+            return false;
+        
+        var lx = mx - layer.minX;
+        var ly = my - layer.minY;
+
+        return layer.mask[ly,lx];
+    }
+
     public void Update(ReadOnlySpan<bool> layerMask, int activeLayer)
     {
         // TODO: crosshair cursor
@@ -305,10 +323,31 @@ class CellSelection
         }
 
         var activeOp = curOpOverride ?? curOp;
+
+        // determine if user wants to activate a static selection tool
+        var shouldStaticToolActive = false;
+        if (view.IsViewportHovered)
+        {
+            // should always activate on click
+            if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                shouldStaticToolActive = true;
+            }
+
+            // if user is holding down mouse button, only activate when cell changes to a non-selected one
+            else if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left) &&
+                (lastMouseX != view.MouseCx || lastMouseY != view.MouseCy) &&
+                !IsMouseInSelectedArea(activeLayer))
+            {
+                shouldStaticToolActive = true;
+            }
+        }
+
         if (curTool == SelectionTool.MagicWand)
         {
-            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+            if (shouldStaticToolActive)
             {
+                Log.Debug("MAGIC WAND!!!");
                 changeRecorder.BeginChange();
 
                 var layerSelection = StaticSelectionTools.MagicWand(view.MouseCx, view.MouseCy, activeLayer);
@@ -325,7 +364,7 @@ class CellSelection
         }
         else if (curTool == SelectionTool.TileSelect)
         {
-            if (view.IsViewportHovered && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+            if (shouldStaticToolActive)
             {
                 changeRecorder.BeginChange();
 
@@ -472,6 +511,9 @@ class CellSelection
         {
             CopySelectedGeometry();
         }
+
+        lastMouseX = view.MouseCx;
+        lastMouseY = view.MouseCy;
     }
 
     private void CopySelectedGeometry()

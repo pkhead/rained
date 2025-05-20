@@ -1,6 +1,3 @@
-Selection:
-- drag for tile select
-
 LargeTexture:
 - large texture for lightmap
 
@@ -8,10 +5,9 @@ Scripting API 3.0:
 - fix log of nlua exception thrown in command run
 - make lua autotiles not use NLua classes
 - effect layer accept lingo names
+- File > Execute Script
 
 Bugs:
-- PASTING FROM BEFORE ENTERING CELL SELECTION WILL CRASH!!
-- HOW COME ONLY SELECTION ADD OPERATION WORKS?
 - Garbage worm entrace numbers?
 
 - undoing while chain holder attach makes a crash .. ???
