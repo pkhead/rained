@@ -342,7 +342,7 @@ class CellSelection
                         _ => throw new UnreachableException("Invalid curTool")
                     };
 
-                    if (activeOp is SelectionOperator.Replace or SelectionOperator.Intersect && mouseDragState is IApplySelection)
+                    if (activeOp is SelectionOperator.Replace && mouseDragState is IApplySelection)
                         ClearSelection(layerMask);
                 }
 
@@ -649,6 +649,10 @@ class CellSelection
                                 // 1  1  0
                                 newSel.mask[y,x] = srcSel.mask[y,x] & (srcSel.mask[y,x] ^ dstSel.mask[ly,lx]);
                             }
+                            else
+                            {
+                                newSel.mask[y,x] = srcSel.mask[y,x];
+                            }
                         }
                     }
 
@@ -660,18 +664,23 @@ class CellSelection
                 {
                     if (srcSel is null) break;
 
-                    var newSel = new LayerSelection(
-                        minX: int.Max(srcSel.minX, dstSel.minX),
-                        minY: int.Max(srcSel.minY, dstSel.minY),
-                        maxX: int.Max(srcSel.maxX, dstSel.maxX),
-                        maxY: int.Max(srcSel.maxY, dstSel.maxY)
-                    );
+                    var newMinX = int.Max(srcSel.minX, dstSel.minX);
+                    var newMinY = int.Max(srcSel.minY, dstSel.minY);
+                    var newMaxX = int.Min(srcSel.maxX, dstSel.maxX);
+                    var newMaxY = int.Min(srcSel.maxY, dstSel.maxY);
 
-                    if (newSel.maxX < newSel.minX || newSel.maxY < newSel.minY)
+                    if (newMaxX < newMinX || newMaxY < newMinY)
                     {
                         selections[l] = null;
                         break;
                     }
+
+                    var newSel = new LayerSelection(
+                        minX: int.Max(srcSel.minX, dstSel.minX),
+                        minY: int.Max(srcSel.minY, dstSel.minY),
+                        maxX: int.Min(srcSel.maxX, dstSel.maxX),
+                        maxY: int.Min(srcSel.maxY, dstSel.maxY)
+                    );
                     
                     // source
                     var ox0 = newSel.minX - srcSel.minX;
