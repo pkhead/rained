@@ -18,6 +18,7 @@ struct MaskedCell(bool mask, LevelCell cell)
 class CellSelection
 {
     public static CellSelection? Instance { get; set; } = null;
+    public static Action<LayerSelection?[]>? GeometryFillCallback = null;
 
     public bool Active { get; private set; } = true;
     public bool PasteMode { get; set; } = false;
@@ -42,7 +43,7 @@ class CellSelection
         MoveSelectedForward,
         MoveSelectionBackward,
         MoveSelectionForward,
-        Done,
+        FillBucket,
         Cancel,
     };
 
@@ -216,6 +217,19 @@ class CellSelection
             ImGui.SetItemTooltip(alt ? "Move Selection Forward" : "Move Selected Forward");
 
             ImGui.EndDisabled();
+
+            if (!AffectTiles && !PasteMode)
+            {
+                ImGui.BeginDisabled(!IsSelectionActive() || IsGeometryMoveActive);
+
+                ImGui.SameLine();
+                if (IconButton(IconName.FillBucket)) {
+                    GeometryFillCallback?.Invoke(selections);
+                }
+                ImGui.SetItemTooltip("Geometry Fill");
+
+                ImGui.EndDisabled();
+            }
         }
         ImGui.PopStyleVar();
 

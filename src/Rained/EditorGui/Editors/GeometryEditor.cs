@@ -192,6 +192,8 @@ class GeometryEditor : IEditorMode
         layerMask[1] = false;
         layerMask[2] = false;
         layerMask[window.WorkLayer] = true;
+
+        CellSelection.GeometryFillCallback = SelectionFill;
     }
 
     public void Unload()
@@ -996,6 +998,161 @@ class GeometryEditor : IEditorMode
         return newType;
     }
 
+    private void ActivateToolSingleTile(Tool tool, int tx, int ty, int layer, bool pressed)
+    {
+        var level = RainEd.Instance.Level;
+        if (!level.IsInBounds(tx, ty)) return;
+
+        var cell = level.Layers[layer, tx, ty];
+        LevelObject levelObject = LevelObject.None;
+
+        switch (tool)
+        {
+            case Tool.Wall:
+                cell.Geo = GeoType.Solid;
+                break;
+            
+            case Tool.Air:
+                cell.Geo = GeoType.Air;
+                break;
+
+            case Tool.Platform:
+                cell.Geo = GeoType.Platform;
+                break;
+
+            case Tool.Glass:
+                cell.Geo = GeoType.Glass;
+                break;
+            
+            case Tool.Inverse:
+                if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
+                cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
+                break;
+
+            case Tool.ShortcutEntrance:
+                if (layer != 0) break;
+
+                if (pressed) toolPlaceMode = cell.Geo == GeoType.ShortcutEntrance;
+
+                if (toolPlaceMode) {
+                    if (cell.Geo == GeoType.ShortcutEntrance) cell.Geo = GeoType.Air;
+                } else {
+                    cell.Geo = GeoType.ShortcutEntrance;
+                }
+
+                break;
+            
+            case Tool.Slope:
+            {
+                var slopeType = CalcPossibleSlopeType(tx, ty, layer);
+                if (slopeType != GeoType.Air)
+                {
+                    cell.Geo = slopeType;
+                }
+
+                break;
+            }
+
+            case Tool.CopyBackwards:
+            {
+                int dstLayer = (layer + 1) % 3;
+
+                ref var dstCell = ref level.Layers[dstLayer, tx, ty];
+                dstCell.Geo = cell.Geo;
+                dstCell.Objects = cell.Objects;
+                window.InvalidateGeo(tx, ty, dstLayer);
+
+                break;
+            }
+
+            // the following will use the default object tool
+            // handler
+            case Tool.HorizontalBeam:
+                levelObject = LevelObject.HorizontalBeam;
+                break;
+
+            case Tool.VerticalBeam:
+                levelObject = LevelObject.VerticalBeam;
+                break;
+                
+            case Tool.Rock:
+                levelObject = LevelObject.Rock;
+                break;
+
+            case Tool.Spear:
+                levelObject = LevelObject.Spear;
+                break;
+
+            case Tool.Crack:
+                levelObject = LevelObject.Crack;
+                break;
+            
+            case Tool.Hive:
+                // hives can only be placed above ground
+                if (ty < level.Height - 1 && level.Layers[layer, tx, ty + 1].Geo == GeoType.Solid)
+                {
+                    levelObject = LevelObject.Hive;
+                }
+                else
+                {
+                    levelObject = LevelObject.None;
+                }
+                break;
+            
+            case Tool.ForbidFlyChain:
+                levelObject = LevelObject.ForbidFlyChain;
+                break;
+            
+            case Tool.Waterfall:
+                levelObject = LevelObject.Waterfall;
+                break;
+            
+            case Tool.WormGrass:
+                levelObject = LevelObject.WormGrass;
+                break;
+
+            case Tool.Shortcut:
+                levelObject = LevelObject.Shortcut;
+                break;
+
+            case Tool.Entrance:
+                levelObject = LevelObject.Entrance;
+                break;
+
+            case Tool.CreatureDen:
+                levelObject = LevelObject.CreatureDen;
+                break;
+            
+            case Tool.WhackAMoleHole:
+                levelObject = LevelObject.WhackAMoleHole;
+                break;
+            
+            case Tool.GarbageWorm:
+                levelObject = LevelObject.GarbageWorm;
+                break;
+            
+            case Tool.ScavengerHole:
+                levelObject = LevelObject.ScavengerHole;
+                break;
+        }
+
+        if (levelObject != LevelObject.None)
+        {
+            // player can only place objects on work layer 1 (except if it's a beam or crack)
+            if (layer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack || levelObject == LevelObject.Hive)
+            {
+                if (pressed) toolPlaceMode = cell.Has(levelObject);
+                if (toolPlaceMode)
+                    cell.Remove(levelObject);
+                else
+                    cell.Add(levelObject);
+            }
+        }
+
+        level.Layers[layer, tx, ty] = cell;
+        window.InvalidateGeo(tx, ty, layer);
+    }
+
     private void ActivateToolSingleTile(Tool tool, int tx, int ty, bool pressed)
     {
         var level = RainEd.Instance.Level;
@@ -1006,155 +1163,7 @@ class GeometryEditor : IEditorMode
         for (int layer = 0; layer < 3; layer++)
         {
             if (!layerMask[layer]) continue;
-
-            var cell = level.Layers[layer, tx, ty];
-            LevelObject levelObject = LevelObject.None;
-
-            switch (tool)
-            {
-                case Tool.Wall:
-                    cell.Geo = GeoType.Solid;
-                    break;
-                
-                case Tool.Air:
-                    cell.Geo = GeoType.Air;
-                    break;
-
-                case Tool.Platform:
-                    cell.Geo = GeoType.Platform;
-                    break;
-
-                case Tool.Glass:
-                    cell.Geo = GeoType.Glass;
-                    break;
-                
-                case Tool.Inverse:
-                    if (pressed) toolPlaceMode = cell.Geo == GeoType.Air;
-                    cell.Geo = toolPlaceMode ? GeoType.Solid : GeoType.Air;
-                    break;
-
-                case Tool.ShortcutEntrance:
-                    if (layer != 0) break;
-
-                    if (pressed) toolPlaceMode = cell.Geo == GeoType.ShortcutEntrance;
-
-                    if (toolPlaceMode) {
-                        if (cell.Geo == GeoType.ShortcutEntrance) cell.Geo = GeoType.Air;
-                    } else {
-                        cell.Geo = GeoType.ShortcutEntrance;
-                    }
-
-                    break;
-                
-                case Tool.Slope:
-                {
-                    var slopeType = CalcPossibleSlopeType(tx, ty, layer);
-                    if (slopeType != GeoType.Air)
-                    {
-                        cell.Geo = slopeType;
-                    }
-
-                    break;
-                }
-
-                case Tool.CopyBackwards:
-                {
-                    int dstLayer = (layer + 1) % 3;
-
-                    ref var dstCell = ref level.Layers[dstLayer, tx, ty];
-                    dstCell.Geo = cell.Geo;
-                    dstCell.Objects = cell.Objects;
-                    window.InvalidateGeo(tx, ty, dstLayer);
-
-                    break;
-                }
-
-                // the following will use the default object tool
-                // handler
-                case Tool.HorizontalBeam:
-                    levelObject = LevelObject.HorizontalBeam;
-                    break;
-
-                case Tool.VerticalBeam:
-                    levelObject = LevelObject.VerticalBeam;
-                    break;
-                    
-                case Tool.Rock:
-                    levelObject = LevelObject.Rock;
-                    break;
-
-                case Tool.Spear:
-                    levelObject = LevelObject.Spear;
-                    break;
-
-                case Tool.Crack:
-                    levelObject = LevelObject.Crack;
-                    break;
-                
-                case Tool.Hive:
-                    // hives can only be placed above ground
-                    if (ty < level.Height - 1 && level.Layers[layer, tx, ty + 1].Geo == GeoType.Solid)
-                    {
-                        levelObject = LevelObject.Hive;
-                    }
-                    else
-                    {
-                        levelObject = LevelObject.None;
-                    }
-                    break;
-                
-                case Tool.ForbidFlyChain:
-                    levelObject = LevelObject.ForbidFlyChain;
-                    break;
-                
-                case Tool.Waterfall:
-                    levelObject = LevelObject.Waterfall;
-                    break;
-                
-                case Tool.WormGrass:
-                    levelObject = LevelObject.WormGrass;
-                    break;
-
-                case Tool.Shortcut:
-                    levelObject = LevelObject.Shortcut;
-                    break;
-
-                case Tool.Entrance:
-                    levelObject = LevelObject.Entrance;
-                    break;
-
-                case Tool.CreatureDen:
-                    levelObject = LevelObject.CreatureDen;
-                    break;
-                
-                case Tool.WhackAMoleHole:
-                    levelObject = LevelObject.WhackAMoleHole;
-                    break;
-                
-                case Tool.GarbageWorm:
-                    levelObject = LevelObject.GarbageWorm;
-                    break;
-                
-                case Tool.ScavengerHole:
-                    levelObject = LevelObject.ScavengerHole;
-                    break;
-            }
-
-            if (levelObject != LevelObject.None)
-            {
-                // player can only place objects on work layer 1 (except if it's a beam or crack)
-                if (layer == 0 || levelObject == LevelObject.HorizontalBeam || levelObject == LevelObject.VerticalBeam || levelObject == LevelObject.Crack || levelObject == LevelObject.Hive)
-                {
-                    if (pressed) toolPlaceMode = cell.Has(levelObject);
-                    if (toolPlaceMode)
-                        cell.Remove(levelObject);
-                    else
-                        cell.Add(levelObject);
-                }
-            }
-
-            level.Layers[layer, tx, ty] = cell;
-            window.InvalidateGeo(tx, ty, layer);
+            ActivateToolSingleTile(tool, tx, ty, layer, pressed);
         }
     }
 
@@ -1372,5 +1381,28 @@ class GeometryEditor : IEditorMode
                 ActivateTool(Tool.Slope, pos.X, pos.Y, true);
             }
         }
+    }
+
+    private void SelectionFill(CellEditing.LayerSelection?[] layers)
+    {
+        window.CellChangeRecorder.BeginChange();
+
+        for (int l = 0; l < Level.LayerCount; l++)
+        {
+            var layer = layers[l];
+            if (layer is null) continue;
+
+            // evil double-variable in for loop
+            for (int y = layer.minY, ly = 0; y <= layer.maxY; y++, ly++)
+            {
+                for (int x = layer.minX, lx = 0; x <= layer.maxX; x++, lx++)
+                {
+                    if (layer.mask[ly,lx])
+                        ActivateToolSingleTile(selectedTool, x, y, l, true);
+                }
+            }
+        }
+
+        window.CellChangeRecorder.PushChange();
     }
 }
