@@ -9,8 +9,8 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
     private readonly List<int> matSearchResults = [];
     private readonly MaterialEditMode editor = editor;
 
-    private RlManaged.Texture2D? _loadedMatPreview = null;
-    private string _activeMatPreview = "";
+    internal static RlManaged.Texture2D? _loadedMatPreview = null;
+    internal static string _activeMatPreview = "";
 
     protected override void ProcessSearch(string searchQuery)
     {

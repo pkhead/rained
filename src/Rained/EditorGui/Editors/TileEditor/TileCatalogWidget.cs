@@ -15,7 +15,7 @@ interface ITileSelectionState
 class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
 {
     private readonly ITileSelectionState state = selectionState;
-    private RlManaged.RenderTexture2D? _hoverPreview = null;
+    private static RlManaged.RenderTexture2D? _hoverPreview = null;
     private readonly List<int> tileSearchResults = [];
 
     protected override void ProcessSearch(string searchQuery)
@@ -176,13 +176,16 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
         Raylib.EndShaderMode();
     }
 
-    private void RenderTilePreview(Tile tile)
+    internal static void RenderTilePreview(Tile tile)
     {
         var prefs = RainEd.Instance.Preferences;
 
         if (prefs.ViewPreviews)
         {
-            var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
+			if (tile is null)
+				goto renderPlaceholder;
+
+			var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
             if (tileTexture is null)
                 goto renderPlaceholder;
 
@@ -313,7 +316,7 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
     }
 
     // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
-    private static float ContrastRatio(Color colorA, Color colorB)
+    internal static float ContrastRatio(Color colorA, Color colorB)
     {
         var lumA = RelativeLuminance(colorA);
         var lumB = RelativeLuminance(colorB);

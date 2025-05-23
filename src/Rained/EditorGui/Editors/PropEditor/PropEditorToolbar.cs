@@ -24,8 +24,8 @@ partial class PropEditor : IEditorMode
     private SelectionMode selectionMode = SelectionMode.Props;
     private SelectionMode? forceSelection = null;
     private PropInit? selectedInit;
-    private RlManaged.RenderTexture2D previewTexture = null!;
-    private PropInit? curPropPreview = null;
+    internal static RlManaged.RenderTexture2D previewTexture = null!;
+    private static PropInit? curPropPreview = null;
 
     // search results only process groups because i'm too lazy to have
     // it also process the resulting props
@@ -281,7 +281,7 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    private void UpdatePreview(PropInit prop)
+    internal static void UpdatePreview(PropInit prop)
     {
         var texWidth = (int)(prop.Width * 20f);
         var texHeight = (int)(prop.Height * 20f);

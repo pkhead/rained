@@ -1,6 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using ImGuiNET;
+using Rained.EditorGui.Windows;
 namespace Rained.EditorGui;
 
 static class EditorWindow
@@ -204,6 +205,11 @@ static class EditorWindow
                 {
                     PreferencesWindow.OpenWindow();
                 }
+
+				if (ImGui.MenuItem("Open Asset Manager"))
+				{
+					AssetManagerWindow.OpenWindow();
+				}
 
                 ImGui.Separator();
                 if (ImGui.MenuItem("Quit", "Alt+F4"))
@@ -569,6 +575,7 @@ static class EditorWindow
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
+		AssetManagerWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();
