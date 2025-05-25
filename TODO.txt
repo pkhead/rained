@@ -47,6 +47,7 @@ v2.4.0:
   - prop editor lasso select
 
 Do Soon:
+- Add geo big slope to manual
 - toggle for showing shortcuts in tile editor
 - tile graphics ludo's seamless tile types?
 - could there be an option to change the move confirm shortcut? my laptop preset has change layer on enter so would be very useful for me if it’s ok ^^
