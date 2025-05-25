@@ -665,7 +665,7 @@ static class PreferencesWindow
             var lightEditorControlScheme = (int) prefs.LightEditorControlScheme;
             if (ImGui.Combo("Light editor control scheme", ref lightEditorControlScheme, "Mouse\0Keyboard\0"))
                 prefs.LightEditorControlScheme = (UserPreferences.LightEditorControlSchemeOption) lightEditorControlScheme;
-
+            
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             if (ImGui.BeginItemTooltip())
@@ -681,6 +681,41 @@ static class PreferencesWindow
                     - Keyboard: Mimics the controls in the
                     original level editor: WASD to
                     scale and Q/E to rotate.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementPos = (int) prefs.EffectPlacementPosition;
+            if (ImGui.Combo("Effect placement position", ref effectPlacementPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementAltPos = (int) prefs.EffectPlacementAltPosition;
+            if (ImGui.Combo("Effect placement alt position", ref effectPlacementAltPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementAltPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementAltPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created when
+                    SHIFT is held.
                     """
                 );
                 ImGui.End();

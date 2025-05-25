@@ -3,6 +3,7 @@ using Raylib_cs;
 using System.Numerics;
 using Rained.Assets;
 using Rained.LevelData;
+using System.Diagnostics;
 namespace Rained.EditorGui.Editors;
 
 class EffectsEditor : IEditorMode
@@ -15,7 +16,7 @@ class EffectsEditor : IEditorMode
     private int selectedGroup = 0;
     private int selectedEffect = -1;
     private string searchQuery = string.Empty;
-    private bool doInsertAfter = false;
+    private bool altInsertion = false;
 
     public int SelectedEffect { get => selectedEffect; set => selectedEffect = value; }
 
@@ -108,7 +109,7 @@ class EffectsEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
         var fxDatabase = RainEd.Instance.EffectsDatabase;
-        doInsertAfter = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+        altInsertion = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -194,7 +195,7 @@ class EffectsEditor : IEditorMode
         {
             if (ImGui.BeginListBox("##EffectStack", ImGui.GetContentRegionAvail()))
             {
-                var effectInsertPreviewIndex = doInsertAfter ? selectedEffect+1 : selectedEffect;;
+                var effectInsertPreviewIndex = altInsertion ? selectedEffect+1 : selectedEffect;;
                 if (level.Effects.Count == 0)
                 {
                     ImGui.TextDisabled("(no effects)");
@@ -671,26 +672,52 @@ class EffectsEditor : IEditorMode
     private void AddEffect(EffectInit init)
     {
         var level = RainEd.Instance.Level;
+        var prefs = RainEd.Instance.Preferences;
         changeRecorder.BeginListChange();
+
+        // convert it to an integer cus Uhhhhhh
+        // writing the whole enum path is too long
+        int mode = (altInsertion ? prefs.EffectPlacementAltPosition : prefs.EffectPlacementPosition)
+        switch
+        {
+            UserPreferences.EffectPlacementPositionOption.BeforeSelected => 0,
+            UserPreferences.EffectPlacementPositionOption.AfterSelected => 1,
+            UserPreferences.EffectPlacementPositionOption.First => 2,
+            UserPreferences.EffectPlacementPositionOption.Last => 3,
+            _ => throw new UnreachableException()
+        };
 
         var newEffect = new Effect(level, init);
         if (selectedEffect != -1)
         {
             // shift: insert after selected effect
             // no shift: insert before selected effect
-            if (doInsertAfter)
-                level.Effects.Insert(++selectedEffect, newEffect);
-            else
-                level.Effects.Insert(selectedEffect, newEffect);
+            switch (mode)
+            {
+                case 0: // before selected
+                    level.Effects.Insert(selectedEffect, newEffect);
+                    break;
+                case 1: // after selected
+                    level.Effects.Insert(++selectedEffect, newEffect);
+                    break;
+                case 2: // first
+                    level.Effects.Add(newEffect);
+                    selectedEffect = 0;
+                    break;
+                case 3: // last
+                    selectedEffect = level.Effects.Count;
+                    level.Effects.Insert(0, newEffect);
+                    break;
+            }
         }
         else
         {
-            if (doInsertAfter)
+            if (mode is 1 or 3) // after or last
             {
                 level.Effects.Add(newEffect);
                 selectedEffect = level.Effects.Count - 1;
             }
-            else
+            else // before or first
             {
                 level.Effects.Insert(0, newEffect);
                 selectedEffect = 0;

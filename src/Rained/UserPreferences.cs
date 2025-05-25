@@ -356,6 +356,89 @@ class UserPreferences
         }
     }
 
+    public enum EffectPlacementPositionOption
+    {
+        BeforeSelected, AfterSelected, First, Last
+    }
+    public EffectPlacementPositionOption EffectPlacementPosition = EffectPlacementPositionOption.BeforeSelected;
+    public EffectPlacementPositionOption EffectPlacementAltPosition = EffectPlacementPositionOption.AfterSelected;
+
+    [JsonPropertyName("effectPlacementPosition")]
+    public string EffectPlacementPositionString
+    {
+        get => EffectPlacementPosition switch
+        {
+            EffectPlacementPositionOption.BeforeSelected => "beforeSelected",
+            EffectPlacementPositionOption.AfterSelected => "afterSelected",
+            EffectPlacementPositionOption.First => "first",
+            EffectPlacementPositionOption.Last => "last",
+            _ => throw new Exception("Invalid LightEditorControlScheme")
+        };
+        set
+        {
+            switch (value)
+            {
+                case "beforeSelected":
+                    EffectPlacementPosition = EffectPlacementPositionOption.BeforeSelected;
+                    break;
+
+                case "afterSelected":
+                    EffectPlacementPosition = EffectPlacementPositionOption.AfterSelected;
+                    break;
+
+                case "first":
+                    EffectPlacementPosition = EffectPlacementPositionOption.First;
+                    break;
+
+                case "last":
+                    EffectPlacementPosition = EffectPlacementPositionOption.Last;
+                    break;
+
+                default:
+                    Log.Error("Invalid 'effectPlacementPosition' option");
+                    break;
+            }
+        }
+    }
+
+    [JsonPropertyName("effectPlacementAltPosition")]
+    public string EffectPlacementAltPositionString
+    {
+        get => EffectPlacementAltPosition switch
+        {
+            EffectPlacementPositionOption.BeforeSelected => "beforeSelected",
+            EffectPlacementPositionOption.AfterSelected => "afterSelected",
+            EffectPlacementPositionOption.First => "first",
+            EffectPlacementPositionOption.Last => "last",
+            _ => throw new Exception("Invalid LightEditorControlScheme")
+        };
+        set
+        {
+            switch (value)
+            {
+                case "beforeSelected":
+                    EffectPlacementAltPosition = EffectPlacementPositionOption.BeforeSelected;
+                    break;
+
+                case "afterSelected":
+                    EffectPlacementAltPosition = EffectPlacementPositionOption.AfterSelected;
+                    break;
+
+                case "first":
+                    EffectPlacementAltPosition = EffectPlacementPositionOption.First;
+                    break;
+
+                case "last":
+                    EffectPlacementAltPosition = EffectPlacementPositionOption.Last;
+                    break;
+
+                default:
+                    Log.Error("Invalid 'effectPlacementAltPosition' option");
+                    break;
+            }
+        }
+    }
+
     public bool ShowPaletteWindow { get; set; }
     public bool UsePalette { get; set; }
     public int PaletteIndex { get; set; }
