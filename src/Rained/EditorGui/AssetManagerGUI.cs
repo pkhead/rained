@@ -7,6 +7,7 @@ using System.Numerics;
 using Rained.EditorGui.Editors;
 using Raylib_cs;
 using Rained.LevelData;
+using System.IO;
 namespace Rained.EditorGui;
 
 static class AssetManagerGUI
@@ -58,10 +59,12 @@ static class AssetManagerGUI
 
 	// fields related to the export prompt
 	private static int wantExport;
-	private static Dictionary<CategoryList.InitCategory, List<CategoryList.InitItem>> pendingExportFiles = [];
+	internal static Dictionary<CategoryList.InitCategory, List<CategoryList.InitItem>> pendingExportFiles = [];
 	private static int selectedExportCategory = -1;
 	internal static AssetType nextAssetTab;
 	internal static bool firstOpen = false;
+	private static Task? exportTask;
+	private static string exportLocation;
 	private static readonly List<(int, CategoryList.InitCategory)> searchResults = [];
 
 	private static async Task<PromptResult> PromptOverwrite(PromptOptions prompt)
@@ -98,9 +101,7 @@ static class AssetManagerGUI
             var drawList = ImGui.GetWindowDrawList();
             float textHeight = ImGui.GetTextLineHeight();
 
-			const string leftPadding = "  ";
-			float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
-			foreach ((var i, var group) in searchResults)
+            foreach ((var i, var group) in searchResults)
             {
                 if (group.Color.HasValue)
                 {
@@ -125,7 +126,7 @@ static class AssetManagerGUI
                     var col = group.Color.Value;
                     drawList.AddRectFilled(
                         p_min: cursor,
-                        p_max: cursor + new Vector2(colorWidth, textHeight),
+                        p_max: cursor + new Vector2(10f, textHeight),
                         ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
                     );
                 }
@@ -759,10 +760,19 @@ static class AssetManagerGUI
 			wantExport = exportReq;
 		}
 
-		if (wantExport > 0)
+		if (fileBrowser == null && wantExport == 3)
+			wantExport = 1;
+
+		if (wantExport == 1 && exportTask is null)
 		{
 			// Maybe move this to its own dedicated space at some point, but it's rather isolated to this use case
 			RenderAssetExporter();			
+		}
+		else if (wantExport == 2)
+		{
+			wantExport = 3;
+			fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, ExportAssetZip, RainEd.Instance.AssetDataPath);
+			fileBrowser.AddFilter("ZIP File", ".zip");
 		}
 
 		// render merge status
@@ -942,6 +952,60 @@ static class AssetManagerGUI
 				ImGui.EndPopup();
 			}
 		}
+
+		if (exportTask is not null)
+		{
+			ImGuiExt.EnsurePopupIsOpen("Exporting");
+			ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+			ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+
+			var popupFlags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove;
+			if (ImGuiExt.BeginPopupModal("Exporting", popupFlags))
+			{
+				ImGui.Text("Exporting...");
+
+				// show error if present
+				if (exportTask.IsFaulted)
+				{
+					ImGuiExt.EnsurePopupIsOpen("Error");
+					ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+					ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.Appearing);
+					if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+					{
+						var exception = exportTask.Exception.InnerExceptions[0];
+						ImGui.Text($"An error occured while exporting the pack.");
+
+						ImGui.Separator();
+
+						if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+						{
+							ImGui.CloseCurrentPopup();
+							exportTask = null;
+						}
+
+						ImGui.End();
+					}
+				}
+
+				else if (exportTask.IsCompleted)
+				{
+					ImGui.SameLine();
+					ImGui.Text("completed!");
+
+					if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+					{
+						ImGui.CloseCurrentPopup();
+						exportTask = null;
+					}
+					ImGui.SameLine();
+
+					if (ImGui.Button("Show In File Browser") && File.Exists(exportLocation))
+						RainEd.Instance.ShowPathInSystemBrowser(exportLocation, true);
+				}
+
+				ImGui.EndPopup();
+			}
+		}
     }
 
 	private static void RenderAssetExporter()
@@ -1012,7 +1076,7 @@ static class AssetManagerGUI
 
 			float lineHeight = ImGui.GetItemRectSize().Y;
 
-			if (selectedExportCategory != -1)
+			if (selectedExportCategory != -1 && pendingExportFiles.Count > 0)
 			{
 				var keys = pendingExportFiles.Keys.ToList();
 				bool anyItemsBeenRemoved = selectedExportCategory != -1 && categoryList.Contains(keys[selectedExportCategory]) && categoryList[categoryList.IndexOf(keys[selectedExportCategory])].Items.Any(item => !pendingExportFiles[keys[selectedExportCategory]].Contains(item));
@@ -1184,7 +1248,9 @@ static class AssetManagerGUI
 			ImGui.BeginDisabled(pendingExportFiles.Count == 0);
 			if (ImGui.Button("Export"))
 			{
-				// To do, add actual export functions
+				selectedExportCategory = 0;
+				wantExport = 2;
+				ImGui.CloseCurrentPopup();
 			}
 			ImGui.EndDisabled();
 
@@ -1197,6 +1263,15 @@ static class AssetManagerGUI
 			}
 			ImGui.EndPopup();
 		}
+	}
+
+	private static void ExportAssetZip(string[]? paths)
+	{
+		if (paths == null || paths.Length == 0) return;
+		if (exportTask is not null) return;
+		exportTask = assetManager!.Export(GetCurrentAssetList(), paths[0]);
+		exportLocation = paths[0];
+		Log.Information("Export .zip file {Path}", paths[0]);
 	}
 
 	private static void ReAddTilePreviews(CategoryList.InitItem tile, int selected)
@@ -1264,33 +1339,21 @@ static class AssetManagerGUI
 				break;
 
 			case AssetType.Material:
-				// Borked shrugs
-				var materialDb = RainEd.Instance.MaterialDatabase;
-
-				if (materialDb.Categories.Count > selected)
+				// show material preview when hovered
+				if (ImGui.IsItemHovered())
 				{
-					var materialList = materialDb.Categories[selected].Materials;
-
-					// Replace this if there's a better method to search for an existing material
-					if (materialList.Any(mat => mat.Name == tile.Name))
+					if (MaterialCatalogWidget._activeMatPreview != tile.Name)
 					{
-						var material = materialList.Where(mat => mat.Name == tile.Name).FirstOrDefault();
-						if (material != default && ImGui.IsItemHovered())
-						{
-							if (MaterialCatalogWidget._activeMatPreview != material.Name)
-							{
-								MaterialCatalogWidget._activeMatPreview = material.Name;
-								MaterialCatalogWidget._loadedMatPreview?.Dispose();
-								MaterialCatalogWidget._loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", material.Name + ".png"));
-							}
+						MaterialCatalogWidget._activeMatPreview = tile.Name;
+						MaterialCatalogWidget._loadedMatPreview?.Dispose();
+						MaterialCatalogWidget._loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", tile.Name + ".png"));
+					}
 
-							if (MaterialCatalogWidget._loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(MaterialCatalogWidget._loadedMatPreview))
-							{
-								ImGui.BeginTooltip();
-								ImGuiExt.ImageSize(MaterialCatalogWidget._loadedMatPreview, MaterialCatalogWidget._loadedMatPreview.Width * Boot.PixelIconScale, MaterialCatalogWidget._loadedMatPreview.Height * Boot.PixelIconScale);
-								ImGui.EndTooltip();
-							}
-						}
+					if (MaterialCatalogWidget._loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(MaterialCatalogWidget._loadedMatPreview))
+					{
+						ImGui.BeginTooltip();
+						ImGuiExt.ImageSize(MaterialCatalogWidget._loadedMatPreview, MaterialCatalogWidget._loadedMatPreview.Width * Boot.PixelIconScale, MaterialCatalogWidget._loadedMatPreview.Height * Boot.PixelIconScale);
+						ImGui.EndTooltip();
 					}
 				}
 

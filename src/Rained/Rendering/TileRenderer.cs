@@ -667,7 +667,7 @@ class TileRenderer
     )
     {
         var lineWidth = 1f;
-		if (RainEd.Instance.LevelView != null)
+		if (RainEd.Instance.CurrentTab != null && RainEd.Instance.LevelView != null)
 		{
 			lineWidth = 1f / RainEd.Instance.LevelView.ViewZoom;
 		}

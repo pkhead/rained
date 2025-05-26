@@ -222,6 +222,11 @@ static class EditorWindow
                     PreferencesWindow.OpenWindow();
                 }
 
+				if (ImGui.MenuItem("Open Asset Manager"))
+				{
+					AssetManagerWindow.OpenWindow();
+				}
+
                 LuaScripting.Modules.GuiModule.MenuHook("file");
 
                 ImGui.Separator();

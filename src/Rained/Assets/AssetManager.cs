@@ -1,7 +1,10 @@
 using Drizzle.Lingo.Runtime;
+using Rained.EditorGui;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.IO.Compression;
 using System.Linq;
 using static Silk.NET.Core.Native.WinString;
 
@@ -645,6 +648,14 @@ record CategoryList
 		}
 	}
 
+	internal string GetCategoryHeader(InitCategory header)
+	{
+		if (categoryHeaders.TryGetValue(header.Name, out var initCategoryHeader))
+			return initCategoryHeader.RawLine;
+
+		return "";
+	}
+
 	//public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
 
 	//public async Task Merge(string otherPath, PromptRequest promptOverwrite)
@@ -1264,6 +1275,84 @@ class AssetManager
 	{
 		var catList = GetCategoryList(index)!;
 		catList.MoveCategory(draggedCategory, dragToCategory);
+	}
+
+	internal async Task? Export(CategoryListIndex index, string filePath)
+	{
+		string imagePath = RainEd.Instance.AssetDataPath;
+		switch (index)
+		{
+			case CategoryListIndex.Tile:
+				imagePath = Path.Combine(imagePath, "Graphics");
+				break;
+
+			case CategoryListIndex.Prop:
+				imagePath = Path.Combine(imagePath, "Props");
+				break;
+
+			case CategoryListIndex.Materials:
+				imagePath = Path.Combine(imagePath, "Materials");
+				break;
+		}
+		string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
+
+		var catList = GetCategoryList(index);
+		using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+		using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
+
+		var initEntry = zipInit.CreateEntry("Copy_To_Init.txt", CompressionLevel.Optimal);
+		using var initStream = new StreamWriter(initEntry.Open());
+		foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+		{
+			if (catList.Categories.Contains(key))
+			{
+				// Implement the init
+				await initStream.WriteLineAsync(catList.GetCategoryHeader(key));
+
+				int items = AssetManagerGUI.pendingExportFiles[key].Count;
+				foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+				{
+					await initStream.WriteLineAsync(item.RawLine);
+				}
+				await initStream.WriteLineAsync("");
+			}
+		}
+		await initStream.DisposeAsync();
+
+		foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+		{
+			// Then implement images
+			foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+			{
+				await WritePngToZip(imageFiles, item, zipInit);
+			}
+		}
+
+		AssetManagerGUI.pendingExportFiles.Clear();
+	}
+
+	public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
+	{
+		if (imageFiles.Any(x => x.Contains(item.Name)))
+		{
+			string source = imageFiles.Where(x => x.Contains(item.Name)).First();
+			if (File.Exists(source))
+			{
+				var entry = zipInit.CreateEntry(Path.GetFileName(source));
+				if (entry is not null)
+				{
+					using var imageFile = entry.Open();
+					using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
+
+					if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
+					{
+						await originalImage.CopyToAsync(imageFile);
+					}
+
+					await imageFile.DisposeAsync();
+				}
+			}
+		}
 	}
 
 	/*public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptOverwrite)
