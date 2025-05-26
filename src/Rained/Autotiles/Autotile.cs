@@ -101,6 +101,7 @@ abstract class Autotile
     public virtual void ConfigGui() {}
 
     public virtual bool AllowIntersections { get => false; }
+    public virtual bool AutoHistory { get => true; }
 
     enum Direction : int
     {

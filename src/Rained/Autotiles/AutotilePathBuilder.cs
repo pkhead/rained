@@ -15,6 +15,7 @@ class AutotilePathBuilder : IAutotileInputBuilder
     }
 
     private readonly Autotile autotile;
+    public Autotile Autotile => autotile;
 
     private readonly List<Vector2i> autotilePath = [];
     private readonly List<PathDirection> autotilePathDirs = [];

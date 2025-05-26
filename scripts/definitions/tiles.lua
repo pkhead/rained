@@ -123,8 +123,10 @@ function rained.tiles.getTilesInCategory(categoryName) end
 ---@field type AutotileType The fill type of the autotile.
 ---@field allowIntersections boolean True if self-intersections are allowed.
 ---@field requiredTiles string[]? The list of all the tiles required by the autotile.
+---@field autoHistory boolean If set to true, Rained will automatically handle cell change history. The function should then not call beginChange or endChange. Defaults to true.
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
 ---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
+---@field uiHook fun(self: Autotile) Hook used to insert custom ImGui calls into the autotile configuration UI.
 ---@field onOptionChanged fun(self: Autotile, id: string)? The callback that is invoked when an option is changed.
 local Autotile = {}
 

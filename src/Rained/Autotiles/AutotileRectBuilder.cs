@@ -6,6 +6,8 @@ using LevelData;
 class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInputBuilder
 {
     private readonly Autotile autotile = autotile;
+    public Autotile Autotile => autotile;
+    
     private readonly Vector2i startPos = startPos;
     private Vector2i endPos = startPos;
 

@@ -17,11 +17,14 @@ class LuaAutotile : Autotile, IDisposable
 
     public LuaFunction? LuaFillPathProcedure = null;
     public LuaFunction? LuaFillRectProcedure = null;
+    public LuaFunction? LuaUiHook = null;
     public LuaFunction? OnOptionChanged = null;
 
     public LuaAutotileInterface LuaWrapper;
 
     public override bool AllowIntersections { get => LuaWrapper.AllowIntersections; }
+    public override bool AutoHistory { get => LuaWrapper.AutoHistory; }
+
     private List<string>? missingTiles = null;
     
     public enum ConfigDataType
@@ -201,6 +204,8 @@ class LuaAutotile : Autotile, IDisposable
 
             ImGui.PopItemWidth();
         }
+        
+        LuaUiHook?.Call();
     }
 
     public List<string> CheckMissingTiles()
@@ -276,11 +281,17 @@ class LuaAutotileInterface
     [LuaMember(Name = "allowIntersections")]
     public bool AllowIntersections = false;
 
+    [LuaMember(Name = "autoHistory")]
+    public bool AutoHistory = true;
+
     [LuaMember(Name = "tilePath")]
     public LuaFunction? TilePath { get => autotile.LuaFillPathProcedure; set => autotile.LuaFillPathProcedure = value; }
     
     [LuaMember(Name = "tileRect")]
     public LuaFunction? TileRect { get => autotile.LuaFillRectProcedure; set => autotile.LuaFillRectProcedure = value; }
+
+    [LuaMember(Name = "uiHook")]
+    public LuaFunction? UiHook { get => autotile.LuaUiHook; set => autotile.LuaUiHook = value; }
     
     [LuaMember(Name = "requiredTiles")]
     public LuaTable? RequiredTiles = null;
