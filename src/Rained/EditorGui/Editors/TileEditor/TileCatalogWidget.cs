@@ -179,16 +179,16 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
         Raylib.EndShaderMode();
     }
 
-    internal static void RenderTilePreview(Tile tile)
+    public static void RenderTilePreview(Tile tile)
     {
         var prefs = RainEd.Instance.Preferences;
 
         if (prefs.ViewPreviews)
         {
-			if (tile is null)
-				goto renderPlaceholder;
+            if (tile is null)
+                goto renderPlaceholder;
 
-			var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
+            var tileTexture = RainEd.Instance.AssetGraphics.GetTileTexture(tile.Name);
             if (tileTexture is null)
                 goto renderPlaceholder;
 
@@ -319,7 +319,7 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
     }
 
     // https://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
-    internal static float ContrastRatio(Color colorA, Color colorB)
+    public static float ContrastRatio(Color colorA, Color colorB)
     {
         var lumA = RelativeLuminance(colorA);
         var lumB = RelativeLuminance(colorB);

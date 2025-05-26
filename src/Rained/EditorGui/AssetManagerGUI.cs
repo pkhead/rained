@@ -61,10 +61,10 @@ static class AssetManagerGUI
 
     // fields related to the export prompt
     private static int wantExport;
-    internal static Dictionary<CategoryList.InitCategory, List<CategoryList.InitItem>> pendingExportFiles = [];
+    public static Dictionary<CategoryList.InitCategory, List<CategoryList.InitItem>> pendingExportFiles = [];
     private static int selectedExportCategory = -1;
-    internal static AssetType nextAssetTab;
-    internal static bool firstOpen = false;
+    public static AssetType nextAssetTab;
+    public static bool firstOpen = false;
     private static Task? exportTask;
     private static string exportLocation;
     private static readonly List<(int, CategoryList.InitCategory)> searchResults = [];

@@ -667,10 +667,11 @@ class TileRenderer
     )
     {
         var lineWidth = 1f;
-		if (RainEd.Instance.CurrentTab != null && RainEd.Instance.LevelView != null)
-		{
-			lineWidth = 1f / RainEd.Instance.LevelView.ViewZoom;
-		}
+        if (RainEd.Instance.CurrentTab != null && RainEd.Instance.LevelView != null)
+        {
+            lineWidth = 1f / RainEd.Instance.LevelView.ViewZoom;
+        }
+        
         var prefs = RainEd.Instance.Preferences;
 
         if (selectedTile.HasSecondLayer)
