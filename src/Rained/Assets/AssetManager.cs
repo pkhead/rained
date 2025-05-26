@@ -1,12 +1,6 @@
-using Drizzle.Lingo.Runtime;
 using Rained.EditorGui;
-using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO.Compression;
-using System.Linq;
-using static Silk.NET.Core.Native.WinString;
 
 
 /**
@@ -101,7 +95,7 @@ record CategoryList
         public List<InitItem> Items = [];
     }
 
-    internal List<InitCategory> Categories = [];
+    public List<InitCategory> Categories = [];
     private readonly Dictionary<string, InitCategoryHeader> categoryHeaders = [];
     private readonly Dictionary<InitItem, InitCategory> itemCategories = [];
 
@@ -143,8 +137,8 @@ record CategoryList
 
                     lines.Add(new InitCategoryHeader(
                         RawLine: line,
-                        Name: (string) list.values[0],
-                        Color: (Lingo.Color) list.values[1]
+                        Name: (string) list[0],
+                        Color: (Lingo.Color) list[1]
                     ));
                 }
                 else
@@ -166,7 +160,7 @@ record CategoryList
                 {
                     lines.Add(new InitItem(
                         RawLine: line,
-                        Name: (string) data.fields["nm"]
+                        Name: (string) data["nm"]
                     ));
                     // AddInit();
                 }
@@ -379,21 +373,21 @@ record CategoryList
                     lines.RemoveAt(lineIndex);
                     break;
                 }
-				lineIndex++;
+                lineIndex++;
             }
 
             if (!success) Log.Warning("Could not remove item {Item} from category {Category} in the init file", item.Name, srcCategory.Name);
         }
 
         // now, add it to the new category
-		if (moveItemAfterAdding && replaceItem != null)
-		{
-			MoveItemWithinCategory(dstCategory, AddItem(dstCategory, item), replaceItem);
-		}
-		else
-		{
-			AddItem(dstCategory, item);
-		}
+        if (moveItemAfterAdding && replaceItem != null)
+        {
+            MoveItemWithinCategory(dstCategory, AddItem(dstCategory, item), replaceItem);
+        }
+        else
+        {
+            AddItem(dstCategory, item);
+        }
     }
 
     public void DeleteCategory(InitCategory category)
@@ -427,16 +421,16 @@ record CategoryList
         }
     }
 
-	public void UpdateCategoryInit(InitCategory category)
-	{
-		if (!Categories.Contains(category))
-			throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
+    public void UpdateCategoryInit(InitCategory category)
+    {
+        if (!Categories.Contains(category))
+            throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
 
-		// Replaces the category init line with the new updated information
-		int lineIndex = lines.IndexOf(categoryHeaders[category.Name]);
-		if (lineIndex == -1) throw new Exception($"Failed to find line index of category '{category.Name}'");
-		lines[lineIndex].RawLine = $"-[\"{category.Name}\"{(category.Color == null ? "" : $", color({category.Color.Value.R}, {category.Color.Value.G}, {category.Color.Value.B})")}]";
-	}
+        // Replaces the category init line with the new updated information
+        int lineIndex = lines.IndexOf(categoryHeaders[category.Name]);
+        if (lineIndex == -1) throw new Exception($"Failed to find line index of category '{category.Name}'");
+        lines[lineIndex].RawLine = $"-[\"{category.Name}\"{(category.Color == null ? "" : $", color({category.Color.Value.R}, {category.Color.Value.G}, {category.Color.Value.B})")}]";
+    }
 
     public void DeleteItem(InitItem item)
     {
@@ -452,492 +446,492 @@ record CategoryList
         lines.Remove(item);
     }
 
-	internal void MoveItemWithinCategory(InitCategory category, InitItem draggingItem, InitItem replaceItem)
-	{
-		if (!Categories.Contains(category))
-			throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
-
-		int dragIndex = lines.IndexOf(draggingItem);
-
-		if (dragIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitLineData");
-
-		int replaceIndex = lines.IndexOf(replaceItem);
-		lines.RemoveAt(dragIndex);
-		int postReplaceIndex = lines.IndexOf(replaceItem);
-		if (replaceIndex == -1 || postReplaceIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitLineData");
-
-		// Changes the behavior so the target destination is before or after an item depending if the user drags the item up or down
-		int displace = replaceIndex - postReplaceIndex;
-		displace += postReplaceIndex;
-
-		if (displace >= 0 && displace < lines.Count)
-		{
-			lines.Insert(displace, draggingItem);
-		}
-		else if (displace >= lines.Count)
-		{
-			lines.Add(draggingItem);
-		}
-
-		// Handle the visual category part
-		int catDragIndex = category.Items.IndexOf(draggingItem);
-
-		if (catDragIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategory");
-
-		int catReplaceIndex = category.Items.IndexOf(replaceItem);
-		category.Items.RemoveAt(catDragIndex);
-		int catPostReplaceIndex = category.Items.IndexOf(replaceItem);
-		if (catReplaceIndex == -1 || catPostReplaceIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategory");
-
-		displace = catReplaceIndex - catPostReplaceIndex;
-		displace += catPostReplaceIndex;
-
-		if (displace >= 0 && displace < category.Items.Count)
-		{
-			category.Items.Insert(displace, draggingItem);
-		}
-		else if (displace >= category.Items.Count)
-		{
-			category.Items.Add(draggingItem);
-		}
-	}
-
-	internal void MoveCategory(InitCategory draggedCategory, InitCategory replaceCategory)
-	{
-		if (!Categories.Contains(replaceCategory) || !Categories.Contains(draggedCategory))
-			throw new ArgumentException("InitCategory does not contain one or more of the categories");
-
-		// This is the tedious part, editing the init lines to follow the category :(
-		int dragIndex = lines.IndexOf(categoryHeaders[draggedCategory.Name]);
-		if (dragIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
-		List<InitLineData> dragCategoryLines = [];
-
-		int replaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
-
-		// Move the index back in case there are comments in the category, so the index starts at the end of the last category
-		while (dragIndex > 0 && ((lines[dragIndex] is not InitCategoryHeader && lines[dragIndex] is not InitItem) || lines[dragIndex] == categoryHeaders[draggedCategory.Name]))
-			dragIndex--;
-
-		// Move after the last line
-		if (dragIndex != 0)
-			dragIndex++;
-
-		bool shouldContinue = true;
-		// We need to take into account InitIrrelevantLine that are in the middle of a category because some people add them despite not having any purpose
-		while (dragIndex < lines.Count && shouldContinue && ((lines[dragIndex] is not InitCategoryHeader) || lines[dragIndex] == categoryHeaders[draggedCategory.Name]))
-		{
-			// This is our check to see if this InitIrrelevantLine is a break case or not
-			int cont = 0;
-			while (dragIndex + cont < lines.Count && lines[dragIndex + cont] is not InitItem)
-			{
-				// So if the next valid line is a InitCategoryHeader, we should escape
-				if (lines[dragIndex + cont] is InitCategoryHeader && lines[dragIndex + cont] != categoryHeaders[draggedCategory.Name])
-				{
-					shouldContinue = false;
-					break;
-				}
-					
-				cont++;
-			}
-
-			if (shouldContinue)
-			{
-				// Moving categories should likely also delete dups by default, I guess that's a win
-				if (lines[dragIndex] is InitLineData data && !dragCategoryLines.Contains(data))
-				{
-					dragCategoryLines.Add(data);
-				}
-				Log.Information("Removing {string}", lines[dragIndex].RawLine);
-				lines.RemoveAt(dragIndex);
-
-
-				if (dragCategoryLines.Count == 1 && dragCategoryLines[0] is not InitIrrelevantLine)
-				{
-					// Insert a blank line at the beginning if the category is at the top
-					dragCategoryLines.Insert(0, new(""));
-				}
-			}
-			else if (dragIndex == 0 && lines[dragIndex] is InitIrrelevantLine && string.IsNullOrEmpty(lines[dragIndex].RawLine))
-			{
-				// Remove the lingering line at the top if the line is not a comment
-				lines.RemoveAt(dragIndex);
-			}
-		}
-		int postReplaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
-		if (replaceIndex == -1 || postReplaceIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
-
-		int lineDisplace = replaceIndex - postReplaceIndex;
-		lineDisplace += postReplaceIndex;
-
-		bool shouldPlaceAtBottom = false;
-		if (lineDisplace > 0 && lineDisplace < lines.Count)
-		{
-			// Moving a category down doesn't properly index, moving it up does however
-			// So if the lineDisplace is positive, it should check for the InitIrrelevantLine at the beginning and then place it before that
-			Log.Information("Initial insert line at {string}", lines[lineDisplace].RawLine);
-
-			if (lineDisplace > 0)
-			{
-				bool displaced = false;
-				// We need to check which direction is the correct index
-				if (lines[lineDisplace] != categoryHeaders[replaceCategory.Name])
-				{
-					displaced = true;
-					while (lineDisplace > 0 && lines[lineDisplace] is not InitCategoryHeader)
-						lineDisplace--;
-				}
-
-				// So if the last category head is our category we want to *move* past, lets move to the next category
-				if (displaced && lines[lineDisplace] == categoryHeaders[replaceCategory.Name])
-				{
-					Log.Information("Last category is our replaced category!");
-					while (lineDisplace < lines.Count && (lines[lineDisplace] is not InitCategoryHeader || lines[lineDisplace] == categoryHeaders[replaceCategory.Name]))
-						lineDisplace++;
-				}
-			}
-		}
-		else
-		{
-			// If nothing else, place them at the bottom so you don't lose them
-			shouldPlaceAtBottom = true;
-			lines.AddRange(dragCategoryLines);
-		}
-
-		if (!shouldPlaceAtBottom)
-		{
-			// Move the line behind the last category if we are not at the top
-			while (lineDisplace > 0 && lines[lineDisplace] is not InitItem)
-				lineDisplace--;
-
-			// Move after the last line of the last category
-			lineDisplace++;
-
-			Log.Information("Final insert line before {string}", lines[lineDisplace + 1].RawLine);
-			lines.InsertRange(lineDisplace, dragCategoryLines);
-		}
-
-			// This is the easy part
-			int catDragIndex = Categories.IndexOf(draggedCategory);
-		if (catDragIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategory");
-
-		int catReplaceIndex = Categories.IndexOf(replaceCategory);
-		Categories.RemoveAt(catDragIndex);
-		int postCatReplaceIndex = Categories.IndexOf(replaceCategory);
-
-		if (catReplaceIndex == -1 || postCatReplaceIndex == -1)
-			throw new ArgumentException("Index of an argument was not found in the InitCategory");
-
-		// Changes the behavior so the target destination is before or after an item depending if the user drags the item up or down
-		int displace = catReplaceIndex - postCatReplaceIndex;
-		displace += postCatReplaceIndex;
-
-		if (displace >= 0 && displace < Categories.Count && !shouldPlaceAtBottom)
-		{
-			Categories.Insert(displace, draggedCategory);
-		}
-		else if (displace >= Categories.Count || shouldPlaceAtBottom)
-		{
-			Categories.Add(draggedCategory);
-		}
-	}
-
-	internal string GetCategoryHeader(InitCategory header)
-	{
-		if (categoryHeaders.TryGetValue(header.Name, out var initCategoryHeader))
-			return initCategoryHeader.RawLine;
-
-		return "";
-	}
-
-	//public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
-
-	//public async Task Merge(string otherPath, PromptRequest promptOverwrite)
-	//{
-	//	try
-	//	{
-	//		// automatically overwrite items that are only defined one time
-	//		// (LOOKING AT YOU, "INSIDE HUGE PIPE HORIZONTAL" DEFINED IN BOTH MISC AND LB INTAKE SYSTEM.)
-	//		bool? autoOverwrite = null;
-
-	//		Log.Information("Merge {Path}", otherPath);
-	//		var parentDir = Path.Combine(FilePath, "..");
-	//		var otherDir = Path.Combine(otherPath, "..");
-
-	//		var parser = new Lingo.LingoParser();
-	//		InitCategory? targetCategory = null;
-
-	//		int lineAccum = 2;
-	//		int otherLineNo = -1;
-
-	//		int FlushLineAccum(int insert)
-	//		{
-	//			int oldAccum = lineAccum;
-
-	//			for (int i = 0; i < lineAccum; i++)
-	//			{
-	//				Lines.Insert(insert, "");
-	//				parsedLines.Insert(insert, new EmptyLine());
-	//			}
-	//			lineAccum = 0;
-
-	//			return oldAccum;
-	//		}
-
-	//		foreach (var line in File.ReadLines(otherPath))
-	//		{
-	//			otherLineNo++;
-	//			int lineNo = Lines.Count;
-
-	//			if (string.IsNullOrWhiteSpace(line))
-	//			{
-	//				if (targetCategory is not null) lineAccum++;
-	//				continue;
-	//			}
-
-	//			// category
-	//			if (line[0] == '-')
-	//			{
-	//				InitCategory? category = null;
-
-	//				if (isColored)
-	//				{
-	//					var list = parser.Read(line[1..]) as Lingo.LinearList;
-
-	//					if (list is not null)
-	//					{
-	//						category = new InitCategory(
-	//							Name: (string)list[0],
-	//							Color: (Lingo.Color)list[1]
-	//						);
-	//					}
-	//					else
-	//					{
-	//						Log.Information("Ignore malformed category header at '{Line}'", line);
-	//					}
-	//				}
-	//				else
-	//				{
-	//					category = new InitCategory(line[1..], null);
-	//				}
-
-	//				// don't write new line if overwriting a category with the same name and color
-	//				if (category is not null)
-	//				{
-	//					InitCategory? oldCategory = null;
-	//					if ((oldCategory = GetCategory(category.Name)) is not null)
-	//					{
-	//						// throw error on color mismatch
-	//						if (oldCategory.Color != category.Color)
-	//							throw new Exception($"Category '{category.Name}' already exists!");
-
-	//						targetCategory = oldCategory;
-
-	//						// this will insert a newline when adding
-	//						// new tiles to the category
-	//						lineAccum = 1;
-	//					}
-	//					else
-	//					{
-	//						// register the category
-	//						FlushLineAccum(Lines.Count);
-	//						Lines.Add(line);
-	//						parsedLines.Add(category);
-	//						Categories.Add(category);
-	//						targetCategory = category;
-	//					}
-	//				}
-	//			}
-
-	//			// item
-	//			else
-	//			{
-	//				if (targetCategory is null)
-	//				{
-	//					throw new Exception("Category definition expected, got item definition");
-	//				}
-
-	//				var data = parser.Read(line) as Lingo.PropertyList;
-
-	//				if (data is not null)
-	//				{
-	//					var init = new InitItem(
-	//						RawLine: line,
-	//						Name: (string)data["nm"]
-	//					);
-
-	//					bool doInsert = true;
-	//					bool expectGraphics = true;
-
-	//					// check with user if tile with same name already exists
-	//					if (ItemDictionary.TryGetValue(init.Name, out List<InitData>? initItems))
-	//					{
-	//						doInsert = false;
-
-	//						// if there is more than one item with the same name, or
-	//						// if the item is defined in a different category,
-	//						// it is a merge conflict that needs Advanced User Intervention.
-
-	//						// (IM TALKING ABOUT YOU INSIDE HUGE PIPE HORIZINTAL WHICH IS IN BOTH MISC AND LB INTAKE SYSTEM)
-	//						if (initItems.Count > 1 || initItems[0].Category != targetCategory)
-	//						{
-	//							Log.Information("Merge conflict with asset '{Name}'", init.Name);
-
-	//							// there will be an extra checkbox which will insert the new init
-	//							// into a new line
-	//							var options = new string[initItems.Count + 1];
-	//							for (int i = 0; i < initItems.Count; i++)
-	//							{
-	//								options[i] = "Overwrite old definition in " + initItems[i].Category.Name;
-	//							}
-	//							options[^1] = "Add to " + targetCategory.Name;
-
-	//							var prompt = new PromptOptions($"Merge conflict with asset \"{init.Name}\"\nNew definition is in {targetCategory.Name}", options);
-	//							await promptOverwrite(prompt);
-
-	//							for (int i = 0; i < initItems.Count; i++)
-	//							{
-	//								if (prompt.CheckboxValues[i])
-	//								{
-	//									Log.Information("Overwrite def in '{Category}'", initItems[0].Category);
-	//									ReplaceInit(initItems[i], init);
-	//								}
-	//							}
-
-	//							if (prompt.CheckboxValues[^1])
-	//							{
-	//								Log.Information("Add to '{Category}'", targetCategory);
-
-	//								doInsert = true;
-	//								expectGraphics = false;
-	//							}
-	//						}
-
-	//						// simple merge conflict - item is only defined once and
-	//						// both new and old items are in the same category
-	//						else
-	//						{
-	//							bool doOverwrite;
-
-	//							if (autoOverwrite.HasValue)
-	//							{
-	//								doOverwrite = autoOverwrite.Value;
-	//							}
-	//							else
-	//							{
-	//								// ask the user if they want to overwrite
-	//								var opt = new PromptOptions($"Overwrite \"{init.Name}\"?");
-
-	//								switch (await promptOverwrite(opt))
-	//								{
-	//									case PromptResult.Yes:
-	//										doOverwrite = true;
-	//										break;
-
-	//									case PromptResult.No:
-	//										doOverwrite = false;
-	//										break;
-
-	//									case PromptResult.YesToAll:
-	//										doOverwrite = true;
-	//										autoOverwrite = true;
-	//										break;
-
-	//									case PromptResult.NoToAll:
-	//										doOverwrite = false;
-	//										autoOverwrite = false;
-	//										break;
-
-	//									default:
-	//										throw new Exception();
-	//								}
-	//							}
-
-	//							if (doOverwrite)
-	//							{
-	//								// go ahead and overwrite
-	//								Log.Information("Overwrite tile '{TileName}'", init.Name);
-	//								ReplaceInit(initItems[0], init);
-
-	//								graphicsManager.CopyGraphics(init, otherDir, parentDir, false);
-	//							}
-	//							else
-	//							{
-	//								Log.Information("Ignore tile '{TileName}'", init.Name);
-	//							}
-	//						}
-	//					}
-
-	//					if (doInsert)
-	//					{
-	//						// insert the new item at the end of the category tile list
-	//						// by inserting it where the next init category definition is,
-	//						// or the EOF
-	//						int i = parsedLines.IndexOf(targetCategory);
-	//						if (i == -1) throw new Exception("Failed to find line number of category");
-
-	//						// find where the next category starts (or the EOF)
-	//						int insertLoc = -1;
-
-	//						i++;
-	//						while (i < parsedLines.Count && parsedLines[i] is not InitCategory)
-	//						{
-	//							if (parsedLines[i] is not EmptyLine)
-	//								insertLoc = i;
-
-	//							i++;
-	//						}
-
-	//						// if at EOF
-	//						if (i == Lines.Count)
-	//						{
-	//							i = Lines.Count;
-	//							insertLoc = i;
-	//						}
-
-	//						else
-	//						{
-	//							// prefer to insert it after the last item def in this category
-	//							if (insertLoc >= 0)
-	//							{
-	//								insertLoc++;
-	//							}
-	//							else
-	//							{
-	//								insertLoc = i;
-	//							}
-	//						}
-
-	//						// flush line accumulator
-	//						insertLoc += FlushLineAccum(insertLoc);
-
-	//						// insert item
-	//						Lines.Insert(insertLoc, line);
-	//						parsedLines.Insert(insertLoc, init);
-	//						AddInit(init, targetCategory);
-
-	//						graphicsManager.CopyGraphics(init, otherDir, parentDir, expectGraphics);
-	//					}
-	//				}
-	//			}
-	//		}
-
-	//		Log.Information("Writing merge result to {Path}...", FilePath);
-	//		WriteToFile();
-	//		Log.Information("Merge successful!");
-	//	}
-	//	catch (Exception e)
-	//	{
-	//		Log.Error("Error while merging:\n{Error}", e);
-	//		throw;
-	//	}
-	//}
+    public void MoveItemWithinCategory(InitCategory category, InitItem draggingItem, InitItem replaceItem)
+    {
+        if (!Categories.Contains(category))
+            throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
+
+        int dragIndex = lines.IndexOf(draggingItem);
+
+        if (dragIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitLineData");
+
+        int replaceIndex = lines.IndexOf(replaceItem);
+        lines.RemoveAt(dragIndex);
+        int postReplaceIndex = lines.IndexOf(replaceItem);
+        if (replaceIndex == -1 || postReplaceIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitLineData");
+
+        // Changes the behavior so the target destination is before or after an item depending if the user drags the item up or down
+        int displace = replaceIndex - postReplaceIndex;
+        displace += postReplaceIndex;
+
+        if (displace >= 0 && displace < lines.Count)
+        {
+            lines.Insert(displace, draggingItem);
+        }
+        else if (displace >= lines.Count)
+        {
+            lines.Add(draggingItem);
+        }
+
+        // Handle the visual category part
+        int catDragIndex = category.Items.IndexOf(draggingItem);
+
+        if (catDragIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategory");
+
+        int catReplaceIndex = category.Items.IndexOf(replaceItem);
+        category.Items.RemoveAt(catDragIndex);
+        int catPostReplaceIndex = category.Items.IndexOf(replaceItem);
+        if (catReplaceIndex == -1 || catPostReplaceIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategory");
+
+        displace = catReplaceIndex - catPostReplaceIndex;
+        displace += catPostReplaceIndex;
+
+        if (displace >= 0 && displace < category.Items.Count)
+        {
+            category.Items.Insert(displace, draggingItem);
+        }
+        else if (displace >= category.Items.Count)
+        {
+            category.Items.Add(draggingItem);
+        }
+    }
+
+    public void MoveCategory(InitCategory draggedCategory, InitCategory replaceCategory)
+    {
+        if (!Categories.Contains(replaceCategory) || !Categories.Contains(draggedCategory))
+            throw new ArgumentException("InitCategory does not contain one or more of the categories");
+
+        // This is the tedious part, editing the init lines to follow the category :(
+        int dragIndex = lines.IndexOf(categoryHeaders[draggedCategory.Name]);
+        if (dragIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
+        List<InitLineData> dragCategoryLines = [];
+
+        int replaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
+
+        // Move the index back in case there are comments in the category, so the index starts at the end of the last category
+        while (dragIndex > 0 && ((lines[dragIndex] is not InitCategoryHeader && lines[dragIndex] is not InitItem) || lines[dragIndex] == categoryHeaders[draggedCategory.Name]))
+            dragIndex--;
+
+        // Move after the last line
+        if (dragIndex != 0)
+            dragIndex++;
+
+        bool shouldContinue = true;
+        // We need to take into account InitIrrelevantLine that are in the middle of a category because some people add them despite not having any purpose
+        while (dragIndex < lines.Count && shouldContinue && ((lines[dragIndex] is not InitCategoryHeader) || lines[dragIndex] == categoryHeaders[draggedCategory.Name]))
+        {
+            // This is our check to see if this InitIrrelevantLine is a break case or not
+            int cont = 0;
+            while (dragIndex + cont < lines.Count && lines[dragIndex + cont] is not InitItem)
+            {
+                // So if the next valid line is a InitCategoryHeader, we should escape
+                if (lines[dragIndex + cont] is InitCategoryHeader && lines[dragIndex + cont] != categoryHeaders[draggedCategory.Name])
+                {
+                    shouldContinue = false;
+                    break;
+                }
+                    
+                cont++;
+            }
+
+            if (shouldContinue)
+            {
+                // Moving categories should likely also delete dups by default, I guess that's a win
+                if (lines[dragIndex] is InitLineData data && !dragCategoryLines.Contains(data))
+                {
+                    dragCategoryLines.Add(data);
+                }
+                Log.Information("Removing {string}", lines[dragIndex].RawLine);
+                lines.RemoveAt(dragIndex);
+
+
+                if (dragCategoryLines.Count == 1 && dragCategoryLines[0] is not InitIrrelevantLine)
+                {
+                    // Insert a blank line at the beginning if the category is at the top
+                    dragCategoryLines.Insert(0, new(""));
+                }
+            }
+            else if (dragIndex == 0 && lines[dragIndex] is InitIrrelevantLine && string.IsNullOrEmpty(lines[dragIndex].RawLine))
+            {
+                // Remove the lingering line at the top if the line is not a comment
+                lines.RemoveAt(dragIndex);
+            }
+        }
+        int postReplaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
+        if (replaceIndex == -1 || postReplaceIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
+
+        int lineDisplace = replaceIndex - postReplaceIndex;
+        lineDisplace += postReplaceIndex;
+
+        bool shouldPlaceAtBottom = false;
+        if (lineDisplace > 0 && lineDisplace < lines.Count)
+        {
+            // Moving a category down doesn't properly index, moving it up does however
+            // So if the lineDisplace is positive, it should check for the InitIrrelevantLine at the beginning and then place it before that
+            Log.Information("Initial insert line at {string}", lines[lineDisplace].RawLine);
+
+            if (lineDisplace > 0)
+            {
+                bool displaced = false;
+                // We need to check which direction is the correct index
+                if (lines[lineDisplace] != categoryHeaders[replaceCategory.Name])
+                {
+                    displaced = true;
+                    while (lineDisplace > 0 && lines[lineDisplace] is not InitCategoryHeader)
+                        lineDisplace--;
+                }
+
+                // So if the last category head is our category we want to *move* past, lets move to the next category
+                if (displaced && lines[lineDisplace] == categoryHeaders[replaceCategory.Name])
+                {
+                    Log.Information("Last category is our replaced category!");
+                    while (lineDisplace < lines.Count && (lines[lineDisplace] is not InitCategoryHeader || lines[lineDisplace] == categoryHeaders[replaceCategory.Name]))
+                        lineDisplace++;
+                }
+            }
+        }
+        else
+        {
+            // If nothing else, place them at the bottom so you don't lose them
+            shouldPlaceAtBottom = true;
+            lines.AddRange(dragCategoryLines);
+        }
+
+        if (!shouldPlaceAtBottom)
+        {
+            // Move the line behind the last category if we are not at the top
+            while (lineDisplace > 0 && lines[lineDisplace] is not InitItem)
+                lineDisplace--;
+
+            // Move after the last line of the last category
+            lineDisplace++;
+
+            Log.Information("Final insert line before {string}", lines[lineDisplace + 1].RawLine);
+            lines.InsertRange(lineDisplace, dragCategoryLines);
+        }
+
+        // This is the easy part
+        int catDragIndex = Categories.IndexOf(draggedCategory);
+        if (catDragIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategory");
+
+        int catReplaceIndex = Categories.IndexOf(replaceCategory);
+        Categories.RemoveAt(catDragIndex);
+        int postCatReplaceIndex = Categories.IndexOf(replaceCategory);
+
+        if (catReplaceIndex == -1 || postCatReplaceIndex == -1)
+            throw new ArgumentException("Index of an argument was not found in the InitCategory");
+
+        // Changes the behavior so the target destination is before or after an item depending if the user drags the item up or down
+        int displace = catReplaceIndex - postCatReplaceIndex;
+        displace += postCatReplaceIndex;
+
+        if (displace >= 0 && displace < Categories.Count && !shouldPlaceAtBottom)
+        {
+            Categories.Insert(displace, draggedCategory);
+        }
+        else if (displace >= Categories.Count || shouldPlaceAtBottom)
+        {
+            Categories.Add(draggedCategory);
+        }
+    }
+
+    public string GetCategoryHeader(InitCategory header)
+    {
+        if (categoryHeaders.TryGetValue(header.Name, out var initCategoryHeader))
+            return initCategoryHeader.RawLine;
+
+        return "";
+    }
+
+    //public delegate Task<PromptResult> PromptRequest(PromptOptions promptState);
+
+    //public async Task Merge(string otherPath, PromptRequest promptOverwrite)
+    //{
+    //	try
+    //	{
+    //		// automatically overwrite items that are only defined one time
+    //		// (LOOKING AT YOU, "INSIDE HUGE PIPE HORIZONTAL" DEFINED IN BOTH MISC AND LB INTAKE SYSTEM.)
+    //		bool? autoOverwrite = null;
+
+    //		Log.Information("Merge {Path}", otherPath);
+    //		var parentDir = Path.Combine(FilePath, "..");
+    //		var otherDir = Path.Combine(otherPath, "..");
+
+    //		var parser = new Lingo.LingoParser();
+    //		InitCategory? targetCategory = null;
+
+    //		int lineAccum = 2;
+    //		int otherLineNo = -1;
+
+    //		int FlushLineAccum(int insert)
+    //		{
+    //			int oldAccum = lineAccum;
+
+    //			for (int i = 0; i < lineAccum; i++)
+    //			{
+    //				Lines.Insert(insert, "");
+    //				parsedLines.Insert(insert, new EmptyLine());
+    //			}
+    //			lineAccum = 0;
+
+    //			return oldAccum;
+    //		}
+
+    //		foreach (var line in File.ReadLines(otherPath))
+    //		{
+    //			otherLineNo++;
+    //			int lineNo = Lines.Count;
+
+    //			if (string.IsNullOrWhiteSpace(line))
+    //			{
+    //				if (targetCategory is not null) lineAccum++;
+    //				continue;
+    //			}
+
+    //			// category
+    //			if (line[0] == '-')
+    //			{
+    //				InitCategory? category = null;
+
+    //				if (isColored)
+    //				{
+    //					var list = parser.Read(line[1..]) as Lingo.LinearList;
+
+    //					if (list is not null)
+    //					{
+    //						category = new InitCategory(
+    //							Name: (string)list[0],
+    //							Color: (Lingo.Color)list[1]
+    //						);
+    //					}
+    //					else
+    //					{
+    //						Log.Information("Ignore malformed category header at '{Line}'", line);
+    //					}
+    //				}
+    //				else
+    //				{
+    //					category = new InitCategory(line[1..], null);
+    //				}
+
+    //				// don't write new line if overwriting a category with the same name and color
+    //				if (category is not null)
+    //				{
+    //					InitCategory? oldCategory = null;
+    //					if ((oldCategory = GetCategory(category.Name)) is not null)
+    //					{
+    //						// throw error on color mismatch
+    //						if (oldCategory.Color != category.Color)
+    //							throw new Exception($"Category '{category.Name}' already exists!");
+
+    //						targetCategory = oldCategory;
+
+    //						// this will insert a newline when adding
+    //						// new tiles to the category
+    //						lineAccum = 1;
+    //					}
+    //					else
+    //					{
+    //						// register the category
+    //						FlushLineAccum(Lines.Count);
+    //						Lines.Add(line);
+    //						parsedLines.Add(category);
+    //						Categories.Add(category);
+    //						targetCategory = category;
+    //					}
+    //				}
+    //			}
+
+    //			// item
+    //			else
+    //			{
+    //				if (targetCategory is null)
+    //				{
+    //					throw new Exception("Category definition expected, got item definition");
+    //				}
+
+    //				var data = parser.Read(line) as Lingo.PropertyList;
+
+    //				if (data is not null)
+    //				{
+    //					var init = new InitItem(
+    //						RawLine: line,
+    //						Name: (string)data["nm"]
+    //					);
+
+    //					bool doInsert = true;
+    //					bool expectGraphics = true;
+
+    //					// check with user if tile with same name already exists
+    //					if (ItemDictionary.TryGetValue(init.Name, out List<InitData>? initItems))
+    //					{
+    //						doInsert = false;
+
+    //						// if there is more than one item with the same name, or
+    //						// if the item is defined in a different category,
+    //						// it is a merge conflict that needs Advanced User Intervention.
+
+    //						// (IM TALKING ABOUT YOU INSIDE HUGE PIPE HORIZINTAL WHICH IS IN BOTH MISC AND LB INTAKE SYSTEM)
+    //						if (initItems.Count > 1 || initItems[0].Category != targetCategory)
+    //						{
+    //							Log.Information("Merge conflict with asset '{Name}'", init.Name);
+
+    //							// there will be an extra checkbox which will insert the new init
+    //							// into a new line
+    //							var options = new string[initItems.Count + 1];
+    //							for (int i = 0; i < initItems.Count; i++)
+    //							{
+    //								options[i] = "Overwrite old definition in " + initItems[i].Category.Name;
+    //							}
+    //							options[^1] = "Add to " + targetCategory.Name;
+
+    //							var prompt = new PromptOptions($"Merge conflict with asset \"{init.Name}\"\nNew definition is in {targetCategory.Name}", options);
+    //							await promptOverwrite(prompt);
+
+    //							for (int i = 0; i < initItems.Count; i++)
+    //							{
+    //								if (prompt.CheckboxValues[i])
+    //								{
+    //									Log.Information("Overwrite def in '{Category}'", initItems[0].Category);
+    //									ReplaceInit(initItems[i], init);
+    //								}
+    //							}
+
+    //							if (prompt.CheckboxValues[^1])
+    //							{
+    //								Log.Information("Add to '{Category}'", targetCategory);
+
+    //								doInsert = true;
+    //								expectGraphics = false;
+    //							}
+    //						}
+
+    //						// simple merge conflict - item is only defined once and
+    //						// both new and old items are in the same category
+    //						else
+    //						{
+    //							bool doOverwrite;
+
+    //							if (autoOverwrite.HasValue)
+    //							{
+    //								doOverwrite = autoOverwrite.Value;
+    //							}
+    //							else
+    //							{
+    //								// ask the user if they want to overwrite
+    //								var opt = new PromptOptions($"Overwrite \"{init.Name}\"?");
+
+    //								switch (await promptOverwrite(opt))
+    //								{
+    //									case PromptResult.Yes:
+    //										doOverwrite = true;
+    //										break;
+
+    //									case PromptResult.No:
+    //										doOverwrite = false;
+    //										break;
+
+    //									case PromptResult.YesToAll:
+    //										doOverwrite = true;
+    //										autoOverwrite = true;
+    //										break;
+
+    //									case PromptResult.NoToAll:
+    //										doOverwrite = false;
+    //										autoOverwrite = false;
+    //										break;
+
+    //									default:
+    //										throw new Exception();
+    //								}
+    //							}
+
+    //							if (doOverwrite)
+    //							{
+    //								// go ahead and overwrite
+    //								Log.Information("Overwrite tile '{TileName}'", init.Name);
+    //								ReplaceInit(initItems[0], init);
+
+    //								graphicsManager.CopyGraphics(init, otherDir, parentDir, false);
+    //							}
+    //							else
+    //							{
+    //								Log.Information("Ignore tile '{TileName}'", init.Name);
+    //							}
+    //						}
+    //					}
+
+    //					if (doInsert)
+    //					{
+    //						// insert the new item at the end of the category tile list
+    //						// by inserting it where the next init category definition is,
+    //						// or the EOF
+    //						int i = parsedLines.IndexOf(targetCategory);
+    //						if (i == -1) throw new Exception("Failed to find line number of category");
+
+    //						// find where the next category starts (or the EOF)
+    //						int insertLoc = -1;
+
+    //						i++;
+    //						while (i < parsedLines.Count && parsedLines[i] is not InitCategory)
+    //						{
+    //							if (parsedLines[i] is not EmptyLine)
+    //								insertLoc = i;
+
+    //							i++;
+    //						}
+
+    //						// if at EOF
+    //						if (i == Lines.Count)
+    //						{
+    //							i = Lines.Count;
+    //							insertLoc = i;
+    //						}
+
+    //						else
+    //						{
+    //							// prefer to insert it after the last item def in this category
+    //							if (insertLoc >= 0)
+    //							{
+    //								insertLoc++;
+    //							}
+    //							else
+    //							{
+    //								insertLoc = i;
+    //							}
+    //						}
+
+    //						// flush line accumulator
+    //						insertLoc += FlushLineAccum(insertLoc);
+
+    //						// insert item
+    //						Lines.Insert(insertLoc, line);
+    //						parsedLines.Insert(insertLoc, init);
+    //						AddInit(init, targetCategory);
+
+    //						graphicsManager.CopyGraphics(init, otherDir, parentDir, expectGraphics);
+    //					}
+    //				}
+    //			}
+    //		}
+
+    //		Log.Information("Writing merge result to {Path}...", FilePath);
+    //		WriteToFile();
+    //		Log.Information("Merge successful!");
+    //	}
+    //	catch (Exception e)
+    //	{
+    //		Log.Error("Error while merging:\n{Error}", e);
+    //		throw;
+    //	}
+    //}
 }
 
 class AssetManager
@@ -1099,14 +1093,14 @@ class AssetManager
         gfxManagerActionQueue.Enqueue(new GfxManagerDeleteAction(gfx, item.Name, dir));
     }
 
-	public void UpdateCategory(CategoryListIndex index, int categoryIndex)
-	{
-		var list = GetCategoryList(index)!;
-		var category = list.Categories[categoryIndex];
-		list.UpdateCategoryInit(category);
-	}
+    public void UpdateCategory(CategoryListIndex index, int categoryIndex)
+    {
+        var list = GetCategoryList(index)!;
+        var category = list.Categories[categoryIndex];
+        list.UpdateCategoryInit(category);
+    }
 
-	public List<CategoryList.InitCategory> GetCategories(CategoryListIndex index)
+    public List<CategoryList.InitCategory> GetCategories(CategoryListIndex index)
     {
         return GetCategoryList(index)!.Categories;
     }
@@ -1245,117 +1239,117 @@ class AssetManager
                 Expect: true
             ));
         }
-	}
+    }
 
-	internal void MoveItem(CategoryListIndex index, CategoryList.InitItem? draggingItem, CategoryList.InitCategory destCategory)
-	{
-		var catList = GetCategoryList(index)!;
-		catList.MoveItem(draggingItem!, destCategory, false);
-	}
+    public void MoveItem(CategoryListIndex index, CategoryList.InitItem? draggingItem, CategoryList.InitCategory destCategory)
+    {
+        var catList = GetCategoryList(index)!;
+        catList.MoveItem(draggingItem!, destCategory, false);
+    }
 
-	internal void MoveItem(CategoryListIndex index, CategoryList.InitCategory category, CategoryList.InitItem draggingItem, CategoryList.InitItem replaceItem)
-	{
-		if (!category.Items.Contains(draggingItem))
-			throw new ArgumentException("Dragged item was not found in the current category.", draggingItem.Name);
-		if (!category.Items.Contains(replaceItem))
-			throw new ArgumentException("Replace item was not found in the current category.", replaceItem.Name);
+    public void MoveItem(CategoryListIndex index, CategoryList.InitCategory category, CategoryList.InitItem draggingItem, CategoryList.InitItem replaceItem)
+    {
+        if (!category.Items.Contains(draggingItem))
+            throw new ArgumentException("Dragged item was not found in the current category.", draggingItem.Name);
+        if (!category.Items.Contains(replaceItem))
+            throw new ArgumentException("Replace item was not found in the current category.", replaceItem.Name);
 
-		var catList = GetCategoryList(index)!;
-		catList.MoveItemWithinCategory(category, draggingItem, replaceItem);
-	}
+        var catList = GetCategoryList(index)!;
+        catList.MoveItemWithinCategory(category, draggingItem, replaceItem);
+    }
 
-	internal void MoveItem(CategoryListIndex index, CategoryList.InitItem draggingItem, CategoryList.InitCategory destCategory, CategoryList.InitItem? replaceItem)
-	{
-		//Applies the move item and then also rearranges the item inside of the class
-		var catList = GetCategoryList(index)!;
-		catList.MoveItem(draggingItem!, destCategory, true, replaceItem);
-	}
+    public void MoveItem(CategoryListIndex index, CategoryList.InitItem draggingItem, CategoryList.InitCategory destCategory, CategoryList.InitItem? replaceItem)
+    {
+        //Applies the move item and then also rearranges the item inside of the class
+        var catList = GetCategoryList(index)!;
+        catList.MoveItem(draggingItem!, destCategory, true, replaceItem);
+    }
 
-	internal void MoveCategory(CategoryListIndex index, CategoryList.InitCategory draggedCategory, CategoryList.InitCategory dragToCategory)
-	{
-		var catList = GetCategoryList(index)!;
-		catList.MoveCategory(draggedCategory, dragToCategory);
-	}
+    public void MoveCategory(CategoryListIndex index, CategoryList.InitCategory draggedCategory, CategoryList.InitCategory dragToCategory)
+    {
+        var catList = GetCategoryList(index)!;
+        catList.MoveCategory(draggedCategory, dragToCategory);
+    }
 
-	internal async Task? Export(CategoryListIndex index, string filePath)
-	{
-		string imagePath = RainEd.Instance.AssetDataPath;
-		switch (index)
-		{
-			case CategoryListIndex.Tile:
-				imagePath = Path.Combine(imagePath, "Graphics");
-				break;
+    public async Task? Export(CategoryListIndex index, string filePath)
+    {
+        string imagePath = RainEd.Instance.AssetDataPath;
+        switch (index)
+        {
+            case CategoryListIndex.Tile:
+                imagePath = Path.Combine(imagePath, "Graphics");
+                break;
 
-			case CategoryListIndex.Prop:
-				imagePath = Path.Combine(imagePath, "Props");
-				break;
+            case CategoryListIndex.Prop:
+                imagePath = Path.Combine(imagePath, "Props");
+                break;
 
-			case CategoryListIndex.Materials:
-				imagePath = Path.Combine(imagePath, "Materials");
-				break;
-		}
-		string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
+            case CategoryListIndex.Materials:
+                imagePath = Path.Combine(imagePath, "Materials");
+                break;
+        }
+        string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
 
-		var catList = GetCategoryList(index);
-		using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
-		using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
+        var catList = GetCategoryList(index);
+        using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+        using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
 
-		var initEntry = zipInit.CreateEntry("Copy_To_Init.txt", CompressionLevel.Optimal);
-		using var initStream = new StreamWriter(initEntry.Open());
-		foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
-		{
-			if (catList.Categories.Contains(key))
-			{
-				// Implement the init
-				await initStream.WriteLineAsync(catList.GetCategoryHeader(key));
+        var initEntry = zipInit.CreateEntry("Copy_To_Init.txt", CompressionLevel.Optimal);
+        using var initStream = new StreamWriter(initEntry.Open());
+        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+        {
+            if (catList.Categories.Contains(key))
+            {
+                // Implement the init
+                await initStream.WriteLineAsync(catList.GetCategoryHeader(key));
 
-				int items = AssetManagerGUI.pendingExportFiles[key].Count;
-				foreach (var item in AssetManagerGUI.pendingExportFiles[key])
-				{
-					await initStream.WriteLineAsync(item.RawLine);
-				}
-				await initStream.WriteLineAsync("");
-			}
-		}
-		await initStream.DisposeAsync();
+                int items = AssetManagerGUI.pendingExportFiles[key].Count;
+                foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+                {
+                    await initStream.WriteLineAsync(item.RawLine);
+                }
+                await initStream.WriteLineAsync("");
+            }
+        }
+        await initStream.DisposeAsync();
 
-		foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
-		{
-			// Then implement images
-			foreach (var item in AssetManagerGUI.pendingExportFiles[key])
-			{
-				await WritePngToZip(imageFiles, item, zipInit);
-			}
-		}
+        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+        {
+            // Then implement images
+            foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+            {
+                await WritePngToZip(imageFiles, item, zipInit);
+            }
+        }
 
-		AssetManagerGUI.pendingExportFiles.Clear();
-	}
+        AssetManagerGUI.pendingExportFiles.Clear();
+    }
 
-	public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
-	{
-		if (imageFiles.Any(x => x.Contains(item.Name)))
-		{
-			string source = imageFiles.Where(x => x.Contains(item.Name)).First();
-			if (File.Exists(source))
-			{
-				var entry = zipInit.CreateEntry(Path.GetFileName(source));
-				if (entry is not null)
-				{
-					using var imageFile = entry.Open();
-					using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
+    public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
+    {
+        if (imageFiles.Any(x => x.Contains(item.Name)))
+        {
+            string source = imageFiles.Where(x => x.Contains(item.Name)).First();
+            if (File.Exists(source))
+            {
+                var entry = zipInit.CreateEntry(Path.GetFileName(source));
+                if (entry is not null)
+                {
+                    using var imageFile = entry.Open();
+                    using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
 
-					if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
-					{
-						await originalImage.CopyToAsync(imageFile);
-					}
+                    if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
+                    {
+                        await originalImage.CopyToAsync(imageFile);
+                    }
 
-					await imageFile.DisposeAsync();
-				}
-			}
-		}
-	}
+                    await imageFile.DisposeAsync();
+                }
+            }
+        }
+    }
 
-	/*public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptOverwrite)
+    /*public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptOverwrite)
     {
         try
         {

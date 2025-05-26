@@ -222,10 +222,10 @@ static class EditorWindow
                     PreferencesWindow.OpenWindow();
                 }
 
-				if (ImGui.MenuItem("Open Asset Manager"))
-				{
-					AssetManagerWindow.OpenWindow();
-				}
+                if (ImGui.MenuItem("Open Asset Manager"))
+                {
+                    AssetManagerWindow.OpenWindow();
+                }
 
                 LuaScripting.Modules.GuiModule.MenuHook("file");
 
@@ -633,7 +633,7 @@ static class EditorWindow
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
-		AssetManagerWindow.ShowWindow();
+        AssetManagerWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();

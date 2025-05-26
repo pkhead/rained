@@ -17,7 +17,7 @@ static class PreferencesWindow
     {
         General = 0,
         Shortcuts = 1,
-		Theme = 2,
+        Theme = 2,
         Drizzle = 3,
         Scripts = 4
     }
@@ -134,7 +134,7 @@ static class PreferencesWindow
                         if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
                         {
                             selectedNavTab = (NavTabEnum)i;
-							AssetManagerGUI.curAssetTab = (AssetManagerGUI.AssetType)i;
+                            AssetManagerGUI.curAssetTab = (AssetManagerGUI.AssetType)i;
                         }
                     }
                 }
