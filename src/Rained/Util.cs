@@ -7,6 +7,9 @@ static class Util
 {
     public static int Mod(int a, int b)
         => (a%b + b)%b;
+
+    public static float Mod(float a, float b)
+        => (a%b + b)%b;
     
     private static bool? _cachedFsCaseSensitive;
 

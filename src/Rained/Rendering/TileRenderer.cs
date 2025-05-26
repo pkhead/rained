@@ -21,7 +21,7 @@ class TileRenderer
     public TileRenderer(LevelEditRender renderInfo)
     {
         this.renderInfo = renderInfo;
-        ReloadLevel();
+        // ReloadLevel();
     }
 
     public void ReloadLevel()

@@ -42,8 +42,8 @@ local function fixTileHead(rootX, rootY, rootL)
 end
 
 rained.registerCommand("Fix Detached Tiles", function()
-    for x=0, rained.getLevelWidth() - 1 do
-        for y=0, rained.getLevelHeight() - 1 do
+    for x=0, rained.level.width - 1 do
+        for y=0, rained.level.height - 1 do
             for layer=1, 3 do
                 if rained.tiles.hasTileHead(x, y, layer) then
                     fixTileHead(x, y, layer)

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>true</ImplicitUsings>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Drizzle/Drizzle.Lingo.Runtime/Drizzle.Lingo.Runtime.csproj" />
+    <ProjectReference Include="../Drizzle/Drizzle.Logic/Drizzle.Logic.csproj" />
+    <ProjectReference Include="../Drizzle/Drizzle.Ported/Drizzle.Ported.csproj" />
+  </ItemGroup>
+</Project>

@@ -6,7 +6,7 @@ This is the editor used to control light and shadows in the level.
     ![Light angle window](img/lightangle.png)
 </figure>
 
-The top-right corner of screen houses the window used to control the direction of the light as well as its distance. You can control the two parameters either using the sliders, interacting with the light ring using the mouse, or using WASD while holding <kbd>Shift</kbd>.
+The top-right corner of screen houses the window used to control the direction of the light as well as its flatness. You can control the two parameters either using the sliders, interacting with the light ring using the mouse, or using WASD while holding <kbd>Shift</kbd>.
 
 What the light angle does is self-explanatory, but it should be noted that it's suggested to keep it near the top-left as tile/prop lighting normally assume that is the direction light is coming from.
 
@@ -32,6 +32,8 @@ Light maps are usually fairly simple. As a rule of thumb, if you have an interio
 You edit this light map as if you were drawing an image in a paint editing program. You first select the brush shape that you want from the bottom-right window titled "Brush", either by clicking on them or using WASD. Then, when you want to paint shadows, you hold down the left mouse button over the level viewport, and when you want to erase shadows, you hold down the right mouse button instead.
 
 The brush can also be scaled and rotated. To scale the brush, you hold down the <kbd>Q</kbd> key and move your mouse. To rotate the brush, you hold down the <kbd>E</kbd> key and move your mouse up or down. If you don't like this methodology, you can change the *Light editor control scheme* setting to "Keyboard". With that, you scale using the WASD keys, rotate clockwise by holding <kbd>E</kbd>, and rotate counter-clockwise by holding <kbd>Q</kbd>. Holding down <kbd>Shift</kbd> will make it faster.
+
+Additionally, there are sliders that you can use to change the size and rotation of the brush. While editing these sliders, a preview of the brush cursor will appear in the center of the screen for your convenience.
 
 !!! note
 

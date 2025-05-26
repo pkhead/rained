@@ -19,7 +19,7 @@ class CellChangeRecord : IChangeRecord
         public Vector2i? NewChainPos = newChainPos;
     }
 
-    public int EditMode;
+    public int EditMode = -1;
     public List<CellChange> CellChanges = [];
     public List<ChainHolderChange> ChainHolderChanges = [];
 
@@ -29,7 +29,7 @@ class CellChangeRecord : IChangeRecord
     public void Apply(bool useNew)
     {
         var level = RainEd.Instance.Level;
-        RainEd.Instance.LevelView.EditMode = EditMode;
+        if (EditMode != -1) RainEd.Instance.LevelView.EditMode = EditMode;
 
         foreach (CellChange change in CellChanges)
         {
@@ -60,7 +60,10 @@ class CellChangeRecorder : ChangeRecorder
     private LevelCell[,,]? snapshotLayers = null;
     private Dictionary<(int, int, int), Vector2i>? snapshotChains = null;
 
-    public void BeginChange()
+    public override bool Active => snapshotLayers is not null;
+    private bool userCreated = false;
+
+    public void BeginChange(bool userCreated = true)
     {
         if (snapshotLayers != null)
         {
@@ -73,17 +76,20 @@ class CellChangeRecorder : ChangeRecorder
         snapshotChains = [];
         foreach (var (k, v) in RainEd.Instance.Level.ChainData)
             snapshotChains[k] = v;
+        
+        this.userCreated = userCreated;
     }
 
-    public void TryPushChange()
+    public override IChangeRecord? EndChange()
     {
         if (snapshotLayers is null || snapshotChains is null)
-            return;
+            return null;
         
-        var changes = new CellChangeRecord()
+        var changes = new CellChangeRecord();
+        if (userCreated)
         {
-            EditMode = RainEd.Instance.LevelView.EditMode
-        };
+            changes.EditMode = RainEd.Instance.LevelView.EditMode;
+        }
 
         var level = RainEd.Instance.Level;
 
@@ -93,13 +99,15 @@ class CellChangeRecorder : ChangeRecorder
             {
                 for (int y = 0; y < level.Height; y++)
                 {
-                    if (!snapshotLayers[l,x,y].Equals(level.Layers[l,x,y]))
+                    if (!snapshotLayers[l, x, y].Equals(level.Layers[l, x, y]))
                     {
                         changes.CellChanges.Add(new CellChangeRecord.CellChange()
                         {
-                            X = x, Y = y, Layer = l,
-                            OldState = snapshotLayers[l,x,y],
-                            NewState = level.Layers[l,x,y]
+                            X = x,
+                            Y = y,
+                            Layer = l,
+                            OldState = snapshotLayers[l, x, y],
+                            NewState = level.Layers[l, x, y]
                         });
                     }
                 }
@@ -131,11 +139,13 @@ class CellChangeRecorder : ChangeRecorder
             }
         }
 
-        if (changes.CellChanges.Count > 0 || changes.ChainHolderChanges.Count > 0)
-            RainEd.Instance.ChangeHistory.Push(changes);
-
         snapshotLayers = null;
         snapshotChains = null;
+
+        if (changes.CellChanges.Count > 0 || changes.ChainHolderChanges.Count > 0)
+            return changes;
+
+        return null;
     }
 
     public void CancelChange()
@@ -143,7 +153,7 @@ class CellChangeRecorder : ChangeRecorder
         snapshotLayers = null;
         snapshotChains = null;
     }
-
+    
     public void PushChange()
     {
         if (snapshotLayers is null || snapshotChains is null)

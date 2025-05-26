@@ -13,7 +13,7 @@ static class Log
 
     public static List<LogEntry> UserLog = [];
 
-    public static void Setup(bool logToStdout)
+    public static void Setup(bool logToStdout, bool userLoggerToStdout = false)
     {
         Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
 
@@ -49,15 +49,22 @@ static class Log
 
         _logger = loggerConfig.CreateLogger();
 
-        var logStream = new MemoryStream();
-        var writer = new StreamWriter(logStream);
-        var reader = new StreamReader(logStream);
+        if (userLoggerToStdout)
+        {
+            var wrapperLogConfig = new LoggerConfiguration()
+                .WriteTo.Sink(new UserConsoleLogSink(Boot.UserCulture))
+                .WriteTo.Logger(_logger);
 
-        var wrapperLogConfig = new LoggerConfiguration()
-            .WriteTo.Sink(new UserLogSink(UserLog, Boot.UserCulture))
-            .WriteTo.Logger(_logger);
+            UserLogger = wrapperLogConfig.CreateLogger();
+        }
+        else
+        {
+            var wrapperLogConfig = new LoggerConfiguration()
+                .WriteTo.Sink(new UserLogSink(UserLog, Boot.UserCulture))
+                .WriteTo.Logger(_logger);
 
-        UserLogger = wrapperLogConfig.CreateLogger();
+            UserLogger = wrapperLogConfig.CreateLogger();
+        }
 
         Serilog.Log.Logger = UserLogger;
 
@@ -115,6 +122,49 @@ static class Log
             {
                 _log.Add(new LogEntry((LogLevel)logEvent.Level, msg));
             }
+        }
+    }
+
+    class UserConsoleLogSink : ILogEventSink
+    {
+        private readonly IFormatProvider _formatProvider;
+
+        public UserConsoleLogSink(IFormatProvider formatProvider)
+        {
+            _formatProvider = formatProvider;
+        }
+
+        public void Emit(LogEvent logEvent)
+        {
+            var msg = logEvent.RenderMessage(_formatProvider);
+            var prefix = logEvent.Level switch
+            {
+                LogEventLevel.Verbose => "vrb",
+                LogEventLevel.Debug => "dbg",
+                LogEventLevel.Information => "inf",
+                LogEventLevel.Warning => "wrn",
+                LogEventLevel.Error => "err",
+                LogEventLevel.Fatal => "ftl",
+                _ => "???"
+            };
+
+            switch (logEvent.Level)
+            {
+                case LogEventLevel.Error:
+                case LogEventLevel.Fatal:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    break;
+                
+                case LogEventLevel.Warning:
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    break;
+
+                default:
+                    break;
+            }
+
+            Console.Write("[{0}] {1}", prefix, msg);
+            Console.ResetColor();
         }
     }
 

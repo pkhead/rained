@@ -7,7 +7,7 @@ Rendering is the process by which the level file gets processed into:
 This output can be parsed by the Rain World game so that your level can be played.
 
 ## Rendering
-The render process uses [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community), a port of the original renderer used in the official level editor, which was created in Adobe Director. It has high priority in maintaining 1:1 parity, so you need not worry about your renders looking different than renders in the original level editor. It also runs much faster.
+The render process uses [Drizzle](https://github.com/SlimeCubed/Drizzle/tree/community), a port of the original renderer used in the official level editor, which was created in Adobe Director. The project prioritizes maintaining 1:1 parity, so the difference between levels rendered with the Lingo renderer and Drizzle is very rarely noticeable. It also runs signficantly faster, so this is a pretty good tradeoff.
 
 ### Single-level rendering
 You first must have the level you want to render open and active. Click on **File > Render** in order to begin the rendering process.
@@ -45,8 +45,12 @@ You also have the option to specify the maximum amount of threads that can be us
 ## Drizzle options
 There are several options available for configuring Drizzle. These can be accessed in the Drizzle page in the preferences window, opened by selecting **File > Preferences**.
 
-### Initialize on startup
-If you would rather not have to wait for the Drizzle runtime to initialize on each render, you have the option to initialize it on start-up and have it available for the duration of the session. This is achieved by opening the preferences window (**File > Preferences**), navigating to the "Drizzle" page, and toggling on the option **Initialize Drizzle on app startup**. You will have to restart Rained in order for this option to go into effect.
+### Persistent Drizzle runtime
+Usually, Rained has to create and setup a new instance of Drizzle before starting a render. With this enabled, on the render afterward it will keep the created Drizzle instance and reuse it for subsequent renders. However, this means that Rained will eat up more RAM even though it's not using Drizzle.
+
+Above this option is the button "Discard Drizzle Runtime". When clicked, it will force Rained to re-create a new Drizzle instance on the next render.
+
+This option isn't as important, since nowadays Drizzle doesn't take so long to start up thanks to a nice optimization by Alduris.
 
 ### Configuration
 There are several options available for configuring how Drizzle renders levels. This is an interface for editing the editorConfig.txt file. These options are listed below the "Rendering" category on the preferences page.

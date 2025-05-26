@@ -300,6 +300,12 @@ static class Raylib
         return window.Time;
     }
 
+    public static void WaitTime(double seconds)
+    {
+        sleepHandle ??= new Rained.Platform.SleepHandler();
+        if (seconds > 0) sleepHandle.Wait(seconds);
+    }
+
     public static int GetScreenWidth()
     {
         return window.Width;
@@ -521,16 +527,16 @@ static class Raylib
         RenderContext.Instance!.End();
         Boot.Window.SwapBuffers();
 
-        if (!Boot.Window.VSync)
+        if (targetFrameLength > 0.0)
         {
-            long targetFrameLenMs = (long)(targetFrameLength * 1000.0);
-            var ms = frameStopwatch.ElapsedMilliseconds;
-            if (ms < targetFrameLenMs)
+            long targetFrameLenTicks = (long)(targetFrameLength * Stopwatch.Frequency);
+            if (frameStopwatch.ElapsedTicks < targetFrameLenTicks)
             {
                 sleepHandle ??= new Rained.Platform.SleepHandler();
-                var waitInMs = (int)(targetFrameLenMs - frameStopwatch.ElapsedMilliseconds) - 1;
+                var ticksDt = targetFrameLenTicks - frameStopwatch.ElapsedTicks;
+                var waitInMs = (double)ticksDt / Stopwatch.Frequency * 1000.0 - 1;
                 if (waitInMs > 0) sleepHandle.Wait(waitInMs / 1000.0);
-                while (frameStopwatch.ElapsedMilliseconds < targetFrameLenMs)
+                while (frameStopwatch.ElapsedTicks < targetFrameLenTicks)
                 {}
                 frameStopwatch.Stop();
             }

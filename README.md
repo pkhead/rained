@@ -28,24 +28,44 @@ at the time of a certain release, use the Git tags system.
 ## Building
 Prerequisities:
  - .NET Core toolchain
+ - Python 3
  - *(optional)* OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
- - *(optional)* Python 3
  - *(optional)* [glslang](https://github.com/KhronosGroup/glslang) CLI
 
-### .NET CLI
 Clone with Git:
 ```bash
 git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-Compile Drizzle
+### Building Drizzle
+These steps only need to be followed on the initial build or if you have updated Drizzle.
+
+Compile Drizzle:
 ```bash
 cd src/Drizzle
 dotnet run --project Drizzle.Transpiler
 ```
 
-Back to the root directory, build and run Rained
+Back to root directory, export some Drizzle data for Rained to build with:
+```bash
+dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
+```
+
+### Generating Lua API
+This step only needs to be run once, or whenever you update ImGui.NET.
+
+In the root directory, run:
+```bash
+python3 lua-imgui-gen.py
+```
+
+This will generate the Lua API for the imgui module.
+
+### Building Rained
+
+#### .NET CLI and Cake
+From the root directory, build and run Rained
 ```bash
 # only needs to be run once
 dotnet tool restore
@@ -59,6 +79,21 @@ dotnet cake --gles=false
 # run the project!
 dotnet run --no-build --project src/Rained/Rained.csproj
 ```
+
+#### .NET CLI alone
+This is a translation of the Cake build script:
+```bash
+# validate/compile updated shader source files
+# if you don't have glslangValidator, just skip these steps.
+python3 shader-preprocessor.py gl330
+python3 shader-preprocessor.py gles300
+
+# you have three options here:
+dotnet build src/Rained/Rained.csproj /p:GL=ES      # you can build with ES/ANGLE
+dotnet build src/Rained/Rained.csproj /p:GL=Desktop # or you can build with normal OpenGL
+dotnet build src/Rained/Rained.csproj               # this will auto-select based on OS. windows = GLES/ANGLE, linux = OpenGL
+```
+
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
 ## Contributing

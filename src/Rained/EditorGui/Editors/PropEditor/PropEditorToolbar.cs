@@ -27,6 +27,11 @@ partial class PropEditor : IEditorMode
     internal static RlManaged.RenderTexture2D previewTexture = null!;
     private static PropInit? curPropPreview = null;
 
+    private int zTranslateValue = 0;
+    private bool zTranslateActive = false;
+    private bool zTranslateWrap = false;
+    private Dictionary<Prop, int> zTranslateDepths = [];
+
     // search results only process groups because i'm too lazy to have
     // it also process the resulting props
     // plus, i don't think it's much of an optimization concern because then
@@ -86,6 +91,7 @@ partial class PropEditor : IEditorMode
     {
         var field = typeof(Prop).GetField(fieldName)!;
         var targetV = (int)field.GetValue(selectedProps[0])!;
+        var style = ImGui.GetStyle();
 
         bool isSame = true;
         for (int i = 1; i < selectedProps.Count; i++)
@@ -97,10 +103,17 @@ partial class PropEditor : IEditorMode
             }
         }
 
+        bool depthOffsetInput = fieldName == nameof(Prop.DepthOffset);
+        if (depthOffsetInput)
+        {
+            var w = ImGui.CalcItemWidth() - ImGui.GetFrameHeight() * 2 - style.ItemInnerSpacing.X * 2;
+            ImGui.PushItemWidth(w);
+        }
+        
         if (isSame)
         {
             int v = (int) field.GetValue(selectedProps[0])!;
-            if (ImGui.SliderInt(label, ref v, v_min, v_max, format, flags))
+            if (ImGui.SliderInt(depthOffsetInput ? "##"+label : label, ref v, v_min, v_max, format, flags))
             {
                 foreach (var prop in selectedProps)
                     field.SetValue(prop, v);
@@ -109,7 +122,7 @@ partial class PropEditor : IEditorMode
         else
         {
             int v = int.MinValue;
-            if (ImGui.SliderInt(label, ref v, v_min, v_max, string.Empty, flags))
+            if (ImGui.SliderInt(depthOffsetInput ? "##"+label : label, ref v, v_min, v_max, string.Empty, flags))
             {
                 foreach (var prop in selectedProps)
                     field.SetValue(prop, v);
@@ -117,8 +130,44 @@ partial class PropEditor : IEditorMode
         }
 
         if (ImGui.IsItemDeactivatedAfterEdit())
-        {
             changeRecorder.PushSettingsChanges();
+
+        if (depthOffsetInput)
+        {
+            // decrement/increment input
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, style.ItemInnerSpacing);
+
+            ImGui.PushButtonRepeat(true);
+            bool fast = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+            var delta = fast ? 10 : 1;
+
+            ImGui.SameLine();
+            if (ImGui.Button(fast ? "<" : "-", Vector2.One * ImGui.GetFrameHeight()))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, Math.Max(0, (int)field.GetValue(prop)! - delta));
+            }
+
+            if (ImGui.IsItemDeactivated())
+                changeRecorder.PushSettingsChanges();
+
+            ImGui.SameLine();
+            if (ImGui.Button(fast ? ">" : "+", Vector2.One * ImGui.GetFrameHeight()))
+            {
+                foreach (var prop in selectedProps)
+                    field.SetValue(prop, Math.Min(Level.LayerCount*10-1, (int)field.GetValue(prop)! + delta));
+            }
+
+            if (ImGui.IsItemDeactivated())
+                changeRecorder.PushSettingsChanges();
+
+            ImGui.PopButtonRepeat();
+
+            ImGui.SameLine();
+            ImGui.Text(label);
+
+            ImGui.PopStyleVar();
+            ImGui.PopItemWidth();
         }
     }
 
@@ -462,6 +511,9 @@ partial class PropEditor : IEditorMode
                     var boxHeight = ImGui.GetContentRegionAvail().Y;
                     if (ImGui.BeginListBox("##Groups", new Vector2(halfWidth, boxHeight)))
                     {
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in searchResults)
                         {
                             // redundant skip Tiles as props categories
@@ -470,11 +522,11 @@ partial class PropEditor : IEditorMode
                             var cursor = ImGui.GetCursorScreenPos();
                             ImGui.GetWindowDrawList().AddRectFilled(
                                 p_min: cursor,
-                                p_max: cursor + new Vector2(10f, ImGui.GetTextLineHeight()),
+                                p_max: cursor + new Vector2(colorWidth, ImGui.GetTextLineHeight()),
                                 ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
 
-                            if (ImGui.Selectable("  " + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
+                            if (ImGui.Selectable(leftPadding + group.Name, selectedPropGroup == i) || searchResults.Count == 1)
                             {
                                 if (i != selectedPropGroup)
                                 {
@@ -544,10 +596,13 @@ partial class PropEditor : IEditorMode
                         var drawList = ImGui.GetWindowDrawList();
                         float textHeight = ImGui.GetTextLineHeight();
 
+                        const string leftPadding = "  ";
+                        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+
                         foreach ((var i, var group) in tileSearchResults)
                         {
                             var cursor = ImGui.GetCursorScreenPos();
-                            if (ImGui.Selectable("  " + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
+                            if (ImGui.Selectable(leftPadding + propDb.TileCategories[i].Name, selectedTileGroup == i) || tileSearchResults.Count == 1)
                             {
                                 if (i != selectedTileGroup)
                                 {
@@ -559,7 +614,7 @@ partial class PropEditor : IEditorMode
                             // draw color square
                             drawList.AddRectFilled(
                                 p_min: cursor,
-                                p_max: cursor + new Vector2(10f, textHeight),
+                                p_max: cursor + new Vector2(colorWidth, textHeight),
                                 ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
                             );
                         }
@@ -694,8 +749,6 @@ partial class PropEditor : IEditorMode
 
     private void OptionsToolbar()
     {
-        var propDb = RainEd.Instance.PropDatabase;
-
         if (ImGui.Begin("Prop Options", ImGuiWindowFlags.NoFocusOnAppearing))
         {
             // prop transformation mode
@@ -712,8 +765,11 @@ partial class PropEditor : IEditorMode
                 {
                     ImGui.Text("Selected multiple props");
                 }
-                
-                if (ImGui.Button("Reset Transform"))
+
+                var btnSize = new Vector2(ImGuiExt.ButtonGroup.CalcItemWidth(ImGui.GetContentRegionAvail().X, 4), 0);
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+
+                if (ImGui.Button("Reset", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
@@ -722,7 +778,7 @@ partial class PropEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Flip X"))
+                if (ImGui.Button("Flip X", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
@@ -731,7 +787,7 @@ partial class PropEditor : IEditorMode
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Flip Y"))
+                if (ImGui.Button("Flip Y", btnSize))
                 {
                     changeRecorder.BeginTransform();
                         foreach (var prop in selectedProps)
@@ -739,7 +795,58 @@ partial class PropEditor : IEditorMode
                     changeRecorder.PushChanges();
                 }
 
-                ImGui.PushItemWidth(ImGui.GetTextLineHeightWithSpacing() * 10f);
+                ImGui.SameLine();
+                if (ImGui.Button("Depth Move", btnSize))
+                {
+                    ImGui.OpenPopup("ZTranslate");
+                    zTranslateValue = 0;
+                    zTranslateDepths.Clear();
+                    foreach (var prop in selectedProps)
+                        zTranslateDepths.Add(prop, prop.DepthOffset);
+                }
+
+                zTranslateActive = false;
+                if (ImGui.BeginPopup("ZTranslate"))
+                {
+                    zTranslateActive = true;
+                    ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 20f);
+                    ImGui.SliderInt("##depth", ref zTranslateValue, -29, 29);
+                    ImGui.PopItemWidth();
+
+                    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
+                    ImGui.Checkbox("Wrap around", ref zTranslateWrap);
+                    ImGui.PopStyleVar();
+
+                    if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out var btn))
+                    {
+                        zTranslateActive = false;
+
+                        if (btn == 0)
+                        {
+                            changeRecorder.BeginTransform();
+                            foreach (var prop in selectedProps)
+                            {
+                                prop.DepthOffset += zTranslateValue;
+                                if (zTranslateWrap)
+                                    prop.DepthOffset = Util.Mod(prop.DepthOffset, 30);
+                                else
+                                    prop.DepthOffset = Math.Clamp(prop.DepthOffset, 0, 29);
+                            }
+                            changeRecorder.PushChanges();
+                        }
+
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    ImGui.EndPopup();
+                }
+
+                ImGui.PopStyleVar();
+
+                ImGui.PushItemWidth(Math.Max(
+                    ImGui.GetTextLineHeightWithSpacing() * 12f,
+                    ImGui.GetContentRegionAvail().X - ImGui.GetTextLineHeightWithSpacing() * 8f
+                ));
                 MultiselectDragInt("Render Order", "RenderOrder", 0.02f);
                 MultiselectSliderInt("Depth Offset", "DepthOffset", 0, 29, "%i", ImGuiSliderFlags.AlwaysClamp);
                 MultiselectSliderInt("Seed", "Seed", 0, 999);
@@ -888,22 +995,6 @@ partial class PropEditor : IEditorMode
                                 if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
                                     changeRecorder.PushSettingsChanges();
                             }
-                        } else if (selectedProps.Count > 1) {
-                            var prop = selectedProps[0];
-
-                            var _oldReleaseFlags = (int) prop.Rope!.ReleaseMode;
-                            var _releaseFlags = (int) prop.Rope!.ReleaseMode;
-                            if (ImGuiExt.ButtonFlags("##Release", ["Left", "Right"], ref _releaseFlags)) {
-                                if (_releaseFlags == 3) {
-                                    if (_oldReleaseFlags == 1) _releaseFlags = 2;
-                                    if (_oldReleaseFlags == 2) _releaseFlags = 1;
-                                }
-                                foreach (var newProp in selectedProps) {
-                                    newProp.Rope!.ReleaseMode = (RopeReleaseMode) _releaseFlags;
-                                }
-                            }
-                            ImGui.SameLine();
-                            ImGui.Text("Release");
                         }
 
                         // rope simulation controls
@@ -1056,6 +1147,11 @@ partial class PropEditor : IEditorMode
 
     public void ShowEditMenu()
     {
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Copy, "Copy");
+
+        // TODO: grey this out if prop clipboard data is not available
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.Paste, "Paste");
+
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.Duplicate, "Duplicate Selected Prop(s)");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.RemoveObject, "Delete Selected Prop(s)");
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.ToggleVertexMode, "Toggle Vertex Edit");

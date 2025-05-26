@@ -42,12 +42,20 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
     - name: Restore dependencies
       run: |
         cd src/Drizzle
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
+    - name: Run generators
+      run: |
+        dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
+        python3 lua-imgui-gen.py
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:
@@ -80,12 +88,20 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
     - name: Restore dependencies
       run: |
         cd src/Drizzle
         dotnet run --project Drizzle.Transpiler
         cd ../..
         dotnet restore
+    - name: Run generators
+      run: |
+        dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
+        python3 lua-imgui-gen.py
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:

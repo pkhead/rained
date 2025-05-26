@@ -54,7 +54,7 @@ static class AboutWindow
             
             ImGui.Text("A Rain World level editor - " + RainEd.Version);
             ImGui.NewLine();
-            ImGui.Text("(c) 2024 pkhead - MIT License");
+            ImGui.Text("(c) 2024-2025 pkhead - MIT License");
             ImGui.Text("Rain World - Videocult/Adult Swim Games/Akapura Games");
 
             ImGui.Bullet();

@@ -6,6 +6,7 @@ using Raylib_cs;
 using ImGuiNET;
 using System.Globalization;
 using Glib;
+using Rained.LuaScripting;
 
 namespace Rained
 {
@@ -14,10 +15,13 @@ namespace Rained
         // find the location of the app data folder
 #if DATA_ASSEMBLY
         public static string AppDataPath = AppContext.BaseDirectory;
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #elif DATA_APPDATA
         public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #else
         public static string AppDataPath = Directory.GetCurrentDirectory();
+        public static string ConfigPath = Path.Combine(AppDataPath, "config");
 #endif
 
         public const int DefaultWindowWidth = 1200;
@@ -29,6 +33,7 @@ namespace Rained
         public static Glib.Window Window => window;
         public static Glib.ImGui.ImGuiController? ImGuiController { get; private set; }
 
+
         private static BootOptions bootOptions = null!;
         public static BootOptions Options { get => bootOptions; }
 
@@ -37,6 +42,18 @@ namespace Rained
         
         // this is just the window scale, floored.
         public static int PixelIconScale { get; set; } = 1;
+
+        private static int _refreshRate = 60;
+        public static int RefreshRate {
+            get => _refreshRate;
+            set
+            {
+                _refreshRate = int.Max(1, value);
+                // Raylib.SetTargetFPS(_refreshRate);
+            }
+        }
+
+        public static int DefaultRefreshRate => window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
 
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
 
@@ -48,28 +65,89 @@ namespace Rained
             if (!bootOptions.ContinueBoot)
                 return;
 
+            if (bootOptions.EffectExportOutput is not null)
+            {
+                LaunchDrizzleExport(bootOptions.EffectExportOutput);
+            }
+            else if (bootOptions.Render || bootOptions.Scripts.Count > 0)
+            {
+                LaunchBatch();
+            }
+            else
+            {
+                LaunchEditor();
+            }
+        }
+
+        private static void LaunchDrizzleExport(string path)
+        {
+            DrizzleExport.DrizzleEffectExport.Export(Assets.AssetDataPath.GetPath(), Path.Combine(AppDataPath, "assets", "drizzle-cast"), path);
+        }
+
+        private static void LaunchBatch()
+        {
+            // setup serilog
+            {
+                bool logToStdout = bootOptions.ConsoleAttached || bootOptions.LogToStdout;
+                #if DEBUG
+                logToStdout = true;
+                #endif
+
+                Log.Setup(
+                    logToStdout: false,
+                    userLoggerToStdout: false
+                );
+            }
+
+            if (bootOptions.Scripts.Count > 0 || !bootOptions.NoAutoloads)
+            {
+                var app = new APIBatchHost();
+                LuaInterface.Initialize(app, !bootOptions.NoAutoloads);
+                
+                var lua = LuaInterface.LuaState;
+                foreach (var path in bootOptions.Scripts)
+                {
+                    LuaHelpers.DoFile(lua, path);
+                }
+            }
+            else
+            {
+                // this would have been loaded by APIBatchHost ctor
+                Assets.DrizzleCast.Initialize();
+            }
+
             if (bootOptions.Render)
                 LaunchRenderer();
-            else
-                LaunchEditor();
         }
 
         private static void LaunchRenderer()
         {
-            if (string.IsNullOrEmpty(bootOptions.LevelToLoad))
+            if (bootOptions.Files.Count == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("error: ");
                 Console.ResetColor();
 
-                Console.WriteLine("The level path was not given");
+                Console.WriteLine("The level path(s) were not given");
                 Environment.ExitCode = 2;
                 return;
             }
 
             try
             {
-                Drizzle.DrizzleRender.Render(bootOptions.LevelToLoad);
+                // single-file render
+                if (bootOptions.Files.Count == 1 && !Directory.Exists(bootOptions.Files[0]))
+                {
+                    Log.Information("====== Standalone render ======");
+                    Drizzle.DrizzleRender.ConsoleRender(bootOptions.Files[0]);
+                }
+
+                // mass render
+                else
+                {
+                    Log.Information("====== Standalone mass render ======");
+                    Drizzle.DrizzleMassRender.ConsoleRender([..bootOptions.Files], bootOptions.RenderThreads);
+                }
             }
             catch (Drizzle.DrizzleRenderException e)
             {
@@ -104,7 +182,10 @@ namespace Rained
                 logToStdout = true;
                 #endif
 
-                Log.Setup(logToStdout);
+                Log.Setup(
+                    logToStdout: logToStdout,
+                    userLoggerToStdout: false
+                );
             }
 
             // setup window logger
@@ -266,7 +347,7 @@ namespace Rained
                 //Raylib.SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.HiddenWindow | ConfigFlags.VSyncHint);
                 //Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
                 //Raylib.InitWindow(DefaultWindowWidth, DefaultWindowHeight, "Rained");
-                //Raylib.SetTargetFPS(240);
+                Raylib.SetTargetFPS(0);
                 //Raylib.SetExitKey(KeyboardKey.Null);
 
                 {
@@ -303,7 +384,7 @@ namespace Rained
 
                 try
                 {
-                    app = new(assetDataPath, bootOptions.LevelToLoad);
+                    app = new(assetDataPath, bootOptions.Files);
                 }
                 catch (RainEdStartupException)
                 {
@@ -329,14 +410,34 @@ namespace Rained
                 {
                     Fonts.SetFont(app.Preferences.Font);
 
+                    // setup vsync state
+                    Window.VSync = app.Preferences.Vsync;
+
                     // set initial target fps
-                    var refreshRate = window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
-                    if (app.Preferences.RefreshRate == 0)
-                        app.Preferences.RefreshRate = refreshRate;
-                    Raylib.SetTargetFPS(app.Preferences.RefreshRate);
+                    if (Window.VSync || app.Preferences.RefreshRate == 0)
+                    {
+                        RefreshRate = DefaultRefreshRate;
+                    }
+                    else
+                    {
+                        RefreshRate = app.Preferences.RefreshRate;
+                    }
 
                     while (app.Running)
                     {
+                        // for some reason on MacOS, turning on vsync just... doesn't?
+                        // I should probably just have framelimiting be able to work with vsync
+                        // in place, since it's possible a user's drivers don't listen to vsync on/off requests,
+                        // but... whatever.
+                        if (Window.VSync && !OperatingSystem.IsMacOS())
+                        {
+                            Raylib.SetTargetFPS(0);
+                        }
+                        else
+                        {
+                            Raylib.SetTargetFPS(_refreshRate);
+                        }
+
                         // update fonts if scale changed or reload was requested
                         var io = ImGui.GetIO();
                         if (WindowScale != curWindowScale || Fonts.FontReloadQueued)

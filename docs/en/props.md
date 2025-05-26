@@ -80,7 +80,7 @@ a dot. To simulate the rope, hold down the Simulate button or the <kbd>Space</kb
 On the bottom-right is a window titled "Prop Options". This is where you can edit the options of one or more props that are currently selected. The following is a list of all possible prop options. Note that not all props will have every option available.
 
 - **Render Order:** Affects the order the prop is rendered in if a destruction prop is in the level.
-- **Depth Offset:** The sublayer position of the prop, ranging from 0-29. The next work layer is reached every 10 units.
+- **Depth Offset:** The sublayer position of the prop, ranging from 0-29. Each sublayer is 1/10th of a work layer.
 - **Seed:** Seed used for procedural generation.
 - **Render Time:** Used to control whether or not the prop renders before or after effects.
 - **Custom Depth:** The size of the prop in terms of sublayers.
@@ -93,6 +93,14 @@ The following options are applicable only to rope-type props:
 - **Flexibility:** Controls the flexibility of the prop. Scaling the prop vertically does the same thing.
 - **Release:** Controls which end of the prop is not attached.
 - **Thickness:** The thickness of the rope.
+
+### Prop controls
+The **Prop Options** window also has four buttons that deal with transforming the selected props.
+
+1. **Reset:** Resets the prop rotation and size.
+2. **Flip X:** Flips the selected props across the vertical axis.
+3. **Flip Y:** Flips the selected props across the horizontal axis.
+4. **Depth Move:** Opens a popup with a slider allowing you to move the selected props by the distance marked by the slider when "OK" is pressed. The "Wrap around" option, will make props wrap back to the opposite layer of the level if they exceed the minimum or maximum sublayer position.
 
 <!--
 Multiple props can be selected at once

@@ -33,10 +33,18 @@
 # level editor assets/data
 /Data
 
+# intermediate generation
+/src/Rained/Assets/effects.json
+/src/Rained/LuaScripting/Modules/ImGuiModule.gen.cs
+/scripts/definitions/imgui.lua
+
 # rained-generated files
 /config/preferences.json
 /logs
 /emsavs
+
+# rendercopy script config
+/config/rendercopy.conf
 
 # mkdocs generated output
 /dist/docs

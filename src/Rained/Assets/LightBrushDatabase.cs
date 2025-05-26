@@ -98,7 +98,7 @@ class LightBrushDatabase
         }
 
         // load drizzle light data
-        var lightsDir = Path.Combine(RainEd.Instance.AssetDataPath, "Lights");
+        var lightsDir = Path.Combine(AssetDataPath.GetPath(), "Lights");
         if (Directory.Exists(lightsDir))
         {
             foreach (var filePath in Directory.GetFileSystemEntries(lightsDir))
