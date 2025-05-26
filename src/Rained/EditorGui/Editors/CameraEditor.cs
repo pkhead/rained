@@ -10,6 +10,7 @@ class CameraEditor : IEditorMode
 {
     public string Name { get => "Cameras"; }
     public bool SupportsCellSelection => false;
+    public ChangeHistory.CameraChangeRecorder ChangeRecorder => changeRecorder;
     
     private readonly LevelWindow window;
 

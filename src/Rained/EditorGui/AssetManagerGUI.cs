@@ -101,7 +101,9 @@ static class AssetManagerGUI
             var drawList = ImGui.GetWindowDrawList();
             float textHeight = ImGui.GetTextLineHeight();
 
-            foreach ((var i, var group) in searchResults)
+			const string leftPadding = "  ";
+			float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
+			foreach ((var i, var group) in searchResults)
             {
                 if (group.Color.HasValue)
                 {
@@ -126,7 +128,7 @@ static class AssetManagerGUI
                     var col = group.Color.Value;
                     drawList.AddRectFilled(
                         p_min: cursor,
-                        p_max: cursor + new Vector2(10f, textHeight),
+                        p_max: cursor + new Vector2(colorWidth, textHeight),
                         ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
                     );
                 }

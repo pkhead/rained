@@ -237,7 +237,8 @@ class TileEditMode : TileEditorMode, ITileSelectionState
         else
         {
             // draw tile requirements
-            TileRenderer.DrawTileSpecs(selectedTile, tileOriginX, tileOriginY);
+            var tileAlpha = (byte)(Math.Clamp(RainEd.Instance.Preferences.TileSpecOpacity, 0f, 1f) * 255);
+            TileRenderer.DrawTileSpecs(selectedTile, tileOriginX, tileOriginY, alpha: tileAlpha);
 
             // check if requirements are satisfied
             TilePlacementStatus validationStatus;

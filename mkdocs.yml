@@ -15,6 +15,7 @@ nav:
       - Environment: env.md
       - Geometry: geo.md
       - Tiles: tiles.md
+      - Cell selection: selection.md
       - Cameras: cameras.md
       - Light: light.md
       - Effects: effects.md

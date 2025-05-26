@@ -164,6 +164,7 @@ class DrizzleRender : IDisposable
     private abstract record ThreadMessage;
 
     private record MessageRenderStarted : ThreadMessage;
+    private record MessageReady : ThreadMessage;
     private record MessageRenderGeometryStarted : ThreadMessage;
     private record MessageLevelLoading : ThreadMessage;
     private record MessageRenderFailed(Exception Exception) : ThreadMessage;
@@ -172,9 +173,7 @@ class DrizzleRender : IDisposable
     private record MessageRenderProgress(float Percentage) : ThreadMessage;
     private record MessageDoCancel : ThreadMessage;
     private record MessageReceievePreview(RenderPreview Preview) : ThreadMessage;
-
-    private static LingoRuntime? staticRuntime = null; 
-    public static LingoRuntime? StaticRuntime => staticRuntime;
+    private record MessageScreenFinished(int Index, LingoImage Image) : ThreadMessage;
 
     private class RenderThread
     {
@@ -188,6 +187,9 @@ class DrizzleRender : IDisposable
         public readonly bool GeometryExport;
         public readonly int PrioritizedCameraIndex;
 
+        private LingoRuntime runtime = null!;
+        private bool useStatic;
+
         public RenderThread(string filePath, bool geoExport, int prioCam)
         {
             GeometryExport = geoExport;
@@ -198,36 +200,15 @@ class DrizzleRender : IDisposable
             this.filePath = filePath;
         }
 
-        public void ThreadProc()
+        public void StartUpDrizzle()
         {
             try
             {
-                LingoRuntime runtime;
+                useStatic = RainEd.Instance.Preferences.StaticDrizzleLingoRuntime;
 
-                // create large trash log file, in case user decided to have it enabled
-                // otherwise drizzle will not work
-                var largeTrashLogFile = Path.Combine(RainEd.Instance.AssetDataPath, "largeTrashLog.txt");
-                if (!File.Exists(largeTrashLogFile))
-                    File.Create(largeTrashLogFile).Dispose();
-                
-                // make sure Levels output folder exists
-                Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
-
-                if (staticRuntime is not null)
-                {
-                    runtime = staticRuntime;
-                }
-                else
-                {
-                    Log.UserLogger.Information("Initializing Lingo runtime...");
-
-                    LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-                    LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-                    
-                    runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-                    runtime.Init();
-                    EditorRuntimeHelpers.RunStartup(runtime);
-                }
+                if (DrizzleManager.NeedsCreateRuntime(useStatic))
+                    Log.UserLogger.Information("Initializing Drizzle...");
+                runtime = DrizzleManager.GetRuntime(useStatic);
 
                 // process user cancel if cancelled while init
                 // drizzle runtime
@@ -236,6 +217,25 @@ class DrizzleRender : IDisposable
                     if (msg is MessageDoCancel)
                         throw new RenderCancelledException();
                 }
+
+                Queue.Enqueue(new MessageReady());
+            }
+            catch (RenderCancelledException)
+            {
+                Log.UserLogger.Information("Render was cancelled");
+                Queue.Enqueue(new MessageRenderCancelled());
+            }
+            catch (Exception e)
+            {
+                Queue.Enqueue(new MessageRenderFailed(e));
+            }
+        }
+
+        public void ThreadProc()
+        {
+            try
+            {
+                ThreadMessage? msg;
 
                 Queue.Enqueue(new MessageLevelLoading());
                 Log.UserLogger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
@@ -264,6 +264,7 @@ class DrizzleRender : IDisposable
                     Renderer = new LevelRenderer(runtime, null);
                     Renderer.StatusChanged += StatusChanged;
                     Renderer.PreviewSnapshot += PreviewSnapshot;
+                    Renderer.OnScreenRenderCompleted += ScreenRenderCompleted;
                     
                     // process user cancel if cancelled while init
                     // drizzle runtime
@@ -296,10 +297,15 @@ class DrizzleRender : IDisposable
         {
             Queue.Enqueue(new MessageReceievePreview(renderPreview));
         }
+
+        private void ScreenRenderCompleted(int index, LingoImage image)
+        {
+            Queue.Enqueue(new MessageScreenFinished(index, image));
+        }
     }
 
     private readonly RenderThread threadState;
-    private readonly Thread thread;
+    private Thread thread;
 
     public enum RenderState
     {
@@ -328,6 +334,10 @@ class DrizzleRender : IDisposable
     public int CameraCount { get => cameraCount; }
     public int CamerasDone { get => camsDone; }
 
+    private readonly string filePath;
+    private readonly List<string> pngPaths = [];
+    private bool isDrizzleReady = false;
+
     public RenderPreviewImages? PreviewImages;
     public Action? PreviewUpdated;
 
@@ -340,7 +350,7 @@ class DrizzleRender : IDisposable
         cameraCount = RainEd.Instance.Level.Cameras.Count;
 
         state = RenderState.Initializing;
-        var filePath = RainEd.Instance.CurrentFilePath;
+        filePath = RainEd.Instance.CurrentFilePath;
         if (string.IsNullOrEmpty(filePath)) throw new Exception("Render called but level wasn't saved");
 
         // create render layer preview images
@@ -356,10 +366,10 @@ class DrizzleRender : IDisposable
         // MacOS has a smaller stack size by default,
         // so i need to make it bigger on that platform.
         int maxStackSize = 0; // 0 = use default stack size
-        if (OperatingSystem.IsMacOS())
-            maxStackSize = 1024 * 1024; // 1 MiB
+        if (DrizzleManager.UseCustomStackSize)
+            maxStackSize = DrizzleManager.ThreadStackSize;
 
-        thread = new Thread(new ThreadStart(threadState.ThreadProc), maxStackSize)
+        thread = new Thread(new ThreadStart(threadState.StartUpDrizzle), maxStackSize)
         {
             CurrentCulture = Thread.CurrentThread.CurrentCulture
         };
@@ -369,17 +379,6 @@ class DrizzleRender : IDisposable
     public void Dispose()
     {
         PreviewImages?.Dispose();
-    }
-
-    public static void InitStaticRuntime()
-    {
-        Configuration.Default.PreferContiguousImageBuffers = true;
-        LingoRuntime.MovieBasePath = RainEd.Instance.AssetDataPath + Path.DirectorySeparatorChar;
-        LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
-
-        staticRuntime = new LingoRuntime(typeof(MovieScript).Assembly);
-        staticRuntime.Init();
-        EditorRuntimeHelpers.RunStartup(staticRuntime);
     }
 
     private void StatusChanged(RenderStatus status)
@@ -496,6 +495,29 @@ class DrizzleRender : IDisposable
 
             switch (messageGeneral)
             {
+                // render thread has finished starting up drizzle.
+                // now, load level and begin the render!
+                case MessageReady:
+                {
+                    thread.Join();
+                    isDrizzleReady = true;
+                    LuaScripting.Modules.RainedModule.PreRenderCallback(filePath);
+                    
+                    // MacOS has a smaller stack size by default,
+                    // so i need to make it bigger on that platform.
+                    int maxStackSize = 0; // 0 = use default stack size
+                    if (DrizzleManager.UseCustomStackSize)
+                        maxStackSize = DrizzleManager.ThreadStackSize;
+
+                    thread = new Thread(new ThreadStart(threadState.ThreadProc), maxStackSize)
+                    {
+                        CurrentCulture = Thread.CurrentThread.CurrentCulture
+                    };
+                    thread.Start();
+
+                    break;
+                }
+
                 case MessageRenderProgress msgProgress:
                     progress = msgProgress.Percentage;
                     break;
@@ -506,7 +528,21 @@ class DrizzleRender : IDisposable
                     progress = 1f;
                     DisplayString = "";
                     thread.Join();
+
+                    LuaScripting.Modules.RainedModule.PostRenderCallback(
+                        filePath,
+                        Path.Combine(RainEd.Instance.AssetDataPath, "Levels", Path.GetFileName(filePath)),
+                        [..pngPaths]
+                    );
+
                     break;
+
+                case MessageScreenFinished scr:
+                {
+                    var levelName = Path.GetFileNameWithoutExtension(filePath);
+                    pngPaths.Add(Path.Combine(RainEd.Instance.AssetDataPath, "Levels", $"{levelName}_{scr.Index}.png"));
+                    break;
+                }
 
                 case MessageLevelLoading:
                     state = RenderState.Loading;
@@ -524,11 +560,19 @@ class DrizzleRender : IDisposable
                     Log.UserLogger.Error("Error occured when rendering level:\n{ErrorMessage}", msgFail.Exception);
                     thread.Join();
                     state = RenderState.Errored;
+
+                    if (isDrizzleReady)
+                        LuaScripting.Modules.RainedModule.RenderFailureCallback(filePath, msgFail.Exception.ToString());
+
                     break;
                 
                 case MessageRenderCancelled:
                     state = RenderState.Canceled;
                     thread.Join();
+
+                    if (isDrizzleReady)
+                        LuaScripting.Modules.RainedModule.RenderFailureCallback(filePath, null);
+
                     break;
                 
                 case MessageReceievePreview preview:
@@ -651,9 +695,8 @@ class DrizzleRender : IDisposable
     /// </summary>
     /// <param name="levelPath">The path of the level to render</param>
     /// <returns></returns>
-    public static void Render(string levelPath)
+    public static void ConsoleRender(string levelPath)
     {
-        Directory.CreateDirectory(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"));
         var levelName = Path.GetFileNameWithoutExtension(levelPath);
         var pathWithoutExt = Path.Combine(Path.GetDirectoryName(levelPath)!, levelName);
 
@@ -667,80 +710,58 @@ class DrizzleRender : IDisposable
             throw new DrizzleRenderException($"The file '{pathWithoutExt + ".png"}' does not exist!");
         }
 
-        var prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
-        string dataPath;
-
-        if (Boot.Options.DrizzleDataPath is not null)
-        {
-            dataPath = Boot.Options.DrizzleDataPath;
-        }
-        else
-        {
-            // read preferences in order to get the data directory
-            if (File.Exists(prefFilePath))
-            {
-                var prefs = UserPreferences.LoadFromFile(prefFilePath);
-                dataPath = prefs.DataPath;
-            }
-            else
-            {
-                throw new Exception("preferences.json was not found");
-            }
-        }
-
-        if (!Directory.Exists(dataPath))
-        {
-            throw new DrizzleRenderException($"The data directory {dataPath} does not exist.");
-        }
-
-        // create large trash log file, in case user decided to have it enabled
-        // otherwise drizzle will not work
-        var largeTrashLogFile = Path.Combine(dataPath, "largeTrashLog.txt");
-        if (!File.Exists(largeTrashLogFile))
-            File.Create(largeTrashLogFile).Dispose();
+        string dataPath = AssetDataPath.GetPath();
 
         LingoRuntime runtime;
+        Console.WriteLine("Initializing Lingo runtime...");
+        runtime = DrizzleManager.GetRuntime(false);
 
-        if (staticRuntime is not null)
-        {
-            runtime = staticRuntime;
-        }
-        else
-        {
-            Console.WriteLine("Initializing Lingo runtime...");
+        LuaScripting.Modules.RainedModule.PreRenderCallback(levelPath);
+        var levelOutput = Path.Combine(dataPath, "Levels", $"{levelName}.txt");
+        var success = false;
 
-            Configuration.Default.PreferContiguousImageBuffers = true;
-            LingoRuntime.MovieBasePath = dataPath + Path.DirectorySeparatorChar;
-            LingoRuntime.CastPath = DrizzleCast.DirectoryPath + Path.DirectorySeparatorChar;
+        try
+        {
+            EditorRuntimeHelpers.RunLoadLevel(runtime, levelPath);
+
+            var movie = (MovieScript)runtime.MovieScriptInstance;
+            var camCount = (int) movie.gCameraProps.cameras.count;
+            List<string> pngList = [];
+
+            void StatusChanged(RenderStatus status)
+            {
+                if (status.Stage.Stage == RenderStage.CameraSetup)
+                    Console.WriteLine($"Rendering {status.CountCamerasDone + 1} of {camCount} cameras...");
+            }
+
+            void RenderComplete(int index, LingoImage image)
+            {
+                Console.WriteLine($"Finished {levelName}_{index}.png");
+                var pngPath = Path.Combine(dataPath, "Levels", $"{levelName}_{index}.png");
+                pngList.Add(pngPath);
+            }
             
-            runtime = new LingoRuntime(typeof(MovieScript).Assembly);
-            runtime.Init();
-            EditorRuntimeHelpers.RunStartup(runtime);
+            var renderer = new LevelRenderer(runtime, null);
+            renderer.StatusChanged += StatusChanged;
+            renderer.OnScreenRenderCompleted += RenderComplete;
+
+            var stopwatch = Stopwatch.StartNew();
+            renderer.DoRender();
+
+            Console.WriteLine($"Render finished in {stopwatch.Elapsed}");
+            success = true;
+            LuaScripting.Modules.RainedModule.PostRenderCallback(
+                levelPath,
+                levelOutput,
+                [..pngList]
+            );
         }
-
-        EditorRuntimeHelpers.RunLoadLevel(runtime, levelPath);
-
-        var movie = (MovieScript)runtime.MovieScriptInstance;
-        var camCount = (int) movie.gCameraProps.cameras.count;
-
-        void StatusChanged(RenderStatus status)
+        catch (Exception e)
         {
-            if (status.Stage.Stage == RenderStage.CameraSetup)
-                Console.WriteLine($"Rendering {status.CountCamerasDone + 1} of {camCount} cameras...");
+            if (!success)
+                LuaScripting.Modules.RainedModule.RenderFailureCallback(levelPath, e.ToString());
+
+            throw;
         }
-
-        void RenderComplete(int index, LingoImage image)
-        {
-            Console.WriteLine($"Finished {levelName}_{index}.png");
-        }
-        
-        var renderer = new LevelRenderer(runtime, null);
-        renderer.StatusChanged += StatusChanged;
-        renderer.OnScreenRenderCompleted += RenderComplete;
-
-        var stopwatch = Stopwatch.StartNew();
-        renderer.DoRender();
-
-        Console.WriteLine($"Render finished in {stopwatch.Elapsed}");
     }
 }

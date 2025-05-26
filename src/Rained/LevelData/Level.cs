@@ -355,7 +355,6 @@ partial class Level : IDisposable
 
     public readonly List<Effect> Effects = new();
     public readonly List<Prop> Props = new();
-    public readonly List<Prop> SortedProps = new();
     public readonly Dictionary<(int, int, int), Vector2i> ChainData = [];
     
     public int TileSeed;

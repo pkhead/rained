@@ -38,6 +38,8 @@ static class Shaders
 
     public static RlManaged.Shader LevelLightShader { get; private set; } = null!;
 
+    public static RlManaged.Shader LightStretchShader { get; private set; } = null!;
+
     /// <summary>
     /// The vertex+fragment shader used for rendering the line mesh grid.
     /// </summary>
@@ -70,6 +72,7 @@ static class Shaders
         TileShader = RlManaged.Shader.Load(null, "tile.frag");
         PaletteShader = RlManaged.Shader.Load(null, "palette.frag");
         LevelLightShader = RlManaged.Shader.Load(null, "level_light.frag");
+        LightStretchShader = RlManaged.Shader.Load(null, "lightmap_stretch.frag");
         GridShader = RlManaged.Shader.Load("grid.vert", "grid.frag");
         RenderPreviewLayerShader = RlManaged.Shader.Load(null, "render_preview.frag");
         RenderPreviewLightShader = RlManaged.Shader.Load(null, "bitmap_render_preview.frag");

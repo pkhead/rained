@@ -6,6 +6,7 @@ This page is intended for users who have experience using a Rain World level edi
 - You can also delete effect slots by right-clicking on them.
 - In the light editor, you scale and rotate your brush by holding down a key and moving your mouse.
 - You can also use your mouse to manipulate the light ring for the light angle.
+- Press Ctrl+E (or Edit > Select) to begin geo/tile select/move, copy, and paste mode.
 
 The prop editor has some pretty significant changes in design when compared to RWE+ or the Lingo editor. It works akin to transform tools
 in other software like Photoshop.

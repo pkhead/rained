@@ -39,7 +39,7 @@ class EnvironmentChangeRecorder
 {
     private EnvironmentData snapshot;
 
-    private static EnvironmentData CreateSnapshot()
+    public static EnvironmentData CreateSnapshot()
     {
         var level = RainEd.Instance.Level;
         return new() {

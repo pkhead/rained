@@ -9,7 +9,8 @@ namespace ImGuiNET;
 [Flags]
 enum ButtonGroupOptions : uint
 {
-    Vertical = 1
+    Vertical = 1,
+    ShowID = 2
 }
 
 static class ImGuiExt
@@ -357,6 +358,12 @@ static class ImGuiExt
 
         private bool verticalLayout;
 
+        public static float CalcItemWidth(float totalWidth, int count)
+        {
+            var itemSpacing = ImGui.GetStyle().ItemInnerSpacing;
+            return (totalWidth + itemSpacing.X * (1 - count)) / count;
+        }
+
         public static ButtonGroup Begin(string id, int buttonCount, ButtonGroupOptions opts)
         {
             var activeCol = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
@@ -378,7 +385,7 @@ static class ImGuiExt
             }
             else
             {
-                itemSize = new Vector2((ImGui.CalcItemWidth() + itemSpacing.X * (1 - buttonCount)) / buttonCount, 0f);
+                itemSize = new Vector2(CalcItemWidth(ImGui.CalcItemWidth(), buttonCount), 0f);
             }
 
             return new ButtonGroup()
@@ -442,6 +449,14 @@ static class ImGuiExt
             group.EndButton();
         }
 
+        if (groupOptions.HasFlag(ButtonGroupOptions.ShowID))
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+            ImGui.SameLine();
+            ImGui.Text(id);
+            ImGui.PopStyleVar();
+        }
+
         return returnValue;
     }
 
@@ -466,6 +481,14 @@ static class ImGuiExt
                 returnValue = true;
             }
             group.EndButton();
+        }
+
+        if (groupOptions.HasFlag(ButtonGroupOptions.ShowID))
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+            ImGui.SameLine();
+            ImGui.Text(id);
+            ImGui.PopStyleVar();
         }
 
         return returnValue;

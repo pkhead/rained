@@ -192,6 +192,26 @@ class LevelWindow
         RainEd.Instance.CurrentTab!.NodeData.Reset();
     }
 
+    public void ChangeLevel(Level newLevel)
+    {
+        foreach (var mode in editorModes)
+            mode.ChangeLevel(newLevel);
+        
+        RainEd.Instance.CurrentTab!.NodeData.Reset();
+    }
+
+    public void LevelCreated(Level level)
+    {
+        foreach (var mode in editorModes)
+            mode.LevelCreated(level);
+    }
+
+    public void LevelClosed(Level level)
+    {
+        foreach (var mode in editorModes)
+            mode.LevelClosed(level);
+    }
+
     public void ResetView()
     {
         ViewOffset = Vector2.Zero;
@@ -225,7 +245,7 @@ class LevelWindow
             
             if (!editorModes[newMode].SupportsCellSelection && CellSelection.Instance is not null)
             {
-                CellSelection.Instance.SubmitMove();
+                CellSelection.Instance.Deactivate();
                 CellSelection.Instance = null;
             }
 
@@ -309,7 +329,8 @@ class LevelWindow
                     // scroll keybinds
                     var moveX = (EditorWindow.IsKeyDown(ImGuiKey.RightArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.LeftArrow)?1:0);
                     var moveY = (EditorWindow.IsKeyDown(ImGuiKey.DownArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.UpArrow)?1:0);
-                    var moveSpeed = EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 60f : 30f;
+                    var speedMult = Math.Max(0.75f, 1.0f / ViewZoom);
+                    var moveSpeed = (EditorWindow.IsKeyDown(ImGuiKey.ModShift) ? 90f : 30f) * speedMult;
                     ViewOffset.X += moveX * Level.TileSize * moveSpeed * dt;
                     ViewOffset.Y += moveY * Level.TileSize * moveSpeed * dt;
 

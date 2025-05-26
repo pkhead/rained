@@ -9,5 +9,11 @@
     begins with three dashes.
 --]]
 
-local maj, min, rev = rained.getApiVersion()
-print(("Rained API version: %s.%s.%s"):format(maj, min, rev))
+-- don't want this to print when rained is running as a
+-- console executable
+if not rained.isBatchMode() then
+    local maj, min, rev = rained.getApiVersion()
+    print(("Rained API version: %s.%s.%s"):format(maj, min, rev))
+end
+
+require("rendercopy")

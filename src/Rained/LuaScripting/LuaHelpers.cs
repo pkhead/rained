@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using KeraLua;
 namespace Rained.LuaScripting;
@@ -25,6 +26,7 @@ static class LuaHelpers
     
     private const string FuncWrapperMetatable = "luahelpers_delegate";
     private const string FuncMetatable = "luahelpers_function";
+    private const string UserDataMetatable = "luahelpers_userdata";
 
     private static int nextID = 1;
     private static readonly Dictionary<int, object> allocatedObjects = [];
@@ -35,6 +37,8 @@ static class LuaHelpers
 
     private static readonly KeraLua.LuaFunction wrapperGcDelegate = new KeraLua.LuaFunction(WrapperGCDelegate);
     private static readonly KeraLua.LuaFunction wrapperCallDelegate = new KeraLua.LuaFunction(WrapperCallDelegate);
+
+    private static readonly KeraLua.LuaFunction userdataGcDelegate = new KeraLua.LuaFunction(UserDataGCDelegate);
 
     public static void Init(Lua lua)
     {
@@ -51,6 +55,16 @@ static class LuaHelpers
         // create wrapper metatable
         lua.NewMetaTable(FuncWrapperMetatable);
         lua.PushCFunction(wrapperGcDelegate);
+        lua.SetField(-2, "__gc");
+
+        lua.PushCFunction(mtDelegate);
+        lua.SetField(-2, "__metatable");
+
+        lua.Pop(1);
+
+        // create userdata metatable
+        lua.NewMetaTable(UserDataMetatable);
+        lua.PushCFunction(gcDelegate);
         lua.SetField(-2, "__gc");
 
         lua.PushCFunction(mtDelegate);
@@ -82,11 +96,11 @@ static class LuaHelpers
 
         try
         {
-            return func(Lua.FromIntPtr(luaPtr));
+            return func(lua);
         }
         catch (LuaErrorException e)
         {
-            return lua.Error(e.Message);
+            return lua.ErrorWhere(e.Message);
         }
         catch (Exception e)
         {
@@ -269,5 +283,204 @@ static class LuaHelpers
         allocatedObjects[nextID++] = func;
 
         lua.PushCClosure(callDelegate, 1);
+    }
+
+    public static unsafe void PushClosureWithUserdata(Lua lua, object userdata, KeraLua.LuaFunction func)
+    {
+        int* userData = (int*) lua.NewUserData(sizeof(int));
+        *userData = nextID;
+
+        lua.GetMetaTable(UserDataMetatable);
+        lua.SetMetaTable(-2);
+        allocatedObjects[nextID++] = userdata;
+
+        lua.PushCClosure(func, 1);
+    }
+
+    private static unsafe int UserDataGCDelegate(nint luaPtr)
+    {
+        Lua lua = Lua.FromIntPtr(luaPtr)!;
+        int id = *((int*)lua.CheckUserData(1, UserDataMetatable));
+        allocatedObjects.Remove(id);
+        return 0;
+    }
+
+    public static unsafe object GetUserData(Lua lua)
+    {
+        int id = *((int*)lua.CheckUserData(Lua.UpValueIndex(1), UserDataMetatable));
+        return allocatedObjects[id];
+    }
+
+    public static void ModuleFunction(this Lua lua, string funcName, KeraLua.LuaFunction func)
+    {
+        lua.PushCFunction(func);
+        lua.SetField(-2, funcName);
+    }
+
+    public static void ModuleFunction(this Lua lua, string funcName, LuaHelpers.LuaFunction func)
+    {
+        LuaHelpers.PushLuaFunction(lua, func);
+        lua.SetField(-2, funcName);
+    }
+
+    public static int ErrorWhere(this Lua lua, string msg, int level = 1)
+    {
+        lua.Where(level);
+        lua.PushString(msg);
+        lua.Concat(2);
+        return lua.Error();
+    }
+
+    /// <summary>
+    /// Error message handler to be used with lua_pcall.
+    /// </summary>
+    /// <param name="luaPtr"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static int ErrorHandler(nint luaPtr, int errObj)
+    {
+        var lua = Lua.FromIntPtr(luaPtr);
+        if (errObj < 0) errObj = lua.GetTop() - (errObj + 1);
+
+        // create exception from first argument (error object)
+        var msg = lua.ToString(errObj);
+        var exceptionMsg = msg;
+
+        // if error string has stack/position info, begin traceback to where
+        // it is located on the stack rather than actual location where the error
+        // was thrown.
+        int level = 0;
+        string source = "";
+        if (msg.Contains(':'))
+        {
+            for (int i = 0;; i++)
+            {
+                LuaDebug ar = new();
+                if (lua.GetStack(i, ref ar) == 0) break;
+                if (!lua.GetInfo("Sl", ref ar)) {
+                    Log.Debug("error handler: could not get lua activation record");
+                    break;
+                }
+                
+                var name = ar.Source;
+                name = (name[0] == '@' || name[0] == '=') ? name[1..] : name;
+                if (name == "[C]") continue;
+
+                var testStr = name + ":" + ar.CurrentLine + ": ";
+                if (msg.Length >= testStr.Length && msg[..testStr.Length] == testStr)
+                {
+                    exceptionMsg = msg[testStr.Length..];
+                    level = i;
+                    source = name;
+                    break;
+                }
+            }
+        }
+
+        var exception = new NLua.Exceptions.LuaScriptException(exceptionMsg, source);
+
+        lua.Traceback(lua, level);
+        exception.Data["Traceback"] = lua.ToString(-1);
+        LuaInterface.HandleException(exception);
+        lua.Pop(1); // remove traceback
+
+        // return original error object?
+        // lua.PushCopy(1);
+        return 1;
+    }
+
+    public static LuaStatus ResumeCoroutine(Lua lua, Lua? from, int arguments, out int results)
+    {
+        try
+        {
+            var status = lua.Resume(from, arguments, out results);
+
+            if (!(status is LuaStatus.OK or LuaStatus.Yield))
+            {
+                ErrorHandler(lua.Handle, -1);
+            }
+
+            return status;
+        }
+        catch (NoLevelException)
+        {
+            lua.Where(1);
+            lua.PushString("a level is not loaded");
+            lua.Concat(2);
+            ErrorHandler(lua.Handle, -1);
+            results = 0;
+            return LuaStatus.ErrRun;
+        }
+    }
+
+    public static LuaStatus Call(Lua lua, int arguments, int results)
+    {
+        lua.PushCFunction(static (nint luaPtr) =>
+        {
+            ErrorHandler(luaPtr, 1);
+            return 1;
+        });
+
+        lua.Insert(-arguments - 2);
+        try
+        {
+            LuaStatus stat = lua.PCall(arguments, results, -arguments - 2);
+            if (stat == LuaStatus.ErrRun)
+            {
+                lua.Remove(-2); // pop the error handler, keeping the original error object
+            }
+            else
+            {
+                lua.Remove(-(results + 1)); // pop the error handler
+            }
+            return stat;
+        }
+        catch (NoLevelException)
+        {
+            lua.Where(1);
+            lua.PushString("a level is not loaded");
+            lua.Concat(2);
+            ErrorHandler(lua.Handle, -1);
+            return LuaStatus.ErrRun;
+        }
+    }
+
+    public static LuaStatus DoFile(Lua lua, string path)
+    {
+        var stat = lua.LoadFile(path);
+        if (stat != KeraLua.LuaStatus.OK)
+        {
+            LuaInterface.Host.Error(lua.ToString(-1));
+            return stat;
+        }
+        else
+        {
+            return Call(lua, 0, 0);
+        }
+    }
+
+    public static LuaStatus DoString(Lua lua, string str, string? name = null)
+    {
+        var stat = name is not null ? lua.LoadString(str, name) : lua.LoadString(str);
+        if (stat != KeraLua.LuaStatus.OK)
+        {
+            LuaInterface.Host.Error(lua.ToString(-1));
+            return stat;
+        }
+        else
+        {
+            return Call(lua, 0, 0);
+        }
+    }
+
+    public static void LevelCheck(Lua lua)
+    {
+        if (LuaInterface.Host.ActiveDocument == -1)
+        {
+            lua.Where(1);
+            lua.PushString("a level is not loaded");
+            lua.Concat(2);
+            lua.Error();
+        }
     }
 }

@@ -12,6 +12,18 @@ public class ChangeRecorderException : Exception
 
 abstract class ChangeRecorder
 {
+    public abstract bool Active { get; }
+    public abstract IChangeRecord? EndChange();
+
+    public void TryPushChange()
+    {
+        var change = EndChange();
+        if (change is not null)
+        {
+            RainEd.Instance.ChangeHistory.Push(change);
+        }
+    }
+    
     protected static void ValidationError(string msg)
     {
         #if DEBUG

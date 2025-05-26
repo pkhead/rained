@@ -8,7 +8,6 @@ using Rained.Drizzle;
 class MassRenderProcessWindow
 {
     public const string WindowName = "Mass Render###MassRenderProc";
-    private readonly Task renderTask;
     private readonly CancellationTokenSource cancelSource;
 
     public bool IsDone { get; private set; } = false;
@@ -18,23 +17,28 @@ class MassRenderProcessWindow
     private int totalLevels = 1;
     private readonly Dictionary<string, float> levelProgress = [];
     private readonly List<string> problematicLevels = [];
+    private bool renderIsDone = false;
 
-    private Stopwatch elapsedStopwatch = new();
+    private readonly Stopwatch elapsedStopwatch = new();
     private bool showTime = false;
+    private readonly DrizzleMassRender renderProc;
 
-    public MassRenderProcessWindow(DrizzleMassRender renderProcess)
+    public MassRenderProcessWindow(string[] files, int parallelismLimit)
     {
         cancelSource = new CancellationTokenSource();
 
-        var prog = new Progress<MassRenderNotification>();
+        var prog = new ProgressNoSync<MassRenderNotification>();
         prog.ProgressChanged += RenderProgressChanged;
 
-        var ct = cancelSource.Token;
-        //renderTask = null!;
-        renderTask = Task.Run(() =>
+        renderProc = new DrizzleMassRender(files, parallelismLimit, prog, cancelSource.Token);
+
+        totalLevels = files.Length;
+
+        // startup task
+        Task.Run(() =>
         {
-            renderProcess.Start(prog, ct);
-        }, ct);
+            renderProc.StartUp(DrizzleManager.GetRuntime(RainEd.Instance.Preferences.StaticDrizzleLingoRuntime));
+        }, cancelSource.Token);
     }
 
     public void Render()
@@ -54,6 +58,10 @@ class MassRenderProcessWindow
         {
             RainEd.Instance.NeedScreenRefresh();
 
+            // update render process
+            if (!renderIsDone && renderBegan)
+                if (!renderProc.ProcessUpdate()) renderIsDone = true;
+
             ImGui.BeginDisabled(cancel);
             if (ImGui.Button("Cancel"))
             {
@@ -62,7 +70,7 @@ class MassRenderProcessWindow
             }
             ImGui.EndDisabled();
 
-            ImGui.BeginDisabled(!renderTask.IsCompleted);
+            ImGui.BeginDisabled(!renderIsDone);
             ImGui.SameLine();
             if (ImGui.Button("Close"))
             {
@@ -84,12 +92,12 @@ class MassRenderProcessWindow
             }
 
             // status text
-            if (renderTask is null || renderTask.IsFaulted)
+            if (renderIsDone && problematicLevels.Count > 0)
             {
                 ImGui.Text("An error occured!\nCheck the log file for more info.");
                 if (elapsedStopwatch.IsRunning) elapsedStopwatch.Stop();
             }
-            else if (renderTask.IsCanceled)
+            else if (renderIsDone && cancel)
             {
                 ImGui.Text("Render was cancelled.");
 
@@ -145,34 +153,40 @@ class MassRenderProcessWindow
     {
         switch (prog)
         {
-            case MassRenderBegan began:
-                totalLevels = began.Total;
+            case MassRenderBegin begin:
+                totalLevels = begin.Total;
                 renderBegan = true;
                 break;
 
-            case MassRenderLevelCompleted level:
-                lock (levelProgress)
-                {
-                    renderedLevels++;
-
-                    if (!level.Success)
-                    {
-                        problematicLevels.Add(level.LevelName);
-                    }
-
-                    levelProgress.Remove(level.LevelName);
-                }
+            case MassRenderBeginLevel level:
+            {
+                LuaScripting.Modules.RainedModule.PreRenderCallback(level.LevelFile);
                 break;
+            }
+
+            case MassRenderLevelCompleted level:
+            {
+                var levelName = Path.GetFileNameWithoutExtension(level.LevelFile);
+                var levelsPath = Path.Combine(RainEd.Instance.AssetDataPath, "Levels") + Path.DirectorySeparatorChar;
+                renderedLevels++;
+
+                if (!level.Success)
+                {
+                    problematicLevels.Add(levelName);
+                }
+
+                lock (levelProgress) levelProgress.Remove(level.LevelFile);
+
+                LuaScripting.Modules.RainedModule.PostRenderCallback(
+                    sourceTxt: level.LevelFile,
+                    dstTxt: string.Join(null, levelsPath, levelName, ".txt"),
+                    dstPngs: level.Cameras.Select(x => levelsPath + $"{levelName}_{x}.png").ToArray()
+                );
+                break;
+            }
             
             case MassRenderLevelProgress levelProg:
-                lock (levelProgress)
-                {
-                    if (!levelProgress.TryAdd(levelProg.LevelName, levelProg.Progress))
-                    {
-                        levelProgress[levelProg.LevelName] = levelProg.Progress;
-                    }
-                }
-
+                lock (levelProgress) levelProgress[levelProg.LevelFile] = levelProg.Progress;
                 break;
         }
     }

@@ -15,10 +15,33 @@ record LevelLoadResult(Level Level)
     public string[] UnrecognizedEffects = [];
 }
 
+class LevelSerializationParams
+{
+    public required MaterialDatabase MaterialDatabase;
+    public required TileDatabase TileDatabase;
+    public required EffectsDatabase EffectsDatabase;
+    public required PropDatabase PropDatabase;
+    public int ActiveWorkLayer = 0;
+}
+
 static class LevelSerialization
 {
-    public static LevelLoadResult Load(string path)
+    private static LevelSerializationParams InitParams(LevelSerializationParams? v)
     {
+        return v ?? new LevelSerializationParams
+        {
+            MaterialDatabase = RainEd.Instance.MaterialDatabase,
+            TileDatabase = RainEd.Instance.TileDatabase,
+            EffectsDatabase = RainEd.Instance.EffectsDatabase,
+            PropDatabase = RainEd.Instance.PropDatabase,
+            ActiveWorkLayer = RainEd.Instance.CurrentTab is not null ? RainEd.Instance.LevelView.WorkLayer : 0
+        };
+    }
+
+    public static LevelLoadResult Load(string path, LevelSerializationParams? hostData = null)
+    {
+        hostData = InitParams(hostData);
+
         List<string> unknownMats = [];
         List<string> unknownTiles = [];
         List<string> unknownProps = [];
@@ -124,7 +147,7 @@ static class LevelSerialization
         // get default material
         {
             var defaultMat = (string) levelTileData["defaultMaterial"];
-            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(defaultMat);
+            var matInfo = hostData.MaterialDatabase.GetMaterial(defaultMat);
 
             if (matInfo is not null)
             {
@@ -161,7 +184,7 @@ static class LevelSerialization
                         case "material":
                         {
                             var data = (string) dataObj;
-                            var matInfo = RainEd.Instance.MaterialDatabase.GetMaterial(data);
+                            var matInfo = hostData.MaterialDatabase.GetMaterial(data);
 
                             if (matInfo is not null)
                             {
@@ -196,7 +219,7 @@ static class LevelSerialization
                             var tileID = (Vector2) data[0];
                             var name = (string) data[1];
 
-                            if (!RainEd.Instance.TileDatabase.HasTile(name))
+                            if (!hostData.TileDatabase.HasTile(name))
                             {
                                 // unrecognized tile
                                 Log.Warning("Unrecognized tile '{Name}'", name);
@@ -206,7 +229,7 @@ static class LevelSerialization
                             }
                             else
                             {
-                                var tile = RainEd.Instance.TileDatabase.GetTileFromName(name);
+                                var tile = hostData.TileDatabase.GetTileFromName(name);
                                 ref var cell = ref level.Layers[z,x,y]; 
                                 cell.TileHead = tile;
 
@@ -238,7 +261,7 @@ static class LevelSerialization
                 var nameStr = (string) effectData["nm"];
                 var type = (string) effectData["tp"];
 
-                if (!RainEd.Instance.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
+                if (!hostData.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
                 {
                     // unrecognized effect
                     Log.Warning("Unrecognized effect '{Name}'", nameStr);
@@ -459,7 +482,7 @@ static class LevelSerialization
         // READ PROP DATA
         if (levelPropData is not null)
         {
-            var propDb = RainEd.Instance.PropDatabase;
+            var propDb = hostData.PropDatabase;
             var propsList = (Lingo.LinearList) levelPropData["props"];
             List<Vector2> pointList = [];
             
@@ -598,8 +621,10 @@ static class LevelSerialization
         "Color1", "Color2", "Dead"
     };
 
-    public static void SaveLevelTextFile(Level level, string path)
+    public static void SaveLevelTextFile(Level level, string path, LevelSerializationParams? hostData = null)
     {
+        hostData = InitParams(hostData);
+
         var outputTxtFile = new StreamWriter(path);
         StringBuilder output = new();
 
@@ -608,7 +633,7 @@ static class LevelSerialization
         // Wtf this sucks why does lingo expect \r newlines that's bs \r newlines were deprecated on mac software like 20 years ago
         // Why is there no compatibilty for \r\n newlines wtf is this bs
         var newLine = "\r";
-        var workLayer = RainEd.Instance.LevelView.WorkLayer + 1;
+        var workLayer = hostData.ActiveWorkLayer + 1;
 
         // geometry data
         output.Append('[');
@@ -674,7 +699,7 @@ static class LevelSerialization
                     // tile head
                     if (cell.TileHead is not null)
                     {
-                        int group = cell.TileHead.Category.Index + 2 + RainEd.Instance.MaterialDatabase.Categories.Count;
+                        int group = cell.TileHead.Category.Index + 2 + hostData.MaterialDatabase.Categories.Count;
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
 
@@ -713,7 +738,7 @@ static class LevelSerialization
                     // material
                     else if (cell.Material != 0)
                     {
-                        output.AppendFormat("[#tp: \"material\", #Data: \"{0}\"]", RainEd.Instance.MaterialDatabase.GetMaterial(cell.Material).Name);
+                        output.AppendFormat("[#tp: \"material\", #Data: \"{0}\"]", hostData.MaterialDatabase.GetMaterial(cell.Material).Name);
                     }
                     // no tile/material data here
                     else
@@ -723,7 +748,7 @@ static class LevelSerialization
             }
             output.Append(']');
         }
-        output.AppendFormat("], #defaultMaterial: \"{0}\", ", RainEd.Instance.MaterialDatabase.GetMaterial(level.DefaultMaterial).Name);
+        output.AppendFormat("], #defaultMaterial: \"{0}\", ", hostData.MaterialDatabase.GetMaterial(level.DefaultMaterial).Name);
 
         // some lingo tile editor data, irrelevant to this editor
         output.Append("#toolType: \"material\", #toolData: \"Big Metal\", #tmPos: point(1, 1), #tmSavPosL: [], #specialEdit: 0]");

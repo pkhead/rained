@@ -2,6 +2,7 @@ namespace Rained.Rendering;
 using LevelData;
 using System.Globalization;
 using Raylib_cs;
+using Rained.Assets;
 
 class PaletteRenderer : IDisposable
 {
@@ -19,7 +20,7 @@ class PaletteRenderer : IDisposable
     public PaletteRenderer()
     {
         var palettes = new Dictionary<int, Palette>();
-        foreach (var filePath in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "assets", "palettes")))
+        foreach (var filePath in ConfigDirectory.EnumerateFiles("palettes"))
         {
             int paletteNumber = 0;
             bool validFilename = false;

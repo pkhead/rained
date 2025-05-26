@@ -1,1 +1,1 @@
-Default material: Bricks (Press 'E' to change)
+Default material: Concrete (Press 'E' to change)

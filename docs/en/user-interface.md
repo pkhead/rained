@@ -59,6 +59,7 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Render**: Render the level using Drizzle.
     - **Export Geometry**: Export the geometry of the level without rendering the visuals, using Drizzle.
     - **Mass Render**: Render multiple levels at once.
+    - **Reload Scripts**: Remove all autotiles, commands, and callbacks, and reload the Lua script engine.
     - **Preferences**: Open the preferences window.
     - **Quit**: Quit Rained.
 
@@ -78,6 +79,7 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Props**: Toggle the visibility of props outside of the Props edit mode.
     - **Camera Borders**: Toggle the visibility of camera boundaries.
     - **Tile Graphics**: Toggle whether or not tiles are rendered using the in-game render or the editor preview.
+    - **Node Indices**: Options for displaying the numbers and locations of each creature entrance in the level, useful for world editing.
     - **Obscured Beams**: If on, will show negative space for a horizontal or vertical beam if placed inside a wall.
     - **Tile Heads**: If on, will show a cross at the location of each tile head in the level.
     - **Keyboard Shortcuts**: Toggle the visibility of the keyboard shortcuts window.
@@ -89,5 +91,6 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Show Render Folder**: Open the system's file browser to the folder where Drizzle outputs level renders.
 
 **Help**
-:   - **Manual**: Opens your preferred file browser to this website.
+:   - **Readme**: Opens the README.txt file in your preferred text viewer.
+    - **Manual**: Opens your preferred file browser to this website.
     - **About**: Shows/hides the about window.

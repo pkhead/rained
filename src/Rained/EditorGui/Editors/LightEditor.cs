@@ -2,6 +2,7 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using Rained.LevelData;
+using System.Runtime.CompilerServices;
 
 namespace Rained.EditorGui.Editors;
 
@@ -15,6 +16,7 @@ class LightEditor : IEditorMode
     private Vector2 brushSize = new(50f, 70f);
     private float brushRotation = 0f;
     private int selectedBrush = 0;
+    private bool brushPreview = false; // true when user is changing brush parameters through slider
 
     private bool isCursorEnabled = true;
     private bool isDrawing = false;
@@ -22,50 +24,83 @@ class LightEditor : IEditorMode
     private Vector2 savedMouseGp = new();
     private Vector2 savedMousePos = new();
 
-    private ChangeHistory.LightChangeRecorder? changeRecorder = null;
+    private bool warpMode = false;
+    private bool warpModeSubmit = false;
+    private readonly Vector2[] warpPoints = new Vector2[4];
+    private int hoveredVertexIndex = -1;
+    private RlManaged.RenderTexture2D? tmpFramebuffer;
+
+    // Bleh
+    // I think i need to change how the EditorMode classes work.
+    // specifically, to make a unique set of each per document.
+    // instead of using the same one across multiple documents.
+    private readonly ConditionalWeakTable<Level, ChangeHistory.LightChangeRecorder> changeRecorders = [];
 
     public LightEditor(LevelWindow window)
     {
         this.window = window;
-        ReloadLevel();
+        // ReloadLevel();
 
         RainEd.Instance.ChangeHistory.Cleared += ReloadLevel;
 
         RainEd.Instance.ChangeHistory.UndidOrRedid += () =>
         {
-            changeRecorder?.UpdateParametersSnapshot();
+            if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+                changeRecorder.UpdateParametersSnapshot();
         };
     }
 
-    public void ReloadLevel()
-    {   
-        changeRecorder?.Dispose();
-
-        if (RainEd.Instance.Level.LightMap.IsLoaded)
-        {
-            changeRecorder = new ChangeHistory.LightChangeRecorder(RainEd.Instance.Level.LightMap.GetImage());
-        }
+    public void LevelCreated(Level level)
+    {
+        ChangeHistory.LightChangeRecorder changeRecorder;
+        if (level.LightMap.IsLoaded)
+            changeRecorder = new ChangeHistory.LightChangeRecorder(level.LightMap.GetImage());
         else
-        {
             changeRecorder = new ChangeHistory.LightChangeRecorder(null);
-        }
 
-        changeRecorder.UpdateParametersSnapshot();
+        changeRecorders.AddOrUpdate(level, changeRecorder);
     }
+
+    public void LevelClosed(Level level)
+    {
+        changeRecorders.Remove(level);
+    }
+
+    public void ReloadLevel()
+    {
+        if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+            changeRecorder?.Dispose();
+        
+        tmpFramebuffer?.Dispose();
+        tmpFramebuffer = null;
+
+        var level = RainEd.Instance.Level;
+        if (level.LightMap.IsLoaded)
+            changeRecorder = new ChangeHistory.LightChangeRecorder(level.LightMap.GetImage());
+        else
+            changeRecorder = new ChangeHistory.LightChangeRecorder(null);
+
+        changeRecorders.AddOrUpdate(RainEd.Instance.Level, changeRecorder);
+        changeRecorder?.UpdateParametersSnapshot();
+    }
+
+    public void ChangeLevel(Level newLevel) {}
 
     public void Load()
     {
         if (!RainEd.Instance.Level.LightMap.IsLoaded)
             EditorWindow.ShowNotification("The lightmap is too large to be loaded.");
 
-        changeRecorder?.ClearStrokeData();
+        if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+            changeRecorder.ClearStrokeData();
     }
 
     public void Unload()
     {
         if (isChangingParameters)
         {
-            changeRecorder?.PushParameterChanges();
+            if (changeRecorders.TryGetValue(RainEd.Instance.Level, out var changeRecorder))
+                changeRecorder.PushParameterChanges();
             isChangingParameters = false;
         }
 
@@ -75,11 +110,38 @@ class LightEditor : IEditorMode
             Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
             isCursorEnabled = true;
         }
+
+        tmpFramebuffer?.Dispose();
+        tmpFramebuffer = null;
+
+        warpMode = false;
+        warpModeSubmit = false;
     }
 
     public void ShowEditMenu()
     {
         KeyShortcuts.ImGuiMenuItem(KeyShortcut.ResetBrushTransform, "Reset Brush Transform");
+        KeyShortcuts.ImGuiMenuItem(KeyShortcut.LightmapStretch, "Warp", enabled: !warpMode);
+    }
+
+    public void DrawStatusBar()
+    {
+        if (warpMode)
+        {
+            ImGui.Text("Warp");
+
+            ImGui.SameLine();
+            if (ImGui.Button("OK") || EditorWindow.IsKeyPressed(ImGuiKey.Enter))
+            {
+                warpModeSubmit = true;
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
+            {
+                warpMode = false;
+            }
+        }
     }
 
     public void DrawToolbar()
@@ -90,6 +152,8 @@ class LightEditor : IEditorMode
         var level = RainEd.Instance.Level;
         var brushDb = RainEd.Instance.LightBrushDatabase;
         var prefs = RainEd.Instance.Preferences;
+        brushPreview = false;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
 
         if (ImGui.Begin("Light###Light Catalog", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -169,6 +233,13 @@ class LightEditor : IEditorMode
                 brushRotation = 0f;
             }
 
+            var rotInRadians = Util.Mod(brushRotation, 360f) / 180f * MathF.PI;
+            ImGui.DragFloat2("Size", ref brushSize, 2f, 1f, float.PositiveInfinity, "%.0f px", ImGuiSliderFlags.AlwaysClamp);
+            if (ImGui.IsItemActive()) brushPreview = true;
+            if (ImGui.SliderAngle("Rotation", ref rotInRadians, 0f, 360f))
+                brushRotation = rotInRadians / MathF.PI * 180f;
+            if (ImGui.IsItemActive()) brushPreview = true;
+
             ImGui.BeginChild("BrushCatalog", ImGui.GetContentRegionAvail());
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
@@ -176,6 +247,8 @@ class LightEditor : IEditorMode
                 ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
 
                 int i = 0;
+                int cols = (int)(ImGui.GetContentRegionAvail().X / (64 * Boot.WindowScale + 4));
+                if (cols == 0) cols = 1;
                 foreach (var brush in RainEd.Instance.LightBrushDatabase.Brushes)
                 {
                     var texture = brush.Texture;
@@ -206,8 +279,7 @@ class LightEditor : IEditorMode
                     ImGui.PopID();
 
                     i++;
-
-                    if (!(i % 3 == 0)) ImGui.SameLine();
+                    if (!(i % cols == 0)) ImGui.SameLine();
                 }
 
                 ImGui.PopStyleVar(2);
@@ -340,18 +412,19 @@ class LightEditor : IEditorMode
         }
     }
 
-    private void DrawOcclusionPlane()
+    private static void DrawOcclusionPlane(RlManaged.RenderTexture2D? fb = null)
     {
         var level = RainEd.Instance.Level;
+        fb ??= level.LightMap.RenderTexture;
         
         // render light plane
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
 
-        if (level.LightMap.RenderTexture is not null)
+        if (fb is not null)
         {
             RlExt.DrawRenderTextureV(
-                level.LightMap.RenderTexture,
+                fb,
                 new Vector2(levelBoundsW - level.LightMap.Width, levelBoundsH - level.LightMap.Height),
                 new Color(255, 0, 0, 100)
             );
@@ -364,11 +437,20 @@ class LightEditor : IEditorMode
         );*/
     }
 
+    private static Vector2 CalcCastOffset()
+    {
+        var level = RainEd.Instance.Level;
+        var correctedAngle = level.LightAngle + MathF.PI / 2f;
+        return new(
+            -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
+            -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
+        );
+    }
+
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
     {
         var level = RainEd.Instance.Level;
         var levelRender = window.Renderer;
-        var prefs = RainEd.Instance.Preferences;
 
         var levelBoundsW = level.Width * 20;
         var levelBoundsH = level.Height * 20;
@@ -377,12 +459,7 @@ class LightEditor : IEditorMode
             levelBoundsH - level.LightMap.Height
         );
 
-        var wasCursorEnabled = isCursorEnabled;
-        var wasDrawing = isDrawing;
-        isCursorEnabled = true;
-        isDrawing = false;
-
-        // draw light background
+        // draw light background (solid white)
         if (level.LightMap.IsLoaded)
         {
             Raylib.DrawRectangle(
@@ -394,7 +471,7 @@ class LightEditor : IEditorMode
             );
         }
         
-        // draw level background (solid white)
+        // draw level
         levelRender.RenderLevel(new Rendering.LevelRenderConfig()
         {
             Fade = 30f / 255f
@@ -404,176 +481,347 @@ class LightEditor : IEditorMode
 
         if (level.LightMap.RenderTexture is not null)
         {
-            var shader = Shaders.LevelLightShader;
-            Raylib.BeginShaderMode(shader);
-            //shader.GlibShader.SetUniform("uColor", Glib.Color.FromRGBA(0, 0, 0, 80));
-            //shader.GlibShader.SetUniform("uTexture", RainEd.RenderContext.WhiteTexture);
-
-            // render cast
-            var correctedAngle = level.LightAngle + MathF.PI / 2f;
-            Vector2 castOffset = new(
-                -MathF.Cos(correctedAngle) * level.LightDistance * Level.TileSize,
-                -MathF.Sin(correctedAngle) * level.LightDistance * Level.TileSize
-            );
-
-            RlExt.DrawRenderTextureV(level.LightMap.RenderTexture, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
-
-            // Render mouse cursor
-            if (window.IsViewportHovered && changeRecorder is not null)
+            if (warpMode)
             {
-                var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
-                var mpos = window.MouseCellFloat;
-                if (!wasCursorEnabled) mpos = savedMouseGp;
-
-                var screenSize = brushSize / window.ViewZoom;
-
-                // render brush preview
-                // if drawing, draw on light texture instead of screen
-                var lmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
-                var rmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
-                if (lmb || rmb)
-                {
-                    isDrawing = true;
-
-                    DrawOcclusionPlane();
-
-                    Rlgl.LoadIdentity(); // why the hell do i have to call this
-                    level.LightMap.RaylibBeginTextureMode();
-
-                    // draw on brush plane
-                    BrushAtom atom = new()
-                    {
-                        rect = new Rectangle(
-                            mpos.X * Level.TileSize - lightMapOffset.X,
-                            mpos.Y * Level.TileSize - lightMapOffset.Y,
-                            screenSize.X, screenSize.Y
-                        ),
-                        rotation = brushRotation,
-                        mode = lmb,
-                        brush = selectedBrush
-                    };
-
-                    changeRecorder.RecordAtom(atom);
-                    LightMap.DrawAtom(atom);
-                    
-                    Raylib.BeginTextureMode(mainFrame);
-                }
-                else
-                {
-                    // cast of brush preview
-                    Raylib.DrawTexturePro(
-                        tex,
-                        new Rectangle(0, 0, tex.Width, tex.Height),
-                        new Rectangle(
-                            mpos.X * Level.TileSize + castOffset.X,
-                            mpos.Y * Level.TileSize + castOffset.Y,
-                            screenSize.X, screenSize.Y
-                        ),
-                        screenSize / 2f,
-                        brushRotation,
-                        new Color(0, 0, 0, 80)
-                    );
-                    
-                    DrawOcclusionPlane();
-
-                    // draw preview on on occlusion plane
-                    Raylib.DrawTexturePro(
-                        tex,
-                        new Rectangle(0, 0, tex.Width, tex.Height),
-                        new Rectangle(
-                            mpos.X * Level.TileSize,
-                            mpos.Y * Level.TileSize,
-                            screenSize.X, screenSize.Y
-                        ),
-                        screenSize / 2f,
-                        brushRotation,
-                        new Color(255, 0, 0, 100)
-                    );
-                }
-
-                switch (prefs.LightEditorControlScheme)
-                {
-                    case UserPreferences.LightEditorControlSchemeOption.Mouse:
-                    {
-                        var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
-                        var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
-
-                        if (doScale || doRotate)
-                        {
-                            if (wasCursorEnabled)
-                            {
-                                savedMouseGp = mpos;
-                                savedMousePos = Raylib.GetMousePosition();
-                            }
-                            isCursorEnabled = false;
-
-                            if (doScale)
-                                brushSize += Raylib.GetMouseDelta();
-                            if (doRotate)
-                                brushRotation -= Raylib.GetMouseDelta().Y / 2f;
-                        }
-
-                        break;
-                    }
-
-                    case UserPreferences.LightEditorControlSchemeOption.Keyboard:
-                    {
-                        var rotSpeed = Raylib.GetFrameTime() * 60f;
-
-                        if (KeyShortcuts.Active(KeyShortcut.RotateBrushCW))
-                            brushRotation += rotSpeed;
-                        if (KeyShortcuts.Active(KeyShortcut.RotateBrushCCW))
-                            brushRotation -= rotSpeed;
-                        
-                        var scaleSpeed = Raylib.GetFrameTime() * 60f;
-
-                        if (KeyShortcuts.Active(KeyShortcut.NavRight))
-                            brushSize.X += scaleSpeed;
-                        if (KeyShortcuts.Active(KeyShortcut.NavLeft))
-                            brushSize.X -= scaleSpeed;
-                        if (KeyShortcuts.Active(KeyShortcut.NavUp))
-                            brushSize.Y += scaleSpeed;
-                        if (KeyShortcuts.Active(KeyShortcut.NavDown))
-                            brushSize.Y -= scaleSpeed;
-                        
-                        break;
-                    }
-                }
-
-                brushSize.X = MathF.Max(0f, brushSize.X);
-                brushSize.Y  = MathF.Max(0f, brushSize.Y);
+                ProcessWarpMode(lightMapOffset, mainFrame);
             }
             else
             {
+                ProcessBrushMode(lightMapOffset, mainFrame);
+
+                if (KeyShortcuts.Activated(KeyShortcut.LightmapStretch))
+                {
+                    warpMode = true;
+                    var levelBounds = new Vector2(level.LightMap.Width, level.LightMap.Height);
+
+                    warpPoints[0] = Vector2.Zero;
+                    warpPoints[1] = Vector2.UnitX * levelBounds;
+                    warpPoints[2] = Vector2.One * levelBounds;
+                    warpPoints[3] = Vector2.UnitY * levelBounds;
+                }
+            }
+        }
+    }
+
+    private void RenderCursor(Texture2D tex, Vector2 mpos, bool cast)
+    {
+        var screenSize = brushSize / window.ViewZoom;
+
+        // cast of brush preview
+        if (cast)
+        {
+            var castOffset = CalcCastOffset();
+            Raylib.DrawTexturePro(
+                tex,
+                new Rectangle(0, 0, tex.Width, tex.Height),
+                new Rectangle(
+                    mpos.X * Level.TileSize + castOffset.X,
+                    mpos.Y * Level.TileSize + castOffset.Y,
+                    screenSize.X, screenSize.Y
+                ),
+                screenSize / 2f,
+                brushRotation,
+                new Color(0, 0, 0, 80)
+            );
+        }
+        else
+        {
+            // draw preview on occlusion plane
+            Raylib.DrawTexturePro(
+                tex,
+                new Rectangle(0, 0, tex.Width, tex.Height),
+                new Rectangle(
+                    mpos.X * Level.TileSize,
+                    mpos.Y * Level.TileSize,
+                    screenSize.X, screenSize.Y
+                ),
+                screenSize / 2f,
+                brushRotation,
+                new Color(255, 0, 0, 100)
+            );
+        }
+    }
+    
+    private void ProcessBrushMode(Vector2 lightMapOffset, RlManaged.RenderTexture2D mainFrame)
+    {
+        var wasCursorEnabled = isCursorEnabled;
+        var wasDrawing = isDrawing;
+        isCursorEnabled = true;
+        isDrawing = false;
+
+        var prefs = RainEd.Instance.Preferences;
+        var level = RainEd.Instance.Level;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
+
+        var shader = Shaders.LevelLightShader;
+        Raylib.BeginShaderMode(shader);
+
+        // render cast
+        var castOffset = CalcCastOffset();
+
+        RlExt.DrawRenderTextureV(level.LightMap.RenderTexture!, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
+
+        // Render mouse cursor
+        if (window.IsViewportHovered && changeRecorder is not null)
+        {
+            var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
+            var mpos = window.MouseCellFloat;
+            if (!wasCursorEnabled) mpos = savedMouseGp;
+
+            var screenSize = brushSize / window.ViewZoom;
+
+            // render brush preview
+            // if drawing, draw on light texture instead of screen
+            var lmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
+            var rmb = EditorWindow.IsMouseDown(ImGuiMouseButton.Right);
+            if (lmb || rmb)
+            {
+                isDrawing = true;
+
                 DrawOcclusionPlane();
+
+                Rlgl.LoadIdentity(); // why the hell do i have to call this
+                level.LightMap.RaylibBeginTextureMode();
+
+                // draw on brush plane
+                BrushAtom atom = new()
+                {
+                    rect = new Rectangle(
+                        mpos.X * Level.TileSize - lightMapOffset.X,
+                        mpos.Y * Level.TileSize - lightMapOffset.Y,
+                        screenSize.X, screenSize.Y
+                    ),
+                    rotation = brushRotation,
+                    mode = lmb,
+                    brush = selectedBrush
+                };
+
+                changeRecorder.RecordAtom(atom);
+                LightMap.DrawAtom(atom);
+                
+                Raylib.BeginTextureMode(mainFrame);
+            }
+            else
+            {
+                // cast of brush preview
+                RenderCursor(tex, mpos, true);
+                DrawOcclusionPlane();
+
+                // draw preview on on occlusion plane
+                RenderCursor(tex, mpos, false);
             }
 
-            Raylib.EndShaderMode();
-            
-            // record stroke data at the end of the stroke
-            if (wasDrawing && !isDrawing)
+            switch (prefs.LightEditorControlScheme)
             {
-                changeRecorder!.EndStroke();
+                case UserPreferences.LightEditorControlSchemeOption.Mouse:
+                {
+                    var doScale = KeyShortcuts.Active(KeyShortcut.ScaleLightBrush);
+                    var doRotate = KeyShortcuts.Active(KeyShortcut.RotateLightBrush);
+
+                    if (doScale || doRotate)
+                    {
+                        if (wasCursorEnabled)
+                        {
+                            savedMouseGp = mpos;
+                            savedMousePos = Raylib.GetMousePosition();
+                        }
+                        isCursorEnabled = false;
+
+                        if (doScale)
+                            brushSize += Raylib.GetMouseDelta();
+                        if (doRotate)
+                            brushRotation -= Raylib.GetMouseDelta().Y / 2f;
+                    }
+
+                    break;
+                }
+
+                case UserPreferences.LightEditorControlSchemeOption.Keyboard:
+                {
+                    var rotSpeed = Raylib.GetFrameTime() * 120f;
+
+                    if (KeyShortcuts.Active(KeyShortcut.RotateBrushCW))
+                        brushRotation += rotSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.RotateBrushCCW))
+                        brushRotation -= rotSpeed;
+                    
+                    var scaleSpeed = Raylib.GetFrameTime() * 120f;
+
+                    if (KeyShortcuts.Active(KeyShortcut.NavRight))
+                        brushSize.X += scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavLeft))
+                        brushSize.X -= scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavUp))
+                        brushSize.Y += scaleSpeed;
+                    if (KeyShortcuts.Active(KeyShortcut.NavDown))
+                        brushSize.Y -= scaleSpeed;
+                    
+                    break;
+                }
             }
 
-            // handle cursor lock when transforming brush
-            if (!isCursorEnabled)
+            brushSize.X = MathF.Max(0f, brushSize.X);
+            brushSize.Y  = MathF.Max(0f, brushSize.Y);
+        }
+        else
+        {
+            var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
+            var mpos = (window.Renderer.ViewTopLeft + window.Renderer.ViewBottomRight) / 2;
+
+            if (brushPreview) RenderCursor(tex, mpos, false);
+            DrawOcclusionPlane();
+            if (brushPreview) RenderCursor(tex, mpos, true);
+        }
+
+        Raylib.EndShaderMode();
+        
+        // record stroke data at the end of the stroke
+        if (wasDrawing && !isDrawing)
+        {
+            changeRecorder!.EndStroke();
+        }
+
+        // handle cursor lock when transforming brush
+        if (!isCursorEnabled)
+        {
+            Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);    
+        }
+        
+        if (wasCursorEnabled != isCursorEnabled)
+        {
+            if (isCursorEnabled)
             {
-                Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);    
+                Raylib.ShowCursor();
+                Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
             }
-            
-            if (wasCursorEnabled != isCursorEnabled)
+            else
             {
-                if (isCursorEnabled)
+                Raylib.HideCursor();
+            }
+        }
+    }
+
+    private void ProcessWarpMode(Vector2 lightMapOffset, RlManaged.RenderTexture2D mainFrame)
+    {
+        var level = RainEd.Instance.Level;
+        changeRecorders.TryGetValue(level, out var changeRecorder);
+
+        // render stretched lightmap into intermediary framebuffer
+
+        if (tmpFramebuffer is null || tmpFramebuffer.Texture.Width != level.LightMap.Width || tmpFramebuffer.Texture.Height != level.LightMap.Height)
+        {
+            tmpFramebuffer?.Dispose();
+            tmpFramebuffer = RlManaged.RenderTexture2D.Load(level.LightMap.Width, level.LightMap.Height);
+        }
+
+        Rlgl.PushMatrix();
+        Rlgl.LoadIdentity();
+
+        Raylib.BeginTextureMode(tmpFramebuffer);
+        Raylib.BeginShaderMode(Shaders.LightStretchShader);
+        LightMap.UpdateWarpShaderUniforms(warpPoints);
+        RlExt.DrawRenderTexture(level.LightMap.RenderTexture!, 0, 0, Color.White);
+        // Raylib.EndShaderMode();
+        
+        // render lightmap into main framebuffer
+        Raylib.BeginTextureMode(mainFrame);
+        Rlgl.PopMatrix();
+        Raylib.BeginShaderMode(Shaders.LevelLightShader);
+
+        // render cast
+        var castOffset = CalcCastOffset();
+        RlExt.DrawRenderTextureV(tmpFramebuffer, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
+
+        // render occlusion plane
+        DrawOcclusionPlane(tmpFramebuffer);
+
+        Raylib.EndShaderMode();
+
+        // move active vertex
+        var mousePos = window.MouseCellFloat * 20 - lightMapOffset;
+        if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+        {
+            if (hoveredVertexIndex != -1)
+            {
+                warpPoints[hoveredVertexIndex] = mousePos;
+            }
+        }
+        else
+        {
+            // find warp vertex closest to mouse
+            hoveredVertexIndex = -1;
+            float minDistSq = 40 / window.ViewZoom; // initial value is the distance threshold
+            minDistSq *= minDistSq;
+            for (int i = 0; i < 4; i++)
+            {
+                var distSq = Vector2.DistanceSquared(warpPoints[i], mousePos);
+                if (distSq < minDistSq)
                 {
-                    Raylib.ShowCursor();
-                    Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
-                }
-                else
-                {
-                    Raylib.HideCursor();
+                    minDistSq = distSq;
+                    hoveredVertexIndex = i;
                 }
             }
+        }
+
+        // draw warp vertices
+        Span<Vector2> cornerOrigins =
+        [
+            Vector2.Zero,
+            Vector2.UnitX * level.LightMap.Width,
+            Vector2.One * new Vector2(level.LightMap.Width, level.LightMap.Height),
+            Vector2.UnitY * level.LightMap.Height,
+        ];
+
+        for (int i = 0; i < 4; i++)
+        {
+            var pt = warpPoints[i];
+
+            var color = Color.Red;
+            if (i != hoveredVertexIndex)
+            {
+                color.A = 180;
+            }
+
+            // corner origin
+            Raylib.DrawCircleV(cornerOrigins[i] + lightMapOffset, 2f / window.ViewZoom * Boot.WindowScale, color);
+
+            // warp point
+            Raylib.DrawCircleV(pt + lightMapOffset, 5f / window.ViewZoom * Boot.WindowScale, color);
+
+            // ring
+            Raylib.DrawCircleLinesV(cornerOrigins[i] + lightMapOffset, Vector2.Distance(cornerOrigins[i], pt), color);
+
+            // Line
+            Raylib.DrawLineV(cornerOrigins[i] + lightMapOffset, pt + lightMapOffset, color);
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            // draw quad lines
+            var a = warpPoints[i];
+            var b = warpPoints[(i+1) % 4];
+            Raylib.DrawLineV(a + lightMapOffset, b + lightMapOffset, Color.Red);
+        }
+
+        if (warpModeSubmit)
+        {
+            warpModeSubmit = false;
+
+            var imgClone = RlManaged.Image.Copy(level.LightMap.GetImage());
+
+            Rlgl.PushMatrix();
+            Rlgl.LoadIdentity();
+
+            level.LightMap.RaylibBeginTextureMode();
+            Raylib.ClearBackground(Color.White);
+            RlExt.DrawRenderTexture(tmpFramebuffer, 0, 0, Color.White);
+
+            Raylib.BeginTextureMode(mainFrame);
+
+            Rlgl.PopMatrix();
+
+            changeRecorder!.PushWarpChange(imgClone, warpPoints);
+            warpMode = false;
         }
     }
 }

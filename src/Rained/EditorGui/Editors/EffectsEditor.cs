@@ -3,6 +3,7 @@ using Raylib_cs;
 using System.Numerics;
 using Rained.Assets;
 using Rained.LevelData;
+using System.Diagnostics;
 namespace Rained.EditorGui.Editors;
 
 class EffectsEditor : IEditorMode
@@ -15,6 +16,7 @@ class EffectsEditor : IEditorMode
     private int selectedGroup = 0;
     private int selectedEffect = -1;
     private string searchQuery = string.Empty;
+    private bool altInsertion = false;
 
     public int SelectedEffect { get => selectedEffect; set => selectedEffect = value; }
 
@@ -79,7 +81,7 @@ class EffectsEditor : IEditorMode
 
     private static readonly string[] plantColorNames =
     [
-        "Color1", "Color2", "Dead"
+        "1", "2", "X"
     ];
 
     private bool doDeleteCurrent = false;
@@ -107,6 +109,7 @@ class EffectsEditor : IEditorMode
     {
         var level = RainEd.Instance.Level;
         var fxDatabase = RainEd.Instance.EffectsDatabase;
+        altInsertion = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
 
         if (ImGui.Begin("Add Effect", ImGuiWindowFlags.NoFocusOnAppearing))
         {
@@ -155,6 +158,7 @@ class EffectsEditor : IEditorMode
             {
                 foreach (int i in groupsPassingSearch)
                 {
+                    if (fxDatabase.Groups[i].name == "_deprecated_") continue;
                     if (ImGui.Selectable(fxDatabase.Groups[i].name, i == selectedGroup) || groupsPassingSearch.Count == 1)
                         selectedGroup = i;
                 }
@@ -171,7 +175,7 @@ class EffectsEditor : IEditorMode
                 for (int i = 0; i < effectsList.Count; i++)
                 {
                     var effectData = effectsList[i];
-                    if (effectData.deprecated) continue; // ignore deprecated effects
+                    // if (effectData.deprecated) continue; // ignore deprecated effects
 
                     if (searchQuery != "" && !effectData.name.Contains(searchQuery, StringComparison.CurrentCultureIgnoreCase)) continue;
 
@@ -191,6 +195,7 @@ class EffectsEditor : IEditorMode
         {
             if (ImGui.BeginListBox("##EffectStack", ImGui.GetContentRegionAvail()))
             {
+                var effectInsertPreviewIndex = altInsertion ? selectedEffect+1 : selectedEffect;;
                 if (level.Effects.Count == 0)
                 {
                     ImGui.TextDisabled("(no effects)");
@@ -321,7 +326,7 @@ class EffectsEditor : IEditorMode
                 {
                     if (ImGui.BeginCombo("Layers", layerModeNames[(int) effect.Layer]))
                     {
-                        for (int i = 0; i < layerModeNames.Length; i++)
+                        foreach (int i in effect.Data.availableLayers.Select(v => (int)v))
                         {
                             bool isSelected = i == (int) effect.Layer;
                             if (ImGui.Selectable(layerModeNames[i], isSelected))
@@ -353,26 +358,10 @@ class EffectsEditor : IEditorMode
                 // plant color property
                 if (effect.Data.usePlantColors)
                 {
-                    if (ImGui.BeginCombo("Color", plantColorNames[effect.PlantColor]))
+                    if (ImGuiExt.ButtonSwitch("Color", plantColorNames, ref effect.PlantColor, ButtonGroupOptions.ShowID))
                     {
-                        for (int i = 0; i < plantColorNames.Length; i++)
-                        {
-                            bool isSelected = i == effect.PlantColor;
-                            if (ImGui.Selectable(plantColorNames[i], isSelected))
-                            {
-                                effect.PlantColor = i;
-                                hadChanged = true;
-                            }
-                            
-                            if (isSelected)
-                                ImGui.SetItemDefaultFocus();
-                        }
-
-                        ImGui.EndCombo();
-                    }
-
-                    if (ImGui.IsItemEdited())
                         hadChanged = true;
+                    }
                 }
 
                 // affect colors and gradients
@@ -391,22 +380,32 @@ class EffectsEditor : IEditorMode
                     // string config
                     if (configInfo is CustomEffectString strConfig)
                     {
-                        if (ImGui.BeginCombo(strConfig.Name, strConfig.Options[configValue]))
+                        if (strConfig.IsColorOption)
                         {
-                            for (int i = 0; i < strConfig.Options.Length; i++)
+                            if (ImGuiExt.ButtonSwitch(strConfig.Name, plantColorNames, ref configValue, ButtonGroupOptions.ShowID))
                             {
-                                bool isSelected = i == configValue;
-                                if (ImGui.Selectable(strConfig.Options[i], isSelected))
+                                hadChanged = true;
+                            }
+                        }
+                        else
+                        {
+                            if (ImGui.BeginCombo(strConfig.Name, strConfig.Options[configValue]))
+                            {
+                                for (int i = 0; i < strConfig.Options.Length; i++)
                                 {
-                                    configValue = i;
-                                    hadChanged = true;
+                                    bool isSelected = i == configValue;
+                                    if (ImGui.Selectable(strConfig.Options[i], isSelected))
+                                    {
+                                        configValue = i;
+                                        hadChanged = true;
+                                    }
+
+                                    if (isSelected)
+                                        ImGui.SetItemDefaultFocus();
                                 }
 
-                                if (isSelected)
-                                    ImGui.SetItemDefaultFocus();
+                                ImGui.EndCombo();
                             }
-
-                            ImGui.EndCombo();
                         }
                     }
 
@@ -527,6 +526,9 @@ class EffectsEditor : IEditorMode
             Fade = 30f / 255f,
             ActiveLayer = window.WorkLayer
         });
+
+        if (selectedEffect >= level.Effects.Count)
+            selectedEffect = -1;
 
         if (selectedEffect >= 0)
         {
@@ -669,10 +671,59 @@ class EffectsEditor : IEditorMode
 
     private void AddEffect(EffectInit init)
     {
-        changeRecorder.BeginListChange();
         var level = RainEd.Instance.Level;
-        selectedEffect = level.Effects.Count;
-        level.Effects.Add(new Effect(level, init));
+        var prefs = RainEd.Instance.Preferences;
+        changeRecorder.BeginListChange();
+
+        // convert it to an integer cus Uhhhhhh
+        // writing the whole enum path is too long
+        int mode = (altInsertion ? prefs.EffectPlacementAltPosition : prefs.EffectPlacementPosition)
+        switch
+        {
+            UserPreferences.EffectPlacementPositionOption.BeforeSelected => 0,
+            UserPreferences.EffectPlacementPositionOption.AfterSelected => 1,
+            UserPreferences.EffectPlacementPositionOption.First => 2,
+            UserPreferences.EffectPlacementPositionOption.Last => 3,
+            _ => throw new UnreachableException()
+        };
+
+        var newEffect = new Effect(level, init);
+        if (selectedEffect != -1)
+        {
+            // shift: insert after selected effect
+            // no shift: insert before selected effect
+            switch (mode)
+            {
+                case 0: // before selected
+                    level.Effects.Insert(selectedEffect, newEffect);
+                    break;
+                case 1: // after selected
+                    level.Effects.Insert(++selectedEffect, newEffect);
+                    break;
+                case 2: // first
+                    level.Effects.Add(newEffect);
+                    selectedEffect = 0;
+                    break;
+                case 3: // last
+                    selectedEffect = level.Effects.Count;
+                    level.Effects.Insert(0, newEffect);
+                    break;
+            }
+        }
+        else
+        {
+            if (mode is 1 or 3) // after or last
+            {
+                level.Effects.Add(newEffect);
+                selectedEffect = level.Effects.Count - 1;
+            }
+            else // before or first
+            {
+                level.Effects.Insert(0, newEffect);
+                selectedEffect = 0;
+            }
+        }
+        
         changeRecorder.PushListChange();
     }
 }

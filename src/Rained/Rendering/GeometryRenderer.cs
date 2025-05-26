@@ -189,7 +189,7 @@ class EditorGeometryRenderer
         this.renderInfo = renderer;
         chunkLayers = null!;
         dirtyChunks = null!;
-        ReloadLevel();
+        // ReloadLevel();
     }
 
     public void ReloadLevel()

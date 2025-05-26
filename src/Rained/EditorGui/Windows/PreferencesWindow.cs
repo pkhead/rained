@@ -1,5 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
+using Rained.Assets;
+using Rained.Drizzle;
 using Raylib_cs;
 
 // i probably should create an IGUIWindow interface for the various miscellaneous windows...
@@ -15,11 +17,12 @@ static class PreferencesWindow
     {
         General = 0,
         Shortcuts = 1,
-        Theme = 2,
-        Drizzle = 3
+		Theme = 2,
+        Drizzle = 3,
+        Scripts = 4
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Drizzle"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Drizzle", "Scripts"];
     private readonly static string[] RendererNames = ["Direct3D 11", "Direct3D 12", "OpenGL", "Vulkan"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
@@ -124,6 +127,10 @@ static class PreferencesWindow
                 {
                     for (int i = 0; i < NavTabs.Length; i++)
                     {
+                        // don't show scripts tab if there are no scripts with preferences guis
+                        if (i == (int)NavTabEnum.Scripts && !LuaScripting.Modules.GuiModule.HasPreferencesCallbacks)
+                            continue;
+                        
                         if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
                         {
                             selectedNavTab = (NavTabEnum)i;
@@ -152,6 +159,10 @@ static class PreferencesWindow
 
                     case NavTabEnum.Drizzle:
                         ShowDrizzleTab();
+                        break;
+
+                    case NavTabEnum.Scripts:
+                        LuaScripting.Modules.GuiModule.PrefsHook();
                         break;
                 }
 
@@ -330,6 +341,38 @@ static class PreferencesWindow
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Tile Specs L2");
 
+            // grid opacity
+            float gridOpacity = prefs.GridOpacity;
+            if (ImGui.SliderFloat("##Grid Opacity", ref gridOpacity, 0f, 0.5f))
+            {
+                prefs.GridOpacity = gridOpacity;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetGRIDOP"))
+            {
+                prefs.GridOpacity = UserPreferences.DefaultGridOpacity;
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Grid Opacity");
+
+            // spec opacity
+            float specOpacity = prefs.TileSpecOpacity;
+            if (ImGui.SliderFloat("##Tile Specs Opacity", ref specOpacity, 0f, 1f))
+            {
+                prefs.TileSpecOpacity = specOpacity;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("X##ResetTILESPEC"))
+            {
+                prefs.TileSpecOpacity = UserPreferences.DefaultTileSpecOpacity;
+            }
+            ImGui.SetItemTooltip("Reset");
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Tile Specs Opacity");
+
             // update layer colors in preferences class
             prefs.LayerColor1 = Vec3ToHexColor(layerColor1);
             prefs.LayerColor2 = Vec3ToHexColor(layerColor2);
@@ -420,7 +463,15 @@ static class PreferencesWindow
             {
                 bool vsync = Boot.Window.VSync;
                 if (ImGui.Checkbox("Vsync", ref vsync))
+                {
                     Boot.Window.VSync = vsync;
+                    prefs.Vsync = vsync;
+
+                    if (vsync)
+                    {
+                        Boot.RefreshRate = Boot.DefaultRefreshRate;
+                    }
+                }
                 
                 if (!vsync)
                 {
@@ -428,12 +479,30 @@ static class PreferencesWindow
 
                     ImGui.SetNextItemWidth(ImGui.GetFontSize() * 8.0f);
 
+                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
                     var refreshRate = prefs.RefreshRate;
-                    if (ImGui.SliderInt("Refresh rate", ref refreshRate, 30, 240))
+                    if (ImGui.SliderInt("###Refresh rate", ref refreshRate, 30, 240))
                     {
                         prefs.RefreshRate = refreshRate;
-                        Raylib.SetTargetFPS(prefs.RefreshRate);
                     }
+
+                    if (ImGui.IsItemDeactivatedAfterEdit())
+                    {
+                        Boot.RefreshRate = prefs.RefreshRate;
+                        prefs.RefreshRate = Boot.RefreshRate;
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.PopStyleVar();
+                    if (ImGui.Button("X###refreshratereset"))
+                    {
+                        Boot.RefreshRate = Boot.DefaultRefreshRate;
+                        prefs.RefreshRate = Boot.RefreshRate;
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.Text("Refresh rate");
                 }
             }
 
@@ -514,9 +583,29 @@ static class PreferencesWindow
             ImGui.Separator();
             
             ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            // geo icon set
+            var geometryIcons = prefs.GeometryIcons;
+            if (ImGui.BeginCombo("Geometry icon set", geometryIcons))
+            {
+                foreach (var str in GeometryIcons.Sets)
+                {
+                    var isSelected = str == geometryIcons;
+                    if (ImGui.Selectable(str, isSelected))
+                    {
+                        GeometryIcons.CurrentSet = str;
+                        prefs.GeometryIcons = GeometryIcons.CurrentSet;
+                    }
+
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
+            }
             
             // camera border view mode
-            var camBorderMode = (int) prefs.CameraBorderMode;
+                var camBorderMode = (int) prefs.CameraBorderMode;
             if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
                 prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
             
@@ -561,7 +650,7 @@ static class PreferencesWindow
             var lightEditorControlScheme = (int) prefs.LightEditorControlScheme;
             if (ImGui.Combo("Light editor control scheme", ref lightEditorControlScheme, "Mouse\0Keyboard\0"))
                 prefs.LightEditorControlScheme = (UserPreferences.LightEditorControlSchemeOption) lightEditorControlScheme;
-
+            
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             if (ImGui.BeginItemTooltip())
@@ -577,6 +666,41 @@ static class PreferencesWindow
                     - Keyboard: Mimics the controls in the
                     original level editor: WASD to
                     scale and Q/E to rotate.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementPos = (int) prefs.EffectPlacementPosition;
+            if (ImGui.Combo("Effect placement position", ref effectPlacementPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementAltPos = (int) prefs.EffectPlacementAltPosition;
+            if (ImGui.Combo("Effect placement alt position", ref effectPlacementAltPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementAltPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementAltPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created when
+                    SHIFT is held.
                     """
                 );
                 ImGui.End();
@@ -635,6 +759,12 @@ static class PreferencesWindow
                     ImGui.PopTextWrapPos();
                     ImGui.EndTooltip();
                 }
+            }
+
+            var saveBackups = prefs.SaveFileBackups;
+            if (ImGui.Checkbox("Save backups of files", ref saveBackups))
+            {
+                prefs.SaveFileBackups = saveBackups;
             }
 
             ImGui.Separator();
@@ -867,24 +997,30 @@ static class PreferencesWindow
         bool boolRef;
         var prefs = RainEd.Instance.Preferences;
 
+        ImGui.BeginDisabled(DrizzleManager.StaticRuntime is null);
+        if (ImGui.Button("Discard Drizzle runtime"))
+            DrizzleManager.DisposeStaticRuntime();
+        ImGui.EndDisabled();
+
         // static lingo runtime
         {
             boolRef = prefs.StaticDrizzleLingoRuntime;
-            if (ImGui.Checkbox("Initialize Drizzle on app startup", ref boolRef))
+            if (ImGui.Checkbox("Persistent Drizzle runtime", ref boolRef))
+            {
                 prefs.StaticDrizzleLingoRuntime = boolRef;
+                if (!boolRef)
+                    DrizzleManager.DisposeStaticRuntime();
+            }
             
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             ImGui.SetItemTooltip(
                 """
-                This will run the Drizzle runtime initialization
-                process once, when the app starts. This results
-                in a longer startup time and more idle RAM
-                usage, but will decrease the time it takes to
-                start a render.
-
-                This option requires a restart in order to
-                take effect.    
+                This will keep a Drizzle runtime in the background
+                after a render, instead of discarding it and
+                recreating a new one on the next render. This
+                results in more idle RAM usage, but will decrease
+                the time it takes for subsequent renders.
                 """);
         }
 

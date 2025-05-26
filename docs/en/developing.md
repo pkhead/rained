@@ -18,22 +18,34 @@ If the program is being ran via `dotnet Rained.dll`, the ANGLE DLLs need to be p
 
 If you don't feel like doing all of this, there is a way to build Rained with desktop OpenGL that doesn't have all this DLL nonsense as a prerequisite. How to do so is explained later in this document.
 
-## .NET CLI
-The following are instructions on how to clone Rained using Git and build it using the .NET CLI:
+## Build setup
+Prerequisities:
+ - .NET Core toolchain
+ - Python 3
+ - *(optional)* OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
+ - *(optional)* [glslang](https://github.com/KhronosGroup/glslang) CLI
 
-1. Clone with Git:
+1. Clone repository with Git:
 ```bash
 git clone --recursive https://github.com/pkhead/rained
 cd rained
 ```
 
-2. Compile Drizzle
+2. Compile Drizzle and run exporter (rerun this whenever you update Drizzle)
 ```bash
 cd src/Drizzle
 dotnet run --project Drizzle.Transpiler
+cd ../..
+dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
 ```
 
-3. Back to the root directory, build and run Rained
+3. Generate Lua API (rerun this whenever you update ImGui)
+```bash
+python3 lua-imgui-gen.py
+```
+
+## Building Rained
+### .NET CLI and Cake
 ```bash
 # only needs to be run once
 dotnet tool restore
@@ -45,9 +57,23 @@ dotnet cake
 dotnet cake --gles=false
 ```
 
-4. Run the project!
+Run the project!
 ```bash
 dotnet run --no-build --project src/Rained/Rained.csproj
+```
+
+### .NET CLI alone
+This is a translation of the Cake build script:
+```bash
+# validate/compile updated shader source files
+# if you don't have glslangValidator, just skip these steps.
+python3 shader-preprocessor.py gl330
+python3 shader-preprocessor.py gles300
+
+# you have three options here:
+dotnet build src/Rained/Rained.csproj /p:GL=ES      # you can build with ES/ANGLE
+dotnet build src/Rained/Rained.csproj /p:GL=Desktop # or you can build with normal OpenGL
+dotnet build src/Rained/Rained.csproj               # this will auto-select based on OS. windows = GLES/ANGLE, linux = OpenGL
 ```
 
 I unfortunately have no steps for setting up the build process in IDEs such as Visual Studio or the JetBrains one, because I
@@ -77,16 +103,18 @@ mkdocs build
 ## Subprojects
 Rained has multiple projects in the C# solution. Here is a list of their brief descriptions:
 
-|     Name           |      Description                                           |
-| ------------------ | ---------------------------------------------------------- |
-| **Drizzle**        | Port of the original renderer from Lingo to C#.            |
-| **Glib**           | OpenGL 3.3/OpenGL ES 2.0 and Silk.NET wrapper.             |
-| **Glib.ImGui**     | ImGui.NET backend for Glib/Silk.NET.                       |
-| **Glib.Tests**     | Test program for Glib visual output.                       |
-| **ImGui.NET**      | Freetype-enabled version of ImGui.NET.                     |
-| **Rained**         | The entire Rained application.                             |
-| **Rained.Console** | C application to launch Rained from a console environment. |
-| **Rained.Tests**   | A few unit tests for Rained.                               |
+|     Name                  |      Description                                           |
+| ------------------------- | ---------------------------------------------------------- |
+| **Drizzle**               | Port of the original renderer from Lingo to C#.            |
+| **Glib**                  | OpenGL 3.3/OpenGL ES 2.0 and Silk.NET wrapper.             |
+| **Glib.ImGui**            | ImGui.NET backend for Glib/Silk.NET.                       |
+| **Glib.Tests**            | Test program for Glib visual output.                       |
+| **ImGui.NET**             | Freetype-enabled version of ImGui.NET.                     |
+| **Rained**                | The entire Rained application.                             |
+| **Rained.Console**        | C application to launch Rained from a console environment. |
+| **Rained.Tests**          | A few unit tests for Rained's Lingo parser                 |
+| **DrizzleExport**         | Library to export Drizzle effect data to a .json file      |
+| **DrizzleExport.Console** | Basic console interface to DrizzleExport.           |
 
 There is also [rainedvm](https://github.com/pkhead/rainedvm), which is a separate program that serves as a version manager utility. It is programmed in C++ and distributed separately, which is why it is a separate repository.
 
