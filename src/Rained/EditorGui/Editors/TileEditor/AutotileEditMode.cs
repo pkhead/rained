@@ -47,7 +47,8 @@ class AutotileEditMode : TileEditorMode
                         _ => null
                     };
 
-                    RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
+                    if (activePathBuilder is not null && activePathBuilder.Autotile.AutoHistory)
+                        RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
                 }
             }
             else if (endOnClick)
@@ -74,8 +75,12 @@ class AutotileEditMode : TileEditorMode
             else if (deactivate)
             {
                 activePathBuilder.Finish(window.WorkLayer, forcePlace, modifyGeometry);
+
+                if (activePathBuilder.Autotile.AutoHistory)
+                    RainEd.Instance.LevelView.CellChangeRecorder.TryPushChange();
+                
                 activePathBuilder = null;
-                RainEd.Instance.LevelView.CellChangeRecorder.TryPushChange();
+
             }
         }
     }

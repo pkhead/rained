@@ -11,6 +11,7 @@ class StandardPathAutotile : Autotile, ITileSelectionState
 {
     public PathTileTable TileTable;
     public override bool AllowIntersections { get => TileTable.AllowJunctions; }
+    public override bool AutoHistory => true;
 
     public StandardPathAutotile(int thickness, int length, string ld, string lu, string rd, string ru, string vert, string horiz)
     {
