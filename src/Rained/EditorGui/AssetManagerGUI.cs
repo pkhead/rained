@@ -87,13 +87,11 @@ static class AssetManagerGUI
         if (categoryEditMode && tab == 1)
         {
             ImGui.Separator();
-            ImGui.Text("Rearrange Mode");
-            ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             ImGui.SetItemTooltip(
                 """
-                Click and drag to move items
-                between categories.
+                Click and drag to move items into
+                specific positions between categories.
                 """
             );
 
@@ -1459,7 +1457,10 @@ static class AssetManagerGUI
             ProcessSearch();
         }
 
-        ImGui.Text("Any changes here require a restart in order to take effect. Right click a category to enter rearrange mode.");
+        ImGui.Bullet();
+        ImGui.TextWrapped("Any changes here require a restart in order to take effect.");
+        ImGui.Bullet();
+        ImGui.TextWrapped("Right click a category to view two categories at once.");
         ImGui.Separator();
 
         ImGui.AlignTextToFramePadding();

@@ -222,7 +222,7 @@ static class EditorWindow
                     PreferencesWindow.OpenWindow();
                 }
 
-                if (ImGui.MenuItem("Open Asset Manager"))
+                if (ImGui.MenuItem("Asset Manager"))
                 {
                     AssetManagerWindow.OpenWindow();
                 }
