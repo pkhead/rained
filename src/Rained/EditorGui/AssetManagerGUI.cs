@@ -8,6 +8,7 @@ using Rained.EditorGui.Editors;
 using Raylib_cs;
 using Rained.LevelData;
 using System.IO;
+using Rained.EditorGui.AssetPreviews;
 
 namespace Rained.EditorGui;
 
@@ -1258,6 +1259,7 @@ static class AssetManagerGUI
         Log.Information("Export .zip file {Path}", paths[0]);
     }
 
+    private static RlManaged.RenderTexture2D? _hoverPreview;
     private static void ReAddTilePreviews(CategoryList.InitItem tile, int selected)
     {
         // Restores previews to the preferences tab, uses the standard method for displaying previews
@@ -1279,8 +1281,7 @@ static class AssetManagerGUI
                             (byte)(bgCol4.W * 255f)
                         );
 
-                        var contrastRatio = TileCatalogWidget.ContrastRatio(fgCol, bgCol);
-                        var invertContrast = contrastRatio < 3f;
+                        var invertContrast = TilePreview.ShouldInvertContrast(fgCol, bgCol);
 
                         if (invertContrast)
                         {
@@ -1293,7 +1294,7 @@ static class AssetManagerGUI
                         }
 
                         ImGui.BeginTooltip();
-                        TileCatalogWidget.RenderTilePreview(tileDb.GetTileFromName(tile.Name));
+                        TilePreview.RenderTilePreview(tileDb.GetTileFromName(tile.Name), ref _hoverPreview);
                         ImGui.EndTooltip();
 
                         if (invertContrast) ImGui.PopStyleColor();
