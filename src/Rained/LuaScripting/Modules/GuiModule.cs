@@ -5,25 +5,67 @@ namespace Rained.LuaScripting.Modules;
 
 static class GuiModule
 {
-    private static readonly List<LuaCallback> menuCallbacks = [];
     private static readonly List<LuaCallback> prefsCallbacks = [];
     private static readonly ObjectWrap<FileBrowser> fileBrowserWrap = new("FileBrowser", "FILEBROWSER_REGISTRY");
     private static readonly string[] fileBrowserOpenMode = ["write", "read", "multiRead", "directory", "multiDirectory"];
+
+    private static readonly List<(string menuName, List<LuaCallback> callbacks)> menuCallbacks = [];
 
     private static nint levelFilterUserdata;
 
     public static bool HasPreferencesCallbacks => prefsCallbacks.Count > 0;
 
-    public static void MenuHook(string menuName)
+    private static readonly string[] BuiltInMenus = ["File", "Edit", "View", "Help"];
+    public static IEnumerable<string> CustomMenus => menuCallbacks.Where(x => Array.IndexOf(BuiltInMenus, x.menuName) == -1).Select(x => x.menuName);
+
+    public static void MenuHook(string menuName, bool separator)
     {
-        var i = 0;
-        foreach (var cb in menuCallbacks)
+        foreach (var (name, callbacks) in menuCallbacks)
         {
-            ImGui.PushID(i++);
-            ImGui.Separator();
-            cb.LuaState.PushString(menuName);
-            cb.Invoke(1);
-            ImGui.PopID();
+            if (name == menuName)
+            {
+                var id = 0;
+                foreach (var cb in callbacks)
+                {
+                    ImGui.PushID(id);
+                    if (separator || id > 0) ImGui.Separator();
+                    cb.Invoke(0);
+                    ImGui.PopID();
+                    id++;
+                }
+
+                break;
+            }
+        }
+    }
+
+    private static void AddMenuCallback(string menuName, LuaCallback callback)
+    {
+        foreach (var (name, cbs) in menuCallbacks)
+        {
+            if (menuName == name)
+            {
+                cbs.Add(callback);
+                return;
+            }
+        }
+
+        // menu of name doesn't already exist, create it
+        menuCallbacks.Add((menuName, [callback]));
+    }
+
+    private static void RemoveMenuCallback(LuaCallback callback)
+    {
+        for (int i = 0; i < menuCallbacks.Count; i++)
+        {
+            var (_, cbs) = menuCallbacks[i];
+            if (cbs.Remove(callback))
+            {
+                if (cbs.Count == 0)
+                    menuCallbacks.RemoveAt(i);
+                
+                break;
+            }
         }
     }
 
@@ -201,13 +243,14 @@ static class GuiModule
 
         lua.ModuleFunction("menuHook", static (Lua lua) =>
         {
-            lua.CheckType(1, LuaType.Function);
-            lua.PushCopy(1);
+            var menuName = lua.CheckString(1);
+            lua.CheckType(2, LuaType.Function);
+            lua.PushCopy(2);
             var cb = new LuaCallback(lua)
             {
-                OnDisconnect = static (Lua lua, LuaCallback cb) => menuCallbacks.Remove(cb)
+                OnDisconnect = static (Lua lua, LuaCallback cb) => RemoveMenuCallback(cb)
             };
-            menuCallbacks.Add(cb);
+            AddMenuCallback(menuName, cb);
             
             return 1;
         });
