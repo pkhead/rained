@@ -1261,6 +1261,8 @@ static class AssetManagerGUI
 
     private static RlManaged.RenderTexture2D? _hoverPreview;
     private static MaterialPreview? _matPreview = null;
+    private static PropPreview? _propPreview = null;
+    
     private static void ReAddTilePreviews(CategoryList.InitItem tile, int selected)
     {
         // Restores previews to the preferences tab, uses the standard method for displaying previews
@@ -1306,21 +1308,21 @@ static class AssetManagerGUI
             case AssetType.Prop:
                 var propDb = RainEd.Instance.PropDatabase;
 
-                if (propDb.Categories.Count > selected)
+                if (selected < propDb.Categories.Count && ImGui.BeginItemTooltip())
                 {
-                    var propList = propDb.Categories[selected].Props;
-
-                    // Replace this if there's a better method to search for an existing prop
-                    if (propList.Any(propInit => propInit.Name == tile.Name))
+                    if (propDb.TryGetPropFromName(tile.Name, out var prop))
                     {
-                        var prop = propList.Where(propInit => propInit.Name == tile.Name).FirstOrDefault();
-                        if (prop != default && ImGui.BeginItemTooltip())
-                        {
-                            PropEditor.UpdatePreview(prop);
-                            ImGuiExt.ImageRenderTextureScaled(PropEditor.previewTexture, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
-                            ImGui.EndTooltip();
-                        }
+                        _propPreview ??= new PropPreview();
+                        _propPreview.UpdatePreview(prop);
+                        ImGuiExt.ImageRenderTextureScaled(_propPreview.Texture!, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
                     }
+                    else
+                    {
+                        ImGui.TextDisabled("not loaded");
+                        // ImGuiExt.ImageSize(RainEd.Instance.PlaceholderTexture, 16f * Boot.WindowScale, 16f * Boot.WindowScale);
+                    }
+
+                    ImGui.EndTooltip();
                 }
                 break;
 

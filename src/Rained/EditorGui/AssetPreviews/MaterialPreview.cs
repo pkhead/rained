@@ -1,9 +1,5 @@
 namespace Rained.EditorGui.AssetPreviews;
-using System.Numerics;
-using Raylib_cs;
 using ImGuiNET;
-using Rained.Assets;
-using Rained.Rendering;
 
 class MaterialPreview : IDisposable
 {
