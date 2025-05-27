@@ -100,7 +100,7 @@ class ObjectWrap<T>(string typeName, string registryIndex) where T : notnull
     {
         if (lua.GetField((int)LuaRegistry.Index, RegistryIndex) != LuaType.Table)
         {
-            throw new Exception("Problem obtaining camera from registry.");
+            throw new Exception($"Problem obtaining {TypeMt} from registry.");
         }
         var camTable = lua.GetTop();
 
