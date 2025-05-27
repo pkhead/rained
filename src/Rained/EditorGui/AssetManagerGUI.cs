@@ -8,6 +8,7 @@ using Rained.EditorGui.Editors;
 using Raylib_cs;
 using Rained.LevelData;
 using System.IO;
+
 namespace Rained.EditorGui;
 
 static class AssetManagerGUI
@@ -99,18 +100,20 @@ static class AssetManagerGUI
 
         if (ImGui.BeginListBox($"##Categories{tab}", listSize))
         {
-            var drawList = ImGui.GetWindowDrawList();
-            float textHeight = ImGui.GetTextLineHeight();
-
             foreach ((var i, var group) in searchResults)
             {
                 if (group.Color.HasValue)
                 {
                     // colored variant
-                    var cursor = ImGui.GetCursorScreenPos();
-                    
-                    // pad beginning of selectable to reserve space for the color square
-                    if (ImGui.Selectable("  " + group.Name, i == selected || searchResults.Count == 1))
+                    var col = group.Color.Value;
+                    var rlColor = new Raylib_cs.Color(
+                        (byte)col.R,
+                        (byte)col.G,
+                        (byte)col.B,
+                        (byte)255
+                    );
+
+                    if (CatalogWidget.ColoredSelectable(group.Name, rlColor, i == selected) || searchResults.Count == 1)
                     {
                         if (selected != i)
                         {
@@ -122,19 +125,11 @@ static class AssetManagerGUI
                         
                         selected = i;
                     }
-
-                    // draw color square
-                    var col = group.Color.Value;
-                    drawList.AddRectFilled(
-                        p_min: cursor,
-                        p_max: cursor + new Vector2(10f, textHeight),
-                        ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
-                    );
                 }
                 else
                 {
                     // non-colored variant
-                    if (ImGui.Selectable(group.Name, i == selected || searchResults.Count == 1))
+                    if (ImGui.Selectable(group.Name, i == selected) || searchResults.Count == 1)
                     {
                         if (selected != i)
                         {
@@ -1025,9 +1020,6 @@ static class AssetManagerGUI
             // Everything pertaining to lists goes here
             if (ImGui.BeginListBox("##CategoryCanidates", new(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y - (ImGui.GetTextLineHeight() * 2f))))
             {
-                var drawList = ImGui.GetWindowDrawList();
-                float textHeight = ImGui.GetTextLineHeight();
-
                 for (int i = 0; i < categoryList.Count; i++)
                 {
                     var group = categoryList[i];
@@ -1037,10 +1029,14 @@ static class AssetManagerGUI
                     if (group.Color.HasValue)
                     {
                         // colored variant
-                        var cursor = ImGui.GetCursorScreenPos();
-
-                        // pad beginning of selectable to reserve space for the color square
-                        if (ImGui.Selectable("  " + group.Name, false))
+                        var col = group.Color.Value;
+                        var rlColor = new Raylib_cs.Color(
+                            (byte)col.R,
+                            (byte)col.G,
+                            (byte)col.B,
+                            (byte)255
+                        );
+                        if (CatalogWidget.ColoredSelectable(group.Name, rlColor, false))
                         {
                             if (!pendingExportFiles.ContainsKey(group))
                             {
@@ -1049,14 +1045,6 @@ static class AssetManagerGUI
                                     selectedExportCategory = 0;
                             }
                         }
-
-                        // draw color square
-                        var col = group.Color!.Value;
-                        drawList.AddRectFilled(
-                            p_min: cursor,
-                            p_max: cursor + new Vector2(10f, textHeight),
-                            ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
-                        );
                     }
                     else
                     {
@@ -1087,9 +1075,6 @@ static class AssetManagerGUI
                 ImGui.SameLine();
                 if (ImGui.BeginChild("##ExportLists", new(-1, lineHeight)))
                 {
-                    var drawList = ImGui.GetWindowDrawList();
-                    float textHeight = ImGui.GetTextLineHeight();
-
                     if (ImGui.BeginListBox("##ExportCategories", new(ImGui.GetContentRegionAvail().X / 2f, ImGui.GetContentRegionAvail().Y - (ImGui.GetTextLineHeight() * 2f))))
                     {
                         for (int i = 0; i < keys.Count; i++)
@@ -1097,23 +1082,20 @@ static class AssetManagerGUI
                             var group = keys[i];
                             if (group.Color.HasValue)
                             {
-                                // colored variant
-                                var cursor = ImGui.GetCursorScreenPos();
+                                var col = group.Color.Value;
+                                var rlColor = new Raylib_cs.Color(
+                                    (byte)col.R,
+                                    (byte)col.G,
+                                    (byte)col.B,
+                                    (byte)255
+                                );
 
                                 // pad beginning of selectable to reserve space for the color square
-                                if (ImGui.Selectable("  " + group.Name, i == selectedExportCategory))
+                                if (CatalogWidget.ColoredSelectable(group.Name, rlColor, i == selectedExportCategory))
                                 {
                                     selectedExportCategory = i;
                                     exportGroupIndex = 0;
                                 }
-
-                                // draw color square
-                                var col = group.Color!.Value;
-                                drawList.AddRectFilled(
-                                    p_min: cursor,
-                                    p_max: cursor + new Vector2(10f, textHeight),
-                                    ImGui.ColorConvertFloat4ToU32(new Vector4(col.R / 255f, col.G / 255f, col.B / 255f, 1f))
-                                );
                             }
                             else
                             {
