@@ -55,12 +55,15 @@ function rained.gui.fileBrowserWidget(id, openMode, path, filters) end
 ---@return FileBrowser
 function rained.gui.openFileBrowser(openMode, filters, callback) end
 
----Register a hook into one or more menus from the menubar.
+---Register a hook into one or more menus from the menubar. If a menu of
+---menuName does not already exist, it will be inserted into the menubar.
+---
 ---It is expected that the callback function will insert ImGui widgets. Each
----individual callback is also split by separators.
----@param func fun(menuName: MenuName) The function to run.
+---individual callback that occupies the same menu is also split by separators.
+---@param menuName string The name of the menu to hook into (case-sensitive)
+---@param func fun() The function to run.
 ---@return CallbackHandle
-function rained.gui.menuHook(func) end
+function rained.gui.menuHook(menuName, func) end
 
 ---Register a hook into the preferences window.
 ---It is expected that the callback function will insert ImGui widgets.
