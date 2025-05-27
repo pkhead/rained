@@ -50,33 +50,20 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
         }
     }
 
-    public override void ShowGroupList()
+    protected override void RenderGroupList()
     {
         var tileDb = RainEd.Instance.TileDatabase;
-
-        var drawList = ImGui.GetWindowDrawList();
-        float textHeight = ImGui.GetTextLineHeight();
-
-        const string leftPadding = "  ";
-        float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
 
         foreach (var i in tileSearchResults)
         {
             var group = tileDb.Categories[i];
-            var cursor = ImGui.GetCursorScreenPos();
 
-            if (ImGui.Selectable(leftPadding + group.Name, state.SelectedTileGroup == i) || tileSearchResults.Count == 1)
+            if (ColoredSelectable(group.Name, group.Color, state.SelectedTileGroup == i) || tileSearchResults.Count == 1)
                 state.SelectedTileGroup = i;
-            
-            drawList.AddRectFilled(
-                p_min: cursor,
-                p_max: cursor + new Vector2(colorWidth, textHeight),
-                ImGui.ColorConvertFloat4ToU32(new Vector4(group.Color.R / 255f, group.Color.G / 255f, group.Color.B / 255f, 1f))
-            );
         }
     }
 
-    public override void ShowAssetList()
+    protected override void RenderItemList()
     {
         var tileDb = RainEd.Instance.TileDatabase;
 
