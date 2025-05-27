@@ -106,10 +106,7 @@ class GenericDualCatalogWidget : CatalogWidget
             if (selectedGroup != value)
             {
                 selectedGroup = value;
-                if (SelectedItemAlwaysInSelectedGroup)
-                {
-                    ResetSelectedItem();
-                }
+                ResetSelectedItem();
             }
         }
     }
@@ -120,7 +117,6 @@ class GenericDualCatalogWidget : CatalogWidget
 
     public bool ShowGroupColors = false;
     public bool ShowItemColors = false;
-    public bool SelectedItemAlwaysInSelectedGroup = true;
 
     public delegate (string name, Color color) GetGroupInfoDelegate(int group);
     public delegate (string name, Color color) GetItemInfoDelegate(int group, int item);
@@ -182,10 +178,7 @@ class GenericDualCatalogWidget : CatalogWidget
                 if (!selectedGroup.Equals(group))
                 {
                     selectedGroup = group;
-                    if (SelectedItemAlwaysInSelectedGroup)
-                    {
-                        selectedItem = GetItemsInGroup(selectedGroup).First();
-                    }
+                    selectedItem = GetItemsInGroup(selectedGroup).First();
                 }
             }
         }

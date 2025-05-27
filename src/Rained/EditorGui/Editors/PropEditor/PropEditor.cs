@@ -70,7 +70,6 @@ partial class PropEditor : IEditorMode
     public PropEditor(LevelWindow window)
     {
         this.window = window;
-        selectedInit = RainEd.Instance.PropDatabase.Categories[selectedPropGroup].Props[0];
 
         // register prop color names to be displayed in the custom color dropdown 
         propColorNames = new List<string>()
@@ -106,9 +105,6 @@ partial class PropEditor : IEditorMode
             }
         };
 
-        // this function is defined in PropEditorToolbar.cs
-        ProcessSearch();
-
         // load preferences
         switch (RainEd.Instance.Preferences.PropSnap)
         {
@@ -132,6 +128,61 @@ partial class PropEditor : IEditorMode
                 Log.Error("Invalid prop snap '{PropSnap}' in preferences.json", RainEd.Instance.Preferences.PropSnap);
                 break;
         }
+
+        static IEnumerable<int> GetPropGroups()
+        {
+            var list = RainEd.Instance.PropDatabase.Categories;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].IsTileCategory) continue;
+                yield return i;
+            }
+        }
+
+        propCatalogWidget = new()
+        {
+            ShowGroupColors = true,
+            ItemPostRender = PropItemPostRender,
+            GetGroups = GetPropGroups,
+
+            GetGroupInfo = (int groupIdx) =>
+            {
+                var group = RainEd.Instance.PropDatabase.Categories[groupIdx];
+                return (group.Name, group.Color);
+            },
+
+            GetItemInfo = (int groupIdx, int itemIdx) =>
+            {
+                var item = RainEd.Instance.PropDatabase.Categories[groupIdx].Props[itemIdx];
+                return (item.Name, Color.Blank);   
+            },
+            
+            GetItemsInGroup = (int groupIdx) => Enumerable.Range(0, RainEd.Instance.PropDatabase.Categories[groupIdx].Props.Count),
+        };
+
+        tileCatalogWidget = new()
+        {
+            ShowGroupColors = true,
+            ItemPostRender = TileItemPostRender,
+            GetGroups = () => Enumerable.Range(0, RainEd.Instance.PropDatabase.TileCategories.Count),
+
+            GetGroupInfo = (int groupIdx) =>
+            {
+                var group = RainEd.Instance.PropDatabase.TileCategories[groupIdx];
+                return (group.Name, group.Color);
+            },
+
+            GetItemInfo = (int groupIdx, int itemIdx) =>
+            {
+                var item = RainEd.Instance.PropDatabase.TileCategories[groupIdx].Props[itemIdx];
+                return (item.Name, Color.Blank);   
+            },
+
+            GetItemsInGroup = (int groupIdx) => Enumerable.Range(0, RainEd.Instance.PropDatabase.TileCategories[groupIdx].Props.Count),
+        };
+
+        propCatalogWidget.ProcessSearch();
+        tileCatalogWidget.ProcessSearch();
     }
 
     public void Load()
@@ -956,8 +1007,8 @@ partial class PropEditor : IEditorMode
                             if (idx >= 0)
                             {
                                 forceSelection = SelectionMode.Tiles;
-                                selectedTileGroup = i;
-                                selectedTileIdx = idx;
+                                tileCatalogWidget.SelectedGroup = i;
+                                tileCatalogWidget.SelectedItem = idx;
                                 break;
                             }
                         }
@@ -967,8 +1018,8 @@ partial class PropEditor : IEditorMode
                     else
                     {
                         forceSelection = SelectionMode.Props;
-                        selectedPropGroup = prop.PropInit.Category.Index;
-                        selectedPropIdx = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
+                        tileCatalogWidget.SelectedGroup = prop.PropInit.Category.Index;
+                        tileCatalogWidget.SelectedItem = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
                     }
                 }
             }
