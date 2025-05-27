@@ -91,13 +91,11 @@ abstract class CatalogWidget
 }
 
 // god, what do i name this...
-class GenericDualCatalogWidget : CatalogWidget
+abstract class CatalogWidgetExt : CatalogWidget
 {
-    private readonly List<int> displayedGroups = [];
-    private int selectedGroup = 0;
-    private int selectedItem = 0;
-
-    // public List<Tg> DisplayedGroups => displayedGroups;
+    protected readonly List<int> displayedGroups = [];
+    protected int selectedGroup = 0;
+    protected int selectedItem = 0;
 
     public int SelectedGroup {
         get => selectedGroup!;
@@ -115,6 +113,121 @@ class GenericDualCatalogWidget : CatalogWidget
     protected override bool HasSearch => true;
     protected override bool Dual => true;
 
+    protected abstract string GetGroupName(int group);
+    protected abstract string GetItemName(int group, int item);
+    protected abstract IEnumerable<int> GetGroupList();
+    protected abstract IEnumerable<int> GetItemList(int group);
+
+    protected void ResetSelectedItem()
+    {
+        bool first = true;
+        foreach (var i in GetItemList(selectedGroup))
+        {
+            if (first)
+            {
+                selectedItem = i;
+                first = false;
+            }
+
+            if (PassesSearchQuery(GetItemName(selectedGroup, i)))
+            {
+                selectedItem = i;
+                break;
+            }
+        }
+    }
+
+    protected override void ProcessSearch(string searchQuery)
+    {
+        displayedGroups.Clear();
+
+        // find groups that have any entries that pass the search query
+        foreach (var group in GetGroupList())
+        {
+            // if search query is empty, add this group to the search query
+            if (string.IsNullOrEmpty(searchQuery))
+            {
+                displayedGroups.Add(group);
+                continue;
+            }
+
+            // search is not empty, so scan the tiles in this group
+            // if there is one tile that that passes the search query, the
+            // group gets put in the list
+            // (further searching is done in DrawViewport)
+            foreach (var item in GetItemList(group))
+            {
+                var name = GetItemName(group, item);
+                if (PassesSearchQuery(name))
+                {
+                    displayedGroups.Add(group);
+                    break;
+                }
+            }
+        }
+
+        if (!displayedGroups.Contains(selectedGroup))
+        {
+            if (displayedGroups.Count > 0)
+                selectedGroup = displayedGroups[0];
+
+            ResetSelectedItem();
+        }
+
+        if (!PassesSearchQuery(GetItemName(selectedGroup, selectedItem)))
+            ResetSelectedItem();
+    }
+
+    public int PreviousGroup(int group)
+    {
+        if (displayedGroups.Count == 0) return default;
+        var idx = displayedGroups.IndexOf(group);
+        if (idx == -1) return displayedGroups[0];
+
+        return displayedGroups[Util.Mod(idx - 1, displayedGroups.Count)];
+    }
+
+    public int PreviousItem(int group, int item)
+    {
+        var list = GetItemList(group)
+            .Where(x => PassesSearchQuery(GetItemName(group, x)))
+            .ToArray();
+        
+        if (list.Length == 0) return item;
+
+        var idx = Array.IndexOf(list, item);
+        if (idx == -1) return list[0];
+        
+        if (idx == 0) return list[^1];
+        else          return list[idx-1];
+    }
+
+    public int NextGroup(int group)
+    {
+        if (displayedGroups.Count == 0) return group;
+        var idx = displayedGroups.IndexOf(group);
+        if (idx == -1) return displayedGroups[0];
+
+        return displayedGroups[(idx + 1) % displayedGroups.Count];
+    }
+
+    public int NextItem(int group, int item)
+    {
+        var list = GetItemList(group)
+            .Where(x => PassesSearchQuery(GetItemName(group, x)))
+            .ToArray();
+        
+        if (list.Length == 0) return item;
+
+        var idx = Array.IndexOf(list, item);
+        if (idx == -1) return list[0];
+        
+        return list[(idx + 1) % list.Length];
+    }
+}
+
+class GenericDualCatalogWidget : CatalogWidgetExt
+{
     public bool ShowGroupColors = false;
     public bool ShowItemColors = false;
 
@@ -143,24 +256,10 @@ class GenericDualCatalogWidget : CatalogWidget
     /// </summary>
     public required GetItemsInGroupDelegate GetItemsInGroup;
 
-    private void ResetSelectedItem()
-    {
-        bool first = true;
-        foreach (var i in GetItemsInGroup(selectedGroup))
-        {
-            if (first)
-            {
-                selectedItem = i;
-                first = false;
-            }
-
-            if (PassesSearchQuery(GetItemInfo(selectedGroup, i).name))
-            {
-                selectedItem = i;
-                break;
-            }
-        }
-    }
+    protected override string GetGroupName(int group) => GetGroupInfo(group).name;
+    protected override string GetItemName(int group, int item) => GetItemInfo(group, item).name;
+    protected override IEnumerable<int> GetGroupList() => GetGroups();
+    protected override IEnumerable<int> GetItemList(int group) => GetItemsInGroup(group);
 
     override protected void RenderGroupList()
     {
@@ -214,93 +313,5 @@ class GenericDualCatalogWidget : CatalogWidget
 
             ItemPostRender?.Invoke(item, isSelected);
         }
-    }
-
-    protected override void ProcessSearch(string searchQuery)
-    {
-        displayedGroups.Clear();
-
-        // find groups that have any entries that pass the search query
-        foreach (var group in GetGroups())
-        {
-            // if search query is empty, add this group to the search query
-            if (string.IsNullOrEmpty(searchQuery))
-            {
-                displayedGroups.Add(group);
-                continue;
-            }
-
-            // search is not empty, so scan the tiles in this group
-            // if there is one tile that that passes the search query, the
-            // group gets put in the list
-            // (further searching is done in DrawViewport)
-            foreach (var item in GetItemsInGroup(group))
-            {
-                var (name, color) = GetItemInfo(group, item);
-                if (PassesSearchQuery(name))
-                {
-                    displayedGroups.Add(group);
-                    break;
-                }
-            }
-        }
-
-        if (!displayedGroups.Contains(selectedGroup))
-        {
-            if (displayedGroups.Count > 0)
-                selectedGroup = displayedGroups[0];
-
-            ResetSelectedItem();
-        }
-
-        if (!PassesSearchQuery(GetItemInfo(selectedGroup, selectedItem).name))
-            ResetSelectedItem();
-    }
-
-    public int PreviousGroup(int group)
-    {
-        if (displayedGroups.Count == 0) return default;
-        var idx = displayedGroups.IndexOf(group);
-        if (idx == -1) return displayedGroups[0];
-
-        return displayedGroups[Util.Mod(idx - 1, displayedGroups.Count)];
-    }
-
-    public int PreviousItem(int group, int item)
-    {
-        var list = GetItemsInGroup(group)
-            .Where(x => PassesSearchQuery(GetItemInfo(group, x).name))
-            .ToArray();
-        
-        if (list.Length == 0) return item;
-
-        var idx = Array.IndexOf(list, item);
-        if (idx == -1) return list[0];
-        
-        if (idx == 0) return list[^1];
-        else          return list[idx-1];
-    }
-
-    public int NextGroup(int group)
-    {
-        if (displayedGroups.Count == 0) return group;
-        var idx = displayedGroups.IndexOf(group);
-        if (idx == -1) return displayedGroups[0];
-
-        return displayedGroups[(idx + 1) % displayedGroups.Count];
-    }
-
-    public int NextItem(int group, int item)
-    {
-        var list = GetItemsInGroup(group)
-            .Where(x => PassesSearchQuery(GetItemInfo(group, x).name))
-            .ToArray();
-        
-        if (list.Length == 0) return item;
-
-        var idx = Array.IndexOf(list, item);
-        if (idx == -1) return list[0];
-        
-        return list[(idx + 1) % list.Length];
     }
 }
