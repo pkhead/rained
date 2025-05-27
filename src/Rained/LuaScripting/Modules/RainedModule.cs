@@ -191,7 +191,7 @@ static class RainedModule
         lua.ModuleFunction("closeDocument", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            var idx = (int)lua.CheckInteger(1);
+            var idx = (int)lua.CheckInteger(1) - 1;
 
             if (idx >= 0 && idx < +LuaInterface.Host.DocumentCount)
                 LuaInterface.Host.CloseDocument(idx);
