@@ -112,58 +112,51 @@ static class LevelModule
 
         lua.ModuleFunction("save", static (nint luaPtr) =>
         {
-            var coro = Lua.FromIntPtr(luaPtr);
-            if (!coro.IsYieldable) return coro.ErrorWhere("attempt to called rained.level.save from a non-yieldable context");
+            var lua = Lua.FromIntPtr(luaPtr);
 
             string? overridePath = null;
-            if (!coro.IsNoneOrNil(1))
+            if (!lua.IsNoneOrNil(1))
             {
-                overridePath = Path.GetFullPath(coro.ToString(1));
+                overridePath = Path.GetFullPath(lua.ToString(1));
             }
 
-            int? coroRef = null;
-            string? path = null;
+            bool doCallbackFunc = !lua.IsNoneOrNil(2);
+            int funcRef = 0;
+            if (doCallbackFunc)
+            {
+                lua.CheckType(2, LuaType.Function);
+
+                // save reference to function
+                lua.PushCopy(2);
+                funcRef = lua.Ref(LuaRegistry.Index);
+            }
 
             bool immediate = EditorWindow.AsyncSave(
                 overridePath: overridePath,
                 callback: (string? p, bool immediate) =>
                 {
-                    path = p;
-                    if (immediate) return;
-                    if (coroRef is null) throw new Exception("referenced coroutine is null");
-
                     var lua = LuaInterface.LuaState;
-                    lua.RawGetInteger(LuaRegistry.Index, coroRef.Value);
-                    lua.Unref(LuaRegistry.Index, coroRef.Value);
 
-                    lua.PushString(LuaInterface.Host.GetDocumentFilePath(LuaInterface.Host.ActiveDocument));
-                    LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
+                    // load and unref function
+                    lua.RawGetInteger(LuaRegistry.Index, funcRef);
+                    lua.Unref(LuaRegistry.Index, funcRef);
+
+                    // push argument 1 (path)
+                    if (p is not null)
+                        lua.PushString(p);
+                    else
+                        lua.PushNil();
+
+                    // push argument 2 (immediate)
+                    lua.PushBoolean(immediate);
+
+                    LuaHelpers.Call(lua, 2, 0);
+                    // LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
                 }
             );
 
-            if (immediate)
-            {
-                coro.PushString(path!);
-                return 1;
-            }
-            else
-            {
-                coro.PushThread();
-                coroRef = coro.Ref(LuaRegistry.Index);
-
-                var handle = GCHandle.Alloc(null);
-                LuaKFunction kfunc = (nint luaPtr, int status, nint k) =>
-                {
-                    handle.Free();
-                    coro.PushString(path!);
-                    return 1;
-                };
-
-                handle.Target = kfunc;
-                Debug.Assert(handle.IsAllocated);
-                
-                return coro.YieldK(0, 0, kfunc);
-            }
+            lua.PushBoolean(immediate);
+            return 1;
         });
 
         // set metatable
