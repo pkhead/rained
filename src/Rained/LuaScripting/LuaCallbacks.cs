@@ -27,20 +27,17 @@ class LuaCallback : IDisposable
 
     public void Invoke(int nargs)
     {
-        Lua coro = LuaState.NewThread();
-        LuaState.Pop(1);
-        
-        coro.RawGetInteger(LuaRegistry.Index, @ref);
-        for (int i = -nargs; i <= -1; i++)
-        {
-            LuaState.PushCopy(i);
-            var tmpRef = LuaState.Ref(LuaRegistry.Index);
-            coro.RawGetInteger(LuaRegistry.Index, tmpRef);
-            LuaState.Unref(LuaRegistry.Index, tmpRef);
-        }
-        LuaState.Pop(nargs);
-        LuaHelpers.ResumeCoroutine(coro, null, nargs, out int results);
-        coro.Pop(results);
+        var lua = LuaState;
+
+        lua.RawGetInteger(LuaRegistry.Index, @ref); // get func ref
+        var firstArg = lua.GetTop() - nargs;
+
+        // copy arguments to be after loaded function
+        for (int i = 0; i < nargs; i++)
+            lua.PushCopy(firstArg + i);
+
+        LuaHelpers.Call(lua, nargs, 0);
+        lua.Pop(nargs);
     }
 
     public void Dispose()

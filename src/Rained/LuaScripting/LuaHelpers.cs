@@ -389,29 +389,29 @@ static class LuaHelpers
         return 1;
     }
 
-    public static LuaStatus ResumeCoroutine(Lua lua, Lua? from, int arguments, out int results)
-    {
-        try
-        {
-            var status = lua.Resume(from, arguments, out results);
+    // public static LuaStatus ResumeCoroutine(Lua lua, Lua? from, int arguments, out int results)
+    // {
+    //     try
+    //     {
+    //         var status = lua.Resume(from, arguments, out results);
 
-            if (!(status is LuaStatus.OK or LuaStatus.Yield))
-            {
-                ErrorHandler(lua.Handle, -1);
-            }
+    //         if (!(status is LuaStatus.OK or LuaStatus.Yield))
+    //         {
+    //             ErrorHandler(lua.Handle, -1);
+    //         }
 
-            return status;
-        }
-        catch (NoLevelException)
-        {
-            lua.Where(1);
-            lua.PushString("a level is not loaded");
-            lua.Concat(2);
-            ErrorHandler(lua.Handle, -1);
-            results = 0;
-            return LuaStatus.ErrRun;
-        }
-    }
+    //         return status;
+    //     }
+    //     catch (NoLevelException)
+    //     {
+    //         lua.Where(1);
+    //         lua.PushString("a level is not loaded");
+    //         lua.Concat(2);
+    //         ErrorHandler(lua.Handle, -1);
+    //         results = 0;
+    //         return LuaStatus.ErrRun;
+    //     }
+    // }
 
     public static LuaStatus Call(Lua lua, int arguments, int results)
     {
