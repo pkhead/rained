@@ -1,5 +1,6 @@
 namespace Rained.EditorGui.Editors;
 using ImGuiNET;
+using Rained.EditorGui.AssetPreviews;
 using Rained.LevelData;
 using Raylib_cs;
 using System.Numerics;
@@ -8,9 +9,7 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
 {
     private readonly List<int> matSearchResults = [];
     private readonly MaterialEditMode editor = editor;
-
-    public static RlManaged.Texture2D? _loadedMatPreview = null;
-    public static string _activeMatPreview = "";
+    private readonly MaterialPreview matPreview = new();
 
     protected override void ProcessSearch(string searchQuery)
     {
@@ -80,19 +79,7 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
             // show material preview when hovered
             if (prefs.MaterialSelectorPreview && ImGui.IsItemHovered())
             {
-                if (_activeMatPreview != mat.Name)
-                {
-                    _activeMatPreview = mat.Name;
-                    _loadedMatPreview?.Dispose();
-                    _loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", mat.Name + ".png"));
-                }
-
-                if (_loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(_loadedMatPreview))
-                {
-                    ImGui.BeginTooltip();
-                    ImGuiExt.ImageSize(_loadedMatPreview, _loadedMatPreview.Width * Boot.PixelIconScale, _loadedMatPreview.Height * Boot.PixelIconScale);
-                    ImGui.EndTooltip();
-                }
+                matPreview.RenderPreviewTooltip(mat.Name);
             }
         }
     }

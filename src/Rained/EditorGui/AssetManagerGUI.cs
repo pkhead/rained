@@ -1260,6 +1260,7 @@ static class AssetManagerGUI
     }
 
     private static RlManaged.RenderTexture2D? _hoverPreview;
+    private static MaterialPreview? _matPreview = null;
     private static void ReAddTilePreviews(CategoryList.InitItem tile, int selected)
     {
         // Restores previews to the preferences tab, uses the standard method for displaying previews
@@ -1327,19 +1328,8 @@ static class AssetManagerGUI
                 // show material preview when hovered
                 if (ImGui.IsItemHovered())
                 {
-                    if (MaterialCatalogWidget._activeMatPreview != tile.Name)
-                    {
-                        MaterialCatalogWidget._activeMatPreview = tile.Name;
-                        MaterialCatalogWidget._loadedMatPreview?.Dispose();
-                        MaterialCatalogWidget._loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", tile.Name + ".png"));
-                    }
-
-                    if (MaterialCatalogWidget._loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(MaterialCatalogWidget._loadedMatPreview))
-                    {
-                        ImGui.BeginTooltip();
-                        ImGuiExt.ImageSize(MaterialCatalogWidget._loadedMatPreview, MaterialCatalogWidget._loadedMatPreview.Width * Boot.PixelIconScale, MaterialCatalogWidget._loadedMatPreview.Height * Boot.PixelIconScale);
-                        ImGui.EndTooltip();
-                    }
+                    _matPreview ??= new MaterialPreview();
+                    _matPreview.RenderPreviewTooltip(tile.Name);
                 }
 
                 break;
