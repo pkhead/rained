@@ -14,7 +14,7 @@ function rained.tiles.createAutotile(name, category) end
 ---@field width integer
 ---@field height integer
 ---@field specs integer[]
----@field specs2 integer[]
+---@field specs2 integer[]?
 ---@field bfTiles integer
 ---@field centerX integer
 ---@field centerY integer

@@ -12,12 +12,48 @@ rained.gui = {}
 ---| "read"
 ---| "directory"
 
+---A given filter has three formats:
+---1. `{name (string), extWithPeriod (string)}` (ex: `{"PNG Image", ".png"}`)
+---2. `{name (string), extensions (string[])}` (ex: `{"Image", {".png", ".jpg", ".tga", ".bmp"}}`)
+---3. `rained.fileFilters.level`
+---@alias FileBrowserFilter
+---| table
+---| userdata
+
+---@class FileBrowser
+local FileBrowser = {}
+
+---Render the file browser popup window.
+---@return boolean isOpen True if the window is still open, false if not.
+function FileBrowser:render() end
+
+---@type table<string, FileBrowserFilter>
+rained.gui.fileFilters = {}
+
+---@type userdata
+local ud
+rained.gui.fileFilters.level = ud
+
 ---Renders an ImGui file browser widget.
 ---@param id string
 ---@param openMode FileBrowserOpenModeSingle
----@param path string
----@return boolean s, string path
-function rained.gui.fileBrowserWidget(id, openMode, path) end
+---@param path string?
+---@param filters FileBrowserFilter[]?
+---@return boolean s, string? path
+function rained.gui.fileBrowserWidget(id, openMode, path, filters) end
+
+---Open the file browser, blocking the script until the user has either submitted or canceled.
+---
+---A given filter has three formats:
+---1. `{name (string), extWithPeriod (string)}` (ex: `{"PNG Image", ".png"}`)
+---2. `{name (string), extensions (string[])}` (ex: `{"Image", {".png", ".jpg", ".tga", ".bmp"}}`)
+---3. `rained.fileFilters.level`
+---
+---@param openMode FileBrowserOpenMode
+---@param filters FileBrowserFilter[]?
+---@param callback fun(files: string[]) The callback to run when the user finishes using the file browser.
+---@return FileBrowser
+function rained.gui.openFileBrowser(openMode, filters, callback) end
 
 ---Register a hook into one or more menus from the menubar.
 ---It is expected that the callback function will insert ImGui widgets. Each
