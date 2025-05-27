@@ -188,6 +188,17 @@ static class RainedModule
             return 1;
         });
 
+        lua.ModuleFunction("closeDocument", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            var idx = (int)lua.CheckInteger(1);
+
+            if (idx >= 0 && idx < +LuaInterface.Host.DocumentCount)
+                LuaInterface.Host.CloseDocument(idx);
+
+            return 0;
+        });
+
         lua.NewMetaTable(CommandID);
         LuaHelpers.PushLuaFunction(lua, static (Lua lua) =>
         {
