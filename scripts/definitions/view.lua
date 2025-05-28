@@ -8,8 +8,8 @@
 ---@field geoLayer1 boolean True if layer 1 is enabled in the geometry editor.
 ---@field geoLayer2 boolean True if layer 2 is enabled in the geometry editor.
 ---@field geoLayer3 boolean True if layer 3 is enabled in the geometry editor.
----@field palettesEnabled boolean
----@field palette1 integer
----@field palette2 integer
----@field paletteMix number
+---@field palettesEnabled boolean True if palette rendering is enabled, false if not.
+---@field palette1 integer Index of the main palette.
+---@field palette2 integer Index of the fade palette.
+---@field paletteMix number Strength of the fade, from 0 to 1.
 rained.view = {}
