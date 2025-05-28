@@ -54,10 +54,13 @@ static partial class ImGuiModule
         return buf;
     }
 
-    private static unsafe byte* GetStr(Lua lua, int idx, ReadOnlySpan<byte> defaultValue)
+    private static unsafe byte* GetStr(Lua lua, int idx, byte[]? defaultValue)
     {
         if (lua.IsNoneOrNil(idx))
         {
+            if (defaultValue is null)
+                return null;
+            
             var sz = (nuint)defaultValue.Length;
             void *buf = NativeMemory.Alloc(sz);
             fixed (byte* p = defaultValue)
