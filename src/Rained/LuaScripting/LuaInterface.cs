@@ -26,7 +26,8 @@ static class LuaInterface
     {
         Host = host;
 
-        scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
+        // scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
+        scriptsPath = Path.Combine(Boot.AppDataPath, "scripts");
 
         luaState = new Lua()
         {
@@ -39,7 +40,7 @@ static class LuaInterface
 
         // configure package.path
         var package = (LuaTable)luaState["package"];
-        package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua");
+        package["path"] = Path.Combine(scriptsPath, "?.lua") + ";" + Path.Combine(scriptsPath, "?", "init.lua") + ";" + package["path"];
 
         // global functions
         LuaHelpers.PushCsFunction(luaState.State, new Action<string, bool?>(AutoRequire));
