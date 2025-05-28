@@ -26,6 +26,9 @@ at the time of a certain release, use the Git tags system.
 ![Screenshot of Rained's prop editor with tile graphics enabled and a palette applied.](screenshot2.png)
 
 ## Building
+> [!tip]
+> Additional documentation about the development setup is found [here](https://pkhead.github.io/rained/en/developing.html).
+
 Prerequisities:
  - .NET Core toolchain
  - Python 3
