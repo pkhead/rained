@@ -744,17 +744,19 @@ sealed class RainEd
         return _tabs.Remove(tab);
     }
 
-    private void UpdateTitle()
+    public void UpdateTitle()
     {
+        string title = "Rained";
+
         if (CurrentTab is not null)
         {
             string levelName = CurrentTab.Name;
-            Raylib.SetWindowTitle($"Rained - {levelName}");
+            title += $" - {levelName}";
+            if (ChangeHistory.HasChanges)
+                title += "*";
         }
-        else
-        {
-            Raylib.SetWindowTitle("Rained");
-        }
+        
+        Raylib.SetWindowTitle(title);
     }
 
     /// <summary>
