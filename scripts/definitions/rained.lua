@@ -80,8 +80,8 @@ function rained.getApiVersion() end
 ---it was opened normally and so is in GUI mode.
 ---
 ---Due to the lack of a GUI, several things are different in batch mode:
---- - commands, autotiles, and onUpdate are no-ops
---- - the history module will not be defined
+--- - commands, autotiles, and onUpdate are no-ops.
+--- - `rained.history`, `rained.gui`, and `rained.view` will be nil.
 --- - alert will instead print messages to stdout.
 ---@return boolean isConsole
 function rained.isBatchMode() end

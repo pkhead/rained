@@ -156,6 +156,7 @@ static class LuaInterface
         PropModule.Init(lua, luaState);
         HistoryModule.Init(lua, luaState);
         GuiModule.Init(lua);
+        ViewModule.Init(lua, luaState);
 
         return 1;
     }

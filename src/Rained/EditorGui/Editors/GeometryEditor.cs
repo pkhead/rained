@@ -115,7 +115,8 @@ class GeometryEditor : IEditorMode
     private int toolRectY;
     private int lastMouseX, lastMouseY;
 
-    private bool[] layerMask;
+    private readonly bool[] layerMask;
+    public bool[] LayerMask => layerMask;
     
     private enum MirrorFlags
     {
