@@ -13,6 +13,12 @@ static class RainedModule
     private static readonly List<LuaCallback> postRenderCallbacks = [];
     private static readonly List<LuaCallback> renderFailCallbacks = [];
 
+    private static readonly List<LuaCallback> docChangedCallbacks = [];
+    private static readonly List<LuaCallback> docOpenedCallbacks = [];
+    private static readonly List<LuaCallback> docClosingCallbacks = [];
+    private static readonly List<LuaCallback> docSavingCallbacks = [];
+    private static readonly List<LuaCallback> docSavedCallbacks = [];
+
     public static void Init(Lua lua, NLua.Lua nLua)
     {
         // init script parameters
@@ -345,7 +351,11 @@ static class RainedModule
             var lua = Lua.FromIntPtr(luaPtr);
             var w = (int)lua.CheckInteger(1);
             var h = (int)lua.CheckInteger(2);
-            var filePath = lua.OptString(3, "");
+            string? filePath;
+            if (lua.IsNoneOrNil(3))
+                filePath = null;
+            else
+                filePath = lua.CheckString(3);
 
             LuaInterface.Host.NewLevel(w, h, filePath);
             return 0;
@@ -410,6 +420,71 @@ static class RainedModule
             
             return 1;
         });
+
+        lua.ModuleFunction("onDocumentChanged", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => docChangedCallbacks.Remove(cb)
+            };
+            docChangedCallbacks.Add(cb);
+            return 1;
+        });
+
+        lua.ModuleFunction("onDocumentOpened", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => docOpenedCallbacks.Remove(cb)
+            };
+            docOpenedCallbacks.Add(cb);
+            return 1;
+        });
+
+        lua.ModuleFunction("onDocumentClosing", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => docClosingCallbacks.Remove(cb)
+            };
+            docClosingCallbacks.Add(cb);
+            return 1;
+        });
+
+        lua.ModuleFunction("onDocumentSaving", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => docSavingCallbacks.Remove(cb)
+            };
+            docSavingCallbacks.Add(cb);
+            return 1;
+        });
+
+        lua.ModuleFunction("onDocumentSaved", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            lua.CheckType(1, LuaType.Function);
+            lua.PushCopy(1);
+            var cb = new LuaCallback(lua)
+            {
+                OnDisconnect = static (Lua lua, LuaCallback cb) => docSavedCallbacks.Remove(cb)
+            };
+            docSavedCallbacks.Add(cb);
+            return 1;
+        });
     }
 
     public static void UpdateCallback(float dt)
@@ -466,6 +541,51 @@ static class RainedModule
                 cb.LuaState.PushNil();
             
             cb.Invoke(2);
+        }
+    }
+
+    public static void DocumentChangedCallback(int index)
+    {
+        foreach (var cb in docChangedCallbacks)
+        {
+            cb.LuaState.PushInteger(index+1);
+            cb.Invoke(1);
+        }
+    }
+
+    public static void DocumentOpenedCallback(int index)
+    {
+        foreach (var cb in docOpenedCallbacks)
+        {
+            cb.LuaState.PushInteger(index+1);
+            cb.Invoke(1);
+        }
+    }
+
+    public static void DocumentClosingCallback(int index)
+    {
+        foreach (var cb in docClosingCallbacks)
+        {
+            cb.LuaState.PushInteger(index+1);
+            cb.Invoke(1);
+        }
+    }
+
+    public static void DocumentSavingCallback(int index)
+    {
+        foreach (var cb in docSavingCallbacks)
+        {
+            cb.LuaState.PushInteger(index+1);
+            cb.Invoke(1);
+        }
+    }
+
+    public static void DocumentSavedCallback(int index)
+    {
+        foreach (var cb in docSavedCallbacks)
+        {
+            cb.LuaState.PushInteger(index+1);
+            cb.Invoke(1);
         }
     }
 

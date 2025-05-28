@@ -244,6 +244,8 @@ class APIBatchHost : IAPIHost
                 if (_activeDocument != -1)
                     _documentOpenStack.Push(_documents[_activeDocument]);
                 _activeDocument = value;
+                
+                Modules.RainedModule.DocumentChangedCallback(_activeDocument);
             }
         }
     }
@@ -339,6 +341,7 @@ class APIBatchHost : IAPIHost
 
     public void CloseDocument(int index)
     {
+        Modules.RainedModule.DocumentClosingCallback(index);
         _documents.RemoveAt(index);
 
         do
@@ -350,7 +353,10 @@ class APIBatchHost : IAPIHost
             }
             
             _activeDocument = _documents.IndexOf(_documentOpenStack.Pop());
-        } while (_activeDocument != -1);
+        } while (_activeDocument == -1);
+
+        if (_activeDocument != -1)
+            Modules.RainedModule.DocumentChangedCallback(_activeDocument);
     }
 
     public LevelLoadResult OpenLevel(string filePath)
@@ -358,6 +364,8 @@ class APIBatchHost : IAPIHost
         var loadRes = LevelSerialization.Load(Path.GetFullPath(filePath), _hostData);
         var tab = new Document(loadRes.Level, filePath);
         _documents.Add(tab);
+        Modules.RainedModule.DocumentOpenedCallback(_documents.Count - 1);
+
         ActiveDocument = _documents.Count - 1;
         return loadRes;
     }
@@ -366,6 +374,8 @@ class APIBatchHost : IAPIHost
     {
         var tab = new Document(new Level(width, height), filePath is not null ? Path.GetFullPath(filePath) : null);
         _documents.Add(tab);
+        Modules.RainedModule.DocumentOpenedCallback(_documents.Count - 1);
+
         ActiveDocument = _documents.Count - 1;
     }
 
@@ -375,6 +385,7 @@ class APIBatchHost : IAPIHost
         var path = (overridePath ?? doc.FilePath)
             ?? throw new Exception("cannot save a document with no path in batch mode");
         
+        Modules.RainedModule.DocumentSavingCallback(ActiveDocument);
         LevelSerialization.SaveLevelTextFile(Level!, path, _hostData);
         LevelSerialization.SaveLevelLightMap(Level!, path);
 
@@ -383,6 +394,8 @@ class APIBatchHost : IAPIHost
             doc.FilePath = overridePath;
             doc.Name = Path.GetFileNameWithoutExtension(overridePath)!;
         }
+
+        Modules.RainedModule.DocumentSavedCallback(ActiveDocument);
 
         return true;
     }

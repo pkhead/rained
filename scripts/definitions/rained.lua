@@ -160,6 +160,31 @@ function rained.closeDocument(index) end
 ---@return boolean
 function rained.isDocumentOpen() end
 
+---Register a callback to be ran whenever the active document had changed.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentChanged(func) end
+
+---Register a callback to be ran whenever a document is opened.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentOpened(func) end
+
+---Register a callback to be ran whenever a document is closing.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentClosing(func) end
+
+---Register a callback to be ran whenever a document is about to be saved.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentSaving(func) end
+
+---Register a callback to be ran whenever a document was successfully saved.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentSaved(func) end
+
 ---Opens a level from file. Returns diagnostic information if there were problems loading the level
 ---but it could be opened regardless, but nil if successful.
 ---@param filePath string The file path to the level txt file.
