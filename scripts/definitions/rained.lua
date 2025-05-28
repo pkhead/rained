@@ -80,8 +80,8 @@ function rained.getApiVersion() end
 ---it was opened normally and so is in GUI mode.
 ---
 ---Due to the lack of a GUI, several things are different in batch mode:
---- - commands, autotiles, and onUpdate are no-ops
---- - the history module will not be defined
+--- - commands, autotiles, and onUpdate are no-ops.
+--- - `rained.history`, `rained.gui`, and `rained.view` will be nil.
 --- - alert will instead print messages to stdout.
 ---@return boolean isConsole
 function rained.isBatchMode() end
@@ -159,6 +159,31 @@ function rained.closeDocument(index) end
 ---Check if a document is open.
 ---@return boolean
 function rained.isDocumentOpen() end
+
+---Register a callback to be ran whenever the active document had changed.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentChanged(func) end
+
+---Register a callback to be ran whenever a document is opened.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentOpened(func) end
+
+---Register a callback to be ran whenever a document is closing.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentClosing(func) end
+
+---Register a callback to be ran whenever a document is about to be saved.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentSaving(func) end
+
+---Register a callback to be ran whenever a document was successfully saved.
+---@param func fun(index:integer)
+---@return CallbackHandle
+function rained.onDocumentSaved(func) end
 
 ---Opens a level from file. Returns diagnostic information if there were problems loading the level
 ---but it could be opened regardless, but nil if successful.

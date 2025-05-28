@@ -80,7 +80,6 @@ Other features:
 - undo/redo for level resize
 - level resze drag
 - level resize change history
-- put asterik in window title for unsaved levels
 - allow user to open levels with unrecognized tiles/props
   without erasing unrecognized assets
   - so need to figure out how to store tiles/props by name only instead of

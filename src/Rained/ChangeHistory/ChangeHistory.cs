@@ -33,6 +33,7 @@ class ChangeHistory
         redoStack.Clear();
 
         Cleared?.Invoke();
+        RainEd.Instance?.UpdateTitle();
     }
     
     public void Push(IChangeRecord record)
@@ -44,6 +45,7 @@ class ChangeHistory
         
         redoStack.Clear();
         undoStack.Push(record);
+        RainEd.Instance?.UpdateTitle();
     }
 
     public bool Undo()
@@ -53,6 +55,8 @@ class ChangeHistory
         redoStack.Push(record);
         record.Apply(false);
         UndidOrRedid?.Invoke();
+
+        RainEd.Instance?.UpdateTitle();
         return true;
     }
 
@@ -63,6 +67,8 @@ class ChangeHistory
         undoStack.Push(record);
         record.Apply(true);
         UndidOrRedid?.Invoke();
+
+        RainEd.Instance?.UpdateTitle();
         return true;
     }
 
@@ -70,11 +76,13 @@ class ChangeHistory
     {
         upToDate = undoStack.Count == 0 ? null : undoStack.Peek();
         dirty = false;
+        RainEd.Instance?.UpdateTitle();
     }
 
     public void ForceMarkDirty()
     {
         dirty = true;
+        RainEd.Instance?.UpdateTitle();
     }
 
     public bool HasChanges {

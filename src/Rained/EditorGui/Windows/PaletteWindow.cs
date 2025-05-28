@@ -24,19 +24,19 @@ static class PaletteWindow
                 prefs.UsePalette = renderer.UsePalette = usePalette;
             }
 
-            int paletteIndex = prefs.PaletteIndex;
+            int paletteIndex = renderer.Palette.Index;
             if (ImGui.InputInt("Palette", ref paletteIndex))
             {
                 prefs.PaletteIndex = renderer.Palette.Index = paletteIndex;
             }
 
-            int fadePalette = prefs.PaletteFadeIndex;
+            int fadePalette = renderer.Palette.FadeIndex;
             if (ImGui.InputInt("Fade Palette", ref fadePalette))
             {
                 prefs.PaletteFadeIndex = renderer.Palette.FadeIndex = fadePalette;
             }
 
-            float fadeAmt = prefs.PaletteFade;
+            float fadeAmt = renderer.Palette.Mix;
             if (ImGui.SliderFloat("Fade Amount", ref fadeAmt, 0f, 1f))
             {
                 prefs.PaletteFade = fadeAmt;

@@ -454,6 +454,7 @@ sealed class RainEd
         var tab = new LevelTab();
         _tabs.Add(tab);
 
+        LuaScripting.Modules.RainedModule.DocumentOpenedCallback(_tabs.IndexOf(tab));
         SwitchTab(tab, true);
     }
 
@@ -461,6 +462,7 @@ sealed class RainEd
     {
         var tab = new LevelTab(level, filePath);
         _tabs.Add(tab);
+        LuaScripting.Modules.RainedModule.DocumentOpenedCallback(_tabs.IndexOf(tab));
         SwitchTab(tab, true);
     }
 
@@ -479,6 +481,7 @@ sealed class RainEd
                 _tabs.Add(tab);
                 Log.Information("Done!");
 
+                LuaScripting.Modules.RainedModule.DocumentOpenedCallback(_tabs.IndexOf(tab));
                 SwitchTab(tab, true);
             }
             else
@@ -562,6 +565,7 @@ sealed class RainEd
                 }
             }
 
+            LuaScripting.Modules.RainedModule.DocumentSavingCallback(_tabs.IndexOf(_currentTab!));
             LevelSerialization.SaveLevelTextFile(Level, path);
             LevelSerialization.SaveLevelLightMap(Level, path);
 
@@ -586,6 +590,8 @@ sealed class RainEd
                 File.Delete(oldFilePath);
                 File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
             }
+
+            LuaScripting.Modules.RainedModule.DocumentSavedCallback(_tabs.IndexOf(_currentTab!));
 
             IsLevelLocked = false;
         }
@@ -724,27 +730,33 @@ sealed class RainEd
             levelView!.Renderer.ReloadLevel();
             if (needInitLevelView) levelView!.LoadView();
             UpdateTitle();
+
+            LuaScripting.Modules.RainedModule.DocumentChangedCallback(_tabs.IndexOf(_currentTab));
         }
     }
 
     public bool CloseTab(LevelTab tab)
     {
+        LuaScripting.Modules.RainedModule.DocumentClosingCallback(_tabs.IndexOf(tab));
+
         levelView?.LevelClosed(tab.Level);
         tab.Dispose();
         return _tabs.Remove(tab);
     }
 
-    private void UpdateTitle()
+    public void UpdateTitle()
     {
+        string title = "Rained";
+
         if (CurrentTab is not null)
         {
             string levelName = CurrentTab.Name;
-            Raylib.SetWindowTitle($"Rained - {levelName}");
+            title += $" - {levelName}";
+            if (ChangeHistory.HasChanges)
+                title += "*";
         }
-        else
-        {
-            Raylib.SetWindowTitle("Rained");
-        }
+        
+        Raylib.SetWindowTitle(title);
     }
 
     /// <summary>
