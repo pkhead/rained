@@ -47,6 +47,9 @@ static class AssetManagerGUI
     // variables related to the merge process
     private static TaskCompletionSource<PromptResult>? mergePromptTcs = null;
     private static PromptOptions? mergePrompt = null;
+    private static bool[]? mergePromptOptions = null;
+    private static int mergePromptRadioOpt = -1;
+
     private static TaskCompletionSource<int>? importOptionTcs = null;
     private static Task? mergeTask = null;
     
@@ -75,6 +78,7 @@ static class AssetManagerGUI
     {
         mergePromptTcs = new();
         mergePrompt = prompt;
+        mergePromptRadioOpt = -1;
         var res = await mergePromptTcs.Task;
         
         mergePromptTcs = null;
@@ -795,58 +799,97 @@ static class AssetManagerGUI
                     {
                         ImGui.TextUnformatted(mergePrompt.Text);
 
-                        if (mergePrompt.CheckboxText.Length > 0)
+                        switch (mergePrompt.InputMode)
                         {
-                            for (int i = 0; i < mergePrompt.CheckboxText.Length; i++)
+                            case PromptInputMode.YesNo:
                             {
-                                ImGui.Checkbox(mergePrompt.CheckboxText[i], ref mergePrompt.CheckboxValues[i]);
-                            }
-
-                            ImGui.Separator();
-                            if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btn))
-                            {
-                                if (btn == 0)
-                                    mergePromptTcs!.SetResult(PromptResult.Yes);
-
-                                else if (btn == 1)
-                                    mergePromptTcs!.SetCanceled();
-
-                                ImGui.CloseCurrentPopup();
-                            }
-                        }
-
-                        // yes/no prompt
-                        else
-                        {
-                            ImGui.Separator();
-                            if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
-                            {
-                                if (btn == 0)
+                                ImGui.Separator();
+                                if (StandardPopupButtons.Show(PopupButtonList.YesNo, out int btn))
                                 {
-                                    // Yes
-                                    mergePromptTcs!.SetResult(PromptResult.Yes);
-                                }
-                                else if (btn == 1)
-                                {
-                                    // No
-                                    mergePromptTcs!.SetResult(PromptResult.No);
+                                    if (btn == 0)
+                                    {
+                                        // Yes
+                                        mergePromptTcs!.SetResult(new PromptResultYesNo(PromptYesNoResult.Yes));
+                                    }
+                                    else if (btn == 1)
+                                    {
+                                        // No
+                                        mergePromptTcs!.SetResult(new PromptResultYesNo(PromptYesNoResult.No));
+                                    }
+
+                                    ImGui.CloseCurrentPopup();
                                 }
 
-                                ImGui.CloseCurrentPopup();
+                                ImGui.SameLine();
+                                if (ImGui.Button("Yes To All", StandardPopupButtons.ButtonSize))
+                                {
+                                    mergePromptTcs!.SetResult(new PromptResultYesNo(PromptYesNoResult.YesToAll));
+                                    ImGui.CloseCurrentPopup();
+                                }
+
+                                ImGui.SameLine();
+                                if (ImGui.Button("No To All", StandardPopupButtons.ButtonSize))
+                                {
+                                    mergePromptTcs!.SetResult(new PromptResultYesNo(PromptYesNoResult.NoToAll));
+                                    ImGui.CloseCurrentPopup();
+                                }
+                                break;
                             }
 
-                            ImGui.SameLine();
-                            if (ImGui.Button("Yes To All", StandardPopupButtons.ButtonSize))
+                            case PromptInputMode.Checkbox:
                             {
-                                mergePromptTcs!.SetResult(PromptResult.YesToAll);
-                                ImGui.CloseCurrentPopup();
+                                var opts = mergePrompt.OptionText!;
+                                mergePromptOptions ??= new bool[opts.Length];
+                                
+                                for (int i = 0; i < opts.Length; i++)
+                                {
+                                    ImGui.PushID(i);
+                                    ImGui.Checkbox(opts[i], ref mergePromptOptions[i]);
+                                    ImGui.PopID();
+                                }
+
+                                ImGui.Separator();
+                                if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btn))
+                                {
+                                    if (btn == 0)
+                                        mergePromptTcs!.SetResult(new PromptResultCheckbox(mergePromptOptions));
+
+                                    else if (btn == 1)
+                                        mergePromptTcs!.SetCanceled();
+
+                                    mergePromptOptions = null;
+                                    ImGui.CloseCurrentPopup();
+                                }
+                                break;
                             }
 
-                            ImGui.SameLine();
-                            if (ImGui.Button("No To All", StandardPopupButtons.ButtonSize))
+                            case PromptInputMode.Radio:
                             {
-                                mergePromptTcs!.SetResult(PromptResult.NoToAll);
-                                ImGui.CloseCurrentPopup();
+                                var opts = mergePrompt.OptionText!;
+                                
+                                for (int i = 0; i < opts.Length; i++)
+                                {
+                                    ImGui.PushID(i);
+                                    if (ImGui.RadioButton(opts[i], i == mergePromptRadioOpt))
+                                        mergePromptRadioOpt = i;
+                                    ImGui.PopID();
+                                }
+
+                                ImGui.Separator();
+                                if (StandardPopupButtons.Show(PopupButtonList.OKCancel, out int btn))
+                                {
+                                    if (btn != 0 || mergePromptRadioOpt != -1)
+                                    {
+                                        if (btn == 0)
+                                            mergePromptTcs!.SetResult(new PromptResultRadio(mergePromptRadioOpt));
+
+                                        else if (btn == 1)
+                                            mergePromptTcs!.SetCanceled();
+
+                                        ImGui.CloseCurrentPopup();
+                                    }
+                                }
+                                break;
                             }
                         }
 
@@ -1355,6 +1398,9 @@ static class AssetManagerGUI
 
         else if (res == 1)
             assetManager!.Append(GetCurrentAssetList(), newInit);
+
+        else if (res == 2)
+            await assetManager!.Merge(GetCurrentAssetList(), newInit, PromptOverwrite);
         
         else
             Log.Information("Init.txt import was cancelled");

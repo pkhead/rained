@@ -37,30 +37,19 @@ interface IAssetGraphicsManager
     public void DeleteGraphics(string name, string dir);
 }
 
-enum PromptResult { Yes, No, YesToAll, NoToAll }
+enum PromptYesNoResult { Yes, No, YesToAll, NoToAll }
+enum PromptInputMode { YesNo, Checkbox, Radio }
 
-class PromptOptions
+abstract record PromptResult;
+record PromptResultYesNo(PromptYesNoResult Result) : PromptResult;
+record PromptResultCheckbox(bool[] Values) : PromptResult;
+record PromptResultRadio(int Value) : PromptResult;
+
+class PromptOptions(PromptInputMode inputMode, string text, string[]? options = null)
 {
-    public string Text = "";
-    public readonly string[] CheckboxText;
-    public readonly bool[] CheckboxValues;
-
-    public PromptOptions(string text)
-    {
-        Text = text;
-        CheckboxText = [];
-        CheckboxValues = [];
-    }
-
-    public PromptOptions(string text, string[] checkboxes)
-    {
-        Text = text;
-        CheckboxText = checkboxes;
-        CheckboxValues = new bool[checkboxes.Length];
-
-        for (int i = 0; i < checkboxes.Length; i++)
-            CheckboxValues[i] = false;
-    }
+    public readonly PromptInputMode InputMode = inputMode;
+    public string Text = text;
+    public string[]? OptionText = options;
 }
 
 record CategoryList
@@ -1105,6 +1094,114 @@ class AssetManager
         return GetCategoryList(index)!.Categories;
     }
 
+    public void MoveItem(CategoryListIndex index, CategoryList.InitItem? draggingItem, CategoryList.InitCategory destCategory)
+    {
+        var catList = GetCategoryList(index)!;
+        catList.MoveItem(draggingItem!, destCategory, false);
+    }
+
+    public void MoveItem(CategoryListIndex index, CategoryList.InitCategory category, CategoryList.InitItem draggingItem, CategoryList.InitItem replaceItem)
+    {
+        if (!category.Items.Contains(draggingItem))
+            throw new ArgumentException("Dragged item was not found in the current category.", draggingItem.Name);
+        if (!category.Items.Contains(replaceItem))
+            throw new ArgumentException("Replace item was not found in the current category.", replaceItem.Name);
+
+        var catList = GetCategoryList(index)!;
+        catList.MoveItemWithinCategory(category, draggingItem, replaceItem);
+    }
+
+    public void MoveItem(CategoryListIndex index, CategoryList.InitItem draggingItem, CategoryList.InitCategory destCategory, CategoryList.InitItem? replaceItem)
+    {
+        //Applies the move item and then also rearranges the item inside of the class
+        var catList = GetCategoryList(index)!;
+        catList.MoveItem(draggingItem!, destCategory, true, replaceItem);
+    }
+
+    public void MoveCategory(CategoryListIndex index, CategoryList.InitCategory draggedCategory, CategoryList.InitCategory dragToCategory)
+    {
+        var catList = GetCategoryList(index)!;
+        catList.MoveCategory(draggedCategory, dragToCategory);
+    }
+
+    public async Task? Export(CategoryListIndex index, string filePath)
+    {
+        string imagePath = RainEd.Instance.AssetDataPath;
+        switch (index)
+        {
+            case CategoryListIndex.Tile:
+                imagePath = Path.Combine(imagePath, "Graphics");
+                break;
+
+            case CategoryListIndex.Prop:
+                imagePath = Path.Combine(imagePath, "Props");
+                break;
+
+            case CategoryListIndex.Materials:
+                imagePath = Path.Combine(imagePath, "Materials");
+                break;
+        }
+        string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
+
+        var catList = GetCategoryList(index);
+        using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
+        using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
+
+        var initEntry = zipInit.CreateEntry("Copy_To_Init.txt", CompressionLevel.Optimal);
+        using var initStream = new StreamWriter(initEntry.Open());
+        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+        {
+            if (catList.Categories.Contains(key))
+            {
+                // Implement the init
+                await initStream.WriteLineAsync(catList.GetCategoryHeader(key));
+
+                int items = AssetManagerGUI.pendingExportFiles[key].Count;
+                foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+                {
+                    await initStream.WriteLineAsync(item.RawLine);
+                }
+                await initStream.WriteLineAsync("");
+            }
+        }
+        await initStream.DisposeAsync();
+
+        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
+        {
+            // Then implement images
+            foreach (var item in AssetManagerGUI.pendingExportFiles[key])
+            {
+                await WritePngToZip(imageFiles, item, zipInit);
+            }
+        }
+
+        AssetManagerGUI.pendingExportFiles.Clear();
+    }
+
+    public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
+    {
+        if (imageFiles.Any(x => x.Contains(item.Name)))
+        {
+            string source = imageFiles.Where(x => x.Contains(item.Name)).First();
+            if (File.Exists(source))
+            {
+                var entry = zipInit.CreateEntry(Path.GetFileName(source));
+                if (entry is not null)
+                {
+                    using var imageFile = entry.Open();
+                    using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
+
+                    if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
+                    {
+                        await originalImage.CopyToAsync(imageFile);
+                    }
+
+                    await imageFile.DisposeAsync();
+                }
+            }
+        }
+    }
+
     public void Commit()
     {
         TileInit.Commit();
@@ -1241,115 +1338,19 @@ class AssetManager
         }
     }
 
-    public void MoveItem(CategoryListIndex index, CategoryList.InitItem? draggingItem, CategoryList.InitCategory destCategory)
-    {
-        var catList = GetCategoryList(index)!;
-        catList.MoveItem(draggingItem!, destCategory, false);
-    }
-
-    public void MoveItem(CategoryListIndex index, CategoryList.InitCategory category, CategoryList.InitItem draggingItem, CategoryList.InitItem replaceItem)
-    {
-        if (!category.Items.Contains(draggingItem))
-            throw new ArgumentException("Dragged item was not found in the current category.", draggingItem.Name);
-        if (!category.Items.Contains(replaceItem))
-            throw new ArgumentException("Replace item was not found in the current category.", replaceItem.Name);
-
-        var catList = GetCategoryList(index)!;
-        catList.MoveItemWithinCategory(category, draggingItem, replaceItem);
-    }
-
-    public void MoveItem(CategoryListIndex index, CategoryList.InitItem draggingItem, CategoryList.InitCategory destCategory, CategoryList.InitItem? replaceItem)
-    {
-        //Applies the move item and then also rearranges the item inside of the class
-        var catList = GetCategoryList(index)!;
-        catList.MoveItem(draggingItem!, destCategory, true, replaceItem);
-    }
-
-    public void MoveCategory(CategoryListIndex index, CategoryList.InitCategory draggedCategory, CategoryList.InitCategory dragToCategory)
-    {
-        var catList = GetCategoryList(index)!;
-        catList.MoveCategory(draggedCategory, dragToCategory);
-    }
-
-    public async Task? Export(CategoryListIndex index, string filePath)
-    {
-        string imagePath = RainEd.Instance.AssetDataPath;
-        switch (index)
-        {
-            case CategoryListIndex.Tile:
-                imagePath = Path.Combine(imagePath, "Graphics");
-                break;
-
-            case CategoryListIndex.Prop:
-                imagePath = Path.Combine(imagePath, "Props");
-                break;
-
-            case CategoryListIndex.Materials:
-                imagePath = Path.Combine(imagePath, "Materials");
-                break;
-        }
-        string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
-
-        var catList = GetCategoryList(index);
-        using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
-        using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
-
-        var initEntry = zipInit.CreateEntry("Copy_To_Init.txt", CompressionLevel.Optimal);
-        using var initStream = new StreamWriter(initEntry.Open());
-        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
-        {
-            if (catList.Categories.Contains(key))
-            {
-                // Implement the init
-                await initStream.WriteLineAsync(catList.GetCategoryHeader(key));
-
-                int items = AssetManagerGUI.pendingExportFiles[key].Count;
-                foreach (var item in AssetManagerGUI.pendingExportFiles[key])
-                {
-                    await initStream.WriteLineAsync(item.RawLine);
-                }
-                await initStream.WriteLineAsync("");
-            }
-        }
-        await initStream.DisposeAsync();
-
-        foreach (var key in AssetManagerGUI.pendingExportFiles.Keys)
-        {
-            // Then implement images
-            foreach (var item in AssetManagerGUI.pendingExportFiles[key])
-            {
-                await WritePngToZip(imageFiles, item, zipInit);
-            }
-        }
-
-        AssetManagerGUI.pendingExportFiles.Clear();
-    }
-
-    public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
-    {
-        if (imageFiles.Any(x => x.Contains(item.Name)))
-        {
-            string source = imageFiles.Where(x => x.Contains(item.Name)).First();
-            if (File.Exists(source))
-            {
-                var entry = zipInit.CreateEntry(Path.GetFileName(source));
-                if (entry is not null)
-                {
-                    using var imageFile = entry.Open();
-                    using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
-
-                    if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
-                    {
-                        await originalImage.CopyToAsync(imageFile);
-                    }
-
-                    await imageFile.DisposeAsync();
-                }
-            }
-        }
-    }
-
-    /*public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptOverwrite)
+    // this will try to import an init such that an item will only appear once in the merged init.
+    //
+    // simple merge conflict:
+    //  - item already exists in dest init. Will simply ask user if they want to overwrite it.
+    //
+    // complex merge conflict:
+    //  - imported item is in a different category than in the dest init
+    //  - item is defined multiple times in the source init
+    //  will give user a list of choices.
+    //
+    // if no merge conflicts occur with a certain item, then it will simply find the category in the
+    // dest init that the source item belonged in, or create a new one, and append it there.
+    public async Task Merge(CategoryListIndex initIndex, CategoryList srcInit, PromptRequest promptReq)
     {
         try
         {
@@ -1378,24 +1379,42 @@ class AssetManager
                 {
                     // throw error on color mismatch
                     if (srcCategory.Color != destCategory.Color)
-                            throw new Exception($"Attempt to merge category '{destCategory.Name}' with a different color");
+                        throw new Exception($"Attempt to merge category '{destCategory.Name}' with a different color");
                 }
                 else // register the category
                 {
                     destCategory = destInit.AddCategory(srcCategory.Name, srcCategory.Color);
                 }
                 
-                foreach (var item in srcCategory.Items)
+                foreach (var candidateItem in srcCategory.Items)
                 {
-                    if (!processedItemNames.Add(item.Name)) continue;
+                    if (!processedItemNames.Add(candidateItem.Name)) continue;
                     
                     bool doInsert = true;
                     bool expectGraphics = true;
 
+                    var srcItems = srcInit.GetItemsByName(candidateItem.Name);
+                    var dstItems = destInit.GetItemsByName(candidateItem.Name);
+                    Debug.Assert(srcItems.Length > 0);
+
                     // check with user if the same tile appears multiple times in the
                     // source
-                    var srcItems = srcInit.GetItemsByName(item.Name);
-                    if (srcInit.Length > 0)
+                    var item = candidateItem;
+                    if (srcItems.Length > 1)
+                    {
+                        var options = new string[srcItems.Length];
+                        for (int i = 0; i < srcItems.Length; i++)
+                        {
+                            options[i] = $"Use definition in \"{srcInit.GetCategoryOfItem(srcItems[i]).Name}\"";
+                        }
+                        var prompt = new PromptOptions(PromptInputMode.Radio, $"Multiple definitions of \"{item.Name}\"", options);
+                        var res = (PromptResultRadio) await promptReq(prompt);
+
+                        Debug.Assert(res.Value >= 0);
+                        item = srcItems[res.Value];
+                    }
+
+                    if (dstItems.Length > 0)
                     {
                         doInsert = false;
 
@@ -1417,16 +1436,16 @@ class AssetManager
                             }
                             options[^1] = "Add to " + destCategory.Name;
 
-                            var prompt = new PromptOptions($"Merge conflict with asset \"{item.Name}\"\nNew definition is in {destCategory.Name}", options);
-                            await promptOverwrite(prompt);
+                            var prompt = new PromptOptions(PromptInputMode.Checkbox, $"Merge conflict with asset \"{item.Name}\"\nNew definition is in {destCategory.Name}", options);
+                            var res = (PromptResultCheckbox) await promptReq(prompt);
                             
                             for (int i = 0; i < dstItems.Length; i++)
                             {
-                                if (prompt.CheckboxValues[i])
+                                if (res.Values[i])
                                 {
-                                    Log.Information("Overwrite def in '{Category}'", destInit.GetCategoryOfItem(dstItems[0]).Name);
-                                    dstItems[0].RawLine = item.RawLine;
-                                    dstItems[0].Name = item.Name;
+                                    Log.Information("Overwrite def in '{Category}'", destInit.GetCategoryOfItem(dstItems[i]).Name);
+                                    dstItems[i].RawLine = item.RawLine;
+                                    dstItems[i].Name = item.Name;
                                     gfxManagerActionQueue.Enqueue(new GfxManagerCopyAction(
                                         GraphicsManager: gfxManager,
                                         SourceDirectory: srcDir,
@@ -1437,7 +1456,7 @@ class AssetManager
                                 }
                             }
 
-                            if (prompt.CheckboxValues[^1])
+                            if (res.Values[^1])
                             {
                                 Log.Information("Add to '{Category}'", destCategory.Name);
 
@@ -1459,24 +1478,25 @@ class AssetManager
                             else
                             {
                                 // ask the user if they want to overwrite
-                                var opt = new PromptOptions($"Overwrite \"{item.Name}\"?");
+                                var opt = new PromptOptions(PromptInputMode.YesNo, $"Overwrite \"{item.Name}\"?");
                                 
-                                switch (await promptOverwrite(opt))
+                                var res = (PromptResultYesNo) await promptReq(opt);
+                                switch (res.Result)
                                 {
-                                    case PromptResult.Yes:
+                                    case PromptYesNoResult.Yes:
                                         doOverwrite = true;
                                         break;
 
-                                    case PromptResult.No:
+                                    case PromptYesNoResult.No:
                                         doOverwrite = false;
                                         break;
 
-                                    case PromptResult.YesToAll:
+                                    case PromptYesNoResult.YesToAll:
                                         doOverwrite = true;
                                         autoOverwrite = true;
                                         break;
 
-                                    case PromptResult.NoToAll:
+                                    case PromptYesNoResult.NoToAll:
                                         doOverwrite = false;
                                         autoOverwrite = false;
                                         break;
@@ -1531,5 +1551,5 @@ class AssetManager
             Log.Error("Error while merging:\n{Error}", e);
             throw;
         }
-    }*/
+    }
 }
