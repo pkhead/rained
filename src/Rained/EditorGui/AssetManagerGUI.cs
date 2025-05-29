@@ -507,8 +507,8 @@ static class AssetManagerGUI
                 ImGui.BeginDisabled(!unsavedChanges);
                 if (ImGui.MenuItem("Apply Changes"))
                 {
-                    unsavedChanges = false;
                     assetManager!.Commit();
+                    unsavedChanges = false;
                 }
                 ImGui.EndDisabled();
                 ImGui.SetItemTooltip(
@@ -1394,13 +1394,22 @@ static class AssetManagerGUI
         // 2: Merge
 
         if (res == 0)
+        {
             assetManager!.Replace(GetCurrentAssetList(), newInit);
+            unsavedChanges = true;
+        }
 
         else if (res == 1)
+        {
             assetManager!.Append(GetCurrentAssetList(), newInit);
+            unsavedChanges = true;
+        }
 
         else if (res == 2)
+        {
             await assetManager!.Merge(GetCurrentAssetList(), newInit, PromptOverwrite);
+            unsavedChanges = true;
+        }
         
         else
             Log.Information("Init.txt import was cancelled");
