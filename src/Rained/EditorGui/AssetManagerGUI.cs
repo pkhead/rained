@@ -74,6 +74,9 @@ static class AssetManagerGUI
     private static string exportLocation;
     private static readonly List<(int, CategoryList.InitCategory)> searchResults = [];
 
+    public static bool HasUnsavedChanges => unsavedChanges;
+    public static AssetManager? Manager => assetManager;
+
     private static async Task<PromptResult> PromptOverwrite(PromptOptions prompt)
     {
         mergePromptTcs = new();

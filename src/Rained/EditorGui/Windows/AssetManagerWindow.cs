@@ -12,6 +12,7 @@ namespace Rained.EditorGui.Windows
         private static bool isWindowOpen = false; 
         
         private static bool openPopupCmd = false;
+        private static bool openCloseConfirm = false;
 
         public static void OpenWindow()
         {
@@ -27,6 +28,8 @@ namespace Rained.EditorGui.Windows
 
         private static AssetTabEnum selectedAssetTab = AssetTabEnum.Tiles;
         private readonly static string[] NavTabs = ["Tiles", "Props", "Materials"];
+
+        private static TaskCompletionSource<bool>? closePromptTcs = null;
 
         public static void ShowWindow()
         {
@@ -45,10 +48,9 @@ namespace Rained.EditorGui.Windows
             {
                 var lastNavTab = selectedAssetTab;
 
-                if (ImGui.Begin(WindowName, ref isWindowOpen, ImGuiWindowFlags.NoDocking))
+                var p_open = true;
+                if (ImGui.Begin(WindowName, ref p_open, ImGuiWindowFlags.NoDocking))
                 {
-
-
                     // show navigation sidebar
                     ImGui.BeginChild("Nav", new Vector2(ImGui.GetTextLineHeight() * 12.0f, ImGui.GetContentRegionAvail().Y), ImGuiChildFlags.Border);
                     {
@@ -96,8 +98,54 @@ namespace Rained.EditorGui.Windows
                     //}
 
                     ImGui.EndChild();
+
+                    if (openCloseConfirm)
+                    {
+                        ImGui.OpenPopup("Unsaved Changes");
+                        openCloseConfirm = false;
+                    }
+
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+                    if (ImGui.BeginPopupModal("Unsaved Changes"))
+                    {
+                        ImGui.Text("Do you want to apply your changes before proceeding?");
+                        ImGui.Separator();
+
+                        if (ImGui.Button("Yes", StandardPopupButtons.ButtonSize))
+                        {
+                            AssetManagerGUI.Manager?.Commit();
+                            isWindowOpen = false;
+                            ImGui.CloseCurrentPopup();
+                            closePromptTcs?.SetResult(true);
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("No", StandardPopupButtons.ButtonSize))
+                        {
+                            isWindowOpen = false;
+                            ImGui.CloseCurrentPopup();
+                            closePromptTcs?.SetResult(true);
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize))
+                        {
+                            ImGui.CloseCurrentPopup();
+                            closePromptTcs?.SetResult(false);
+                        }
+
+                        ImGui.EndPopup();
+                    }
                 }
                 ImGui.End();
+
+                if (!p_open)
+                {
+                    if (AssetManagerGUI.HasUnsavedChanges)
+                        openCloseConfirm = true;
+                    else
+                        isWindowOpen = false;
+                }
 
                 if (!isWindowOpen)
                 {
@@ -105,5 +153,18 @@ namespace Rained.EditorGui.Windows
                 }
             }
         }
+
+        public static async Task<bool> AppClose()
+        {
+            if (!isWindowOpen) return true;
+            if (!AssetManagerGUI.HasUnsavedChanges) return true;
+
+            closePromptTcs = new();
+            openCloseConfirm = true;
+            var res = await closePromptTcs.Task;
+            closePromptTcs = null;
+            return res;
+        }
     }
+
 }
