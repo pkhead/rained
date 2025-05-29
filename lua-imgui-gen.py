@@ -49,7 +49,6 @@ static partial class ImGuiModule
             func_name = ovr_def['ov_cimguiname']
             if func_name[:2] == 'ig' and not ('imgui_internal' in ovr_def['location']):
                 out_func_name = func_name[2:]
-            # if func_name == 'igButton' or func_name == 'igSliderFloat':
                 success = True
 
                 func_def = []
@@ -217,6 +216,10 @@ static partial class ImGuiModule
                     elif ovr_def['ret'] == 'int' or ovr_def['ret'] == 'const int':
                         meta_returns.insert(0, MetaParameter('integer', 's'))
                         func_def.append("lua.PushInteger(ret);\n")
+
+                    elif ovr_def['ret'] == 'float' or ovr_def['ret'] == 'const float':
+                        meta_returns.insert(0, MetaParameter('number', 'num'))
+                        func_def.append("lua.PushNumber((double)ret);\n")
 
                     else:
                         print("unsupported return type: " + ovr_def['ret'])
