@@ -360,8 +360,8 @@ class UserPreferences
     {
         BeforeSelected, AfterSelected, First, Last
     }
-    public EffectPlacementPositionOption EffectPlacementPosition = EffectPlacementPositionOption.BeforeSelected;
-    public EffectPlacementPositionOption EffectPlacementAltPosition = EffectPlacementPositionOption.AfterSelected;
+    public EffectPlacementPositionOption EffectPlacementPosition = EffectPlacementPositionOption.Last;
+    public EffectPlacementPositionOption EffectPlacementAltPosition = EffectPlacementPositionOption.BeforeSelected;
 
     [JsonPropertyName("effectPlacementPosition")]
     public string EffectPlacementPositionString

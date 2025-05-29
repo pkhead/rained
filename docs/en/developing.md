@@ -8,23 +8,25 @@ of the GitHub repository, but this document further details the development setu
 
     TL;DR: If you are on Windows, copy the DLLs in `src\Glib\angle\win-x64` to `C:\Program Files\dotnet`.
 
-For Windows, Rained prefers to use [ANGLE](https://chromium.googlesource.com/angle/angle), an OpenGL ES implementation for various graphics APIs. On other operating systems, Rained will prefer to use desktop OpenGL 3.3. The reasoning for this is that Windows OpenGL drivers can be a bit quirky, so to speak, and depending on the user's vendor, badly optimized. Also, I kept getting reports of OpenGL errors of a mysterious origin, although that may be fixed by now.
+For Windows, Rained prefers to use [ANGLE](https://chromium.googlesource.com/angle/angle), an OpenGL ES implementation for various graphics APIs. On other operating systems, Rained will prefer to use desktop OpenGL 3.3. The reasoning for this is that Windows OpenGL drivers can be a bit quirky, so to speak, and depending on the user's vendor, badly optimized. Also, I kept getting reports of OpenGL errors of a mysterious origin, although that bug has been fixed by now.
 
 ANGLE is provided by a set of DLLs that takes a lot of waiting to build. Fortunately, pre-built ANGLE binaries for both Windows and Linux are stored in this repository, both of which I took from an Electron project for the respective systems because I couldn't figure out how to build it myself.
 
-However, there is a hiccup with the referencing of the DLLs for Rained. Since whatever searches for the ANGLE DLLs does not go through the C# DLL resolver, that means that the ANGLE DLLs *must* either be in PATH or, on Windows, in the same folder as the running executable. There is no problem here for release packages, since it needs to be put there anyway, but when running from a non-publish build there are two ways Rained can be launched and neither of them have the ANGLE DLLs automatically put in the directories of the executables.
+However, there is a hiccup with the referencing of the DLLs for Rained. Since whatever searches for the ANGLE DLLs does not go through the C# DLL resolver, that means that the ANGLE DLLs *must* either be in the system's library directories, LD_LIBRARY_PATH (on Unix), or the same folder as the running executable (on Windows). There is no problem here for release packages, since it needs to be put there anyway, but when running from a non-publish build there are two ways Rained can be launched and neither of them have the ANGLE DLLs automatically put in the directories of the executables.
 
 If the program is being ran via `dotnet Rained.dll`, the ANGLE DLLs need to be present in the directory where `dotnet.exe` is located, otherwise the program will fail to start. If the program is being ran by running Rained.exe directly, the ANGLE DLLs need to be present in the build directory containing Rained.exe. You can alternatively copy the ANGLE DLLs to a directory that's referenced in the DLL search path, and it should work just fine for both launch situations.
 
 If you don't feel like doing all of this, there is a way to build Rained with desktop OpenGL that doesn't have all this DLL nonsense as a prerequisite. How to do so is explained later in this document.
 
-## Build setup
+## Building
 Prerequisities:
+
  - .NET Core toolchain
  - Python 3
  - *(optional)* OpenGL ES driver or [ANGLE libraries](src/Glib/angle) in the DLL search path.
  - *(optional)* [glslang](https://github.com/KhronosGroup/glslang) CLI
 
+### Setup
 1. Clone repository with Git:
 ```bash
 git clone --recursive https://github.com/pkhead/rained
@@ -44,8 +46,8 @@ dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects
 python3 lua-imgui-gen.py
 ```
 
-## Building Rained
-### .NET CLI and Cake
+### Building the app
+#### .NET CLI and Cake
 ```bash
 # only needs to be run once
 dotnet tool restore
@@ -62,7 +64,7 @@ Run the project!
 dotnet run --no-build --project src/Rained/Rained.csproj
 ```
 
-### .NET CLI alone
+#### .NET CLI alone
 This is a translation of the Cake build script:
 ```bash
 # validate/compile updated shader source files
@@ -119,9 +121,11 @@ Rained has multiple projects in the C# solution. Here is a list of their brief d
 There is also [rainedvm](https://github.com/pkhead/rainedvm), which is a separate program that serves as a version manager utility. It is programmed in C++ and distributed separately, which is why it is a separate repository.
 
 ## The ImGui .ini file
-The `config/imgui.ini` file will always be modified whenever you launch Rained, making version control want to keep track of
-the unnecessary changes. However, it can't be put in the .gitignore since Rained needs to have an initial imgui.ini file.
-Thus, if you don't actually want to update config/imgui.ini, I advise two practices:
+Previously the `config/imgui.ini` file was kept track in version control because an initial imgui.ini file is required for correct window positioning. It was a bit problematic, however, since not only would it always reflect window changes made by the developer on their latest run, it seems to change on a Rained launch even if you don't mess with any windows. Obviously, it's not preferable to have the imgui.ini file be included in every commit
+
+However, as of [commit ddfafe2](https://github.com/pkhead/rained/commit/ddfafe2c6d468a49cc2dee6d937a8ac367fe037c), it is no longer necessary to keep it in version control since Rained will now generate an imgui.ini file from a programmer-given base file if it doesn't exist, and it thusly has been removed from version control.
+
+Still, below are practices for how to deal with the imgui.ini file if it is in version control:
 
 1. Run `git update-index --assume-unchanged config/imgui.ini`. This will make Git ignore any changes to the file, though
    it may cause problems when switching branches. You can use `git stash` in this situation. If you want to undo this,

@@ -115,10 +115,10 @@ static class LuaInterface
         if (runAutoloads)
         {
             LuaHelpers.DoFile(luaState.State, Path.Combine(scriptsPath, "init.lua"));
-            if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
-            {
-                LuaHelpers.DoString(luaState.State, "autorequire('autoload', true)");
-            }
+            // if (Directory.Exists(Path.Combine(scriptsPath, "autoload")))
+            // {
+            //     LuaHelpers.DoString(luaState.State, "autorequire('autoload', true)");
+            // }
         }
     }
 

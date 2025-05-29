@@ -189,11 +189,15 @@ static class GuiModule
                 filters = ParseFileFilters(lua, 4);
             }
 
+            string? openDir = null;
+            if (!lua.IsNoneOrNil(5))
+                openDir = lua.CheckString(5);
+
             lua.PushBoolean(FileBrowser.Button(id, openMode, ref path, (fileBrowser) =>
             {
                 if (filters is not null)
                     ApplyFilters(fileBrowser, filters);
-            }));
+            }, openDir));
 
             if (path is null)
                 lua.PushNil();
@@ -206,12 +210,27 @@ static class GuiModule
         lua.ModuleFunction("openFileBrowser", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
+            var narg = lua.GetTop();
             var openMode = (FileBrowser.OpenMode)lua.CheckOption(1, null, fileBrowserOpenMode);
             if (!lua.IsNoneOrNil(2)) lua.CheckType(2, LuaType.Table);
-            lua.CheckType(3, LuaType.Function);
 
-            lua.PushCopy(3);
-            var funcRef = lua.Ref(LuaRegistry.Index);
+            int funcRef;
+            string? openDir = null;
+            if (narg == 4)
+            {
+                if (!lua.IsNoneOrNil(3)) openDir = lua.CheckString(3);
+
+                lua.CheckType(4, LuaType.Function);
+                lua.PushCopy(4);
+                funcRef = lua.Ref(LuaRegistry.Index);
+            }
+            else
+            {
+                // assume narg == 3
+                lua.CheckType(3, LuaType.Function);
+                lua.PushCopy(3);
+                funcRef = lua.Ref(LuaRegistry.Index);
+            }
 
             var filters = ParseFileFilters(lua, 2);
 
@@ -234,7 +253,7 @@ static class GuiModule
                 LuaHelpers.Call(lua, 1, 0);
             }
 
-            var fileBrowser = new FileBrowser(openMode, Callback, null);
+            var fileBrowser = new FileBrowser(openMode, Callback, openDir);
             ApplyFilters(fileBrowser, filters);
 
             fileBrowserWrap.PushWrapper(lua, fileBrowser);

@@ -1007,7 +1007,7 @@ partial class FileBrowser
     private static bool fileBrowserReturn = false;
     private static FileBrowser? fileBrowserButtonInstance = null;
 
-    public static bool Button(string id, OpenMode openMode, ref string? path, Action<FileBrowser>? ctorCallback = null)
+    public static bool Button(string id, OpenMode openMode, ref string? path, Action<FileBrowser>? ctorCallback = null, string? openDir = null)
     {
         if (openMode is OpenMode.MultiRead or OpenMode.MultiDirectory)
             throw new ArgumentException("Cannot use a multiselect mode for FileBrowser.Button.", nameof(openMode));
@@ -1026,7 +1026,7 @@ partial class FileBrowser
         {
             activeFileBrowserButton = ImGui.GetItemID();
             fileBrowserReturn = false;
-            fileBrowserButtonInstance = new FileBrowser(openMode, Callback, path is not null ? Path.GetDirectoryName(path) : null);
+            fileBrowserButtonInstance = new FileBrowser(openMode, Callback, path is not null ? Path.GetDirectoryName(path) : openDir);
             ctorCallback?.Invoke(fileBrowserButtonInstance);
         }
         uint buttonId = ImGui.GetItemID();

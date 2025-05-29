@@ -216,6 +216,23 @@ static class EditorWindow
                         LuaScripting.LuaInterface.HandleException(e);
                     }
                 }
+                
+                if (ImGui.MenuItem("Execute Script..."))
+                {
+                    var startDir = Path.Combine(Boot.AppDataPath, "scripts");
+                    fileBrowser = new FileBrowser(
+                        mode: FileBrowser.OpenMode.Read,
+                        openDir: startDir, 
+                        callback: (string[] paths) =>
+                        {
+                            if (paths.Length == 0) return;
+                            LuaScripting.LuaHelpers.DoFile(LuaScripting.LuaInterface.LuaState, paths[0]);
+                        }
+                    );
+                    fileBrowser.AddFilter("Lua file", ".lua");
+                }
+
+                ImGui.Separator();
 
                 if (ImGui.MenuItem("Preferences"))
                 {
