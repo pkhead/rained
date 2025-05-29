@@ -72,6 +72,15 @@ static class ViewModule
                 case "paletteMix":
                     lua.PushNumber(RainEd.Instance.LevelView.Renderer.Palette.Mix);
                     break;
+                
+                case "reloadPalettes":
+                    lua.PushCFunction(static (nint luaPtr) =>
+                    {
+                        var lua = Lua.FromIntPtr(luaPtr);
+                        RainEd.Instance.LevelView.Renderer.Palette.LoadPalettes();
+                        return 0;
+                    });
+                    break;
 
                 default:
                     lua.PushNil();
@@ -134,6 +143,10 @@ static class ViewModule
                     RainEd.Instance.LevelView.Renderer.Palette.Mix = Math.Clamp((float)lua.CheckNumber(3), 0f, 1f);
                     break;
 
+                case "reloadPalettes":
+                    lua.ErrorWhere($"'{idx}' is read-only", 2);
+                    break;
+                
                 default:
                     lua.ErrorWhere($"unknown field '{idx ?? "nil"}'", 2);
                     break;

@@ -13,3 +13,6 @@
 ---@field palette2 integer Index of the fade palette.
 ---@field paletteMix number Strength of the fade, from 0 to 1.
 rained.view = {}
+
+---Rescans and reloads palettes.
+function rained.view.reloadPalettes() end

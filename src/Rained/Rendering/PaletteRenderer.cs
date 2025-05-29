@@ -19,7 +19,19 @@ class PaletteRenderer : IDisposable
     
     public PaletteRenderer()
     {
-        var palettes = new Dictionary<int, Palette>();
+        Palettes = [];
+        LoadPalettes();
+
+        // create palette texture which will be computed and sent to the palette shader
+        // (Glib.PixelFormat.RGB does not work for some reason)
+        paletteTexture = Glib.Texture.Create(30, 3, Glib.PixelFormat.RGBA);
+        _paletteImgBuf = Glib.Image.FromColor(30, 3, Glib.Color.Black, Glib.PixelFormat.RGBA);
+    }
+
+    public void LoadPalettes()
+    {
+        Palettes.Clear();
+
         foreach (var filePath in ConfigDirectory.EnumerateFiles("palettes"))
         {
             int paletteNumber = 0;
@@ -35,7 +47,7 @@ class PaletteRenderer : IDisposable
             {
                 try
                 {
-                    palettes[paletteNumber] = new Palette(filePath);
+                    Palettes[paletteNumber] = new Palette(filePath);
                 }
                 catch (Exception e)
                 {
@@ -47,13 +59,6 @@ class PaletteRenderer : IDisposable
                 Log.UserLogger.Warning("Invalid palette file name {FileName}, ignoring.", Path.GetFileName(filePath));
             }
         }
-        
-        Palettes = palettes;
-
-        // create palette texture which will be computed and sent to the palette shader
-        // (Glib.PixelFormat.RGB does not work for some reason)
-        paletteTexture = Glib.Texture.Create(30, 3, Glib.PixelFormat.RGBA);
-        _paletteImgBuf = Glib.Image.FromColor(30, 3, Glib.Color.Black, Glib.PixelFormat.RGBA);
     }
 
     public Palette GetPalette(int index)
