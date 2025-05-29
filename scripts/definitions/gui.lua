@@ -39,8 +39,9 @@ rained.gui.fileFilters.level = ud
 ---@param openMode FileBrowserOpenModeSingle
 ---@param path string?
 ---@param filters FileBrowserFilter[]?
+---@param openDir string? If path is nil, the file browser will optionally open in this directory instead. 
 ---@return boolean s, string? path
-function rained.gui.fileBrowserWidget(id, openMode, path, filters) end
+function rained.gui.fileBrowserWidget(id, openMode, path, filters, openDir) end
 
 ---Open the file browser, blocking the script until the user has either submitted or canceled.
 ---
@@ -51,9 +52,11 @@ function rained.gui.fileBrowserWidget(id, openMode, path, filters) end
 ---
 ---@param openMode FileBrowserOpenMode
 ---@param filters FileBrowserFilter[]?
+---@param openDir string? The optional directory to open the file browser in.
 ---@param callback fun(files: string[]) The callback to run when the user finishes using the file browser.
+---@overload fun(openMode:FileBrowserOpenMode, filters:FileBrowserFilter[]?, callback:fun(files: string[]))
 ---@return FileBrowser
-function rained.gui.openFileBrowser(openMode, filters, callback) end
+function rained.gui.openFileBrowser(openMode, filters, openDir, callback) end
 
 ---Register a hook into one or more menus from the menubar. If a menu of
 ---menuName does not already exist, it will be inserted into the menubar.
