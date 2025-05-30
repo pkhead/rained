@@ -134,6 +134,7 @@ namespace Rained.EditorGui.Windows
                             closePromptTcs?.SetResult(false);
                         }
 
+                        AssetManagerGUI.HasUnsavedChanges = false;
                         ImGui.EndPopup();
                     }
                 }

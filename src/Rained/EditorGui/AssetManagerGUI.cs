@@ -60,9 +60,9 @@ static class AssetManagerGUI
 
     // fields related to edit prompt
     private static int wantEdit; // 0 = no, 1 = category, 2 = asset
-    private static string newItemName = "";
-    private static Vector3 categoryColor = new(1f, 0f, 0f);
-    private static bool showColorPicker;
+    private static string? newItemName = null;
+    private static Vector3 v3CategoryColor = new(0f, 0f, 0f);
+    private static bool initColorEdit = true;
 
     // fields related to the export prompt
     private static int wantExport;
@@ -74,7 +74,7 @@ static class AssetManagerGUI
     private static string exportLocation;
     private static readonly List<(int, CategoryList.InitCategory)> searchResults = [];
 
-    public static bool HasUnsavedChanges => unsavedChanges;
+    public static bool HasUnsavedChanges { get => unsavedChanges; set => unsavedChanges = value; }
     public static AssetManager? Manager => assetManager;
 
     private static async Task<PromptResult> PromptOverwrite(PromptOptions prompt)
@@ -286,6 +286,7 @@ static class AssetManagerGUI
         {
             selected = Math.Clamp(selected, 0, categories.Count - 1);
         }
+        unsavedChanges = true;
     }
 
     private static void DeleteCategory()
@@ -304,6 +305,7 @@ static class AssetManagerGUI
                 DeleteCategory(AssetManager.CategoryListIndex.Materials, ref selectedMatCategory);
                 break;
         }
+        unsavedChanges = true;
     }
 
     private static void DeleteItem(AssetManager.CategoryListIndex assetIndex, int selectedCategory)
@@ -322,6 +324,7 @@ static class AssetManagerGUI
         {
             groupIndex = Math.Clamp(groupIndex, 0, category.Items.Count - 1);
         }
+        unsavedChanges = true;
     }
 
     private static void DeleteItem()
@@ -374,11 +377,11 @@ static class AssetManagerGUI
 
         _dragToCategory = null;
         _draggedCategory = null;
+        unsavedChanges = true;
     }
 
     private static void MoveItem(int tab)
     {
-        unsavedChanges = true;
         switch (curAssetTab)
         {
             case AssetType.Tile:
@@ -393,6 +396,7 @@ static class AssetManagerGUI
                 MoveItem(AssetManager.CategoryListIndex.Materials, selectedMatCategory);
                 break;
         }
+        unsavedChanges = true;
     }
 
     private static void MoveItem(AssetManager.CategoryListIndex index, int selectedCategory)
@@ -413,30 +417,15 @@ static class AssetManagerGUI
         _draggingItem = null;
         _replaceItem = null;
         _dragToCategory = null;
+        unsavedChanges = true;
     }
 
-    private static void UpdateCategory(AssetManager.CategoryListIndex assetIndex, int selectedCategory)
+    private static void ChangeCategoryHeader(int category, string newName, Lingo.Color newColor)
     {
-        assetManager!.UpdateCategory(assetIndex, selectedCategory);
+        assetManager!.ChangeCategoryHeader(GetCurrentAssetList(), category, newName, newColor);
+        unsavedChanges = true;
     }
 
-    private static void UpdateCategory()
-    {
-        switch (curAssetTab)
-        {
-            case AssetType.Tile:
-                UpdateCategory(AssetManager.CategoryListIndex.Tile, selectedTileCategory);
-                break;
-
-            case AssetType.Prop:
-                UpdateCategory(AssetManager.CategoryListIndex.Prop, selectedPropCategory);
-                break;
-
-            case AssetType.Material:
-                UpdateCategory(AssetManager.CategoryListIndex.Materials, selectedMatCategory);
-                break;
-        }
-    }
 
     //private static void MoveCategory(int selected, int next)
     //{
@@ -507,13 +496,11 @@ static class AssetManagerGUI
                     fileBrowser.AddFilter("ZIP File", ".zip");
                 }*/
 
-                ImGui.BeginDisabled(!unsavedChanges);
-                if (ImGui.MenuItem("Apply Changes"))
+                if (ImGui.MenuItem("Apply Changes", null, false, unsavedChanges))
                 {
                     assetManager!.Commit();
                     unsavedChanges = false;
                 }
-                ImGui.EndDisabled();
                 ImGui.SetItemTooltip(
                         """
                     Clicking apply will commit
@@ -588,7 +575,6 @@ static class AssetManagerGUI
         // delete confirmation prompt
         if (wantDelete > 0)
         {
-            unsavedChanges = true;
             ImGuiExt.EnsurePopupIsOpen("Delete?");
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
 
@@ -645,11 +631,11 @@ static class AssetManagerGUI
         // Edits the raw init line, may cause unexpected issues due to possibly format irregularities
         if (wantEdit > 0)
         {
-            unsavedChanges = true;
-            ImGuiExt.EnsurePopupIsOpen("Edit");
+            var popupName = wantEdit == 1 ? "Edit Category" : "Edit Asset Name";
+            ImGuiExt.EnsurePopupIsOpen(popupName);
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
 
-            if (ImGuiExt.BeginPopupModal("Edit", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+            if (ImGuiExt.BeginPopupModal(popupName, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
             {
                 int idx = GetCurrentCategoryIndex();
                 var categories = assetManager!.GetCategories(GetCurrentAssetList());
@@ -659,48 +645,37 @@ static class AssetManagerGUI
                     var category = categories[idx];
                     if (curAssetTab != AssetType.Material)
                     {
-                        if (categoryColor == new Vector3(1f, 0f, 0f) && category.Color != null)
+                        if (initColorEdit)
                         {
-                            Lingo.Color col = category.Color.Value;
-                            categoryColor = new((float)col.R / 255f, (float)col.G / 255f, (float)col.B / 255f);
+                            var lingoCol = category.Color ?? new Lingo.Color(255, 0, 0);
+                            v3CategoryColor = new Vector3((float)lingoCol.R / 255, (float)lingoCol.G / 255, (float)lingoCol.B / 255);
+                            initColorEdit = false;
                         }
 
-                        if (ImGui.ColorButton("##CategoryCol", new(categoryColor.X, categoryColor.Y, categoryColor.Z, 1f), ImGuiColorEditFlags.NoTooltip))
-                        {
-                            showColorPicker = !showColorPicker;
-                        }
+                        ImGui.ColorEdit3("##CategoryCol", ref v3CategoryColor, ImGuiColorEditFlags.NoInputs);
                         ImGui.SameLine();
                     }
-                    if (string.IsNullOrEmpty(newItemName))
-                    {
-                        newItemName = category.Name;
-                    }
                     
+                    newItemName ??= category.Name;
                     ImGui.InputTextWithHint("##CategoryName", "Name", ref newItemName, 128);
-
-                    if (showColorPicker)
-                    {
-                        ImGui.ColorPicker3("##Color", ref categoryColor, ImGuiColorEditFlags.InputRGB | ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoSidePreview | ImGuiColorEditFlags.NoSmallPreview);
-                    }
                 }
                 else if (wantEdit == 2)
                 {
                     var item = categories[idx].Items[groupIndex];
-                    if (string.IsNullOrEmpty(newItemName))
-                    {
-                        newItemName = item.Name;
-                    }
 
+                    newItemName ??= item.Name;
                     ImGui.InputTextWithHint("##ItemName", "File Name", ref newItemName, 128);
-                    ImGui.SameLine();
-                    ImGui.TextDisabled("(?)");
-                    ImGui.SetItemTooltip(
-                            """
-                    Renaming the asset name will also attempt 
-                    to rename the corrosponding image file, 
-                    as renaming assets by themselves causes 
-                    a invalid file path error.    
-                    """);
+
+                    // // I feel like this is obvious...
+                    // ImGui.SameLine();
+                    // ImGui.TextDisabled("(?)");
+                    // ImGui.SetItemTooltip(
+                    //         """
+                    // Renaming the asset name will also attempt 
+                    // to rename the corrosponding image file, 
+                    // as renaming assets by themselves causes 
+                    // a invalid file path error.    
+                    // """);
                 }
 
                 ImGui.Separator();
@@ -712,48 +687,47 @@ static class AssetManagerGUI
                         if (wantEdit == 1)
                         {
                             var category = categories[idx];
-                            category.Name = newItemName;
-                            
-                            category.Color = new((int)(categoryColor.X * 255f), (int)(categoryColor.Y * 255f), (int)(categoryColor.Z * 255f));
 
-                            if (curAssetTab == AssetType.Tile && RainEd.Instance.TileDatabase.Categories.Any(cat => cat.Name == category.Name))
-                            {
-                                Lingo.Color col = category.Color.Value;
-                                RainEd.Instance.TileDatabase.Categories[idx].Color = new(col.R, col.G, col.B, 1);
-                            }
+                            if (newItemName is null)
+                                throw new NullReferenceException("newItemName is null");
 
-                            categoryColor = new(1f, 0f, 0f);
-                            newItemName = "";
+                            // if (curAssetTab == AssetType.Tile && RainEd.Instance.TileDatabase.Categories.Any(cat => cat.Name == category.Name))
+                            // {
+                            //     Lingo.Color col = category.Color.Value;
+                            //     RainEd.Instance.TileDatabase.Categories[idx].Color = new(col.R, col.G, col.B, 1);
+                            // }
 
-                            UpdateCategory();
+                            ChangeCategoryHeader(idx, newItemName ?? throw new NullReferenceException(), new Lingo.Color(
+                                (int)(Math.Clamp(v3CategoryColor.X, 0f, 1f) * 255),
+                                (int)(Math.Clamp(v3CategoryColor.Y, 0f, 1f) * 255),
+                                (int)(Math.Clamp(v3CategoryColor.Z, 0f, 1f) * 255)
+                            ));
                         }
                         else if (wantEdit == 2)
                         {
                             var item = categories[idx].Items[groupIndex];
-                            item.Name = newItemName;
-                            newItemName = "";
-                            // Handle Init editing or something here
+
+                            if (newItemName is not null)
+                            {
+                                assetManager!.RenameItem(GetCurrentAssetList(), item, newItemName);
+                                unsavedChanges = true;
+                            }
                         }
                     }
 
-                    else // if Cancel was pressed
-                    {
-                        categoryColor = new(1f, 0f, 0f);
-                        newItemName = "";
-                    }
-
                     ImGui.CloseCurrentPopup();
+                    initColorEdit = true;
+                    newItemName = null;
                     wantEdit = 0;
-                    showColorPicker = false;
                 }
-                ImGui.SameLine();
-                ImGui.TextDisabled("(?)");
-                ImGui.SetItemTooltip(
-                        """
-                    Any changes made here will
-                    also attempt to be reflected
-                    in the Init.txt file.
-                    """);
+                // ImGui.SameLine();
+                // ImGui.TextDisabled("(?)");
+                // ImGui.SetItemTooltip(
+                //         """
+                //     Any changes made here will
+                //     also attempt to be reflected
+                //     in the Init.txt file.
+                //     """);
 
                 ImGui.EndPopup();
             }

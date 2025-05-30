@@ -1,6 +1,8 @@
 using Rained.EditorGui;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text;
+using System.Text.RegularExpressions;
 
 
 /**
@@ -35,6 +37,7 @@ interface IAssetGraphicsManager
 {
     public void CopyGraphics(string name, string srcDir, string destDir, bool expect);
     public void DeleteGraphics(string name, string dir);
+    public void RenameGraphics(string oldName, string newName, string dir);
 }
 
 enum PromptYesNoResult { Yes, No, YesToAll, NoToAll }
@@ -52,7 +55,7 @@ class PromptOptions(PromptInputMode inputMode, string text, string[]? options = 
     public string[]? OptionText = options;
 }
 
-record CategoryList
+partial class CategoryList
 {
     public readonly string FilePath;
     //public readonly List<string> Lines;
@@ -410,15 +413,52 @@ record CategoryList
         }
     }
 
-    public void UpdateCategoryInit(InitCategory category)
+    /// <summary>
+    /// Updates the name and color of a category header.
+    /// If this CategoryList does not support colors in headers, the newColor field
+    /// will be ignored. Otherwise, it is mandatory.
+    /// </summary>
+    public void ChangeCategoryHeader(InitCategory category, string newName, Lingo.Color newColor)
     {
         if (!Categories.Contains(category))
             throw new ArgumentException("The given category was not created by this CategoryList", nameof(category));
 
         // Replaces the category init line with the new updated information
-        int lineIndex = lines.IndexOf(categoryHeaders[category.Name]);
+        var line = categoryHeaders[category.Name];
+        int lineIndex = lines.IndexOf(line);
         if (lineIndex == -1) throw new Exception($"Failed to find line index of category '{category.Name}'");
-        lines[lineIndex].RawLine = $"-[\"{category.Name}\"{(category.Color == null ? "" : $", color({category.Color.Value.R}, {category.Color.Value.G}, {category.Color.Value.B})")}]";
+
+        line.Name = newName;
+        category.Name = newName;
+        if (isColored)
+        {
+            line.Color = newColor;
+            category.Color = newColor;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("-[\"");
+        sb.Append(category.Name);
+        sb.Append('"');
+
+        if (isColored)
+            sb.AppendFormat(", color({0}, {1}, {2})", newColor.R, newColor.G, newColor.B);
+
+        sb.Append(']');
+
+        lines[lineIndex].RawLine = sb.ToString();
+    }
+
+    [GeneratedRegex("#nm.*?:\\s*\".*?\"")]
+    private static partial Regex NameReplaceRegex();
+
+    public void RenameItem(InitItem item, string newName)
+    {
+        if (!itemCategories.TryGetValue(item, out _))
+            throw new ArgumentException("The given item does not exist within the CategoryList", nameof(item));
+
+        item.Name = newName;
+        item.RawLine = NameReplaceRegex().Replace(item.RawLine, "#nm:\"" + newName + "\"");
     }
 
     public void DeleteItem(InitItem item)
@@ -657,6 +697,7 @@ class AssetManager
     private record GfxManagerAction;
     private record GfxManagerDeleteAction(IAssetGraphicsManager GraphicsManager, string Name, string Directory) : GfxManagerAction;
     private record GfxManagerCopyAction(IAssetGraphicsManager GraphicsManager, string SourceDirectory, string DestDirectory, string Name, bool Expect) : GfxManagerAction;
+    private record GfxManagerRenameAction(IAssetGraphicsManager GraphicsManager, string Directory, string OldName, string NewName) : GfxManagerAction;
     private readonly Queue<GfxManagerAction> gfxManagerActionQueue = [];
 
     class StandardGraphicsManager : IAssetGraphicsManager
@@ -687,6 +728,17 @@ class AssetManager
             {
                 Log.Information("Delete {FilePath}", filePath);
                 File.Delete(filePath);
+            }
+        }
+
+        public void RenameGraphics(string oldName, string newName, string dir)
+        {
+            var filePath = AssetGraphicsProvider.GetFilePath(dir, oldName + ".png");
+
+            if (File.Exists(filePath))
+            {
+                Log.Information("Rename {OldPath} to {NewBaseName}", filePath, newName + ".png");
+                File.Move(filePath, Path.Combine(dir, newName + ".png"));
             }
         }
     }
@@ -729,6 +781,20 @@ class AssetManager
                 {
                     Log.Information("Delete {FilePath}", filePath);
                     File.Delete(filePath);
+                }
+            }
+        }
+
+        public void RenameGraphics(string oldName, string newName, string dir)
+        {
+            foreach (var ext in PossibleExtensions)
+            {
+                var filePath = AssetGraphicsProvider.GetFilePath(dir, oldName + ext);
+
+                if (File.Exists(filePath))
+                {
+                    Log.Information("Rename {OldPath} to {NewBaseName}", filePath, newName + ext);
+                    File.Move(filePath, Path.Combine(dir, newName + ext));
                 }
             }
         }
@@ -799,11 +865,22 @@ class AssetManager
         gfxManagerActionQueue.Enqueue(new GfxManagerDeleteAction(gfx, item.Name, dir));
     }
 
-    public void UpdateCategory(CategoryListIndex index, int categoryIndex)
+    public void RenameItem(CategoryListIndex index, CategoryList.InitItem item, string newName)
+    {
+        var oldName = item.Name;
+        var list = GetCategoryList(index)!;
+        list.RenameItem(item, newName);
+
+        var gfx = GetGraphicsManager(index);
+        var dir = Path.Combine(list.FilePath, "..");
+        gfxManagerActionQueue.Enqueue(new GfxManagerRenameAction(gfx, dir, oldName, newName));
+    }
+
+    public void ChangeCategoryHeader(CategoryListIndex index, int categoryIndex, string newName, Lingo.Color newColor)
     {
         var list = GetCategoryList(index)!;
         var category = list.Categories[categoryIndex];
-        list.UpdateCategoryInit(category);
+        list.ChangeCategoryHeader(category, newName, newColor);
     }
 
     public List<CategoryList.InitCategory> GetCategories(CategoryListIndex index)
@@ -927,11 +1004,20 @@ class AssetManager
 
         foreach (var action in gfxManagerActionQueue)
         {
-            if (action is GfxManagerCopyAction copyAction)
-                copyAction.GraphicsManager.CopyGraphics(copyAction.Name, copyAction.SourceDirectory, copyAction.DestDirectory, copyAction.Expect);
-            
-            else if (action is GfxManagerDeleteAction delAction)
-                delAction.GraphicsManager.DeleteGraphics(delAction.Name, delAction.Directory);
+            switch (action)
+            {
+                case GfxManagerCopyAction copyAction:
+                    copyAction.GraphicsManager.CopyGraphics(copyAction.Name, copyAction.SourceDirectory, copyAction.DestDirectory, copyAction.Expect);
+                    break;
+
+                case GfxManagerDeleteAction deleteAction:
+                    deleteAction.GraphicsManager.DeleteGraphics(deleteAction.Name, deleteAction.Directory);
+                    break;
+                
+                case GfxManagerRenameAction renameAction:
+                    renameAction.GraphicsManager.RenameGraphics(renameAction.OldName, renameAction.NewName, renameAction.Directory);
+                    break;
+            }
         }
         gfxManagerActionQueue.Clear();
     }
