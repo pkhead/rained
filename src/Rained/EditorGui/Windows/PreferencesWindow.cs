@@ -18,12 +18,11 @@ static class PreferencesWindow
         General = 0,
         Shortcuts = 1,
         Theme = 2,
-        Assets = 3,
-        Drizzle = 4,
-        Scripts = 5
+        Drizzle = 3,
+        Scripts = 4
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Assets", "Drizzle", "Scripts"];
+    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Drizzle", "Scripts"];
     private readonly static string[] RendererNames = ["Direct3D 11", "Direct3D 12", "OpenGL", "Vulkan"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
@@ -112,10 +111,6 @@ static class PreferencesWindow
             ImGui.SetNextWindowSize(new Vector2(ImGui.GetTextLineHeight() * 50f, ImGui.GetTextLineHeight() * 30f), ImGuiCond.FirstUseEver);
         }
 
-        // keep track of this, as i want to clear some data
-        // when the following tabs are no longer shown
-        bool showAssetsTab = false;
-
         if (justOpened)
         {
             SetUpDrizzleConfig();
@@ -139,6 +134,7 @@ static class PreferencesWindow
                         if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
                         {
                             selectedNavTab = (NavTabEnum)i;
+                            AssetManagerGUI.curAssetTab = (AssetManagerGUI.AssetType)i;
                         }
                     }
                 }
@@ -160,12 +156,7 @@ static class PreferencesWindow
                     case NavTabEnum.Theme:
                         ShowThemeTab(justOpened || lastNavTab != selectedNavTab);
                         break;
-                    
-                    case NavTabEnum.Assets:
-                        AssetManagerGUI.Show();
-                        showAssetsTab = true;
-                        break;
-                    
+
                     case NavTabEnum.Drizzle:
                         ShowDrizzleTab();
                         break;
@@ -181,15 +172,9 @@ static class PreferencesWindow
 
             if (!isWindowOpen)
             {
-                showAssetsTab = false;
                 activeDrizzleConfig = null;
                 drizzleConfigWatcher?.Dispose();
                 drizzleConfigWatcher = null;
-            }
-
-            if (!showAssetsTab && lastNavTab == NavTabEnum.Assets)
-            {
-                AssetManagerGUI.Unload();
             }
         }
         else
