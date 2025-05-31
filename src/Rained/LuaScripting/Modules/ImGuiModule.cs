@@ -62,23 +62,16 @@ static partial class ImGuiModule
                 return null;
             
             var sz = (nuint)defaultValue.Length;
-            void *buf = NativeMemory.Alloc(sz);
+            byte *buf = (byte*) NativeMemory.Alloc(sz);
             fixed (byte* p = defaultValue)
             {
                 Buffer.MemoryCopy(p, buf, sz, sz);
             }
-            return (byte*)buf;    
+            return buf;
         }
         else
         {
-            var luaStr = lua.CheckBuffer(idx);
-            var sz = (nuint)luaStr.Length;
-            void *buf = NativeMemory.Alloc(sz + 1);
-            fixed (byte* p = luaStr)
-            {
-                Buffer.MemoryCopy(p, buf, sz+1, sz);
-            }
-            return (byte*)buf;
+            return GetStr(lua, idx);
         }
     }
 
