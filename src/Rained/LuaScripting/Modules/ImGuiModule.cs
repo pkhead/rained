@@ -1,11 +1,14 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using ImGuiNET;
 using KeraLua;
 namespace Rained.LuaScripting.Modules;
 
 static partial class ImGuiModule
 {
-    private static readonly byte[] _tmpBuffer0 = new byte[256]; 
+    private static readonly byte[] _tmpBuffer0 = new byte[256];
+    private static readonly ObjectWrap<byte[]> bufferMt = new("Buffer", "IMGUI_BUFFER");
 
     private static byte[] NullTerminated(byte[] src, int index)
     {
@@ -13,6 +16,15 @@ static partial class ImGuiModule
         Buffer.BlockCopy(src, 0, buf, 0, src.Length);
         buf[src.Length] = 0;
         return buf;
+    }
+
+    unsafe struct InputTextCallbackUserData
+    {
+        // guess i'm using my own implementation of a resizable byte array,
+        // because i need to pass a byte array to imgui.
+        public byte* buf;
+        public uint bufSize;
+        public uint bufCapacity;
     }
 
     // private static unsafe int Override_igBegin(nint luaPtr)
@@ -96,7 +108,7 @@ static partial class ImGuiModule
         );
     }
 
-    public static int Loader(Lua lua)
+    public static unsafe int Loader(Lua lua)
     {
         lua.NewTable();
 
@@ -117,7 +129,74 @@ static partial class ImGuiModule
         }
         else
         {
+            InitBufferType(lua);
+
+            LuaHelpers.ModuleFunction(lua, "newBuffer", static (nint luaPtr) =>
+            {
+                var lua = Lua.FromIntPtr(luaPtr);
+                var capac = lua.ToInteger(1);
+                if (capac < 1)
+                    lua.ErrorWhere("given capacity is out of range", 2);
+
+                bufferMt.PushWrapper(lua, new byte[capac]);
+                return 1;
+            });
+
             GeneratedFuncs(lua);
+
+            LuaHelpers.ModuleFunction(lua, "InputText", static (nint luaPtr) =>
+            {
+                var lua = Lua.FromIntPtr(luaPtr);
+                var label = GetStr(lua, 1);
+                var str = bufferMt.GetRef(lua, 2);
+                var flags = (ImGuiInputTextFlags)lua.OptInteger(3, 0);
+
+                int s;
+                fixed (byte* p = str)
+                    s = ImGuiNative.igInputText(label, p, (uint)str.Length, flags, null, null);
+
+                StrFree(label);
+
+                lua.PushBoolean(s != 0);
+                return 2;
+            });
+
+            LuaHelpers.ModuleFunction(lua, "InputTextMultiline", static (nint luaPtr) =>
+            {
+                var lua = Lua.FromIntPtr(luaPtr);
+                var label = GetStr(lua, 1);
+                var str = bufferMt.GetRef(lua, 2);
+                var size = new Vector2((float)lua.OptNumber(3, 0), (float)lua.OptNumber(4, 0));
+                var flags = (ImGuiInputTextFlags)lua.OptInteger(5, 0);
+
+                int s;
+                fixed (byte* p = str)
+                    s = ImGuiNative.igInputTextMultiline(label, p, (uint)str.Length, size, flags, null, null);
+
+                StrFree(label);
+
+                lua.PushBoolean(s != 0);
+                return 2;
+            });
+
+            LuaHelpers.ModuleFunction(lua, "InputTextWithHint", static (nint luaPtr) =>
+            {
+                var lua = Lua.FromIntPtr(luaPtr);
+                var label = GetStr(lua, 1);
+                var hint = GetStr(lua, 2);
+                var str = bufferMt.GetRef(lua, 3);
+                var flags = (ImGuiInputTextFlags)lua.OptInteger(4, 0);
+
+                int s;
+                fixed (byte* p = str)
+                    s = ImGuiNative.igInputTextWithHint(label, hint, p, (uint)str.Length, flags, null, null);
+
+                StrFree(label);
+                StrFree(hint);
+
+                lua.PushBoolean(s != 0);
+                return 2;
+            });
         }
 
         // foreach (var (k, v) in _overrides)
@@ -126,6 +205,112 @@ static partial class ImGuiModule
         // }
 
         return 1;
+    }
+    
+    private static void InitBufferType(Lua lua)
+    {
+        bufferMt.InitMetatable(lua);
+
+        lua.ModuleFunction("__tostring", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            byte[] buf = bufferMt.GetRef(lua, 1);
+
+            int strlen;
+            for (strlen = 0; buf[strlen] != 0; strlen++)
+            {
+                if (strlen >= buf.Length)
+                    lua.ErrorWhere("buffer does not contain a null terminator character", 2);
+            }
+
+            lua.PushBuffer(buf[0..strlen]);
+            return 1;
+        });
+
+        lua.ModuleFunction("__len", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            byte[] buf = bufferMt.GetRef(lua, 1);
+
+            int strlen;
+            for (strlen = 0; buf[strlen] != 0; strlen++)
+            {
+                if (strlen >= buf.Length)
+                    lua.ErrorWhere("buffer does not contain a null terminator character", 2);
+            }
+
+            lua.PushInteger(strlen);
+            return 1;
+        });
+
+        lua.ModuleFunction("__index", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            byte[] obj = bufferMt.GetRef(lua, 1);
+
+            if (lua.IsInteger(2))
+            {
+                var i = lua.ToInteger(2) - 1;
+                if (i < 0 || i >= obj.Length)
+                    return lua.ErrorWhere("index out of range", 2);
+
+                lua.PushInteger(obj[i]);
+                return 1;
+            }
+            else
+            {
+                switch (lua.ToString(2))
+                {
+                    case "capacity":
+                    {
+                        lua.PushInteger(obj.Length);
+                        break;
+                    }
+
+                    default:
+                        lua.PushNil();
+                        break;
+                }
+
+            }
+
+            return 1;
+        });
+
+        lua.ModuleFunction("__newindex", static (nint luaPtr) =>
+        {
+            var lua = Lua.FromIntPtr(luaPtr);
+            byte[] obj = bufferMt.GetRef(lua, 1);
+
+            if (lua.IsInteger(2))
+            {
+                var i = lua.ToInteger(2) - 1;
+                if (i < 0 || i >= obj.Length)
+                    return lua.ErrorWhere("index out of range", 2);
+
+                var v = (byte)Math.Clamp(lua.ToInteger(3), 0, 255);
+                obj[i] = v;
+            }
+            else
+            {
+                var k = lua.ToString(2);
+                switch (k)
+                {
+                    case "capacity":
+                    {
+                        return lua.ErrorWhere("capacity is read-only", 2);
+                    }
+
+                    default:
+                        return lua.ErrorWhere($"unknown field \"{k}\"");
+                }
+
+            }
+
+            return 0;
+        });
+
+        lua.Pop(1);
     }
 
     // public static int Loader(Lua lua)
