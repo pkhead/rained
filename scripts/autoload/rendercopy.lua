@@ -113,9 +113,11 @@ if not rained.isBatchMode() then
             updateFile()
         end
 
+        imgui.BeginDisabled(copyDir == nil)
         s, isEnabled = imgui.Checkbox("Enabled", isEnabled)
         if s then
             updateFile()
         end
+        imgui.EndDisabled()
     end)
 end
