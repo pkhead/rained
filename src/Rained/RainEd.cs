@@ -172,6 +172,9 @@ sealed class RainEd
                 Log.Information("Drizzle version: UNKNOWN");
         }
 
+        // display lua api version
+        Log.Information($"Lua API version: {LuaInterface.VersionMajor}.{LuaInterface.VersionMinor}.{LuaInterface.VersionRevision}");
+
         // load user preferences
         KeyShortcuts.InitShortcuts();
         prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
