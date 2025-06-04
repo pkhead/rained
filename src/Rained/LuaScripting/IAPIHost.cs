@@ -7,14 +7,6 @@ using Rained.LevelData;
 
 namespace Rained.LuaScripting;
 
-enum CellDirtyFlags
-{
-    Geometry = 1,
-    Objects = 2,
-    Material = 4,
-    TileHead = 8
-};
-
 interface IAPIHost
 {
     public bool IsGui { get; }
@@ -157,22 +149,8 @@ class APIGuiHost : IAPIHost
 
     public void InvalidateCell(int x, int y, int layer, CellDirtyFlags flags)
     {
-        // don't invalidate objects if geometry is invalidated,
-        // because internally the geometry invalidator automatically
-        // calls the object invalidator as appropraite
-        if (flags.HasFlag(CellDirtyFlags.Geometry))
-        {
-            RainEd.Instance.LevelView.InvalidateGeo(x, y, layer);
-        }
-        else if (flags.HasFlag(CellDirtyFlags.Objects))
-        {
-            if (layer == 0) RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
-        }
-
-        if (flags.HasFlag(CellDirtyFlags.TileHead))
-        {
-            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(x, y, layer);
-        }
+        LuaInterface.Host.LevelCheck();
+        RainEd.Instance.LevelView.InvalidateCell(x, y, layer, flags);
     }
 
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY)

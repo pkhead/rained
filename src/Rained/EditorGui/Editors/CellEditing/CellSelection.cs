@@ -988,8 +988,7 @@ class CellSelection
         if (cancelGeoData is not null)
         {
             var level = RainEd.Instance.Level;
-            var renderer = RainEd.Instance.LevelView.Renderer;
-            var nodeData = RainEd.Instance.CurrentTab!.NodeData;
+            var view = RainEd.Instance.LevelView;
 
             for (int y = 0; y < movingH; y++)
             {
@@ -1003,10 +1002,7 @@ class CellSelection
                         if (!cancelGeoData[l, x, y].mask) continue;
                         level.Layers[l, gx, gy] = cancelGeoData[l, x, y].cell;
 
-                        renderer.InvalidateGeo(gx, gy, l);
-                        if (l == 0) nodeData.InvalidateCell(gx, gy);
-                        if (level.Layers[l, gx, gy].TileHead is not null)
-                            renderer.InvalidateTileHead(gx, gy, l);
+                        view.InvalidateCell(gx, gy, l);
                     }
                 }
             }
