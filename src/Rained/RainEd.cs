@@ -8,7 +8,7 @@ using Rained.LevelData;
 using Rained.Rendering;
 using System.Reflection;
 using Rained.LuaScripting;
-using System.Diagnostics;
+using Rained.EditorGui.Windows;
 
 namespace Rained;
 
@@ -833,7 +833,7 @@ sealed class RainEd
 
     private async void AsyncCloseWindowRequest()
     {
-        if (await EditorWindow.CloseAllTabs())
+        if (await AssetManagerWindow.AppClose() && await EditorWindow.CloseAllTabs())
         {
             Running = false; 
         }

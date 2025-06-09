@@ -1,5 +1,6 @@
 namespace Rained.EditorGui.Editors;
 using ImGuiNET;
+using Rained.EditorGui.AssetPreviews;
 using Rained.LevelData;
 using Raylib_cs;
 using System.Numerics;
@@ -8,9 +9,7 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
 {
     private readonly List<int> matSearchResults = [];
     private readonly MaterialEditMode editor = editor;
-
-    private RlManaged.Texture2D? _loadedMatPreview = null;
-    private string _activeMatPreview = "";
+    private readonly MaterialPreview matPreview = new();
 
     protected override void ProcessSearch(string searchQuery)
     {
@@ -44,7 +43,7 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
         }
     }
 
-    public override void ShowGroupList()
+    protected override void RenderGroupList()
     {
         var matDb = RainEd.Instance.MaterialDatabase;
 
@@ -57,13 +56,10 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
         }
     }
 
-    public override void ShowAssetList()
+    protected override void RenderItemList()
     {
         var matDb = RainEd.Instance.MaterialDatabase;
         var prefs = RainEd.Instance.Preferences;
-
-        var drawList = ImGui.GetWindowDrawList();
-        float textHeight = ImGui.GetTextLineHeight();
 
         var matList = matDb.Categories[editor.SelectedGroup].Materials;
 
@@ -74,38 +70,16 @@ class MaterialCatalogWidget(MaterialEditMode editor) : TileEditorCatalog
             // don't show this prop if it doesn't pass search test
             if (!mat.Name.Contains(SearchQuery, StringComparison.CurrentCultureIgnoreCase))
                 continue;
-
-            const string leftPadding = "  ";
-            float colorWidth = ImGui.CalcTextSize(leftPadding).X - ImGui.GetStyle().ItemInnerSpacing.X;
             
-            var cursor = ImGui.GetCursorScreenPos();
-            if (ImGui.Selectable(leftPadding + mat.Name, mat.ID == editor.SelectedMaterial))
+            if (ColoredSelectable(mat.Name, mat.Color, mat.ID == editor.SelectedMaterial))
             {
                 editor.SelectedMaterial = mat.ID;
             }
 
-            drawList.AddRectFilled(
-                p_min: cursor,
-                p_max: cursor + new Vector2(colorWidth, textHeight),
-                ImGui.ColorConvertFloat4ToU32(new Vector4(mat.Color.R / 255f, mat.Color.G / 255f, mat.Color.B / 255f, 1f))
-            );
-
             // show material preview when hovered
             if (prefs.MaterialSelectorPreview && ImGui.IsItemHovered())
             {
-                if (_activeMatPreview != mat.Name)
-                {
-                    _activeMatPreview = mat.Name;
-                    _loadedMatPreview?.Dispose();
-                    _loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", mat.Name + ".png"));
-                }
-
-                if (_loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(_loadedMatPreview))
-                {
-                    ImGui.BeginTooltip();
-                    ImGuiExt.ImageSize(_loadedMatPreview, _loadedMatPreview.Width * Boot.PixelIconScale, _loadedMatPreview.Height * Boot.PixelIconScale);
-                    ImGui.EndTooltip();
-                }
+                matPreview.RenderPreviewTooltip(mat.Name);
             }
         }
     }
