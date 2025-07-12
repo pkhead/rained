@@ -375,6 +375,7 @@ class APIBatchHost : IAPIHost
 
         Modules.RainedModule.DocumentSavedCallback(ActiveDocument);
 
+        callback?.Invoke(doc.FilePath, true);
         return true;
     }
 
