@@ -3,6 +3,7 @@ using System.Numerics;
 using ImGuiNET;
 using NLua.Exceptions;
 using System.Runtime.CompilerServices;
+using Rained.EditorGui.Windows;
 namespace Rained.EditorGui;
 
 static class EditorWindow
@@ -236,6 +237,11 @@ static class EditorWindow
                 if (ImGui.MenuItem("Preferences"))
                 {
                     PreferencesWindow.OpenWindow();
+                }
+
+                if (ImGui.MenuItem("Asset Manager"))
+                {
+                    AssetManagerWindow.OpenWindow();
                 }
 
                 LuaScripting.Modules.GuiModule.MenuHook("File", true);
@@ -653,6 +659,7 @@ static class EditorWindow
         AboutWindow.ShowWindow();
         LevelLoadFailedWindow.ShowWindow();
         PreferencesWindow.ShowWindow();
+        AssetManagerWindow.ShowWindow();
         EmergencySaveWindow.ShowWindow();
         NewLevelWindow.ShowWindow();
         MassRenderWindow.ShowWindow();
