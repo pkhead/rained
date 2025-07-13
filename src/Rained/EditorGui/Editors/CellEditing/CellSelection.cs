@@ -17,7 +17,13 @@ struct MaskedCell(bool mask, LevelCell cell)
 /// </summary>
 class CellSelection
 {
-    public static CellSelection? Instance { get; set; } = null;
+    // public static CellSelection? Instance { get; set; } = null;
+    public static CellSelection? Instance
+    {
+        get => RainEd.Instance.CurrentTab!.CellSelection;
+        set => RainEd.Instance.CurrentTab!.CellSelection = value;
+    }
+    
     public static Action<LayerSelection?[]>? GeometryFillCallback = null;
 
     public bool Active { get; private set; } = true;

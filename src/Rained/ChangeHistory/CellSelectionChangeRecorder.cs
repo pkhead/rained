@@ -146,6 +146,7 @@ class CellSelectionChangeRecorder : ChangeRecorder
 
     public void CancelChange()
     {
+        RainEd.Instance.LevelView.CellChangeRecorder.CancelChange();
         _active = false;
     }
 }
