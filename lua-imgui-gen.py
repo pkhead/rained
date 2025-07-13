@@ -227,7 +227,8 @@ static partial class ImGuiModule
                             func_def.append(f"byte* {local_name} = ")
 
                             if default_value:
-                                func_def.append(f"GetStr(lua, {param_idx}, {("null" if default_value == "null" else str_to_utf8_buf(default_value))});\n")
+                                subst = ("null" if default_value == "null" else str_to_utf8_buf(default_value))
+                                func_def.append(f"GetStr(lua, {param_idx}, {subst});\n")
                                 meta_params.append(MetaParameter("string?", arg_name))
                             else:
                                 func_def.append(f"GetStr(lua, {param_idx});\n")
