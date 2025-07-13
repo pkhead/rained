@@ -884,10 +884,37 @@ class CellSelection
         }
         Debug.Assert(movingGeometry is not null);
 
+        // move tile root references
+        if (moveGeometry && AffectTiles)
+        {
+            var movingX = CutoutX;
+            var movingY = CutoutY;
+
+            for (int l = 0; l < 3; l++)
+            {
+                for (int y = 0; y < movingH; y++)
+                {
+                    for (int x = 0; x < movingW; x++)
+                    {
+                        if (!movingGeometry[l, x, y].mask) continue;
+
+                        ref var cell = ref movingGeometry[l, x, y].cell;
+                        if (cell.HasTile() && cell.TileHead is null &&
+                            cell.TileRootX >= 0 && cell.TileRootX < movingW &&
+                            cell.TileRootY >= 0 && cell.TileRootY < movingH)
+                        {
+                            cell.TileLayer = Util.Mod(cell.TileLayer + direction, 3);
+                        }
+                    }
+                }
+            }
+        }
+
         // move backward
         if (direction > 0)
         {
-            if (moveGeometry) {
+            if (moveGeometry)
+            {
                 var tempLayer = new MaskedCell[movingW, movingH];
                 CopyLayer(tempLayer, 2);
                 CopyLayer(2, 1);
@@ -901,8 +928,10 @@ class CellSelection
             selections[0] = tempSel;
         }
         // move forward
-        else if (direction < 0) {
-            if (moveGeometry) {
+        else if (direction < 0)
+        {
+            if (moveGeometry)
+            {
                 var tempLayer = new MaskedCell[movingW, movingH];
                 CopyLayer(tempLayer, 0);
                 CopyLayer(0, 1);
