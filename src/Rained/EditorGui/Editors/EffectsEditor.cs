@@ -701,12 +701,12 @@ class EffectsEditor : IEditorMode
                     level.Effects.Insert(++selectedEffect, newEffect);
                     break;
                 case 2: // first
-                    level.Effects.Add(newEffect);
+                    level.Effects.Insert(0, newEffect);
                     selectedEffect = 0;
                     break;
                 case 3: // last
                     selectedEffect = level.Effects.Count;
-                    level.Effects.Insert(0, newEffect);
+                    level.Effects.Add(newEffect);
                     break;
             }
         }

@@ -1,4 +1,5 @@
 using System.Numerics;
+using Rained.EditorGui.Editors.CellEditing;
 using Rained.LevelData;
 namespace Rained;
 
@@ -9,6 +10,7 @@ class LevelTab : IDisposable
     public Level Level;
     public LevelNodeData NodeData;
     public readonly ChangeHistory.ChangeHistory ChangeHistory;
+    public CellSelection? CellSelection = null;
     
     /// <summary>
     /// True if the file for the current level is non-existent or is an emergency save.

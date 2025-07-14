@@ -1,4 +1,5 @@
 using System.Numerics;
+using Rained.EditorGui;
 using Rained.LevelData;
 namespace Rained.ChangeHistory;
 
@@ -34,8 +35,7 @@ class CellChangeRecord : IChangeRecord
         foreach (CellChange change in CellChanges)
         {
             level.Layers[change.Layer, change.X, change.Y] = useNew ? change.NewState : change.OldState;
-            RainEd.Instance.LevelView.InvalidateGeo(change.X, change.Y, change.Layer);
-            RainEd.Instance.LevelView.Renderer.InvalidateTileHead(change.X, change.Y, change.Layer);
+            RainEd.Instance.LevelView.InvalidateCell(change.X, change.Y, change.Layer, CellDirtyFlags.Geometry | CellDirtyFlags.TileHead);
         }
 
         foreach (var change in ChainHolderChanges)

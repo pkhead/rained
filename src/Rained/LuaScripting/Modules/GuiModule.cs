@@ -10,6 +10,7 @@ static class GuiModule
     private static readonly string[] fileBrowserOpenMode = ["write", "read", "multiRead", "directory", "multiDirectory"];
 
     private static readonly List<(string menuName, List<LuaCallback> callbacks)> menuCallbacks = [];
+    private static readonly List<LuaCallback> globalMenuCallbacks = []; // deprecated...
 
     private static nint levelFilterUserdata;
 
@@ -35,6 +36,25 @@ static class GuiModule
                 }
 
                 break;
+            }
+        }
+
+        // global menu callbacks
+        // Undocumented feature, because this is how it worked in 3.0.0 and then in 4.1.0
+        // i was like "wait. this is stupid. unrelated menus have separators that separate
+        // nothing. God damnit." and I didn't want to bump the major version because of a
+        // breaking change.
+        if (Array.IndexOf(BuiltInMenus, menuName) != -1)
+        {
+            int id = 0;
+            foreach (var cb in globalMenuCallbacks)
+            {
+                ImGui.PushID(id + 1000); // add 1000 to prevent collision with menu-local callbacks
+                cb.LuaState.PushString(menuName.ToLowerInvariant());
+                if (separator || id > 0) ImGui.Separator();
+                cb.Invoke(1);
+                ImGui.PopID();
+                id++;
             }
         }
     }
@@ -262,14 +282,33 @@ static class GuiModule
 
         lua.ModuleFunction("menuHook", static (Lua lua) =>
         {
-            var menuName = lua.CheckString(1);
-            lua.CheckType(2, LuaType.Function);
-            lua.PushCopy(2);
-            var cb = new LuaCallback(lua)
+            if (lua.GetTop() == 1 && lua.IsFunction(1)) // don't use this version of the function...
             {
-                OnDisconnect = static (Lua lua, LuaCallback cb) => RemoveMenuCallback(cb)
-            };
-            AddMenuCallback(menuName, cb);
+                if (lua.GetGlobal("warn") is LuaType.Function or LuaType.UserData)
+                {
+                    lua.PushString("global menu hooks are a deprecated feature.");
+                    lua.Call(1, 0);
+                }
+
+                lua.CheckType(1, LuaType.Function);
+                lua.PushCopy(1);
+                var cb = new LuaCallback(lua)
+                {
+                    OnDisconnect = static (Lua lua, LuaCallback cb) => globalMenuCallbacks.Remove(cb)
+                };
+                globalMenuCallbacks.Add(cb);
+            }
+            else
+            {
+                var menuName = lua.CheckString(1);
+                lua.CheckType(2, LuaType.Function);
+                lua.PushCopy(2);
+                var cb = new LuaCallback(lua)
+                {
+                    OnDisconnect = static (Lua lua, LuaCallback cb) => RemoveMenuCallback(cb)
+                };
+                AddMenuCallback(menuName, cb);
+            }
             
             return 1;
         });

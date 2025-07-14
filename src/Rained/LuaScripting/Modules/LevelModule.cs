@@ -131,7 +131,7 @@ static class LevelModule
                 funcRef = lua.Ref(LuaRegistry.Index);
             }
 
-            bool immediate = EditorWindow.AsyncSave(
+            bool immediate = LuaInterface.Host.AsyncSaveActiveDocument(
                 overridePath: overridePath,
                 callback: (string? p, bool immediate) =>
                 {

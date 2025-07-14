@@ -3,6 +3,7 @@ using ImGuiNET;
 using NLua;
 using NLua.Exceptions;
 using Rained.Autotiles;
+using Rained.EditorGui;
 namespace Rained.LuaScripting;
 
 class LuaAutotile : Autotile, IDisposable
@@ -19,11 +20,13 @@ class LuaAutotile : Autotile, IDisposable
     public LuaFunction? LuaFillRectProcedure = null;
     public LuaFunction? LuaUiHook = null;
     public LuaFunction? OnOptionChanged = null;
+    public LuaFunction? VerifySizeProc = null;
 
     public LuaAutotileInterface LuaWrapper;
 
     public override bool AllowIntersections { get => LuaWrapper.AllowIntersections; }
     public override bool AutoHistory { get => LuaWrapper.AutoHistory; }
+    public override bool ConstrainToSquare { get => LuaWrapper.ConstrainToSquare; }
 
     private List<string>? missingTiles = null;
     
@@ -194,7 +197,7 @@ class LuaAutotile : Autotile, IDisposable
                 {
                     if (ImGui.InputInt(opt.Name, ref opt.IntValue))
                         opt.IntValue = Math.Clamp(opt.IntValue, opt.IntMin, opt.IntMax);
-                    
+
                     if (ImGui.IsItemDeactivatedAfterEdit())
                         RunOptionChangeCallback(opt.ID);
                 }
@@ -204,8 +207,45 @@ class LuaAutotile : Autotile, IDisposable
 
             ImGui.PopItemWidth();
         }
-        
-        LuaUiHook?.Call();
+
+        try
+        {
+            LuaUiHook?.Call(LuaWrapper);
+        }
+        catch (LuaScriptException e)
+        {
+            LuaInterface.HandleException(e);
+        }
+    }
+
+    public override bool VerifySize(Vector2i rectMin, Vector2i rectMax)
+    {
+        if (VerifySizeProc is not null)
+        {
+            try
+            {
+                var ret = VerifySizeProc.Call(LuaWrapper, rectMin.X, rectMin.Y, rectMax.X, rectMax.Y);
+                if (ret.Length == 0)
+                {
+                    EditorWindow.ShowNotification("Error!");
+                    LuaInterface.LogError($"expected boolean as the first return value for verifySize of autotile '{Name}'");
+                    return false;
+                }
+
+                // convert value to boolean using lua coercion rules
+                LuaInterface.NLuaState.Push(ret[0]);
+                var retBool = LuaInterface.LuaState.ToBoolean(-1);
+                LuaInterface.LuaState.Pop(1);
+
+                return retBool;
+            }
+            catch (LuaScriptException e)
+            {
+                LuaInterface.HandleException(e);
+            }
+        }
+
+        return true;
     }
 
     public List<string> CheckMissingTiles()
@@ -292,9 +332,15 @@ class LuaAutotileInterface
 
     [LuaMember(Name = "uiHook")]
     public LuaFunction? UiHook { get => autotile.LuaUiHook; set => autotile.LuaUiHook = value; }
+
+    [LuaMember(Name = "verifySize")]
+    public LuaFunction? VerifySize { get => autotile.VerifySizeProc; set => autotile.VerifySizeProc = value; }
     
     [LuaMember(Name = "requiredTiles")]
     public LuaTable? RequiredTiles = null;
+
+    [LuaMember(Name = "constrainToSquare")]
+    public bool ConstrainToSquare = false;
 
     public LuaAutotileInterface()
     {

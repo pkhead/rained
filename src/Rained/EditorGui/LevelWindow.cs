@@ -7,6 +7,14 @@ using Rained.Rendering;
 using Rained.LevelData;
 using CellSelection = Editors.CellEditing.CellSelection;
 
+enum CellDirtyFlags
+{
+    Geometry = 1,
+    Objects = 2,
+    Material = 4,
+    TileHead = 8
+};
+
 class LevelWindow
 {
     public bool IsWindowOpen = true;
@@ -566,7 +574,6 @@ class LevelWindow
         );
     }
 
-    // seems a bit random to be placed here but i'm lazy
     /// <summary>
     /// Invalidate geometry for both the renderer and node list.
     /// </summary>
@@ -578,5 +585,35 @@ class LevelWindow
         Renderer.InvalidateGeo(x, y, layer);
         if (layer == 0)
             RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+    }
+
+    /// <summary>
+    /// Invalidate data of a cell.
+    /// </summary>
+    /// <param name="x">The X position of the dirty cell.</param>
+    /// <param name="y">The Y position of the dirty cell.</param>
+    /// <param name="layer">The work layer of the dirty cell.</param>
+    /// <param name="flags">The data to invalidate.</param>
+    public void InvalidateCell(int x, int y, int layer, CellDirtyFlags flags = CellDirtyFlags.Geometry | CellDirtyFlags.Objects)
+    {
+        if (flags.HasFlag(CellDirtyFlags.Geometry))
+            Renderer.InvalidateGeo(x, y, layer);
+        
+        if (layer == 0 && flags.HasFlag(CellDirtyFlags.Objects))
+            RainEd.Instance.CurrentTab!.NodeData.InvalidateCell(x, y);
+
+        if (flags.HasFlag(CellDirtyFlags.TileHead))
+            Renderer.InvalidateTileHead(x, y, layer);
+    }
+
+    /// <summary>
+    /// Invalidate all data of a cell.
+    /// </summary>
+    /// <param name="x">The X position of the dirty cell.</param>
+    /// <param name="y">The Y position of the dirty cell.</param>
+    /// <param name="layer">The work layer of the dirty cell.</param>
+    public void InvalidateCell(int x, int y, int layer)
+    {
+        InvalidateCell(x, y, layer, CellDirtyFlags.Geometry | CellDirtyFlags.Objects | CellDirtyFlags.Material | CellDirtyFlags.TileHead);
     }
 }

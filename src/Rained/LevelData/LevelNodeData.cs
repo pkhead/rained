@@ -34,11 +34,18 @@ enum NodeType
 /// </summary>
 class LevelNodeData
 {
+    public struct Node(Vector2i pos, NodeType type, int id = -1)
+    {
+        public Vector2i pos = pos;
+        public NodeType type = type;
+        public int id = id;
+    }
+
     private readonly HashSet<Vector2i> shortcutLocsSet = [];
     private readonly Level level;
 
-    private readonly List<(Vector2i pos, NodeType type)> nodes = [];
-    public IEnumerable<(Vector2i pos, NodeType type)> Nodes => nodes;
+    private readonly List<Node> nodes = [];
+    public IEnumerable<Node> Nodes => nodes;
     private bool dirty = false;
     private bool hadWater;
 
@@ -105,7 +112,7 @@ class LevelNodeData
         });
 
         nodes.Clear();
-        List<(Vector2i pos, NodeType type)> shortcuts = [];
+        List<Node> shortcuts = [];
         List<Vector2i> hives = [];
         List<Vector2i> garbageHoles = [];
 
@@ -128,11 +135,11 @@ class LevelNodeData
 
             // shortcut nodes
             if (cell.Geo == GeoType.ShortcutEntrance && ProcessShortcut(x, y, out Vector2i shortcutPos, out var nodeType))
-                shortcuts.Add((shortcutPos, nodeType));
+                shortcuts.Add(new Node(shortcutPos, nodeType));
         }
 
         // sort shortcuts by position
-        shortcuts.Sort(((Vector2i pos, NodeType type) s0, (Vector2i pos, NodeType type) s1) =>
+        shortcuts.Sort((Node s0, Node s1) =>
         {
             var idx0 = s0.pos.Y * level.Width + s0.pos.X;
             var idx1 = s1.pos.Y * level.Width + s1.pos.X;
@@ -180,7 +187,7 @@ class LevelNodeData
             {
                 var solid = level.Layers[0,x,y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
-                    nodes.Add((new Vector2i(x, y), NodeType.SideExit));
+                    nodes.Add(new Node(new Vector2i(x, y), NodeType.SideExit));
                 
                 lastSolid = solid;
             }
@@ -194,7 +201,7 @@ class LevelNodeData
             {
                 var solid = level.Layers[0,x,y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
-                    nodes.Add((new Vector2i(x, y), NodeType.SkyExit));
+                    nodes.Add(new Node(new Vector2i(x, y), NodeType.SkyExit));
                 
                 lastSolid = solid;
             }
@@ -209,7 +216,7 @@ class LevelNodeData
             {
                 var solid = level.Layers[0, x, y].Geo == GeoType.Solid;
                 if (solid != lastSolid && !solid)
-                    nodes.Add((new Vector2i(x, y), NodeType.SeaExit));
+                    nodes.Add(new Node(new Vector2i(x, y), NodeType.SeaExit));
                 
                 lastSolid = solid;
             }
@@ -218,13 +225,22 @@ class LevelNodeData
         // hives
         foreach (var pos in hives)
         {
-            nodes.Add((pos, NodeType.BatHive));
+            nodes.Add(new Node(pos, NodeType.BatHive));
         }
 
         // garbage hole
         foreach (var pos in garbageHoles)
         {
-            nodes.Add((pos, NodeType.GarbageHoles));
+            nodes.Add(new Node(pos, NodeType.GarbageHoles));
+        }
+
+        // set node ids
+        int nodeId = 0;
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            nodes[i] = new Node(nodes[i].pos, nodes[i].type, nodeId);
+            if (nodes[i].type != NodeType.GarbageHoles)
+                nodeId++;
         }
 
         stopwatch.Stop();

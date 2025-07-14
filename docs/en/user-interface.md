@@ -42,7 +42,7 @@ If <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can type in the va
 ### Drag input
 ![Drag input](img//draginput.png)
 
-These work identically to sliders, except that there is no visual knob and also no limit on the minimum or maximum value.
+These work identically to sliders, except that there is no visual knob and also no limit on either the minimum value, maximum value, or both, depending on what the drag input is controlling.
 Like sliders, if <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> is held while clicking, you can type in the value of the input.
 
 ## Menubar

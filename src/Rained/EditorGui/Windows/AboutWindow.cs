@@ -1,5 +1,5 @@
 using ImGuiNET;
-
+using Rained.LuaScripting;
 using System.Runtime.InteropServices;
 namespace Rained.EditorGui;
 
@@ -76,7 +76,10 @@ static class AboutWindow
             {
                 if (drizzleVersion is not null)
                     ImGui.BulletText($"Drizzle: {drizzleVersion}");
+                ImGui.BulletText($"Lua API: {LuaInterface.VersionMajor}.{LuaInterface.VersionMinor}.{LuaInterface.VersionRevision}");
 
+                ImGui.Separator();
+                
                 var sysInfo = systemInfo ?? GetSystemInfo();
                 ImGui.BulletText(".NET: " + sysInfo.FrameworkName);
                 ImGui.BulletText("OS: " + sysInfo.OsName);
