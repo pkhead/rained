@@ -51,3 +51,8 @@ function autotile:tileRect(layer, left, top, right, bottom, forceModifier)
         end
     end
 end
+
+function autotile:verifySize(left, top, right, bottom)
+    -- the minimum size of the box is 4x4
+    return not ((right - left) + 1 < 4 or (bottom - top) + 1 < 4)
+end
