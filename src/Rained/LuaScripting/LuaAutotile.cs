@@ -224,7 +224,7 @@ class LuaAutotile : Autotile, IDisposable
         {
             try
             {
-                var ret = VerifySizeProc.Call(LuaWrapper, rectMin.X, rectMax.X, rectMin.Y, rectMax.Y);
+                var ret = VerifySizeProc.Call(LuaWrapper, rectMin.X, rectMin.Y, rectMax.X, rectMax.Y);
                 if (ret.Length == 0)
                 {
                     EditorWindow.ShowNotification("Error!");
