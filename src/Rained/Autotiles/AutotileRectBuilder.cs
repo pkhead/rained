@@ -11,6 +11,11 @@ class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInput
     private readonly Vector2i startPos = startPos;
     private Vector2i endPos = startPos;
 
+    private bool sizeInit = true;
+    private Vector2i curMin = new();
+    private Vector2i curMax = new();
+    private bool isSizeValid = true;
+
     private void GetRectBounds(int startX, int startY, int endX, int endY, out int minX, out int minY, out int maxX, out int maxY)
     {
         if (autotile.ConstrainToSquare)
@@ -47,6 +52,16 @@ class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInput
             out var minX, out var minY, out var maxX, out var maxY
         );
 
+        var minVec = new Vector2i(minX, minY);
+        var maxVec = new Vector2i(maxX, maxY);
+        if (sizeInit || minVec != curMin || maxVec != curMax)
+        {
+            sizeInit = false;
+            isSizeValid = autotile.VerifySize(minVec, maxVec);
+            curMin = minVec;
+            curMax = maxVec;
+        }
+
         Raylib.DrawRectangleLinesEx(
             new Rectangle(
                 x: minX * Level.TileSize,
@@ -55,22 +70,25 @@ class AutotileRectBuilder(Autotile autotile, Vector2i startPos) : IAutotileInput
                 height: (maxY - minY + 1) * Level.TileSize
             ),
             1f / window.ViewZoom,
-            Color.White
+            isSizeValid ? Color.White : Color.Red
         );
     }
 
     public void Finish(int layer, bool force, bool geometry)
     {
-        GetRectBounds(
-            startPos.X, startPos.Y, endPos.X, endPos.Y,
-            out var minX, out var minY, out var maxX, out var maxY
-        );
+        if (isSizeValid)
+        {
+            GetRectBounds(
+                startPos.X, startPos.Y, endPos.X, endPos.Y,
+                out var minX, out var minY, out var maxX, out var maxY
+            );
 
-        autotile.TileRect(
-            layer,
-            rectMin: new Vector2i(minX, minY),
-            rectMax: new Vector2i(maxX, maxY),
-            force, geometry
-        );
+            autotile.TileRect(
+                layer,
+                rectMin: new Vector2i(minX, minY),
+                rectMax: new Vector2i(maxX, maxY),
+                force, geometry
+            );
+        }
     }
 }

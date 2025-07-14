@@ -128,6 +128,7 @@ function rained.tiles.getTilesInCategory(categoryName) end
 ---@field tilePath fun(self: Autotile, layer: integer, segments: PathSegment[], forceModifier: ForceModifier)? The path autotiling callback
 ---@field tileRect fun(self: Autotile, layer: integer, left: integer, top: integer, right: integer, bottom: integer, forceModifier: ForceModifier)? The rect autotiling callback
 ---@field uiHook fun(self: Autotile) Hook used to insert custom ImGui calls into the autotile configuration UI.
+---@field verifySize ?fun(self: Autotile, left: integer, top: integer, right: integer, bottom: integer):boolean A callback for rect autotiles used to restrict which sizes are valid.
 ---@field onOptionChanged fun(self: Autotile, id: string)? The callback that is invoked when an option is changed.
 local Autotile = {}
 

@@ -100,6 +100,11 @@ abstract class Autotile
 
     public virtual void ConfigGui() {}
 
+    public virtual bool VerifySize(Vector2i rectMin, Vector2i rectMax)
+    {
+        return true;
+    }
+
     public virtual bool AllowIntersections { get => false; }
     public virtual bool AutoHistory { get => true; }
     public virtual bool ConstrainToSquare { get => false; }
