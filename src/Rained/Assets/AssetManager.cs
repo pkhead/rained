@@ -63,7 +63,7 @@ partial class CategoryList
     private readonly bool isColored;
 
     // structs to store information directly from lines in the init file
-    public record class InitLineData(string RawLine)
+    public abstract record class InitLineData(string RawLine)
     {
         public string RawLine = RawLine;
     }
@@ -449,7 +449,7 @@ partial class CategoryList
         lines[lineIndex].RawLine = sb.ToString();
     }
 
-    [GeneratedRegex("#nm.*?:\\s*\".*?\"")]
+    [GeneratedRegex("#nm\\s*?:\\s*\".*?\"")]
     private static partial Regex NameReplaceRegex();
 
     public void RenameItem(InitItem item, string newName)
@@ -531,14 +531,28 @@ partial class CategoryList
 
     public void MoveCategory(InitCategory draggedCategory, InitCategory replaceCategory)
     {
-        if (!Categories.Contains(replaceCategory) || !Categories.Contains(draggedCategory))
-            throw new ArgumentException("InitCategory does not contain one or more of the categories");
+        var catDragIndex = Categories.IndexOf(draggedCategory);
+        if (catDragIndex == -1)
+            throw new ArgumentException($"Category {draggedCategory.Name} was not in the CategoryList", nameof(draggedCategory));
+
+        var catReplaceIndex = Categories.IndexOf(replaceCategory);
+        if (catReplaceIndex == -1)
+            throw new ArgumentException($"Category {replaceCategory.Name} was not in the CategoryList", nameof(replaceCategory));
+
+        // when updating the init contents,
+        // the dragged category will need to insert itself after the new category if the new category is
+        // ahead of the old category, and before the new category if the new category is behind the old category
+        var moveDirection = Math.Sign(catReplaceIndex - catDragIndex);
+        if (moveDirection == 0)
+        {
+            Log.Warning("Attempt to move category {CategoryName} into itself?", replaceCategory.Items);
+            return;
+        }
 
         // This is the tedious part, editing the init lines to follow the category :(
         int dragIndex = lines.IndexOf(categoryHeaders[draggedCategory.Name]);
         if (dragIndex == -1)
             throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
-        List<InitLineData> dragCategoryLines = [];
 
         int replaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
 
@@ -550,8 +564,11 @@ partial class CategoryList
         if (dragIndex != 0)
             dragIndex++;
 
-        bool shouldContinue = true;
+        // remove all the lines for the category and store them into dragCategoryLines
         // We need to take into account InitIrrelevantLine that are in the middle of a category because some people add them despite not having any purpose
+        // (...as separators? that would their purpose.)
+        bool shouldContinue = true;
+        List<InitLineData> dragCategoryLines = [];
         while (dragIndex < lines.Count && shouldContinue && ((lines[dragIndex] is not InitCategoryHeader) || lines[dragIndex] == categoryHeaders[draggedCategory.Name]))
         {
             // This is our check to see if this InitIrrelevantLine is a break case or not
@@ -564,111 +581,131 @@ partial class CategoryList
                     shouldContinue = false;
                     break;
                 }
-                    
+
                 cont++;
             }
 
             if (shouldContinue)
             {
-                // Moving categories should likely also delete dups by default, I guess that's a win
-                if (lines[dragIndex] is InitLineData data && !dragCategoryLines.Contains(data))
-                {
-                    dragCategoryLines.Add(data);
-                }
-                Log.Information("Removing {string}", lines[dragIndex].RawLine);
-                lines.RemoveAt(dragIndex);
+                dragCategoryLines.Add(lines[dragIndex]);
+                // Log.Information("Removing {string}", lines[dragIndex].RawLine);
 
+                // RemoveAt here is a bit inefficient, would probably be faster if
+                // it used RemoveRange after finishing building dragCategoryLines
+                lines.RemoveAt(dragIndex);
 
                 if (dragCategoryLines.Count == 1 && dragCategoryLines[0] is not InitIrrelevantLine)
                 {
                     // Insert a blank line at the beginning if the category is at the top
-                    dragCategoryLines.Insert(0, new(""));
+                    dragCategoryLines.Insert(0, new InitIrrelevantLine(""));
                 }
             }
-            else if (dragIndex == 0 && lines[dragIndex] is InitIrrelevantLine && string.IsNullOrEmpty(lines[dragIndex].RawLine))
+            else if (dragIndex == 0 && lines[dragIndex] is InitIrrelevantLine && string.IsNullOrWhiteSpace(lines[dragIndex].RawLine))
             {
                 // Remove the lingering line at the top if the line is not a comment
                 lines.RemoveAt(dragIndex);
             }
         }
+
+        // now i want to reinsert the contents of the category into the new position
+        // first need to calculate the position at which the category contents will be inserted
         int postReplaceIndex = lines.IndexOf(categoryHeaders[replaceCategory.Name]);
         if (replaceIndex == -1 || postReplaceIndex == -1)
             throw new ArgumentException("Index of an argument was not found in the InitCategoryHeader");
 
-        int lineDisplace = replaceIndex - postReplaceIndex;
-        lineDisplace += postReplaceIndex;
-
-        bool shouldPlaceAtBottom = false;
-        if (lineDisplace > 0 && lineDisplace < lines.Count)
+        // once again, move direction changes if it should be inserted before or after the target category
+        int initInsertionIndex = postReplaceIndex;
+        var insertingAtEnd = false; // if not inserting at end, add an empty line at the end of the category init
+        if (moveDirection > 0)
         {
-            // Moving a category down doesn't properly index, moving it up does however
-            // So if the lineDisplace is positive, it should check for the InitIrrelevantLine at the beginning and then place it before that
-            Log.Information("Initial insert line at {string}", lines[lineDisplace].RawLine);
-
-            if (lineDisplace > 0)
+            if (catReplaceIndex + 1 == Categories.Count)
             {
-                bool displaced = false;
-                // We need to check which direction is the correct index
-                if (lines[lineDisplace] != categoryHeaders[replaceCategory.Name])
-                {
-                    displaced = true;
-                    while (lineDisplace > 0 && lines[lineDisplace] is not InitCategoryHeader)
-                        lineDisplace--;
-                }
-
-                // So if the last category head is our category we want to *move* past, lets move to the next category
-                if (displaced && lines[lineDisplace] == categoryHeaders[replaceCategory.Name])
-                {
-                    Log.Information("Last category is our replaced category!");
-                    while (lineDisplace < lines.Count && (lines[lineDisplace] is not InitCategoryHeader || lines[lineDisplace] == categoryHeaders[replaceCategory.Name]))
-                        lineDisplace++;
-                }
+                insertingAtEnd = true;
+                initInsertionIndex = lines.Count;
+            }
+            else
+            {
+                // need to go to the end of the category
+                // a loop with no body feels cursed
+                while (lines[++initInsertionIndex] is not InitCategoryHeader) ;
+                while (lines[--initInsertionIndex] is InitIrrelevantLine) ;
+                initInsertionIndex++;
             }
         }
-        else
+
+        // now do the reinsertion
+        if (!insertingAtEnd)
         {
-            // If nothing else, place them at the bottom so you don't lose them
-            shouldPlaceAtBottom = true;
-            lines.AddRange(dragCategoryLines);
+            dragCategoryLines.Add(new InitIrrelevantLine(""));
         }
+        lines.InsertRange(initInsertionIndex, dragCategoryLines);
 
-        if (!shouldPlaceAtBottom)
-        {
-            // Move the line behind the last category if we are not at the top
-            while (lineDisplace > 0 && lines[lineDisplace] is not InitItem)
-                lineDisplace--;
+        // int lineDisplace = replaceIndex - postReplaceIndex;
+        // lineDisplace += postReplaceIndex;
 
-            // Move after the last line of the last category
-            lineDisplace++;
+        // bool shouldPlaceAtBottom = false;
+        // if (lineDisplace > 0 && lineDisplace < lines.Count)
+        // {
+        //     // Moving a category down doesn't properly index, moving it up does however
+        //     // So if the lineDisplace is positive, it should check for the InitIrrelevantLine at the beginning and then place it before that
+        //     Log.Information("Initial insert line at {string}", lines[lineDisplace].RawLine);
 
-            Log.Information("Final insert line before {string}", lines[lineDisplace + 1].RawLine);
-            lines.InsertRange(lineDisplace, dragCategoryLines);
-        }
+        //     if (lineDisplace > 0)
+        //     {
+        //         bool displaced = false;
+        //         // We need to check which direction is the correct index
+        //         if (lines[lineDisplace] != categoryHeaders[replaceCategory.Name])
+        //         {
+        //             displaced = true;
+        //             while (lineDisplace > 0 && lines[lineDisplace] is not InitCategoryHeader)
+        //                 lineDisplace--;
+        //         }
 
+        //         // So if the last category head is our category we want to *move* past, lets move to the next category
+        //         if (displaced && lines[lineDisplace] == categoryHeaders[replaceCategory.Name])
+        //         {
+        //             Log.Information("Last category is our replaced category!");
+        //             while (lineDisplace < lines.Count && (lines[lineDisplace] is not InitCategoryHeader || lines[lineDisplace] == categoryHeaders[replaceCategory.Name]))
+        //                 lineDisplace++;
+        //         }
+        //     }
+        // }
+        // else
+        // {
+        //     // If nothing else, place them at the bottom so you don't lose them
+        //     shouldPlaceAtBottom = true;
+        //     lines.AddRange(dragCategoryLines);
+        // }
+
+        // if (!shouldPlaceAtBottom)
+        // {
+        //     // Move the line behind the last category if we are not at the top
+        //     while (lineDisplace > 0 && lines[lineDisplace] is not InitItem)
+        //         lineDisplace--;
+
+        //     // Move after the last line of the last category
+        //     lineDisplace++;
+
+        //     Log.Information("Final insert line before {string}", lines[lineDisplace + 1].RawLine);
+        //     lines.InsertRange(lineDisplace, dragCategoryLines);
+        // }
+
+        // now, changing the category list instead of the contents of the init file
         // This is the easy part
-        int catDragIndex = Categories.IndexOf(draggedCategory);
-        if (catDragIndex == -1)
-            throw new ArgumentException("Index of an argument was not found in the InitCategory");
-
-        int catReplaceIndex = Categories.IndexOf(replaceCategory);
         Categories.RemoveAt(catDragIndex);
-        int postCatReplaceIndex = Categories.IndexOf(replaceCategory);
 
-        if (catReplaceIndex == -1 || postCatReplaceIndex == -1)
-            throw new ArgumentException("Index of an argument was not found in the InitCategory");
+        // int postCatReplaceIndex = Categories.IndexOf(replaceCategory);
+        // int postCatReplaceIndex = moveDirection > 0 ? catReplaceIndex - 1 : catReplaceIndex; // insane optimization of probably 1 us
+
+        // if (catReplaceIndex == -1 || postCatReplaceIndex == -1)
+        //     throw new ArgumentException("Index of an argument was not found in the InitCategory");
 
         // Changes the behavior so the target destination is before or after an item depending if the user drags the item up or down
-        int displace = catReplaceIndex - postCatReplaceIndex;
-        displace += postCatReplaceIndex;
+        // Categories.Insert(postCatReplaceIndex + (moveDirection < 0 ? 0 : 1), draggedCategory);
+        Categories.Insert(catReplaceIndex, draggedCategory);
 
-        if (displace >= 0 && displace < Categories.Count && !shouldPlaceAtBottom)
-        {
-            Categories.Insert(displace, draggedCategory);
-        }
-        else if (displace >= Categories.Count || shouldPlaceAtBottom)
-        {
-            Categories.Add(draggedCategory);
-        }
+        // DEBUGGING
+        // File.WriteAllLines("testinit.txt", lines.Select(x => x.RawLine));
     }
 
     public string GetCategoryHeader(InitCategory header)
@@ -819,6 +856,16 @@ class AssetManager
         }
     }
 
+    public bool HasCategoryList(CategoryListIndex index) =>
+        index switch
+        {
+            CategoryListIndex.Tile => TileInit,
+            CategoryListIndex.Prop => PropInit,
+            CategoryListIndex.Materials => MaterialsInit,
+            _ => throw new ArgumentOutOfRangeException(nameof(index))
+        }
+        is not null;
+    
     private CategoryList? GetCategoryList(CategoryListIndex index) =>
         index switch
         {

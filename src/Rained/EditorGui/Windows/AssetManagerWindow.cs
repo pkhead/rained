@@ -47,6 +47,7 @@ namespace Rained.EditorGui.Windows
             if (isWindowOpen)
             {
                 var lastNavTab = selectedAssetTab;
+                AssetManagerGUI.Init();
 
                 var p_open = true;
                 if (ImGui.Begin(WindowName, ref p_open, ImGuiWindowFlags.NoDocking))
@@ -56,6 +57,8 @@ namespace Rained.EditorGui.Windows
                     {
                         for (int i = 0; i < NavTabs.Length; i++)
                         {
+                            ImGui.BeginDisabled(!AssetManagerGUI.Manager!.HasCategoryList((Assets.AssetManager.CategoryListIndex)i));
+
                             if (ImGui.Selectable(NavTabs[i], i == (int)selectedAssetTab))
                             {
                                 selectedAssetTab = (AssetTabEnum)i;
@@ -74,6 +77,8 @@ namespace Rained.EditorGui.Windows
                                         break;
                                 }
                             }
+
+                            ImGui.EndDisabled();
                         }
                     }
                     ImGui.EndChild();

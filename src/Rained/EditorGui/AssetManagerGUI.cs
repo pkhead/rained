@@ -1456,13 +1456,18 @@ static class AssetManagerGUI
         }
     }
 
-    public static void Show()
+    public static void Init()
     {
         assetManager ??= new AssetManager();
         if (firstOpen)
         {
             ProcessSearch();
         }
+    }
+
+    public static void Show()
+    {
+        Init();
 
         ImGui.Bullet();
         ImGui.TextWrapped("Any changes here require a restart in order to take effect.");
