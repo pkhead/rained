@@ -102,6 +102,7 @@ abstract class Autotile
 
     public virtual bool AllowIntersections { get => false; }
     public virtual bool AutoHistory { get => true; }
+    public virtual bool ConstrainToSquare { get => false; }
 
     enum Direction : int
     {

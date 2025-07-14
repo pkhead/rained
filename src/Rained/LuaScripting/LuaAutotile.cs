@@ -24,6 +24,7 @@ class LuaAutotile : Autotile, IDisposable
 
     public override bool AllowIntersections { get => LuaWrapper.AllowIntersections; }
     public override bool AutoHistory { get => LuaWrapper.AutoHistory; }
+    public override bool ConstrainToSquare { get => LuaWrapper.ConstrainToSquare; }
 
     private List<string>? missingTiles = null;
     
@@ -295,6 +296,9 @@ class LuaAutotileInterface
     
     [LuaMember(Name = "requiredTiles")]
     public LuaTable? RequiredTiles = null;
+
+    [LuaMember(Name = "constrainToSquare")]
+    public bool ConstrainToSquare = false;
 
     public LuaAutotileInterface()
     {
