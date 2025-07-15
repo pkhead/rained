@@ -553,18 +553,28 @@ sealed class RainEd
                 var levelPath = path;
                 var pngPath = Path.ChangeExtension(path, "png");
 
+                string backupTxt, backupPng;
+                if (Preferences.BackupDirectory is not null)
+                {
+                    backupTxt = Path.Combine(Preferences.BackupDirectory, Path.GetFileName(levelPath));
+                    backupPng = Path.Combine(Preferences.BackupDirectory, Path.GetFileName(pngPath));
+                }
+                else
+                {
+                    backupTxt = levelPath + "~";
+                    backupPng = pngPath + "~";
+                }
+
                 if (File.Exists(levelPath))
                 {
-                    var backupFile = levelPath + ".1";
-                    File.Delete(backupFile);
-                    File.Move(levelPath, backupFile);
+                    File.Delete(backupTxt);
+                    File.Move(levelPath, backupTxt);
                 }
 
                 if (File.Exists(pngPath))
                 {
-                    var backupFile = pngPath + ".1";
-                    File.Delete(backupFile);
-                    File.Move(pngPath, backupFile);
+                    File.Delete(backupPng);
+                    File.Move(pngPath, backupPng);
                 }
             }
 

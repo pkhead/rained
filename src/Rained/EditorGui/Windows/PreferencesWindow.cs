@@ -761,10 +761,32 @@ static class PreferencesWindow
                 }
             }
 
+            ImGui.Separator();
+
             var saveBackups = prefs.SaveFileBackups;
             if (ImGui.Checkbox("Save backups of files", ref saveBackups))
             {
                 prefs.SaveFileBackups = saveBackups;
+            }
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("When you save a level, enabling this will make Rained move the previously saved version of the level to a different file. This serves as the backup file.\n\nWith no backup directory given, the backup will be in the same directory as the work file but with a tilde (~) appended to its file extension. With one, it will be saved to the backup directory with the same name as the work file.");
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
+
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Backup Directory");
+            ImGui.SameLine();
+
+            var backupDir = prefs.BackupDirectory;
+            if (FileBrowser.Button("BackupDirectory", FileBrowser.OpenMode.Directory, ref backupDir, clearButton: true))
+            {
+                prefs.BackupDirectory = backupDir;
             }
 
             ImGui.Separator();

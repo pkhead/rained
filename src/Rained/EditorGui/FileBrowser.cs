@@ -1007,8 +1007,10 @@ partial class FileBrowser
     private static bool fileBrowserReturn = false;
     private static FileBrowser? fileBrowserButtonInstance = null;
 
-    public static bool Button(string id, OpenMode openMode, ref string? path, Action<FileBrowser>? ctorCallback = null, string? openDir = null)
+    public static bool Button(string id, OpenMode openMode, ref string? path, Action<FileBrowser>? ctorCallback = null, string? openDir = null, bool clearButton = false)
     {
+        bool returnValue = false;
+
         if (openMode is OpenMode.MultiRead or OpenMode.MultiDirectory)
             throw new ArgumentException("Cannot use a multiselect mode for FileBrowser.Button.", nameof(openMode));
         
@@ -1022,6 +1024,19 @@ partial class FileBrowser
         LoadIcons();
 
         var textColor = ImGui.GetStyle().Colors[(int) ImGuiCol.Text];
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
+        
+        if (clearButton)
+        {
+            if (ImGuiExt.ImageButtonRect(id + "_clearButton", icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(3), textColor))
+            {
+                path = null;
+                returnValue = true;
+            }
+
+            ImGui.SameLine();
+        }
+        
         if (ImGuiExt.ImageButtonRect(id, icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(5), textColor))
         {
             activeFileBrowserButton = ImGui.GetItemID();
@@ -1029,6 +1044,7 @@ partial class FileBrowser
             fileBrowserButtonInstance = new FileBrowser(openMode, Callback, path is not null ? Path.GetDirectoryName(path) : openDir);
             ctorCallback?.Invoke(fileBrowserButtonInstance);
         }
+
         uint buttonId = ImGui.GetItemID();
 
         ImGui.SameLine();
@@ -1040,6 +1056,8 @@ partial class FileBrowser
             if (openMode == OpenMode.Directory) ImGui.TextDisabled("Choose directory...");
             else                                ImGui.TextDisabled("Choose file...");
         }
+
+        ImGui.PopStyleVar();
 
         if (activeFileBrowserButton == buttonId)
         {
@@ -1058,7 +1076,7 @@ partial class FileBrowser
 
         }
 
-        return false;
+        return returnValue;
     }
 
     // used for getting drive list from lsblk
