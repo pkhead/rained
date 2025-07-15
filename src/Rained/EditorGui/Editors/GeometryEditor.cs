@@ -809,30 +809,30 @@ class GeometryEditor : IEditorMode
                             toolRectX = window.MouseCx;
                             toolRectY = window.MouseCy;
                         }
-                        else if (isErasing && window.IsMouseInLevel())
+                        else if (KeyShortcuts.Active(KeyShortcut.FloodFill) && ToolCanFloodFill(selectedTool))
                         {
-                            Erase(window.MouseCx, window.MouseCy);
+                            for (int l = 0; l < Level.LayerCount; l++)
+                            {
+                                if (layerMask[l])
+                                    ActivateToolFloodFill(selectedTool, window.MouseCx, window.MouseCy, l, isErasing);
+                            }
                         }
                         else
                         {
-                            if (!isToolRectActive)
+                            Action<int, int> plotFunc;
+                            if (isErasing)
                             {
-                                if (KeyShortcuts.Active(KeyShortcut.FloodFill) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && ToolCanFloodFill(selectedTool))
-                                {
-                                    for (int l = 0; l < Level.LayerCount; l++)
-                                    {
-                                        if (layerMask[l])
-                                            ActivateToolFloodFill(selectedTool, window.MouseCx, window.MouseCy, l);
-                                    }
-                                }
-                                else
-                                {
-                                    Rasterization.Bresenham(lastMouseX, lastMouseY, window.MouseCx, window.MouseCy, (int x, int y) =>
-                                    {
-                                        ActivateTool(selectedTool, x, y, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
-                                    });
-                                }
+                                plotFunc = Erase;
                             }
+                            else
+                            {
+                                plotFunc = (x, y) =>
+                                {
+                                    ActivateTool(selectedTool, x, y, EditorWindow.IsMouseClicked(ImGuiMouseButton.Left));
+                                };
+                            }
+
+                            Rasterization.Bresenham(lastMouseX, lastMouseY, window.MouseCx, window.MouseCy, plotFunc);
                         }
                     }
                 }
@@ -1168,7 +1168,7 @@ class GeometryEditor : IEditorMode
         }
     }
 
-    private void ActivateToolFloodFill(Tool tool, int srcX, int srcY, int layer)
+    private void ActivateToolFloodFill(Tool tool, int srcX, int srcY, int layer, bool isErasing)
     {
         var level = RainEd.Instance.Level;
         var renderer = RainEd.Instance.LevelView.Renderer;
@@ -1180,8 +1180,8 @@ class GeometryEditor : IEditorMode
         GeoType geoMedium = level.Layers[layer, srcX, srcY].Geo;
         GeoType fillGeo = tool switch
         {
-            Tool.Air => GeoType.Air,
-            Tool.Wall => GeoType.Solid,
+            Tool.Air => isErasing ? GeoType.Solid : GeoType.Air,
+            Tool.Wall => isErasing ? GeoType.Air : GeoType.Solid,
             _ => throw new ArgumentException("ActivateToolFloodFill only supports Tool.Air and Tool.Wall", nameof(tool))
         };
 
