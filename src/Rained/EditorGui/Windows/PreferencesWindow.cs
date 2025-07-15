@@ -15,14 +15,15 @@ static class PreferencesWindow
 
     enum NavTabEnum : int
     {
-        General = 0,
-        Shortcuts = 1,
-        Theme = 2,
-        Drizzle = 3,
-        Scripts = 4
+        General,
+        Interface,
+        Shortcuts,
+        Theme,
+        Drizzle,
+        Scripts
     }
 
-    private readonly static string[] NavTabs = ["General", "Shortcuts", "Theme", "Drizzle", "Scripts"];
+    private readonly static string[] NavTabs = ["General", "Interface", "Shortcuts", "Theme", "Drizzle", "Scripts"];
     private readonly static string[] RendererNames = ["Direct3D 11", "Direct3D 12", "OpenGL", "Vulkan"];
     private static NavTabEnum selectedNavTab = NavTabEnum.General;
 
@@ -134,7 +135,6 @@ static class PreferencesWindow
                         if (ImGui.Selectable(NavTabs[i], i == (int)selectedNavTab))
                         {
                             selectedNavTab = (NavTabEnum)i;
-                            AssetManagerGUI.curAssetTab = (AssetManagerGUI.AssetType)i;
                         }
                     }
                 }
@@ -147,6 +147,10 @@ static class PreferencesWindow
                 {
                     case NavTabEnum.General:
                         ShowGeneralTab(justOpened || lastNavTab != selectedNavTab);
+                        break;
+                    
+                    case NavTabEnum.Interface:
+                        ShowInterfaceTab(justOpened || lastNavTab != selectedNavTab);
                         break;
 
                     case NavTabEnum.Shortcuts:
@@ -242,6 +246,119 @@ static class PreferencesWindow
 
     private static void ShowGeneralTab(bool entered)
     {
+        var prefs = RainEd.Instance.Preferences;
+
+        ImGui.SeparatorText("Backups");
+        {
+            var saveBackups = prefs.SaveFileBackups;
+            if (ImGui.Checkbox("Save backups of files", ref saveBackups))
+            {
+                prefs.SaveFileBackups = saveBackups;
+            }
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("When you save a level, enabling this will make Rained move the previously saved version of the level to a different file. This serves as the backup file.\n\nWith no backup directory given, the backup will be in the same directory as the work file but with a tilde (~) appended to its file extension. With one, it will be saved to the backup directory with the same name as the work file.");
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
+
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Backup Directory");
+            ImGui.SameLine();
+
+            var backupDir = prefs.BackupDirectory;
+            if (FileBrowser.Button("BackupDirectory", FileBrowser.OpenMode.Directory, ref backupDir, clearButton: true))
+            {
+                prefs.BackupDirectory = backupDir;
+            }
+        }
+
+        ImGui.SeparatorText("Miscellaneous");
+        {
+            // they've brainwashed me to not add this
+            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
+            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
+            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
+
+            bool versionCheck = prefs.CheckForUpdates;
+            if (ImGui.Checkbox("Check for updates", ref versionCheck))
+                prefs.CheckForUpdates = versionCheck;
+            
+            bool optimizedTile = prefs.OptimizedTilePreviews;
+            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
+                prefs.OptimizedTilePreviews = optimizedTile;
+            
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            ImGui.SetItemTooltip(
+                """
+                This will optimize tile preview rendering such
+                that only tile cells located in the bounds of
+                its tile head will be rendered. If this option
+                is turned off, all tile bodies will be
+                processed regardless or not if it is within the
+                bounds of its tile head.
+
+                Turning this off may be useful if you have very
+                erroneous tiles in a level and want to see them,
+                but otherwise there is no reason to do so.
+                """
+            );
+
+            // sky roots fix
+            {
+                var skyRootsFix = activeDrizzleConfig!.SkyRootsFix;
+                if (ImGui.Checkbox("Require in-bounds effects by default", ref skyRootsFix))
+                {
+                    activeDrizzleConfig.SkyRootsFix = skyRootsFix;
+                    activeDrizzleConfig.SavePreferences();
+                }
+
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                if (ImGui.BeginItemTooltip())
+                {
+                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                    ImGui.TextWrapped("This will set the value of the \"Require In-Bounds\" effect property for any newly created effects or effects from levels made before this option was added. This is an alias for the \"Sky roots fix\" option in the Drizzle page.");
+                    ImGui.PopTextWrapPos();
+                    ImGui.EndTooltip();
+                }
+            }
+
+            ImGui.Separator();
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            var simSpeed = prefs.FastSimulationSpeed;
+            if (ImGui.SliderFloat("Fast simulation speed", ref simSpeed, 1f, 20f, "%.0fx"))
+            {
+                prefs.FastSimulationSpeed = simSpeed;
+            }
+
+            ImGui.PopItemWidth();
+
+            //bool multiViewport = prefs.ImGuiMultiViewport;
+            //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
+            //    prefs.ImGuiMultiViewport = multiViewport;
+            //ImGui.SameLine();
+            //ImGui.TextDisabled("(?)");
+            //ImGui.SetItemTooltip(
+            //    """
+            //    Turning this on will allow inner windows to
+            //    go outside of the bounds of the main window.
+            //    This option requires a restart in order to
+            //    take effect.
+            //    """
+            //);
+        }
+    }
+
+    private static void ShowInterfaceTab(bool entered)
+    {
         static HexColor Vec3ToHexColor(Vector3 vec) => new(
             (byte)(Math.Clamp(vec.X, 0f, 1f) * 255f),
             (byte)(Math.Clamp(vec.Y, 0f, 1f) * 255f),
@@ -256,7 +373,7 @@ static class PreferencesWindow
         );
 
         var prefs = RainEd.Instance.Preferences;
-        
+
         ImGui.SeparatorText("Level Colors");
         {
             if (entered)
@@ -382,6 +499,206 @@ static class PreferencesWindow
             prefs.TileSpec2 = Vec4ToHexColor(tileSpec2Color);
         }
 
+        ImGui.SeparatorText("Interface");
+        {
+            bool showCameraNumbers = prefs.ShowCameraNumbers;
+            if (ImGui.Checkbox("Show camera numbers", ref showCameraNumbers))
+                prefs.ShowCameraNumbers = showCameraNumbers;
+
+            bool materialSelectorPreviews = prefs.MaterialSelectorPreview;
+            if (ImGui.Checkbox("Show previews in the material selector", ref materialSelectorPreviews))
+                prefs.MaterialSelectorPreview = materialSelectorPreviews;
+
+            bool doubleClickToCreateProp = prefs.DoubleClickToCreateProp;
+            if (ImGui.Checkbox("Double-click to create props", ref doubleClickToCreateProp))
+                prefs.DoubleClickToCreateProp = doubleClickToCreateProp;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Enabling this brings back the old prop
+                    selection/creation controls, where double-
+                    clicking the left mouse button placed down
+                    a prop instead of a single right click.
+                    """
+                );
+                ImGui.EndTooltip();
+            }
+
+            bool hideScreenSize = prefs.HideScreenSize;
+            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
+                prefs.HideScreenSize = hideScreenSize;
+
+            bool removeCangleLimit = prefs.RemoveCameraAngleLimit;
+            if (ImGui.Checkbox("Unlock camera angles", ref removeCangleLimit))
+                prefs.RemoveCameraAngleLimit = removeCangleLimit;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("Normally, there is a limit to how large you can make the strength of a camera angle, unless you hold SHIFT. With this enabled, the limit will be removed without the need to hold SHIFT, and doing so will instead impose the limit.");
+                ImGui.PopTextWrapPos();
+
+                ImGui.End();
+            }
+
+            bool geoMaskMouseDecor = prefs.GeometryMaskMouseDecor;
+            if (ImGui.Checkbox("Geometry mask mouse decoration", ref geoMaskMouseDecor))
+                prefs.GeometryMaskMouseDecor = geoMaskMouseDecor;
+
+            bool minUi = prefs.MinimalStatusBar;
+            if (ImGui.Checkbox("Minimal status bar", ref minUi))
+                prefs.MinimalStatusBar = minUi;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("This hides certain elements from the status bar.");
+                ImGui.PopTextWrapPos();
+
+                ImGui.End();
+            }
+
+            bool hideEditSwitch = prefs.HideEditorSwitch;
+            if (ImGui.Checkbox("Hide editor switch", ref hideEditSwitch))
+                prefs.HideEditorSwitch = hideEditSwitch;
+
+            ImGui.Separator();
+
+            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+            // geo icon set
+            var geometryIcons = prefs.GeometryIcons;
+            if (ImGui.BeginCombo("Geometry icon set", geometryIcons))
+            {
+                foreach (var str in GeometryIcons.Sets)
+                {
+                    var isSelected = str == geometryIcons;
+                    if (ImGui.Selectable(str, isSelected))
+                    {
+                        GeometryIcons.CurrentSet = str;
+                        prefs.GeometryIcons = GeometryIcons.CurrentSet;
+                    }
+
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
+            }
+
+            // camera border view mode
+            var camBorderMode = (int)prefs.CameraBorderMode;
+            if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
+                prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption)camBorderMode;
+
+            // autotile mouse mode
+            var autotileMouseMode = (int)prefs.AutotileMouseMode;
+            if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
+                prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions)autotileMouseMode;
+
+            // tile placement mode toggle
+            var tilePlacementToggle = prefs.TilePlacementModeToggle ? 1 : 0;
+            if (ImGui.Combo("Tile placement modifier mode", ref tilePlacementToggle, "Hold\0Toggle"))
+                prefs.TilePlacementModeToggle = tilePlacementToggle != 0;
+
+            // prop selection layer filter
+            var propSelectionLayerFilter = (int)prefs.PropSelectionLayerFilter;
+            if (ImGui.Combo("Prop selection layer filter", ref propSelectionLayerFilter, "All\0Current\0In Front"))
+                prefs.PropSelectionLayerFilter = (UserPreferences.PropSelectionLayerFilterOption)propSelectionLayerFilter;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    This controls which layers you can select
+                    in the prop editor relative to the current
+                    view layer.
+                    
+                    - All: Will allow you to select props from
+                    any layer.
+                    - Current: Will only allow you to select
+                    props in the currently viewed layer.
+                    - In Front: Will only allow you to select
+                    props in the current layer as well as all
+                    layers behind it.
+                    """
+                );
+                ImGui.End();
+            }
+
+            // light editor control scheme
+            var lightEditorControlScheme = (int)prefs.LightEditorControlScheme;
+            if (ImGui.Combo("Light editor control scheme", ref lightEditorControlScheme, "Mouse\0Keyboard\0"))
+                prefs.LightEditorControlScheme = (UserPreferences.LightEditorControlSchemeOption)lightEditorControlScheme;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    This changes how the brush in the light
+                    editor will be scaled and rotated.
+
+                    - Mouse: Hold Q/E and move the mouse for
+                    scaling and rotation, respectively.
+
+                    - Keyboard: Mimics the controls in the
+                    original level editor: WASD to
+                    scale and Q/E to rotate.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementPos = (int)prefs.EffectPlacementPosition;
+            if (ImGui.Combo("Effect placement position", ref effectPlacementPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementPosition = (UserPreferences.EffectPlacementPositionOption)effectPlacementPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created.
+                    """
+                );
+                ImGui.End();
+            }
+
+            var effectPlacementAltPos = (int)prefs.EffectPlacementAltPosition;
+            if (ImGui.Combo("Effect placement alt position", ref effectPlacementAltPos, "Before selected\0After selected\0First\0Last\0"))
+                prefs.EffectPlacementAltPosition = (UserPreferences.EffectPlacementPositionOption)effectPlacementAltPos;
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.TextUnformatted(
+                    """
+                    Changes where effects are inserted into
+                    the Active Effects list when created when
+                    SHIFT is held.
+                    """
+                );
+                ImGui.End();
+            }
+
+            ImGui.PopItemWidth();
+        }
+        
         ImGui.SeparatorText("Display");
         {
             if (entered)
@@ -508,320 +825,13 @@ static class PreferencesWindow
 
             ImGui.PopItemWidth();
         }
-
-        ImGui.SeparatorText("Interface");
-        {
-            bool showCameraNumbers = prefs.ShowCameraNumbers;
-            if (ImGui.Checkbox("Show camera numbers", ref showCameraNumbers))
-                prefs.ShowCameraNumbers = showCameraNumbers;
-            
-            bool materialSelectorPreviews = prefs.MaterialSelectorPreview;
-            if (ImGui.Checkbox("Show previews in the material selector", ref materialSelectorPreviews))
-                prefs.MaterialSelectorPreview = materialSelectorPreviews;
-            
-            bool doubleClickToCreateProp = prefs.DoubleClickToCreateProp;
-            if (ImGui.Checkbox("Double-click to create props", ref doubleClickToCreateProp))
-                prefs.DoubleClickToCreateProp = doubleClickToCreateProp;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.TextUnformatted(
-                    """
-                    Enabling this brings back the old prop
-                    selection/creation controls, where double-
-                    clicking the left mouse button placed down
-                    a prop instead of a single right click.
-                    """
-                );
-                ImGui.EndTooltip();
-            }
-            
-            bool hideScreenSize = prefs.HideScreenSize;
-            if (ImGui.Checkbox("Hide screen size parameters in the resize window", ref hideScreenSize))
-                prefs.HideScreenSize = hideScreenSize;
-            
-            bool removeCangleLimit = prefs.RemoveCameraAngleLimit;
-            if (ImGui.Checkbox("Unlock camera angles", ref removeCangleLimit))
-                prefs.RemoveCameraAngleLimit = removeCangleLimit;
-
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
-                ImGui.TextWrapped("Normally, there is a limit to how large you can make the strength of a camera angle, unless you hold SHIFT. With this enabled, the limit will be removed without the need to hold SHIFT, and doing so will instead impose the limit.");
-                ImGui.PopTextWrapPos();
-
-                ImGui.End();
-            }
-            
-            bool geoMaskMouseDecor = prefs.GeometryMaskMouseDecor;
-            if (ImGui.Checkbox("Geometry mask mouse decoration", ref geoMaskMouseDecor))
-                prefs.GeometryMaskMouseDecor = geoMaskMouseDecor;
-            
-            bool minUi = prefs.MinimalStatusBar;
-            if (ImGui.Checkbox("Minimal status bar", ref minUi))
-                prefs.MinimalStatusBar = minUi;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
-                ImGui.TextWrapped("This hides certain elements from the status bar.");
-                ImGui.PopTextWrapPos();
-
-                ImGui.End();
-            }
-
-            bool hideEditSwitch = prefs.HideEditorSwitch;
-            if (ImGui.Checkbox("Hide editor switch", ref hideEditSwitch))
-                prefs.HideEditorSwitch = hideEditSwitch;
-            
-            ImGui.Separator();
-            
-            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
-
-            // geo icon set
-            var geometryIcons = prefs.GeometryIcons;
-            if (ImGui.BeginCombo("Geometry icon set", geometryIcons))
-            {
-                foreach (var str in GeometryIcons.Sets)
-                {
-                    var isSelected = str == geometryIcons;
-                    if (ImGui.Selectable(str, isSelected))
-                    {
-                        GeometryIcons.CurrentSet = str;
-                        prefs.GeometryIcons = GeometryIcons.CurrentSet;
-                    }
-
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
-                }
-
-                ImGui.EndCombo();
-            }
-            
-            // camera border view mode
-                var camBorderMode = (int) prefs.CameraBorderMode;
-            if (ImGui.Combo("Camera border view mode", ref camBorderMode, "Inner Border\0Outer Border\0Both Borders"))
-                prefs.CameraBorderMode = (UserPreferences.CameraBorderModeOption) camBorderMode;
-            
-            // autotile mouse mode
-            var autotileMouseMode = (int) prefs.AutotileMouseMode;
-            if (ImGui.Combo("Autotile mouse mode", ref autotileMouseMode, "Click\0Hold"))
-                prefs.AutotileMouseMode = (UserPreferences.AutotileMouseModeOptions) autotileMouseMode;
-            
-            // tile placement mode toggle
-            var tilePlacementToggle = prefs.TilePlacementModeToggle ? 1 : 0;
-            if (ImGui.Combo("Tile placement modifier mode", ref tilePlacementToggle, "Hold\0Toggle"))
-                prefs.TilePlacementModeToggle = tilePlacementToggle != 0;
-            
-            // prop selection layer filter
-            var propSelectionLayerFilter = (int) prefs.PropSelectionLayerFilter;
-            if (ImGui.Combo("Prop selection layer filter", ref propSelectionLayerFilter, "All\0Current\0In Front"))
-                prefs.PropSelectionLayerFilter = (UserPreferences.PropSelectionLayerFilterOption) propSelectionLayerFilter;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.TextUnformatted(
-                    """
-                    This controls which layers you can select
-                    in the prop editor relative to the current
-                    view layer.
-                    
-                    - All: Will allow you to select props from
-                    any layer.
-                    - Current: Will only allow you to select
-                    props in the currently viewed layer.
-                    - In Front: Will only allow you to select
-                    props in the current layer as well as all
-                    layers behind it.
-                    """
-                );
-                ImGui.End();
-            }
-
-            // light editor control scheme
-            var lightEditorControlScheme = (int) prefs.LightEditorControlScheme;
-            if (ImGui.Combo("Light editor control scheme", ref lightEditorControlScheme, "Mouse\0Keyboard\0"))
-                prefs.LightEditorControlScheme = (UserPreferences.LightEditorControlSchemeOption) lightEditorControlScheme;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.TextUnformatted(
-                    """
-                    This changes how the brush in the light
-                    editor will be scaled and rotated.
-
-                    - Mouse: Hold Q/E and move the mouse for
-                    scaling and rotation, respectively.
-
-                    - Keyboard: Mimics the controls in the
-                    original level editor: WASD to
-                    scale and Q/E to rotate.
-                    """
-                );
-                ImGui.End();
-            }
-
-            var effectPlacementPos = (int) prefs.EffectPlacementPosition;
-            if (ImGui.Combo("Effect placement position", ref effectPlacementPos, "Before selected\0After selected\0First\0Last\0"))
-                prefs.EffectPlacementPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementPos;
-
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.TextUnformatted(
-                    """
-                    Changes where effects are inserted into
-                    the Active Effects list when created.
-                    """
-                );
-                ImGui.End();
-            }
-
-            var effectPlacementAltPos = (int) prefs.EffectPlacementAltPosition;
-            if (ImGui.Combo("Effect placement alt position", ref effectPlacementAltPos, "Before selected\0After selected\0First\0Last\0"))
-                prefs.EffectPlacementAltPosition = (UserPreferences.EffectPlacementPositionOption) effectPlacementAltPos;
-
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.TextUnformatted(
-                    """
-                    Changes where effects are inserted into
-                    the Active Effects list when created when
-                    SHIFT is held.
-                    """
-                );
-                ImGui.End();
-            }
-            
-            ImGui.PopItemWidth();
-        }
-
-        ImGui.SeparatorText("Miscellaneous");
-        {
-            // they've brainwashed me to not add this
-            //bool showHiddenEffects = prefs.ShowDeprecatedEffects;
-            //if (ImGui.Checkbox("Show deprecated effects", ref showHiddenEffects))
-            //    prefs.ShowDeprecatedEffects = showHiddenEffects;
-
-            bool versionCheck = prefs.CheckForUpdates;
-            if (ImGui.Checkbox("Check for updates", ref versionCheck))
-                prefs.CheckForUpdates = versionCheck;
-            
-            bool optimizedTile = prefs.OptimizedTilePreviews;
-            if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
-                prefs.OptimizedTilePreviews = optimizedTile;
-            
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            ImGui.SetItemTooltip(
-                """
-                This will optimize tile preview rendering such
-                that only tile cells located in the bounds of
-                its tile head will be rendered. If this option
-                is turned off, all tile bodies will be
-                processed regardless or not if it is within the
-                bounds of its tile head.
-
-                Turning this off may be useful if you have very
-                erroneous tiles in a level and want to see them,
-                but otherwise there is no reason to do so.
-                """
-            );
-
-            // sky roots fix
-            {
-                var skyRootsFix = activeDrizzleConfig!.SkyRootsFix;
-                if (ImGui.Checkbox("Require in-bounds effects by default", ref skyRootsFix))
-                {
-                    activeDrizzleConfig.SkyRootsFix = skyRootsFix;
-                    activeDrizzleConfig.SavePreferences();
-                }
-
-                ImGui.SameLine();
-                ImGui.TextDisabled("(?)");
-                if (ImGui.BeginItemTooltip())
-                {
-                    ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
-                    ImGui.TextWrapped("This will set the value of the \"Require In-Bounds\" effect property for any newly created effects or effects from levels made before this option was added. This is an alias for the \"Sky roots fix\" option in the Drizzle page.");
-                    ImGui.PopTextWrapPos();
-                    ImGui.EndTooltip();
-                }
-            }
-
-            ImGui.Separator();
-
-            var saveBackups = prefs.SaveFileBackups;
-            if (ImGui.Checkbox("Save backups of files", ref saveBackups))
-            {
-                prefs.SaveFileBackups = saveBackups;
-            }
-
-            ImGui.SameLine();
-            ImGui.TextDisabled("(?)");
-            if (ImGui.BeginItemTooltip())
-            {
-                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
-                ImGui.TextWrapped("When you save a level, enabling this will make Rained move the previously saved version of the level to a different file. This serves as the backup file.\n\nWith no backup directory given, the backup will be in the same directory as the work file but with a tilde (~) appended to its file extension. With one, it will be saved to the backup directory with the same name as the work file.");
-                ImGui.PopTextWrapPos();
-                ImGui.EndTooltip();
-            }
-
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Backup Directory");
-            ImGui.SameLine();
-
-            var backupDir = prefs.BackupDirectory;
-            if (FileBrowser.Button("BackupDirectory", FileBrowser.OpenMode.Directory, ref backupDir, clearButton: true))
-            {
-                prefs.BackupDirectory = backupDir;
-            }
-
-            ImGui.Separator();
-
-            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
-
-            var simSpeed = prefs.FastSimulationSpeed;
-            if (ImGui.SliderFloat("Fast simulation speed", ref simSpeed, 1f, 20f, "%.0fx"))
-            {
-                prefs.FastSimulationSpeed = simSpeed;
-            }
-
-            ImGui.PopItemWidth();
-
-            //bool multiViewport = prefs.ImGuiMultiViewport;
-            //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
-            //    prefs.ImGuiMultiViewport = multiViewport;
-            //ImGui.SameLine();
-            //ImGui.TextDisabled("(?)");
-            //ImGui.SetItemTooltip(
-            //    """
-            //    Turning this on will allow inner windows to
-            //    go outside of the bounds of the main window.
-            //    This option requires a restart in order to
-            //    take effect.
-            //    """
-            //);
-        }
     }
 
     private static void ShowShortcutsTab()
     {
         ImGui.SeparatorText("Accessibility");
         ShortcutButton(KeyShortcut.RightMouse);
-        
+
         ImGui.SeparatorText("General");
         ShortcutButton(KeyShortcut.ViewZoomIn);
         ShortcutButton(KeyShortcut.ViewZoomOut);
