@@ -13,12 +13,12 @@ If you want to update Rained, you should remove and replace all the files and fo
 
 Then, download and extract the new version of Rained from the releases page.
 
-You should ensure that any potential changes you made in any files aren't accidentally overwritten. Additionally, if you open Rained after updating and the windows are messed up, you should either fix it yourself (tedious), or replace config/imgui.ini with the version from the new update.
+You should ensure that any potential changes you made in any files aren't accidentally overwritten. Additionally, if you open Rained after updating and the windows are messed up, deleting the config/imgui.ini file should reset the UI layout.
 
 ## rainedvm
-rainedvm is a program that eases the process of maintaining Rained versions. Downloads are [here](https://github.com/pkhead/rainedvm/releases).
+rainedvm is a program that eases the process of installing Rained versions. Downloads are [here](https://github.com/pkhead/rainedvm/releases).
 
-Inside the .zip or .tar.gz download is the executable **rainedvm**. Simply extract it and drop it in the folder where you want to install Rained. Then, launch the executable, which should open a window that looks like this:
+Inside the .zip or .tar.gz download is the executable **rainedvm**. Simply extract it and drop it in the folder where you want to install or update Rained. Then, launch the executable, which should open a window that looks like this:
 
 <figure markdown="span">
     ![rainedvm](img//rainedvm.png)
@@ -40,11 +40,11 @@ Your first launch of Rained should look like this:
     ![The asset installation screen.](img/configure-data.png)
 </figure>
 
-!!! note
+!!! important
 
     If you do not already have an installation of a different Rain World level editor on your computer, select "Download Data". Otherwise, continue reading.
 
-Each Rain World level editor should come with a set of tiles, props, and vanilla and Downpour levels. However, trying using the same set of tiles, props, and created levels across different level editors can be cumbersome, as they have their own folder/directory to store this data. Additionally, the set of bundled level files takes around 4 GB of storage.
+Each Rain World level editor should come with a set of tiles, props, and vanilla and DLC levels. However, trying using the same set of tiles, props, and created levels across different level editors can be cumbersome, as they have their own folder/directory to store this data. Additionally, the set of bundled level files takes around 4 GB of storage.
 
 To accomodate for this, Rained allows you to choose whether or not you want it to use a pre-existing directory on your computer for tiles, props, and levels. If you do not already have these installed on your computer (or if you just want to), you need to select "Download Data". It will download the required files from the Internet. Otherwise, you may select "Choose Data Folder". This will open up a file browser where you will choose the correct data directory. The directory you choose should contain the following subdirectories:
 
@@ -54,17 +54,23 @@ To accomodate for this, Rained allows you to choose whether or not you want it t
 - LevelEditorProjects *(optional)*
 - Materials *(optional)*
 
-You can also change the data directory after this initial set-up. This is done by modifying the Data Path option, located in the Assets page in the preferences window (**File > Preferences**).
+You can also change the data directory after this initial set-up. This is done by modifying the Data Path option, located in the preferences window (**File > Preferences**) and the asset manager (**File > Asset Manager**).
 
 !!! note
 
     When you choose "Download Data", the progress bar will stay at 0% for most of the duration. This is a fault of the download provider that is being used.
 
 ## Dependencies
-!!! note
+!!! important
 
     This section is only relevant if you are running Rained on Windows.
 
 The only dependency Rained has is the Microsoft Visual Studio C++ runtime. Rained *is* programmed in C#, but some of the libraries it uses for windowing and graphics were programmed in C++, which is why it is required.
 
-To check if you have the required dependency installed or not, simply try running Rained. If it can't open a window and fails to launch, it's likely that you will need to install it. Fortunately, it is very simple. The installer for the C++ runtime can be downloaded [here](https://aka.ms/vs/17/release/vc_redist.x64.exe). Run the executable and once the installation process is finished, you now can run Rained.
+To check if you have the required dependency installed or not, simply try running Rained. If it can't open a window and fails to launch, it's likely that you will need to install it. Fortunately, it is very simple. The installer for the C++ runtime can be downloaded here: 
+
+<figure markdown="span">
+[https://aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+</figure>
+
+Run the executable and once the installation process is finished, you now can run Rained (hopefully).

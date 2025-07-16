@@ -1,3 +1,6 @@
+- URGENT!!! (For solar)
+    Fix asset manager exports pertaining to images
+
 LargeTexture:
 - large texture for lightmap
 
