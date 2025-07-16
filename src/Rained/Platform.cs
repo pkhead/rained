@@ -216,7 +216,7 @@ static partial class Platform
     /// </summary>
     /// <param name="filePath">The path of the file to trash.</param>
     /// <returns>True if the operation is supported on the running platform, false if not.</returns>
-    public static bool TrashFile(string file)
+    public static bool TrashFile(string file, bool deleteAsFallback = true)
     {
         file = Path.GetFullPath(file);
         if (!File.Exists(file))
@@ -306,6 +306,12 @@ static partial class Platform
             }
             catch {}
             if (success) return true;
+
+            if (deleteAsFallback)
+            {
+                Log.Warning("File trashing is not supported on this platform, resorted to permanent deletion.");   
+                File.Delete(file);
+            }
 
             return false;
         }

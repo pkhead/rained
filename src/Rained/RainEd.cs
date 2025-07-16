@@ -567,13 +567,13 @@ sealed class RainEd
 
                 if (File.Exists(levelPath))
                 {
-                    File.Delete(backupTxt);
+                    Platform.TrashFile(backupTxt);
                     File.Move(levelPath, backupTxt);
                 }
 
                 if (File.Exists(pngPath))
                 {
-                    File.Delete(backupPng);
+                    Platform.TrashFile(backupPng);
                     File.Move(pngPath, backupPng);
                 }
             }
@@ -600,8 +600,8 @@ sealed class RainEd
 
             if (Util.ArePathsEquivalent(oldParentFolder, EmergencySaveFolder) && !Util.ArePathsEquivalent(newParentFolder, EmergencySaveFolder))
             {
-                File.Delete(oldFilePath);
-                File.Delete(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
+                Platform.TrashFile(oldFilePath);
+                Platform.TrashFile(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
             }
 
             LuaScripting.Modules.RainedModule.DocumentSavedCallback(_tabs.IndexOf(_currentTab!));
@@ -678,11 +678,7 @@ sealed class RainEd
         {
             if (file is not null)
             {
-                if (!Platform.TrashFile(file))
-                {
-                    Log.UserLogger.Warning("File trashing is not supported on this platform, resorted to permanent deletion.");
-                    File.Delete(file);
-                }
+                Platform.TrashFile(file);
             }
         }
 

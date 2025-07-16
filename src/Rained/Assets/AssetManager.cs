@@ -764,7 +764,7 @@ class AssetManager
             if (File.Exists(filePath))
             {
                 Log.Information("Delete {FilePath}", filePath);
-                File.Delete(filePath);
+                Platform.TrashFile(filePath);
             }
         }
 
@@ -817,7 +817,7 @@ class AssetManager
                 if (File.Exists(filePath))
                 {
                     Log.Information("Delete {FilePath}", filePath);
-                    File.Delete(filePath);
+                    Platform.TrashFile(filePath);
                 }
             }
         }
