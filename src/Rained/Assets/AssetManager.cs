@@ -38,6 +38,7 @@ interface IAssetGraphicsManager
     public void CopyGraphics(string name, string srcDir, string destDir, bool expect);
     public void DeleteGraphics(string name, string dir);
     public void RenameGraphics(string oldName, string newName, string dir);
+    public string[] GetGraphicsFiles(string name, string dir);
 }
 
 enum PromptYesNoResult { Yes, No, YesToAll, NoToAll }
@@ -751,7 +752,7 @@ class AssetManager
             {
                 // copy graphics
                 Log.Information("Copy {ImageName}", pngName);
-                
+
                 var graphicsData = File.ReadAllBytes(pngPath);
                 File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
             }
@@ -778,6 +779,11 @@ class AssetManager
                 File.Move(filePath, Path.Combine(dir, newName + ".png"));
             }
         }
+
+        public string[] GetGraphicsFiles(string name, string dir)
+        {
+            return [AssetGraphicsProvider.GetFilePath(dir, name + ".png")];
+        }
     }
 
     class MaterialGraphicsManager : IAssetGraphicsManager
@@ -801,7 +807,7 @@ class AssetManager
                 {
                     // copy graphics
                     Log.Information("Copy {ImageName}", pngName);
-                    
+
                     var graphicsData = File.ReadAllBytes(pngPath);
                     File.WriteAllBytes(Path.Combine(destDir, pngName), graphicsData);
                 }
@@ -813,7 +819,7 @@ class AssetManager
             foreach (var ext in PossibleExtensions)
             {
                 var filePath = AssetGraphicsProvider.GetFilePath(dir, name + ext);
-                
+
                 if (File.Exists(filePath))
                 {
                     Log.Information("Delete {FilePath}", filePath);
@@ -834,6 +840,17 @@ class AssetManager
                     File.Move(filePath, Path.Combine(dir, newName + ext));
                 }
             }
+        }
+
+        public string[] GetGraphicsFiles(string name, string dir)
+        {
+            string[] output = new string[PossibleExtensions.Length];
+            for (int i = 0; i < PossibleExtensions.Length; i++)
+            {
+                output[i] = AssetGraphicsProvider.GetFilePath(dir, name + PossibleExtensions[i]);
+            }
+
+            return output;
         }
     }
     
@@ -982,9 +999,10 @@ class AssetManager
                 imagePath = Path.Combine(imagePath, "Materials");
                 break;
         }
-        string[] imageFiles = Directory.GetFiles(imagePath, "*.png");
 
-        var catList = GetCategoryList(index);
+        var catList = GetCategoryList(index)!;
+        var gfxManager = GetGraphicsManager(index);
+
         using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate);
         using var zipInit = new ZipArchive(fileStream, ZipArchiveMode.Create, true);
 
@@ -1012,6 +1030,7 @@ class AssetManager
             // Then implement images
             foreach (var item in AssetManagerGUI.pendingExportFiles[key])
             {
+                string[] imageFiles = gfxManager.GetGraphicsFiles(item.Name, imagePath);
                 await WritePngToZip(imageFiles, item, zipInit);
             }
         }
@@ -1021,24 +1040,27 @@ class AssetManager
 
     public static async Task WritePngToZip(string[] imageFiles, CategoryList.InitItem item, ZipArchive zipInit)
     {
-        if (imageFiles.Any(x => x.Contains(item.Name)))
+        foreach (var imageFilePath in imageFiles)
         {
-            string source = imageFiles.Where(x => x.Contains(item.Name)).First();
-            if (File.Exists(source))
+            if (!File.Exists(imageFilePath))
             {
-                var entry = zipInit.CreateEntry(Path.GetFileName(source));
-                if (entry is not null)
-                {
-                    using var imageFile = entry.Open();
-                    using var originalImage = new FileStream(source, FileMode.Open, FileAccess.Read);
+                Log.UserLogger.Error($"Could not export asset \"{Path.GetFileName(imageFilePath)}\": Image file does not exist");
+                continue;
+            }
 
-                    if (originalImage is not null && originalImage.CanRead && imageFile.CanWrite)
-                    {
-                        await originalImage.CopyToAsync(imageFile);
-                    }
+            try
+            {
+                var entry = zipInit.CreateEntry(Path.GetFileName(imageFilePath));
+                using var imageFile = entry.Open();
+                using var originalImage = new FileStream(imageFilePath, FileMode.Open, FileAccess.Read);
 
-                    await imageFile.DisposeAsync();
-                }
+                await originalImage.CopyToAsync(imageFile);
+                await imageFile.DisposeAsync();
+                await originalImage.DisposeAsync();
+            }
+            catch (Exception e)
+            {
+                Log.UserLogger.Error($"Could not export asset \"{Path.GetFileName(imageFilePath)}\": " + e);
             }
         }
     }
