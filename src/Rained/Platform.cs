@@ -213,6 +213,9 @@ static partial class Platform
 
     /// <summary>
     /// Send a file to the trash bin.
+    /// 
+    /// note that the return value always returns true if the file does not exist (and therefore does nothing),
+    /// even if the function does not actually support trashing the file on that platform.
     /// </summary>
     /// <param name="filePath">The path of the file to trash.</param>
     /// <returns>True if the operation is supported on the running platform, false if not.</returns>
@@ -221,7 +224,8 @@ static partial class Platform
         file = Path.GetFullPath(file);
         if (!File.Exists(file))
         {
-            throw new FileNotFoundException($"Attempt to trash nonexistent file \"{file}\"");
+            // throw new FileNotFoundException($"Attempt to trash nonexistent file \"{file}\"");
+            return true;
         }
 
         if (OperatingSystem.IsWindows())
