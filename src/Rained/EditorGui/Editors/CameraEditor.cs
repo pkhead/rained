@@ -356,19 +356,21 @@ class CameraEditor : IEditorMode
                 {
                     changeRecorder.BeginChange();
                     List<Camera> newList = [];
+                    // position all dupes relative to a barycenter
+                    Vector2 barycenter = new(0, 0);
+                    foreach (var srcCam in selectedCameras)
+                        barycenter += srcCam.Position;
+                    barycenter /= new Vector2(selectedCameras.Count, selectedCameras.Count);
                     foreach (var srcCam in selectedCameras)
                     {
-                        var newCam = new Camera(window.MouseCellFloat - Camera.Size / 2f);
+                        var newCam = new Camera(window.MouseCellFloat - Camera.Size / 2f + (srcCam.Position - barycenter));
                         level.Cameras.Add(newCam);
-
                         for (int i = 0; i < 4; i++)
                         {
                             newCam.CornerAngles[i] = srcCam.CornerAngles[i];
                             newCam.CornerOffsets[i] = srcCam.CornerOffsets[i];
                         }
-
                         newList.Add(newCam);
-
                         if (srcCam == activeCamera)
                             activeCamera = newCam;
                     }
