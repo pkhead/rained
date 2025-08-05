@@ -156,6 +156,13 @@ class CameraEditor : IEditorMode
             window.WriteStatus("Y snap");
         }
 
+        if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.A))
+        {
+            selectedCameras.Clear();
+            foreach (Camera cam in RainEd.Instance.Level.Cameras)
+                selectedCameras.Add(cam);
+        }
+
         if (window.IsViewportHovered)
         {
             doubleClick = EditorWindow.IsMouseDoubleClicked(ImGuiMouseButton.Left);
