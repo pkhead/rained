@@ -20,8 +20,8 @@ class LevelWindow
     public bool IsWindowOpen = true;
 
     private const float ZoomFactorPerStep = 1.5f;
-    private const int MaxZoomSteps = 7;
-    private const int MinZoomSteps = -5;
+    private const int MaxZoomSteps = 24;
+    private const int MinZoomSteps = -24;
 
     public float ViewZoom { get => RainEd.Instance.CurrentTab!.ViewZoom; set => RainEd.Instance.CurrentTab!.ViewZoom = value; }
     public ref int WorkLayer => ref RainEd.Instance.CurrentTab!.WorkLayer;
