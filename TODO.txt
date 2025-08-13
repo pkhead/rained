@@ -1,6 +1,3 @@
-- URGENT!!! (For solar)
-    Fix asset manager exports pertaining to images
-
 LargeTexture:
 - large texture for lightmap
 
@@ -30,12 +27,9 @@ v2.4.0:
   - second layer for keybinds
   - Rotation props (#29)
   - scripting system
-    - button to reload scripts
     - autotiles
       - option to join only inner tiles
       - ability to recognize more than one tile as a direction type
-      - cross beams autotile
-        - ability to constrain autotile shape into a square
       - expose imgui functions for scripting api
       - add re-path button (useful for autotiles that do random)
   - prop editor lasso select
@@ -51,7 +45,6 @@ Do Soon:
 - Add geo big slope to manual
 - toggle for showing shortcuts in tile editor
 - tile graphics ludo's seamless tile types?
-- ability to specify Backup folder, instead of saving it next to original level file
 - could there be an option to change the move confirm shortcut? my laptop preset has change layer on enter so would be very useful for me if it’s ok ^^
   (I don't know about adding this because does this mean i need to change all submit keybinds? I'd rather be consistent. ANd why has this user bound layer change to enter??)
 
@@ -68,12 +61,9 @@ v3.0.0:
 
 Other features:
 - asset manager
-  - can rearrange the order of stuff in asset manager
-  - can change color in asset manager
-  - fix merging
   - can select certain packs from solar repo?
 - autosave
-- optimize tile deform rendering (use vertex shader)
+- optimize tile deform rendering (use vertex shader) (maybe?)
 - prop selection box is affected by bfTiles (don't do this, also make optional from preferences. is this possible?)
 - material previews. henry said i shouldn't try it because it will make the leditor very slow but I Don't Care.
   (i  mean i do care, i just think i can make it run reasonably fast by using spatial partitioning)
@@ -105,6 +95,9 @@ Prop Editor:
   freeform props should flip about the center of the AABB
 
 Tile graphics atlasing:
+(hm... not really looking much into this anymore since i realized that it doesn't really work
+with z-buffering. unless i have a tesellation shader or something Idk. Could potentially have this
+an optional optimization option, however.)
 
 Regular colors you already know
 rgb(255,0,0) —> shadow
