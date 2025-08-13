@@ -44,7 +44,7 @@ partial class PropEditor : IEditorMode
     {
         if (ImGui.BeginItemTooltip())
         {
-            var prop = RainEd.Instance.PropDatabase.TileCategories[propCatalogWidget.SelectedGroup].Props[propIndex];
+            var prop = RainEd.Instance.PropDatabase.TileCategories[tileCatalogWidget.SelectedGroup].Props[propIndex];
             propPreview.UpdatePreview(prop);
             ImGuiExt.ImageRenderTextureScaled(propPreview.Texture!, new Vector2(Boot.PixelIconScale, Boot.PixelIconScale));
             ImGui.EndTooltip();
