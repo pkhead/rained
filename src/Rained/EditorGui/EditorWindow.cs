@@ -15,7 +15,19 @@ static class EditorWindow
     private static bool isLmbReleased = false;
     private static bool isLmbDragging = false;
 
-    public static bool IsPanning { get => isLmbPanning; set => isLmbPanning = value; }
+    public static bool IsPanning
+    {
+        get => isLmbPanning;
+        set
+        {
+            isLmbPanning = value;
+            if (isLmbPanning)
+            {
+                isLmbDown = false;
+                isLmbClicked = false;
+            }
+        }
+    }
 
     public static bool IsKeyDown(ImGuiKey key)
     {

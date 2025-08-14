@@ -439,6 +439,23 @@ class LevelWindow
         mouseCellFloat.Y = (canvasWidget.MouseY / doc.ViewZoom + doc.ViewOffset.Y) / Level.TileSize;
         mouseCx = (int) Math.Floor(mouseCellFloat.X);
         mouseCy = (int) Math.Floor(mouseCellFloat.Y);
+        
+        // view controls
+        if (canvasWidget.IsHovered)
+        {
+            // middle click pan
+            if (EditorWindow.IsPanning || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
+            {
+                var mouseDelta = Raylib.GetMouseDelta();
+                ViewOffset -= mouseDelta / ViewZoom;
+            }
+
+            // begin alt+left panning
+            if (ImGui.IsKeyDown(ImGuiKey.ModAlt) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                EditorWindow.IsPanning = true;
+            }
+        }
 
         // draw viewport
         // the blending functions here are some stupid hack
@@ -447,7 +464,7 @@ class LevelWindow
         // blend into the imgui background when rendered.
         // Good thing I downloaded renderdoc, otherwise there was no way
         // I would've figured that was the problem!
-        
+
         // glSrcRGB: Silk.NET.OpenGL.BlendingFactor.SrcAlpha
         // glDstRGB: Silk.NET.OpenGL.BlendingFactor.OneMinusSrcAlpha
         // glSrcAlpha: 1
@@ -498,23 +515,6 @@ class LevelWindow
         }
 
         RainEd.RenderContext.BlendMode = Glib.BlendMode.Normal;
-
-        // view controls
-        if (canvasWidget.IsHovered)
-        {
-            // middle click pan
-            if (EditorWindow.IsPanning || ImGui.IsMouseDown(ImGuiMouseButton.Middle))
-            {
-                var mouseDelta = Raylib.GetMouseDelta();
-                ViewOffset -= mouseDelta / ViewZoom;
-            }
-
-            // begin alt+left panning
-            if (ImGui.IsKeyDown(ImGuiKey.ModAlt) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-            {
-                EditorWindow.IsPanning = true;
-            }
-        }
 
         // scroll wheel zooming
         if (!OverrideMouseWheel)
