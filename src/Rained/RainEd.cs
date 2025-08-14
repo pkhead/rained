@@ -60,8 +60,10 @@ sealed class RainEd
 
     private LevelWindow? levelView;
 
+    private const int PREF_SAVE_INTERVAL = 60; // in seconds
     private readonly string prefFilePath;
     public UserPreferences Preferences;
+    private DateTime nextPrefsSave = DateTime.UtcNow.AddSeconds(PREF_SAVE_INTERVAL);
 
     public string AssetDataPath;
     public readonly AssetGraphicsProvider AssetGraphics;
@@ -116,8 +118,6 @@ sealed class RainEd
     // this is used to make sure window doesn't sleep when
     // any key is held down
     private int keysPressed = 0;
-    
-    private double lastRopeUpdateTime = 0f;
 
     /// <summary>
     /// This is true whenever Rained is in a temporary state where level editing
@@ -368,7 +368,6 @@ sealed class RainEd
         }
 
         Log.Information("Boot successful!");
-        lastRopeUpdateTime = Raylib.GetTime();
 
         Boot.Window.KeyDown += (Glib.Key _, int _) =>
         {
@@ -413,13 +412,11 @@ sealed class RainEd
         Boot.Window.IsEventDriven = false;
     }
 
-    public void Shutdown()
+    private void SavePreferences()
     {
-        // save user-created autotiles
-        Autotiles.SaveConfig();
-
-        // save user preferences
+        Log.Information("Preferences saved");
         levelView?.SavePreferences(Preferences);
+
         Preferences.ViewKeyboardShortcuts = ShortcutsWindow.IsWindowOpen;
         Preferences.ShowPaletteWindow = PaletteWindow.IsWindowOpen;
 
@@ -427,8 +424,15 @@ sealed class RainEd
         Preferences.WindowHeight = Raylib.GetScreenHeight();
         Preferences.WindowMaximized = Raylib.IsWindowMaximized();
         Preferences.DataPath = AssetDataPath;
-        
+
         UserPreferences.SaveToFile(Preferences, prefFilePath);
+    }
+
+    public void Shutdown()
+    {
+        Autotiles.SaveConfig();
+        SavePreferences();
+
         levelView?.Renderer.Dispose();
     }
 
@@ -897,10 +901,17 @@ sealed class RainEd
         {
             NeedScreenRefresh();
         }
+
+        // preferences save at regular intervals during application runtime
+        if (DateTime.UtcNow >= nextPrefsSave)
+        {
+            nextPrefsSave = nextPrefsSave.AddSeconds(PREF_SAVE_INTERVAL);
+            SavePreferences();
+        }
         
 #if DEBUG
-        if (ImGui.IsKeyPressed(ImGuiKey.F2))
-            throw new Exception("Test Exception");
+            if (ImGui.IsKeyPressed(ImGuiKey.F2))
+                throw new Exception("Test Exception");
 #endif
         DebugWindow.ShowWindow();
         
