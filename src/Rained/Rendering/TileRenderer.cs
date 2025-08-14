@@ -299,26 +299,30 @@ class TileRenderer
         if (RainEd.Instance.Preferences.OptimizedTilePreviews)
         {
             UpdateRenderList();
+            
+            bool IsTileOnScreen(TileRender tileRender)
+            {
+                var init = tileRender.TileInit;
+                var rectPos = new Vector2(tileRender.X - init.CenterX - init.BfTiles, tileRender.Y - init.CenterY - init.BfTiles);
+                var rectSize = new Vector2(init.Width + init.BfTiles * 2, init.Height + init.BfTiles * 2);
+
+                // if levelRec is within screen bounds?
+                return (
+                    rectPos.X < viewR &&
+                    rectPos.Y < viewB &&
+                    rectPos.X + rectSize.X > viewL &&
+                    rectPos.Y + rectSize.Y > viewT
+                );
+            }
 
             // draw the tile renders
             foreach (var tileRender in tileRenders)
             {
                 var init = tileRender.TileInit;
-                if (tileRender.Layer != layer && init.HasSecondLayer && tileRender.Layer+1 != layer) continue;
-
-                var rectPos = new Vector2(tileRender.X - init.CenterX - init.BfTiles, tileRender.Y - init.CenterY - init.BfTiles);
-                var rectSize = new Vector2(init.Width + init.BfTiles * 2, init.Height + init.BfTiles * 2);
-
-                // if levelRec is within screen bounds?
-                if (
-                    rectPos.X < viewR &&
-                    rectPos.Y < viewB &&
-                    rectPos.X + rectSize.X > viewL &&
-                    rectPos.Y + rectSize.Y > viewT
-                )
-                {
-                    RenderTilePreviewFromRoot(init, tileRender, layer, alpha);
-                }
+                if (tileRender.Layer != layer && init.HasSecondLayer && tileRender.Layer + 1 != layer) continue;
+                if (!IsTileOnScreen(tileRender)) continue;
+                
+                RenderTilePreviewFromRoot(init, tileRender, layer, alpha);
             }
 
             // highlight tile heads
@@ -327,27 +331,12 @@ class TileRenderer
                 foreach (var tileRender in tileRenders)
                 {
                     if (tileRender.Layer != layer) continue;
+                    if (!IsTileOnScreen(tileRender)) continue;
+
                     var x = tileRender.X;
                     var y = tileRender.Y;
                     var col = tileRender.TileInit.Category.Color;
-
                     DrawTileHeadMark(x, y, col, alpha);
-                    /*Raylib.DrawRectangle(
-                        x * Level.TileSize, y * Level.TileSize, Level.TileSize, Level.TileSize,
-                        new Color(col.R, col.G, col.B, (int)(alpha * 0.2f))  
-                    );
-
-                    Raylib.DrawLineV(
-                        new Vector2(x, y) * Level.TileSize,
-                        new Vector2(x+1, y+1) * Level.TileSize,
-                        col
-                    );
-
-                    Raylib.DrawLineV(
-                        new Vector2(x+1, y) * Level.TileSize,
-                        new Vector2(x, y+1) * Level.TileSize,
-                        col
-                    );*/
                 }
             }
         }
