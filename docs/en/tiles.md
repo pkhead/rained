@@ -42,7 +42,7 @@ In order to place a tile, you first must select the tile you want to place in th
     <figcaption>The tile selector.</figcaption>
 </figure>
 
-With a tile selected and your mouse over the level view, a preview of the tile will display over your mouse which is called the "tile cursor". Pressing down the left mouse button will place down the tile at that position. and pressing down the right mouse button will remove the tile that is being hovered over. You can also place or remove a rectangular area of tiles by holding <kbd>Shift</kbd> before pressing either the left or right mouse button.
+With a tile selected and your mouse over the level view, a preview of the tile will display over your mouse which is called the "tile cursor". Pressing down the left mouse button will place down the tile at that position. and pressing down the right mouse button will remove the tile at the cell that is being hovered over. You can also place or remove a rectangular area of tiles by holding <kbd>Shift</kbd> before pressing either the left or right mouse button.
 
 !!! info
 
@@ -66,9 +66,9 @@ Normally, you will not be able to place down a tile if the geometry under the cu
 In order to activate the "Force Placement" modifier, you must have the <kbd>F</kbd> key held down. Once this is active, you may
 place down a tile regardless of if the underlying geometry fits the requirements of tile's specs.
 
-The "Force Geometry" modifier, activated by holding down the <kbd>G</kbd> key, will instead, upon placement, modify the geometry underneath the tile to fit the tile specs. This way, you don't have to labouriously manually place the geometry down for any large or complex tiles. Additionally, if you remove a tile with "Force Geometry" active, it will remove the tile's required geometry along with the tile itself.
+The "Force Geometry" modifier, activated by holding down the <kbd>G</kbd> key, will instead, upon placement, modify the geometry underneath the newly placed tile to fit the tile specs. This way, you don't have to labouriously place the geometry down for any large or complex tiles. Additionally, if you remove a tile with "Force Geometry" active, it will remove the tile's required geometry along with the tile itself.
 
-These modifiers also work with the rectangular-area fill/erase feature, but "Force Geometry" has a special behavior depending on if you tap the key for a short amount of time while the rectangle is active, or if you don't. If tapped, it will place the required geometry for the already-placed tiles underneath the rectangle, and close the rectangle. Otherwise, geometry-forced tiles will be placed if the modifier is held down when the mouse button is released.
+These modifiers also work with the rectangular-area fill/erase feature, but "Force Geometry" has a special behavior if you tap the key for a short amount of time while the rectangle is active. If <kbd>G</kbd> is tapped, it will place the required geometry for the already-placed tiles underneath the rectangle, and close the rectangle. Otherwise, geometry-forced tiles will be placed if the modifier is held down when the mouse button is released.
 
 ### Heads and Bodies
 
