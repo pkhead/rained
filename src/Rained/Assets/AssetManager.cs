@@ -182,8 +182,9 @@ partial class CategoryList
             
             if (lineInfo is InitCategoryHeader groupInfo)
             {
-                if (!categoryHeaders.TryAdd(groupInfo.Name, groupInfo))
-                    throw new Exception(ErrorString(lineNum, $"A category with the name '{groupInfo.Name}' was already created."));
+                // if (!categoryHeaders.TryAdd(groupInfo.Name, groupInfo))
+                //     throw new Exception(ErrorString(lineNum, $"A category with the name '{groupInfo.Name}' was already created."));
+                categoryHeaders[groupInfo.Name] = groupInfo;
                 
                 currentCategory = new InitCategory(groupInfo.Name, groupInfo.Color);
                 Categories.Add(currentCategory);
