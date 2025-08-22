@@ -30,6 +30,7 @@ static class PreferencesWindow
     private static KeyShortcut activeShortcut = KeyShortcut.None;
     private static DrizzleConfiguration? activeDrizzleConfig = null;
     private static FileSystemWatcher? drizzleConfigWatcher = null;
+    private static string[]? missingDirs;
 
     private static bool openPopupCmd = false;
     public static void OpenWindow()
@@ -236,6 +237,29 @@ static class PreferencesWindow
         }
     }
 
+    // TODO: i guess put this somewhere else, because the same code for checking
+    // the data path is duplicated in three other places in this codebase.
+    private static bool CheckDataPath(string path, out string[] missingDirs)
+    {
+        // check for any missing directories
+        List<string> list = [];
+        list.Add("Graphics");
+        list.Add("Props");
+        list.Add("Levels");
+
+        for (int i = list.Count - 1; i >= 0; i--)
+        {
+            if (Directory.Exists(Path.Combine(path, list[i])))
+            {
+                list.RemoveAt(i);
+            }
+        }
+
+        missingDirs = [.. list];
+        return list.Count == 0;
+    }
+
+
     private static Vector3 layerColor1;
     private static Vector3 layerColor2;
     private static Vector3 layerColor3;
@@ -274,6 +298,67 @@ static class PreferencesWindow
             if (FileBrowser.Button("BackupDirectory", FileBrowser.OpenMode.Directory, ref backupDir, clearButton: true))
             {
                 prefs.BackupDirectory = backupDir;
+            }
+        }
+
+        ImGui.SeparatorText("Assets");
+        {
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Data Path");
+            ImGui.SameLine();
+            ImGui.TextDisabled("(!)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.Text("Note that a restart is required in order for changes to take effect.");
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
+
+            ImGui.SameLine();
+
+            var dataPath = RainEd.Instance.AssetDataPath;
+            if (FileBrowser.Button("AssetDataPath", FileBrowser.OpenMode.Directory, ref dataPath))
+            {
+                if (dataPath is not null)
+                {
+                    // check for any missing directories
+                    if (CheckDataPath(dataPath, out var dirs))
+                    {
+                        RainEd.Instance.AssetDataPath = dataPath;
+                    }
+                    else
+                    {
+                        missingDirs = dirs;
+                        ImGui.OpenPopup("Error");
+                    }
+                }
+            }
+
+            // show error message when given data folder is missing some
+            // subdirectories
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
+            var flags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings;
+            if (ImGui.IsPopupOpen("Error") && ImGui.BeginPopupModal("Error", flags))
+            {
+                ImGui.Text("The given data folder is missing the following subdirectories:");
+
+                if (missingDirs is not null)
+                {
+                    foreach (var dir in missingDirs)
+                    {
+                        ImGui.BulletText(dir);
+                    }
+                }
+
+                ImGui.Separator();
+                if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
+                {
+                    ImGui.CloseCurrentPopup();
+                    missingDirs = null;
+                }
+
+                ImGui.EndPopup();
             }
         }
 
