@@ -355,25 +355,34 @@ class CameraEditor : IEditorMode
                 if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.D))
                 {
                     changeRecorder.BeginChange();
-                    List<Camera> newList = [];
+
                     // position all dupes relative to a barycenter
+                    // this is in order to maintain that the duplicated cameras
+                    // all have the same relative positions to each other
                     Vector2 barycenter = new(0, 0);
                     foreach (var srcCam in selectedCameras)
                         barycenter += srcCam.Position;
+                    
                     barycenter /= new Vector2(selectedCameras.Count, selectedCameras.Count);
+
+                    List<Camera> newList = [];
                     foreach (var srcCam in selectedCameras)
                     {
                         var newCam = new Camera(window.MouseCellFloat - Camera.Size / 2f + (srcCam.Position - barycenter));
                         level.Cameras.Add(newCam);
+
                         for (int i = 0; i < 4; i++)
                         {
                             newCam.CornerAngles[i] = srcCam.CornerAngles[i];
                             newCam.CornerOffsets[i] = srcCam.CornerOffsets[i];
                         }
+
                         newList.Add(newCam);
+
                         if (srcCam == activeCamera)
                             activeCamera = newCam;
                     }
+
                     selectedCorner = -1;
                     selectedCameras = newList;
                     changeRecorder.PushChange();
