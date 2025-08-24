@@ -1583,9 +1583,8 @@ static class AssetManagerGUI
                     ShowItemList(AssetManager.CategoryListIndex.Materials, selectedMatCategory, new Vector2(halfWidth, boxHeight), 0);
                     break;
             }
-
-            ImGui.EndChild();
         }
+        ImGui.EndChild();
     }
 
     public static void Unload()

@@ -84,9 +84,12 @@ namespace Rained.EditorGui.Windows
                     ImGui.EndChild();
 
                     ImGui.SameLine();
-                    ImGui.BeginChild("Manager", ImGui.GetContentRegionAvail());
+                    if (ImGui.BeginChild("Manager", ImGui.GetContentRegionAvail()))
+                    {
+                        AssetManagerGUI.Show();
+                    }
+                    ImGui.EndChild();
 
-                    AssetManagerGUI.Show();
                     //switch (selectedAssetTab)
                     //{
                     //	case AssetTabEnum.Tiles:
@@ -101,8 +104,6 @@ namespace Rained.EditorGui.Windows
                     //		ShowThemeTab(justOpened || lastNavTab != selectedAssetTab);
                     //		break;
                     //}
-
-                    ImGui.EndChild();
 
                     if (openCloseConfirm)
                     {
