@@ -18,7 +18,7 @@ struct BrushAtom
 
 class LightMap : IDisposable
 {
-    private static bool UseHardwareAcceleration => RainEd.Instance is not null && (width < Glib.Texture.MaxSize && height < Glib.Texture.MaxSize);
+    private bool UseHardwareAcceleration => RainEd.Instance is not null && (width < Glib.Texture.MaxSize && height < Glib.Texture.MaxSize);
 
     private RlManaged.RenderTexture2D? lightmapRt;
     private RlManaged.Image? _lightmapImage;
