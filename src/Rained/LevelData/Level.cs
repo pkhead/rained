@@ -190,7 +190,7 @@ class Effect
     private static DateTime lastWriteTime;
     private static bool GetSkyRootsFixConfig()
     {
-        string path = Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt");
+        string path = Path.Combine(AssetDataPath.GetPath(), "editorConfig.txt");
 
         if (_skyRootsFixOption is null || File.GetLastWriteTime(path) > lastWriteTime)
         {
