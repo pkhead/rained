@@ -363,18 +363,41 @@ record class PropInit
     private void GetPropSize()
     {
         if (sizeKnown) return;
+        pixelWidth = 20;
+        pixelHeight = 20;
 
-        var texture = RainEd.Instance.AssetGraphics.GetPropTexture(this);
-
-        if (texture is not null)
+        if (RainEd.Instance is not null)
         {
-            pixelWidth = texture.Width;
-            pixelHeight = texture.Height;
+            var texture = RainEd.Instance.AssetGraphics.GetPropTexture(this);
+
+            if (texture is not null)
+            {
+                pixelWidth = texture.Width;
+                pixelHeight = texture.Height;
+            }
         }
         else
         {
-            pixelWidth = 20;
-            pixelHeight = 20;
+            // headless image loading (no gpu)
+            string texturePath = AssetGraphicsProvider.GetFilePath(
+                Path.Combine(AssetDataPath.GetPath(), "Props"),
+                Name + ".png");
+
+            if (!File.Exists(texturePath) && DrizzleCast.GetFileName(Name + ".png", out string? castPath))
+            {
+                texturePath = castPath!;
+            }
+
+            try
+            {
+                using var img = Glib.Image.FromFile(texturePath, Glib.PixelFormat.RGBA);
+                pixelWidth = img.Width;
+                pixelHeight = img.Height;
+            }
+            catch (Exception e)
+            {
+                Log.Error("Could not load image {ImagePath}: {Exception}", texturePath, e.ToString());
+            }
         }
 
         sizeKnown = true;
