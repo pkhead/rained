@@ -100,7 +100,7 @@ dotnet build src/Rained/Rained.csproj               # this will auto-select base
 Upon first startup, you can configure where your Data folder is located. If you chose to download and install it, Rained will download and extract [this repository](https://github.com/SlimeCubed/Drizzle.Data/tree/community).
 
 ## Contributing
-Don't hestiate to report any bugs, complaints, and suggestions by creating an issue or discussion thread on GitHub, or contacting me through Discord. I am in several Rain World modding Discord servers, and I have my own server as well: https://discord.gg/e2dRyU4m. You may either ping me in a relevant channel in the server of your choice or DM me (they are open). And you may also join my Discord server if you find announcement channels a conveninent way of keeping track of Rained news and updates.
+Don't hestiate to report any bugs, complaints, and suggestions by creating an issue or discussion thread on GitHub, or contacting me through Discord. I am in several Rain World modding Discord servers, and I have my own server as well: https://discord.gg/raUQ4yRH9F. You may either ping me in a relevant channel in the server of your choice or DM me (they are open). And you may also join my Discord server if you find announcement channels a conveninent way of keeping track of Rained news and updates.
 
 If you send a crash report, please send me the contents of logs/latest.log.txt before relaunching the program.
 

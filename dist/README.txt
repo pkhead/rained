@@ -3,7 +3,7 @@ This is a level editor used to make Rain World levels.
 Don't hestiate to report any bugs, complaints, and suggestions by creating an issue or
 discussion thread on GitHub, or contacting me through Discord. I am in several Rain
 World modding Discord servers, and I have my own server as well:
-https://discord.gg/e2dRyU4m. You may either ping me in a relevant channel in the server
+https://discord.gg/raUQ4yRH9F. You may either ping me in a relevant channel in the server
 of your choice or DM me (they are open).
 
 You may also join my Discord server if you find announcement channels a conveninent way

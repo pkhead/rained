@@ -1,7 +1,7 @@
 # Home
 <figure markdown="span">
     ![Rained logo](img//rained-logo.png)
-    [GitHub](https://github.com/pkhead/rained) | [Downloads](https://github.com/pkhead/rained/releases) | [Discord](https://discord.gg/e2dRyU4m)
+    [GitHub](https://github.com/pkhead/rained) | [Downloads](https://github.com/pkhead/rained/releases) | [Discord](https://discord.gg/raUQ4yRH9F)
 </figure>
 
 Rained is a tool used to make Rain World levels.
