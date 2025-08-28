@@ -1,1 +1,1 @@
-Edit effect: Use W, A, S, D to change the settings of the effect. Press the spacebar to activate the selected option. Use the left and right mouse buttons to change the effect matrix. Press T while clicking to increase the strength of the brush. Press E to edit effects added previously. Press N to return to the new effects menu.
+Create new: Use the W, A, S, D keys and the spacebar to select an effect to add. Press E to edit effects added previously.

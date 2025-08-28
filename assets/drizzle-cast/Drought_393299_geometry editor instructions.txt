@@ -1,1 +1,7 @@
-Arrow keys - Select red cursor tool if mouse is over main view. Move the cursor if mouse is over the tools.Mouse Movement - Move the red cursor.E S D F - Move the grey cursor.Left Mouse - Use current tool with the red cursor.W - Use current tool with the grey cursor.Hold Q + E S D F - Select grey cursor tool.Move Level / Mirror Tools - Place the mouse cursor outside the level, then use the arrow keys to move the level / mirror.
+Arrow keys - Select red cursor tool if mouse is over main view. Move the cursor if mouse is over the tools.
+Mouse Movement - Move the red cursor.
+E S D F - Move the grey cursor.
+Left Mouse - Use current tool with the red cursor.
+W - Use current tool with the grey cursor.
+Hold Q + E S D F - Select grey cursor tool.
+Move Level / Mirror Tools - Place the mouse cursor outside the level, then use the arrow keys to move the level / mirror.

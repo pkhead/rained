@@ -1,1 +1,22 @@
-Press 'ENTER' to apply changes, 'SHIFT' to cancel.Change:                                                          Add or remove tiles to left and top:Width                                                                  LeftHeight                                                                 Top(including buffer tiles)                       (input the TOTAL new dimensions)                  (Input the tiles to ADD, or the tiles (the width will affect the right side                    or the tiles to REMOVE preceded while the height will affect the bottom)             by a -)Buffer tiles:LeftTopRightBottom
+Press 'ENTER' to apply changes, 'SHIFT' to cancel.
+
+
+Change:                                                          Add or remove tiles to left and top:
+
+Width                                                                  Left
+Height                                                                 Top
+
+(including buffer tiles)                       
+(input the TOTAL new dimensions)                  (Input the tiles to ADD, or the tiles (the width will affect the right side                    or the tiles to REMOVE preceded 
+while the height will affect the bottom)             by a -)
+
+
+Buffer tiles:
+
+Left
+
+Top
+
+Right
+
+Bottom

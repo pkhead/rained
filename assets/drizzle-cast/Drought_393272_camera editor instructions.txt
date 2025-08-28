@@ -1,1 +1,3 @@
-E - pick up camera					D - delete held camera (after picking up)						      																				P - place/drop held camera			I K - push/pull background corner from/to foreground corner					N - create new camera		       		J L - rotate background corner around foreground corner (no visible change if corners overlap)Up Arrow - active vertical camera snap   Right Arrow - active horizontal camera snap	O - active horizontal and vertical camera snap
+E - pick up camera					D - delete held camera (after picking up)						      																				P - place/drop held camera			I K - push/pull background corner from/to foreground corner					
+N - create new camera		       		J L - rotate background corner around foreground corner (no visible change if corners overlap)
+Up Arrow - active vertical camera snap   Right Arrow - active horizontal camera snap	O - active horizontal and vertical camera snap

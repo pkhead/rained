@@ -1,1 +1,5 @@
-Save Project as: Press enter to savePress delete + shift to cancel
+Save Project as: 
+
+Press enter to save
+
+Press delete + shift to cancel

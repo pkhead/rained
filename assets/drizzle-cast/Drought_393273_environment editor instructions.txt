@@ -1,1 +1,5 @@
- L - Change water level based on mouse movement F - Toggle between drawing water above the first layer or below it. W - Remove water from the level if there is already water.  If there is no water, set water level to halfway up the level.						
+ L - Change water level based on mouse movement
+ F - Toggle between drawing water above the first layer or below it.
+ W - Remove water from the level if there is already water. 
+ If there is no water, set water level to halfway up the level.	
+					
