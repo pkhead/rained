@@ -254,14 +254,14 @@ partial class PropEditor : IEditorMode
             // is 0, and the user resizes it afterwards, it will cause the length at that axis
             // to be NaN, which would make the prop disappear and, more urgently, crash the
             // program if it's a rope simulation
-            if (MathF.Abs(origRect.Size.X * scale.X) < 0.5f)
+            if (MathF.Abs(origRect.Size.X * scale.X) < 0.1f)
             {
-                scale.X = MathF.Abs(0.5f / origRect.Size.X) * (scale.X >= 0f ? 1f : -1f);
+                scale.X = MathF.Abs(0.1f / origRect.Size.X) * (scale.X >= 0f ? 1f : -1f);
             }
 
-            if (MathF.Abs(origRect.Size.Y * scale.Y) < 0.5f)
+            if (MathF.Abs(origRect.Size.Y * scale.Y) < 0.1f)
             {
-                scale.Y = MathF.Abs(0.5f / origRect.Size.Y) * (scale.Y >= 0f ? 1f : -1f);
+                scale.Y = MathF.Abs(0.1f / origRect.Size.Y) * (scale.Y >= 0f ? 1f : -1f);
             }
             
             // hold shift to maintain proportions
