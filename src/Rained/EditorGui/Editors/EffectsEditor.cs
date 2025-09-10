@@ -14,6 +14,7 @@ class EffectsEditor : IEditorMode
     private readonly LevelWindow window;
 
     private int selectedEffect = -1;
+    private int selectedTab = 0;
     private bool altInsertion = false;
 
     public int SelectedEffect { get => selectedEffect; set => selectedEffect = value; }
@@ -115,6 +116,11 @@ class EffectsEditor : IEditorMode
         catalogWidget.Draw();
     }
 
+    private void PrefabsGUI()
+    {
+
+    }
+
     public void DrawToolbar()
     {
         var level = RainEd.Instance.Level;
@@ -131,7 +137,37 @@ class EffectsEditor : IEditorMode
                 window.WorkLayer = Math.Clamp(workLayerV, 1, 3) - 1;
             }
 
-            AddSingleEffectGUI();
+            bool forceSelect = false;
+            if (KeyShortcuts.Activated(KeyShortcut.SwitchTab))
+            {
+                forceSelect = true;
+                selectedTab = (selectedTab + 1) % 2;
+            }
+
+            if (ImGui.BeginTabBar("effectsEditorTab"))
+            {
+                ImGuiTabItemFlags flags;
+
+                flags = (forceSelect && selectedTab == 0) ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
+                if (ImGuiExt.BeginTabItem("Effects", flags))
+                {
+                    if (!forceSelect) selectedTab = 0;
+
+                    AddSingleEffectGUI();
+                    ImGui.EndTabItem();
+                }
+
+                flags = (forceSelect && selectedTab == 1) ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
+                if (ImGuiExt.BeginTabItem("Prefabs", flags))
+                {
+                    if (!forceSelect) selectedTab = 1;
+
+                    PrefabsGUI();
+                    ImGui.EndTabItem();
+                }
+
+                ImGui.EndTabBar();
+            }
         }
         ImGui.End();
 
