@@ -1018,8 +1018,8 @@ partial class PropEditor : IEditorMode
                     else
                     {
                         forceSelection = SelectionMode.Props;
-                        tileCatalogWidget.SelectedGroup = prop.PropInit.Category.Index;
-                        tileCatalogWidget.SelectedItem = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
+                        propCatalogWidget.SelectedGroup = prop.PropInit.Category.Index;
+                        propCatalogWidget.SelectedItem = prop.PropInit.Category.Props.IndexOf(prop.PropInit);
                     }
                 }
             }
