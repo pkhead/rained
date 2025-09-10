@@ -469,8 +469,8 @@ static class KeyShortcuts
         Register("Rope Simulation Fast", KeyShortcut.RopeSimulationFast, ImGuiKey.Space, ImGuiModFlags.Shift);
         Register("Reset Rope Simulation", KeyShortcut.ResetSimulation, ImGuiKey.None, ImGuiModFlags.None);
         
-        Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.None);
-        Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiModFlags.None);
+        Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.Shift);
+        Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiModFlags.Shift);
 
         Register("Change Prop Snapping", KeyShortcut.ChangePropSnapping, ImGuiKey.R, ImGuiModFlags.None);
 
