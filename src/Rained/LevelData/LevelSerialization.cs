@@ -460,7 +460,7 @@ static class LevelSerialization
 
             // some level pngs have no data written to them.
             // wtf??
-            if (img.Width == 0 && img.Height == 0)
+            if (!Raylib.IsImageReady(img) || (img.Width == 0 && img.Height == 0))
             {
                 Log.UserLogger.Warning("Invalid lightmap image, loaded fallback");
             }
@@ -1099,12 +1099,17 @@ static class LevelSerialization
         outputTxtFile.Close();
     }
 
-    public static void SaveLevelLightMap(Level level, string path)
+    public static bool SaveLevelLightMap(Level level, string path)
     {
+        if (!level.LightMap.IsLoaded)
+            return false;
+
         var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         using var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
         lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
         Raylib.ExportImage(lightMapImg, lightPath);
+
+        return true;
     }
 }

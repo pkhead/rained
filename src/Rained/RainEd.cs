@@ -584,16 +584,26 @@ sealed class RainEd
 
             LuaScripting.Modules.RainedModule.DocumentSavingCallback(_tabs.IndexOf(_currentTab!));
             LevelSerialization.SaveLevelTextFile(Level, path);
-            LevelSerialization.SaveLevelLightMap(Level, path);
+            bool canSaveLightMap = LevelSerialization.SaveLevelLightMap(Level, path);
 
             CurrentTab.FilePath = path;
             CurrentTab.Name = Path.GetFileNameWithoutExtension(path);
 
             UpdateTitle();
 
-            Log.Information("Done!");
+            if (canSaveLightMap)
+            {
+                Log.Information("Done!");
+                EditorWindow.ShowNotification("Saved!");
+            }
+            else
+            {
+                Log.Information("Could not save lightmap, so it is skipped.");
+                Log.Information("Done!");
+                EditorWindow.ShowNotification("Saved, but without the light map.");
+            }
+
             CurrentTab.ChangeHistory.MarkUpToDate();
-            EditorWindow.ShowNotification("Saved!");
             AddToRecentFiles(CurrentTab.FilePath);
 
             // if the old level was an emergency save and the user
