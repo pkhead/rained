@@ -535,6 +535,13 @@ class PropDatabase
     [#nm:"Twisted Thread", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Stretched Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]
     [#nm:"Long Barbed Wire", #tp:"long", #depth:0, #tags:[], #notes:[]]
+
+    -["April Longs", color(0, 255, 0)]
+    [#nm:"Moss Drop", #tp:"long", #depth:3, #tags:[], #notes:["Keep in mind this long will droop in in front of anything solid, if you dont want something to collide with it, render it after this prop"]]
+    [#nm:"Moss Drop A", #tp:"long", #depth:3, #tags:["effectColorA"], #notes:["Keep in mind this long will droop in in front of anything solid, if you dont want something to collide with it, render it after this prop"]]
+    [#nm:"Moss Drop B", #tp:"long", #depth:3, #tags:["effectColorB"], #notes:["Keep in mind this long will droop in in front of anything solid, if you dont want something to collide with it, render it after this prop"]]
+    [#nm:"Moss Hang", #tp:"long", #depth:3, #tags:[], #notes:["For best results you should place this on the back sublayers of whatever layer you're trying to place this on, and allow the moss to kinda 'lerch' forward. The moss starts placing in the middle of the long, and follows gravity."]]
+    [#nm:"Moss Hang A", #tp:"long", #depth:3, #tags:["effectColorA"], #notes:["For best results you should place this on the back sublayers of whatever layer you're trying to place this on, and allow the moss to kinda 'lerch' forward. The moss starts placing in the middle of the long, and follows gravity."]]
     """;
 
     public readonly List<PropCategory> Categories;
