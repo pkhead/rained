@@ -29,7 +29,7 @@ partial class PropEditor : IEditorMode
 
     private PropInit? selectedInit = null;
 
-    private void PropItemPostRender(int propIndex, bool selected)
+    private void PropItemPostRender(int propIndex, bool selected, bool pressed)
     {
         if (ImGui.BeginItemTooltip())
         {
@@ -40,7 +40,7 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    private void TileItemPostRender(int propIndex, bool selected)
+    private void TileItemPostRender(int propIndex, bool selected, bool pressed)
     {
         if (ImGui.BeginItemTooltip())
         {
