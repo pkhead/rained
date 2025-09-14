@@ -118,7 +118,112 @@ class EffectsEditor : IEditorMode
 
     private void PrefabsGUI()
     {
+        int id = 0;
+        void Recurse(EffectPrefabDatabase.DatabaseNode node, bool isRoot = false)
+        {
+            ImGui.PushID(++id);
 
+            switch (node)
+            {
+                case EffectPrefabDatabase.DatabaseBranch branch:
+                    bool isOpen = isRoot || ImGui.TreeNode(branch.Name);
+                    if (!isRoot)
+                    {
+                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                        {
+                            ImGui.OpenPopup("ctx");
+                        }
+
+                        if (ImGui.IsPopupOpen("ctx") && ImGui.BeginPopup("ctx"))
+                        {
+                            ImGui.Selectable("Create Subfolder");
+                            ImGui.Selectable("Create Prefab");
+                            ImGui.Separator();
+                            ImGui.Selectable("Delete");
+                            ImGui.Selectable("Rename");
+                            ImGui.EndPopup();
+                        }
+                    }
+
+                    if (isOpen)
+                    {
+                        List<EffectPrefabDatabase.DatabaseBranch> subdirs = [];
+                        List<EffectPrefabDatabase.DatabaseLeaf> leaves = [];
+
+                        foreach (var child in branch.Nodes)
+                        {
+                            if (child is EffectPrefabDatabase.DatabaseBranch br)
+                                subdirs.Add(br);
+                            else if (child is EffectPrefabDatabase.DatabaseLeaf lf)
+                                leaves.Add(lf);
+                        }
+
+                        subdirs.Sort((a, b) => a.Name.CompareTo(b.Name));
+                        leaves.Sort((a, b) => a.Name.CompareTo(b.Name));
+
+                        foreach (var child in subdirs)
+                            Recurse(child);
+
+                        foreach (var child in leaves)
+                            Recurse(child);
+
+                        if (!isRoot) ImGui.TreePop();
+                    }
+
+                    break;
+
+                case EffectPrefabDatabase.DatabaseLeaf leaf:
+                    ImGui.TreeNodeEx(leaf.Name, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+
+                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                    {
+                        ImGui.OpenPopup("ctx");
+                    }
+
+                    if (ImGui.IsPopupOpen("ctx") && ImGui.BeginPopup("ctx"))
+                    {
+                        ImGui.Selectable("Delete");
+                        ImGui.Selectable("Rename");
+                        ImGui.EndPopup();
+                    }
+
+                    break;
+            }
+
+            ImGui.PopID();
+        }
+
+        {
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            using var group = ImGuiExt.ButtonGroup.Begin("group", 3, 0);
+
+            group.BeginButton(0, true);
+            if (ImGui.Button("Refresh", group.ItemSize))
+            {
+                RainEd.Instance.EffectPrefabs.Refresh();
+            }
+            group.EndButton();
+
+            group.BeginButton(1, true);
+            if (ImGui.Button("Create Folder", group.ItemSize))
+            {
+                // RainEd.Instance.EffectPrefabs.Refresh();
+            }
+            group.EndButton();
+
+            group.BeginButton(2, true);
+            if (ImGui.Button("Create Prefab", group.ItemSize))
+            {
+                // RainEd.Instance.EffectPrefabs.Refresh();
+            }
+            group.EndButton();
+        }
+
+        if (ImGui.BeginListBox("##EffectPrefabs", new Vector2(-0.0001f, -0.0001f)))
+        {
+            Recurse(RainEd.Instance.EffectPrefabs.Root, true);
+            ImGui.EndListBox();
+        }
     }
 
     public void DrawToolbar()
