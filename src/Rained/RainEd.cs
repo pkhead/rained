@@ -73,7 +73,6 @@ sealed class RainEd
     public readonly LightBrushDatabase LightBrushDatabase;
     public readonly PropDatabase PropDatabase;
     public readonly AutotileCatalog Autotiles;
-    public readonly EffectPrefabDatabase EffectPrefabs;
 
     public string CurrentFilePath { get => CurrentTab!.FilePath; }
     
@@ -266,9 +265,6 @@ sealed class RainEd
             initPhase = "effects";
             Log.Information("Initializing effects database...");
             EffectsDatabase = new EffectsDatabase();
-
-            initPhase = "effect prefabs";
-            EffectPrefabs = new EffectPrefabDatabase();
 
             initPhase = "light brushes";
             Log.UserLogger.Information("Reading light brushes...");

@@ -9,6 +9,23 @@ class EffectPrefab
     public string Version { get; set; } = "1.0.0";
     public EffectPrefabItem[] Items { get; set; } = [];
 
+    private static JsonSerializerOptions jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public void WriteToFile(string filePath)
+    {
+        var text = JsonSerializer.Serialize(this, jsonOptions);
+        File.WriteAllText(filePath, text);
+    }
+
+    public static EffectPrefab? ReadFromFile(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        return JsonSerializer.Deserialize<EffectPrefab>(stream, jsonOptions);
+    }
+
     public class EffectPrefabItem
     {
         public string Name { get; set; } = "";
@@ -16,6 +33,11 @@ class EffectPrefab
 
         public EffectPrefabItem()
         { }
+
+        public EffectPrefabItem(Effect src)
+        {
+            LoadFromEffect(src);
+        }
 
         public void LoadFromEffect(Effect src)
         {
@@ -98,111 +120,6 @@ class EffectPrefab
                     }
                 }
             }
-        }
-    }
-}
-
-
-class EffectPrefabDatabase
-{
-    private static readonly string prefabFolder = Path.Combine(Boot.AppDataPath, "config", "prefabs", "effects");
-    private static readonly JsonSerializerOptions jsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    public DatabaseBranch Root { get; private set; }    
-
-    public EffectPrefabDatabase()
-    {
-        Root = new DatabaseBranch("root");
-        Refresh();
-    }
-
-    public void Refresh()
-    {
-        Root = Directory.Exists(prefabFolder) ?
-            ScanFolder(prefabFolder, "root") :
-            new DatabaseBranch("root");
-    }
-
-    private DatabaseBranch ScanFolder(string folderPath, string branchName)
-    {
-        var branch = new DatabaseBranch(branchName);
-        var nodes = branch.Nodes;
-
-        foreach (var dir in Directory.EnumerateDirectories(folderPath))
-        {
-            branch.Nodes.Add(ScanFolder(dir, Path.GetFileName(dir)));
-        }
-
-        foreach (var pfbPath in Directory.EnumerateFiles(folderPath, "*.json"))
-        {
-            try
-            {
-                var leaf = new DatabaseLeaf(Path.GetFileNameWithoutExtension(pfbPath), pfbPath);
-                nodes.Add(leaf);
-            }
-            catch (Exception e)
-            {
-                Log.UserLogger.Error("Could not load \"{FilePath}\": {Message}", pfbPath, e.Message);
-                Log.Error("{Exception}", e);
-            }
-        }
-
-        return branch;
-    }
-
-    // since groups can be within groups, a recursive tree structure is
-    // necessary to represent the data
-    public abstract class DatabaseNode(string name)
-    {
-        public readonly string Name = name;
-    }
-
-    public class DatabaseBranch(string name) : DatabaseNode(name)
-    {
-        public readonly List<DatabaseNode> Nodes = [];
-    }
-
-    public class DatabaseLeaf(string name, string filePath) : DatabaseNode(name)
-    {
-        public readonly string FilePath = filePath;
-
-        private EffectPrefab? _cache;
-        private DateTime _cacheTime;
-
-        public EffectPrefab? Load()
-        {
-            bool needsReload;
-            if (_cache is not null)
-            {
-                needsReload = File.GetLastWriteTime(FilePath) > _cacheTime;
-            }
-            else
-            {
-                needsReload = true;
-            }
-
-            if (needsReload)
-            {
-                using var stream = File.OpenRead(FilePath);
-                _cacheTime = File.GetLastWriteTime(FilePath);
-                return _cache = JsonSerializer.Deserialize<EffectPrefab>(stream, jsonOptions);
-            }
-            else
-            {
-                return _cache;
-            }
-        }
-
-        public void Save(EffectPrefab prefab)
-        {
-            var text = JsonSerializer.Serialize(prefab, jsonOptions);
-            File.WriteAllText(FilePath, text);
-
-            _cache = prefab;
-            _cacheTime = File.GetLastWriteTime(FilePath);
         }
     }
 }
