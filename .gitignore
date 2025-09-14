@@ -41,6 +41,7 @@
 # rained-generated files
 /config/preferences.json
 /config/imgui.ini
+/config/prefabs
 /logs
 /emsavs
 
