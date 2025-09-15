@@ -82,21 +82,6 @@ if path.isfile(configFilePath) then
         config.fallbackDirectory = configTxtLines[1] -- first line: copy directory
         config.enabled = configTxtLines[2] == "true" -- second line: enable flag
     end
-    -- loadfile(configFilePath, "t")()
-    -- local f = openFile(configFilePath, "r")
-    -- local txt = f:read("a")
-    -- f:close()
-
-    -- configFilePath = load(txt, "@" .. configFilePath, "t")()
-
-    -- copyDir = f:read("l") -- first line: copy directory
-    -- isEnabled = f:read("l") == "true" -- second line: enable flag
-    -- f:close()
-
-    -- if not path.isdir(copyDir) then
-    --     warn("rendercopy: " .. copyDir .. " does not exist!")
-    --     copyDir = nil
-    -- end
 end
 
 -- render hook
@@ -226,18 +211,18 @@ if not rained.isBatchMode() then
                     assert(rowEdit)
 
                     imgui.TableNextColumn()
-                    imgui.PushStyleVar_Vec2(imgui.StyleVar_FramePadding, 0, 0)
+                    imgui.SetNextItemWidth(-0.00001)
                     imgui.InputText("##acronym", rowEdit.acronymInputBuf)
-                    imgui.PopStyleVar()
 
                     imgui.TableNextColumn()
+                    imgui.AlignTextToFramePadding()
                     _, rowEdit.path = rained.gui.fileBrowserWidget("##path", "directory", rowEdit.path)
                     if imgui.IsItemHovered(imgui.HoveredFlags_DelayNormal) then
                         imgui.SetTooltip(rowEdit.path)
                     end
 
                     imgui.TableNextColumn()
-                    if imgui.SmallButton("OK") then
+                    if imgui.Button("OK") then
                         dirConfig.prefix = string.upper(tostring(rowEdit.acronymInputBuf))
                         dirConfig.path = rowEdit.path
 
@@ -247,21 +232,23 @@ if not rained.isBatchMode() then
                     end
 
                     imgui.SameLine()
-                    if imgui.SmallButton("Cancel") then
+                    if imgui.Button("Cancel") then
                         currentlyEditedRowIndex = nil
                         rowEdit = nil
                     end
                 else
                     imgui.TableNextColumn()
+                    imgui.AlignTextToFramePadding()
                     imgui.Text(dirConfig.prefix)
 
                     imgui.TableNextColumn()
+                    imgui.AlignTextToFramePadding()
                     textTruncated(dirConfig.path, imgui.GetContentRegionAvail(0,0))
 
                     imgui.TableNextColumn()
                     imgui.BeginDisabled(currentlyEditedRowIndex ~= nil)
 
-                    if imgui.SmallButton("Edit") then
+                    if imgui.Button("Edit") then
                         currentlyEditedRowIndex = i
                         rowEdit = {
                             acronymInputBuf = imgui.newBuffer(64),
@@ -272,7 +259,7 @@ if not rained.isBatchMode() then
                     end
 
                     imgui.SameLine()
-                    if imgui.SmallButton("Delete") then
+                    if imgui.Button("Delete") then
                         indexToRemove = i
                     end
 
@@ -364,22 +351,5 @@ if not rained.isBatchMode() then
         if fileBrowser then
             fileBrowser:render()
         end
-
-        -- imgui.AlignTextToFramePadding()
-        -- imgui.Text("Copy Directory")
-        -- imgui.SameLine()
-
-        -- local s
-        -- s, copyDir = rained.gui.fileBrowserWidget("Copy Directory", "directory", copyDir)
-        -- if s then
-        --     updateFile()
-        -- end
-
-        -- imgui.BeginDisabled(copyDir == nil)
-        -- s, isEnabled = imgui.Checkbox("Enabled", isEnabled)
-        -- if s then
-        --     updateFile()
-        -- end
-        -- imgui.EndDisabled()
     end)
 end
