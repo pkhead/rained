@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 using ImGuiNET;
 using KeraLua;
 namespace Rained.LuaScripting.Modules;
@@ -264,6 +265,25 @@ static partial class ImGuiModule
                     case "capacity":
                     {
                         lua.PushInteger(obj.Length);
+                        break;
+                    }
+
+                    case "set":
+                    {
+                        lua.PushCFunction(static (luaPtr) =>
+                        {
+                            var lua = Lua.FromIntPtr(luaPtr);
+
+                            byte[] self = bufferMt.GetRef(lua, 1);
+                            var str = lua.CheckString(2);
+
+                            var strBytes = Encoding.UTF8.GetBytes(str);
+                            var len = Math.Min(strBytes.Length, self.Length - 1);
+                            Array.Copy(strBytes, self, len);
+                            self[len] = 0;
+
+                            return 0;
+                        });
                         break;
                     }
 

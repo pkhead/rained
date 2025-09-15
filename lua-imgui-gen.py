@@ -61,6 +61,10 @@ def main():
 ---@class imgui.Buffer
 ---@field capacity integer The maximum capacity of the buffer
 local Buffer = {}
+                   
+---Set the contents of this buffer to a string.
+---@param str string
+function Buffer:set(str) end
               
 ---Create a new imgui.Buffer, for use with InputText.
 ---
@@ -150,7 +154,10 @@ static partial class ImGuiModule
 
                             param_idx = param_idx + 1
 
-                        elif arg['type'] == 'int' or arg['type'] == 'const int' or (arg['type'] + '_') in enums_json:
+                        elif (
+                            arg['type'] == 'int' or arg['type'] == 'const int'
+                            or (arg['type'] + '_') in enums_json
+                        ):
                             if (arg['type'] + '_') in enums_json:
                                 func_parameters.append("("+arg['type']+")"+local_name)
                             else:
@@ -162,6 +169,22 @@ static partial class ImGuiModule
                                 meta_params.append(MetaParameter("integer?", arg_name))
                             else:
                                 func_def.append(f"(int)lua.CheckInteger({param_idx});\n")
+                                meta_params.append(MetaParameter("integer", arg_name))
+
+                            param_idx = param_idx + 1
+
+                        elif (
+                            arg['type'] == 'unsigned int' or arg['type'] == 'const unsigned int'
+                            or arg['type'] == 'ImGuiID' or arg['type'] == 'const ImGuiID'
+                        ):
+                            func_parameters.append(local_name)
+                            func_def.append(f"uint {local_name} = ")
+
+                            if default_value:
+                                func_def.append("(uint)lua.OptInteger(" + str(param_idx) + ", " + default_value + ");\n")
+                                meta_params.append(MetaParameter("integer?", arg_name))
+                            else:
+                                func_def.append(f"(uint)lua.CheckInteger({param_idx});\n")
                                 meta_params.append(MetaParameter("integer", arg_name))
 
                             param_idx = param_idx + 1
@@ -240,7 +263,7 @@ static partial class ImGuiModule
                             continue
 
                         else:
-                            print("unsupported arg type: " + arg['type'])
+                            print(out_func_name + ": " + "unsupported arg type: " + arg['type'] + " (skipped)")
                             success = False
 
                         local_idx = local_idx + 1
@@ -267,7 +290,7 @@ static partial class ImGuiModule
                             func_def.append("lua.PushNumber((double)ret);\n")
 
                         else:
-                            print("unsupported return type: " + ovr_def['ret'])
+                            print("unsupported return type: " + ovr_def['ret'] + " (ignored)")
                             success = False
 
                     for v in extra_pushes:

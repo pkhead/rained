@@ -8,7 +8,7 @@ namespace Rained.LuaScripting;
 static class LuaInterface
 {
     public const int VersionMajor = 4;
-    public const int VersionMinor = 2;
+    public const int VersionMinor = 3;
     public const int VersionRevision = 0;
 
     static private Lua luaState = null!;
