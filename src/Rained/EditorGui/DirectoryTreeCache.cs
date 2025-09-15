@@ -135,6 +135,46 @@ class DirectoryTreeCache
         return list.Directories;
     }
 
+    public bool Exists(string path)
+    {
+        path = NormalizePath(path);
+        if (directoryItems.ContainsKey(path))
+            return true;
+
+        // get name of file/directory
+        string name;
+        string parent;
+        var idx = path.LastIndexOf('/');
+        if (idx == -1)
+        {
+            name = path;
+            parent = "/";
+        }
+        else
+        {
+            name = path[(idx + 1)..];
+            parent = path[..idx];
+            if (parent == "") parent = "/";
+        }
+
+        if (!directoryItems.TryGetValue(parent, out var parentListing))
+            return false;
+
+        foreach (var f in parentListing.Files)
+        {
+            if (f == name)
+                return true;
+        }
+
+        foreach (var d in parentListing.Directories)
+        {
+            if (d == name)
+                return true;
+        }
+
+        return false;
+    }
+
     public static string Join(params string[] paths)
     {
         if (paths.Length == 0) return "";

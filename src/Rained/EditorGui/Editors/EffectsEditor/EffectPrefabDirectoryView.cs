@@ -18,6 +18,7 @@ class EffectPrefabDirectoryView : DirectoryTreeView
     private ActionPromptRequest actionPromptRequest = ActionPromptRequest.None;
     private string? actionFilePath = null;
     private List<int> selectedEffects = null!;
+    private NamePromptState? namePromptState = null;
 
     public EffectPrefabDirectoryView() :
         base(Path.Combine(Boot.AppDataPath, "config", "prefabs", "effects"), "*.json")
@@ -60,18 +61,19 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             {
                 case ActionPromptRequest.DeletePrefab:
                     ImGui.OpenPopup("Delete Prefab?");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Once);
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     break;
 
                 case ActionPromptRequest.CreatePrefab:
                     ImGui.OpenPopup("Create Prefab");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Once);
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     selectedEffects = [];
+
                     break;
 
                 case ActionPromptRequest.RenamePrefab:
                     ImGui.OpenPopup("Rename Prefab");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Once);
+                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     break;
             }
 
@@ -79,9 +81,12 @@ class EffectPrefabDirectoryView : DirectoryTreeView
         }
 
         var flags = ImGuiWindowFlags.AlwaysAutoResize;
+        bool isPopupOpen = false;
 
         if (ImGui.BeginPopupModal("Delete Prefab?", flags))
         {
+            isPopupOpen = true;
+
             ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 20.0f);
             ImGui.TextWrapped($"Are you sure you want to delete the file \"{actionFilePath}\"?");
 
@@ -91,7 +96,16 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             {
                 if (btn == 0)
                 {
-                    Cache.DeleteFile(actionFilePath!);
+                    try
+                    {
+                        Cache.DeleteFile(actionFilePath!);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.UserLogger.Error(e.Message);
+                        Log.Error(e.ToString());
+                        EditorWindow.ShowNotification("An error occurred trying to delete the prefab");
+                    }
                 }
 
                 ImGui.CloseCurrentPopup();
@@ -102,6 +116,8 @@ class EffectPrefabDirectoryView : DirectoryTreeView
 
         if (ImGui.BeginPopupModal("Create Prefab", flags))
         {
+            isPopupOpen = true;
+
             // show effect stack
             var level = RainEd.Instance.Level;
 
@@ -135,11 +151,17 @@ class EffectPrefabDirectoryView : DirectoryTreeView
                 ImGui.EndListBox();
             }
 
-            switch (PopupNamePrompt("Prefab Name...", selectedEffects.Count > 0))
+            namePromptState ??= new NamePromptState(actionFilePath!)
+            {
+                CanOverwrite = true,
+                GetFullPath = static (self, x) => DirectoryTreeCache.Join(self.Path, x + ".json")
+            };
+
+            switch (PopupNamePrompt("Prefab Name...", namePromptState, selectedEffects.Count > 0))
             {
                 case 1: // submit
                     {
-                        var prefabPath = DirectoryTreeCache.Join(actionFilePath!, TextInput + ".json");
+                        var prefabPath = DirectoryTreeCache.Join(actionFilePath!, namePromptState.Input + ".json");
 
                         try
                         {
@@ -157,6 +179,7 @@ class EffectPrefabDirectoryView : DirectoryTreeView
                         catch (Exception e)
                         {
                             Log.UserLogger.Error(e.Message);
+                            Log.Error(e.ToString());
                             EditorWindow.ShowNotification("An error occurred trying to create the prefab");
                         }
 
@@ -172,6 +195,49 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             ImGui.EndPopup();
         }
 
-        // TODO: rename prefab
+        if (ImGui.BeginPopupModal("Rename Prefab", flags))
+        {
+            isPopupOpen = true;
+
+            namePromptState ??= new NamePromptState(actionFilePath!, PathGetNameWithoutExtension(actionFilePath!))
+            {
+                PathPermittedToOverride = actionFilePath,
+                GetFullPath = static (self, x) => DirectoryTreeCache.Join(self.Path, "..", x + ".json")
+            };
+
+            switch (PopupNamePrompt("Prefab Name...", namePromptState))
+            {
+                case 1: // submit
+                    {
+                        var newPath = DirectoryTreeCache.Join(actionFilePath!, "..", namePromptState.Input + ".json");
+                        newPath = DirectoryTreeCache.NormalizePath(newPath);
+
+                        try
+                        {
+                            Cache.MoveFile(actionFilePath!, newPath);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.UserLogger.Error(e.Message);
+                            Log.Error(e.ToString());
+                            EditorWindow.ShowNotification("An error occurred trying to rename the prefab");
+                        }
+
+                        ImGui.CloseCurrentPopup();
+                    }
+                    break;
+
+                case 2: // cancel
+                    ImGui.CloseCurrentPopup();
+                    break;
+            }
+
+            ImGui.EndPopup();
+        }
+
+        if (!isPopupOpen)
+        {
+            namePromptState = null;
+        }
     }
 }

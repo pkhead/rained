@@ -18,17 +18,15 @@ abstract class DirectoryTreeView
 
     public readonly DirectoryTreeCache Cache;
 
-    protected string TextInput { get => popupText; }
-
     private ActivePopupID activePopup = ActivePopupID.None;
-    private string popupText = "";
-    private string? popupItem;
+    private NamePromptState? namePromptState = null;
+    private string? popupItem = null;
 
     public DirectoryTreeView(string baseDir, string? fileFilter)
     {
         Cache = new(baseDir, fileFilter);
     }
-    
+
     protected abstract void DirectoryContextMenu(string dirPath);
     protected abstract void FileContextMenu(string filePath);
     protected abstract void RequestFileDeletion(string filePath);
@@ -117,7 +115,7 @@ abstract class DirectoryTreeView
 
         bool popupWasInactive = activePopup == ActivePopupID.None;
 
-        if (ImGui.BeginListBox(label, size))
+        if (ImGui.BeginListBox(label, size - Vector2.UnitY * ImGui.GetFrameHeightWithSpacing()))
         {
             RenderDirectory("/");
 
@@ -141,8 +139,6 @@ abstract class DirectoryTreeView
         // if popup was requested, handle opening it here
         if (popupWasInactive && activePopup != ActivePopupID.None)
         {
-            popupText = "";
-
             switch (activePopup)
             {
                 case ActivePopupID.CreateFolder:
@@ -155,11 +151,10 @@ abstract class DirectoryTreeView
 
                 case ActivePopupID.RenameFolder:
                     ImGui.OpenPopup("Rename Folder");
-                    popupText = PathGetName(popupItem!);
                     break;
             }
 
-            ImGuiExt.CenterNextWindow(ImGuiCond.Once);
+            ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
 
         ShowActivePopup();
@@ -181,34 +176,52 @@ abstract class DirectoryTreeView
         return path[..idx];
     }
 
-    protected int PopupNamePrompt(string hintText, bool canSubmit = true)
+    protected int PopupNamePrompt(string hintText, NamePromptState state, bool canSubmit = true)
     {
         ImGui.SetNextItemWidth(ImGui.GetTextLineHeight() * 20.0f);
+        ImGui.PushTextWrapPos(ImGui.GetTextLineHeight() * 20.0f);
+
         bool submit =
-            ImGui.InputTextWithHint("##name", hintText, ref popupText, 128, ImGuiInputTextFlags.EnterReturnsTrue);
+            ImGui.InputTextWithHint("##name", hintText, ref state.Input, 128, ImGuiInputTextFlags.EnterReturnsTrue);
 
         // these are for windows only, since for unix the only invalid chars
         // is the forward slash. but i think the user should be concerned
         // about cross-platform compatibility anyway.
-        bool hasInvalidChars = popupText.Contains('/')
-            || popupText.Contains('\\')
-            || popupText.Contains(':')
-            || popupText.Contains('*')
-            || popupText.Contains('?')
-            || popupText.Contains('|')
-            || popupText.Contains('<')
-            || popupText.Contains('>')
-            || popupText == "." || popupText == "..";
+        bool hasInvalidChars = state.Input.Contains('/')
+            || state.Input.Contains('\\')
+            || state.Input.Contains(':')
+            || state.Input.Contains('*')
+            || state.Input.Contains('?')
+            || state.Input.Contains('|')
+            || state.Input.Contains('<')
+            || state.Input.Contains('>')
+            || state.Input == "." || state.Input == "..";
 
-        if (hasInvalidChars)
+        bool isOverwriting = false;
+        if (state.GetFullPath is not null && state.Input.Length > 0)
         {
-            ImGui.TextDisabled("Name contains invalid characters");
+            var fullPath = DirectoryTreeCache.NormalizePath(state.GetFullPath(state, state.Input));
+            if (state.PathPermittedToOverride is null || fullPath != state.PathPermittedToOverride)
+                isOverwriting = Cache.Exists(fullPath);
         }
 
+        // show errors
+        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 48f/255f, 48/255f, 1f));
+        if (hasInvalidChars)
+        {
+            ImGui.TextWrapped("Name contains invalid characters");
+        }
+        else if (isOverwriting)
+        {
+            ImGui.TextWrapped("File or directory already exists");
+        }
+        ImGui.PopStyleColor();
+
+        ImGui.PopTextWrapPos();
         ImGui.Separator();
 
-        bool cannotSubmit = hasInvalidChars || popupText.Length == 0;
-        cannotSubmit = cannotSubmit || !canSubmit;
+        bool cannotSubmit = hasInvalidChars || state.Input.Length == 0;
+        cannotSubmit = cannotSubmit || (isOverwriting && !state.CanOverwrite) || !canSubmit;
 
         ImGui.BeginDisabled(cannotSubmit);
         if (ImGui.Button("OK", StandardPopupButtons.ButtonSize))
@@ -235,11 +248,16 @@ abstract class DirectoryTreeView
         {
             popupOpen = true;
 
-            switch (PopupNamePrompt("Folder Name..."))
+            namePromptState ??= new(popupItem!)
+            {
+                GetFullPath = static (self, x) => DirectoryTreeCache.Join(self.Path, x)
+            };
+
+            switch (PopupNamePrompt("Folder Name...", namePromptState))
             {
                 case 1: // submit
                     {
-                        var dirPath = DirectoryTreeCache.Join(popupItem!, popupText);
+                        var dirPath = DirectoryTreeCache.Join(popupItem!, namePromptState.Input);
 
                         try
                         {
@@ -250,6 +268,7 @@ abstract class DirectoryTreeView
                         catch (Exception e)
                         {
                             Log.UserLogger.Error(e.Message);
+                            Log.Error(e.ToString());
                             EditorWindow.ShowNotification("An error occurred trying to create the folder");
                         }
 
@@ -278,7 +297,16 @@ abstract class DirectoryTreeView
             {
                 if (btn == 0)
                 {
-                    Cache.DeleteDirectory(popupItem!);
+                    try
+                    {
+                        Cache.DeleteDirectory(popupItem!);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.UserLogger.Error(e.Message);
+                        Log.Error(e.ToString());
+                        EditorWindow.ShowNotification("An error occurred trying to delete the folder");
+                    }
                 }
 
                 ImGui.CloseCurrentPopup();
@@ -291,18 +319,25 @@ abstract class DirectoryTreeView
         {
             popupOpen = true;
 
-            switch (PopupNamePrompt("Folder Name..."))
+            namePromptState ??= new(popupItem!, PathGetName(popupItem!))
+            {
+                PathPermittedToOverride = popupItem,
+                GetFullPath = static (self, x) => DirectoryTreeCache.Join(self.Path, "..", x)
+            };
+
+            switch (PopupNamePrompt("Folder Name...", namePromptState))
             {
                 case 1: // submit
                     {
                         try
                         {
-                            var newPath = DirectoryTreeCache.Join(popupItem!, "..", popupText);
+                            var newPath = DirectoryTreeCache.Join(popupItem!, "..", namePromptState.Input);
                             Cache.MoveDirectory(popupItem!, newPath);
                         }
                         catch (Exception e)
                         {
                             Log.UserLogger.Error(e.Message);
+                            Log.Error(e.ToString());
                             EditorWindow.ShowNotification("An error occurred trying to rename the folder");
                         }
 
@@ -322,6 +357,17 @@ abstract class DirectoryTreeView
         {
             activePopup = ActivePopupID.None;
             popupItem = null;
+            namePromptState = null;
         }
+    }
+
+    protected class NamePromptState(string pathState, string input = "")
+    {
+        public string Input = input;
+        public string Path = pathState;
+        public bool CanSubmit = true;
+        public bool CanOverwrite = false;
+        public Func<NamePromptState, string, string>? GetFullPath = null;
+        public string? PathPermittedToOverride;
     }
 }
