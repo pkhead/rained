@@ -97,4 +97,87 @@ function module.patternBox(prefix, layer, left, top, right, bottom, forceModifie
     end
 end
 
+do
+    local tinsert = table.insert
+    local tab = "    "
+
+    ---Escapes special characters in a given string so that it is able to be correctly parsed as a string literal in a Lua parser.
+    ---@param str string
+    ---@return string
+    local function escapeString(str)
+        str = str
+            :gsub("\a", "\\\a")
+            :gsub("\b", "\\\b")
+            :gsub("\f", "\\\f")
+            :gsub("\n", "\\\n")
+            :gsub("\r", "\\\r")
+            :gsub("\v", "\\\v")
+            :gsub("\\", "\\\\")
+            :gsub("\"", "\\\"")
+            :gsub("\t", "\\\t")
+        
+        str = string.gsub(str, "\"", "\\\"")
+        return str
+    end
+
+    local function rec(out, indent, t)
+        if type(t) == "function" or type(t) == "userdata" or type(t) == "thread" then
+            error(("%s is not serializable"):format(type(t)))
+        end
+
+        if type(t) == "table" then
+            tinsert(out, "{\n")
+            local indent2 = indent .. tab
+            
+            -- numeric list
+            if t[1] ~= nil then
+                for i, v in ipairs(t) do
+                    tinsert(out, indent2)
+                    rec(out, indent2, v)
+                    tinsert(out, ",\n")
+                end
+            else
+                local keys = {}
+                for k, _ in pairs(t) do
+                    table.insert(keys, k)
+                end
+                table.sort(keys)
+
+                for _, k in ipairs(keys) do
+                    local v = t[k]
+                    if type(k) == "table" then
+                        error("table is not serializable as a key")
+                    end
+
+                    tinsert(out, indent2)
+                    tinsert(out, "[")
+                    rec(out, 0, k)
+                    tinsert(out, "] = ")
+                    rec(out, indent2, v)
+                    tinsert(out, ",\n")
+                end
+            end
+
+            tinsert(out, indent)
+            tinsert(out, "}")
+        
+        elseif type(t) == "string" then
+            table.insert(out, "\"")
+            table.insert(out, escapeString(t))
+            table.insert(out, "\"")
+        else
+            table.insert(out, tostring(t))
+        end
+    end
+
+    ---Serialize a Lua value (including tables) into a string
+    ---@param value any The value to serialize
+    ---@return string res
+    function module.serialize(value)
+        local out = {}
+        rec(out, "", value)
+        return table.concat(out)
+    end
+end
+
 return module
