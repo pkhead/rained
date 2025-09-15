@@ -321,6 +321,76 @@ static partial class Platform
         }
     }
 
+    /// <summary>
+    /// Send a directory to the trash bin.
+    /// 
+    /// note that the return value always returns true if the directory does not exist (and therefore does nothing),
+    /// even if the function does not actually support trashing the directory on that platform.
+    /// </summary>
+    /// <param name="directory">The path of the directory to trash.</param>
+    /// <returns>True if the operation is supported on the running platform, false if not.</returns>
+    public static bool TrashDirectory(string directory, bool deleteAsFallback = true)
+    {
+        directory = Path.GetFullPath(directory);
+        if (!Directory.Exists(directory))
+        {
+            // throw new FileNotFoundException($"Attempt to trash nonexistent file \"{file}\"");
+            return true;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(directory, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+            return true;
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            // run AppleScript interpreter to trash file
+            // (untested)
+            try
+            {
+                var proc = Process.Start("osascript", ["-e", $"tell application \"Finder\" to move POSIX file \"{directory}\" to the trash"])!;
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) return true;
+            }
+            catch {}
+
+            return false;
+        }
+        else // assume Linux...
+        {
+            bool success = false;
+            
+            // try GIO
+            try
+            {
+                var proc = Process.Start("gio", ["trash", directory])!;
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) success = true;
+            }
+            catch {}
+            if (success) return true;
+
+            // then, try KFMCLIENT (KDE)
+            try
+            {
+                var proc = Process.Start("kfmclient", ["move", directory, "trash:/"])!;
+                proc.WaitForExit();
+                if (proc.ExitCode == 0) success = true;
+            }
+            catch {}
+            if (success) return true;
+
+            if (deleteAsFallback)
+            {
+                Log.Warning("File trashing is not supported on this platform, resorted to permanent deletion.");   
+                Directory.Delete(directory, true);
+            }
+
+            return false;
+        }
+    }
+
     #region Clipboard
     public enum ClipboardDataType
     {

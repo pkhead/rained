@@ -215,45 +215,10 @@ static class EditorWindow
                 }
 
                 ImGui.Separator();
-                if (ImGui.MenuItem("Reload Scripts"))
-                {
-                    LuaScripting.LuaInterface.Unload();
-                    
-                    try
-                    {
-                        LuaScripting.LuaInterface.Initialize(new LuaScripting.APIGuiHost(), true);
-                    }
-                    catch (LuaScriptException e)
-                    {
-                        LuaScripting.LuaInterface.HandleException(e);
-                    }
-                }
-                
-                if (ImGui.MenuItem("Execute Script..."))
-                {
-                    var startDir = Path.Combine(Boot.AppDataPath, "scripts");
-                    fileBrowser = new FileBrowser(
-                        mode: FileBrowser.OpenMode.Read,
-                        openDir: startDir, 
-                        callback: (string[] paths) =>
-                        {
-                            if (paths.Length == 0) return;
-                            LuaScripting.LuaHelpers.DoFile(LuaScripting.LuaInterface.LuaState, paths[0]);
-                        }
-                    );
-                    fileBrowser.AddFilter("Lua file", ".lua");
-                }
-
-                ImGui.Separator();
 
                 if (ImGui.MenuItem("Preferences"))
                 {
                     PreferencesWindow.OpenWindow();
-                }
-
-                if (ImGui.MenuItem("Asset Manager"))
-                {
-                    AssetManagerWindow.OpenWindow();
                 }
 
                 LuaScripting.Modules.GuiModule.MenuHook("File", true);
@@ -437,27 +402,70 @@ static class EditorWindow
                 ImGui.EndMenu();
             }
 
-            if (ImGui.BeginMenu("Help"))
+            if (ImGui.BeginMenu("Tools"))
             {
-                if (ImGui.MenuItem("Readme..."))
+                if (ImGui.MenuItem("Reload Scripts"))
                 {
-                    Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.txt"));
+                    LuaScripting.LuaInterface.Unload();
+
+                    try
+                    {
+                        LuaScripting.LuaInterface.Initialize(new LuaScripting.APIGuiHost(), true);
+                    }
+                    catch (LuaScriptException e)
+                    {
+                        LuaScripting.LuaInterface.HandleException(e);
+                    }
                 }
 
-                if (ImGui.MenuItem("Manual..."))
+                if (ImGui.MenuItem("Execute Script..."))
                 {
-                    OpenManual();
+                    var startDir = Path.Combine(Boot.AppDataPath, "scripts");
+                    fileBrowser = new FileBrowser(
+                        mode: FileBrowser.OpenMode.Read,
+                        openDir: startDir,
+                        callback: (string[] paths) =>
+                        {
+                            if (paths.Length == 0) return;
+                            LuaScripting.LuaHelpers.DoFile(LuaScripting.LuaInterface.LuaState, paths[0]);
+                        }
+                    );
+                    fileBrowser.AddFilter("Lua file", ".lua");
                 }
 
-                if (ImGui.MenuItem("About..."))
+                ImGui.Separator();
+
+                if (ImGui.MenuItem("Asset Manager"))
                 {
-                    AboutWindow.IsWindowOpen = true;
+                    AssetManagerWindow.OpenWindow();
                 }
 
-                LuaScripting.Modules.GuiModule.MenuHook("Help", true);
-                
+                LuaScripting.Modules.GuiModule.MenuHook("Tools", true);
+
                 ImGui.EndMenu();
             }
+
+            if (ImGui.BeginMenu("Help"))
+                {
+                    if (ImGui.MenuItem("Readme..."))
+                    {
+                        Platform.OpenURL(Path.Combine(Boot.AppDataPath, "README.txt"));
+                    }
+
+                    if (ImGui.MenuItem("Manual..."))
+                    {
+                        OpenManual();
+                    }
+
+                    if (ImGui.MenuItem("About..."))
+                    {
+                        AboutWindow.IsWindowOpen = true;
+                    }
+
+                    LuaScripting.Modules.GuiModule.MenuHook("Help", true);
+
+                    ImGui.EndMenu();
+                }
 
             foreach (var menuName in LuaScripting.Modules.GuiModule.CustomMenus)
             {

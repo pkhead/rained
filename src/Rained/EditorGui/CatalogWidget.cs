@@ -110,6 +110,12 @@ abstract class CatalogWidgetExt : CatalogWidget
     }
     public int SelectedItem { get => selectedItem; set => selectedItem = value; }
 
+    /// <summary>
+    /// If true, a selected item will be tracked and activating an item will
+    /// change the selected item to be that.
+    /// </summary>
+    public bool UseSelectedItem = true;
+
     protected override bool HasSearch => true;
     protected override bool Dual => true;
 
@@ -120,6 +126,9 @@ abstract class CatalogWidgetExt : CatalogWidget
 
     protected void ResetSelectedItem()
     {
+        if (!UseSelectedItem)
+            return;
+        
         bool first = true;
         foreach (var i in GetItemList(selectedGroup))
         {
@@ -174,7 +183,7 @@ abstract class CatalogWidgetExt : CatalogWidget
             ResetSelectedItem();
         }
 
-        if (!PassesSearchQuery(GetItemName(selectedGroup, selectedItem)))
+        if (UseSelectedItem && !PassesSearchQuery(GetItemName(selectedGroup, selectedItem)))
             ResetSelectedItem();
     }
 
@@ -234,7 +243,7 @@ class GenericDualCatalogWidget : CatalogWidgetExt
     public delegate (string name, Color color) GetGroupInfoDelegate(int group);
     public delegate (string name, Color color) GetItemInfoDelegate(int group, int item);
     public delegate bool RenderItemDelegate(int item, bool selected);
-    public delegate void ItemPostRenderDelegate(int item, bool selected);
+    public delegate void ItemPostRenderDelegate(int item, bool selected, bool pressed);
     public delegate IEnumerable<int> GetGroupsDelegate();
     public delegate IEnumerable<int> GetItemsInGroupDelegate(int group);
 
@@ -311,7 +320,7 @@ class GenericDualCatalogWidget : CatalogWidgetExt
                 selectedItem = item;
             }
 
-            ItemPostRender?.Invoke(item, isSelected);
+            ItemPostRender?.Invoke(item, isSelected, pressed);
         }
     }
 }
