@@ -36,11 +36,25 @@ class EffectsEditor : IEditorMode
     public EffectsEditor(LevelWindow window)
     {
         this.window = window;
-        prefabGui = new();
+        prefabGui = new()
+        {
+            ApplyPrefabCallback = (prefab) =>
+            {
+                var level = RainEd.Instance.Level;
+                var fxDb = RainEd.Instance.EffectsDatabase;
+
+                foreach (var item in prefab.Items)
+                {
+                    var effectInit = fxDb.GetEffectFromName(item.Name);
+                    var effect = AddEffect(effectInit);
+                    item.Load(effect);
+                }
+            }
+        };
 
         catalogWidget = new EffectsEditorCatalogWidget(RainEd.Instance.EffectsDatabase)
         {
-            AddEffect = AddEffect
+            AddEffect = (x) => AddEffect(x)
         };
         catalogWidget.ProcessSearch();
 
@@ -650,7 +664,7 @@ class EffectsEditor : IEditorMode
             changeRecorder.PushMatrixChange();
     }
 
-    private void AddEffect(EffectInit init)
+    private Effect AddEffect(EffectInit init)
     {
         var level = RainEd.Instance.Level;
         var prefs = RainEd.Instance.Preferences;
@@ -706,6 +720,8 @@ class EffectsEditor : IEditorMode
         }
 
         changeRecorder.PushListChange();
+
+        return newEffect;
     }
 
     class EffectsEditorCatalogWidget(EffectsDatabase db) : CatalogWidgetExt

@@ -89,6 +89,10 @@ abstract class DirectoryTreeView
                 var fileNameNoExt = fileName[..fileName.LastIndexOf('.')];
 
                 ImGui.TreeNodeEx(fileNameNoExt, flags | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+                if (ImGui.IsItemDeactivated() && ImGui.IsItemHovered())
+                {
+                    FileActivated(filePath);
+                }
 
                 ImGui.OpenPopupOnItemClick("ctx", ImGuiPopupFlags.MouseButtonRight);
                 if (ImGui.IsPopupOpen("ctx") && ImGui.BeginPopup("ctx"))

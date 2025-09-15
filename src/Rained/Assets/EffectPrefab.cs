@@ -83,21 +83,21 @@ class EffectPrefab
             }
         }
 
-        public void Load(Level level, EffectsDatabase fxDb)
+        public void Load(Effect effect)
         {
-            var init = fxDb.GetEffectFromName(Name);
-            var effect = new Effect(level, init);
-
             if (Data.TryGetValue("3D", out var val3D) && val3D is not null)
-                effect.Is3D = (bool)val3D;
+                effect.Is3D = ((JsonElement)val3D).GetBoolean();
 
             if (Data.TryGetValue("Affect Gradients And Decals", out var valGad) && valGad is not null)
-                effect.AffectGradientsAndDecals = (bool)valGad;
+                effect.AffectGradientsAndDecals = ((JsonElement)valGad).GetBoolean();
 
-            if (Data.TryGetValue("Color", out var valCol) && valCol is not null)
+            if (Data.TryGetValue("Color", out var valColObj) && valColObj is not null)
             {
-                if (valCol is string colStr)
+                var valCol = (JsonElement)valColObj;
+                if (valCol.ValueKind == JsonValueKind.String)
                 {
+                    var colStr = valCol.GetString()!;
+
                     if (colStr.Equals("x", StringComparison.InvariantCultureIgnoreCase) ||
                         colStr.Equals("dead", StringComparison.InvariantCultureIgnoreCase))
                     {
@@ -108,7 +108,7 @@ class EffectPrefab
                         Log.UserLogger.Warning("\"{Name}\": invalid Color value \"{Value}\"; ignoring.", Name, colStr);
                     }
                 }
-                else if (valCol is int colInt)
+                else if (valCol.TryGetInt32(out var colInt))
                 {
                     if (colInt >= 0 && colInt <= 2)
                     {

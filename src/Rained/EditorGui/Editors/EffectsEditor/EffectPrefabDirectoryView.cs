@@ -15,6 +15,8 @@ class EffectPrefabDirectoryView : DirectoryTreeView
         CreatePrefab,
     };
 
+    public Action<EffectPrefab>? ApplyPrefabCallback;
+
     private ActionPromptRequest actionPromptRequest = ActionPromptRequest.None;
     private string? actionFilePath = null;
     private List<int> selectedEffects = null!;
@@ -49,7 +51,29 @@ class EffectPrefabDirectoryView : DirectoryTreeView
     }
 
     protected override void FileActivated(string filePath)
-    { }
+    {
+        var realPath = Cache.ConvertToRealPath(filePath);
+        Log.Information("Load prefab {Path}", realPath);
+
+        try
+        {
+            var prefab = EffectPrefab.ReadFromFile(realPath);
+            if (prefab is null)
+            {
+                Log.UserLogger.Error("Could not load prefab flie \"{File}\"", realPath);
+                EditorWindow.ShowNotification("Error occurred while applying prefab");
+            }
+            else
+            {
+                ApplyPrefabCallback?.Invoke(prefab);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.UserLogger.Error(e.ToString());
+            EditorWindow.ShowNotification("Error occurred while applying prefab");
+        }
+    }
 
     public override void Render(string label, Vector2 size)
     {
