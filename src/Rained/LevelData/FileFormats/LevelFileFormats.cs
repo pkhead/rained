@@ -1,0 +1,36 @@
+using Rained.EditorGui;
+
+namespace Rained.LevelData.FileFormats;
+
+static class LevelFileFormats
+{
+    public static ILevelFileFormat AutoDetect(string path)
+    {
+        var ext = Path.GetExtension(path);
+
+        if (ext.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+            return new VanillaFileFormat();
+
+        if (ext.Equals(".rwlz", StringComparison.OrdinalIgnoreCase))
+            return new RWLZFileFormat();
+
+        return new VanillaFileFormat();
+    }
+
+    public static void SetUpFileBrowser(FileBrowser fileBrowser)
+    {
+        static bool levelCheck(string path, bool isRw)
+        {
+            return isRw;
+        }
+        
+        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        fileBrowser.AddFilterWithCallback("Zipped level file", null, ".rwlz");
+
+        fileBrowser.PreviewCallback = (string path, bool isRw) =>
+        {
+            if (isRw || Path.GetExtension(path).Equals(".rwlz", StringComparison.OrdinalIgnoreCase)) return new BrowserLevelPreview(path);
+            return null;
+        };
+    }
+}
