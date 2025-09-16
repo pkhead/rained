@@ -25,8 +25,21 @@ struct LevelSaveResult
     public bool WroteLightMap;
 }
 
+class LevelGeometryData
+{
+    public record struct CellData(GeoType Geometry, LevelObject Objects);
+
+    public required int Width;
+    public required int Height;
+    public required CellData[,,] Geometry;
+}
+
 interface ILevelFileFormat
 {
     LevelLoadResult Load(string path, LevelSerializationParams? hostData = null);
     public LevelSaveResult Save(Level level, string path, LevelSerializationParams? hostData = null);
+
+    // for the preview
+    LevelGeometryData? LoadGeometry(string path, CancellationToken? cancelToken);
+    void ExportForDrizzle(string path, string tmpDir);
 }

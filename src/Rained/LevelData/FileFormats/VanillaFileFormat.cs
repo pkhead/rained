@@ -43,6 +43,75 @@ class VanillaFileFormat : ILevelFileFormat
         };
     }
 
+    public LevelGeometryData? LoadGeometry(string path, CancellationToken? cancelToken)
+    {
+        using var file = File.OpenRead(path);
+        return LoadGeometryFromStream(file, cancelToken);
+    }
+
+    public void ExportForDrizzle(string path, string tmpDir)
+    {
+        var levelName = Path.GetFileNameWithoutExtension(path);
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+
+        File.Copy(path, Path.Combine(tmpDir, levelName + ".txt"));
+        if (File.Exists(lightPath))
+        {
+            File.Copy(lightPath, Path.Combine(tmpDir, levelName + ".png"));
+        }
+    }
+
+    public static LevelGeometryData? LoadGeometryFromStream(Stream stream, CancellationToken? cancelToken)
+    {
+        string? geoData;
+
+        {
+            using var reader = new StreamReader(stream);
+            geoData = reader.ReadLine();
+        }
+
+        if (string.IsNullOrEmpty(geoData)) return null;
+
+        var parser = new Lingo.LingoParser();
+        if (parser.Read(geoData) is not Lingo.LinearList geoList) return null;
+
+        int levelWidth = geoList.Count;
+        int levelHeight = ((Lingo.LinearList)geoList[0]).Count;
+        var cells = new LevelGeometryData.CellData[levelWidth, levelHeight, 3];
+
+        for (int x = 0; x < levelWidth; x++)
+        {
+            var listX = (Lingo.LinearList)geoList[x];
+            for (int y = 0; y < levelHeight; y++)
+            {
+                var listY = (Lingo.LinearList)listX[y];
+
+                for (int l = 0; l < 3; l++)
+                {
+                    var cellData = (Lingo.LinearList)listY[l];
+                    var geoValue = (GeoType)Lingo.LingoNumber.AsInt(cellData[0]);
+
+                    LevelObject objects = 0;
+                    foreach (var v in ((Lingo.LinearList)cellData[1]).Cast<int>())
+                    {
+                        objects |= (LevelObject)(1 << (v - 1));
+                    }
+
+                    cells[x, y, l] = new LevelGeometryData.CellData(geoValue, objects);
+                }
+
+                cancelToken?.ThrowIfCancellationRequested();
+            }
+        }
+
+        return new LevelGeometryData
+        {
+            Width = levelWidth,
+            Height = levelHeight,
+            Geometry = cells,
+        };
+    }
+
     private static LevelSerializationParams InitParams(LevelSerializationParams? v)
     {
         return v ?? new LevelSerializationParams
