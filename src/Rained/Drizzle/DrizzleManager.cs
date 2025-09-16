@@ -3,6 +3,7 @@ using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
 using Drizzle.Ported;
 using Rained.Assets;
+using Rained.LevelData.FileFormats;
 namespace Rained.Drizzle;
 
 /// <summary>
@@ -57,7 +58,7 @@ static class DrizzleManager
                 var idx = line.IndexOf(" : ");
                 if (idx == -1)
                 {
-                    Log.UserLogger?.Warning("Line {LineNumber} of editorConfig.txt was invalid: {Line}", i+1, line);
+                    Log.UserLogger?.Warning("Line {LineNumber} of editorConfig.txt was invalid: {Line}", i + 1, line);
                     continue;
                 }
 
@@ -74,7 +75,7 @@ static class DrizzleManager
                 var idx = baseLine.IndexOf(" : ");
                 if (idx == -1)
                 {
-                    Log.UserLogger?.Warning("Line {LineNumber} of cast baseConfig.txt was invalid: {Line}", i+1, baseLine);
+                    Log.UserLogger?.Warning("Line {LineNumber} of cast baseConfig.txt was invalid: {Line}", i + 1, baseLine);
                     newLines[i] = baseLine;
                     continue;
                 }
@@ -150,5 +151,24 @@ static class DrizzleManager
     public static void DisposeStaticRuntime()
     {
         _staticRuntime = null;
+    }
+
+    /// <summary>
+    /// Convert level file to Drizzle (aka vanilla) format.
+    /// </summary>
+    /// <param name="levelPath">Path to the level file.</param>
+    /// <param name="levelTxt">Path to the converted text file.</param>
+    /// <returns>Handle to the newly created temp directory</returns>
+    public static TempDirectoryHandle ConvertToDrizzle(string levelPath, out string levelTxt)
+    {
+        var tmpDir = new TempDirectoryHandle("DrizzleRender");
+
+        // export to drizzle level format
+        var fileFormat = LevelFileFormats.AutoDetect(levelPath);
+        fileFormat.ExportForDrizzle(levelPath, tmpDir.Path);
+
+        levelTxt = Path.Combine(tmpDir.Path, Path.GetFileNameWithoutExtension(levelPath) + ".txt");
+
+        return tmpDir;
     }
 }

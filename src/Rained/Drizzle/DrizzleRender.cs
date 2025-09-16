@@ -238,9 +238,11 @@ class DrizzleRender : IDisposable
                 ThreadMessage? msg;
 
                 Queue.Enqueue(new MessageLevelLoading());
-                Log.UserLogger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(filePath));
+
+                using var tmpDir = DrizzleManager.ConvertToDrizzle(filePath, out var txtPath);
+                Log.UserLogger.Information("RENDER: Loading {LevelName}", Path.GetFileNameWithoutExtension(txtPath));
                 
-                EditorRuntimeHelpers.RunLoadLevel(runtime, filePath);
+                EditorRuntimeHelpers.RunLoadLevel(runtime, txtPath);
 
                 var movie = (MovieScript)runtime.MovieScriptInstance;
                 movie.gPrioCam = PrioritizedCameraIndex + 1;
@@ -722,7 +724,8 @@ class DrizzleRender : IDisposable
 
         try
         {
-            EditorRuntimeHelpers.RunLoadLevel(runtime, levelPath);
+            using var tmpDir = DrizzleManager.ConvertToDrizzle(levelPath, out string levelTxtFile);
+            EditorRuntimeHelpers.RunLoadLevel(runtime, levelTxtFile);
 
             var movie = (MovieScript)runtime.MovieScriptInstance;
             var camCount = (int) movie.gCameraProps.cameras.count;
