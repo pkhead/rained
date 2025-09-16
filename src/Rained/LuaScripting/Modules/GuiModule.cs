@@ -162,7 +162,7 @@ static class GuiModule
         {
             if (isRw)
             {
-                LevelData.FileFormats.LevelFileFormats.SetUpFileBrowser(fileBrowser);
+                LevelData.FileFormats.LevelFileFormats.SetUpFileBrowser(fileBrowser, fileBrowser.Mode);
             }
             else
             {

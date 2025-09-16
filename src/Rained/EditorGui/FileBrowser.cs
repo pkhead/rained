@@ -56,6 +56,7 @@ partial class FileBrowser
     };
 
     private readonly OpenMode mode;
+    public OpenMode Mode { get => mode; }
     private readonly bool multiSelect;
     
     private enum EntryType { File, Directory };

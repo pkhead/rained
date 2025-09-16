@@ -17,17 +17,29 @@ static class LevelFileFormats
         return new VanillaFileFormat();
     }
 
-    public static void SetUpFileBrowser(FileBrowser fileBrowser)
+    public static void SetUpFileBrowser(FileBrowser fileBrowser, FileBrowser.OpenMode openMode)
     {
         static bool levelCheck(string path, bool isRw)
             => isRw;
         
         static bool vanillaLevelCheck(string path, bool isRw)
             => isRw && Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase);
-        
-        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt", ".rwlz");
-        fileBrowser.AddFilterWithCallback("Vanilla level file", vanillaLevelCheck, ".txt");
-        fileBrowser.AddFilterWithCallback("Zipped level file", null, ".rwlz");
+
+        switch (openMode)
+        {
+            case FileBrowser.OpenMode.Write:
+                fileBrowser.AddFilterWithCallback("Plain level file", vanillaLevelCheck, ".txt");
+                fileBrowser.AddFilterWithCallback("Compressed level file", null, ".rwlz");
+                break;
+            
+            case FileBrowser.OpenMode.Read:
+            case FileBrowser.OpenMode.MultiRead:
+            default:
+                fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt", ".rwlz");
+                fileBrowser.AddFilterWithCallback("Plain level file", vanillaLevelCheck, ".txt");
+                fileBrowser.AddFilterWithCallback("Compressed level file", null, ".rwlz");
+                break;
+        }
 
         fileBrowser.PreviewCallback = (string path, bool isRw) =>
         {

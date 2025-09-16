@@ -170,7 +170,7 @@ static class EditorWindow
     {
         var tab = RainEd.Instance.CurrentTab;
         fileBrowser = new FileBrowser(openMode, callback, (tab is null || tab.IsTemporaryFile) ? null : Path.GetDirectoryName(tab.FilePath));
-        LevelFileFormats.SetUpFileBrowser(fileBrowser);
+        LevelFileFormats.SetUpFileBrowser(fileBrowser, openMode);
     }
 
     private static void DrawMenuBar()
