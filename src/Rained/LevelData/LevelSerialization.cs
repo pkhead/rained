@@ -40,6 +40,40 @@ static class LevelSerialization
 
     public static LevelLoadResult Load(string path, LevelSerializationParams? hostData = null)
     {
+        string[] levelData = File.ReadAllLines(path);
+
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        Image? lightImage = null;
+        if (File.Exists(lightPath))
+            lightImage = Raylib.LoadImage(lightPath);
+
+        try
+        {
+            return Load(levelData, lightImage, hostData);
+        }
+        finally
+        {
+            if (lightImage is not null)
+                Raylib.UnloadImage(lightImage.Value);
+        }
+    }
+    
+    public static void SaveLevelTextFile(Level level, string path, LevelSerializationParams? hostData = null)
+    {
+        using var file = File.OpenWrite(path);
+        SaveLevelTextFile(level, file, hostData);
+    }
+
+    public static bool SaveLevelLightMap(Level level, string path)
+    {
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        using var fileStream = File.OpenWrite(lightPath);
+
+        return SaveLevelLightMap(level, fileStream);
+    }
+
+    public static LevelLoadResult Load(string[] levelData, Image? image, LevelSerializationParams? hostData = null)
+    {
         hostData = InitParams(hostData);
 
         List<string> unknownMats = [];
@@ -48,37 +82,36 @@ static class LevelSerialization
         List<string> unknownEffects = [];
         bool loadSuccess = true;
 
-        var levelData = File.ReadAllLines(path);
         var lingoParser = new Lingo.LingoParser();
-           
+
         // obtain level data from lines
         Lingo.LinearList levelGeometry = (Lingo.LinearList)
             (lingoParser.Read(levelData[0]) ?? throw new Exception("No geometry data"));
-        
+
         Lingo.PropertyList levelTileData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[1]) ?? throw new Exception("No tile data"));
-        
+
         Lingo.PropertyList levelEffectData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[2]) ?? throw new Exception("No effects data"));
 
         Lingo.PropertyList levelLightData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[3]) ?? throw new Exception("No light data"));
-        
+
         Lingo.PropertyList levelMiscData = (Lingo.PropertyList)
             (lingoParser.Read(levelData[4]) ?? throw new Exception("No misc data"));
-        
+
         Lingo.PropertyList levelProperties = (Lingo.PropertyList)
             (lingoParser.Read(levelData[5]) ?? throw new Exception("No properties"));
-        
+
         // it is valid for these lines to be omitted
         // i assume these were features not present in older versions of the RWLE
         Lingo.PropertyList? levelCameraData = null;
         Lingo.PropertyList? levelWaterData = null;
         Lingo.PropertyList? levelPropData = null;
-        
+
         if (levelData.Length >= 7)
             levelCameraData = lingoParser.Read(levelData[6]) as Lingo.PropertyList;
-        
+
         if (levelData.Length >= 8)
             levelWaterData = lingoParser.Read(levelData[7]) as Lingo.PropertyList;
 
@@ -86,8 +119,8 @@ static class LevelSerialization
             levelPropData = lingoParser.Read(levelData[8]) as Lingo.PropertyList;
 
         // get level dimensions
-        Vector2 levelSize = (Vector2) levelProperties["size"];
-        Lingo.LinearList extraTiles = (Lingo.LinearList) levelProperties["extraTiles"];
+        Vector2 levelSize = (Vector2)levelProperties["size"];
+        Lingo.LinearList extraTiles = (Lingo.LinearList)levelProperties["extraTiles"];
 
         var level = new Level((int)levelSize.X, (int)levelSize.Y)
         {
@@ -125,13 +158,13 @@ static class LevelSerialization
                 z = 0;
                 foreach (var cellData in yv.Cast<Lingo.LinearList>())
                 {
-                    level.Layers[z,x,y].Geo = (GeoType) Lingo.LingoNumber.AsInt(cellData[0]);
-                    
-                    var flags = (Lingo.LinearList) cellData[1];
+                    level.Layers[z, x, y].Geo = (GeoType)Lingo.LingoNumber.AsInt(cellData[0]);
+
+                    var flags = (Lingo.LinearList)cellData[1];
                     foreach (int flag in flags.Cast<int>())
                     {
                         if (flag != 4)
-                            level.Layers[z,x,y].Add((LevelObject) (1 << (flag-1)));
+                            level.Layers[z, x, y].Add((LevelObject)(1 << (flag - 1)));
                     }
 
                     z++;
@@ -142,11 +175,11 @@ static class LevelSerialization
         }
 
         // read tile data
-        Lingo.LinearList tileMatrix = (Lingo.LinearList) levelTileData["tlMatrix"];
+        Lingo.LinearList tileMatrix = (Lingo.LinearList)levelTileData["tlMatrix"];
 
         // get default material
         {
-            var defaultMat = (string) levelTileData["defaultMaterial"];
+            var defaultMat = (string)levelTileData["defaultMaterial"];
             var matInfo = hostData.MaterialDatabase.GetMaterial(defaultMat);
 
             if (matInfo is not null)
@@ -173,75 +206,75 @@ static class LevelSerialization
                 z = 0;
                 foreach (Lingo.PropertyList cellData in yv.Cast<Lingo.PropertyList>())
                 {
-                    var tp = (string) cellData["tp"];
+                    var tp = (string)cellData["tp"];
                     var dataObj = cellData["data"];
-                    
+
                     switch (tp)
                     {
                         case "default":
                             break;
-                        
-                        case "material":
-                        {
-                            var data = (string) dataObj;
-                            var matInfo = hostData.MaterialDatabase.GetMaterial(data);
 
-                            if (matInfo is not null)
+                        case "material":
                             {
-                                level.Layers[z,x,y].Material = matInfo.ID;
+                                var data = (string)dataObj;
+                                var matInfo = hostData.MaterialDatabase.GetMaterial(data);
+
+                                if (matInfo is not null)
+                                {
+                                    level.Layers[z, x, y].Material = matInfo.ID;
+                                }
+                                else
+                                {
+                                    // unrecognized material
+                                    Log.Warning("Material \"{Name}\" does not exist", data);
+                                    loadSuccess = false;
+                                    if (!unknownMats.Contains(data))
+                                        unknownMats.Add(data);
+                                }
+                                break;
                             }
-                            else
-                            {
-                                // unrecognized material
-                                Log.Warning("Material \"{Name}\" does not exist", data);
-                                loadSuccess = false;
-                                if (!unknownMats.Contains(data))
-                                    unknownMats.Add(data);
-                            }
-                            break;
-                        }
 
                         case "tileBody":
-                        {
-                            var data = (Lingo.LinearList) dataObj;
-                            var pos = (Vector2) data[0];
-                            var layer = Lingo.LingoNumber.AsInt(data[1]);
+                            {
+                                var data = (Lingo.LinearList)dataObj;
+                                var pos = (Vector2)data[0];
+                                var layer = Lingo.LingoNumber.AsInt(data[1]);
 
-                            level.Layers[z,x,y].TileRootX = (int)pos.X - 1;
-                            level.Layers[z,x,y].TileRootY = (int)pos.Y - 1;
-                            level.Layers[z,x,y].TileLayer = layer - 1;
-                            break;
-                        }
+                                level.Layers[z, x, y].TileRootX = (int)pos.X - 1;
+                                level.Layers[z, x, y].TileRootY = (int)pos.Y - 1;
+                                level.Layers[z, x, y].TileLayer = layer - 1;
+                                break;
+                            }
 
                         case "tileHead":
-                        {
-                            var data = (Lingo.LinearList) dataObj;
-                            var tileID = (Vector2) data[0];
-                            var name = (string) data[1];
-
-                            if (!hostData.TileDatabase.HasTile(name))
                             {
-                                // unrecognized tile
-                                Log.Warning("Unrecognized tile '{Name}'", name);
-                                loadSuccess = false;
-                                if (!unknownTiles.Contains(name))
-                                    unknownTiles.Add(name);
-                            }
-                            else
-                            {
-                                var tile = hostData.TileDatabase.GetTileFromName(name);
-                                ref var cell = ref level.Layers[z,x,y]; 
-                                cell.TileHead = tile;
+                                var data = (Lingo.LinearList)dataObj;
+                                var tileID = (Vector2)data[0];
+                                var name = (string)data[1];
 
-                                if (tile.Tags.Contains("Chain Holder") && data.Count > 2 && data[2] as string != "NONE")
+                                if (!hostData.TileDatabase.HasTile(name))
                                 {
-                                    var chainPos = (Vector2) data[2];
-                                    level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
+                                    // unrecognized tile
+                                    Log.Warning("Unrecognized tile '{Name}'", name);
+                                    loadSuccess = false;
+                                    if (!unknownTiles.Contains(name))
+                                        unknownTiles.Add(name);
                                 }
-                            }
+                                else
+                                {
+                                    var tile = hostData.TileDatabase.GetTileFromName(name);
+                                    ref var cell = ref level.Layers[z, x, y];
+                                    cell.TileHead = tile;
 
-                            break;
-                        }
+                                    if (tile.Tags.Contains("Chain Holder") && data.Count > 2 && data[2] as string != "NONE")
+                                    {
+                                        var chainPos = (Vector2)data[2];
+                                        level.SetChainData(z, x, y, (int)chainPos.X - 1, (int)chainPos.Y - 1);
+                                    }
+                                }
+
+                                break;
+                            }
 
                         default:
                             throw new Exception($"Invalid tile type {tp}");
@@ -255,11 +288,11 @@ static class LevelSerialization
 
         // read effects data
         {
-            var effectsList = (Lingo.LinearList) levelEffectData["effects"];
+            var effectsList = (Lingo.LinearList)levelEffectData["effects"];
             foreach (var effectData in effectsList.Cast<Lingo.PropertyList>())
             {
-                var nameStr = (string) effectData["nm"];
-                var type = (string) effectData["tp"];
+                var nameStr = (string)effectData["nm"];
+                var type = (string)effectData["tp"];
 
                 if (!hostData.EffectsDatabase.TryGetEffectFromName(nameStr, out EffectInit? effectInit))
                 {
@@ -283,9 +316,9 @@ static class LevelSerialization
                     };
 
                     // check type
-                    if (requiredType != (string) effectData["tp"])
+                    if (requiredType != (string)effectData["tp"])
                         throw new Exception($"Effect '{nameStr}' has incompatible parameters");
-                    
+
                     // check crossScreen
                     // actually, nevermind. must maintain compatibility with all erroneously generated level files
                     // that may or may not have missing data
@@ -304,27 +337,27 @@ static class LevelSerialization
                             throw new Exception($"Effect '{nameStr}' has incompatible parameters");
                     }
                     */
-                    
+
                     // read effect matrix
-                    var mtrxData = (Lingo.LinearList) effectData["mtrx"];
+                    var mtrxData = (Lingo.LinearList)effectData["mtrx"];
                     x = 0;
                     foreach (var xv in mtrxData.Cast<Lingo.LinearList>())
                     {
                         y = 0;
                         foreach (var vo in xv)
                         {
-                            effect.Matrix[x,y] = Lingo.LingoNumber.AsFloat(vo);
+                            effect.Matrix[x, y] = Lingo.LingoNumber.AsFloat(vo);
                             y++;
                         }
                         x++;
                     }
 
                     // read effect options
-                    var optionsData = (Lingo.LinearList) effectData["options"]!;
+                    var optionsData = (Lingo.LinearList)effectData["options"]!;
 
                     foreach (var optionData in optionsData.Cast<Lingo.LinearList>())
                     {
-                        var optionName = (string) optionData[0];
+                        var optionName = (string)optionData[0];
 
                         if (optionName == "Seed")
                         {
@@ -335,14 +368,14 @@ static class LevelSerialization
                         {
                             // the list of options are stored in the level file
                             // alongside the selected option as a string
-                            var optionValues = ((Lingo.LinearList) optionData[1]).Cast<string>().ToList();
+                            var optionValues = ((Lingo.LinearList)optionData[1]).Cast<string>().ToList();
                             var optionIndex = 0;
 
                             if (optionValues.Count > 0)
                             {
-                                var selectedValue = (string) optionData[2];
+                                var selectedValue = (string)optionData[2];
                                 optionIndex = optionValues.IndexOf(selectedValue);
-                                
+
                                 if (optionIndex == -1)
                                 {
                                     Log.UserLogger.Warning(
@@ -358,7 +391,7 @@ static class LevelSerialization
                             switch (optionName)
                             {
                                 case "Layers":
-                                    effect.Layer = (Effect.LayerMode) optionIndex;
+                                    effect.Layer = (Effect.LayerMode)optionIndex;
                                     break;
                                 case "Color":
                                     effect.PlantColor = optionIndex;
@@ -373,26 +406,26 @@ static class LevelSerialization
                                     effect.RequireInBounds = optionIndex == 0;
                                     break;
                                 default:
-                                {
-                                    int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
-                                    if (cfgIndex == -1)
                                     {
-                                        Log.UserLogger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
-                                    }
-                                    else
-                                    {
-                                        if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
+                                        int cfgIndex = effect.Data.GetCustomConfigIndex(optionName);
+                                        if (cfgIndex == -1)
                                         {
-                                            effect.CustomValues[cfgIndex] = Lingo.LingoNumber.AsInt(optionData[2]);
+                                            Log.UserLogger.Warning($"Unknown option '{optionName}' in effect '{nameStr}'");
                                         }
                                         else
                                         {
-                                            effect.CustomValues[cfgIndex] = optionIndex;
+                                            if (effect.Data.customConfigs[cfgIndex] is CustomEffectInteger)
+                                            {
+                                                effect.CustomValues[cfgIndex] = Lingo.LingoNumber.AsInt(optionData[2]);
+                                            }
+                                            else
+                                            {
+                                                effect.CustomValues[cfgIndex] = optionIndex;
+                                            }
                                         }
-                                    }
 
-                                    break;
-                                }
+                                        break;
+                                    }
                             }
                         }
                     }
@@ -403,7 +436,7 @@ static class LevelSerialization
         // read camear data
         if (levelCameraData is not null)
         {
-            var camerasList = (Lingo.LinearList) levelCameraData["cameras"];
+            var camerasList = (Lingo.LinearList)levelCameraData["cameras"];
 
             foreach (Vector2 cameraPos in camerasList.Cast<Vector2>())
             {
@@ -412,12 +445,12 @@ static class LevelSerialization
 
             if (levelCameraData.TryGetValue("quads", out object? quadsListData))
             {
-                var quadsList = (Lingo.LinearList) quadsListData!;
+                var quadsList = (Lingo.LinearList)quadsListData!;
                 int camIndex = 0;
                 foreach (Lingo.LinearList quad in quadsList.Cast<Lingo.LinearList>())
                 {
                     var ptsList = quad.Cast<Lingo.LinearList>().ToArray();
-                    
+
                     for (int i = 0; i < 4; i++)
                     {
                         var angle = Lingo.LingoNumber.AsFloat(ptsList[i][0]);
@@ -425,7 +458,7 @@ static class LevelSerialization
 
                         // i did not think this through
                         // although, i'm not sure how to do Newtonsoft.Json-esque
-                        level.Cameras[camIndex].CornerAngles[i] = angle / 180f * MathF.PI; 
+                        level.Cameras[camIndex].CornerAngles[i] = angle / 180f * MathF.PI;
                         level.Cameras[camIndex].CornerOffsets[i] = offset;
                     }
                     camIndex++;
@@ -434,7 +467,7 @@ static class LevelSerialization
         }
         else
         {
-            level.Cameras.Add(new Camera());   
+            level.Cameras.Add(new Camera());
         }
 
         // read water data
@@ -453,10 +486,9 @@ static class LevelSerialization
         }
 
         // read light data
-        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        if (File.Exists(lightPath))
+        if (image is not null)
         {
-            using var img = RlManaged.Image.Load(lightPath);
+            var img = image.Value;
 
             // some level pngs have no data written to them.
             // wtf??
@@ -466,7 +498,7 @@ static class LevelSerialization
             }
             else
             {
-                Raylib.ImageFormat(ref img.Ref(), PixelFormat.UncompressedGrayscale);
+                Raylib.ImageFormat(ref img, PixelFormat.UncompressedGrayscale);
                 level.LoadLightMap(img);
             }
         }
@@ -483,16 +515,16 @@ static class LevelSerialization
         if (levelPropData is not null)
         {
             var propDb = hostData.PropDatabase;
-            var propsList = (Lingo.LinearList) levelPropData["props"];
+            var propsList = (Lingo.LinearList)levelPropData["props"];
             List<Vector2> pointList = [];
-            
+
             foreach (var propData in propsList.Cast<Lingo.LinearList>())
             {
                 var depth = Lingo.LingoNumber.AsInt(propData[0]);
-                var name = (string) propData[1];
-                var quadCornersData = (Lingo.LinearList) propData[3];
-                var moreData = (Lingo.PropertyList) propData[4];
-                var settingsData = (Lingo.PropertyList) moreData["settings"];
+                var name = (string)propData[1];
+                var quadCornersData = (Lingo.LinearList)propData[3];
+                var moreData = (Lingo.PropertyList)propData[4];
+                var settingsData = (Lingo.PropertyList)moreData["settings"];
 
                 // create prop
                 if (!propDb.TryGetPropFromName(name, out PropInit? propInit) || propInit is null)
@@ -518,7 +550,7 @@ static class LevelSerialization
                         DepthOffset = -depth,
                         RenderOrder = Lingo.LingoNumber.AsInt(settingsData["renderorder"]),
                         Seed = Lingo.LingoNumber.AsInt(settingsData["seed"]),
-                        RenderTime = (PropRenderTime) Lingo.LingoNumber.AsInt(settingsData["renderTime"])
+                        RenderTime = (PropRenderTime)Lingo.LingoNumber.AsInt(settingsData["renderTime"])
                     };
 
                     prop.TryConvertToAffine();
@@ -527,7 +559,7 @@ static class LevelSerialization
                     // read rope points if needed
                     if (propInit.Rope is not null)
                     {
-                        var pointsData = (Lingo.LinearList) moreData["points"];
+                        var pointsData = (Lingo.LinearList)moreData["points"];
                         pointList.Clear();
 
                         foreach (var pt in pointsData.Cast<Vector2>())
@@ -602,10 +634,10 @@ static class LevelSerialization
 
         if (!loadSuccess)
         {
-            loadResult.UnrecognizedEffects = [..unknownEffects];
-            loadResult.UnrecognizedMaterials = [..unknownMats];
-            loadResult.UnrecognizedProps = [..unknownProps];
-            loadResult.UnrecognizedTiles = [..unknownTiles];
+            loadResult.UnrecognizedEffects = [.. unknownEffects];
+            loadResult.UnrecognizedMaterials = [.. unknownMats];
+            loadResult.UnrecognizedProps = [.. unknownProps];
+            loadResult.UnrecognizedTiles = [.. unknownTiles];
         }
 
         return loadResult;
@@ -621,11 +653,11 @@ static class LevelSerialization
         "Color1", "Color2", "Dead"
     };
 
-    public static void SaveLevelTextFile(Level level, string path, LevelSerializationParams? hostData = null)
+    public static void SaveLevelTextFile(Level level, Stream stream, LevelSerializationParams? hostData = null)
     {
         hostData = InitParams(hostData);
 
-        var outputTxtFile = new StreamWriter(path);
+        var outputTxtFile = new StreamWriter(stream, Encoding.UTF8);
         StringBuilder output = new();
 
         // Wtf this sucks i spent like an hour trying to figure out why drizzle wasn't rendering the props it was because
@@ -650,8 +682,8 @@ static class LevelSerialization
                     if (l > 0) output.Append(", ");
                     output.Append('[');
 
-                    ref var cell = ref level.Layers[l,x,y];
-                    output.Append((int) cell.Geo);
+                    ref var cell = ref level.Layers[l, x, y];
+                    output.Append((int)cell.Geo);
                     output.Append(", [");
 
                     // objects
@@ -661,14 +693,14 @@ static class LevelSerialization
                         hasObject = true;
                         output.Append('4');
                     }
-                    
+
                     for (int i = 0; i < 32; i++)
                     {
-                        if (cell.Has((LevelObject) (1 << i)))
+                        if (cell.Has((LevelObject)(1 << i)))
                         {
                             if (hasObject) output.Append(", ");
                             hasObject = true;
-                            output.Append(i+1);
+                            output.Append(i + 1);
                         }
                     }
 
@@ -694,7 +726,7 @@ static class LevelSerialization
                 for (int l = 0; l < Level.LayerCount; l++)
                 {
                     if (l > 0) output.Append(", ");
-                    var cell = level.Layers[l,x,y];
+                    var cell = level.Layers[l, x, y];
 
                     // tile head
                     if (cell.TileHead is not null)
@@ -776,7 +808,7 @@ static class LevelSerialization
                 for (int y = 0; y < level.Height; y++)
                 {
                     if (y > 0) output.Append(", ");
-                    output.Append(effect.Matrix[x,y].ToString("0.0000", CultureInfo.InvariantCulture));
+                    output.Append(effect.Matrix[x, y].ToString("0.0000", CultureInfo.InvariantCulture));
                 }
                 output.Append(']');
             }
@@ -803,7 +835,7 @@ static class LevelSerialization
 
             if (effect.Data.useDecalAffect)
             {
-                output.AppendFormat(", [\"Affect Gradients and Decals\", [\"Yes\", \"No\"], \"{0}\"]", effect.AffectGradientsAndDecals ? "Yes": "No");
+                output.AppendFormat(", [\"Affect Gradients and Decals\", [\"Yes\", \"No\"], \"{0}\"]", effect.AffectGradientsAndDecals ? "Yes" : "No");
             }
 
             if (effect.Data.optionalInBounds)
@@ -867,7 +899,7 @@ static class LevelSerialization
         output.AppendFormat(
             "[#timeLimit: 4800, #defaultTerrain: {0}, #maxFlies: 10, #flySpawnRate: 50, #lizards: [], #ambientSounds: [], #music: \"NONE\", #tags: [], #lightType: \"{1}\", #waterDrips: 1, #lightRect: rect(0, 0, 1040, 800), #Matrix: []]",
             level.DefaultMedium ? 1 : 0,
-            "Static"    
+            "Static"
         );
         output.Append(newLine);
 
@@ -939,7 +971,7 @@ static class LevelSerialization
             var catIndex = propInit.Category.Index;
             var propIndex = propInit.Category.Props.IndexOf(propInit);
 
-            output.AppendFormat("[{0}, \"{1}\", point({2}, {3}), [", -prop.DepthOffset, propInit.Name, catIndex+1, propIndex+1);
+            output.AppendFormat("[{0}, \"{1}\", point({2}, {3}), [", -prop.DepthOffset, propInit.Name, catIndex + 1, propIndex + 1);
 
             // quad data
             var quadPoints = prop.QuadPoints;
@@ -962,16 +994,16 @@ static class LevelSerialization
 
             if (propInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))
                 output.AppendFormat(", #customDepth: {0}", prop.CustomDepth);
-            
+
             if (propInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
                 output.AppendFormat(", #color: {0}", prop.CustomColor + 1);
-            
+
             if (propInit.Type is PropType.VariedStandard or PropType.VariedSoft or PropType.VariedDecal)
                 output.AppendFormat(", #variation: {0}", prop.Variation + 1);
-            
+
             if (propInit.PropFlags.HasFlag(PropFlags.Colorize))
                 output.AppendFormat(", #applyColor: {0}", prop.ApplyColor ? 1 : 0);
-            
+
             if (propInit.Rope is not null)
             {
                 output.Append(", #release: ");
@@ -1099,16 +1131,15 @@ static class LevelSerialization
         outputTxtFile.Close();
     }
 
-    public static bool SaveLevelLightMap(Level level, string path)
+    public static bool SaveLevelLightMap(Level level, Stream stream)
     {
         if (!level.LightMap.IsLoaded)
             return false;
 
-        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
         using var lightMapImg = level.LightMap.GetImage();
         lightMapImg.DrawPixel(0, 0, Color.Black); // the magic black pixel
         lightMapImg.DrawPixel(lightMapImg.Width - 1, lightMapImg.Height - 1, Color.Black); // the other magic black pixel
-        Raylib.ExportImage(lightMapImg, lightPath);
+        ((Image)lightMapImg).image!.ExportPng(stream);
 
         return true;
     }
