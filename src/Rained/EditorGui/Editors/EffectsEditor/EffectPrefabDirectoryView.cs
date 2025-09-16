@@ -88,28 +88,25 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             {
                 case ActionPromptRequest.DeletePrefab:
                     ImGui.OpenPopup("Delete Prefab?");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     break;
 
                 case ActionPromptRequest.CreatePrefab:
                     ImGui.OpenPopup("Create Prefab");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     selectedEffects = [];
-
                     break;
 
                 case ActionPromptRequest.RenamePrefab:
                     ImGui.OpenPopup("Rename Prefab");
-                    ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
                     break;
             }
 
             actionPromptRequest = ActionPromptRequest.None;
         }
 
-        var flags = ImGuiWindowFlags.AlwaysAutoResize;
+        var flags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings;
         bool isPopupOpen = false;
 
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         if (ImGui.BeginPopupModal("Delete Prefab?", flags))
         {
             isPopupOpen = true;
@@ -141,6 +138,7 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             ImGui.EndPopup();
         }
 
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         if (ImGui.BeginPopupModal("Create Prefab", flags))
         {
             isPopupOpen = true;
@@ -222,6 +220,7 @@ class EffectPrefabDirectoryView : DirectoryTreeView
             ImGui.EndPopup();
         }
 
+        ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         if (ImGui.BeginPopupModal("Rename Prefab", flags))
         {
             isPopupOpen = true;
