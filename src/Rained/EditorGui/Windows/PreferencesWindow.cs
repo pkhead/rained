@@ -272,7 +272,9 @@ static class PreferencesWindow
     {
         var prefs = RainEd.Instance.Preferences;
 
-        ImGui.SeparatorText("Backups");
+        ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
+
+        ImGui.SeparatorText("Files");
         {
             var saveBackups = prefs.SaveFileBackups;
             if (ImGui.Checkbox("Save backups of files", ref saveBackups))
@@ -298,6 +300,27 @@ static class PreferencesWindow
             if (FileBrowser.Button("BackupDirectory", FileBrowser.OpenMode.Directory, ref backupDir, clearButton: true))
             {
                 prefs.BackupDirectory = backupDir;
+            }
+
+            ImGui.Separator();
+
+            int TEMP = 0;
+            ImGui.Combo("Preferred level file format (TODO!)", ref TEMP, "txt\0rwlz\0");
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+
+                ImGui.Bullet();
+                ImGui.TextWrapped("txt: The file format of the original level editor. Level data is stored in a plain-text format, with a sibling .png that stores the light map.");
+
+                ImGui.Bullet();
+                ImGui.TextWrapped("rwlz: A ZIP archive of the .txt and .png files of the original level editor format. Typically has a ~96% compression ratio.");
+
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
             }
         }
 
@@ -372,11 +395,11 @@ static class PreferencesWindow
             bool versionCheck = prefs.CheckForUpdates;
             if (ImGui.Checkbox("Check for updates", ref versionCheck))
                 prefs.CheckForUpdates = versionCheck;
-            
+
             bool optimizedTile = prefs.OptimizedTilePreviews;
             if (ImGui.Checkbox("Optimized tile previews", ref optimizedTile))
                 prefs.OptimizedTilePreviews = optimizedTile;
-            
+
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             ImGui.SetItemTooltip(
@@ -416,15 +439,11 @@ static class PreferencesWindow
 
             ImGui.Separator();
 
-            ImGui.PushItemWidth(ImGui.GetTextLineHeight() * 10f);
-
             var simSpeed = prefs.FastSimulationSpeed;
             if (ImGui.SliderFloat("Fast simulation speed", ref simSpeed, 1f, 20f, "%.0fx"))
             {
                 prefs.FastSimulationSpeed = simSpeed;
             }
-
-            ImGui.PopItemWidth();
 
             //bool multiViewport = prefs.ImGuiMultiViewport;
             //if (ImGui.Checkbox("(EXPERIMENTAL) Multi-windowing", ref multiViewport))
@@ -440,6 +459,8 @@ static class PreferencesWindow
             //    """
             //);
         }
+        
+        ImGui.PopItemWidth();
     }
 
     private static void ShowInterfaceTab(bool entered)

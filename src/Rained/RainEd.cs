@@ -9,6 +9,7 @@ using Rained.Rendering;
 using System.Reflection;
 using Rained.LuaScripting;
 using Rained.EditorGui.Windows;
+using Rained.LevelData.FileFormats;
 
 namespace Rained;
 
@@ -474,13 +475,16 @@ sealed class RainEd
     }
 
     public LevelLoadResult LoadLevelThrow(string path, bool showLevelLoadFailPopup = true)
+        => LoadLevelThrow(path, LevelFileFormats.AutoDetect(path), showLevelLoadFailPopup);
+
+    public LevelLoadResult LoadLevelThrow(string path, ILevelFileFormat fileFormat, bool showLevelLoadFailPopup = true)
     {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty!", nameof(path));
         Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
 
         try
         {
-            var loadRes = LevelSerialization.Load(path);
+            var loadRes = fileFormat.Load(path);
 
             if (!loadRes.HadUnrecognizedAssets || !showLevelLoadFailPopup)
             {
@@ -518,12 +522,15 @@ sealed class RainEd
     }
 
     public void LoadLevel(string path)
-    {        
+        => LoadLevel(path, LevelFileFormats.AutoDetect(path));
+
+    public void LoadLevel(string path, ILevelFileFormat fileFormat)
+    {
         if (!string.IsNullOrEmpty(path))
         {
             try
             {
-                LoadLevelThrow(path);
+                LoadLevelThrow(path, fileFormat);
             }
             catch (Exception e)
             {
@@ -541,6 +548,13 @@ sealed class RainEd
     /// </summary>
     /// <param name="path"></param>
     public void SaveLevel(string path)
+        => SaveLevel(path, LevelFileFormats.AutoDetect(path));
+
+    /// <summary>
+    /// Save the level to the given path.
+    /// </summary>
+    /// <param name="path"></param>
+    public void SaveLevel(string path, ILevelFileFormat format)
     {
         Log.Information("Saving level to {Path}...", path);
         IsLevelLocked = true;
@@ -583,15 +597,14 @@ sealed class RainEd
             }
 
             LuaScripting.Modules.RainedModule.DocumentSavingCallback(_tabs.IndexOf(_currentTab!));
-            LevelSerialization.SaveLevelTextFile(Level, path);
-            bool canSaveLightMap = LevelSerialization.SaveLevelLightMap(Level, path);
+            var saveRes = format.Save(Level, path);
 
             CurrentTab.FilePath = path;
             CurrentTab.Name = Path.GetFileNameWithoutExtension(path);
 
             UpdateTitle();
 
-            if (canSaveLightMap)
+            if (saveRes.WroteLightMap)
             {
                 Log.Information("Done!");
                 EditorWindow.ShowNotification("Saved!");
@@ -660,8 +673,9 @@ sealed class RainEd
             if (doSave)
             {
                 var emSavFileName = Path.Combine(EmergencySaveFolder, $"{fileName}-{id}.txt");
-                LevelSerialization.SaveLevelTextFile(tab.Level, emSavFileName);
-                LevelSerialization.SaveLevelLightMap(tab.Level, emSavFileName);
+
+                var fileFormat = new VanillaFileFormat();
+                fileFormat.Save(tab.Level, emSavFileName);
             }
         }
     }

@@ -1,7 +1,6 @@
 namespace Rained.LuaScripting.Modules;
 using KeraLua;
-using Rained.EditorGui;
-using Rained.LevelData;
+using Rained.LevelData.FileFormats;
 
 static class RainedModule
 {

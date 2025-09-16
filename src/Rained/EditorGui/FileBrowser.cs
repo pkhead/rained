@@ -56,6 +56,7 @@ partial class FileBrowser
     };
 
     private readonly OpenMode mode;
+    public OpenMode Mode { get => mode; }
     private readonly bool multiSelect;
     
     private enum EntryType { File, Directory };
@@ -290,7 +291,7 @@ partial class FileBrowser
             // quick read to see if it's a rain world level file
             // all rain world level files start with four brackets
             var icon = 6; // file icon
-            if (Path.GetExtension(filePath) == ".txt")
+            if (Path.GetExtension(filePath).Equals(".txt", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -302,9 +303,13 @@ partial class FileBrowser
                     }
                 }
                 catch
-                {}
+                { }
             }
-            else if (Path.GetExtension(filePath) == ".lua")
+            else if (Path.GetExtension(filePath).Equals(".rwlz", StringComparison.OrdinalIgnoreCase))
+            {
+                icon = 7; // slugcat icon
+            }
+            else if (Path.GetExtension(filePath).Equals(".lua", StringComparison.OrdinalIgnoreCase))
             {
                 icon = 9; // lua icon
             }

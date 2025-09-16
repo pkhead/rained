@@ -86,12 +86,7 @@ static class MassRenderWindow
                     if (queueItemMode == 0)
                     {
                         fileBrowser = new FileBrowser(FileBrowser.OpenMode.MultiRead, FileCallback, null);
-                        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
-                        fileBrowser.PreviewCallback = (string path, bool isRw) =>
-                        {
-                            if (isRw) return new BrowserLevelPreview(path);
-                            return null;
-                        };
+                        LevelData.FileFormats.LevelFileFormats.SetUpFileBrowser(fileBrowser, FileBrowser.OpenMode.MultiRead);
                     }
 
                     // select folders

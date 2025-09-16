@@ -3,29 +3,115 @@ using System.Numerics;
 using System.Text;
 using Rained.Assets;
 using Raylib_cs;
-namespace Rained.LevelData;
+namespace Rained.LevelData.FileFormats;
 
-record LevelLoadResult(Level Level)
+class VanillaFileFormat : ILevelFileFormat
 {
-    public Level Level = Level;
-    public bool HadUnrecognizedAssets = false;
-    public string[] UnrecognizedMaterials = [];
-    public string[] UnrecognizedTiles = [];
-    public string[] UnrecognizedProps = [];
-    public string[] UnrecognizedEffects = [];
-}
+    public LevelLoadResult Load(string path, LevelSerializationParams? hostData = null)
+    {
+        string[] levelData = File.ReadAllLines(path);
 
-class LevelSerializationParams
-{
-    public required MaterialDatabase MaterialDatabase;
-    public required TileDatabase TileDatabase;
-    public required EffectsDatabase EffectsDatabase;
-    public required PropDatabase PropDatabase;
-    public int ActiveWorkLayer = 0;
-}
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        Image? lightImage = null;
+        if (File.Exists(lightPath))
+            lightImage = Raylib.LoadImage(lightPath);
 
-static class LevelSerialization
-{
+        try
+        {
+            return LoadRaw(levelData, lightImage, hostData);
+        }
+        finally
+        {
+            if (lightImage is not null)
+                Raylib.UnloadImage(lightImage.Value);
+        }
+    }
+
+    public LevelSaveResult Save(Level level, string path, LevelSerializationParams? hostData = null)
+    {
+        using var file = File.OpenWrite(path);
+        SaveLevelTextFile(level, file, hostData);
+        
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+        using var fileStream = File.OpenWrite(lightPath);
+
+        var savedLightMap = SaveLevelLightMap(level, fileStream);
+
+        return new LevelSaveResult
+        {
+            WroteLightMap = savedLightMap
+        };
+    }
+
+    public LevelGeometryData? LoadGeometry(string path, CancellationToken? cancelToken)
+    {
+        using var file = File.OpenRead(path);
+        return LoadGeometryFromStream(file, cancelToken);
+    }
+
+    public void ExportForDrizzle(string path, string tmpDir)
+    {
+        var levelName = Path.GetFileNameWithoutExtension(path);
+        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
+
+        File.Copy(path, Path.Combine(tmpDir, levelName + ".txt"));
+        if (File.Exists(lightPath))
+        {
+            File.Copy(lightPath, Path.Combine(tmpDir, levelName + ".png"));
+        }
+    }
+
+    public static LevelGeometryData? LoadGeometryFromStream(Stream stream, CancellationToken? cancelToken)
+    {
+        string? geoData;
+
+        {
+            using var reader = new StreamReader(stream);
+            geoData = reader.ReadLine();
+        }
+
+        if (string.IsNullOrEmpty(geoData)) return null;
+
+        var parser = new Lingo.LingoParser();
+        if (parser.Read(geoData) is not Lingo.LinearList geoList) return null;
+
+        int levelWidth = geoList.Count;
+        int levelHeight = ((Lingo.LinearList)geoList[0]).Count;
+        var cells = new LevelGeometryData.CellData[levelWidth, levelHeight, 3];
+
+        for (int x = 0; x < levelWidth; x++)
+        {
+            var listX = (Lingo.LinearList)geoList[x];
+            for (int y = 0; y < levelHeight; y++)
+            {
+                var listY = (Lingo.LinearList)listX[y];
+
+                for (int l = 0; l < 3; l++)
+                {
+                    var cellData = (Lingo.LinearList)listY[l];
+                    var geoValue = (GeoType)Lingo.LingoNumber.AsInt(cellData[0]);
+
+                    LevelObject objects = 0;
+                    foreach (var v in ((Lingo.LinearList)cellData[1]).Cast<int>())
+                    {
+                        objects |= (LevelObject)(1 << (v - 1));
+                    }
+
+                    cells[x, y, l] = new LevelGeometryData.CellData(geoValue, objects);
+                }
+
+                cancelToken?.ThrowIfCancellationRequested();
+            }
+        }
+
+        return new LevelGeometryData
+        {
+            Width = levelWidth,
+            Height = levelHeight,
+            Geometry = cells,
+        };
+    }
+
     private static LevelSerializationParams InitParams(LevelSerializationParams? v)
     {
         return v ?? new LevelSerializationParams
@@ -38,41 +124,7 @@ static class LevelSerialization
         };
     }
 
-    public static LevelLoadResult Load(string path, LevelSerializationParams? hostData = null)
-    {
-        string[] levelData = File.ReadAllLines(path);
-
-        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        Image? lightImage = null;
-        if (File.Exists(lightPath))
-            lightImage = Raylib.LoadImage(lightPath);
-
-        try
-        {
-            return Load(levelData, lightImage, hostData);
-        }
-        finally
-        {
-            if (lightImage is not null)
-                Raylib.UnloadImage(lightImage.Value);
-        }
-    }
-    
-    public static void SaveLevelTextFile(Level level, string path, LevelSerializationParams? hostData = null)
-    {
-        using var file = File.OpenWrite(path);
-        SaveLevelTextFile(level, file, hostData);
-    }
-
-    public static bool SaveLevelLightMap(Level level, string path)
-    {
-        var lightPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".png";
-        using var fileStream = File.OpenWrite(lightPath);
-
-        return SaveLevelLightMap(level, fileStream);
-    }
-
-    public static LevelLoadResult Load(string[] levelData, Image? image, LevelSerializationParams? hostData = null)
+    public static LevelLoadResult LoadRaw(string[] levelData, Image? image, LevelSerializationParams? hostData = null)
     {
         hostData = InitParams(hostData);
 

@@ -4,6 +4,7 @@ using Rained.Assets;
 using Rained.EditorGui;
 using Rained.EditorGui.Editors;
 using Rained.LevelData;
+using Rained.LevelData.FileFormats;
 
 namespace Rained.LuaScripting;
 
@@ -339,7 +340,8 @@ class APIBatchHost : IAPIHost
 
     public LevelLoadResult OpenLevel(string filePath)
     {
-        var loadRes = LevelSerialization.Load(Path.GetFullPath(filePath), _hostData);
+        var format = LevelFileFormats.AutoDetect(filePath);
+        var loadRes = format.Load(Path.GetFullPath(filePath), _hostData);
         var tab = new Document(loadRes.Level, filePath);
         _documents.Add(tab);
         Modules.RainedModule.DocumentOpenedCallback(_documents.Count - 1);
@@ -364,8 +366,9 @@ class APIBatchHost : IAPIHost
             ?? throw new Exception("cannot save a document with no path in batch mode");
         
         Modules.RainedModule.DocumentSavingCallback(ActiveDocument);
-        LevelSerialization.SaveLevelTextFile(Level!, path, _hostData);
-        LevelSerialization.SaveLevelLightMap(Level!, path);
+
+        var format = LevelFileFormats.AutoDetect(path);
+        format.Save(Level!, path, _hostData);
 
         if (doc.FilePath != overridePath)
         {

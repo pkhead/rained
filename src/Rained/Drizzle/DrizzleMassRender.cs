@@ -115,7 +115,9 @@ class DrizzleMassRender : IDisposable
             var movie = (MovieScript)runtime.MovieScriptInstance;
 
             _progress?.Report(new MassRenderLevelProgress(param.levelPath, 0f));
-            EditorRuntimeHelpers.RunLoadLevel(runtime, param.levelPath);
+
+            using var tmpDir = DrizzleManager.ConvertToDrizzle(param.levelPath, out var levelTxt);
+            EditorRuntimeHelpers.RunLoadLevel(runtime, levelTxt);
 
             var renderer = new LevelRenderer(runtime, null);
 
