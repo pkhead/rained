@@ -51,12 +51,15 @@ class BrowserLevelPreview : FileBrowserPreview
 
         if (levelData is null) return null;
 
+        levelWidth = levelData.Width;
+        levelHeight = levelData.Height;
+
         List<Vector3> vertices = [];
         List<Glib.Color> colors = [];
 
-        for (int x = 0; x < levelData.Width; x++)
+        for (int x = 0; x < levelWidth; x++)
         {
-            for (int y = 0; y < levelData.Height; y++)
+            for (int y = 0; y < levelHeight; y++)
             {
                 for (int l = 2; l >= 0; l--)
                 {
