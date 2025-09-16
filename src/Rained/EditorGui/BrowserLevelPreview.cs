@@ -2,6 +2,7 @@ using System.Numerics;
 using ImGuiNET;
 using Raylib_cs;
 using Rained.LevelData;
+using Rained.LevelData.FileFormats;
 namespace Rained.EditorGui;
 
 class BrowserLevelPreview : FileBrowserPreview
@@ -36,45 +37,30 @@ class BrowserLevelPreview : FileBrowserPreview
 
         var path = threadData.Path;
         var cancelToken = threadData.CancelToken;
+        LevelGeometryData? levelData;
 
-        string? geoData;
-
+        try
         {
-            using var file = File.OpenText(path);
-            geoData = file.ReadLine();
+            levelData = LevelFileFormats.AutoDetect(path)!.LoadGeometry(path, cancelToken);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e.ToString());
+            return null;
         }
 
-        if (string.IsNullOrEmpty(geoData)) return null;
-
-        var parser = new Lingo.LingoParser();
-        if (parser.Read(geoData) is not Lingo.LinearList geoList) return null;
+        if (levelData is null) return null;
 
         List<Vector3> vertices = [];
-        List<Glib.Color> colors = []; 
+        List<Glib.Color> colors = [];
 
-        int levelWidth = 0;
-        int levelHeight = 0;
-
-        levelWidth = geoList.Count;
-        for (int x = 0; x < levelWidth; x++)
+        for (int x = 0; x < levelData.Width; x++)
         {
-            var listX = (Lingo.LinearList) geoList[x];
-            levelHeight = listX.Count;
-
-            for (int y = 0; y < levelHeight; y++)
+            for (int y = 0; y < levelData.Height; y++)
             {
-                var listY = (Lingo.LinearList) listX[y];
-
                 for (int l = 2; l >= 0; l--)
                 {
-                    var cellData = (Lingo.LinearList) listY[l];
-                    var geoValue = (GeoType) Lingo.LingoNumber.AsInt(cellData[0]);
-
-                    LevelObject objects = 0;
-                    foreach (var v in ((Lingo.LinearList) cellData[1]).Cast<int>())
-                    {
-                        objects |= (LevelObject) (1 << (v-1));
-                    }
+                    var cellData = levelData.Geometry[x,y,l];
 
                     var color = l switch
                     {
@@ -84,7 +70,7 @@ class BrowserLevelPreview : FileBrowserPreview
                         _ => Glib.Color.Transparent // should be impossible
                     };
 
-                    BuildShape(x, y, geoValue, objects, color, vertices, colors);
+                    BuildShape(x, y, cellData.Geometry, cellData.Objects, color, vertices, colors);
                 }
 
                 cancelToken.ThrowIfCancellationRequested();
