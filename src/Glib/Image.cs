@@ -352,7 +352,7 @@ public class Image : IDisposable
         ImageSharpImage.SaveAsPng(filePath);
     }
 
-    public void ExprtPng(Stream stream)
+    public void ExportPng(Stream stream)
     {
         ImageSharpImage.SaveAsPng(stream);
     }
