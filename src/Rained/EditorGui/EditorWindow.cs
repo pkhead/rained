@@ -4,6 +4,7 @@ using ImGuiNET;
 using NLua.Exceptions;
 using System.Runtime.CompilerServices;
 using Rained.EditorGui.Windows;
+using Rained.LevelData.FileFormats;
 namespace Rained.EditorGui;
 
 static class EditorWindow
@@ -167,19 +168,9 @@ static class EditorWindow
 
     private static void OpenLevelBrowser(FileBrowser.OpenMode openMode, Action<string[]> callback)
     {
-        static bool levelCheck(string path, bool isRw)
-        {
-            return isRw;
-        }
-
         var tab = RainEd.Instance.CurrentTab;
         fileBrowser = new FileBrowser(openMode, callback, (tab is null || tab.IsTemporaryFile) ? null : Path.GetDirectoryName(tab.FilePath));
-        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
-        fileBrowser.PreviewCallback = (string path, bool isRw) =>
-        {
-            if (isRw) return new BrowserLevelPreview(path);
-            return null;
-        };
+        LevelFileFormats.SetUpFileBrowser(fileBrowser);
     }
 
     private static void DrawMenuBar()

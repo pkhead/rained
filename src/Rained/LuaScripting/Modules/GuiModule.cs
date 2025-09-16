@@ -162,12 +162,7 @@ static class GuiModule
         {
             if (isRw)
             {
-                fileBrowser.AddFilterWithCallback("Level file", static (string path, bool isRw) => isRw, ".txt");
-                fileBrowser.PreviewCallback ??= (string path, bool isRw) =>
-                {
-                    if (isRw) return new BrowserLevelPreview(path);
-                    return null;
-                };
+                LevelData.FileFormats.LevelFileFormats.SetUpFileBrowser(fileBrowser);
             }
             else
             {
