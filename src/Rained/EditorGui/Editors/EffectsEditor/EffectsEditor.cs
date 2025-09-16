@@ -12,8 +12,7 @@ class EffectsEditor : IEditorMode
     public bool SupportsCellSelection => false;
 
     private readonly LevelWindow window;
-    private readonly EffectPrefabDirectoryView prefabGui;
-
+    
     private int selectedEffect = -1;
     private int selectedTab = 0;
     private bool altInsertion = false;
@@ -32,6 +31,7 @@ class EffectsEditor : IEditorMode
 
     private ChangeHistory.EffectsChangeRecorder changeRecorder;
     private readonly EffectsEditorCatalogWidget catalogWidget;
+    private readonly EffectPrefabDirectoryView prefabGui;
 
     public EffectsEditor(LevelWindow window)
     {
@@ -43,12 +43,21 @@ class EffectsEditor : IEditorMode
                 var level = RainEd.Instance.Level;
                 var fxDb = RainEd.Instance.EffectsDatabase;
 
+                changeRecorder!.BeginListChange();
+
                 foreach (var item in prefab.Items)
                 {
-                    var effectInit = fxDb.GetEffectFromName(item.Name);
-                    var effect = AddEffect(effectInit);
+                    if (!fxDb.TryGetEffectFromName(item.Name, out var effectInit))
+                    {
+                        Log.UserLogger.Error("Unknown effect \"{EffectName}\"", item.Name);
+                        continue;
+                    }
+
+                    var effect = AddEffect(effectInit, true);
                     item.Load(effect);
                 }
+
+                changeRecorder!.PushListChange();
             }
         };
 
@@ -664,11 +673,13 @@ class EffectsEditor : IEditorMode
             changeRecorder.PushMatrixChange();
     }
 
-    private Effect AddEffect(EffectInit init)
+    private Effect AddEffect(EffectInit init, bool noChangePush = false)
     {
         var level = RainEd.Instance.Level;
         var prefs = RainEd.Instance.Preferences;
-        changeRecorder.BeginListChange();
+
+        if (!noChangePush)
+            changeRecorder.BeginListChange();
 
         // convert it to an integer cus Uhhhhhh
         // writing the whole enum path is too long
@@ -719,7 +730,8 @@ class EffectsEditor : IEditorMode
             }
         }
 
-        changeRecorder.PushListChange();
+        if (!noChangePush)
+            changeRecorder.PushListChange();
 
         return newEffect;
     }
