@@ -20,16 +20,18 @@ static class LevelFileFormats
     public static void SetUpFileBrowser(FileBrowser fileBrowser)
     {
         static bool levelCheck(string path, bool isRw)
-        {
-            return isRw;
-        }
+            => isRw;
         
-        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt");
+        static bool vanillaLevelCheck(string path, bool isRw)
+            => isRw && Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase);
+        
+        fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt", ".rwlz");
+        fileBrowser.AddFilterWithCallback("Vanilla level file", vanillaLevelCheck, ".txt");
         fileBrowser.AddFilterWithCallback("Zipped level file", null, ".rwlz");
 
         fileBrowser.PreviewCallback = (string path, bool isRw) =>
         {
-            if (isRw || Path.GetExtension(path).Equals(".rwlz", StringComparison.OrdinalIgnoreCase)) return new BrowserLevelPreview(path);
+            if (isRw) return new BrowserLevelPreview(path);
             return null;
         };
     }
