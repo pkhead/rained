@@ -2,26 +2,35 @@ using Rained.EditorGui;
 
 namespace Rained.LevelData.FileFormats;
 
+enum LevelFileFormat
+{
+    Vanilla,
+    RWLZ
+}
+
 static class LevelFileFormats
 {
+    static readonly VanillaFileFormat _vanilla = new();
+    static readonly RWLZFileFormat _rwlz = new();
+
     public static ILevelFileFormat AutoDetect(string path)
     {
         var ext = Path.GetExtension(path);
 
         if (ext.Equals(".txt", StringComparison.OrdinalIgnoreCase))
-            return new VanillaFileFormat();
+            return _vanilla;
 
         if (ext.Equals(".rwlz", StringComparison.OrdinalIgnoreCase))
-            return new RWLZFileFormat();
+            return _rwlz;
 
-        return new VanillaFileFormat();
+        return _vanilla;
     }
 
     public static void SetUpFileBrowser(FileBrowser fileBrowser, FileBrowser.OpenMode openMode)
     {
         static bool levelCheck(string path, bool isRw)
             => isRw;
-        
+
         static bool vanillaLevelCheck(string path, bool isRw)
             => isRw && Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase);
 
@@ -30,8 +39,20 @@ static class LevelFileFormats
             case FileBrowser.OpenMode.Write:
                 fileBrowser.AddFilterWithCallback("Plain level file", vanillaLevelCheck, ".txt");
                 fileBrowser.AddFilterWithCallback("Level ZIP file", null, ".rwlz");
+
+                switch (RainEd.Instance.Preferences.PreferredFileFormat)
+                {
+                    case LevelFileFormat.Vanilla:
+                        fileBrowser.SetDefaultFilter("Plain level file");
+                        break;
+
+                    case LevelFileFormat.RWLZ:
+                        fileBrowser.SetDefaultFilter("Level ZIP file");
+                        break;
+                }
+                
                 break;
-            
+
             case FileBrowser.OpenMode.Read:
             case FileBrowser.OpenMode.MultiRead:
             default:

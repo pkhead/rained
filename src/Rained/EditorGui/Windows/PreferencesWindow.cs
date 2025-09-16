@@ -304,8 +304,11 @@ static class PreferencesWindow
 
             ImGui.Separator();
 
-            int TEMP = 0;
-            ImGui.Combo("Preferred level file format (TODO!)", ref TEMP, "txt\0rwlz\0");
+            int levelFileFormat = (int)prefs.PreferredFileFormat;
+            if (ImGui.Combo("Preferred level file format", ref levelFileFormat, "txt\0rwlz\0"))
+            {
+                prefs.PreferredFileFormat = (LevelData.FileFormats.LevelFileFormat)levelFileFormat;
+            }
 
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
@@ -317,7 +320,7 @@ static class PreferencesWindow
                 ImGui.TextWrapped("txt: The file format of the original level editor. Level data is stored in a plain-text format, with a sibling .png that stores the light map.");
 
                 ImGui.Bullet();
-                ImGui.TextWrapped("rwlz: A ZIP archive of the .txt and .png files of the original level editor format. Typically has a ~96% compression ratio.");
+                ImGui.TextWrapped("rwlz: A ZIP archive of the .txt and .png files of the original level editor format. Typically has a ~96 percent compression ratio.");
 
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();

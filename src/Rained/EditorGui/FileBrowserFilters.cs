@@ -79,6 +79,25 @@ partial class FileBrowser
     public void AddFilter(string filterName, params string[] allowedExtensions)
         => AddFilterWithCallback(filterName, null, allowedExtensions);
 
+    /// <summary>
+    /// Set the default filter from a name.
+    /// </summary>
+    /// <param name="filterName">The name of the filter</param>
+    /// <returns>True if the filter was found and set, and false otherwise.</returns>
+    public bool SetDefaultFilter(string filterName)
+    {
+        foreach (var filter in fileFilters)
+        {
+            if (filter.FilterName == filterName)
+            {
+                selectedFilter = filter;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void RefreshFilter()
     {
         filteredEntries.Clear();
@@ -94,7 +113,7 @@ partial class FileBrowser
                 {
                     filteredEntries.Add((i, entry));
                 }
-            }    
+            }
         }
         else
         {

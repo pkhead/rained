@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Raylib_cs;
 using ImGuiNET;
 using Rained.EditorGui;
+using Rained.LevelData.FileFormats;
 namespace Rained;
 
 struct HexColor(byte r = 0, byte g = 0, byte b = 0)
@@ -483,6 +484,24 @@ class UserPreferences
 
     public bool SaveFileBackups { get; set; } = true;
     public string? BackupDirectory { get; set; } = null;
+
+    public LevelFileFormat PreferredFileFormat = LevelFileFormat.Vanilla;
+
+    [JsonPropertyName("preferredFileFormat")]
+    public string PreferredFileFormatString {
+        get => PreferredFileFormat switch
+        {
+            LevelFileFormat.Vanilla => "txt",
+            LevelFileFormat.RWLZ => "rwlz",
+            _ => "txt"
+        };
+        set => PreferredFileFormat = value switch
+        {
+            "txt" => LevelFileFormat.Vanilla,
+            "rwlz" => LevelFileFormat.RWLZ,
+            _ => LevelFileFormat.Vanilla
+        };
+    }
 
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;
