@@ -117,6 +117,20 @@ abstract class DirectoryTreeView
             Cache.Refresh();
         }
 
+        ImGui.SameLine();
+        if (ImGui.Button("Open In File Browser"))
+        {
+            Platform.OpenPath(Cache.BaseDirectory);
+        }
+
+        ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.Text("Right-click on items or empty space for actions");
+            ImGui.EndTooltip();
+        }
+
         bool popupWasInactive = activePopup == ActivePopupID.None;
 
         if (ImGui.BeginListBox(label, size - Vector2.UnitY * ImGui.GetFrameHeightWithSpacing()))
