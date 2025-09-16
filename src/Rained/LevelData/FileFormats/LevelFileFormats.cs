@@ -29,7 +29,7 @@ static class LevelFileFormats
         {
             case FileBrowser.OpenMode.Write:
                 fileBrowser.AddFilterWithCallback("Plain level file", vanillaLevelCheck, ".txt");
-                fileBrowser.AddFilterWithCallback("Compressed level file", null, ".rwlz");
+                fileBrowser.AddFilterWithCallback("Level ZIP file", null, ".rwlz");
                 break;
             
             case FileBrowser.OpenMode.Read:
@@ -37,7 +37,7 @@ static class LevelFileFormats
             default:
                 fileBrowser.AddFilterWithCallback("Level file", levelCheck, ".txt", ".rwlz");
                 fileBrowser.AddFilterWithCallback("Plain level file", vanillaLevelCheck, ".txt");
-                fileBrowser.AddFilterWithCallback("Compressed level file", null, ".rwlz");
+                fileBrowser.AddFilterWithCallback("Level ZIP file", null, ".rwlz");
                 break;
         }
 
