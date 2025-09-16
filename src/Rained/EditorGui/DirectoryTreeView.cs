@@ -22,9 +22,9 @@ abstract class DirectoryTreeView
     private NamePromptState? namePromptState = null;
     private string? popupItem = null;
 
-    public DirectoryTreeView(string baseDir, string? fileFilter)
+    public DirectoryTreeView(string baseDir, string? fileFilter, bool initRefresh = true)
     {
-        Cache = new(baseDir, fileFilter);
+        Cache = new(baseDir, fileFilter, initRefresh);
     }
 
     protected abstract void DirectoryContextMenu(string dirPath);

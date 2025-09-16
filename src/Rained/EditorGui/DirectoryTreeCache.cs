@@ -14,12 +14,13 @@ class DirectoryTreeCache
 
     private readonly Dictionary<string, DirectoryListing> directoryItems = [];
 
-    public DirectoryTreeCache(string dirPath, string? fileFilter)
+    public DirectoryTreeCache(string dirPath, string? fileFilter, bool initRefresh = true)
     {
         BaseDirectory = dirPath;
         FileFilter = fileFilter ?? "*";
 
-        Refresh();
+        if (initRefresh)
+            Refresh();
     }
 
     public void Refresh()
