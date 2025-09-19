@@ -709,7 +709,7 @@ class VanillaFileFormat : ILevelFileFormat
     {
         hostData = InitParams(hostData);
 
-        var outputTxtFile = new StreamWriter(stream, Encoding.UTF8);
+        var outputTxtFile = new StreamWriter(stream);
         StringBuilder output = new();
 
         // Wtf this sucks i spent like an hour trying to figure out why drizzle wasn't rendering the props it was because
