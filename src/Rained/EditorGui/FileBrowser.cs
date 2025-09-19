@@ -8,6 +8,13 @@ namespace Rained.EditorGui;
 
 partial class FileBrowser
 {
+    enum IconName
+    {
+        Back, Forward, Up, Close, Refresh,
+        Folder, File, Slugcat, TextCursor, Lua,
+        Pin, PinOutline
+    };
+
     private bool isOpen = false;
     private bool isDone = false;
     private string[] callbackData = [];
@@ -65,7 +72,7 @@ partial class FileBrowser
         public string Name;
         public string Extension;
         public EntryType Type;
-        public int IconIndex = 6; // file icon
+        public int IconIndex = (int)IconName.File;
 
         public Entry(string name, EntryType type)
         {
@@ -75,10 +82,11 @@ partial class FileBrowser
         }
     }
 
-    private struct BookmarkItem
+    record BookmarkItem
     {
         public string Name;
         public string Path;
+        public bool Removable = false;
 
         public BookmarkItem(string name, string path)
         {
@@ -95,7 +103,12 @@ partial class FileBrowser
     private static void LoadIcons()
     {
         icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
-    } 
+    }
+
+    private static string GetDirectoryBaseName(string path)
+    {
+        return Path.GetFileName(Path.GetDirectoryName(path) ?? path);
+    }
     
     private static RlManaged.Texture2D icons = null!;
     public FileBrowser(OpenMode mode, Action<string[]> callback, string? openDir)
@@ -115,10 +128,7 @@ partial class FileBrowser
         {
             projectsFolderPath = Path.Combine(RainEd.Instance.AssetDataPath, "LevelEditorProjects");
             doesProjectsFolderExist = Directory.Exists(projectsFolderPath);
-        }
-
-        if (RainEd.Instance is not null)
-        {
+            
             if (openDir is not null)
             {
                 cwd = openDir;
@@ -142,7 +152,7 @@ partial class FileBrowser
             AddBookmark("Projects", projectsFolderPath);
         }
 
-        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        if (OperatingSystem.IsWindows())
         {
             AddBookmark("User", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
@@ -161,84 +171,123 @@ partial class FileBrowser
             AddBookmark("Downloads", downloadsFolder);
         }
 
-        // list drives
-        try
+        if (RainEd.Instance is not null)
         {
-            if (OperatingSystem.IsWindows())
+            var pins = RainEd.Instance.Preferences.FileBrowserPins;
+            foreach (var pin in pins)
             {
-                foreach (var driveInfo in DriveInfo.GetDrives())
+                AddBookmark(new BookmarkItem(GetDirectoryBaseName(pin), pin)
                 {
-                    if (!driveInfo.IsReady) continue;
-                    var driveType = driveInfo.DriveType;
-
-                    if (driveType == DriveType.NoRootDirectory) continue;
-
-                    drives.Add(new BookmarkItem()
-                    {
-                        Name = driveInfo.Name,
-                        Path = driveInfo.RootDirectory.FullName
-                    });
-                }
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                // DriveInfo.GetDrives() lists a bunch of system stuff
-                // that the user probably doesn't want to save their
-                // rain world data in. I'm not sure how to properly
-                // filter that stuff out. Instead, I will use
-                // lsblk since it doesn't list that stuff.
-                var proc = Process.Start(new ProcessStartInfo("lsblk")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    Arguments = "-P -o NAME,MOUNTPOINT"
+                    Removable = true
                 });
+            }
+        }
 
-                if (proc is null)
+        // list drives
+            try
+            {
+                if (OperatingSystem.IsWindows())
                 {
-                    drives.Add(new BookmarkItem("/", "/"));
-                }
-                else
-                {
-                    var stdout = proc.StandardOutput;
-                    while (!stdout.EndOfStream)
+                    foreach (var driveInfo in DriveInfo.GetDrives())
                     {
-                        var line = stdout.ReadLine();
-                        if (string.IsNullOrEmpty(line)) break;
+                        if (!driveInfo.IsReady) continue;
+                        var driveType = driveInfo.DriveType;
 
-                        var match = MyRegex().Match(line);
-                        string mountPoint = match.Groups[2].Value;
-                        if (mountPoint.Length == 0 || mountPoint[0] != '/') continue; // mountpoint may be empty or [SWAP]
-                        if (mountPoint.Length >= 5 && mountPoint[0..5] == "/boot") continue; // ignore efi boot stuff
+                        if (driveType == DriveType.NoRootDirectory) continue;
 
-                        var name = mountPoint == "/" ? mountPoint : Path.GetFileNameWithoutExtension(mountPoint);
-                        drives.Add(new BookmarkItem(name, mountPoint));
+                        drives.Add(new BookmarkItem(
+                            name: driveInfo.Name,
+                            path: driveInfo.RootDirectory.FullName
+                        ));
                     }
                 }
+                else if (OperatingSystem.IsLinux())
+                {
+                    // DriveInfo.GetDrives() lists a bunch of system stuff
+                    // that the user probably doesn't want to save their
+                    // rain world data in. I'm not sure how to properly
+                    // filter that stuff out. Instead, I will use
+                    // lsblk since it doesn't list that stuff.
+                    var proc = Process.Start(new ProcessStartInfo("lsblk")
+                    {
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        Arguments = "-P -o NAME,MOUNTPOINT"
+                    });
+
+                    if (proc is null)
+                    {
+                        drives.Add(new BookmarkItem("/", "/"));
+                    }
+                    else
+                    {
+                        var stdout = proc.StandardOutput;
+                        while (!stdout.EndOfStream)
+                        {
+                            var line = stdout.ReadLine();
+                            if (string.IsNullOrEmpty(line)) break;
+
+                            var match = MyRegex().Match(line);
+                            string mountPoint = match.Groups[2].Value;
+                            if (mountPoint.Length == 0 || mountPoint[0] != '/') continue; // mountpoint may be empty or [SWAP]
+                            if (mountPoint.Length >= 5 && mountPoint[0..5] == "/boot") continue; // ignore efi boot stuff
+
+                            var name = mountPoint == "/" ? mountPoint : Path.GetFileNameWithoutExtension(mountPoint);
+                            drives.Add(new BookmarkItem(name, mountPoint));
+                        }
+                    }
+                }
+                else if (OperatingSystem.IsFreeBSD())
+                {
+                    // what the hell is free bsd
+                    drives.Add(new BookmarkItem("/", "/"));
+                }
+
+                // mac os doesn't get a drive listing i suppose
             }
-            else if (OperatingSystem.IsFreeBSD())
+            catch (Exception e)
             {
-                // what the hell is free bsd
-                drives.Add(new BookmarkItem("/", "/"));
+                Log.Error("Could not get drive info:\n{Exception}", e.ToString());
             }
-            
-            // mac os doesn't get a drive listing i suppose
-        }
-        catch (Exception e)
-        {
-            Log.Error("Could not get drive info:\n{Exception}", e.ToString());
-        }
     }
 
-    private void AddBookmark(string name, string path)
+    private BookmarkItem AddBookmark(BookmarkItem item)
     {
-        if (path == "") return;
+        if (item.Path == "") return null!;
+        if (!Path.EndsInDirectorySeparator(item.Path))
+            item.Path += Path.DirectorySeparatorChar;
+
+        bookmarks.Add(item);
+        return item;
+    }
+
+    private BookmarkItem AddBookmark(string name, string path)
+    {
+        return AddBookmark(new BookmarkItem(name, path));
+    }
+
+    private bool RemoveBookmark(string path)
+    {
+        if (path == "") return false;
         if (!Path.EndsInDirectorySeparator(path)) path += Path.DirectorySeparatorChar;
-        bookmarks.Add(new BookmarkItem(name, path));
+
+        for (int i = 0; i < bookmarks.Count; i++)
+        {
+            if (bookmarks[i].Path == path && bookmarks[i].Removable)
+            {
+                bookmarks.RemoveAt(i);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Rectangle GetIconRect(int index)
         => new Rectangle(index * 13, 0, 13, 13);
+    
+    private static Rectangle GetIconRect(IconName name)
+        => new Rectangle((int)name * 13, 0, 13, 13);
 
     private bool SetPath(string path)
     {
@@ -263,14 +312,14 @@ partial class FileBrowser
         {
             var dirName = Path.GetFileName(dirPath);
             var dirInfo = File.GetAttributes(dirPath);
-            
+
             if (!dirInfo.HasFlag(FileAttributes.Hidden))
             {
                 if (!string.IsNullOrEmpty(dirName))
                 {
                     entries.Add(new Entry(dirName, EntryType.Directory)
                     {
-                        IconIndex = 5 // folder icon
+                        IconIndex = (int)IconName.Folder
                     });
                 }
             }
@@ -330,7 +379,7 @@ partial class FileBrowser
         }
 
         needFilterRefresh = true;
-        
+
         return true;
     }
 
@@ -390,7 +439,7 @@ partial class FileBrowser
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
             // back button
-            if (ImGuiExt.ImageButtonRect("<", icons, iconSize, iconSize, GetIconRect(0), textColor))
+            if (ImGuiExt.ImageButtonRect("<", icons, iconSize, iconSize, GetIconRect(IconName.Back), textColor))
             {
                 if (backStack.TryPop(out string? newPath))
                 {
@@ -405,7 +454,7 @@ partial class FileBrowser
             ImGui.SetItemTooltip("Back");
 
             // forward button
-            if (ImGuiExt.ImageButtonRect(">", icons, iconSize, iconSize, GetIconRect(1), textColor))
+            if (ImGuiExt.ImageButtonRect(">", icons, iconSize, iconSize, GetIconRect(IconName.Forward), textColor))
             {
                 if (forwardStack.TryPop(out string? newPath))
                 {
@@ -423,7 +472,7 @@ partial class FileBrowser
             // because spacing is added after creating a button, not before.
             ImGui.PopStyleVar();
 
-            if (ImGuiExt.ImageButtonRect("^", icons, iconSize, iconSize, GetIconRect(2), textColor))
+            if (ImGuiExt.ImageButtonRect("^", icons, iconSize, iconSize, GetIconRect(IconName.Up), textColor))
             {
                 var oldDir = cwd;
                 if (SetPath(Path.Combine(cwd, "..")))
@@ -435,8 +484,9 @@ partial class FileBrowser
             }
             ImGui.SetItemTooltip("Go To Parent Directory");
 
+            // refresh button
             ImGui.SameLine();
-            if (ImGuiExt.ImageButtonRect("Refresh", icons, iconSize, iconSize, GetIconRect(4), textColor))
+            if (ImGuiExt.ImageButtonRect("Refresh", icons, iconSize, iconSize, GetIconRect(IconName.Refresh), textColor))
             {
                 if (Directory.Exists(cwd))
                     SetPath(cwd);
@@ -445,8 +495,41 @@ partial class FileBrowser
             }
             ImGui.SetItemTooltip("Refresh");
 
+            // pin/unpin button
+            var pins = RainEd.Instance?.Preferences.FileBrowserPins;
+            if (pins is not null)
+            {
+                ImGui.SameLine();
+                bool isPinned = pins.Contains(cwd);
+                var icon = isPinned ? IconName.Pin : IconName.PinOutline;
+
+                bool isBuiltinPin = bookmarks.Any(x =>
+                    x.Path.Equals(cwd, StringComparison.OrdinalIgnoreCase) && !x.Removable);
+
+                ImGui.BeginDisabled(isBuiltinPin);
+                if (ImGuiExt.ImageButtonRect("Pin/Unpin", icons, iconSize, iconSize, GetIconRect(icon), textColor))
+                {
+                    if (isPinned)
+                    {
+                        pins.Remove(cwd);
+                        RemoveBookmark(cwd);
+                    }
+                    else
+                    {
+                        var name = GetDirectoryBaseName(cwd);
+                        pins.Add(cwd);
+                        AddBookmark(new BookmarkItem(name, cwd)
+                        {
+                            Removable = true
+                        });
+                    }
+                }
+                ImGui.SetItemTooltip(isPinned ? "Unpin" : "Pin");
+                ImGui.EndDisabled();
+            }
+
             ImGui.SameLine();
-            if (ImGuiExt.ImageButtonRect("NewFolder", icons, iconSize, iconSize, GetIconRect(5), textColor))
+            if (ImGuiExt.ImageButtonRect("NewFolder", icons, iconSize, iconSize, GetIconRect(IconName.Folder), textColor))
             {
                 ImGui.OpenPopup("Create Folder");
                 folderName = "";
@@ -524,7 +607,7 @@ partial class FileBrowser
             ImGui.SameLine();
             if (enterPath || showPathInput)
             {
-                bool closeTextInput = ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(3), textColor);
+                bool closeTextInput = ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(IconName.Close), textColor);
                 ImGui.SameLine();
                 ImGui.SetItemTooltip("Close Text Input");
 
@@ -548,7 +631,7 @@ partial class FileBrowser
             }
             else
             {
-                if (ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(8), textColor))
+                if (ImGuiExt.ImageButtonRect("Type", icons, iconSize, iconSize, GetIconRect(IconName.TextCursor), textColor))
                     showPathInput = true;
                 ImGui.SetItemTooltip("Open Text Input");
                 
@@ -598,7 +681,7 @@ partial class FileBrowser
                 style.ItemSpacing.Y - style.WindowPadding.Y * 2f;
             
             // list bookmarks/locations
-            void ListBookmark(BookmarkItem location)
+            bool ListBookmark(BookmarkItem location)
             {
                 if (ImGui.Selectable(location.Name, cwd == location.Path))
                 {
@@ -611,16 +694,33 @@ partial class FileBrowser
                             forwardStack.Clear();
                             selected.Clear();
                         }
+                        else if (location.Removable)
+                        {
+                            // remove bookmark since it's not openable
+                            pins?.Remove(location.Path);
+                            return false;
+                        }
                     }
                 }
+
+                return true;
             }
 
             ImGui.BeginChild("Locations", new Vector2(ImGui.GetTextLineHeight() * 10f, listingHeight));
             {
                 // list user locations
+                List<string> bookmarksToRemove = [];
                 foreach (var location in bookmarks)
                 {
-                    ListBookmark(location);
+                    if (!ListBookmark(location))
+                    {
+                        bookmarksToRemove.Add(location.Path);
+                    }
+                }
+
+                foreach (var loc in bookmarksToRemove)
+                {
+                    RemoveBookmark(loc);
                 }
 
                 // list drives, if available
@@ -1033,7 +1133,7 @@ partial class FileBrowser
         
         if (clearButton)
         {
-            if (ImGuiExt.ImageButtonRect(id + "_clearButton", icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(3), textColor))
+            if (ImGuiExt.ImageButtonRect(id + "_clearButton", icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(IconName.Close), textColor))
             {
                 path = null;
                 returnValue = true;
@@ -1042,7 +1142,7 @@ partial class FileBrowser
             ImGui.SameLine();
         }
         
-        if (ImGuiExt.ImageButtonRect(id, icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(5), textColor))
+        if (ImGuiExt.ImageButtonRect(id, icons, 13 * Boot.PixelIconScale, 13 * Boot.PixelIconScale, GetIconRect(IconName.Folder), textColor))
         {
             activeFileBrowserButton = ImGui.GetItemID();
             fileBrowserReturn = false;

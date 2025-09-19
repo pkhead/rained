@@ -506,6 +506,7 @@ class UserPreferences
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;
     public List<string> RecentFiles { get; set; }
+    public List<string> FileBrowserPins { get; set; }
 
     // default user preferences
     public UserPreferences()
@@ -559,6 +560,7 @@ class UserPreferences
         TileSpec2 = new HexColorRGBA("#61A338");
 
         RecentFiles = [];
+        FileBrowserPins = [];
 
         // initialize shortcuts
         Shortcuts = null!;
