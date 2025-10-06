@@ -18,6 +18,17 @@ local config = {
     fallbackDirectory = nil
 }
 
+local function levelDirCheck(dir)
+    local a = path.abspath(dir .. path.sep)
+    local b = path.abspath(path.join(rained.getDataDirectory(), "Levels") .. path.sep)
+    if a == b then
+        rained.alert("Cannot use the levels directory")
+        return false
+    else
+        return true
+    end
+end
+
 -- helper function to open file, and error on failure
 local function openFile(p, mode)
     local f = io.open(p, mode)
@@ -29,6 +40,11 @@ end
 
 -- helper function to copy file a to b
 local function copyFile(a, b)
+    if path.abspath(a) == path.abspath(b) then
+        warn("copying file to itself, aborting")
+        return
+    end
+
     local fileA = io.open(a, "rb")
     if not fileA then
         error("could not open " .. a, 2)
@@ -216,7 +232,13 @@ if not rained.isBatchMode() then
 
                     imgui.TableNextColumn()
                     imgui.AlignTextToFramePadding()
-                    _, rowEdit.path = rained.gui.fileBrowserWidget("##path", "directory", rowEdit.path)
+
+                    local newPath
+                    s, newPath = rained.gui.fileBrowserWidget("##path", "directory", rowEdit.path)
+                    if s and levelDirCheck(newPath) then
+                        rowEdit.path = newPath
+                    end
+
                     if imgui.IsItemHovered(imgui.HoveredFlags_DelayNormal) then
                         imgui.SetTooltip(rowEdit.path)
                     end
@@ -279,7 +301,7 @@ if not rained.isBatchMode() then
 
         if imgui.Button("Add", -0.0000001, 0) then
             fileBrowser = rained.gui.openFileBrowser("directory", {}, function(dirs)
-                if dirs[1] then
+                if dirs[1] and levelDirCheck(dirs[1]) then
                     local prefix = "??"
                     local dirName = string.upper(path.basename(path.dirname(dirs[1])))
                     print(dirName)
@@ -340,8 +362,11 @@ if not rained.isBatchMode() then
             end
 
             imgui.PushID_Str("fallback")
-            s, config.fallbackDirectory = rained.gui.fileBrowserWidget("##fallbackPath", "directory", config.fallbackDirectory)
-            if s then
+
+            local newFallbackDir
+            s, newFallbackDir = rained.gui.fileBrowserWidget("##fallbackPath", "directory", config.fallbackDirectory)
+            if s and levelDirCheck(newFallbackDir) then
+                config.fallbackDirectory = newFallbackDir
                 saveConfig()
             end
             
