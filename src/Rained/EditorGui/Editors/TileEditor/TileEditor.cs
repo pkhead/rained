@@ -360,7 +360,7 @@ partial class TileEditor : IEditorMode
 
                         // remove tile on right click
                         var editMode = editModes[currentMode];
-                        if (!removedOnSameCell && genericModeRmbDown && mouseCell.HasTile())
+                        if (!removedOnSameCell && genericModeRmbDown && !genericModeLmbDown && mouseCell.HasTile())
                         {
                             if ((editMode is AutotileEditMode or TileEditMode) ||
                                 (editMode is MaterialEditMode && !disallowMatOverwrite)

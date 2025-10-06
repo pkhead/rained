@@ -10,8 +10,10 @@ class AutotileEditMode : TileEditorMode
     private Autotile? selectedAutotile = null;
     private IAutotileInputBuilder? activePathBuilder = null;
 
+    private bool wasMousePressed = false;
+
     public AutotileEditMode(TileEditor editor) : base(editor)
-    {}
+    { }
 
     public override void Unfocus()
     {
@@ -22,7 +24,12 @@ class AutotileEditMode : TileEditorMode
     public override void Process()
     {
         base.Process();
-        
+
+        // check if mouse right is pressed/released for the purpose of tracking
+        // change history. tile removal is located in mode manager code and that
+        // doesn't keep track of change history
+        bool isMousePressed = LeftMouseDown || RightMouseDown;
+
         var forcePlace = editor.PlacementFlags.HasFlag(TilePlacementFlags.Force);
         var modifyGeometry = editor.PlacementFlags.HasFlag(TilePlacementFlags.Geometry);
         var window = RainEd.Instance.LevelView;
@@ -31,7 +38,7 @@ class AutotileEditMode : TileEditorMode
         bool endOnClick = RainEd.Instance.Preferences.AutotileMouseMode == UserPreferences.AutotileMouseModeOptions.Click;
 
         // if mouse was pressed
-        if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+        if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left) && !KeyShortcuts.Active(KeyShortcut.RightMouse))
         {
             if (activePathBuilder is null)
             {
@@ -41,7 +48,8 @@ class AutotileEditMode : TileEditorMode
                     selectedAutotile.CanActivate
                 )
                 {
-                    activePathBuilder = selectedAutotile.Type switch {
+                    activePathBuilder = selectedAutotile.Type switch
+                    {
                         AutotileType.Path => new AutotilePathBuilder(selectedAutotile),
                         AutotileType.Rect => new AutotileRectBuilder(selectedAutotile, new Vector2i(window.MouseCx, window.MouseCy)),
                         _ => null
@@ -78,11 +86,26 @@ class AutotileEditMode : TileEditorMode
 
                 if (activePathBuilder.Autotile.AutoHistory)
                     RainEd.Instance.LevelView.CellChangeRecorder.TryPushChange();
-                
+
                 activePathBuilder = null;
 
             }
         }
+        else
+        {
+            // see comment for isMousePressed
+            if (RightMouseDown && !wasMousePressed)
+            {
+                RainEd.Instance.LevelView.CellChangeRecorder.BeginChange();
+            }
+
+            if (KeyShortcuts.Deactivated(KeyShortcut.RightMouse) && wasMousePressed)
+            {
+                RainEd.Instance.LevelView.CellChangeRecorder.TryPushChange();
+            }
+        }
+
+        wasMousePressed = isMousePressed;
     }
 
     public override void DrawToolbar()
