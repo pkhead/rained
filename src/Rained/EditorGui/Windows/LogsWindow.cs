@@ -28,8 +28,8 @@ static class LogsWindow
                 logs.Clear();
             
             ImGui.SameLine();
-            if (ImGui.Button("Show File"))
-                Platform.RevealPath(Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt"));
+            if (ImGui.Button("Show Full Logs"))
+                Platform.OpenPath(Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt"));
                 
             ImGui.SameLine();
             ImGui.Checkbox("Wrap", ref wrap);
