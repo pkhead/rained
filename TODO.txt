@@ -1,8 +1,8 @@
 LargeTexture:
 - large texture for lightmap
 
-- If youre in the autotile tab and remove a tile and then undo, that removed tile doesnt get re-added.
 oh also clicking on a category doesnt select any tile in that category so using w and s to navigate does so in the category that was selected previosly
+  (should i fix this?)
 
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
