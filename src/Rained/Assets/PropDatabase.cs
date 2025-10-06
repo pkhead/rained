@@ -147,7 +147,7 @@ record class PropInit
             "antimatter" => PropType.Antimatter,
             "rope" or "customRope" => PropType.Rope,
             "long" or "customLong" => PropType.Long,
-            _ => throw new Exception("Invalid prop init")
+            _ => throw new Exception($"Invalid prop type '{(string)init["tp"]}'")
         };
 
         // initialize rope-type prop
@@ -662,13 +662,17 @@ class PropDatabase
                         continue;
                     }
 
-                    var propInit = new PropInit(currentCategory, (Lingo.PropertyList) parsedLine);
+                    propData = (Lingo.PropertyList)parsedLine;
+                    var propInit = new PropInit(currentCategory, propData);
                     currentCategory.Props.Add(propInit);
                     AddPropToIndex(lineNo, propInit);
                 }
                 catch (Exception e)
                 {
-                    var name = propData is null ? "Unknown Prop" : (string) propData["nm"];
+                    HasErrors = true;
+
+                    var nameObj = propData?["nm"];
+                    var name = nameObj is string v ? v : "???";
                     Log.UserLogger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
                 }
             }

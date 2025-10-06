@@ -212,6 +212,7 @@ class TileDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.LinearList header)
                 {
+                    // not really important enough to set HasErrors = true
                     Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
                     return;
                 }
@@ -242,58 +243,60 @@ class TileDatabase
                     Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
                     return;
                 }
-                
-                var tileInit = (Lingo.PropertyList) parsedLine;
 
-                object? tempValue = null;
-                var name = (string) tileInit["nm"];
-                var tp = (string) tileInit["tp"];
-                var size = (Vector2) tileInit["sz"];
-                var specsData = (Lingo.LinearList) tileInit["specs"];
-                var bfTiles = Lingo.LingoNumber.AsInt(tileInit["bfTiles"]);
-                Lingo.LinearList? specs2Data = null;
-                Lingo.LinearList? repeatLayerList =
-                    tileInit.TryGetValue("repeatL", out tempValue) ? (Lingo.LinearList) tempValue : null;
-                int rnd =
-                    tileInit.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
-                
-                if (tileInit.TryGetValue("specs2", out tempValue) && tempValue is Lingo.LinearList specs2List)
+                var name = "???";
+                try
                 {
-                    specs2Data = specs2List;
-                }
+                    var tileInit = (Lingo.PropertyList)parsedLine;
 
-                List<int>? repeatL = repeatLayerList?.Cast<int>().ToList();
-                List<int> specs = specsData.Cast<int>().ToList();
-                List<int>? specs2 = specs2Data?.Cast<int>().ToList();
-                List<string> tags = ((Lingo.LinearList)tileInit["tags"]).Cast<string>().ToList();
+                    object? tempValue = null;
+                    name = (string)tileInit["nm"];
+                    var tp = (string)tileInit["tp"];
+                    var size = (Vector2)tileInit["sz"];
+                    var specsData = (Lingo.LinearList)tileInit["specs"];
+                    var bfTiles = Lingo.LingoNumber.AsInt(tileInit["bfTiles"]);
+                    Lingo.LinearList? specs2Data = null;
+                    Lingo.LinearList? repeatLayerList =
+                        tileInit.TryGetValue("repeatL", out tempValue) ? (Lingo.LinearList)tempValue : null;
+                    int rnd =
+                        tileInit.TryGetValue("rnd", out tempValue) ? Lingo.LingoNumber.AsInt(tempValue) : 1;
 
-                TileType tileType = tp switch
-                {
-                    "voxelStruct" => TileType.VoxelStruct,
-                    "voxelStructRockType" => TileType.VoxelStructRockType,
-                    "voxelStructSandType" => TileType.VoxelStructSandType,
-                    "voxelStructRandomDisplaceHorizontal" => TileType.VoxelStructRandomDisplaceHorizontal,
-                    "voxelStructRandomDisplaceVertical" => TileType.VoxelStructRandomDisplaceVertical,
-                    "box" => TileType.Box,
-                    "voxelStructSeamlessHorizontal" => TileType.VoxelStructSeamlessHorizontal,
-                    "voxelStructSeamlessVertical" => TileType.VoxelStructSeamlessVertical,
-                    _ => throw new Exception($"Invalid tile type '{tp}'")
-                };
+                    if (tileInit.TryGetValue("specs2", out tempValue) && tempValue is Lingo.LinearList specs2List)
+                    {
+                        specs2Data = specs2List;
+                    }
 
-                try {
+                    List<int>? repeatL = repeatLayerList?.Cast<int>().ToList();
+                    List<int> specs = specsData.Cast<int>().ToList();
+                    List<int>? specs2 = specs2Data?.Cast<int>().ToList();
+                    List<string> tags = ((Lingo.LinearList)tileInit["tags"]).Cast<string>().ToList();
+
+                    TileType tileType = tp switch
+                    {
+                        "voxelStruct" => TileType.VoxelStruct,
+                        "voxelStructRockType" => TileType.VoxelStructRockType,
+                        "voxelStructSandType" => TileType.VoxelStructSandType,
+                        "voxelStructRandomDisplaceHorizontal" => TileType.VoxelStructRandomDisplaceHorizontal,
+                        "voxelStructRandomDisplaceVertical" => TileType.VoxelStructRandomDisplaceVertical,
+                        "box" => TileType.Box,
+                        "voxelStructSeamlessHorizontal" => TileType.VoxelStructSeamlessHorizontal,
+                        "voxelStructSeamlessVertical" => TileType.VoxelStructSeamlessVertical,
+                        _ => throw new Exception($"Invalid tile type '{tp}'")
+                    };
+
                     var tileData = new Tile(
                         name: name,
                         drizzleConfig: drizzleConfig,
                         category: curGroup,
                         type: tileType,
-                        width: (int) size.X,
-                        height: (int) size.Y,
+                        width: (int)size.X,
+                        height: (int)size.Y,
                         bfTiles: bfTiles,
                         repeatL: repeatL,
                         specs: specs,
                         specs2: specs2,
                         rnd: rnd,
-                        tags: [..tags]
+                        tags: [.. tags]
                     );
 
                     curGroup.Tiles.Add(tileData);
@@ -301,6 +304,7 @@ class TileDatabase
                 }
                 catch (Exception e)
                 {
+                    HasErrors = true;
                     Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile {Name}: {ErrorMessage}"), name, e.Message);
                 }
             }
@@ -325,6 +329,7 @@ class TileDatabase
         }
         else
         {
+            HasErrors = true;
             Log.UserLogger.Error("Could not read cast Drought Needed Init.txt");
         }
 

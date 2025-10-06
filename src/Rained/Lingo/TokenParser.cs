@@ -312,7 +312,19 @@ class TokenParser
                         break;
                     
                     default:
-                        Error($"Invalid keyword {kw}");
+                        // if the last token was a open bracket or a comma, then
+                        // it's possible that this is a property list key that
+                        // does not begin with a pound to identify it as a 
+                        // Symbol
+                        if (tokens.Count > 0 &&
+                            tokens[^1] is { Type: TokenType.OpenBracket or TokenType.Comma })
+                        {
+                            Error($"Invalid keyword {kw} (missing '#' prefix?)");
+                        }
+                        else
+                        {
+                            Error($"Invalid keyword {kw}");
+                        }
                         break;
                 }
             }

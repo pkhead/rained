@@ -142,7 +142,7 @@ public class LingoParser
         {
             var initTok = PeekToken();
             if (initTok.Type is not TokenType.Symbol)
-                throw new ParseException($"{initTok.Line}:{initTok.CharOffset}: Expected Symbol, got {initTok.Type}");
+                throw new ParseException($"{initTok.Line}:{initTok.CharOffset}: Expected pound-symbol, got {initTok.Type}");
 
             PopToken();
             Expect(TokenType.Colon);
