@@ -25,7 +25,8 @@ partial class TileEditor : IEditorMode
     private int currentMode = 0;
     private int lastMode = 0;
     private int forceSelection = -1;
-    public bool isMouseHeldInMode = false;
+    public bool genericModeLmbDown = false;
+    public bool genericModeRmbDown = false;
 
     // true if attaching a chain on a chain holder
     private bool chainHolderMode = false;
@@ -264,25 +265,28 @@ partial class TileEditor : IEditorMode
                 if (chainHolderMode)
                 {
                     ProcessChainAttach();
-                    isMouseHeldInMode = false;
+                    genericModeLmbDown = false;
+                    genericModeRmbDown = false;
                     editModes[currentMode].ResetInput();
                 }
                 else
                 {
-                    if (EditorWindow.IsMouseDown(ImGuiMouseButton.Left) || KeyShortcuts.Active(KeyShortcut.RightMouse))
+                    // mark LMB down on click
+                    if (EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
+                        genericModeLmbDown = true;
+                    else if (!EditorWindow.IsMouseDown(ImGuiMouseButton.Left))
+                        genericModeLmbDown = false;
+
+                    // mark RMB down on click
+                    if (KeyShortcuts.Activated(KeyShortcut.RightMouse))
+                        genericModeRmbDown = true;
+                    else if (!KeyShortcuts.Active(KeyShortcut.RightMouse))
+                        genericModeRmbDown = false;
+                    
+                    if (genericModeLmbDown || genericModeRmbDown)
                     {
                         //if (!wasToolActive) window.CellChangeRecorder.BeginChange();
                         isToolActive = true;
-                    }
-
-                    if (isToolActive && !wasToolActive)
-                    {
-                        isMouseHeldInMode = true;
-                    }
-
-                    if (!isToolActive && wasToolActive)
-                    {
-                        isMouseHeldInMode = false;
                     }
                     
                     editModes[currentMode].Process();
@@ -356,7 +360,7 @@ partial class TileEditor : IEditorMode
 
                         // remove tile on right click
                         var editMode = editModes[currentMode];
-                        if (!removedOnSameCell && isMouseHeldInMode && EditorWindow.IsMouseDown(ImGuiMouseButton.Right) && mouseCell.HasTile())
+                        if (!removedOnSameCell && genericModeRmbDown && mouseCell.HasTile())
                         {
                             if ((editMode is AutotileEditMode or TileEditMode) ||
                                 (editMode is MaterialEditMode && !disallowMatOverwrite)
