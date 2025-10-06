@@ -22,7 +22,8 @@ To paint geometry with a material, simply hold down the left mouse button. To er
 
     Materials will not be visualized if the cell is also occupied by a tile. Removing the tile will expose the material underneath, but any materials obscured by tiles will not be saved in the file.
 
-There are two placement/erasure modifiers you can use while painting. The first is "Force Geometry", which is activated by holding down the <kbd>G</kbd> key. This will allow you to paint onto empty space, where Rained will then automatically place wall geometry onto the area to allow the material to be placed. The second is "Ignore Different", activated by holding down the <kbd>R</kbd> key. It will prevent the modification of any materials different than the background material that you are painting over. It can also be active simultaneously with the "Force Geometry" modifier.
+### Modifiers
+There are two placement/erasure modifiers you can use while painting. The first is "Force Geometry", which is activated by holding down the <kbd>G</kbd> key. This will allow you to paint onto empty space, where Rained will then automatically place wall geometry onto the area to allow the material to be placed. The second is "Ignore Different", activated by holding down the <kbd>R</kbd> key. It will prevent overwriting materials in cells, making it so you can only draw on cells without an already assigned material. It can also be active simultaneously with the "Force Geometry" modifier.
 
 ## Tiles
 A tile is a premade art asset that you can place in a level. Each tile was drawn by someone in an image editor or paint program, depicting things such as metal beams, pipes, stones, machines, and other set pieces.
@@ -67,6 +68,8 @@ In order to activate the "Force Placement" modifier, you must have the <kbd>F</k
 place down a tile regardless of if the underlying geometry fits the requirements of tile's specs.
 
 The "Force Geometry" modifier, activated by holding down the <kbd>G</kbd> key, will instead, upon placement, modify the geometry underneath the newly placed tile to fit the tile specs. This way, you don't have to labouriously place the geometry down for any large or complex tiles. Additionally, if you remove a tile with "Force Geometry" active, it will remove the tile's required geometry along with the tile itself.
+
+The "Ignore Materials" modifier, active when holding down the <kbd>R</kbd> key, will disallow erasing materials.
 
 These modifiers also work with the rectangular-area fill/erase feature, but "Force Geometry" has a special behavior if you tap the key for a short amount of time while the rectangle is active. If <kbd>G</kbd> is tapped, it will place the required geometry for the already-placed tiles underneath the rectangle, and close the rectangle. Otherwise, geometry-forced tiles will be placed if the modifier is held down when the mouse button is released.
 
