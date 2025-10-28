@@ -369,14 +369,35 @@ namespace Glib.ImGui
             // ImGui ignores the tab key
             if (k == Glib.Key.Tab) return;
 
-            if (keyMap.TryGetValue(k, out ImGuiKey imKey))
+            bool isModDown;
+            switch (k)
             {
-                io.AddKeyEvent(ImGuiKey.ModCtrl, _window.IsKeyDown(Glib.Key.ControlLeft) || _window.IsKeyDown(Glib.Key.ControlRight));
-                io.AddKeyEvent(ImGuiKey.ModAlt, _window.IsKeyDown(Glib.Key.AltLeft) || _window.IsKeyDown(Glib.Key.AltRight));
-                io.AddKeyEvent(ImGuiKey.ModShift, _window.IsKeyDown(Glib.Key.ShiftLeft) || _window.IsKeyDown(Glib.Key.ShiftRight));
-                io.AddKeyEvent(ImGuiKey.ModSuper, _window.IsKeyDown(Glib.Key.SuperLeft) || _window.IsKeyDown(Glib.Key.SuperRight));
+                case Glib.Key.ControlLeft or Glib.Key.ControlRight:
+                    isModDown = _window.IsKeyDown(Glib.Key.ControlLeft) || _window.IsKeyDown(Glib.Key.ControlRight);
+                    io.AddKeyEvent(ImGuiKey.ModCtrl, isModDown);
+                    break;
 
-                io.AddKeyEvent(imKey, down);
+                case Glib.Key.AltLeft or Glib.Key.AltRight:
+                    isModDown = _window.IsKeyDown(Glib.Key.AltLeft) || _window.IsKeyDown(Glib.Key.AltRight);
+                    io.AddKeyEvent(ImGuiKey.ModAlt, isModDown);
+                    break;
+                
+                case Glib.Key.ShiftLeft or Glib.Key.ShiftRight:
+                    isModDown = _window.IsKeyDown(Glib.Key.ShiftLeft) || _window.IsKeyDown(Glib.Key.ShiftRight);
+                    io.AddKeyEvent(ImGuiKey.ModShift, isModDown);
+                    break;
+                
+                case Glib.Key.SuperLeft or Glib.Key.SuperRight:
+                    isModDown = _window.IsKeyDown(Glib.Key.SuperLeft) || _window.IsKeyDown(Glib.Key.SuperRight);
+                    io.AddKeyEvent(ImGuiKey.ModSuper, isModDown);
+                    break;
+
+                default:
+                    if (keyMap.TryGetValue(k, out ImGuiKey imKey))
+                    {
+                        io.AddKeyEvent(imKey, down);
+                    }
+                    break;
             }
         }
 
