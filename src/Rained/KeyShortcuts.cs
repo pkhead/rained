@@ -341,11 +341,15 @@ static class KeyShortcuts
     public static void Update()
     {
         // activate shortcuts on key press
-        bool inputDisabled = ImGui.GetIO().WantTextInput;
+        bool inputDisabled = ImGui.GetIO().WantCaptureKeyboard;
         
         foreach (var shortcut in keyShortcuts.Values)
         {
             shortcut.IsActivated = false;
+            if (inputDisabled)
+            {
+                shortcut.IsDown = false;
+            }
 
             if (shortcut.IsKeyPressed() && (!inputDisabled || shortcut.ID == KeyShortcut.RightMouse))
             {

@@ -32,13 +32,13 @@ static class EditorWindow
 
     public static bool IsKeyDown(ImGuiKey key)
     {
-        if (ImGui.GetIO().WantTextInput) return false;
+        if (ImGui.GetIO().WantCaptureKeyboard) return false;
         return ImGui.IsKeyDown(key);
     }
 
     public static bool IsKeyPressed(ImGuiKey key)
     {
-        if (ImGui.GetIO().WantTextInput) return false;
+        if (ImGui.GetIO().WantCaptureKeyboard) return false;
         return ImGui.IsKeyPressed(key);
     }
 
@@ -46,7 +46,7 @@ static class EditorWindow
     // because i specifically disabled the Tab key in ImGui input handling
     public static bool IsTabPressed()
     {
-        if (ImGui.GetIO().WantTextInput) return false;
+        if (ImGui.GetIO().WantCaptureKeyboard) return false;
         return Raylib.IsKeyPressed(KeyboardKey.Tab);
     }
 

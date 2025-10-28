@@ -666,7 +666,7 @@ class GeometryEditor : IEditorMode
             mirrorDrag = 0;
 
         // WASD navigation
-        if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantTextInput)
+        if (!ImGui.GetIO().WantCaptureKeyboard)
         {
             int toolRow = (int) selectedTool / buttonsPerRow;
             int toolCol = (int) selectedTool % buttonsPerRow;

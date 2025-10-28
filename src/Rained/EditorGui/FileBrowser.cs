@@ -849,7 +849,7 @@ partial class FileBrowser
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("Cancel") || (!ImGui.GetIO().WantTextInput && EditorWindow.IsKeyPressed(ImGuiKey.Escape)))
+            if (ImGui.Button("Cancel") || EditorWindow.IsKeyPressed(ImGuiKey.Escape))
             {
                 isDone = true;
             }

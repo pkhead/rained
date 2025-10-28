@@ -332,7 +332,7 @@ class LevelWindow
                 //ImGui.TextUnformatted($"Zoom: {Math.Floor(viewZoom * 100f)}%      {StatusText}");
 
 
-                if (!ImGui.GetIO().WantTextInput)
+                if (!ImGui.GetIO().WantCaptureKeyboard)
                 {
                     // scroll keybinds
                     var moveX = (EditorWindow.IsKeyDown(ImGuiKey.RightArrow)?1:0) - (EditorWindow.IsKeyDown(ImGuiKey.LeftArrow)?1:0);
