@@ -79,6 +79,8 @@ class UICanvasWidget
         {
             mouseX = Raylib.GetMouseX() - screenOrigin.X;
             mouseY = Raylib.GetMouseY() - screenOrigin.Y;
+            ImGui.SetNextFrameWantCaptureKeyboard(false);
+            ImGui.SetNextFrameWantCaptureMouse(false);
         }
 
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) Clicked?.Invoke(this, MouseButton.Left);
