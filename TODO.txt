@@ -40,6 +40,7 @@ Scripting API:
   (so that type(func) is not userdata when it's a function...)
 
 Do Soon:
+- layer 4 maker
 - Add geo big slope to manual
 - toggle for showing shortcuts in tile editor
 - tile graphics ludo's seamless tile types?
