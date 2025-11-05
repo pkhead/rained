@@ -58,6 +58,8 @@ v3.0.0:
 - Fully FeatuerdWorld editor
 
 Other features:
+- organizable favorites per region prefix
+    (probbly could extend scripting api to make this possible?)
 - asset manager
   - can select certain packs from solar repo?
 - autosave
