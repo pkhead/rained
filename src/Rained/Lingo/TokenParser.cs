@@ -13,6 +13,7 @@ class TokenParser
 
     private int savedCharOffset, savedLine;
     private bool tokenBegan = false;
+    private bool processSymbol = false;
 
     public List<Token> Tokens { get => tokens; }
 
@@ -62,6 +63,8 @@ class TokenParser
             CharOffset = savedCharOffset,
             Line = savedLine
         });
+
+        processSymbol = false;
     }
 
     private void DiscardWhitespace()
@@ -180,6 +183,18 @@ class TokenParser
                 ReadChar();
                 EndToken(TokenType.CloseParen);
                 break;
+            
+            case '{':
+                BeginToken();
+                ReadChar();
+                EndToken(TokenType.OpenBrace);
+                break;
+
+            case '}':
+                BeginToken();
+                ReadChar();
+                EndToken(TokenType.CloseBrace);
+                break;
 
             case ',':
                 BeginToken();
@@ -212,10 +227,8 @@ class TokenParser
             // symbol
             case '#':
             {
-                BeginToken();
                 ReadChar();
-                var id = ReadWord();
-                EndToken(TokenType.Symbol, id);
+                processSymbol = true;
                 break;
             }
 
@@ -250,83 +263,12 @@ class TokenParser
             else
             {
                 BeginToken();
-                var kw = ReadWord();
+                var word = ReadWord();
 
-                switch (kw.ToLowerInvariant())
-                {
-                    case "point":
-                        EndToken(TokenType.KeywordPoint);
-                        break;
-                    
-                    case "color":
-                        EndToken(TokenType.KeywordColor);
-                        break;
-                    
-                    case "rect":
-                        EndToken(TokenType.KeywordRect);
-                        break;
-                    
-                    case "void":
-                        EndToken(TokenType.Void);
-                        break;
-
-                    // parse string constants
-                    case "backspace":
-                        EndToken(TokenType.StringConstant, "\b");
-                        break;
-                    
-                    case "empty":
-                        EndToken(TokenType.StringConstant, string.Empty);
-                        break;
-                    
-                    case "enter":
-                        EndToken(TokenType.StringConstant, Environment.NewLine);
-                        break;
-                    
-                    case "false":
-                        EndToken(TokenType.IntConstant, 0);
-                        break;
-                    
-                    case "pi":
-                        EndToken(TokenType.FloatConstant, MathF.PI);
-                        break;
-                    
-                    case "quote":
-                        EndToken(TokenType.StringConstant, "\"");
-                        break;
-                    
-                    case "return":
-                        EndToken(TokenType.StringConstant, "\r");
-                        break;
-                    
-                    case "space":
-                        EndToken(TokenType.StringConstant, " ");
-                        break;
-                    
-                    case "tab":
-                        EndToken(TokenType.StringConstant, "\t");
-                        break;
-                    
-                    case "true":
-                        EndToken(TokenType.IntConstant, 1);
-                        break;
-                    
-                    default:
-                        // if the last token was a open bracket or a comma, then
-                        // it's possible that this is a property list key that
-                        // does not begin with a pound to identify it as a 
-                        // Symbol
-                        if (tokens.Count > 0 &&
-                            tokens[^1] is { Type: TokenType.OpenBracket or TokenType.Comma })
-                        {
-                            Error($"Invalid keyword {kw} (missing '#' prefix?)");
-                        }
-                        else
-                        {
-                            Error($"Invalid keyword {kw}");
-                        }
-                        break;
-                }
+                if (processSymbol)
+                    EndToken(TokenType.Symbol, word);
+                else
+                    EndToken(TokenType.Word, word);
             }
 
             break;

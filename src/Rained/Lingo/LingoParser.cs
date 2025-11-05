@@ -5,7 +5,8 @@ namespace Rained.Lingo;
 
 public class LingoParser
 {
-    private readonly Queue<Token> tokens = new();
+    private List<Token> tokens = null!;
+    private int tokenIndex = 0;
 
     public object? Read(string str, out ParseException? exception)
     {
@@ -17,12 +18,8 @@ public class LingoParser
         
         try
         {
-            tokens.Clear();
-            foreach (Token tok in tokenParser.Read())
-            {
-                tokens.Enqueue(tok);
-            }
-            
+            tokens = tokenParser.Read();
+            tokenIndex = 0;
             return ParseExpression();
         }
 
@@ -37,8 +34,26 @@ public class LingoParser
     public object? Read(string str)
         => Read(str, out _);
 
-    private Token PeekToken() => tokens.Count == 0 ? throw new ParseException("Unexpected EOF") : tokens.Peek();
-    private Token PopToken() => tokens.Count == 0 ? throw new ParseException("Unexpected EOF") : tokens.Dequeue();
+    private Token PeekToken()
+    {
+        if (tokenIndex >= tokens.Count)
+            throw new ParseException("Unexpected EOF");
+        return tokens[tokenIndex];
+    }
+
+    private Token PeekToken(int offset)
+    {
+        if (tokenIndex + offset >= tokens.Count)
+            throw new ParseException("Unexpected EOF");
+        return tokens[tokenIndex + offset];
+    }
+
+    private Token PopToken()
+    {
+        if (tokenIndex >= tokens.Count)
+            throw new ParseException("Unexpected EOF");
+        return tokens[tokenIndex++];
+    }
 
     /*private void Error(string msg)
     {
@@ -82,67 +97,43 @@ public class LingoParser
             return (float)v * sign;
     }
 
-    enum ListType { Linear, Property }
-
-    private ListType CheckListType()
-    {
-        // [] = empty linear list
-        // [: = (expect) empty property list
-        // [# ... = (expect) property list
-        // else = (expect) linear list
-        
-        var tok = PeekToken();
-        if (tok.Type is TokenType.Colon or TokenType.Symbol)
-            return ListType.Property;
-
-        return ListType.Linear;
-    }
-
     // this assumes the open bracket was already popped off
-    private LinearList ParseLinearList()
+    private LinearList ParseLinearList(TokenType closingSymbol)
     {
-        LinearList list = new();
-        if (PeekToken().Type == TokenType.CloseBracket) {
+        LinearList list = [];
+        if (PeekToken().Type == closingSymbol) {
             PopToken();
             return list;
         }
 
         while (true)
         {
-            var initTok = PeekToken();
-            
-            if (initTok.Type != TokenType.Void)
-            {
-                var value = ParseExpression()!;
+            var value = ParseExpression()!;
+            if (value is not null)
                 list.Add(value);
-            }
-            else
-            {
-                PopToken();
-            }
 
             if (PeekToken().Type != TokenType.Comma) break;
             PopToken();
         }
 
-        Expect(TokenType.CloseBracket);
+        Expect(closingSymbol);
         return list;
     }
 
-    private PropertyList ParsePropertyList()
+    private PropertyList ParsePropertyList(TokenType closingSymbol)
     {
-        PropertyList list = new();
+        PropertyList list = [];
         if (PeekToken().Type == TokenType.Colon) {
             PopToken();
-            Expect(TokenType.CloseBracket);
+            Expect(closingSymbol);
             return list;
         }
 
         while (true)
         {
             var initTok = PeekToken();
-            if (initTok.Type is not TokenType.Symbol)
-                throw new ParseException($"{initTok.Line}:{initTok.CharOffset}: Expected pound-symbol, got {initTok.Type}");
+            if (initTok.Type is not (TokenType.Symbol or TokenType.Word))
+                throw new ParseException($"{initTok.Line}:{initTok.CharOffset}: Expected word or symbol-identifier, got {initTok.Type}");
 
             PopToken();
             Expect(TokenType.Colon);
@@ -155,7 +146,7 @@ public class LingoParser
             PopToken();
         }
 
-        Expect(TokenType.CloseBracket);
+        Expect(closingSymbol);
         return list;
     }
 
@@ -164,9 +155,6 @@ public class LingoParser
         var tok = PopToken();
         switch (tok.Type)
         {
-            case TokenType.Void:
-                return null;
-
             case TokenType.String: case TokenType.StringConstant:
             case TokenType.Float: case TokenType.FloatConstant:
             case TokenType.Integer: case TokenType.IntConstant:
@@ -190,62 +178,117 @@ public class LingoParser
             }
             
             case TokenType.OpenBracket:
+            case TokenType.OpenBrace:
             {
-                return CheckListType() switch
-                {
-                    ListType.Linear => ParseLinearList(),
-                    ListType.Property => ParsePropertyList(),
-                    _ => throw new UnreachableException("CheckListType returned invalid value?")
+                var closingSymbol = tok.Type switch {
+                    TokenType.OpenBracket => TokenType.CloseBracket,
+                    TokenType.OpenBrace => TokenType.CloseBrace,
+                    _ => throw new UnreachableException()
                 };
+
+                tok = PeekToken();
+
+                // []: empty linear list
+                if (tok.Type == closingSymbol)
+                {
+                    PopToken();
+                    return new LinearList();
+                }
+
+                // [:]: empty property list
+                if (tok.Type is TokenType.Colon)
+                {
+                    PopToken();
+                    Expect(closingSymbol);
+                    return new PropertyList();
+                }
+
+                // [(*):(...): property list
+                // else, linear list
+                if (PeekToken(1).Type is TokenType.Colon)
+                    return ParsePropertyList(closingSymbol);
+                else
+                    return ParseLinearList(closingSymbol);
             }
             
-            case TokenType.KeywordColor:
+            case TokenType.Word:
             {
-                Expect(TokenType.OpenParen);
-                int[] components = new int[3];
-
-                for (int i = 0; i < 3; i++)
+                switch (((string)tok.Value!).ToLowerInvariant())
                 {
-                    var num = Expect(TokenType.Integer);
-                    components[i] = (int) num.Value!;
-                    if (i < 2) Expect(TokenType.Comma);
+                    case "color":
+                    {
+                        Expect(TokenType.OpenParen);
+                        int[] components = new int[3];
+
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var num = Expect(TokenType.Integer);
+                            components[i] = (int) num.Value!;
+                            if (i < 2) Expect(TokenType.Comma);
+                        }
+
+                        Expect(TokenType.CloseParen);
+                        return new Color(components[0], components[1], components[2]);
+                    }
+
+                    case "point":
+                    {
+                        Expect(TokenType.OpenParen);
+                        float[] components = new float[2];
+
+                        for (int i = 0; i < 2; i++)
+                        {
+                            components[i] = ExpectNumber();
+                            if (i < 1) Expect(TokenType.Comma);
+                        }
+
+                        Expect(TokenType.CloseParen);
+                        return new Vector2(components[0], components[1]);
+                    }
+
+                    case "rect":
+                    {
+                        Expect(TokenType.OpenParen);
+                        float[] components = new float[4];
+
+                        for (int i = 0; i < 4; i++)
+                        {
+                            components[i] = ExpectNumber();
+                            if (i < 3) Expect(TokenType.Comma);
+                        }
+
+                        Expect(TokenType.CloseParen);
+                        return new Rectangle(components[0], components[1], components[2], components[3]);
+                    }
+
+                    case "void":
+                        return null;                        
+                    case "backspace":
+                        return "\b";
+                    case "empty":
+                        return "";
+                    case "enter":
+                        return "\x03"; // wtf is this character??
+                    case "false":
+                        return 0;
+                    case "pi":
+                        return MathF.PI;
+                    case "quote":
+                        return "\"";
+                    case "return":
+                        return "\n"; // technically shoudl be \r but this is easier
+                    case "space":
+                        return " ";
+                    case "tab":
+                        return "\t";
+                    case "true":
+                        return 1;
+                    
+                    default:
+                        throw new ParseException($"{tok.Line}:{tok.CharOffset}: Use of undeclared variable '{tok.Type}'");
                 }
-
-                Expect(TokenType.CloseParen);
-                return new Color(components[0], components[1], components[2]);
-            }
-
-            case TokenType.KeywordPoint:
-            {
-                Expect(TokenType.OpenParen);
-                float[] components = new float[2];
-
-                for (int i = 0; i < 2; i++)
-                {
-                    components[i] = ExpectNumber();
-                    if (i < 1) Expect(TokenType.Comma);
-                }
-
-                Expect(TokenType.CloseParen);
-                return new Vector2(components[0], components[1]);
-            }
-
-            case TokenType.KeywordRect:
-            {
-                Expect(TokenType.OpenParen);
-                float[] components = new float[4];
-
-                for (int i = 0; i < 4; i++)
-                {
-                    components[i] = ExpectNumber();
-                    if (i < 3) Expect(TokenType.Comma);
-                }
-
-                Expect(TokenType.CloseParen);
-                return new Rectangle(components[0], components[1], components[2], components[3]);
             }
         }
-
         
         throw new ParseException($"{tok.Line}:{tok.CharOffset}: Expected value, got {tok.Type}");
     }
@@ -254,7 +297,7 @@ public class LingoParser
     {
         var accumValue = ParseValue();
 
-        while (tokens.Count > 0)
+        while (tokenIndex < tokens.Count)
         {
             var op = PeekToken();
 
@@ -266,16 +309,10 @@ public class LingoParser
                     PopToken();
                     
                     var nextValue = ParseValue();
-
-                    // check that both arguments are a string
-                    if (accumValue is not string strLeft || nextValue is not string strRight)
-                    {
-                        var typeA = accumValue?.GetType().Name ?? "null";
-                        var typeB = nextValue?.GetType().Name ?? "null";
-                        throw new ParseException($"{op.Line}:{op.CharOffset}: Attempt to concatenate {typeA} with {typeB}");
-                    }
-
-                    accumValue = strLeft + strRight;
+                    accumValue =
+                        (accumValue?.ToString() ?? "") +
+                        (nextValue?.ToString() ?? "");
+                    
                     break;
                 }
                 

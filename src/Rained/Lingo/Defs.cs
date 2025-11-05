@@ -136,21 +136,20 @@ enum TokenType
 {
     OpenBracket,
     CloseBracket,
-    CloseParen,
     OpenParen,
+    CloseParen,
+    OpenBrace,
+    CloseBrace,
     Comma,
     Colon,
     Hyphen,
     Ampersand,
-    
-    Void,
+
     String,
     Float,
     Integer,
     Symbol,
-    KeywordColor,
-    KeywordPoint,
-    KeywordRect,
+    Word,
 
     StringConstant,
     IntConstant,
