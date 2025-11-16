@@ -212,7 +212,14 @@ namespace Rained
                 var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
                 if (File.Exists(prefsFile))
                 {
-                    prefs = UserPreferences.LoadFromFile(prefsFile);
+                    try
+                    {
+                        prefs = UserPreferences.LoadFromFile(prefsFile);
+                    }
+                    catch
+                    {
+                        Log.Error("Could not load " + prefsFile);
+                    }
                 }
             }
 

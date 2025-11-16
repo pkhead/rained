@@ -569,33 +569,46 @@ class UserPreferences
             SaveKeyboardShortcuts();
     }
 
+    static readonly JsonSerializerOptions jsonSerializeOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // why does it escape '+'
+        WriteIndented = true
+    };
+
     public static void SaveToFile(UserPreferences prefs, string filePath)
     {
         // pascal case is a superstition
         prefs.SaveKeyboardShortcuts();
-        var serializeOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // why does it escape '+'
-            WriteIndented = true
-        };
+        var jsonString = JsonSerializer.Serialize(prefs, jsonSerializeOptions);
 
-        var jsonString = JsonSerializer.Serialize(prefs, serializeOptions);
+        // for some reason users' preferences.json randomly turns empty,
+        // preventing them from launching rained. this only started happening
+        // after i made it save preferences.json at regular intervals instead of
+        // just at application close. why the fuck is this happening.
+        if (string.IsNullOrWhiteSpace(jsonString))
+        {
+            Log.Warning("UserPreferences.SavetoFile: save string was null, empty, or whitespace.");
+            EditorWindow.ShowNotification("Could not save preferences");
+        }
+
         File.WriteAllText(filePath, jsonString);
     }
 
     public static UserPreferences LoadFromFile(string filePath)
     {
         // PASCAL CASE IS A SOCIAL CONSTRUCT
-        var serializeOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // why does it escape '+'?
-            WriteIndented = true
-        };
-
         var jsonString = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<UserPreferences>(jsonString, serializeOptions)!;
+
+        try
+        {
+            return JsonSerializer.Deserialize<UserPreferences>(jsonString, jsonSerializeOptions)
+                ?? throw new NullReferenceException("JsonSerializer.Deserialize returned null");
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Could not parse {filePath}: {e.Message}");
+        }
     }
 
     public void LoadKeyboardShortcuts()

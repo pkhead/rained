@@ -61,7 +61,7 @@ sealed class RainEd
 
     private LevelWindow? levelView;
 
-    private const int PREF_SAVE_INTERVAL = 60; // in seconds
+    private const int PREF_SAVE_INTERVAL = 60 * 5; // in seconds
     private readonly string prefFilePath;
     public UserPreferences Preferences;
     private DateTime nextPrefsSave = DateTime.UtcNow.AddSeconds(PREF_SAVE_INTERVAL);
@@ -189,6 +189,19 @@ sealed class RainEd
             }
             catch (Exception e)
             {
+                // since preferences.json will inevitably be reset to factory at
+                // this point, copy the erroneous preferences.json to a backup
+                // file, in the case that the user simply messed up manual
+                // editing of it.
+                try
+                {
+                    File.Copy(prefFilePath, prefFilePath + ".bak");
+                }
+                catch (Exception e2)
+                {
+                    Log.Error("Could not copy preferences.json to preferences.json.bak: {Error}", e2);
+                }
+
                 Log.UserLogger.Error("Failed to load user preferences!\n{ErrorMessage}", e);
                 Preferences = new UserPreferences();
                 EditorWindow.ShowNotification("Failed to load preferences");
@@ -929,7 +942,7 @@ sealed class RainEd
         // preferences save at regular intervals during application runtime
         if (DateTime.UtcNow >= nextPrefsSave)
         {
-            nextPrefsSave = nextPrefsSave.AddSeconds(PREF_SAVE_INTERVAL);
+            nextPrefsSave = DateTime.UtcNow.AddSeconds(PREF_SAVE_INTERVAL);
             SavePreferences();
         }
         
