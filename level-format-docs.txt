@@ -115,8 +115,19 @@ PROP LEVEL FORMAT
           #applyColor?: 1 if true, 0 if false
           #release?: (rope release mode) -1 = Left, 0 = None, 1 = Right
 
+          (fez tree)
+          #leafDensity: [0.0000 to 1.0000, in editor changes by increments of 0.05]
+          #effectColor: integer [0, 2]
         ],
         #points: point[] (if rope-type prop)
+        #treeParameters: [
+          (for each coordinate, 20 units = 1 cell)
+          #trunkPos: point
+          #trunkAngle: rotation in degrees, clockwise
+          #leafPos: the point at the bottom of the prop
+          #leafSize: point(55.0000, 67.5000)
+          #leafAngle: rotation in degrees, clockwise
+        ]
       ]
     ]
 
