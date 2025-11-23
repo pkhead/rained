@@ -1,4 +1,4 @@
-Rain World Community Editor; V.0.4.64; Editor configuration file
+Rain World Community Editor; v5.0.0; Editor configuration file
 More tile previews : FALSE
 Grime on gradients : FALSE
 Grime : TRUE

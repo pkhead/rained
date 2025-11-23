@@ -1,1 +1,2 @@
-Layer:1
+Work Layer: 1
+Prop depth: 5

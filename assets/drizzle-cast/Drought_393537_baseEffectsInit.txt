@@ -1,4 +1,4 @@
-Rain World Community Editor; V.0.4.64; Editor effects initialisation file
+Rain World Community Editor; v5.0.0; Editor effects initialisation file
 -Natural
 Slime
 Melt
@@ -58,6 +58,12 @@ DarkSlime
 -Restoration
 Restore As Scaffolding
 Ceramic Chaos
+
+-Watcher DLC
+Fez Tree
+Meat Blobs
+Brain Growers
+Upside Down Brain Growers
 
 -LB Plants
 Colored Hang Roots
