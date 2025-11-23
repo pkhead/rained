@@ -135,18 +135,18 @@ record class PropInit
         SoftPropRender = null;
         LayerDepths = [0];
         Name = (string) init["nm"];
-        Type = (string) init["tp"] switch
+        Type = ((string)init["tp"]).ToLowerInvariant() switch
         {
             "standard" => PropType.Standard,
-            "variedStandard" => PropType.VariedStandard,
+            "variedstandard" => PropType.VariedStandard,
             "soft" => PropType.Soft,
-            "coloredSoft" => PropType.ColoredSoft,
-            "variedSoft" => PropType.VariedSoft,
-            "simpleDecal" => PropType.SimpleDecal,
-            "variedDecal" => PropType.VariedDecal,
+            "coloredsoft" => PropType.ColoredSoft,
+            "variedsoft" => PropType.VariedSoft,
+            "simpledecal" => PropType.SimpleDecal,
+            "varieddecal" => PropType.VariedDecal,
             "antimatter" => PropType.Antimatter,
-            "rope" or "customRope" => PropType.Rope,
-            "long" or "customLong" => PropType.Long,
+            "rope" or "customrope" => PropType.Rope,
+            "long" or "customlong" => PropType.Long,
             _ => throw new Exception($"Invalid prop type '{(string)init["tp"]}'")
         };
 
