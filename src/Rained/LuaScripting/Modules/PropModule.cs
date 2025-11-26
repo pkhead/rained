@@ -86,7 +86,7 @@ static class PropModule
             var prop = wrap.GetRef(lua, 1);
 
             LuaInterface.Host.LevelCheck(lua).Props.Remove(prop);
-            if (LuaInterface.Host.SelectedProps.Remove(prop))
+            if (LuaInterface.Host.DeselectProp(prop))
             {
                 _changeRecordDirty = true;
                 lua.PushBoolean(true);
@@ -134,7 +134,7 @@ static class PropModule
         lua.ModuleFunction("clearSelection", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            LuaInterface.Host.SelectedProps.Clear();
+            LuaInterface.Host.DeselectAllProps();
             return 0;
         });
 
@@ -143,8 +143,7 @@ static class PropModule
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
 
-            if (!LuaInterface.Host.SelectedProps.Contains(prop))
-                LuaInterface.Host.SelectedProps.Add(prop);
+            LuaInterface.Host.SelectProp(prop);
             
             return 0;
         });
@@ -154,7 +153,7 @@ static class PropModule
             var lua = Lua.FromIntPtr(luaPtr);
             var prop = wrap.GetRef(lua, 1);
             
-            lua.PushBoolean( LuaInterface.Host.SelectedProps.Remove(prop) );
+            lua.PushBoolean( LuaInterface.Host.DeselectProp(prop) );
             return 1;
         });
 

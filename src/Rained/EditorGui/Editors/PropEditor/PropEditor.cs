@@ -3,14 +3,49 @@ using Raylib_cs;
 using System.Numerics;
 using Rained.Assets;
 using Rained.LevelData;
+using System.Diagnostics;
 namespace Rained.EditorGui.Editors;
 
 partial class PropEditor : IEditorMode
 {
     public string Name { get => "Props"; }
     public bool SupportsCellSelection => false;
-    public List<Prop> SelectedProps => selectedProps;
     public ChangeHistory.PropChangeRecorder ChangeRecorder => changeRecorder;
+
+    public IEnumerable<Prop> SelectedProps =>
+        selectedObjects
+            .Where(x => x.Type == PropEditorObjectType.Prop)
+            .Select(x => x.Prop);
+
+    public bool IsPropSelected(Prop prop)
+    {
+        return selectedObjects.Any(x => x.Type == PropEditorObjectType.Prop && x.Prop == prop);
+    }
+
+    public void SelectProp(Prop prop)
+    {
+        if (IsPropSelected(prop)) return;
+        selectedObjects.Add(PropEditorObject.CreateProp(prop));
+    }
+
+    public bool DeselectProp(Prop prop)
+    {
+        var idx = selectedObjects.FindIndex(x => x.Type == PropEditorObjectType.Prop && x.Prop == prop);
+        if (idx != -1)
+        {
+            selectedObjects.RemoveAt(idx);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public void DeselectAllProps()
+    {
+        selectedObjects.Clear();
+    }
 
     private enum PropSnapMode
     {
@@ -21,11 +56,12 @@ partial class PropEditor : IEditorMode
     }
     
     private readonly LevelWindow window;
+    private readonly List<PropEditorObject> objects = []; // list of all objects in level
     
-    private readonly List<Prop> selectedProps = new();
-    private List<Prop>? initSelectedProps = null; // used for add rect select mode
-    private Prop[] propSelectionList = Array.Empty<Prop>(); // used for being able to select props that are behind others
-    private Prop? highlightedProp = null; // used for prop selection list
+    private readonly List<PropEditorObject> selectedObjects = [];
+    private List<PropEditorObject>? initSelectedObjects = null; // used for add rect select mode
+    private PropEditorObject[] objectSelectionList = []; // used for being able to select props that are behind others
+    private PropEditorObject? highlightedObject = null; // used for prop selection list
     
     private bool isWarpMode = false;
     private Vector2 prevMousePos;
@@ -98,10 +134,10 @@ partial class PropEditor : IEditorMode
             // when the user undos or redos
             var propsList = RainEd.Instance.Level.Props;
 
-            for (int i = selectedProps.Count - 1; i >= 0; i--)
+            for (int i = selectedObjects.Count - 1; i >= 0; i--)
             {
-                if (propsList.IndexOf(selectedProps[i]) == -1)
-                    selectedProps.RemoveAt(i);
+                if (propsList.IndexOf(selectedObjects[i].Prop) == -1)
+                    selectedObjects.RemoveAt(i);
             }
         };
 
@@ -188,9 +224,9 @@ partial class PropEditor : IEditorMode
     public void Load()
     {
         isDoubleClick = false;
-        selectedProps.Clear();
+        selectedObjects.Clear();
         transformMode = null;
-        initSelectedProps = null;
+        initSelectedObjects = null;
         isMouseDragging = false;
     }
 
@@ -220,11 +256,11 @@ partial class PropEditor : IEditorMode
         
         if (transformMode is WarpTransformMode)
         {
-            selectedProps[0].TryConvertToAffine();
+            selectedObjects[0].Prop.TryConvertToAffine();
         }
 
         transformMode = null;
-        propSelectionList = [];
+        objectSelectionList = [];
 
         foreach (var prop in RainEd.Instance.Level.Props)
         {
@@ -234,6 +270,21 @@ partial class PropEditor : IEditorMode
 
         isRopeSimulationActive = false;
         wasRopeSimulationActive = false;
+
+        objects.Clear();
+    }
+
+    private void SyncObjectList()
+    {
+        objects.Clear();
+        foreach (var prop in RainEd.Instance.Level.Props)
+        {
+            objects.Add(PropEditorObject.CreateProp(prop));
+            if (prop.FezTree is not null)
+            {
+                objects.Add(PropEditorObject.CreateFezTreeTrunk(prop));
+            }
+        }
     }
 
     private static bool IsPointInTriangle(Vector2 pt, Vector2 v1, Vector2 v2, Vector2 v3)
@@ -311,84 +362,156 @@ partial class PropEditor : IEditorMode
         return depthOffset >= layerMin * 10 && depthOffset < (layerMax+1) * 10;
     }
 
-    private static Prop? GetPropAt(Vector2 point, int layer)
+    // private static Prop? GetPropAt(Vector2 point, int layer)
+    // {
+    //     GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
+        
+    //     for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
+    //     {
+    //         var prop = RainEd.Instance.Level.Props[i];
+    //         if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
+
+    //         var pts = prop.QuadPoints;
+    //         if (
+    //             IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
+    //             IsPointInTriangle(point, pts[2], pts[3], pts[0])    
+    //         )
+    //         {
+    //             return prop;
+    //         }
+    //     }
+
+    //     return null;
+    // }
+
+    // private static Prop[] GetPropsAt(Vector2 point, int layer)
+    // {
+    //     GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
+    //     var list = new List<Prop>();
+
+    //     foreach (var prop in RainEd.Instance.Level.Props)
+    //     {
+    //         if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
+
+    //         var pts = prop.QuadPoints;
+    //         if (
+    //             IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
+    //             IsPointInTriangle(point, pts[2], pts[3], pts[0])    
+    //         )
+    //         {
+    //             list.Add(prop);
+    //         }
+    //     }
+
+    //     return list.ToArray();
+    // }
+
+    private PropEditorObject? GetObjectAt(Vector2 point, int layer)
     {
         GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
-        
-        for (int i = RainEd.Instance.Level.Props.Count - 1; i >= 0; i--)
-        {
-            var prop = RainEd.Instance.Level.Props[i];
-            if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
 
-            var pts = prop.QuadPoints;
-            if (
-                IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
-                IsPointInTriangle(point, pts[2], pts[3], pts[0])    
-            )
-            {
-                return prop;
-            }
+        foreach (var obj in objects)
+        {
+            if (!IsSublayerWithinFilter(obj.DepthOffset, layerMin, layerMax)) continue;
+
+            if (obj.PointOverlaps(point))
+                return obj;
         }
 
         return null;
     }
 
-    private static Prop[] GetPropsAt(Vector2 point, int layer)
+    private PropEditorObject[] GetObjectsAt(Vector2 point, int layer)
     {
         GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
-        var list = new List<Prop>();
+        var list = new List<PropEditorObject>();
 
-        foreach (var prop in RainEd.Instance.Level.Props)
+        foreach (var obj in objects)
         {
-            if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
+            if (!IsSublayerWithinFilter(obj.DepthOffset, layerMin, layerMax)) continue;
 
-            var pts = prop.QuadPoints;
-            if (
-                IsPointInTriangle(point, pts[0], pts[1], pts[2]) ||
-                IsPointInTriangle(point, pts[2], pts[3], pts[0])    
-            )
-            {
-                list.Add(prop);
-            }
+            if (obj.PointOverlaps(point))
+                list.Add(obj);
         }
 
-        return list.ToArray();
+        return [..list];
     }
 
-    private Rectangle GetSelectionAABB(bool excludeNonmovable = false)
-        => CalcPropExtents(selectedProps, excludeNonmovable);
+    // private FezTreeTrunk[] GetFezTrunksAt(Vector2 point, int layer)
+    // {
+    //     GetSelectionLayerFilter(layer, out int layerMin, out int layerMax);
+    //     var list = new List<FezTreeTrunk>();
 
-    private static Rectangle CalcPropExtents(IEnumerable<Prop> props, bool excludeNonmovable = false)
+    //     foreach (var fez in fezTrunks)
+    //     {
+    //         if (!IsSublayerWithinFilter(fez.OriginProp.DepthOffset, layerMin, layerMax)) continue;
+
+    //         var dist = Vector2.DistanceSquared(fez.Position, point);
+    //         if (dist < 0.75 * 0.75)
+    //             list.Add(fez);
+    //     }
+
+    //     return [..list];
+    // }
+
+    private Rectangle GetSelectionAABB(bool excludeNonmovable = false)
+        => CalcObjectExtents(selectedObjects, excludeNonmovable);
+
+    private static Rectangle CalcObjectExtents(IEnumerable<PropEditorObject> objs, bool excludeNonmovable = false)
     {
         var minX = float.PositiveInfinity;
         var maxX = float.NegativeInfinity;
         var minY = float.PositiveInfinity;
         var maxY = float.NegativeInfinity;
 
-        foreach (var prop in props)
+        foreach (var obj in objs)
         {
-            if (excludeNonmovable && !prop.IsMovable) continue;
+            if (excludeNonmovable && !obj.IsMovable) continue;
             
-            for (int i = 0; i < 4; i++)
+            if (obj.Type == PropEditorObjectType.Prop)
             {
-                var pts = prop.QuadPoints;
-                minX = Math.Min(minX, pts[i].X);
-                minY = Math.Min(minY, pts[i].Y);
-                maxX = Math.Max(maxX, pts[i].X);
-                maxY = Math.Max(maxY, pts[i].Y);
+                for (int i = 0; i < 4; i++)
+                {
+                    var pts = obj.Prop.QuadPoints;
+                    minX = Math.Min(minX, pts[i].X);
+                    minY = Math.Min(minY, pts[i].Y);
+                    maxX = Math.Max(maxX, pts[i].X);
+                    maxY = Math.Max(maxY, pts[i].Y);
+                }
             }
+            else if (obj.Type == PropEditorObjectType.FezTreeTrunk)
+            {
+                var pos = obj.FezTrunkPosition;
+                minX = Math.Min(minX, pos.X);
+                minY = Math.Min(minY, pos.Y);
+                maxX = Math.Max(maxX, pos.X);
+                maxY = Math.Max(maxY, pos.Y);
+            }
+            else throw new UnreachableException();
         }
 
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
-    private static Vector2 GetPropCenter(Prop prop)
+    private static Vector2 GetObjectCenter(PropEditorObject obj)
     {
-        if (prop.IsAffine)
-            return prop.Rect.Center;
-        
-        var pts = prop.QuadPoints;
-        return (pts[0] + pts[1] + pts[2] + pts[3]) / 4f;
+        switch (obj.Type)
+        {
+            case PropEditorObjectType.Prop:
+            {
+                var prop = obj.Prop;
+                if (prop.IsAffine)
+                    return prop.Rect.Center;
+                
+                var pts = prop.QuadPoints;
+                return (pts[0] + pts[1] + pts[2] + pts[3]) / 4f;
+            }
+
+            case PropEditorObjectType.FezTreeTrunk:
+                return obj.FezTrunkPosition;
+
+            default: throw new UnreachableException();
+        }
     }
 
     // returns true if gizmo is hovered, false if not
@@ -415,7 +538,7 @@ partial class PropEditor : IEditorMode
 
             if (transformMode is WarpTransformMode)
             {
-                selectedProps[0].TryConvertToAffine();
+                selectedObjects[0].Prop.TryConvertToAffine();
             }
         }
 
@@ -432,8 +555,11 @@ partial class PropEditor : IEditorMode
         // z translate preview
         if (zTranslateActive)
         {
-            foreach (var prop in selectedProps)
+            foreach (var obj in selectedObjects)
             {
+                if (obj.Type == PropEditorObjectType.Prop) continue;
+
+                var prop = obj.Prop;
                 prop.DepthOffset += zTranslateValue;
                 if (zTranslateWrap)
                     prop.DepthOffset = Util.Mod(prop.DepthOffset, 30);
@@ -443,6 +569,7 @@ partial class PropEditor : IEditorMode
         }
 
         level.SortPropsByDepth();
+        SyncObjectList();
 
         levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
@@ -459,16 +586,23 @@ partial class PropEditor : IEditorMode
         // done z translate preview
         if (zTranslateActive)
         {
-            foreach (var prop in selectedProps)
+            foreach (var obj in selectedObjects)
+            {
+                if (obj.Type == PropEditorObjectType.Prop) continue;
+                var prop = obj.Prop;
+
                 prop.DepthOffset = zTranslateDepths[prop];
+            }
         }
         
         // highlight selected props
         if (isWarpMode)
         {
-            foreach (var prop in level.Props)
+            foreach (var obj in objects)
             {
-                if (prop == highlightedProp) continue;
+                if (obj == highlightedObject) continue;
+                if (obj.Type != PropEditorObjectType.Prop) continue;
+                var prop = obj.Prop;
 
                 Color col;
                 if (!prop.IsMovable)
@@ -497,9 +631,11 @@ partial class PropEditor : IEditorMode
         }
         else
         {
-            foreach (var prop in selectedProps)
+            foreach (var obj in selectedObjects)
             {
-                if (prop == highlightedProp) continue;
+                if (obj == highlightedObject) continue;
+                if (obj.Type != PropEditorObjectType.Prop) continue;
+                var prop = obj.Prop;
 
                 var pts = prop.QuadPoints;
                 var col = prop.IsMovable ? OutlineColors[0] : OutlineColors[3];;
@@ -510,9 +646,10 @@ partial class PropEditor : IEditorMode
             }
         }
 
-        if (highlightedProp is not null)
+        if (highlightedObject is not null)
         {
-            var pts = highlightedProp.QuadPoints;
+            var prop = highlightedObject.Value.Prop;
+            var pts = prop.QuadPoints;
             var col = OutlineGlowColors[0];
             Raylib.DrawLineV(pts[0] * Level.TileSize, pts[1] * Level.TileSize, col);
             Raylib.DrawLineV(pts[1] * Level.TileSize, pts[2] * Level.TileSize, col);
@@ -520,17 +657,35 @@ partial class PropEditor : IEditorMode
             Raylib.DrawLineV(pts[3] * Level.TileSize, pts[0] * Level.TileSize, col);
         }
 
+        int propCount = 0;
+        Prop? firstProp = null;
+        int trunkCount = 0;
+
+        foreach (var obj in selectedObjects)
+        {
+            if (obj.Type == PropEditorObjectType.Prop)
+            {
+                propCount++;
+                firstProp = obj.Prop;
+            }
+            else if (obj.Type == PropEditorObjectType.FezTreeTrunk)
+            {
+                trunkCount++;
+            }
+        }
+
         // prop transform gizmos
-        if (selectedProps.Count > 0 && !isRopeSimulationActive && !zTranslateActive)
+        if (selectedObjects.Count > 0 && !isRopeSimulationActive && !zTranslateActive)
         {
             bool canWarp = transformMode is WarpTransformMode ||
-                (isWarpMode && selectedProps.Count == 1);
-            
+                (isWarpMode && propCount == 1 && firstProp!.CanVertexEdit);
+            bool canScaleRotate = propCount > 0 || selectedObjects.Count > 1;
+
             var aabb = GetSelectionAABB(excludeNonmovable: transformMode is not null);
 
             // draw selection AABB if there is more than
-            // one prop selected
-            if (!canWarp && (selectedProps.Count > 1 || !selectedProps[0].IsAffine))
+            // one prop selected, or if the selected prop is warped
+            if (!canWarp && (selectedObjects.Count > 1 || (propCount > 0 && !firstProp!.IsAffine)))
             {
                 Raylib.DrawRectangleLinesEx(
                     new Rectangle(
@@ -544,15 +699,15 @@ partial class PropEditor : IEditorMode
             
             // scale gizmo (points on corners/edges)
             // don't draw handles if rotating
-            if ((transformMode is null && !canWarp) || transformMode is ScaleTransformMode)
+            if ((transformMode is null && !canWarp && canScaleRotate) || transformMode is ScaleTransformMode)
             {
                 ScaleTransformMode? scaleMode = transformMode as ScaleTransformMode;
 
                 Vector2[] corners;
 
-                if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
+                if (propCount == 1 && firstProp!.IsAffine)
                 {
-                    corners = selectedProps[0].QuadPoints;
+                    corners = firstProp!.QuadPoints;
                 }
                 else
                 {
@@ -584,7 +739,7 @@ partial class PropEditor : IEditorMode
                     {
                         BeginTransformMode(new ScaleTransformMode(
                             handleId: i,
-                            props: selectedProps,
+                            objects: selectedObjects,
                             snap: GetSnapValue(snappingMode)
                         ));
                     }
@@ -592,14 +747,14 @@ partial class PropEditor : IEditorMode
             }
 
             // rotation gizmo (don't draw if scaling or rotating) 
-            if (transformMode is null && !canWarp)
+            if (transformMode is null && !canWarp && canScaleRotate)
             {
                 Vector2 handleDir = -Vector2.UnitY;
                 Vector2 handleCnPos = aabb.Position + new Vector2(aabb.Width / 2f, 0f);
 
-                if (selectedProps.Count == 1 && selectedProps[0].IsAffine)
+                if (propCount == 1 && firstProp!.IsAffine)
                 {
-                    var prop = selectedProps[0];
+                    var prop = firstProp;
                     var sideDir = new Vector2(MathF.Cos(prop.Rect.Rotation), MathF.Sin(prop.Rect.Rotation));
                     handleDir = new(sideDir.Y, -sideDir.X);
                     handleCnPos = prop.Rect.Center + handleDir * Math.Abs(prop.Rect.Size.Y) / 2f; 
@@ -619,14 +774,14 @@ partial class PropEditor : IEditorMode
                 {
                     BeginTransformMode(new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
-                        props: selectedProps
+                        objects: selectedObjects
                     ));
                 }
                 
                 if (KeyShortcuts.Activated(KeyShortcut.RotatePropCW) || KeyShortcuts.Activated(KeyShortcut.RotatePropCCW))
                 {
                     BeginTransformMode(new MoveTransformMode(
-                        props: selectedProps,
+                        objects: selectedObjects,
                         snap: GetSnapValue(snappingMode),
                         mouseDown: false
                     ));
@@ -637,12 +792,12 @@ partial class PropEditor : IEditorMode
             // freeform warp gizmo
             if ((transformMode is null && canWarp) || transformMode is WarpTransformMode || transformMode is LongTransformMode)
             {
-                if (selectedProps[0].IsMovable)
+                if (firstProp!.IsMovable)
                 {
                     // normal free-form 
-                    if (!selectedProps[0].IsLong)
+                    if (!firstProp!.IsLong)
                     {
-                        Vector2[] corners = selectedProps[0].QuadPoints;
+                        Vector2[] corners = firstProp!.QuadPoints;
 
                         for (int i = 0; i < 4; i++)
                         {
@@ -659,7 +814,7 @@ partial class PropEditor : IEditorMode
                             {
                                 BeginTransformMode(new WarpTransformMode(
                                     handleId: i,
-                                    prop: selectedProps[0],
+                                    prop: firstProp!,
                                     snap: GetSnapValue(snappingMode)
                                 ));
                             }
@@ -671,7 +826,7 @@ partial class PropEditor : IEditorMode
                     // the left and right sides touch A and B
                     else
                     {
-                        var prop = selectedProps[0];
+                        var prop = firstProp!;
                         var cos = MathF.Cos(prop.Rect.Rotation);
                         var sin = MathF.Sin(prop.Rect.Rotation);
                         var pA = prop.Rect.Center + new Vector2(cos, sin) * -prop.Rect.Size.X / 2f;
@@ -714,25 +869,34 @@ partial class PropEditor : IEditorMode
             Raylib.DrawRectangleLinesEx(rect, 1f / window.ViewZoom, OutlineColors[0]);
 
             // select all props within selection rectangle
-            selectedProps.Clear();
-            
-            if (initSelectedProps is not null)
+            selectedObjects.Clear();
+
+            if (initSelectedObjects is not null)
             {
-                foreach (var prop in initSelectedProps)
-                    selectedProps.Add(prop);
+                foreach (var obj in initSelectedObjects)
+                    selectedObjects.Add(obj);
             }
 
             GetSelectionLayerFilter(window.WorkLayer, out int layerMin, out int layerMax);
 
-            foreach (var prop in level.Props)
+            foreach (var obj in objects)
             {
-                if (selectedProps.Contains(prop)) continue;
-                if (!IsSublayerWithinFilter(prop.DepthOffset, layerMin, layerMax)) continue;
+                if (selectedObjects.Contains(obj)) continue;
+                if (!IsSublayerWithinFilter(obj.DepthOffset, layerMin, layerMax)) continue;
                 
-                var pc = GetPropCenter(prop);
+                var pc = GetObjectCenter(obj);
                 if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
-                    selectedProps.Add(prop);
+                    selectedObjects.Add(obj);
             }
+
+            // foreach (var trunk in fezTrunks)
+            // {
+            //     if (!IsSublayerWithinFilter(trunk.OriginProp.DepthOffset, layerMin, layerMax)) continue;
+
+            //     var pc = trunk.Position;
+            //     if (pc.X >= minX && pc.Y >= minY && pc.X <= maxX && pc.Y <= maxY)
+            //         selectedFezTrunks.Add(trunk);
+            // }
         }
 
         if (window.IsViewportHovered)
@@ -766,7 +930,7 @@ partial class PropEditor : IEditorMode
 
                 if (transformMode is WarpTransformMode)
                 {
-                    selectedProps[0].TryConvertToAffine();
+                    firstProp?.TryConvertToAffine();
                 }
 
                 transformMode = null;
@@ -776,24 +940,24 @@ partial class PropEditor : IEditorMode
         prevMousePos = window.MouseCellFloat;
 
         // props selection popup (opens when right-clicking over an area with multiple props)
-        highlightedProp = null;
+        highlightedObject = null;
         if (ImGui.BeginPopup("PropSelectionList"))
         {
-            for (int i = propSelectionList.Length - 1; i >= 0; i--)
+            for (int i = objectSelectionList.Length - 1; i >= 0; i--)
             {
-                var prop = propSelectionList[i];
+                var obj = objectSelectionList[i];
 
                 ImGui.PushID(i);
-                if (ImGui.Selectable(prop.PropInit.Name))
+                if (ImGui.Selectable(obj.DisplayName))
                 {
                     ImGui.CloseCurrentPopup();
                     if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                        selectedProps.Clear();
-                    SelectProp(prop);
+                        selectedObjects.Clear();
+                    SelectObject(obj);
                 }
 
                 if (ImGui.IsItemHovered())
-                    highlightedProp = prop;
+                    highlightedObject = obj;
                 
                 ImGui.PopID();
             }
@@ -805,12 +969,15 @@ partial class PropEditor : IEditorMode
         }
 
         // update depth init for next prop placement based on currently selected props
-        if (selectedProps.Count > 0)
+        if (propCount > 0)
         {
             // check that the depth offset of all selected props are the same
-            int curDepthOffset = selectedProps[0].DepthOffset;
-            foreach (var prop in selectedProps)
+            int curDepthOffset = firstProp!.DepthOffset;
+            foreach (var obj in selectedObjects)
             {
+                if (obj.Type != PropEditorObjectType.Prop) continue;
+                var prop = obj.Prop;
+
                 if (prop.DepthOffset != curDepthOffset)
                 {
                     curDepthOffset = -1;
@@ -822,18 +989,18 @@ partial class PropEditor : IEditorMode
         }
     }
 
-    private void SelectProp(Prop prop)
+    private void SelectObject(PropEditorObject obj)
     {
         if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
         {
             // if prop is in selection, remove it from selection
             // if prop is not in selection, add it to the selection
-            if (!selectedProps.Remove(prop))
-                selectedProps.Add(prop);
+            if (!selectedObjects.Remove(obj))
+                selectedObjects.Add(obj);
         }
         else
         {
-            selectedProps.Add(prop);
+            selectedObjects.Add(obj);
         }
     }
 
@@ -844,23 +1011,23 @@ partial class PropEditor : IEditorMode
         if (window.IsViewportHovered)
         {
             // write selected tile
-            var propsAtCursor = GetPropsAt(EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) ? dragStartPos : window.MouseCellFloat, window.WorkLayer);
-            Prop? hoveredProp;
+            var objectsAtCursor = GetObjectsAt(EditorWindow.IsMouseDragging(ImGuiMouseButton.Left) ? dragStartPos : window.MouseCellFloat, window.WorkLayer);
+            PropEditorObject? hoveredObject;
             {
-                hoveredProp = propsAtCursor.Length == 0 ? null : propsAtCursor[0];
-                foreach (var prop in propsAtCursor)
+                hoveredObject = objectsAtCursor.Length == 0 ? null : objectsAtCursor[0];
+                foreach (var obj in objectsAtCursor)
                 {
-                    if (selectedProps.Contains(prop))
+                    if (selectedObjects.Contains(obj))
                     {
-                        hoveredProp = prop;
+                        hoveredObject = obj;
                         break;
                     }
                 }
             }
             
-            if (hoveredProp is not null)
+            if (hoveredObject is not null)
             {
-                window.WriteStatus(hoveredProp.PropInit.Name, 3);
+                window.WriteStatus(hoveredObject.Value.DisplayName, 3);
             }
 
             if (EditorWindow.IsMouseDragging(ImGuiMouseButton.Left))
@@ -869,15 +1036,20 @@ partial class PropEditor : IEditorMode
                 {
                     // drag had begun
                     // if dragging over an empty space, begin rect select
-                    if (hoveredProp is null)
+                    if (hoveredObject is null)
                     {
                         dragMode = DragMode.Select;
 
                         // if shift is held, rect select Adds instead of Replace
                         if (EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                            initSelectedProps = selectedProps.ToList(); // clone selection list
+                        {
+                            // clone selection lists
+                            initSelectedObjects = [..selectedObjects]; // clone selection lists
+                        }
                         else
-                            initSelectedProps = null;
+                        {
+                            initSelectedObjects = null;
+                        }
                     }
                     else
                     {
@@ -885,14 +1057,14 @@ partial class PropEditor : IEditorMode
                         // if active prop is in selection. if not, then set selection
                         // to this prop
                         dragMode = DragMode.Move;
-                        if (!selectedProps.Contains(hoveredProp))
+                        if (hoveredObject is not null && !selectedObjects.Contains(hoveredObject.Value))
                         {
-                            selectedProps.Clear();
-                            selectedProps.Add(hoveredProp);
+                            selectedObjects.Clear();
+                            selectedObjects.Add(hoveredObject.Value);
                         }
 
                         BeginTransformMode(new MoveTransformMode(
-                            selectedProps,
+                            selectedObjects,
                             GetSnapValue(snappingMode),
                             mouseDown: true
                         ));
@@ -906,12 +1078,12 @@ partial class PropEditor : IEditorMode
             if (EditorWindow.IsMouseReleased(ImGuiMouseButton.Left) && !isMouseDragging)
             {
                 if (!EditorWindow.IsKeyDown(ImGuiKey.ModShift))
-                    selectedProps.Clear();
+                    selectedObjects.Clear();
                 
-                var prop = GetPropAt(window.MouseCellFloat, window.WorkLayer);
-                if (prop is not null)
+                var obj = GetObjectAt(window.MouseCellFloat, window.WorkLayer);
+                if (obj is not null)
                 {
-                    SelectProp(prop);
+                    SelectObject(obj.Value);
                 }
             }
 
@@ -936,9 +1108,9 @@ partial class PropEditor : IEditorMode
             {
                 if (!prefs.DoubleClickToCreateProp) isDoubleClick = false;
 
-                propSelectionList = propsAtCursor;
+                objectSelectionList = objectsAtCursor;
                 
-                if (propSelectionList.Length > 1)
+                if (objectSelectionList.Length > 1)
                 {
                     ImGui.OpenPopup("PropSelectionList");
                 }
@@ -983,19 +1155,20 @@ partial class PropEditor : IEditorMode
                     prop.Randomize();
 
                     RainEd.Instance.Level.Props.Add(prop);
-                    selectedProps.Clear();
-                    selectedProps.Add(prop);
+                    selectedObjects.Clear();
+                    selectedObjects.Add(PropEditorObject.CreateProp(prop));
 
                     changeRecorder.PushListChange();
                 }
             }
 
             // when E is pressed, sample prop
-            if (KeyShortcuts.Activated(KeyShortcut.Eyedropper))
+            if (KeyShortcuts.Activated(KeyShortcut.Eyedropper) && hoveredObject is not null)
             {
-                var prop = hoveredProp;
-                if (prop is not null)
+                if (hoveredObject.Value.Type == PropEditorObjectType.Prop)
                 {
+                    var prop = hoveredObject.Value.Prop;
+
                     // if prop is a tile as prop
                     if (prop.PropInit.PropFlags.HasFlag(PropFlags.Tile))
                     {
@@ -1029,13 +1202,16 @@ partial class PropEditor : IEditorMode
         if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
-            foreach (var prop in selectedProps)
+            for (int i = selectedObjects.Count - 1; i >= 0; i--)
             {
-                RainEd.Instance.Level.Props.Remove(prop);
+                var obj = selectedObjects[i];
+                if (obj.CanRemove)
+                {
+                    RainEd.Instance.Level.Props.Remove(obj.Prop);
+                    selectedObjects.RemoveAt(i);
+                }
             }
             changeRecorder.PushListChange();
-
-            selectedProps.Clear();
             isMouseDragging = false;
         }
 
@@ -1044,14 +1220,14 @@ partial class PropEditor : IEditorMode
         {
             changeRecorder.BeginListChange();
 
-            var propsToDup = selectedProps.ToArray();
-            selectedProps.Clear();
+            var propsToDup = SelectedProps;
+            selectedObjects.Clear();
 
             foreach (var srcProp in propsToDup)
             {
                 Prop newProp = srcProp.Clone();
                 RainEd.Instance.Level.Props.Add(newProp);
-                selectedProps.Add(newProp);
+                selectedObjects.Add(PropEditorObject.CreateProp(newProp));
             }
 
             changeRecorder.PushListChange();
@@ -1059,7 +1235,8 @@ partial class PropEditor : IEditorMode
 
         if (KeyShortcuts.Activated(KeyShortcut.Copy))
         {
-            if (selectedProps.Count > 0)
+            var selectedProps = SelectedProps;
+            if (selectedProps.Any())
             {
                 var data = PropSerialization.SerializeProps([..selectedProps]);
                 if (data is not null)
@@ -1078,11 +1255,11 @@ partial class PropEditor : IEditorMode
                 {
                     ChangeRecorder.BeginListChange();
 
-                    selectedProps.Clear();
+                    selectedObjects.Clear();
                     foreach (var p in props)
                     {
-                        selectedProps.Add(p);
                         RainEd.Instance.Level.Props.Add(p);
+                        selectedObjects.Add(PropEditorObject.CreateProp(p));
                     }
 
                     ChangeRecorder.PushListChange();

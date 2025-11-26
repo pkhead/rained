@@ -19,28 +19,34 @@ partial class PropEditor : IEditorMode
         private readonly Vector2 rotCenter;
         private Vector2 mouseDelta;
         private readonly PropTransform[] dragInitPositions;
+        // private readonly PropEditorObject[] objects;
         private readonly Prop[] props;
+        private readonly Prop[] activeTrunks;
         private readonly Dictionary<Prop, Vector2[]> initRopePoints;
+        private readonly Vector2[] initTrunkPositions;
+        private readonly float[] initTrunkAngles;
         private readonly float snap;
         private float rotAngle = 0f;
         private bool mouseDown = true;
 
-        public MoveTransformMode(List<Prop> props, float snap, bool mouseDown)
+        public MoveTransformMode(List<PropEditorObject> objects, float snap, bool mouseDown)
         {
-            this.props = props.ToArray();
+            // this.objects = [..objects];
+            this.props = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.Prop)];
+            this.activeTrunks = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.FezTreeTrunk)];
             this.snap = snap;
             this.mouseDown = mouseDown;
 
             // record initial drag positions
-            dragInitPositions = new PropTransform[props.Count];
-            for (int i = 0; i < props.Count; i++)
+            dragInitPositions = new PropTransform[props.Length];
+            for (int i = 0; i < props.Length; i++)
             {
                 dragInitPositions[i] = props[i].Transform.Clone();
             }
 
             // record initial rope points
             initRopePoints = new Dictionary<Prop, Vector2[]>();
-            for (int i = 0; i < props.Count; i++)
+            for (int i = 0; i < props.Length; i++)
             {
                 var rope = props[i].Rope;
                 if (rope is not null && rope.Model is not null)
@@ -55,7 +61,17 @@ partial class PropEditor : IEditorMode
                 }
             }
 
-            var propsAABB = CalcPropExtents(props, true);
+            // record init trunk positions
+            initTrunkPositions = new Vector2[activeTrunks.Length];
+            initTrunkAngles = new float[activeTrunks.Length];
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                var tree = activeTrunks[i].FezTree!;
+                initTrunkPositions[i] = tree.TrunkPosition;
+                initTrunkAngles[i] = tree.TrunkAngle;
+            }
+
+            var propsAABB = CalcObjectExtents(objects, true);
             rotCenter = propsAABB.Position + propsAABB.Size / 2f;
         }
 
@@ -131,6 +147,13 @@ partial class PropEditor : IEditorMode
                     // pts[3] = dragInitPositions[i].quad[3] + mouseDelta;
                 }
             }
+
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                var fezTree = activeTrunks[i].FezTree!;
+                fezTree.TrunkAngle = initTrunkAngles[i] + rotAngle;
+                fezTree.TrunkPosition = Vector2.Transform(initTrunkPositions[i] - rotCenter, rotMat) + rotCenter + mouseDelta;
+            }
         }
 
         public bool Deactivated()
@@ -153,9 +176,13 @@ partial class PropEditor : IEditorMode
         private readonly float snap;
 
         private readonly Prop[] props;
-        public ScaleTransformMode(int handleId, List<Prop> props, float snap)
+        private readonly Prop[] activeTrunks;
+        private readonly Vector2[] initTrunkPositions;
+
+        public ScaleTransformMode(int handleId, List<PropEditorObject> objects, float snap)
         {
-            this.props = props.ToArray();
+            this.props = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.Prop)];
+            this.activeTrunks = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.FezTreeTrunk)];
             this.handleId = handleId;
             this.snap = snap;
 
@@ -172,9 +199,9 @@ partial class PropEditor : IEditorMode
                 _ => throw new Exception("Invalid handleId")
             };
 
-            if (props.Count > 1 || !props[0].IsAffine)
+            if (props.Length == 0 || props.Length > 1 || !props[0].IsAffine)
             {
-                var extents = CalcPropExtents(props);
+                var extents = CalcObjectExtents(objects);
                 origRect = new RotatedRect()
                 {
                     Center = extents.Position + extents.Size / 2f,
@@ -195,16 +222,22 @@ partial class PropEditor : IEditorMode
                 rotationMatrix = Matrix3x2.CreateRotation(origRect.Rotation);
             }
 
-            origPropTransforms = new PropTransform[props.Count];
-            for (int i = 0; i < props.Count; i++)
+            origPropTransforms = new PropTransform[props.Length];
+            for (int i = 0; i < props.Length; i++)
             {
                 origPropTransforms[i] = props[i].Transform.Clone();
+            }
+
+            initTrunkPositions = new Vector2[activeTrunks.Length];
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                initTrunkPositions[i] = activeTrunks[i].FezTree!.TrunkPosition;
             }
 
             // proportion maintenance is required if there is more than
             // one prop selected, and at least one affine prop in the selection
             mustMaintainProportions = false;
-            if (props.Count > 1)
+            if (props.Length > 1)
             {
                 foreach (var prop in props)
                 {
@@ -331,6 +364,15 @@ partial class PropEditor : IEditorMode
                         propQuad[k] = Vector2.Transform(scaleOffset * newRect.Size, rotationMatrix) + newRect.Center;
                     }
                 }
+            }
+
+            // scale selected trunks
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                var tree = activeTrunks[i].FezTree!;
+                var origPos = initTrunkPositions[i];
+                var scaleOffset = (origPos - origRect.Center) / origRect.Size;
+                tree.TrunkPosition = Vector2.Transform(scaleOffset * newRect.Size, rotationMatrix) + newRect.Center;
             }
         }
     }
@@ -477,15 +519,28 @@ partial class PropEditor : IEditorMode
         private readonly Vector2 rotCenter;
         private readonly PropTransform[] origTransforms;
         private readonly Prop[] props;
+        private readonly Prop[] activeTrunks;
+        private readonly Vector2[] initTrunkPositions;
+        private readonly float[] initTrunkAngles;
 
-        public RotateTransformMode(Vector2 rotCenter, List<Prop> props)
+        public RotateTransformMode(Vector2 rotCenter, List<PropEditorObject> objects)
         {
-            this.props = props.ToArray();
+            this.props = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.Prop)];
+            this.activeTrunks = [..PropEditorObject.SelectPropsWithType(objects, PropEditorObjectType.FezTreeTrunk)];
+
             this.rotCenter = rotCenter;
-            origTransforms = new PropTransform[props.Count];
-            for (int i = 0; i < props.Count; i++)
+            origTransforms = new PropTransform[props.Length];
+            for (int i = 0; i < props.Length; i++)
             {
                 origTransforms[i] = props[i].Transform.Clone();
+            }
+
+            initTrunkPositions = new Vector2[activeTrunks.Length];
+            initTrunkAngles = new float[activeTrunks.Length];
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                initTrunkPositions[i] = activeTrunks[i].FezTree!.TrunkPosition;
+                initTrunkAngles[i] = activeTrunks[i].FezTree!.TrunkAngle;
             }
         }
 
@@ -523,6 +578,14 @@ partial class PropEditor : IEditorMode
                         pts[k] = Vector2.Transform(origPts[k] - rotCenter, rotMat) + rotCenter;
                     }
                 }
+            }
+            
+            for (int i = 0; i < activeTrunks.Length; i++)
+            {
+                var tree = activeTrunks[i].FezTree!;
+
+                tree.TrunkAngle = initTrunkAngles[i] + angleDiff;
+                tree.TrunkPosition = Vector2.Transform(initTrunkPositions[i] - rotCenter, rotMat) + rotCenter;
             }
         }
     }

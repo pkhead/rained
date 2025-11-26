@@ -36,7 +36,11 @@ interface IAPIHost
     public void ResizeLevel(int newWidth, int newHeight, int anchorX, int anchorY);
 
     public int SelectedEffect { get; set; }
-    public List<Prop> SelectedProps { get; }
+    public IEnumerable<Prop> SelectedProps { get; }
+    public bool IsPropSelected(Prop prop);
+    public bool DeselectProp(Prop prop);
+    public void SelectProp(Prop prop);
+    public void DeselectAllProps();
 
     public Level? Level { get; }
     public MaterialDatabase MaterialDatabase { get; }
@@ -168,7 +172,27 @@ class APIGuiHost : IAPIHost
         get => RainEd.Instance.LevelView.GetEditor<EffectsEditor>().SelectedEffect;
         set => RainEd.Instance.LevelView.GetEditor<EffectsEditor>().SelectedEffect = value;
     }
-    public List<Prop> SelectedProps => RainEd.Instance.LevelView.GetEditor<PropEditor>().SelectedProps;
+
+    public IEnumerable<Prop> SelectedProps => RainEd.Instance.LevelView.GetEditor<PropEditor>().SelectedProps;
+    public bool IsPropSelected(Prop prop)
+    {
+        return RainEd.Instance.LevelView.GetEditor<PropEditor>().IsPropSelected(prop);
+    }
+
+    public bool DeselectProp(Prop prop)
+    {
+        return RainEd.Instance.LevelView.GetEditor<PropEditor>().DeselectProp(prop);
+    }
+
+    public void SelectProp(Prop prop)
+    {
+        RainEd.Instance.LevelView.GetEditor<PropEditor>().SelectProp(prop);
+    }
+
+    public void DeselectAllProps()
+    {
+        RainEd.Instance.LevelView.GetEditor<PropEditor>().DeselectAllProps();
+    }
 }
 
 class APIBatchHost : IAPIHost
@@ -441,5 +465,27 @@ class APIBatchHost : IAPIHost
         get => _documents[_activeDocument].SelectedEffect;
         set => _documents[_activeDocument].SelectedEffect = value;
     }
-    public List<Prop> SelectedProps => _documents[_activeDocument].SelectedProps;
+
+    public IEnumerable<Prop> SelectedProps => _documents[_activeDocument].SelectedProps;
+    public bool IsPropSelected(Prop prop)
+    {
+        return _documents[_activeDocument].SelectedProps.Contains(prop);
+    }
+
+    public bool DeselectProp(Prop prop)
+    {
+        return _documents[_activeDocument].SelectedProps.Remove(prop);
+    }
+
+    public void SelectProp(Prop prop)
+    {
+        var propList = _documents[_activeDocument].SelectedProps;
+        if (!propList.Contains(prop))
+            propList.Add(prop);
+    }
+
+    public void DeselectAllProps()
+    {
+        _documents[_activeDocument].SelectedProps.Clear();
+    }
 }

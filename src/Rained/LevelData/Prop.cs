@@ -193,6 +193,17 @@ class PropRope
     }
 }
 
+class PropFezTree
+{
+    public float LeafDensity = 1f; // [0.0, 1.0]
+    public int EffectColor = 0; // 0, 1, 2
+
+    public Vector2 TrunkPosition = new(0f, 0f);
+    public float TrunkAngle = 0f; // radians, counterclockwise
+    // public Vector2 LeafPosition = new(0f, 0f); // position of prop bottom-middle
+    // public float LeafAngle = 0f; // radians, counterclockwise
+}
+
 public enum PropRenderTime
 {
     PreEffects, PostEffects
@@ -216,6 +227,9 @@ class Prop
 
     private readonly PropRope? rope;
     public PropRope? Rope { get => rope; }
+
+    private readonly PropFezTree? fezTree;
+    public PropFezTree? FezTree { get => fezTree; }
     
     // returns true if it's a rope or a long-type prop
     public bool IsLong { get => PropInit.Type == PropType.Rope || PropInit.Type == PropType.Long; }
@@ -250,6 +264,11 @@ class Prop
         get => !IsLong || transform.isAffine;
     }
 
+    public bool CanVertexEdit
+    {
+        get => PropInit.Type != PropType.FezTree;
+    }
+
     public int DepthOffset = 0; // 0-29
     public int CustomDepth;
     public int CustomColor = 0; // index into the PropDatabase.PropColors list
@@ -277,6 +296,10 @@ class Prop
         {
             rope = new PropRope(init);
         }
+        else if (init.Type == PropType.FezTree)
+        {
+            fezTree = new PropFezTree();
+        }
     }
 
     public Prop(PropInit init, Vector2 center, Vector2 size) : this(init)
@@ -284,6 +307,11 @@ class Prop
         transform.rect.Center = center;
         transform.rect.Size = size;
         transform.rect.Rotation = 0f;
+
+        if (fezTree is not null)
+        {
+            fezTree.TrunkPosition = center + new Vector2(0f, size.Y / 2f + 1f);
+        }
     }
 
     public Prop(PropInit init, Vector2[] points) : this(init)

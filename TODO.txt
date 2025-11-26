@@ -13,6 +13,7 @@ oh also clicking on a category doesnt select any tile in that category so using 
 - errors when rendering new effects???
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
+- make it so .rwlz file format does not require files to be named level.txt and level.png
 
 v2.4.0:
   - tile & effect prefabs

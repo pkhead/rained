@@ -52,7 +52,7 @@ class PropRenderer(LevelEditRender renderInfo)
                 var aabbMax = aabb.Position + aabb.Size;
                 if (aabbMax.X < viewTl.X || aabbMax.Y < viewTl.Y || aabbMin.X > viewBr.X || aabbMin.Y > viewBr.Y)
                 {
-                    continue;
+                    goto frustumCulled;
                 }
             }
             
@@ -272,6 +272,21 @@ class PropRenderer(LevelEditRender renderInfo)
                     if (depthTestEnabled)
                         rctx.SetRenderFlags(Glib.RenderFlags.DepthTest);
                 }
+            }
+
+            // evil goto statement
+            // because i don't want fez tree trunk position to be culled.
+            // this is the easiest way for me to figure out how to do that while
+            // still culling the main prop body.
+            frustumCulled:;
+
+            // render fez tree trunk visualization
+            if (prop.FezTree is not null)
+            {
+                var tree = prop.FezTree;
+
+                rctx.DrawColor = new Glib.Color(1f, 0f, 0f);
+                rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, 8f);
             }
         }
         
