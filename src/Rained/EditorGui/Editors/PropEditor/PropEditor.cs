@@ -677,8 +677,8 @@ partial class PropEditor : IEditorMode
         if (selectedObjects.Count > 0 && !isRopeSimulationActive && !zTranslateActive)
         {
             bool canWarp = transformMode is WarpTransformMode ||
-                (isWarpMode && propCount == 1 && firstProp!.CanVertexEdit);
-            bool canScaleRotate = propCount > 0 || selectedObjects.Count > 1;
+                (isWarpMode && propCount == 1 && trunkCount == 0 && firstProp!.CanVertexEdit);
+            bool canScale = propCount > 0 || selectedObjects.Count > 1;
 
             var aabb = GetSelectionAABB(excludeNonmovable: transformMode is not null);
 
@@ -698,7 +698,7 @@ partial class PropEditor : IEditorMode
             
             // scale gizmo (points on corners/edges)
             // don't draw handles if rotating
-            if ((transformMode is null && !canWarp && canScaleRotate) || transformMode is ScaleTransformMode)
+            if ((transformMode is null && !canWarp && canScale) || transformMode is ScaleTransformMode)
             {
                 ScaleTransformMode? scaleMode = transformMode as ScaleTransformMode;
 
@@ -746,12 +746,21 @@ partial class PropEditor : IEditorMode
             }
 
             // rotation gizmo (don't draw if scaling or rotating) 
-            if (transformMode is null && !canWarp && canScaleRotate)
+            if (transformMode is null && !canWarp)
             {
                 Vector2 handleDir = -Vector2.UnitY;
                 Vector2 handleCnPos = aabb.Position + new Vector2(aabb.Width / 2f, 0f);
+                float handleLineLength = 5f;
 
-                if (propCount == 1 && firstProp!.IsAffine)
+                if (trunkCount == 1 && propCount == 0)
+                {
+                    var tree = selectedObjects[0].Prop.FezTree!;
+                    handleDir = new(MathF.Cos(tree.TrunkAngle), MathF.Sin(tree.TrunkAngle));
+                    handleCnPos = tree.TrunkPosition;
+
+                    handleLineLength = 2f;
+                }
+                else if (trunkCount == 0 && propCount == 1 && firstProp!.IsAffine)
                 {
                     var prop = firstProp;
                     var sideDir = new Vector2(MathF.Cos(prop.Rect.Rotation), MathF.Sin(prop.Rect.Rotation));
@@ -759,7 +768,7 @@ partial class PropEditor : IEditorMode
                     handleCnPos = prop.Rect.Center + handleDir * Math.Abs(prop.Rect.Size.Y) / 2f; 
                 }
 
-                Vector2 rotDotPos = handleCnPos + handleDir * 5f / window.ViewZoom;
+                Vector2 rotDotPos = handleCnPos + handleDir * handleLineLength / window.ViewZoom;
 
                 // draw line to gizmo handle
                 Raylib.DrawLineV(
