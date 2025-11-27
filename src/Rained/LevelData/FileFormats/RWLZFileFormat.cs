@@ -5,12 +5,32 @@ namespace Rained.LevelData.FileFormats;
 
 class RWLZFileFormat : ILevelFileFormat
 {
+    private static void ScanArchive(ZipArchive archive, out ZipArchiveEntry? dataEntry, out ZipArchiveEntry? lightEntry)
+    {
+        dataEntry = null;
+        lightEntry = null;
+
+        foreach (var entry in archive.Entries)
+        {
+            // skip if entry isn't top-level
+            if (!string.IsNullOrEmpty(Path.GetDirectoryName(entry.FullName))) continue;
+
+            if (Path.GetExtension(entry.FullName) == ".txt" && dataEntry is null)
+                dataEntry = entry;
+            
+            else if (Path.GetExtension(entry.FullName) == ".png" && lightEntry is null)
+                lightEntry = entry;
+
+            if (dataEntry is not null && lightEntry is not null)
+                break;
+        }
+    }
+
     public LevelLoadResult Load(string path, LevelSerializationParams? hostData = null)
     {
         using var file = File.OpenRead(path);
         using var archive = new ZipArchive(file, ZipArchiveMode.Read);
-        ZipArchiveEntry? dataEntry = archive.GetEntry("level.txt");
-        ZipArchiveEntry? lightEntry = archive.GetEntry("level.png");
+        ScanArchive(archive, out var dataEntry, out var lightEntry);
 
         if (dataEntry is null)
             throw new InvalidDataException($"{path} does not have a valid .rwlz structure.");
@@ -86,8 +106,7 @@ class RWLZFileFormat : ILevelFileFormat
     {
         using var file = File.OpenRead(path);
         using var archive = new ZipArchive(file, ZipArchiveMode.Read);
-        ZipArchiveEntry? dataEntry = archive.GetEntry("level.txt");
-        ZipArchiveEntry? lightEntry = archive.GetEntry("level.png");
+        ScanArchive(archive, out var dataEntry, out var lightEntry);
 
         if (dataEntry is null)
             throw new InvalidDataException($"{path} does not have a valid .rwlz structure.");
@@ -103,8 +122,7 @@ class RWLZFileFormat : ILevelFileFormat
 
         using var file = File.OpenRead(path);
         using var archive = new ZipArchive(file, ZipArchiveMode.Read);
-        ZipArchiveEntry? dataEntry = archive.GetEntry("level.txt");
-        ZipArchiveEntry? lightEntry = archive.GetEntry("level.png");
+        ScanArchive(archive, out var dataEntry, out var lightEntry);
 
         if (dataEntry is null)
             throw new InvalidDataException($"{path} does not have a valid .rwlz structure.");
