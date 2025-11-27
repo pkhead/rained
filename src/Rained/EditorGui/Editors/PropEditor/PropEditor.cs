@@ -279,11 +279,10 @@ partial class PropEditor : IEditorMode
         objects.Clear();
         foreach (var prop in RainEd.Instance.Level.Props)
         {
-            objects.Add(PropEditorObject.CreateProp(prop));
             if (prop.FezTree is not null)
-            {
                 objects.Add(PropEditorObject.CreateFezTreeTrunk(prop));
-            }
+            
+            objects.Add(PropEditorObject.CreateProp(prop));
         }
     }
 

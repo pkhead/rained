@@ -65,7 +65,7 @@ readonly record struct PropEditorObject(PropEditorObjectType Type, Prop Prop)
 
             case PropEditorObjectType.FezTreeTrunk:
             {
-                return Vector2.DistanceSquared(FezTrunkPosition, point) < 0.75 * 0.75;
+                return Vector2.DistanceSquared(FezTrunkPosition, point) < 0.4 * 0.4;
             }
 
             default: throw new UnreachableException();

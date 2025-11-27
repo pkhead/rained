@@ -199,7 +199,7 @@ class PropFezTree
     public int EffectColor = 0; // 0, 1, 2
 
     public Vector2 TrunkPosition = new(0f, 0f);
-    public float TrunkAngle = 0f; // radians, counterclockwise
+    public float TrunkAngle = -MathF.PI / 2f; // radians, clockwise
     // public Vector2 LeafPosition = new(0f, 0f); // position of prop bottom-middle
     // public float LeafAngle = 0f; // radians, counterclockwise
 }

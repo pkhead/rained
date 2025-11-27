@@ -906,7 +906,7 @@ partial class PropEditor : IEditorMode
                     if (obj.Type == PropEditorObjectType.Prop)
                         ImGui.TextUnformatted($"Depth: {obj.DepthOffset} - {obj.DepthOffset + obj.Prop.PropInit.Depth}");
                     else
-                        ImGui.TextUnformatted($"Depth: {obj.DepthOffset};");
+                        ImGui.TextUnformatted($"Depth: {obj.DepthOffset}");
                 }
                 else
                 {

@@ -283,10 +283,23 @@ class PropRenderer(LevelEditRender renderInfo)
             // render fez tree trunk visualization
             if (prop.FezTree is not null)
             {
+                var depthTestEnabled = rctx.Flags.HasFlag(Glib.RenderFlags.DepthTest);
+                rctx.ClearRenderFlags(Glib.RenderFlags.DepthTest);
+
                 var tree = prop.FezTree;
 
+                // draw circle
                 rctx.DrawColor = new Glib.Color(1f, 0f, 0f);
-                rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, 8f);
+                rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, 4f);
+
+                // draw direction indicator
+                var dir = new Vector2(MathF.Cos(tree.TrunkAngle), MathF.Sin(tree.TrunkAngle));
+                var dirPerp = new Vector2(-dir.Y, dir.X);
+                var basePt = tree.TrunkPosition * Level.TileSize + dir * 4f;
+                rctx.DrawTriangle(basePt + dirPerp * 4f, basePt - dirPerp * 4f, basePt + dir * 5f);
+
+                if (depthTestEnabled)
+                    rctx.SetRenderFlags(Glib.RenderFlags.DepthTest);
             }
         }
         
