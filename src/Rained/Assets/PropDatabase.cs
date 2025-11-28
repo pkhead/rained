@@ -331,6 +331,7 @@ record class PropInit
             // case PropType.SoftEffect: -- unused prop type?
             case PropType.Antimatter:
             case PropType.ColoredSoft:
+            case PropType.FezTree:
                 PropFlags |= PropFlags.CustomDepthAvailable;
                 break;
         }
