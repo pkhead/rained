@@ -547,7 +547,7 @@ class PropDatabase
     [#nm:"Moss Hang B", #tp:"long", #depth:3, #tags:["effectColorB"], #notes:["For best results you should place this on the back sublayers of whatever layer you're trying to place this on, and allow the moss to kinda 'lerch' forward. The moss starts placing in the middle of the long, and follows gravity."], #author:"April"]
   
     -["Procedural Plants", color(0, 255, 0)]
-    [#nm:"Fez Tree", #tp:"fezTree", #depth:10, #tags:[], #notes:["Click again after placing to determine the position of the tree's base. Press Q or E while in this mode to rotate the base.", "Please note that the preview line does not necessarily indicate the path that the trunk will take."], #previewColor:color(255,0, 0), #author:"Cappin"]
+    [#nm:"Fez Tree", #tp:"fezTree", #depth:10, #tags:[], #notes:["Please note that the preview line does not necessarily indicate the path that the trunk will take."], #previewColor:color(255,0, 0), #author:"Cappin"]
     """;
 
     // private const string ExtraPropsInitssssss = """
