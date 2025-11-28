@@ -151,7 +151,9 @@ partial class PropEditor : IEditorMode
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, style.ItemInnerSpacing);
 
             ImGui.PushButtonRepeat(true);
-            bool fast = EditorWindow.IsKeyDown(ImGuiKey.ModShift);
+
+            // ask ImGui directly because it needs to ignore WantCaptureKeyboard in order for it to be clickable
+            bool fast = ImGui.IsKeyDown(ImGuiKey.ModShift) /*EditorWindow.IsKeyDown(ImGuiKey.ModShift)*/;
             var delta = fast ? 10 : 1;
 
             ImGui.SameLine();

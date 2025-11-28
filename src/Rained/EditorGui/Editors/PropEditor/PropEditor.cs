@@ -556,7 +556,7 @@ partial class PropEditor : IEditorMode
         {
             foreach (var obj in selectedObjects)
             {
-                if (obj.Type == PropEditorObjectType.Prop) continue;
+                if (obj.Type != PropEditorObjectType.Prop) continue;
 
                 var prop = obj.Prop;
                 prop.DepthOffset += zTranslateValue;
@@ -587,7 +587,7 @@ partial class PropEditor : IEditorMode
         {
             foreach (var obj in selectedObjects)
             {
-                if (obj.Type == PropEditorObjectType.Prop) continue;
+                if (obj.Type != PropEditorObjectType.Prop) continue;
                 var prop = obj.Prop;
 
                 prop.DepthOffset = zTranslateDepths[prop];
