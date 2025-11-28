@@ -122,11 +122,13 @@ PROP LEVEL FORMAT
         #points: point[] (if rope-type prop)
         #treeParameters: [
           (for each coordinate, 20 units = 1 cell)
+          (rotation is expressed in degrees, clockwise, with up as origin)
+
           #trunkPos: point
-          #trunkAngle: rotation in degrees, clockwise
+          #trunkAngle: number
           #leafPos: the point at the bottom of the prop
-          #leafSize: point(55.0000, 67.5000)
-          #leafAngle: rotation in degrees, clockwise
+          #leafSize: point(propStretchX * 80 * 0.6875, propStretchY * 80 * 0.84375)
+          #leafAngle: number
         ]
       ]
     ]

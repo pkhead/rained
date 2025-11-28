@@ -622,6 +622,20 @@ class VanillaFileFormat : ILevelFileFormat
                         prop.Rope!.LoadPoints(pointList.ToArray());
                     }
 
+                    // read tree parameters
+                    if (prop.FezTree is not null)
+                    {
+                        var treeParams = (Lingo.PropertyList)moreData["treeParameters"];
+
+                        var trunkPos = (Vector2)treeParams["trunkPos"] / 20f;
+                        var trunkAngle = Util.Deg2Rad(Lingo.LingoNumber.AsFloat(treeParams["trunkAngle"]) - 90f);
+
+                        prop.FezTree.LeafDensity = Lingo.LingoNumber.AsFloat(settingsData["leafDensity"]);
+                        prop.FezTree.EffectColor = (PropFezTreeEffectColor)Lingo.LingoNumber.AsInt(settingsData["effectColor"]);
+                        prop.FezTree.TrunkPosition = trunkPos;
+                        prop.FezTree.TrunkAngle = trunkAngle;
+                    }
+
                     // read optional settings
                     object? tempObject;
                     if (settingsData.TryGetValue("customDepth", out tempObject) && tempObject is not null)
@@ -1056,6 +1070,13 @@ class VanillaFileFormat : ILevelFileFormat
             if (propInit.PropFlags.HasFlag(PropFlags.Colorize))
                 output.AppendFormat(", #applyColor: {0}", prop.ApplyColor ? 1 : 0);
 
+            if (prop.FezTree is not null)
+            {
+                var tree = prop.FezTree;
+                output.AppendFormat(", #leafDensity: {0}", tree.LeafDensity.ToString("0.0000", CultureInfo.InvariantCulture));
+                output.AppendFormat(", #effectColor: {0}", (int)tree.EffectColor);
+            }
+
             if (propInit.Rope is not null)
             {
                 output.Append(", #release: ");
@@ -1097,6 +1118,65 @@ class VanillaFileFormat : ILevelFileFormat
                         (segPos.Y * 20f).ToString("0.0000", CultureInfo.InvariantCulture)
                     );
                 }
+
+                output.Append(']');
+            }
+
+            // save fez tree parameters
+            if (prop.FezTree is not null)
+            {
+                output.Append(", #treeParameters: [");
+                var tree = prop.FezTree!;
+
+                output.AppendFormat("#trunkPos: point({0}, {1})",
+                    (tree.TrunkPosition.X * 20f).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (tree.TrunkPosition.Y * 20f).ToString("0.0000", CultureInfo.InvariantCulture)
+                );
+
+                output.AppendFormat(", #trunkAngle: {0}",
+                    Util.Rad2Deg(tree.TrunkAngle + MathF.PI / 2f).ToString("0.0000", CultureInfo.InvariantCulture)
+                );
+
+                // calculate leaf position, size, and angle
+                // leaf position is the midpoint of the bottom rect side
+                // leaf angle is just the rotation of the prop
+                Vector2 leafPos;
+                Vector2 propStretch;
+                float leafAngle;
+                if (prop.IsAffine)
+                {
+                    var rect = prop.Rect;
+                    leafPos = rect.Center + new Vector2(-MathF.Sin(rect.Rotation), MathF.Cos(rect.Rotation)) * (rect.Size.Y / 2f);
+                    propStretch = rect.Size / new Vector2(prop.PropInit.Width, prop.PropInit.Height);
+                    leafAngle = rect.Rotation;
+                }
+                else
+                {
+                    Log.Warning("Fez tree was not affine! Inferring leaf position and angle...");
+                    var pts = prop.QuadPoints;
+
+                    var propWidth = Vector2.Distance((pts[0] + pts[3]) / 2f, (pts[1] + pts[2]) / 2f);
+                    var propHeight = Vector2.Distance((pts[0] + pts[1]) / 2f, (pts[2] + pts[3]) / 2f);
+                    propStretch = new Vector2(propWidth, propHeight) / new Vector2(prop.PropInit.Width, prop.PropInit.Height);
+
+                    leafPos = (pts[2] + pts[3]) / 2f;
+                    leafAngle = MathF.Atan2(pts[2].Y - pts[3].Y, pts[2].X - pts[3].X);
+                }
+
+                output.AppendFormat(", #leafPos: point({0}, {1})",
+                    (leafPos.X * 20f).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (leafPos.Y * 20f).ToString("0.0000", CultureInfo.InvariantCulture)
+                );
+
+                var leafSize = propStretch * 80f * new Vector2(0.6875f, 0.84375f);
+                output.AppendFormat(", #leafSize: point({0}, {1})",
+                    (leafSize.X).ToString("0.0000", CultureInfo.InvariantCulture),
+                    (leafSize.Y).ToString("0.0000", CultureInfo.InvariantCulture)
+                );
+
+                output.AppendFormat(", #leafAngle: {0}",
+                    Util.Rad2Deg(leafAngle).ToString("0.0000", CultureInfo.InvariantCulture)
+                );
 
                 output.Append(']');
             }
