@@ -193,10 +193,17 @@ class PropRope
     }
 }
 
+public enum PropFezTreeEffectColor
+{
+    Dead = 0,
+    Color1 = 1,
+    Color2 = 2
+};
+
 class PropFezTree
 {
     public float LeafDensity = 1f; // [0.0, 1.0]
-    public int EffectColor = 0; // 0, 1, 2
+    public PropFezTreeEffectColor EffectColor = PropFezTreeEffectColor.Dead;
 
     public Vector2 TrunkPosition = new(0f, 0f);
     public float TrunkAngle = -MathF.PI / 2f; // radians, clockwise

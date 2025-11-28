@@ -184,6 +184,51 @@ partial class PropEditor : IEditorMode
         }
     }
 
+    private void MultiselectSliderFloat<T>(T[] items, string label, string fieldName, float v_min, float v_max, string format = "%.3f", ImGuiSliderFlags flags = 0)
+    {
+        var field = typeof(T).GetField(fieldName)!;
+        var targetV = (float)field.GetValue(items[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < items.Length; i++)
+        {
+            if ((float)field.GetValue(items[i])! != targetV)
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        // bool depthOffsetInput = fieldName == nameof(Prop.DepthOffset);
+        // if (depthOffsetInput)
+        // {
+        //     var w = ImGui.CalcItemWidth() - ImGui.GetFrameHeight() * 2 - style.ItemInnerSpacing.X * 2;
+        //     ImGui.PushItemWidth(w);
+        // }
+        
+        if (isSame)
+        {
+            float v = (float) field.GetValue(items[0])!;
+            if (ImGui.SliderFloat(label, ref v, v_min, v_max, format, flags))
+            {
+                foreach (var prop in items)
+                    field.SetValue(prop, v);
+            }
+        }
+        else
+        {
+            float v = float.NegativeInfinity;
+            if (ImGui.SliderFloat(label, ref v, v_min, v_max, string.Empty, flags))
+            {
+                foreach (var prop in items)
+                    field.SetValue(prop, v);
+            }
+        }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            changeRecorder.PushSettingsChanges();
+    }
+
     // this, specifically, is generic for both the items list and the field type,
     // because i use this for both prop properties and rope-type rope properties
     private void MultiselectEnumInput<T, E>(T[] items, string label, string fieldName, string[] enumNames) where E : Enum
@@ -636,164 +681,188 @@ partial class PropEditor : IEditorMode
                 MultiselectListInput(selectedProps, "Custom Color", "CustomColor", propColorNames);
         }
 
-        // rope properties, if all selected props are ropes
+        // scan which type of prop that all selected props are
         bool longProps = true;
         bool ropeProps = true;
         bool affineProps = true;
+        bool fezTreeProps = true;
+
+        // check if they're all affine
+        foreach (var prop in selectedProps)
         {
-            // check if they're all affine
-            foreach (var prop in selectedProps)
+            if (!prop.IsAffine)
             {
-                if (!prop.IsAffine)
+                affineProps = false;
+                break;
+            }
+        }
+
+        // check if they're all long props
+        foreach (var prop in selectedProps)
+        {
+            if (!prop.IsLong)
+            {
+                longProps = false;
+                break;
+            }
+        }
+
+        // check if they're all rope props
+        foreach (var prop in selectedProps)
+        {
+            if (prop.Rope is null)
+            {
+                ropeProps = false;
+                break;
+            }
+        }
+
+        // check if they're all feztree props
+        foreach (var prop in selectedProps)
+        {
+            if (prop.FezTree is null)
+            {
+                fezTreeProps = false;
+                break;
+            }
+        }
+        
+        // rope prop options, if they are all rope props
+        if (ropeProps)
+        {
+            if (affineProps)
+            {
+                // flexibility drag float
+                // can't make a MultiselectDragFloat function for this,
+                // cus it doesn't directly control a value
+                bool sameFlexi = true;
+                float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
+                float minFlexi = 0.5f / selectedProps[0].PropInit.Height;
+
+                for (int i = 1; i < selectedProps.Length; i++)
                 {
-                    affineProps = false;
-                    break;
+                    var prop = selectedProps[i];
+                    float flexi = prop.Rect.Size.Y / prop.PropInit.Height;
+
+                    if (MathF.Abs(flexi - targetFlexi) > 0.01f)
+                    {
+                        sameFlexi = false;
+                        
+                        // idk why i did this cus every rope-type prop
+                        // starts out at the same size anyway
+                        float min = 0.5f / prop.PropInit.Height;
+                        if (min > minFlexi)
+                            minFlexi = min;
+                        
+                        break;
+                    }
                 }
+
+                if (!sameFlexi)
+                {
+                    targetFlexi = 1f;
+                }
+
+                // if not all props have the same flexibility value, the display text will be empty
+                // and interacting it will set them all to the default
+                if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, minFlexi, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
+                {
+                    foreach (var prop in selectedProps)
+                    {
+                        prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
+                    }
+                }
+
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                    changeRecorder.PushSettingsChanges();
             }
 
-            // check if they're all long props
-            foreach (var prop in selectedProps)
+            List<PropRope> ropes = new()
             {
-                if (!prop.IsLong)
-                {
-                    longProps = false;
-                    break;
-                }
-            }
+                Capacity = selectedProps.Length
+            };
+            foreach (var p in selectedProps)
+                ropes.Add(p.Rope!);
+            
+            MultiselectSwitchInput<PropRope, RopeReleaseMode>([..ropes], "Release", "ReleaseMode", ["None", "Left", "Right"]);
 
-            // check if they're all rope props
-            foreach (var prop in selectedProps)
+            if (selectedProps.Length == 1)
             {
-                if (prop.Rope is null)
+                var prop = selectedProps[0];
+
+                // thickness
+                if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                 {
-                    ropeProps = false;
-                    break;
-                }
-            }
-
-            if (ropeProps)
-            {
-                if (affineProps)
-                {
-                    // flexibility drag float
-                    // can't make a MultiselectDragFloat function for this,
-                    // cus it doesn't directly control a value
-                    bool sameFlexi = true;
-                    float targetFlexi = selectedProps[0].Rect.Size.Y / selectedProps[0].PropInit.Height;
-                    float minFlexi = 0.5f / selectedProps[0].PropInit.Height;
-
-                    for (int i = 1; i < selectedProps.Length; i++)
-                    {
-                        var prop = selectedProps[i];
-                        float flexi = prop.Rect.Size.Y / prop.PropInit.Height;
-
-                        if (MathF.Abs(flexi - targetFlexi) > 0.01f)
-                        {
-                            sameFlexi = false;
-                            
-                            // idk why i did this cus every rope-type prop
-                            // starts out at the same size anyway
-                            float min = 0.5f / prop.PropInit.Height;
-                            if (min > minFlexi)
-                                minFlexi = min;
-                            
-                            break;
-                        }
-                    }
-
-                    if (!sameFlexi)
-                    {
-                        targetFlexi = 1f;
-                    }
-
-                    // if not all props have the same flexibility value, the display text will be empty
-                    // and interacting it will set them all to the default
-                    if (ImGui.DragFloat("Flexibility", ref targetFlexi, 0.02f, minFlexi, float.PositiveInfinity, sameFlexi ? "%.2f" : "", ImGuiSliderFlags.AlwaysClamp))
-                    {
-                        foreach (var prop in selectedProps)
-                        {
-                            prop.Rect.Size.Y = targetFlexi * prop.PropInit.Height;
-                        }
-                    }
-
+                    ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 1f, 5f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
                     if (ImGui.IsItemDeactivatedAfterEdit())
                         changeRecorder.PushSettingsChanges();
                 }
 
-                List<PropRope> ropes = new()
+                // color Zero-G Tube white
+                if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
                 {
-                    Capacity = selectedProps.Length
-                };
-                foreach (var p in selectedProps)
-                    ropes.Add(p.Rope!);
-                
-                MultiselectSwitchInput<PropRope, RopeReleaseMode>([..ropes], "Release", "ReleaseMode", ["None", "Left", "Right"]);
-
-                if (selectedProps.Length == 1)
-                {
-                    var prop = selectedProps[0];
-
-                    // thickness
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
-                    {
-                        ImGui.SliderFloat("Thickness", ref prop.Rope!.Thickness, 1f, 5f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
-                        if (ImGui.IsItemDeactivatedAfterEdit())
-                            changeRecorder.PushSettingsChanges();
-                    }
-
-                    // color Zero-G Tube white
-                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.Colorize))
-                    {
-                        if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
-                            changeRecorder.PushSettingsChanges();
-                    }
-                }
-
-                // rope simulation controls
-                if (affineProps)
-                {
-                    if (ImGui.Button("Reset Simulation") || KeyShortcuts.Activated(KeyShortcut.ResetSimulation))
-                    {
-                        changeRecorder.BeginTransform();
-
-                        foreach (var prop in selectedProps)
-                            prop.Rope!.ResetModel();
-                        
-                        changeRecorder.PushChanges();
-                    }
-
-                    var simSpeed = 0f;
-
-                    ImGui.SameLine();
-                    ImGui.Button("Simulate");
-
-                    if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation)) && transformMode is null)
-                    {
-                        simSpeed = 1f;
-                    }
-
-                    ImGui.SameLine();
-                    ImGui.Button("Fast");
-                    if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulationFast)) && transformMode is null)
-                    {
-                        simSpeed = RainEd.Instance.Preferences.FastSimulationSpeed;
-                    }
-
-                    if (simSpeed > 0f)
-                    {
-                        isRopeSimulationActive = true;
-
-                        if (!wasRopeSimulationActive)
-                        {
-                            changeRecorder.BeginTransform();
-                            Log.Information("Begin rope simulation");
-                        }
-
-                        foreach (var prop in selectedProps)
-                            prop.Rope!.SimulationSpeed = simSpeed;
-                    }
+                    if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
+                        changeRecorder.PushSettingsChanges();
                 }
             }
+
+            // rope simulation controls
+            if (affineProps)
+            {
+                if (ImGui.Button("Reset Simulation") || KeyShortcuts.Activated(KeyShortcut.ResetSimulation))
+                {
+                    changeRecorder.BeginTransform();
+
+                    foreach (var prop in selectedProps)
+                        prop.Rope!.ResetModel();
+                    
+                    changeRecorder.PushChanges();
+                }
+
+                var simSpeed = 0f;
+
+                ImGui.SameLine();
+                ImGui.Button("Simulate");
+
+                if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulation)) && transformMode is null)
+                {
+                    simSpeed = 1f;
+                }
+
+                ImGui.SameLine();
+                ImGui.Button("Fast");
+                if ((ImGui.IsItemActive() || KeyShortcuts.Active(KeyShortcut.RopeSimulationFast)) && transformMode is null)
+                {
+                    simSpeed = RainEd.Instance.Preferences.FastSimulationSpeed;
+                }
+
+                if (simSpeed > 0f)
+                {
+                    isRopeSimulationActive = true;
+
+                    if (!wasRopeSimulationActive)
+                    {
+                        changeRecorder.BeginTransform();
+                        Log.Information("Begin rope simulation");
+                    }
+
+                    foreach (var prop in selectedProps)
+                        prop.Rope!.SimulationSpeed = simSpeed;
+                }
+            }
+        }
+
+        // fez tree properties, if all selected props are fez trees
+        if (fezTreeProps)
+        {
+            var trees = new PropFezTree[selectedProps.Length];
+            for (int i = 0; i < selectedProps.Length; i++)
+            {
+                trees[i] = selectedProps[i].FezTree ?? throw new NullReferenceException("Prop.FezTree was null");
+            }
+
+            MultiselectSliderFloat(trees, "Leaf Density", "LeafDensity", 0f, 1f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
+            MultiselectSwitchInput<PropFezTree, PropFezTreeEffectColor>(trees, "Effect Color", "EffectColor", ["X", "1", "2"]);
         }
 
         if (selectedProps.Length == 1)
