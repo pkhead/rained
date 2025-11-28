@@ -481,10 +481,10 @@ partial class PropEditor : IEditorMode
             else if (obj.Type == PropEditorObjectType.FezTreeTrunk)
             {
                 var pos = obj.FezTrunkPosition;
-                minX = Math.Min(minX, pos.X);
-                minY = Math.Min(minY, pos.Y);
-                maxX = Math.Max(maxX, pos.X);
-                maxY = Math.Max(maxY, pos.Y);
+                minX = Math.Min(minX, pos.X - 0.2f);
+                minY = Math.Min(minY, pos.Y - 0.2f);
+                maxX = Math.Max(maxX, pos.X + 0.2f);
+                maxY = Math.Max(maxY, pos.Y + 0.2f);
             }
             else throw new UnreachableException();
         }
@@ -1210,6 +1210,9 @@ partial class PropEditor : IEditorMode
         if (KeyShortcuts.Activated(KeyShortcut.RemoveObject))
         {
             changeRecorder.BeginListChange();
+
+            // remove props
+            List<Prop> removedProps = [];
             for (int i = selectedObjects.Count - 1; i >= 0; i--)
             {
                 var obj = selectedObjects[i];
@@ -1217,8 +1220,20 @@ partial class PropEditor : IEditorMode
                 {
                     RainEd.Instance.Level.Props.Remove(obj.Prop);
                     selectedObjects.RemoveAt(i);
+                    removedProps.Add(obj.Prop);
                 }
             }
+
+            // remove selected fez trunks whose props were removed
+            for (int i = selectedObjects.Count - 1; i >= 0; i--)
+            {
+                var obj = selectedObjects[i];
+                if (obj.Type == PropEditorObjectType.FezTreeTrunk && removedProps.Contains(obj.Prop))
+                {
+                    selectedObjects.RemoveAt(i);
+                }
+            }
+            
             changeRecorder.PushListChange();
             isMouseDragging = false;
         }
