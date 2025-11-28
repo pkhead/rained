@@ -78,8 +78,9 @@ class RWLZFileFormat : ILevelFileFormat
         using var file = File.OpenWrite(path);
         using var archive = new ZipArchive(file, ZipArchiveMode.Create);
         bool wroteLightMap = false;
+        var levelName = Path.GetFileNameWithoutExtension(path);
 
-        ZipArchiveEntry dataEntry = archive.CreateEntry("level.txt");
+        ZipArchiveEntry dataEntry = archive.CreateEntry(levelName + ".txt");
 
         // write level data
         {
@@ -90,7 +91,7 @@ class RWLZFileFormat : ILevelFileFormat
         // write light map data
         if (level.LightMap.IsLoaded)
         {
-            ZipArchiveEntry lightEntry = archive.CreateEntry("level.png");
+            ZipArchiveEntry lightEntry = archive.CreateEntry(levelName + ".png");
             using var stream = lightEntry.Open();
 
             wroteLightMap = VanillaFileFormat.SaveLevelLightMap(level, stream);
