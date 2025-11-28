@@ -11,6 +11,11 @@ static class Util
     public static float Mod(float a, float b)
         => (a%b + b)%b;
     
+    public static float Rad2Deg(float rad)
+        => rad / MathF.PI * 180f;
+    
+    public static float Deg2Rad(float deg)
+        => deg / 180f * MathF.PI;
     private static bool? _cachedFsCaseSensitive;
 
     /// <summary>
