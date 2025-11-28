@@ -7,13 +7,11 @@ oh also clicking on a category doesnt select any tile in that category so using 
 - undoing while chain holder attach makes a crash .. ???
 - reported issue of lag building up over time... speeds up when opened a room with a lot of props
 - reported increased usage while computer is locked
-- reported crash in asset manager due to queues or something
-- asset manager merging is actually kind of buggy
 - don't clip mirror lines to scissor box
 - errors when rendering new effects???
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
-- make it so .rwlz file format does not require files to be named level.txt and level.png
+- make prop size query only scan PNG headers instead of loading the whole thing
 
 v2.4.0:
   - tile & effect prefabs
