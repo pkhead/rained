@@ -3,7 +3,6 @@ using System.Numerics;
 using Rained.EditorGui;
 using Rained.LevelData;
 using Rained.Assets;
-using ImGuiNET;
 using Rained.EditorGui.Editors.CellEditing;
 namespace Rained.Rendering;
 using CameraBorderModeOption = UserPreferences.CameraBorderModeOption;
@@ -64,6 +63,8 @@ class LevelEditRender : IDisposable
     public bool OverlayAffectTiles;
     public MaskedCell[,,]? OverlayGeometry { get; private set; } = null;
     public bool IsOverlayActive => OverlayGeometry is not null;
+
+    private readonly Dictionary<PropFezTree, (Color color, bool magnified)> fezTrunkInfo = []; 
 
     public LevelEditRender()
     {
@@ -474,6 +475,23 @@ class LevelEditRender : IDisposable
     public void RenderProps(int srcLayer, int alpha)
     {
         propRenderer.RenderLayer(srcLayer, alpha);
+    }
+
+    public void ClearFezTrunkRenderInfo()
+    {
+        fezTrunkInfo.Clear();
+    }
+
+    public void SetFezTrunkRenderInfo(IEnumerable<(PropFezTree tree, Color color, bool magnify)> info)
+    {
+        fezTrunkInfo.Clear();
+        foreach (var (tree, color, magn) in info)
+            fezTrunkInfo.Add(tree, (color, magn));
+    }
+
+    public bool TryGetFezTrunkRenderInfo(PropFezTree tree, out (Color color, bool magnify) info)
+    {
+        return fezTrunkInfo.TryGetValue(tree, out info);
     }
 
     public void RenderGrid()

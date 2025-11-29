@@ -288,15 +288,29 @@ class PropRenderer(LevelEditRender renderInfo)
 
                 var tree = prop.FezTree;
 
-                // draw circle
-                rctx.DrawColor = new Glib.Color(1f, 0f, 0f);
-                rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, 4f);
+                // visualization draw info
+                float circRadius = 8f;
+                var drawColor = Color.Red;
+
+                if (renderInfo.TryGetFezTrunkRenderInfo(tree, out var drawInfo))
+                {
+                    drawColor = drawInfo.color;
+                    if (drawInfo.magnify)
+                        circRadius = float.Max(circRadius, 14f / renderInfo.ViewZoom);
+                }
+
+                // drawColor.A = (byte)((drawColor.A / 255f) * (alpha / 255f) * 255f);
+                drawColor.A = (byte)(drawColor.A * alpha / 255);
+
+                // draw circle                
+                rctx.DrawColor = Raylib.ToGlibColor(drawColor);
+                rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, circRadius);
 
                 // draw direction indicator
                 var dir = new Vector2(MathF.Cos(tree.TrunkAngle), MathF.Sin(tree.TrunkAngle));
                 var dirPerp = new Vector2(-dir.Y, dir.X);
-                var basePt = tree.TrunkPosition * Level.TileSize + dir * 4f;
-                rctx.DrawTriangle(basePt + dirPerp * 4f, basePt - dirPerp * 4f, basePt + dir * 5f);
+                var basePt = tree.TrunkPosition * Level.TileSize + dir * circRadius;
+                rctx.DrawTriangle(basePt + dirPerp * circRadius, basePt - dirPerp * circRadius, basePt + dir * (circRadius * 1.25f));
 
                 if (depthTestEnabled)
                     rctx.SetRenderFlags(Glib.RenderFlags.DepthTest);

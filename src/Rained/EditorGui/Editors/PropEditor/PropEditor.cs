@@ -101,6 +101,7 @@ partial class PropEditor : IEditorMode
     private DragMode dragMode;
 
     private ITransformMode? transformMode;
+    private PropFezTree[]? activeFezTrunks;
     private bool isModeMouseDown = false;
 
     public PropEditor(LevelWindow window)
@@ -226,6 +227,7 @@ partial class PropEditor : IEditorMode
         isDoubleClick = false;
         selectedObjects.Clear();
         transformMode = null;
+        activeFezTrunks = null;
         initSelectedObjects = null;
         isMouseDragging = false;
     }
@@ -233,6 +235,8 @@ partial class PropEditor : IEditorMode
     public void ReloadLevel()
     {
         changeRecorder.TakeSettingsSnapshot();
+        objects.Clear();
+        selectedObjects.Clear();
     }
 
     public void SavePreferences(UserPreferences prefs)
@@ -260,6 +264,7 @@ partial class PropEditor : IEditorMode
         }
 
         transformMode = null;
+        activeFezTrunks = null;
         objectSelectionList = [];
 
         foreach (var prop in RainEd.Instance.Level.Props)
@@ -272,6 +277,7 @@ partial class PropEditor : IEditorMode
         wasRopeSimulationActive = false;
 
         objects.Clear();
+        window.Renderer.ClearFezTrunkRenderInfo();
     }
 
     private void SyncObjectList()
@@ -544,6 +550,11 @@ partial class PropEditor : IEditorMode
         changeRecorder.BeginTransform();
         isModeMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
         transformMode = mode;
+
+        activeFezTrunks = selectedObjects
+            .Where(x => x.Type == PropEditorObjectType.FezTreeTrunk)
+            .Select(x => x.Prop.FezTree!)
+            .ToArray();
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -569,6 +580,14 @@ partial class PropEditor : IEditorMode
 
         level.SortPropsByDepth();
         SyncObjectList();
+        levelRender.SetFezTrunkRenderInfo(
+            selectedObjects
+            .Where(x => x.Type == PropEditorObjectType.FezTreeTrunk)
+            .Select(x => (
+                x.Prop.FezTree!,
+                new Color(255, 127, 0, 255),
+                activeFezTrunks is not null && Array.IndexOf(activeFezTrunks, x.Prop.FezTree!) != -1
+            )));
 
         levelRender.RenderLevelComposite(mainFrame, layerFrames, new Rendering.LevelRenderConfig()
         {
@@ -942,6 +961,7 @@ partial class PropEditor : IEditorMode
                 }
 
                 transformMode = null;
+                activeFezTrunks = null;
             }
         }
 
