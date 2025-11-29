@@ -580,7 +580,7 @@ partial class PropEditor : IEditorMode
             .Where(x => x.Type == PropEditorObjectType.FezTreeTrunk)
             .Select(x => (
                 x.Prop.FezTree!,
-                new Color(255, 127, 0, 255),
+                new Color(41, 59, 255, 255),
                 activeFezTrunks is not null && Array.IndexOf(activeFezTrunks, x.Prop.FezTree!) != -1
             )));
 
