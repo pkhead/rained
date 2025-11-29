@@ -550,11 +550,6 @@ partial class PropEditor : IEditorMode
         changeRecorder.BeginTransform();
         isModeMouseDown = EditorWindow.IsMouseDown(ImGuiMouseButton.Left);
         transformMode = mode;
-
-        activeFezTrunks = selectedObjects
-            .Where(x => x.Type == PropEditorObjectType.FezTreeTrunk)
-            .Select(x => x.Prop.FezTree!)
-            .ToArray();
     }
 
     public void DrawViewport(RlManaged.RenderTexture2D mainFrame, RlManaged.RenderTexture2D[] layerFrames)
@@ -798,12 +793,16 @@ partial class PropEditor : IEditorMode
                 );
 
                 // draw gizmo handle
+                bool didRotationStart = false;
+
                 if (DrawGizmoHandle(rotDotPos, 0) && EditorWindow.IsMouseClicked(ImGuiMouseButton.Left))
                 {
                     BeginTransformMode(new RotateTransformMode(
                         rotCenter: aabb.Position + aabb.Size / 2f,
                         objects: selectedObjects
                     ));
+
+                    didRotationStart = true;
                 }
                 
                 if (KeyShortcuts.Activated(KeyShortcut.RotatePropCW) || KeyShortcuts.Activated(KeyShortcut.RotatePropCCW))
@@ -814,7 +813,13 @@ partial class PropEditor : IEditorMode
                         mouseDown: false
                     ));
                     isModeMouseDown = false;
+
+                    didRotationStart = true;
                 }
+
+                // magnify fez trunk base when rotating it
+                if (didRotationStart && trunkCount == 1 && propCount == 0)
+                    activeFezTrunks = [selectedObjects[0].Prop.FezTree!];
             }
 
             // freeform warp gizmo
