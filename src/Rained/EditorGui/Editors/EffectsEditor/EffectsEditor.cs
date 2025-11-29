@@ -571,8 +571,7 @@ class EffectsEditor : IEditorMode
                 if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl))
                 {
                     window.OverrideMouseWheel = true;
-                    userBrushStrength -= Raylib.GetMouseWheelMove();
-
+                    userBrushStrength += Raylib.GetMouseWheelMove();
                     userBrushStrength = Math.Clamp(userBrushStrength, BrushStrengthMin, BrushStrengthMax);
                 }
 
