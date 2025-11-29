@@ -33,7 +33,9 @@ static class PropSerialization
         using var writer = new BinaryWriter(stream);
 
         // version number
-        writer.Write((byte)0);
+        // 0: initial version
+        // 1: fez tree support
+        writer.Write((byte)1);
 
         // write prop type table
         writer.Write((uint)propNames.Count);
@@ -118,6 +120,18 @@ static class PropSerialization
                 }
             }
 
+            // fez tree data
+            var fezTree = prop.FezTree;
+            tmpWriter.Write((byte)(fezTree is not null ? 1 : 0));
+            if (fezTree is not null)
+            {
+                tmpWriter.Write((byte)fezTree.EffectColor);
+                tmpWriter.Write((float)fezTree.LeafDensity);
+                tmpWriter.Write((float)fezTree.TrunkPosition.X);
+                tmpWriter.Write((float)fezTree.TrunkPosition.Y);
+                tmpWriter.Write((float)fezTree.TrunkAngle);
+            }
+
             // then, write size of data + data itself to main stream
             writer.Write((uint)tmpStream.Length);
             writer.Write(tmpStream.ToArray());
@@ -135,7 +149,7 @@ static class PropSerialization
         var propDb = RainEd.Instance.PropDatabase;
 
         var version = reader.ReadByte();
-        if (version != 0)
+        if (version < 0 || version > 1)
         {
             Log.Error("DeserializeProps: Invalid version?");
             return null;
@@ -238,6 +252,22 @@ static class PropSerialization
                 }
 
                 prop.Rope.LoadPoints(segments);
+            }
+
+            // fez tree data?
+            if (version >= 1)
+            {
+                var hasFezTree = reader.ReadByte() != 0;
+                if (hasFezTree)
+                {
+                    Debug.Assert(prop.FezTree is not null);
+
+                    prop.FezTree.EffectColor = (PropFezTreeEffectColor) reader.ReadByte();
+                    prop.FezTree.LeafDensity = reader.ReadSingle();
+                    prop.FezTree.TrunkPosition.X = reader.ReadSingle();
+                    prop.FezTree.TrunkPosition.Y = reader.ReadSingle();
+                    prop.FezTree.TrunkAngle = reader.ReadSingle();
+                }
             }
         }
 
