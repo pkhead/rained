@@ -307,7 +307,8 @@ class PropRenderer(LevelEditRender renderInfo)
                 rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, circRadius);
 
                 // draw direction indicator
-                var dir = new Vector2(MathF.Cos(tree.TrunkAngle), MathF.Sin(tree.TrunkAngle));
+                var trunkAngle = tree.TrunkAngle - MathF.PI / 2f;
+                var dir = new Vector2(MathF.Cos(trunkAngle), MathF.Sin(trunkAngle));
                 var dirPerp = new Vector2(-dir.Y, dir.X);
                 var basePt = tree.TrunkPosition * Level.TileSize + dir * circRadius;
                 rctx.DrawTriangle(basePt + dirPerp * circRadius, basePt - dirPerp * circRadius, basePt + dir * (circRadius * 1.25f));
@@ -433,5 +434,10 @@ class PropRenderer(LevelEditRender renderInfo)
                 batch.Vertex(vPos3.X, vPos3.Y, z);
             }
         }
+    }
+
+    private static void DrawFezTreeTrunkPreview(Vector2 trunkPos, float trunkAngle, Vector2 leafPos, float leafAngle)
+    {
+
     }
 }

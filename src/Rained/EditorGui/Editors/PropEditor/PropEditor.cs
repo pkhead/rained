@@ -774,7 +774,8 @@ partial class PropEditor : IEditorMode
                 if (trunkCount == 1 && propCount == 0)
                 {
                     var tree = selectedObjects[0].Prop.FezTree!;
-                    handleDir = new(MathF.Cos(tree.TrunkAngle), MathF.Sin(tree.TrunkAngle));
+                    var ang = tree.TrunkAngle - MathF.PI / 2f;
+                    handleDir = new(MathF.Cos(ang), MathF.Sin(ang));
                     handleCnPos = tree.TrunkPosition;
 
                     handleLineLength = 2f;

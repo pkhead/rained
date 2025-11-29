@@ -206,7 +206,7 @@ class PropFezTree
     public PropFezTreeEffectColor EffectColor = PropFezTreeEffectColor.Dead;
 
     public Vector2 TrunkPosition = new(0f, 0f);
-    public float TrunkAngle = -MathF.PI / 2f; // radians, clockwise
+    public float TrunkAngle = 0f; // radians, clockwise
     // public Vector2 LeafPosition = new(0f, 0f); // position of prop bottom-middle
     // public float LeafAngle = 0f; // radians, counterclockwise
 }
@@ -514,6 +514,37 @@ class Prop
         }
 
         return new Rectangle(min, max - min);
+    }
+
+    public (Vector2 pos, Vector2 leafSize, float leafAngle) CalcFezTreeLeafParameters()
+    {
+        // calculate leaf position, size, and angle
+        // leaf position is the midpoint of the bottom rect side
+        // leaf angle is just the rotation of the prop
+        Vector2 leafPos;
+        Vector2 propStretch;
+        float leafAngle;
+        if (IsAffine)
+        {
+            var rect = Rect;
+            leafPos = rect.Center + new Vector2(-MathF.Sin(rect.Rotation), MathF.Cos(rect.Rotation)) * (rect.Size.Y / 2f);
+            propStretch = rect.Size / new Vector2(PropInit.Width, PropInit.Height);
+            leafAngle = rect.Rotation;
+        }
+        else
+        {
+            var pts = QuadPoints;
+
+            var propWidth = Vector2.Distance((pts[0] + pts[3]) / 2f, (pts[1] + pts[2]) / 2f);
+            var propHeight = Vector2.Distance((pts[0] + pts[1]) / 2f, (pts[2] + pts[3]) / 2f);
+            propStretch = new Vector2(propWidth, propHeight) / new Vector2(PropInit.Width, PropInit.Height);
+
+            leafPos = (pts[2] + pts[3]) / 2f;
+            leafAngle = MathF.Atan2(pts[2].Y - pts[3].Y, pts[2].X - pts[3].X);
+        }
+
+        var leafSize = propStretch * 80f * new Vector2(0.6875f, 0.84375f);
+        return (leafPos, leafSize, leafAngle);
     }
 
     public void TickRopeSimulation()
