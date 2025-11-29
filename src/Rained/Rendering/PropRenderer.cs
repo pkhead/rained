@@ -302,6 +302,10 @@ class PropRenderer(LevelEditRender renderInfo)
                 // drawColor.A = (byte)((drawColor.A / 255f) * (alpha / 255f) * 255f);
                 drawColor.A = (byte)(drawColor.A * alpha / 255);
 
+                // draw trunk segments
+                var (leafPos, _, leafAngle) = prop.CalcFezTreeLeafParameters();
+                DrawFezTreeTrunkPreview(tree.TrunkPosition, tree.TrunkAngle, leafPos, leafAngle, drawColor);
+
                 // draw circle                
                 rctx.DrawColor = Raylib.ToGlibColor(drawColor);
                 rctx.DrawCircle(tree.TrunkPosition * Level.TileSize, circRadius);
@@ -436,8 +440,45 @@ class PropRenderer(LevelEditRender renderInfo)
         }
     }
 
-    private static void DrawFezTreeTrunkPreview(Vector2 trunkPos, float trunkAngle, Vector2 leafPos, float leafAngle)
+    private void DrawFezTreeTrunkPreview(Vector2 trunkPos, float trunkAngle, Vector2 leafPos, float leafAngle, Color color)
     {
+        static Vector2 DegToVec(float ang)
+        {
+            return new Vector2(MathF.Cos(ang), MathF.Sin(ang));
+        }
 
+        static Vector2 Bezier(Vector2 A, Vector2 cA, Vector2 B, Vector2 cB, float f)
+        {
+            var middleControl = Vector2.Lerp(cA, cB, f);
+            cA = Vector2.Lerp(A, cA, f);
+            cB = Vector2.Lerp(cB, B, f);
+            cA = Vector2.Lerp(cA, middleControl, f);
+            cB = Vector2.Lerp(middleControl, cB, f);
+            return Vector2.Lerp(cA, cB, f);
+        }
+
+        var rctx = RainEd.RenderContext;
+        rctx.DrawColor = Raylib.ToGlibColor(color);
+
+        var tPosCpnt = trunkPos + DegToVec(trunkAngle - MathF.PI / 2f) * 5f;
+        var lposCpnt = leafPos + DegToVec(leafAngle - MathF.PI / 2f) * -5f;
+        
+        var iterations = (int)(Vector2.Distance(leafPos, trunkPos) * 2f) + 1;
+        var drawRadius = MathF.Max(1f / renderInfo.ViewZoom, 2f);
+        for (int q = 0; q <= iterations; q++)
+        {
+            var adaptedPos = Bezier(trunkPos, tPosCpnt, leafPos, lposCpnt, (float)q / iterations);
+            // adaptedPos = adaptedPos * 16f / Level.TileSize;
+            rctx.DrawCircle(adaptedPos * Level.TileSize, drawRadius, 8);
+        }
+        
+        // basePos = tpos
+        // basePos = basePos - gLEProps.camPos*20.0
+        // basePos = basePos * 16.0/20.0
+        
+        // drawRec = rect(basePos-point(10, 10), basePos+point(10, 10))
+        // drawQuad = rotateToQuad(drawRec, maxAbs(tang, 1))
+        // member(img).image.copyPixels(member("shortCutArrow0.-1").image, offsetQuad(drawQuad, degToVec(maxAbs(tang, 1)) * 20), member("shortCutArrow0.-1").image.rect, {#color:col, #ink:36})
+        // member(img).image.copyPixels(member("lightSource").image, drawRec, member("lightSource").image.rect, {#color:col, #ink:36})
     }
 }
