@@ -9,6 +9,8 @@ record PropTransformExt
     public PropTransform Transform;
     public Vector2[] RopePoints;
     public Vector2[] RopeVelocities;
+    public Vector2 TrunkPosition;
+    public float TrunkAngle;
 
     public PropTransformExt(Prop prop)
     {
@@ -30,6 +32,18 @@ record PropTransformExt
             RopePoints = [];
             RopeVelocities = [];
         }
+
+        var tree = prop.FezTree;
+        if (tree is not null)
+        {
+            TrunkPosition = tree.TrunkPosition;
+            TrunkAngle = tree.TrunkAngle;
+        }
+        else
+        {
+            TrunkPosition = Vector2.Zero;
+            TrunkAngle = 0f;
+        }
     }
 
     public void Apply(Prop prop)
@@ -49,6 +63,13 @@ record PropTransformExt
                 rope.Model!.SetSegmentVel(i, RopeVelocities[i]);
             }
         }
+
+        var tree = prop.FezTree;
+        if (tree is not null)
+        {
+            tree.TrunkPosition = TrunkPosition;
+            tree.TrunkAngle = TrunkAngle;
+        }
     }
 }
 
@@ -66,6 +87,9 @@ record PropSettings(Prop Prop)
     public RopeReleaseMode ReleaseMode = Prop.Rope?.ReleaseMode ?? RopeReleaseMode.None;
     public float PropHeight = Prop.IsAffine ? Prop.Rect.Size.Y : 0f; // a.k.a. rope flexibility
     public float RopeThickness = Prop.Rope?.Thickness ?? 0f;
+
+    public float LeafDensity = Prop.FezTree?.LeafDensity ?? 0f;
+    public int EffectColor = (int)(Prop.FezTree?.EffectColor ?? PropFezTreeEffectColor.Dead);
 
     public void Apply(Prop prop)
     {
@@ -88,6 +112,13 @@ record PropSettings(Prop Prop)
             {
                 prop.Rect.Size.Y = PropHeight;
             }
+        }
+
+        var tree = prop.FezTree;
+        if (tree is not null)
+        {
+            tree.EffectColor = (PropFezTreeEffectColor) EffectColor;
+            tree.LeafDensity = LeafDensity;
         }
     }
 }
@@ -216,6 +247,17 @@ class PropChangeRecorder : ChangeRecorder
             for (int i = 0; i < model.SegmentCount; i++)
                 if (transform.RopePoints[i] != model.GetSegmentPos(i) || transform.RopeVelocities[i] != model.GetSegmentVel(i))
                     return false;
+        }
+
+        // check tree data
+        var tree = prop.FezTree;
+        if (tree is not null)
+        {
+            if (tree.TrunkPosition != transform.TrunkPosition)
+                return false;
+
+            if (tree.TrunkAngle != transform.TrunkAngle)
+                return false;
         }
 
         return true;
