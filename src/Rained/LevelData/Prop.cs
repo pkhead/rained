@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Rained.Assets;
 using Raylib_cs;
@@ -331,22 +332,22 @@ class Prop
         }
     }
 
-    public Prop Clone()
+    public Prop Clone(Vector2 cloneOffset)
     {
         Prop newProp;
         var srcProp = this;
         if (srcProp.IsAffine)
         {
-            newProp = new Prop(srcProp.PropInit, srcProp.Rect.Center + Vector2.One, srcProp.Rect.Size);
+            newProp = new Prop(srcProp.PropInit, srcProp.Rect.Center + cloneOffset, srcProp.Rect.Size);
             newProp.Rect.Rotation = srcProp.Rect.Rotation;
         }
         else
         {
             newProp = new Prop(srcProp.PropInit, srcProp.QuadPoints);
-            newProp.QuadPoints[0] += Vector2.One;
-            newProp.QuadPoints[1] += Vector2.One;
-            newProp.QuadPoints[2] += Vector2.One;
-            newProp.QuadPoints[3] += Vector2.One;
+            newProp.QuadPoints[0] += cloneOffset;
+            newProp.QuadPoints[1] += cloneOffset;
+            newProp.QuadPoints[2] += cloneOffset;
+            newProp.QuadPoints[3] += cloneOffset;
         }
 
         // copy other properties to the new prop
@@ -360,8 +361,20 @@ class Prop
         newProp.Seed = srcProp.Seed;
         newProp.RenderTime = srcProp.RenderTime;
 
+        // copy fez tree properties
+        if (newProp.FezTree is not null)
+        {
+            Debug.Assert(FezTree is not null);
+            newProp.FezTree.EffectColor = FezTree.EffectColor;
+            newProp.FezTree.LeafDensity = FezTree.LeafDensity;
+            newProp.FezTree.TrunkPosition = FezTree.TrunkPosition + cloneOffset;
+            newProp.FezTree.TrunkAngle = FezTree.TrunkAngle;
+        }
+
         return newProp;
     }
+
+    public Prop Clone() => Clone(Vector2.Zero);
 
     /// <summary>
     /// Apply random modifications to prop as specified by its RandomVariation,

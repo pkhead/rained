@@ -1274,7 +1274,7 @@ partial class PropEditor : IEditorMode
 
             foreach (var srcProp in propsToDup)
             {
-                Prop newProp = srcProp.Clone();
+                Prop newProp = srcProp.Clone(Vector2.One);
                 RainEd.Instance.Level.Props.Add(newProp);
                 selectedObjects.Add(PropEditorObject.CreateProp(newProp));
             }
