@@ -1269,7 +1269,7 @@ partial class PropEditor : IEditorMode
         {
             changeRecorder.BeginListChange();
 
-            var propsToDup = SelectedProps;
+            var propsToDup = SelectedProps.ToArray();
             selectedObjects.Clear();
 
             foreach (var srcProp in propsToDup)
