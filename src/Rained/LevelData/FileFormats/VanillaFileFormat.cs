@@ -622,6 +622,9 @@ class VanillaFileFormat : ILevelFileFormat
                         prop.Rope!.LoadPoints(pointList.ToArray());
                     }
 
+                    // for optional settings
+                    object? tempObject;
+
                     // read tree parameters
                     if (prop.FezTree is not null)
                     {
@@ -629,15 +632,19 @@ class VanillaFileFormat : ILevelFileFormat
 
                         var trunkPos = (Vector2)treeParams["trunkPos"] / 20f;
                         var trunkAngle = Util.Deg2Rad(Lingo.LingoNumber.AsFloat(treeParams["trunkAngle"]));
-
-                        prop.FezTree.LeafDensity = Lingo.LingoNumber.AsFloat(settingsData["leafDensity"]);
-                        prop.FezTree.EffectColor = (PropFezTreeEffectColor)Lingo.LingoNumber.AsInt(settingsData["effectColor"]);
                         prop.FezTree.TrunkPosition = trunkPos;
                         prop.FezTree.TrunkAngle = trunkAngle;
+
+                        // i think this is present for all versions of fez tree code before public release, but better
+                        // safe than sorry
+                        if (settingsData.TryGetValue("leafDensity", out tempObject))
+                            prop.FezTree.LeafDensity = Lingo.LingoNumber.AsFloat(tempObject);
+                        
+                        if (settingsData.TryGetValue("effectColor", out tempObject))
+                            prop.FezTree.EffectColor = (PropFezTreeEffectColor)Lingo.LingoNumber.AsInt(tempObject);
                     }
 
                     // read optional settings
-                    object? tempObject;
                     if (settingsData.TryGetValue("customDepth", out tempObject) && tempObject is not null)
                     {
                         prop.CustomDepth = Lingo.LingoNumber.AsInt(tempObject);
