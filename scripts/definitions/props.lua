@@ -22,6 +22,12 @@ rained.props = {}
 ---@field applyColor boolean
 ---@field customDepth integer The custom depth of the prop. Minimum value is 1.
 ---@field customColor string The color of the prop decal used. Must be a string available in `rained.props.getCustomColors`.
+---@field isFezTree boolean (Read-only) True if this prop is a fez tree. Fez-tree related properties are nil on read if this is false, and error when written.
+---@field fezTreeEffectColor integer Fez tree effect color as an integer in the range [0, 2].
+---@field fezTreeLeafDensity number Fez tree leaf density as a number in the range [0, 1].
+---@field fezTreeTrunkX number Fez tree trunk X position.
+---@field fezTreeTrunkY number Fez tree trunk Y position.
+---@field fezTreeTrunkAngle number Fez tree trunk angle, clockwise and in radians. Origin points upwards.
 local Prop = {}
 
 ---Remove this prop from the level.

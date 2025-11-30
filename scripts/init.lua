@@ -18,3 +18,11 @@ end
 -- this will recursively require all lua submodules within autoload.
 -- in other words, it executes all the lua files in that directory.
 autorequire("autoload", true)
+
+rained.onUpdate(function(dt)
+    if rained.isDocumentOpen() then
+        for _, prop in ipairs(rained.props.getSelection()) do
+            prop.fezTreeTrunkAngle = 3
+        end
+    end
+end)

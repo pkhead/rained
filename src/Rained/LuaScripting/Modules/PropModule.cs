@@ -604,6 +604,45 @@ static class PropModule
                     });
                     break;
                 
+                case "isFezTree":
+                    lua.PushBoolean(prop.FezTree is not null);
+                    break;
+                
+                case "fezTreeEffectColor":
+                    if (prop.FezTree is not null)
+                        lua.PushInteger((int)prop.FezTree.EffectColor);
+                    else
+                        lua.PushNil();
+                    break;
+
+                case "fezTreeLeafDensity":
+                    if (prop.FezTree is not null)
+                        lua.PushNumber(prop.FezTree.LeafDensity);
+                    else
+                        lua.PushNil();
+                    break;
+                
+                case "fezTreeTrunkX":
+                    if (prop.FezTree is not null)
+                        lua.PushNumber(prop.FezTree.TrunkPosition.X);
+                    else
+                        lua.PushNil();
+                    break;
+
+                case "fezTreeTrunkY":
+                    if (prop.FezTree is not null)
+                        lua.PushNumber(prop.FezTree.TrunkPosition.Y);
+                    else
+                        lua.PushNil();
+                    break;
+
+                case "fezTreeTrunkAngle":
+                    if (prop.FezTree is not null)
+                        lua.PushNumber(prop.FezTree.TrunkAngle);
+                    else
+                        lua.PushNil();
+                    break;
+                
                 default:
                     lua.PushNil();
                     break;
@@ -663,6 +702,46 @@ static class PropModule
                 case "customColor":
                     SettingsChange(prop);
                     prop.CustomColor = lua.CheckOption(3, null, propColorNames);
+                    break;
+
+                case "fezTreeEffectColor":
+                    if (prop.FezTree is null)
+                        return lua.ErrorWhere("prop is not a fez tree");
+                    
+                    SettingsChange(prop);
+                    prop.FezTree.EffectColor = (PropFezTreeEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
+                    break;
+
+                case "fezTreeLeafDensity":
+                    if (prop.FezTree is null)
+                        return lua.ErrorWhere("prop is not a fez tree");
+                    
+                    SettingsChange(prop);
+                    prop.FezTree.LeafDensity = float.Clamp( (float)lua.CheckNumber(3), 0f, 1f );
+                    break;
+                
+                case "fezTreeTrunkX":
+                    if (prop.FezTree is null)
+                        return lua.ErrorWhere("prop is not a fez tree");
+                    
+                    TransformChange(prop);
+                    prop.FezTree.TrunkPosition.X = (float)lua.CheckNumber(3);
+                    break;
+
+                case "fezTreeTrunkY":
+                    if (prop.FezTree is null)
+                        return lua.ErrorWhere("prop is not a fez tree");
+                    
+                    TransformChange(prop);
+                    prop.FezTree.TrunkPosition.Y = (float)lua.CheckNumber(3);
+                    break;
+
+                case "fezTreeTrunkAngle":
+                    if (prop.FezTree is null)
+                        return lua.ErrorWhere("prop is not a fez tree");
+                    
+                    TransformChange(prop);
+                    prop.FezTree.TrunkAngle = (float)lua.CheckNumber(3);
                     break;
                     
                 default:
