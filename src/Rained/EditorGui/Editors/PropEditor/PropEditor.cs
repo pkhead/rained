@@ -1192,6 +1192,9 @@ partial class PropEditor : IEditorMode
                     selectedObjects.Clear();
                     selectedObjects.Add(PropEditorObject.CreateProp(prop));
 
+                    if (prop.FezTree is not null)
+                        selectedObjects.Add(PropEditorObject.CreateFezTreeTrunk(prop));
+
                     changeRecorder.PushListChange();
                 }
             }
@@ -1277,6 +1280,9 @@ partial class PropEditor : IEditorMode
                 Prop newProp = srcProp.Clone(Vector2.One);
                 RainEd.Instance.Level.Props.Add(newProp);
                 selectedObjects.Add(PropEditorObject.CreateProp(newProp));
+
+                if (newProp.FezTree is not null)
+                    selectedObjects.Add(PropEditorObject.CreateFezTreeTrunk(newProp));
             }
 
             changeRecorder.PushListChange();
