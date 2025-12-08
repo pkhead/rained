@@ -61,7 +61,7 @@ static class PropSerialization
             tmpWriter.Write((byte)prop.DepthOffset);
             tmpWriter.Write((byte)prop.CustomDepth);
             tmpWriter.Write((byte)prop.CustomColor);
-            tmpWriter.Write((byte)prop.RenderOrder);
+            tmpWriter.Write((short)prop.RenderOrder);
             tmpWriter.Write((byte)prop.Variation);
             tmpWriter.Write((ushort)prop.Seed);
             tmpWriter.Write((byte)prop.RenderTime);
@@ -198,7 +198,7 @@ static class PropSerialization
             prop.DepthOffset = reader.ReadByte();
             prop.CustomDepth = reader.ReadByte();
             prop.CustomColor = reader.ReadByte();
-            prop.RenderOrder = reader.ReadByte();
+            prop.RenderOrder = reader.ReadInt16();
             prop.Variation = reader.ReadByte();
             prop.Seed = reader.ReadInt16();
             prop.RenderTime = (PropRenderTime) reader.ReadByte();
