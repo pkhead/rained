@@ -33,6 +33,7 @@ static class LuaInterface
         {
             UseTraceback = true
         };
+        luaState.State.Encoding = Encoding.UTF8;
         LuaHelpers.Init(luaState.State);
 
         luaState["print"] = new LuaPrintDelegate(LuaPrint);
