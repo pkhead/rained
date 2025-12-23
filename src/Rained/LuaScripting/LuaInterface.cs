@@ -9,7 +9,7 @@ static class LuaInterface
 {
     public const int VersionMajor = 4;
     public const int VersionMinor = 3;
-    public const int VersionRevision = 0;
+    public const int VersionRevision = 1;
 
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
