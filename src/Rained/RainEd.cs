@@ -517,7 +517,8 @@ sealed class RainEd
                 {
                     var tab = new LevelTab(loadRes.Level, path);
                     _tabs.Add(tab);
-                    CurrentTab = tab;
+                    LuaScripting.Modules.RainedModule.DocumentOpenedCallback(_tabs.IndexOf(tab));
+                    SwitchTab(tab, true);
                 };
             }
 
