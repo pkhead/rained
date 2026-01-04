@@ -1,13 +1,13 @@
 using System.Text.Json;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Drizzle.Lingo.Runtime;
 using Drizzle.Logic;
-using Drizzle.Logic.Rendering;
 using Drizzle.Ported;
 namespace DrizzleExport;
 
 public static class DrizzleEffectExport
 {
+    [method: SetsRequiredMembers]
     public class Effect(string name, string type)
     {
         public required string Name { get; set; } = name;
