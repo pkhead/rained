@@ -285,7 +285,7 @@ public class LingoParser
                         return 1;
                     
                     default:
-                        throw new ParseException($"{tok.Line}:{tok.CharOffset}: Use of undeclared variable '{tok.Type}'");
+                        throw new ParseException($"{tok.Line}:{tok.CharOffset}: Use of unknown identifier '{tok.Value}'");
                 }
             }
         }

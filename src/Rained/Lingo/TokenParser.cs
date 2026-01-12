@@ -241,6 +241,9 @@ class TokenParser
                 strBuffer.Clear();                
                 while (true)
                 {
+                    if (stream.EndOfStream)
+                        Error("Unterminated string");
+                    
                     char ch = ReadChar();
                     if (ch == '"') break;
                     strBuffer.Add(ch);
