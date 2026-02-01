@@ -48,16 +48,30 @@ static class Fonts
 
         var io = ImGui.GetIO();
 
+        ImVector ranges;
+        unsafe
+        {
+            var glyphRangeBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+            var builderPtr = new ImFontGlyphRangesBuilderPtr(glyphRangeBuilder);
+
+            builderPtr.AddRanges(io.Fonts.GetGlyphRangesCyrillic());
+            builderPtr.AddRanges(io.Fonts.GetGlyphRangesChineseSimplifiedCommon());
+            builderPtr.AddRanges(io.Fonts.GetGlyphRangesJapanese());
+
+            builderPtr.BuildRanges(out ranges);
+            builderPtr.Destroy();
+        }
+
         io.Fonts.Clear();
         DefaultFont = io.Fonts.AddFontDefault();
 
         foreach (var file in availableFontPaths)
         {
             var fullFilePath = Path.Combine(FontDirectory, file + ".ttf");
-            var font = io.Fonts.AddFontFromFileTTF(fullFilePath, fontSize * Boot.WindowScale);
+            var font = io.Fonts.AddFontFromFileTTF(fullFilePath, fontSize * Boot.WindowScale, null, ranges.Data);
             loadedFontList.Add(font);
 
-            var bigFont = io.Fonts.AddFontFromFileTTF(fullFilePath, 2f * fontSize * Boot.WindowScale);
+            var bigFont = io.Fonts.AddFontFromFileTTF(fullFilePath, 2f * fontSize * Boot.WindowScale, null, ranges.Data);
             loadedBigFontsList.Add(bigFont);
         }
 
