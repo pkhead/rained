@@ -220,16 +220,17 @@ static class NewLevelWindow
         Raylib.ClearBackground(Color.Blank);
 
         Span<Color> layerColors = stackalloc Color[3];
-        
-        var layerCol1 = RainEd.Instance.Preferences.LayerColor1;
-        var layerCol2 = RainEd.Instance.Preferences.LayerColor2;
-        var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
-        layerColors =
-        [
-            new Color(layerCol1.R, layerCol1.G, layerCol1.B, (byte)255),
-            new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)100),
-            new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)70),
-        ];
+        {
+            var layerCol1 = RainEd.Instance.Preferences.LayerColor1;
+            var layerCol2 = RainEd.Instance.Preferences.LayerColor2;
+            var layerCol3 = RainEd.Instance.Preferences.LayerColor3;
+            layerColors =
+            [
+                new Color(layerCol1.R, layerCol1.G, layerCol1.B, (byte)255),
+                new Color(layerCol2.R, layerCol2.G, layerCol2.B, (byte)100),
+                new Color(layerCol3.R, layerCol3.G, layerCol3.B, (byte)70),
+            ];
+        }
 
         Rlgl.PushMatrix();
         Rlgl.Translatef(
