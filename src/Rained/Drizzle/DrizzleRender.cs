@@ -451,23 +451,70 @@ class DrizzleRender : IDisposable
 
         // send progress
         currentStage = stageEnum;
-        float renderProgress = status.CountCamerasDone * 10 + stageEnum switch
+        float percentMin, percentMax; // out of 10.0f
+        switch (stageEnum)
         {
-            RenderStage.Start => 0f,
-            RenderStage.CameraSetup => 0f,
-            RenderStage.RenderLayers => 1f,
-            RenderStage.RenderPropsPreEffects => 2f,
-            RenderStage.RenderEffects => 3f,
-            RenderStage.RenderPropsPostEffects => 4f,
-            RenderStage.RenderLight => 5f,
-            RenderStage.Finalize => 6f,
-            RenderStage.RenderColors => 7f,
-            RenderStage.Finished => 8f,
-            RenderStage.SaveFile => 9f,
-            _ => throw new ArgumentOutOfRangeException()
-        };
+            case RenderStage.Start:
+                percentMin = 0.0f;
+                percentMax = 0.25f;
+                break;
 
-        progress = (renderProgress + Math.Clamp(stageProgress, 0f, 1f)) / (cameraCount * 10f);
+            case RenderStage.CameraSetup:
+                percentMin = 0.25f;
+                percentMax = 0.50f;
+                break;
+
+            case RenderStage.RenderLayers:
+                percentMin = 0.5f;
+                percentMax = 2.0f;
+                break;
+
+            case RenderStage.RenderPropsPreEffects:
+                percentMin = 2.0f;
+                percentMax = 2.5f;
+                break;
+
+            case RenderStage.RenderEffects:
+                percentMin = 2.5f;
+                percentMax = 6.5f;
+                break;
+
+            case RenderStage.RenderPropsPostEffects:
+                percentMin = 6.5f;
+                percentMax = 7.0f;
+                break;
+
+            case RenderStage.RenderLight:
+                percentMin = 7.0f;
+                percentMax = 9.0f;
+                break;
+
+            case RenderStage.Finalize:
+                percentMin = 9.0f;
+                percentMax = 9.25f;
+                break;
+
+            case RenderStage.RenderColors:
+                percentMin = 9.25f;
+                percentMax = 9.50f;
+                break;
+
+            case RenderStage.Finished:
+                percentMin = 9.50f;
+                percentMax = 9.75f;
+                break;
+
+            case RenderStage.SaveFile:
+                percentMin = 9.75f;
+                percentMax = 10.0f;
+                break;
+
+            default:
+                throw new UnreachableException("invalid RenderStage enum");
+        }
+
+        float camProgress = float.Lerp(percentMin, percentMax, stageProgress) / 10f;
+        progress = (status.CountCamerasDone + camProgress) / cameraCount;
 
         if (stageEnum == RenderStage.Start && PreviewImages is not null)
         {
