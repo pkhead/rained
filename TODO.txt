@@ -5,6 +5,12 @@ LargeTexture:
 - also solar says sometimes rotation crashes the editor.
 
 - FEATURE: render as prop
+- FEATURE: zero-g toggle for all rope props
+- rewrite/refactor prop editor
+- more flexibility with rope editing:
+  - rope prop bezier editing
+  - rope prop quick-create (like in henry's)
+  - rotating/scaling rope to not reset the simulation
 
 oh also clicking on a category doesnt select any tile in that category so using w and s to navigate does so in the category that was selected previosly
   (should i fix this?)
