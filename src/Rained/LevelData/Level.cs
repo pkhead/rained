@@ -336,7 +336,7 @@ partial class Level : IDisposable
     private int _width, _height;
     public int BufferTilesLeft, BufferTilesTop;
     public int BufferTilesRight, BufferTilesBot;
-    public int DefaultMaterial = 1;
+    public int DefaultMaterial = 2; // Concrete material
 
     public readonly List<Camera> Cameras = new();
     public Camera? PrioritizedCamera = null;
