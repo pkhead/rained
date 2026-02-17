@@ -627,11 +627,17 @@ class DrizzleRender : IDisposable
                     CopyLingoImage(effects.Layers[i], PreviewImages.Layers[i]);
                 }
 
-                CopyLingoImage(effects.BlackOut1, PreviewImages.BlackOut1!);
-                CopyLingoImage(effects.BlackOut2, PreviewImages.BlackOut2!);
+                bool useBlackOut1 = !(effects.BlackOut1.Width == 1 && effects.BlackOut1.Height == 1);
+                bool useBlackOut2 = !(effects.BlackOut2.Width == 1 && effects.BlackOut2.Height == 1);
 
-                PreviewImages.RenderBlackOut1 = effects.BlackOut1.Width != 1;
-                PreviewImages.RenderBlackOut2 = effects.BlackOut2.Width != 1;
+                PreviewImages.RenderBlackOut1 = useBlackOut1;
+                PreviewImages.RenderBlackOut2 = useBlackOut2 && useBlackOut1;
+
+                if (PreviewImages.RenderBlackOut1)
+                    CopyLingoImage(effects.BlackOut1, PreviewImages.BlackOut1!);
+                
+                if (PreviewImages.RenderBlackOut2)
+                    CopyLingoImage(effects.BlackOut2, PreviewImages.BlackOut2!);
                 
                 break;
             }
