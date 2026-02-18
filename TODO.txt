@@ -4,6 +4,8 @@ LargeTexture:
 - apparently if you switch between levels with the prop editor active, it causes bug
 - also solar says sometimes rotation crashes the editor.
 
+- MAKE PURPLE NIGHT THEME!!!
+
 - FEATURE: render as prop
 - FEATURE: zero-g toggle for all rope props
 - rewrite/refactor prop editor
