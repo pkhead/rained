@@ -305,7 +305,7 @@ static class EditorWindow
                     Span<string> flagNames = [
                         "Room Exits",
                         "Creature Dens",
-                        "Region Transports",
+                        "Scav Transports",
                         "Side Exits",
                         "Sky Exits",
                         "Sea Exits",
