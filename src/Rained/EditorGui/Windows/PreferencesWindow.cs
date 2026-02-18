@@ -830,11 +830,46 @@ static class PreferencesWindow
                 "Garbage Holes",
             ];
 
-            for (int i = 0; i < flagNames.Length; i++)
+            const ImGuiTableColumnFlags colFlags =
+                ImGuiTableColumnFlags.AngledHeader | ImGuiTableColumnFlags.WidthFixed;
+            // ImGui.PushStyleVar(ImGuiStyleVar.TableAngledHeadersAngle, 0f);
+            ImGui.PushStyleColor(ImGuiCol.TableHeaderBg, Vector4.Zero);
+            ImGui.PushStyleColor(ImGuiCol.TableBorderLight, Vector4.Zero);
+
+            if (ImGui.BeginTable("##t", flagNames.Length))
             {
-                ref var flag = ref prefs.NodeViewFilter.Flags[i];
-                ImGui.Checkbox(flagNames[i], ref flag);
+                for (int i = 0; i < flagNames.Length; i++)
+                    ImGui.TableSetupColumn(flagNames[i], colFlags);
+                
+                ImGui.TableAngledHeadersRow();
+                ImGui.TableNextRow();
+
+                for (int i = 0; i < flagNames.Length; i++)
+                {
+                    if (ImGui.TableSetColumnIndex(i))
+                    {
+                        ImGui.PushID(i);
+
+                        ref var flag = ref prefs.NodeViewFilter.Flags[i];
+                        ImGui.Checkbox("##box", ref flag);
+
+                        ImGui.PopID();
+                    }
+                }
             }
+            ImGui.EndTable();
+            // ImGui.PopStyleVar();
+            ImGui.PopStyleColor(2);
+
+            // var drawList = ImGui.GetWindowDrawList();
+
+            // for (int i = 0; i < flagNames.Length; i++)
+            // {
+            //     ref var flag = ref prefs.NodeViewFilter.Flags[i];
+
+            //     ImGui.PushID(i);
+            //     ImGui.
+            // }
         }
         
         ImGui.SeparatorText("Display");
