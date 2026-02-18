@@ -25,9 +25,6 @@ oh also clicking on a category doesnt select any tile in that category so using 
 - using keyboards shortcuts while rendering does weird things
   fix: disable shortcuts while rendering
 - make prop size query only scan PNG headers instead of loading the whole thing
-- minor menubar consistency issue:
-  "New", "Open", and "Preferences" should have ellipses
-  "Show Data Folder", "Show Render Folder" should be renamed to Open <...> and not have ellipses
 
 v2.4.0:
   - tile & effect prefabs

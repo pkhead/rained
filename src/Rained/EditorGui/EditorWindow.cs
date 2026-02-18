@@ -181,8 +181,8 @@ static class EditorWindow
 
             if (ImGui.BeginMenu("File"))
             {
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New");
-                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.New, "New...");
+                KeyShortcuts.ImGuiMenuItem(KeyShortcut.Open, "Open...");
 
                 if (ImGui.BeginMenu("Open Recent"))
                 {
@@ -207,7 +207,7 @@ static class EditorWindow
 
                 ImGui.Separator();
 
-                if (ImGui.MenuItem("Preferences"))
+                if (ImGui.MenuItem("Preferences..."))
                 {
                     PreferencesWindow.OpenWindow();
                 }
@@ -384,10 +384,10 @@ static class EditorWindow
 
                 ImGui.Separator();
                 
-                if (ImGui.MenuItem("Show Data Folder..."))
+                if (ImGui.MenuItem("Open Data Folder"))
                     RainEd.Instance.ShowPathInSystemBrowser(RainEd.Instance.AssetDataPath, false);
                 
-                if (ImGui.MenuItem("Show Render Folder..."))
+                if (ImGui.MenuItem("Open Render Folder"))
                     RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
                 
                 ImGui.EndMenu();
