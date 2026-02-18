@@ -132,7 +132,7 @@ class DrizzleMassRender : IDisposable
                 renderer.StatusChanged += (status) =>
                 {
                     _cancel?.ThrowIfCancellationRequested();
-                    _progress?.Report(new MassRenderLevelProgress(param.levelPath, GetStatusProgress(status, cameraCount)));
+                    _progress?.Report(new MassRenderLevelProgress(param.levelPath, DrizzleUtil.GetStatusProgress(status, cameraCount)));
                 };
             }
 
@@ -262,54 +262,6 @@ class DrizzleMassRender : IDisposable
                 }
             }
         }
-    }
-
-    private static float GetStatusProgress(RenderStatus status, int cameraCount)
-    {
-        var stageEnum = status.Stage.Stage;
-
-        // from 0 to 1
-        float stageProgress = 0f;
-
-        switch (status.Stage)
-        {
-            case RenderStageStatusLayers layers:
-            {
-                stageProgress = (3 - layers.CurrentLayer) / 3f;
-                break;
-            }
-
-            case RenderStageStatusLight light:
-            {
-                stageProgress = light.CurrentLayer / 30f;
-                break;
-            }
-
-            case RenderStageStatusEffects effects:
-            {
-                stageProgress = Math.Clamp((effects.CurrentEffect - 1f) / effects.EffectNames.Count, 0f, 1f);
-                break;
-            }
-        }
-
-        // send progress
-        float renderProgress = status.CountCamerasDone * 10 + stageEnum switch
-        {
-            RenderStage.Start => 0f,
-            RenderStage.CameraSetup => 0f,
-            RenderStage.RenderLayers => 1f,
-            RenderStage.RenderPropsPreEffects => 2f,
-            RenderStage.RenderEffects => 3f,
-            RenderStage.RenderPropsPostEffects => 4f,
-            RenderStage.RenderLight => 5f,
-            RenderStage.Finalize => 6f,
-            RenderStage.RenderColors => 7f,
-            RenderStage.Finished => 8f,
-            RenderStage.SaveFile => 9f,
-            _ => throw new ArgumentOutOfRangeException(nameof(status))
-        };
-
-        return (renderProgress + Math.Clamp(stageProgress, 0f, 1f)) / (cameraCount * 10f);
     }
 
     record LevelStat(string name, int status, TimeSpan elapsed);

@@ -389,14 +389,10 @@ class DrizzleRender : IDisposable
 
         camsDone = status.CountCamerasDone;
 
-        // from 0 to 1
-        float stageProgress = 0f;
-
         switch (status.Stage)
         {
             case RenderStageStatusLayers layers:
             {
-                stageProgress = (3 - layers.CurrentLayer) / 3f;
                 DisplayString = $"Rendering tiles...\nLayer: {layers.CurrentLayer}";
                 break;
             }
@@ -409,7 +405,6 @@ class DrizzleRender : IDisposable
 
             case RenderStageStatusLight light:
             {
-                stageProgress = light.CurrentLayer / 30f;
                 DisplayString = $"Rendering light...\nLayer: {light.CurrentLayer}";
                 break;
             }
@@ -442,79 +437,12 @@ class DrizzleRender : IDisposable
                     builder.Append('\n');
                 }
 
-                stageProgress = Math.Clamp((effects.CurrentEffect - 1f) / effects.EffectNames.Count, 0f, 1f);
-
                 DisplayString = builder.ToString();
                 break;
             }
         }
 
-        // send progress
-        currentStage = stageEnum;
-        float percentMin, percentMax; // out of 10.0f
-        switch (stageEnum)
-        {
-            case RenderStage.Start:
-                percentMin = 0.0f;
-                percentMax = 0.25f;
-                break;
-
-            case RenderStage.CameraSetup:
-                percentMin = 0.25f;
-                percentMax = 0.50f;
-                break;
-
-            case RenderStage.RenderLayers:
-                percentMin = 0.5f;
-                percentMax = 2.0f;
-                break;
-
-            case RenderStage.RenderPropsPreEffects:
-                percentMin = 2.0f;
-                percentMax = 2.5f;
-                break;
-
-            case RenderStage.RenderEffects:
-                percentMin = 2.5f;
-                percentMax = 6.5f;
-                break;
-
-            case RenderStage.RenderPropsPostEffects:
-                percentMin = 6.5f;
-                percentMax = 7.0f;
-                break;
-
-            case RenderStage.RenderLight:
-                percentMin = 7.0f;
-                percentMax = 9.0f;
-                break;
-
-            case RenderStage.Finalize:
-                percentMin = 9.0f;
-                percentMax = 9.25f;
-                break;
-
-            case RenderStage.RenderColors:
-                percentMin = 9.25f;
-                percentMax = 9.50f;
-                break;
-
-            case RenderStage.Finished:
-                percentMin = 9.50f;
-                percentMax = 9.75f;
-                break;
-
-            case RenderStage.SaveFile:
-                percentMin = 9.75f;
-                percentMax = 10.0f;
-                break;
-
-            default:
-                throw new UnreachableException("invalid RenderStage enum");
-        }
-
-        float camProgress = float.Lerp(percentMin, percentMax, stageProgress) / 10f;
-        progress = (status.CountCamerasDone + camProgress) / cameraCount;
+        progress = DrizzleUtil.GetStatusProgress(status, cameraCount);
 
         if (stageEnum == RenderStage.Start && PreviewImages is not null)
         {
