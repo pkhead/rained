@@ -332,7 +332,7 @@ static class PreferencesWindow
             ImGui.AlignTextToFramePadding();
             ImGui.Text("Data Path");
             ImGui.SameLine();
-            ImGui.TextDisabled("(!)");
+            ImGui.TextDisabled("(?)");
             if (ImGui.BeginItemTooltip())
             {
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
@@ -806,6 +806,35 @@ static class PreferencesWindow
             }
 
             ImGui.PopItemWidth();
+        }
+
+        ImGui.SeparatorText("Shortcut Nodes");
+        {
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+                ImGui.TextWrapped("This switchboard controls which connection node types are displayed when \"Show Node Indices\" is enabled from the View menu.");
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
+
+            Span<string> flagNames = [
+                "Room Exits",
+                "Creature Dens",
+                "Scav Transports",
+                "Side Exits",
+                "Sky Exits",
+                "Sea Exits",
+                "Hives",
+                "Garbage Holes",
+            ];
+
+            for (int i = 0; i < flagNames.Length; i++)
+            {
+                ref var flag = ref prefs.NodeViewFilter.Flags[i];
+                ImGui.Checkbox(flagNames[i], ref flag);
+            }
         }
         
         ImGui.SeparatorText("Display");
