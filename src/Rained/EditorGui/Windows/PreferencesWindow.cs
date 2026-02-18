@@ -964,6 +964,7 @@ static class PreferencesWindow
 
         ImGui.SeparatorText("Editing");
         ShortcutButton(KeyShortcut.SelectEditor);
+        ShortcutButton(KeyShortcut.AdjustView);
         ShortcutButton(KeyShortcut.EnvironmentEditor);
         ShortcutButton(KeyShortcut.GeometryEditor);
         ShortcutButton(KeyShortcut.TileEditor);

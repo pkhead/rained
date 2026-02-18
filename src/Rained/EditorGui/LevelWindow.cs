@@ -288,6 +288,55 @@ class LevelWindow
                 }
             }
 
+            // radial view menu
+            {
+                Span<string> options = ["Grid", "Tiles", "Props", "Cameras", "T. Gfx", "Nodes", "O. Beams", "Heads"];
+                var sel = RadialMenu.PopupRadialMenu("View Menu", KeyShortcut.AdjustView, options, -1);
+                
+                if (sel != -1)
+                    Log.Debug(options[sel]);
+                
+                switch (sel)
+                {
+                    case -1: break;
+                    case 0: // Grid
+                        prefs.ViewGrid = !prefs.ViewGrid;
+                        break;
+                    case 1: // Tiles
+                        prefs.ViewTiles = !prefs.ViewTiles;
+                        break;
+                    case 2: // Props
+                        prefs.ViewProps = !prefs.ViewProps;
+                        break;
+                    case 3: // Cam Borders
+                        prefs.ViewCameras = !prefs.ViewCameras;
+                        break;
+                    case 4: // Tile graphics
+                        prefs.ViewPreviews = !prefs.ViewPreviews;
+                        break;
+                    case 5: // Connection Nodes
+                        prefs.ViewNodeIndices = !prefs.ViewNodeIndices;
+                        break;
+                    case 6: // Obscured Beam
+                    {
+                        prefs.ViewObscuredBeams = !prefs.ViewObscuredBeams;
+
+                        var renderer = Renderer;
+                        if (renderer is not null)
+                        {
+                            renderer.InvalidateGeo(0);
+                            renderer.InvalidateGeo(1);
+                            renderer.InvalidateGeo(2);
+                        }
+                        break;
+                    }
+
+                    case 7: // Heads
+                        prefs.ViewTileHeads = !prefs.ViewTileHeads;
+                        break;
+                }
+            }
+
             if (ImGui.Begin("Level"))
             {
                 // edit mode
