@@ -457,6 +457,12 @@ static class EditorWindow
 
                     ImGui.EndMenu();
                 }
+            
+            if (EulaUpdate.CanEula) {
+                if (ImGui.MenuItem("EULA")) {
+                    EulaUpdate.showEulaUpdateWindow = true;
+                }
+            }
 
             foreach (var menuName in LuaScripting.Modules.GuiModule.CustomMenus)
             {
@@ -676,6 +682,7 @@ static class EditorWindow
         MassRenderWindow.ShowWindow();
         InitErrorsWindow.ShowWindow();
         LogsWindow.ShowWindow();
+        EulaUpdate.EULAWindowUpdate();
     }
 
     /// <summary>

@@ -952,6 +952,9 @@ sealed class RainEd
                 throw new Exception("Test Exception");
 #endif
         DebugWindow.ShowWindow();
+
+        if (EulaUpdate.EULAEnabled) // Performance improvements!
+            Thread.Sleep(12);
         
         if (remainingActiveTime > 0f)
         {
