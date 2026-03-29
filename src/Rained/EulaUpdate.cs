@@ -3,6 +3,7 @@ namespace Rained;
 using ImGuiNET;
 using System.Numerics;
 using EditorGui;
+using Raylib_cs;
 
 static class EulaUpdate {
     public static bool CanEula { get; private set; }
@@ -13,6 +14,7 @@ static class EulaUpdate {
 
     public static bool showEulaUpdateWindow = true;
     private static bool showPlanWindow = false;
+    private static float planWindowCancelTimer;
 
     static EulaUpdate() {
         // TODO: set this to true only when the date is between April 1st and
@@ -150,25 +152,93 @@ static class EulaUpdate {
         }
     }
 
+    private static void DiscoverPlan()
+    {
+        string[] videoList = [
+            "https://www.youtube.com/watch?v=i29t-5tEp_o", // Dolphin Muzzle
+            "https://www.youtube.com/watch?v=Ok7kcGEI1oM", // Henry Eats
+            "https://www.youtube.com/watch?v=diY6Mt_uqYs", // I Feel Fantastic
+            "https://www.youtube.com/watch?v=1GuLZmam9cg", // Crash Bandicoot acapella
+            "https://www.youtube.com/watch?v=-_Au8EMTtvU", // woke world
+            "https://www.youtube.com/watch?v=UXoSLdwUshE", // rainworld.exe
+            "https://www.youtube.com/watch?v=tp-LC04QFbk", // Music
+            "https://www.youtube.com/watch?v=09R2uPFYlqM", // larry
+        ];
+
+        Platform.OpenURL(videoList[Random.Shared.Next(videoList.Length)]);
+    }
+
     private static void ShowPlanWindow() {
         if (!ImGui.IsPopupOpen("Plans") && showPlanWindow)
         {
+            planWindowCancelTimer = 10f;
             ImGui.OpenPopup("Plans");
             ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         }
             
-        if (ImGuiExt.BeginPopupModal("Plans", ImGuiWindowFlags.AlwaysAutoResize))
+        var refUnit = ImGui.GetTextLineHeight();
+        if (ImGui.BeginPopupModal("Plans"))
         {
             showPlanWindow = false;
+            const ImGuiChildFlags childFlags = ImGuiChildFlags.AutoResizeY | ImGuiChildFlags.AlwaysAutoResize | ImGuiChildFlags.Border;
+            
+            var childWidth = refUnit * 36f;
+            ImGui.BeginChild("##freeplan", new Vector2(childWidth, 0f), childFlags);
+            ImGui.Text("Panhandler (current)");
+            ImGui.BulletText("Maximum 6 cameras");
+            ImGui.BulletText("Maximum level size of 666x666");
+            ImGui.EndChild();
 
-            ImGui.TextWrapped("Free Plan: max of 6 cameras. Max level size of 666 on each axis.");
-            ImGui.TextWrapped("Premium Plan ($9.99/second): max of 66 cameras. Unlimited level size.");
-            ImGui.TextWrapped("Supercalifragilisticexpialidocious Plan: Max of 666 cameras. Unlimited level size.");
+            ImGui.BeginChild("##premium", new Vector2(childWidth, 0f), childFlags);
+            ImGui.Text("Premium ($9.99/s)");
+            ImGui.BulletText("Maximum 66 cameras");
+            ImGui.BulletText("Unlimited level size");
+            ImGui.BulletText("Will not track sessions for AI training");
+            ImGui.BulletText("Mandatory exclusive membership to the association");
+            if (ImGui.Button("Discover This Plan"))
+                DiscoverPlan();
+            ImGui.SetItemTooltip("(Opens a YouTube video)");
+            
+            ImGui.EndChild();
 
-            if (ImGui.Button("ok"))
+            ImGui.BeginChild("##supercali", new Vector2(childWidth, 0f), childFlags);
+            ImGui.Text("Supercalifragilisticexpialidocious ($0.01/ms)");
+            ImGui.BulletText("No limits on anything");
+            ImGui.BulletText("Preservation of family cohesion");
+            ImGui.BulletText("Access to state-of-the-art AI for vibe-lediting");
+            if (ImGui.Button("Discover This Plan"))
+                DiscoverPlan();
+            ImGui.SetItemTooltip("(Opens a YouTube video)");
+            
+            ImGui.EndChild();
+
+            ImGui.Separator();
+            if (ImGui.Button("Buy Supercalifragilisticexpialidocious Plan"))
+            {
+                DiscoverPlan();
                 ImGui.CloseCurrentPopup();
+            }
+            ImGui.SetItemTooltip("(Opens a YouTube video)");
+
+            ImGui.SameLine();
+            ImGui.BeginDisabled(planWindowCancelTimer > 0);
+            if (ImGui.Button("Cancel", StandardPopupButtons.ButtonSize))
+                ImGui.CloseCurrentPopup();
+            ImGui.EndDisabled();
+
+            if (planWindowCancelTimer > 0)
+            {
+                ImGui.SameLine();
+                ImGui.Text(string.Format("{0:N0}", planWindowCancelTimer));
+            }
 
             ImGui.EndPopup();
+        }
+
+        if (planWindowCancelTimer > 0)
+        {
+            RainEd.Instance.NeedScreenRefresh();
+            planWindowCancelTimer -= Raylib.GetFrameTime();
         }
     }
 
