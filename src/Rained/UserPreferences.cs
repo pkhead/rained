@@ -508,6 +508,8 @@ class UserPreferences
     public List<string> RecentFiles { get; set; }
     public List<string> FileBrowserPins { get; set; }
 
+    public bool? EnableEULAUpdate { get; set; } = null;
+
     // default user preferences
     public UserPreferences()
     {

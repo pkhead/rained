@@ -54,7 +54,8 @@ class EffectsEditor : IEditorMode
                     }
 
                     var effect = AddEffect(effectInit, true);
-                    item.Load(effect);
+                    if (effect is not null)
+                        item.Load(effect);
                 }
 
                 changeRecorder!.PushListChange();
@@ -672,8 +673,10 @@ class EffectsEditor : IEditorMode
             changeRecorder.PushMatrixChange();
     }
 
-    private Effect AddEffect(EffectInit init, bool noChangePush = false)
+    private Effect? AddEffect(EffectInit init, bool noChangePush = false)
     {
+        if (!EulaUpdate.CreateEffect()) return null;
+
         var level = RainEd.Instance.Level;
         var prefs = RainEd.Instance.Preferences;
 
@@ -739,7 +742,7 @@ class EffectsEditor : IEditorMode
     {
         private readonly EffectsDatabase database = db;
 
-        public Action<EffectInit>? AddEffect;
+        public Action<EffectInit?>? AddEffect;
 
         protected override string GetGroupName(int group) =>
             database.Groups[group].name;

@@ -169,7 +169,7 @@ namespace Rained
 
         private static void LaunchEditor()
         {
-            bool showAltSplashScreen = DateTime.Now.Month == 4 && DateTime.Now.Day == 1; // being a lil silly
+            bool showAltSplashScreen = EulaUpdate.CanEula;
             AppDataPath = Options.AppDataPath;
             
             if (bootOptions.ShowOgscule)
@@ -310,7 +310,10 @@ namespace Rained
                     var splashScreenCtx = RenderContext.Init(splashScreenWindow);
 
                     //var rctx = splashScreenWindow.RenderContext!;
-                    var texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets",showAltSplashScreen ? "splash-screen-alt.png":"splash-screen.png"));
+                    Glib.Texture texture;
+                    if (!showAltSplashScreen || ((texture = EulaUpdate.GetSplashScreenTexture()) is null))
+                        texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets","splash-screen.png"));
+                    
                     var colorMask = Glib.Texture.Load(Path.Combine(AppDataPath, "assets","splash-screen-colormask.png"));
 
                     // get theme filepath

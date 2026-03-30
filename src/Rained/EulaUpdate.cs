@@ -5,24 +5,45 @@ using System.Numerics;
 using EditorGui;
 using Raylib_cs;
 
-static class EulaUpdate {
+static class EulaUpdate
+{
     public static bool CanEula { get; private set; }
 
     public static bool EULAEnabled { get; private set; } = false;
-    public const int MaxLevelSize = 666;
+    public const int MaxLevelWidth = 150;
+    public const int MaxLevelHeight = 83;
+    public const int MaxEffectsCount = 6;
     public const int MaxCameraCount = 6;
 
-    public static bool showEulaUpdateWindow = true;
+    public static bool showEulaUpdateWindow = false;
     private static bool showPlanWindow = false;
     private static float planWindowCancelTimer;
 
-    static EulaUpdate() {
+    static EulaUpdate()
+    {
         // TODO: set this to true only when the date is between April 1st and
         // April 6th.
         CanEula = true;
     }
 
-    private static void ShowEULAAgreementWindow() {
+    public static void LoadSettings()
+    {
+        if (!CanEula) return;
+
+        var opt = RainEd.Instance.Preferences.EnableEULAUpdate;
+        if (opt is null || opt.Value)
+        {
+            showEulaUpdateWindow = true;
+        }
+        else
+        {
+            Log.Debug("EULA update option is set");
+            EULAEnabled = opt.Value;
+        }
+    }
+
+    private static void ShowEULAAgreementWindow()
+    {
         if (!InitErrorsWindow.IsWindowOpen)
         {
             if (!ImGui.IsPopupOpen("EULA Update") && showEulaUpdateWindow)
@@ -127,7 +148,7 @@ static class EulaUpdate {
                     if (ImGui.Button("Um... Okay.", StandardPopupButtons.ButtonSize))
                     {
                         closePopup = true;
-                        EULAEnabled = true;
+                        SetEULAEnabled(true);
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.EndPopup();
@@ -139,7 +160,7 @@ static class EulaUpdate {
                     if (ImGui.Button("Yey", StandardPopupButtons.ButtonSize))
                     {
                         closePopup = true;
-                        EULAEnabled = false;
+                        SetEULAEnabled(false);
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.EndPopup();
@@ -152,23 +173,29 @@ static class EulaUpdate {
         }
     }
 
+    private static readonly string[] FunnyVideoList = [
+        "https://www.youtube.com/watch?v=i29t-5tEp_o", // Dolphin Muzzle
+        "https://www.youtube.com/watch?v=Ok7kcGEI1oM", // Henry Eats
+        "https://www.youtube.com/watch?v=diY6Mt_uqYs", // I Feel Fantastic
+        "https://www.youtube.com/watch?v=1GuLZmam9cg", // Crash Bandicoot acapella
+        "https://www.youtube.com/watch?v=-_Au8EMTtvU", // woke world
+        "https://www.youtube.com/watch?v=UXoSLdwUshE", // rainworld.exe
+        "https://www.youtube.com/watch?v=09R2uPFYlqM", // larry
+        "https://www.youtube.com/watch?v=2jSVi681FoE", // spider blockscraft
+        "https://www.youtube.com/watch?v=973csCP6rWg&t=2210s", // rolypoly mario farts!!
+        "https://www.youtube.com/watch?v=973csCP6rWg&t=1688s", // rolypoly i love gay people
+        "https://scratch.mit.edu/projects/860185328/", // should've made this a youtube video earlier...
+        "https://www.youtube.com/watch?v=tp-LC04QFbk", // aphex boxenergy4remix1
+        "https://www.youtube.com/watch?v=-hl5QFIjZBM", // autechre gantz graf EP
+    ];
+
     private static void DiscoverPlan()
     {
-        string[] videoList = [
-            "https://www.youtube.com/watch?v=i29t-5tEp_o", // Dolphin Muzzle
-            "https://www.youtube.com/watch?v=Ok7kcGEI1oM", // Henry Eats
-            "https://www.youtube.com/watch?v=diY6Mt_uqYs", // I Feel Fantastic
-            "https://www.youtube.com/watch?v=1GuLZmam9cg", // Crash Bandicoot acapella
-            "https://www.youtube.com/watch?v=-_Au8EMTtvU", // woke world
-            "https://www.youtube.com/watch?v=UXoSLdwUshE", // rainworld.exe
-            "https://www.youtube.com/watch?v=tp-LC04QFbk", // Music
-            "https://www.youtube.com/watch?v=09R2uPFYlqM", // larry
-        ];
-
-        Platform.OpenURL(videoList[Random.Shared.Next(videoList.Length)]);
+        Platform.OpenURL(FunnyVideoList[Random.Shared.Next(FunnyVideoList.Length)]);
     }
 
-    private static void ShowPlanWindow() {
+    private static void ShowPlanWindow()
+    {
         if (!ImGui.IsPopupOpen("Plans") && showPlanWindow)
         {
             planWindowCancelTimer = 10f;
@@ -186,14 +213,18 @@ static class EulaUpdate {
             ImGui.BeginChild("##freeplan", new Vector2(childWidth, 0f), childFlags);
             ImGui.Text("Panhandler (current)");
             ImGui.BulletText("Maximum 6 cameras");
-            ImGui.BulletText("Maximum level size of 666x666");
+            ImGui.BulletText("Maximum 6 effects");
+            ImGui.BulletText("Maximum level size of 150x83");
+            ImGui.BulletText("Maximum three layers");
             ImGui.EndChild();
 
             ImGui.BeginChild("##premium", new Vector2(childWidth, 0f), childFlags);
             ImGui.Text("Premium ($9.99/s)");
             ImGui.BulletText("Maximum 66 cameras");
-            ImGui.BulletText("Unlimited level size");
-            ImGui.BulletText("Will not track sessions for AI training");
+            ImGui.BulletText("Maximum 6 effects");
+            ImGui.BulletText("Maximum level size of 666x666");
+            ImGui.BulletText("Maximum three layers");
+            ImGui.BulletText("Option to not track sessions for AI training");
             ImGui.BulletText("Mandatory exclusive membership to the association");
             if (ImGui.Button("Discover This Plan"))
                 DiscoverPlan();
@@ -204,8 +235,9 @@ static class EulaUpdate {
             ImGui.BeginChild("##supercali", new Vector2(childWidth, 0f), childFlags);
             ImGui.Text("Supercalifragilisticexpialidocious ($0.01/ms)");
             ImGui.BulletText("No limits on anything");
-            ImGui.BulletText("Preservation of family cohesion");
+            ImGui.BulletText("Preservation of family cohesion after the Universal Apotheosis");
             ImGui.BulletText("Access to state-of-the-art AI for vibe-lediting");
+            ImGui.BulletText("Free brain supersession!");
             if (ImGui.Button("Discover This Plan"))
                 DiscoverPlan();
             ImGui.SetItemTooltip("(Opens a YouTube video)");
@@ -242,7 +274,14 @@ static class EulaUpdate {
         }
     }
 
-    public static void EULAWindowUpdate() {
+    private static void SetEULAEnabled(bool v)
+    {
+        EULAEnabled = v;
+        RainEd.Instance.Preferences.EnableEULAUpdate = v;
+    }
+
+    public static void EULAWindowUpdate()
+    {
         if (!CanEula) return;
 
         ShowEULAAgreementWindow();
@@ -251,13 +290,43 @@ static class EulaUpdate {
         ShowPlanWindow();
     }
 
-    public static bool CreateCamera() {
+    public static bool CreateCamera()
+    {
         if (!EULAEnabled) return true;
 
         var level = RainEd.Instance.Level;
-        if (level.Cameras.Count < MaxCameraCount - 1) return true;
+        if (level.Cameras.Count < MaxCameraCount) return true;
 
         showPlanWindow = true;
         return false;
+    }
+
+    public static bool CreateEffect()
+    {
+        if (!EULAEnabled) return true;
+
+        var level = RainEd.Instance.Level;
+        if (level.Effects.Count < MaxEffectsCount) return true;
+
+        showPlanWindow = true;
+        return false;
+    }
+
+    public static bool SetLevelSize(int width, int height)
+    {
+        if (!EULAEnabled) return true;
+        if (width <= MaxLevelWidth && height <= MaxLevelHeight) return true;
+
+        showPlanWindow = true;
+        return false;
+    }
+
+    public static Glib.Texture GetSplashScreenTexture()
+    {
+        using var stream = typeof(RainEd).Assembly.GetManifestResourceStream("Rained.embed.aitwme-splash-screen")
+            ?? throw new Exception("Could not create internal effects JSON resource stream");
+        
+        using var img = new Glib.Image(stream);
+        return Glib.Texture.Load(img);
     }
 }

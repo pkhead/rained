@@ -354,6 +354,7 @@ sealed class RainEd
         });
         
         EditorWindow.RequestLoadEmergencySave();
+        EulaUpdate.LoadSettings();
 
         // force gc. i just added this to try to collect
         // the now-garbage asset image data, as they have
