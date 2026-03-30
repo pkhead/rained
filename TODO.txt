@@ -15,6 +15,7 @@ LargeTexture:
   - rope prop quick-create (like in henry's)
   - rotating/scaling rope to not reset the simulation
 - show prop authors (maybe?)
+- option to have backup system delete the old backup instead of moving it to the recycle bin
 
 oh also clicking on a category doesnt select any tile in that category so using w and s to navigate does so in the category that was selected previosly
   (should i fix this?)
