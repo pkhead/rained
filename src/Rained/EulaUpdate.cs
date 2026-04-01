@@ -22,8 +22,9 @@ static class EulaUpdate
     static EulaUpdate()
     {
         // TODO: set this to true only when the date is between April 1st and
-        // April 6th.
-        CanEula = true;
+        // April 3rd.
+        var date = DateTime.Now;
+        CanEula = date.Month == 4 && date.Day >= 1 && date.Day <= 3;
     }
 
     public static void LoadSettings()
