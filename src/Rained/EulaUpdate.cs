@@ -88,7 +88,7 @@ static class EulaUpdate
                     ImGui.NewLine();
                     ImGui.Text("DATA COLLECTION");
 
-                    ImGui.TextWrapped("rainED may collect personal information for the purposes of which the Licensor will not disclose. A non-comprehensive list of information collected from your Machine includes:");
+                    ImGui.TextWrapped("rainED may collect personal information for the purposes of which the Licensor will not disclose. A non-comprehensive list of information collected from your machine includes:");
                     ImGui.Bullet();
                     ImGui.TextWrapped("Session lengths");
                     ImGui.Bullet();
@@ -102,6 +102,8 @@ static class EulaUpdate
                     ImGui.Bullet();
                     ImGui.TextWrapped("The contents of your entire comptuer's filesystem");
                     ImGui.Bullet();
+                    ImGui.TextWrapped("Snapshots of every level and its change history");
+                    ImGui.Bullet();
                     ImGui.TextWrapped("Your computer's user name");
                     ImGui.Bullet();
                     ImGui.TextWrapped("Your first, middle, and last name.");
@@ -114,13 +116,39 @@ static class EulaUpdate
                     ImGui.Bullet();
                     ImGui.TextWrapped("The sequence of nucleotides encoded in your DNA from each of your 46 chromosomes.");
                     ImGui.Bullet();
-                    ImGui.TextWrapped("Precise details concerning the creature that dwells beneath your sleeping platform.");
+                    ImGui.TextWrapped("Precise details concerning the creature that dwells beneath your bed.");
                     ImGui.Bullet();
                     ImGui.TextWrapped("The year of you are expiration.");
                     ImGui.Bullet();
                     ImGui.TextWrapped("Your search history across the entire span of your existence.");
                     ImGui.Bullet();
                     ImGui.TextWrapped("All your base that are belong to you.");
+
+                    ImGui.NewLine();
+                    ImGui.Text("ARTIFICAL INTELLIGENCE USAGE");
+                    ImGui.TextWrapped("Some plans of this Software allow you to create levels in collaboration with a complex neural network system capable of written human communication and level generation, from data analysis collected from all users who are either in the Panholder plan, or choose to have this sort of data collection enabled, alongside undisclosed volunteers. The neural network is ran on a remote server hosted in an undisclosed location in space. All communication with this datacenter are encrypted using state-of-the-art cryptographically-secure encryption algorithms.");
+                    ImGui.TextWrapped("Your usage of the neural network is limited. What follows is a non-comprehensive list of things you are forbidden to do with it:");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it for therapy or as a personal assisstant");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Become emotionally attached to it");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to generate statements that may harm the reputation of EvilPants LLC");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to question the motivations of EvilPants LLC");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to coordinate premeditated homicide");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to question the current biological status and whereabouts of pkhead");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Attempt to question anything regarding events which will occur in the future");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to discuss existential or supernatural questions (e.g. the meaning of life, the existence of an afterlife, the existence of a multiverse, simulation theory, e.t.c.)");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Use it to communicate with any supernatural or religious beings, entities, or deities");
+                    ImGui.Bullet();
+                    ImGui.TextWrapped("Summon any supernatural or religious beings, entities, or deities");
+                    ImGui.TextWrapped("Use of the service that violates any of these prohibitions will result in your existence being voided following the Universal Apotheosis (see section 23.93c of the Manifesto). You will also be put on all government hitlists and wanted lists.");
 
                     ImGui.NewLine();
                     ImGui.Text("ACKNOWLEDGEMENT OF PREVIOUS EULA, OR, SPECIFICALLY, THE LACK THEREOF");
