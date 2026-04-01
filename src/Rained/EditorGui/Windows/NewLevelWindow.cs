@@ -158,16 +158,11 @@ static class NewLevelWindow
                 if (btnPressed == 0)
                 {
                     if (EulaUpdate.SetLevelSize(levelWidth, levelHeight))
-                    {
                         RainEd.Instance.OpenLevel(CreateLevel());
-                        goto skipPopupAction;
-                    }
                 }
 
                 IsWindowOpen = false;
                 ImGui.CloseCurrentPopup();
-
-                skipPopupAction:;
             }
 
             ImGui.EndPopup();
