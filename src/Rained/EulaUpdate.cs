@@ -288,6 +288,7 @@ static class EulaUpdate
         if (!EULAEnabled) return;
 
         ShowPlanWindow();
+        UpdateLarry();
     }
 
     public static bool CreateCamera()
@@ -324,9 +325,72 @@ static class EulaUpdate
     public static Glib.Texture GetSplashScreenTexture()
     {
         using var stream = typeof(RainEd).Assembly.GetManifestResourceStream("Rained.embed.aitwme-splash-screen")
-            ?? throw new Exception("Could not create internal effects JSON resource stream");
+            ?? throw new Exception("Could not load 'aitwme-splash-screen'");
         
         using var img = new Glib.Image(stream);
         return Glib.Texture.Load(img);
+    }
+
+    // tile editor larry easter egg //
+    private static Texture2D? larryTexture = null;
+    private static bool isLarryActivated = false;
+    private static float tileEditorLarryCountdown = 0f;
+
+    public static void TileEditorGroupChange()
+    {
+        if (!EULAEnabled) return;
+
+        if (Random.Shared.Next(80) == 0)
+        {
+            isLarryActivated = true;
+            tileEditorLarryCountdown = 0.8f;
+        }
+        else
+        {
+            isLarryActivated = false;
+        }
+    }
+
+    public static bool TileEditorItemRenderHook()
+    {
+        if (!(EULAEnabled && isLarryActivated)) return true;
+
+        var larryTex = GetLarryTexture();
+        ImGuiExt.ImageRect(
+            larryTex,
+            ImGui.CalcItemWidth(), ImGui.GetFrameHeight(),
+            new Rectangle(0f, 0f, larryTex.Width, larryTex.Height)
+        );
+
+        return false;
+    }
+
+    private static void UpdateLarry()
+    {
+        if (!(EULAEnabled && isLarryActivated)) return;
+
+        tileEditorLarryCountdown -= Raylib.GetFrameTime();
+        Log.Debug("{Countdown}", tileEditorLarryCountdown);
+        if (tileEditorLarryCountdown <= 0f)
+        {
+            RainEd.Instance.EmergencySave();
+            while (true) {} // Mu Ha Ha. Mu Ha Ha. Mu Ha Ha.
+        }
+    }
+
+    private static Texture2D GetLarryTexture()
+    {
+        if (larryTexture is null)
+        {
+            using var stream = typeof(RainEd).Assembly.GetManifestResourceStream("Rained.embed.larry")
+                ?? throw new Exception("Could not load 'larry'");
+            
+            using var gImg = new Glib.Image(stream);
+            var gTex = Glib.Texture.Load(gImg);
+
+            larryTexture = new Texture2D() { ID = gTex };
+        }
+
+        return larryTexture.Value;
     }
 }
