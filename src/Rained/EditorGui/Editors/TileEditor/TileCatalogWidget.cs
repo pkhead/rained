@@ -60,7 +60,10 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
             var group = tileDb.Categories[i];
 
             if (ColoredSelectable(group.Name, group.Color, state.SelectedTileGroup == i) || tileSearchResults.Count == 1)
+            {
                 state.SelectedTileGroup = i;
+                EulaUpdate.TileEditorGroupChange();
+            }
         }
     }
 
@@ -77,6 +80,8 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
             // don't show this prop if it doesn't pass search test
             if (!tile.Name.Contains(SearchQuery, StringComparison.CurrentCultureIgnoreCase))
                 continue;
+                
+            if (!EulaUpdate.TileEditorItemRenderHook()) continue;
             
             if (ImGui.Selectable(tile.Name, tile == state.SelectedTile))
             {

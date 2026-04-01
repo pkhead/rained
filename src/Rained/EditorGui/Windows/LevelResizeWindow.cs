@@ -176,14 +176,14 @@ class LevelResizeWindow
 
                 ImGui.Separator();
 
-                if (ImGui.Button("OK"))
+                if (ImGui.Button("OK") && EulaUpdate.SetLevelSize(newWidth, newHeight))
                 {
                     Apply();
                     IsWindowOpen = false;
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("Apply"))
+                if (ImGui.Button("Apply") && EulaUpdate.SetLevelSize(newWidth, newHeight))
                 {
                     Apply();
                 }

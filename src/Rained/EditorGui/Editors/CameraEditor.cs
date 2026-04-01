@@ -345,7 +345,7 @@ class CameraEditor : IEditorMode
         {
             // N or double-click to create new camera
             bool wantCreate = KeyShortcuts.Activated(KeyShortcut.NewObject) || doubleClick;
-            if (wantCreate)
+            if (wantCreate && EulaUpdate.CreateCamera())
             {
                 changeRecorder.BeginChange();
                 var cam = new Camera(window.MouseCellFloat - Camera.Size / 2f);
@@ -359,7 +359,7 @@ class CameraEditor : IEditorMode
             if (selectedCameras.Count > 0)
             {
                 // Ctrl+D to duplicate selected cameras (duplicating camera corners) 
-                if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.D))
+                if (EditorWindow.IsKeyDown(ImGuiKey.ModCtrl) && EditorWindow.IsKeyPressed(ImGuiKey.D) && EulaUpdate.CreateCamera())
                 {
                     changeRecorder.BeginChange();
 

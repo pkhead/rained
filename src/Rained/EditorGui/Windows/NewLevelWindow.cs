@@ -157,7 +157,8 @@ static class NewLevelWindow
             {
                 if (btnPressed == 0)
                 {
-                    RainEd.Instance.OpenLevel(CreateLevel());
+                    if (EulaUpdate.SetLevelSize(levelWidth, levelHeight))
+                        RainEd.Instance.OpenLevel(CreateLevel());
                 }
 
                 IsWindowOpen = false;

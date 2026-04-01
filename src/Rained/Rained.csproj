@@ -46,6 +46,10 @@
     <EmbeddedResource Include="Assets/effects.json">
       <LogicalName>Rained.embed.%(FileName)</LogicalName>
     </EmbeddedResource>
+
+    <EmbeddedResource Include="EmbeddedResources/*">
+      <LogicalName>Rained.embed.%(FileName)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   
   <!--
