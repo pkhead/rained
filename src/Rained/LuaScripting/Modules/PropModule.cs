@@ -709,7 +709,7 @@ static class PropModule
                         return lua.ErrorWhere("prop is not a fez tree");
                     
                     SettingsChange(prop);
-                    prop.FezTree.EffectColor = (PropFezTreeEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
+                    prop.FezTree.EffectColor = (PropEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
                     break;
 
                 case "fezTreeLeafDensity":

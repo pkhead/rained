@@ -1,15 +1,23 @@
 sorry this todo list is now very disorganized
 
+Drizzle update:
+- Mosaic plants
+  - lock to proportional scaling (unless SHIFT is held)
+  - serialization
+  - change history
+
 LargeTexture:
 - large texture for lightmap
 
 - apparently if you switch between levels with the prop editor active, it causes bug
-- also solar says sometimes rotation crashes the editor.
+- also solar says sometimes rotation crashes the editor. i can't seem to repro it though.
 
 - MAKE PURPLE NIGHT THEME!!!
 - FEATURE: render as prop
 - FEATURE: zero-g toggle for all rope props
 - rewrite/refactor prop editor
+- MOVE TO HEXA.IMGUI.NET
+  (although i worry if it could be troublesome considering i use a custom version of imgui.net for freetype?)
 - more flexibility with rope editing:
   - rope prop bezier editing
   - rope prop quick-create (like in henry's)

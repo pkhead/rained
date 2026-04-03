@@ -342,6 +342,48 @@ partial class PropEditor : IEditorMode
             ImGui.EndCombo();
         }
     }
+
+    private void MultiselectBoolInput<T>(T[] items, string label, string fieldName)
+    {
+        var field = typeof(T).GetField(fieldName)!;
+        var targetV = (bool)field.GetValue(items[0])!;
+
+        bool isSame = true;
+        for (int i = 1; i < items.Length; i++)
+        {
+            if ((bool)field.GetValue(items[i])! != targetV)
+            {
+                isSame = false;
+                break;
+            }
+        }
+
+        if (isSame)
+        {
+            bool v = (bool)field.GetValue(items[0])!;
+            if (ImGui.Checkbox(label, ref v))
+            {
+                foreach (var prop in items)
+                    field.SetValue(prop, v);
+            }
+        }
+        else
+        {
+            bool v = false;
+            // TODO: intermediate checkbox using internal PushItemFlag, but would require switch to Hexa.Net.ImGUI
+            // TODO: switch to Hexa.Net.ImGUI
+            if (ImGui.Checkbox(label, ref v))
+            {
+                foreach (var prop in items)
+                    field.SetValue(prop, v);
+            }
+        }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            changeRecorder.PushSettingsChanges();
+        }
+    }
 #endregion
 
     public void DrawToolbar()
@@ -688,6 +730,7 @@ partial class PropEditor : IEditorMode
         bool ropeProps = true;
         bool affineProps = true;
         bool fezTreeProps = true;
+        bool mosaicPlantProps = true;
 
         // check if they're all affine
         foreach (var prop in selectedProps)
@@ -725,6 +768,16 @@ partial class PropEditor : IEditorMode
             if (prop.FezTree is null)
             {
                 fezTreeProps = false;
+                break;
+            }
+        }
+
+        // check if they're all mosaic plant props
+        foreach (var prop in selectedProps)
+        {
+            if (prop.MosaicPlant is null)
+            {
+                mosaicPlantProps = false;
                 break;
             }
         }
@@ -864,7 +917,33 @@ partial class PropEditor : IEditorMode
             }
 
             MultiselectSliderFloat(trees, "Leaf Density", "LeafDensity", 0f, 1f, "%.2f", ImGuiSliderFlags.AlwaysClamp);
-            MultiselectSwitchInput<PropFezTree, PropFezTreeEffectColor>(trees, "Effect Color", "EffectColor", ["X", "1", "2"]);
+            MultiselectSwitchInput<PropFezTree, PropEffectColor>(trees, "Effect Color", "EffectColor", ["X", "1", "2"]);
+        }
+
+        // mosaic plant properties, if all selected props are mosaic plants
+        if (mosaicPlantProps)
+        {
+            var plants = new PropMosaicPlant[selectedProps.Length];
+            for (int i = 0; i < selectedProps.Length; i++)
+            {
+                plants[i] = selectedProps[i].MosaicPlant
+                            ?? throw new NullReferenceException("Prop.MosaicPlant was null");
+            }
+
+            MultiselectSwitchInput<PropMosaicPlant, PropEffectColor>(plants,
+                "Effect Color", "EffectColor",
+                ["X", "1", "2"]
+            );
+            MultiselectEnumInput<PropMosaicPlant, MosaicPlantColorIntensity>(plants,
+                "Color Intensity", "ColorIntensity",
+                ["None", "Low", "Medium", "High", "Random"]);
+            MultiselectSwitchInput<PropMosaicPlant, PropEffectColor>(plants,
+                "Flower Color", "FlowerColor",
+                ["X", "1", "2"]
+            );
+            MultiselectBoolInput<PropMosaicPlant>(plants,
+                "Has Flowers", "HasFlowers"
+            );
         }
 
         if (selectedProps.Length == 1)

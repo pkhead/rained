@@ -16,7 +16,8 @@ enum PropType
     Antimatter,
     Rope,
     Long,
-    FezTree
+    FezTree,
+    MosaicPlant
 };
 
 // Used to generate note synopses
@@ -149,6 +150,7 @@ record class PropInit
             "rope" or "customrope" => PropType.Rope,
             "long" or "customlong" => PropType.Long,
             "feztree" => PropType.FezTree,
+            "mosaicplant" => PropType.MosaicPlant,
             _ => throw new Exception($"Invalid prop type '{(string)init["tp"]}'")
         };
 
@@ -552,6 +554,9 @@ class PropDatabase
   
     -["Procedural Plants", color(0, 255, 0)]
     [#nm:"Fez Tree", #tp:"fezTree", #depth:10, #tags:[], #notes:["Please note that the preview line does not necessarily indicate the path that the trunk will take."], #previewColor:color(255,0, 0), #author:"Cappin"]
+
+    -["Community Procedural Plants", color(0, 255, 0)]
+    [#nm:"Mosaic Plant", #tp:"mosaicPlant", #depth:2, #tags:[], #notes:["Place in front of the furthest sublayer. Leaves appear in the sublayer in front of stems. Flowers appear in the sublayer in front of leaves and are not counted in the preview range."], #previewColor:color(0,113,53), #author:"Alduris"]
     """;
 
     // private const string ExtraPropsInitssssss = """

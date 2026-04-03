@@ -641,7 +641,7 @@ class VanillaFileFormat : ILevelFileFormat
                             prop.FezTree.LeafDensity = Lingo.LingoNumber.AsFloat(tempObject);
                         
                         if (settingsData.TryGetValue("effectColor", out tempObject))
-                            prop.FezTree.EffectColor = (PropFezTreeEffectColor)Lingo.LingoNumber.AsInt(tempObject);
+                            prop.FezTree.EffectColor = (PropEffectColor)Lingo.LingoNumber.AsInt(tempObject);
                     }
 
                     // read optional settings

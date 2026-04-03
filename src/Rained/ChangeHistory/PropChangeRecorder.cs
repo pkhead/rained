@@ -89,7 +89,7 @@ record PropSettings(Prop Prop)
     public float RopeThickness = Prop.Rope?.Thickness ?? 0f;
 
     public float LeafDensity = Prop.FezTree?.LeafDensity ?? 0f;
-    public int EffectColor = (int)(Prop.FezTree?.EffectColor ?? PropFezTreeEffectColor.Dead);
+    public int EffectColor = (int)(Prop.FezTree?.EffectColor ?? PropEffectColor.Dead);
 
     public void Apply(Prop prop)
     {
@@ -117,7 +117,7 @@ record PropSettings(Prop Prop)
         var tree = prop.FezTree;
         if (tree is not null)
         {
-            tree.EffectColor = (PropFezTreeEffectColor) EffectColor;
+            tree.EffectColor = (PropEffectColor) EffectColor;
             tree.LeafDensity = LeafDensity;
         }
     }

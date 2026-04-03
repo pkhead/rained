@@ -194,22 +194,36 @@ class PropRope
     }
 }
 
-public enum PropFezTreeEffectColor
+public enum PropEffectColor
 {
     Dead = 0,
     Color1 = 1,
     Color2 = 2
-};
+}
 
 class PropFezTree
 {
     public float LeafDensity = 1f; // [0.0, 1.0]
-    public PropFezTreeEffectColor EffectColor = PropFezTreeEffectColor.Dead;
+    public PropEffectColor EffectColor = PropEffectColor.Dead;
 
     public Vector2 TrunkPosition = new(0f, 0f);
     public float TrunkAngle = 0f; // radians, clockwise
     // public Vector2 LeafPosition = new(0f, 0f); // position of prop bottom-middle
     // public float LeafAngle = 0f; // radians, counterclockwise
+}
+
+
+public enum MosaicPlantColorIntensity
+{
+    None, Low, Medium, High, Random
+}
+
+class PropMosaicPlant
+{
+    public PropEffectColor EffectColor = PropEffectColor.Color2;
+    public MosaicPlantColorIntensity ColorIntensity = MosaicPlantColorIntensity.Medium;
+    public bool HasFlowers = false;
+    public PropEffectColor FlowerColor = PropEffectColor.Color1;
 }
 
 public enum PropRenderTime
@@ -238,6 +252,9 @@ class Prop
 
     private readonly PropFezTree? fezTree;
     public PropFezTree? FezTree { get => fezTree; }
+
+    private readonly PropMosaicPlant? mosaicPlant;
+    public PropMosaicPlant? MosaicPlant { get => mosaicPlant; }
     
     // returns true if it's a rope or a long-type prop
     public bool IsLong { get => PropInit.Type == PropType.Rope || PropInit.Type == PropType.Long; }
@@ -300,13 +317,21 @@ class Prop
         CustomDepth = init.Depth;
         Variation = 0;
 
-        if (init.Type == PropType.Rope)
+        switch (init.Type)
         {
-            rope = new PropRope(init);
-        }
-        else if (init.Type == PropType.FezTree)
-        {
-            fezTree = new PropFezTree();
+            case PropType.Rope:
+                rope = new PropRope(init);
+                break;
+
+            case PropType.FezTree:
+                fezTree = new PropFezTree();
+                break;
+
+            case PropType.MosaicPlant:
+                mosaicPlant = new PropMosaicPlant();
+                break;
+                
+            default: break;
         }
     }
 

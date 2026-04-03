@@ -262,7 +262,7 @@ static class PropSerialization
                 {
                     Debug.Assert(prop.FezTree is not null);
 
-                    prop.FezTree.EffectColor = (PropFezTreeEffectColor) reader.ReadByte();
+                    prop.FezTree.EffectColor = (PropEffectColor) reader.ReadByte();
                     prop.FezTree.LeafDensity = reader.ReadSingle();
                     prop.FezTree.TrunkPosition.X = reader.ReadSingle();
                     prop.FezTree.TrunkPosition.Y = reader.ReadSingle();
