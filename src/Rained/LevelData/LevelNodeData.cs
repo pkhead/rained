@@ -101,7 +101,7 @@ class LevelNodeData
         
         if (!dirty) return;
 
-        var stopwatch = new Stopwatch();
+        // var stopwatch = new Stopwatch();
 
         var shortcutLocs = shortcutLocsSet.ToArray();
         Array.Sort(shortcutLocs, (Vector2i pos0, Vector2i pos1) =>
@@ -243,8 +243,8 @@ class LevelNodeData
                 nodeId++;
         }
 
-        stopwatch.Stop();
-        Log.Debug("nodedata update: {ElapsedTime} ms", stopwatch.ElapsedMilliseconds);
+        // stopwatch.Stop();
+        // Log.Debug("nodedata update: {ElapsedTime} ms", stopwatch.ElapsedMilliseconds);
 
         dirty = false;
     }
