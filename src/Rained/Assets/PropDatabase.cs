@@ -671,16 +671,6 @@ class PropDatabase
         return -1;
     }
 
-    // helper function to create error message with line inforamtion
-    static string ErrorString(int lineNo, string msg)
-    {
-        if (lineNo == -1)
-            return "[EMBEDDED]: " + msg;
-        else
-            return "Line " + lineNo + ": " + msg;
-    }
-
-
     private void InitProps(TileDatabase tileDatabase)
     {
         // read prop init file
@@ -700,7 +690,7 @@ class PropDatabase
             {
                 if (lingoParser.Read(line[1..]) is not Lingo.LinearList header)
                 {
-                    Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.UserLogger.Warning(ErrorFormat.ErrorString(lineNo, "Malformed category header, ignoring."));
                     continue;
                 }
 
@@ -711,7 +701,8 @@ class PropDatabase
             // read prop
             else
             {
-                if (currentCategory is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
+                if (currentCategory is null)
+                    throw new Exception(ErrorFormat.ErrorString(lineNo, "The first category header is missing"));
                 
                 Lingo.PropertyList? propData = null;
                 try // curse you Wryak
@@ -720,14 +711,14 @@ class PropDatabase
                     if (parseErr is not null)
                     {
                         HasErrors = true;
-                        Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
+                        Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, parseErr.Message + " (line ignored)"));
                         continue;
                     }
                     
                     if (parsedLine is null)
                     {
                         HasErrors = true;
-                        Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
+                        Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, "Malformed tile init (line ignored)"));
                         continue;
                     }
 
@@ -742,7 +733,10 @@ class PropDatabase
 
                     var nameObj = propData?["nm"];
                     var name = nameObj is string v ? v : "???";
-                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"), name, e.Message);
+                    Log.UserLogger.Warning(
+                        ErrorFormat.ErrorString(lineNo, "Could not add prop '{PropName}': {ErrorMessage}"),
+                        name, e.Message
+                    );
                 }
             }
         }

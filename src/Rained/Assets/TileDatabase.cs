@@ -194,15 +194,6 @@ class TileDatabase
         TileCategory? curGroup = null;
         int groupIndex = 0;
 
-        // helper function to create error string with line information
-        static string ErrorString(int lineNo, string msg)
-        {
-            if (lineNo == -1)
-                return "[EMBEDDED]: " + msg;
-            else
-                return "Line " + lineNo + ": " + msg;
-        }
-
         void ProcessLine(string line, int lineNo)
         {
             if (string.IsNullOrWhiteSpace(line)) return;
@@ -213,7 +204,7 @@ class TileDatabase
                 if (lingoParser.Read(line[1..]) is not Lingo.LinearList header)
                 {
                     // not really important enough to set HasErrors = true
-                    Log.UserLogger.Warning(ErrorString(lineNo, "Malformed category header, ignoring."));
+                    Log.UserLogger.Warning(ErrorFormat.ErrorString(lineNo, "Malformed category header, ignoring."));
                     return;
                 }
 
@@ -227,20 +218,21 @@ class TileDatabase
             }
             else
             {
-                if (curGroup is null) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
+                if (curGroup is null)
+                    throw new Exception(ErrorFormat.ErrorString(lineNo, "The first category header is missing"));
 
                 var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
                 if (parseErr is not null)
                 {
                     HasErrors = true;
-                    Log.UserLogger.Error(ErrorString(lineNo, parseErr.Message + " (line ignored)"));
+                    Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, parseErr.Message + " (line ignored)"));
                     return;
                 }
 
                 if (parsedLine is null)
                 {
                     HasErrors = true;
-                    Log.UserLogger.Error(ErrorString(lineNo, "Malformed tile init (line ignored)"));
+                    Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, "Malformed tile init (line ignored)"));
                     return;
                 }
 
@@ -305,7 +297,9 @@ class TileDatabase
                 catch (Exception e)
                 {
                     HasErrors = true;
-                    Log.UserLogger.Warning(ErrorString(lineNo, "Could not add tile {Name}: {ErrorMessage}"), name, e.Message);
+                    Log.UserLogger.Warning(
+                        ErrorFormat.ErrorString(lineNo, "Could not add tile {Name}: {ErrorMessage}"),
+                        name, e.Message);
                 }
             }
         }

@@ -367,7 +367,8 @@ class EffectsDatabase
             }
             else
             {
-                if (!groupCheck) throw new Exception(ErrorString(lineNo, "The first category header is missing"));
+                if (!groupCheck)
+                    throw new Exception(ErrorFormat.ErrorString(lineNo, "The first category header is missing"));
 
                 // check for parse exception
                 var parsedLine = lingoParser.Read(line, out Lingo.ParseException? parseErr);
@@ -423,7 +424,7 @@ class EffectsDatabase
                         break;
                     
                     default:
-                        Log.UserLogger.Warning(ErrorString(lineNo, "Effect init does not have a valid 'tp' field."));
+                        Log.UserLogger.Warning(ErrorFormat.ErrorString(lineNo, "Effect init does not have a valid 'tp' field."));
                         break;
                 }
 
@@ -450,13 +451,10 @@ class EffectsDatabase
         }
     }
 
-    private static string ErrorString(int lineNo, string msg)
-        => "Line " + lineNo + ": " + msg;
-    
     private void LogError(int lineNo, string template, params string[] values)
     {
         HasErrors = true;
-        Log.UserLogger.Error(ErrorString(lineNo, template), template, values);
+        Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, template), template, values);
     }
 
     public EffectInit GetEffectFromName(string name)
