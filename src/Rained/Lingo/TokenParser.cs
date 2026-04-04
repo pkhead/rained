@@ -144,10 +144,15 @@ class TokenParser
         }
     }
 
+    private static bool IsWordCharacter(char ch)
+    {
+        return char.IsLetterOrDigit(ch) || ch == '_';
+    }
+
     private string ReadWord()
     {
         strBuffer.Clear();
-        while (char.IsLetter(PeekChar()) || char.IsDigit(PeekChar()) || PeekChar() == '_')
+        while (IsWordCharacter(PeekChar()))
         {
             strBuffer.Add(ReadChar());
         }
@@ -158,7 +163,8 @@ class TokenParser
     {
         DiscardWhitespace();
 
-        switch (PeekChar())
+        char peekCh = PeekChar();
+        switch (peekCh)
         {
             case '[':
                 BeginToken();
@@ -256,14 +262,14 @@ class TokenParser
 
         default:
             // hyphen -- may be a negative number, or simply a hyphen
-            if (char.IsDigit(PeekChar()))
+            if (char.IsDigit(peekCh))
             {
                 BeginToken();
                 ParseNumber();
             }
 
             // parse keywords and string constants
-            else
+            else if (IsWordCharacter(peekCh))
             {
                 BeginToken();
                 var word = ReadWord();
@@ -272,6 +278,13 @@ class TokenParser
                     EndToken(TokenType.Symbol, word);
                 else
                     EndToken(TokenType.Word, word);
+            }
+
+            // unknown symbol, throw an error
+            else
+            {
+                BeginToken();
+                Error($"Unknown symbol \"{peekCh}\"");
             }
 
             break;
