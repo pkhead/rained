@@ -644,6 +644,34 @@ class VanillaFileFormat : ILevelFileFormat
                             prop.FezTree.EffectColor = (PropEffectColor)Lingo.LingoNumber.AsInt(tempObject);
                     }
 
+                    // read mosaic plant parameters
+                    if (prop.MosaicPlant is not null)
+                    {
+                        // i'm not sure if these are optional but um sure
+                        if (settingsData.TryGetValue("effectColor", out tempObject))
+                            prop.MosaicPlant.EffectColor = StringToPropEffectColor((string)tempObject);
+                        
+                        if (settingsData.TryGetValue("colorIntensity", out tempObject))
+                        {
+                            string val = ((string)tempObject).ToLowerInvariant();
+                            prop.MosaicPlant.ColorIntensity = val switch
+                            {
+                                "none" => MosaicPlantColorIntensity.None,
+                                "low" => MosaicPlantColorIntensity.Low,
+                                "medium" => MosaicPlantColorIntensity.Medium,
+                                "high" => MosaicPlantColorIntensity.High,
+                                "random" => MosaicPlantColorIntensity.Random,
+                                _ => throw new Exception("Invalid Mosaic Plant color intensity value '{val}"),
+                            };
+                        }
+
+                        if (settingsData.TryGetValue("hasFlowers", out tempObject))
+                            prop.MosaicPlant.HasFlowers = Lingo.LingoNumber.AsInt(tempObject) == 1;
+                        
+                        if (settingsData.TryGetValue("flowerColor", out tempObject))
+                            prop.MosaicPlant.FlowerColor = StringToPropEffectColor((string)tempObject);
+                    }
+
                     // read optional settings
                     if (settingsData.TryGetValue("customDepth", out tempObject) && tempObject is not null)
                     {
@@ -1084,6 +1112,25 @@ class VanillaFileFormat : ILevelFileFormat
                 output.AppendFormat(", #effectColor: {0}", (int)tree.EffectColor);
             }
 
+            if (prop.MosaicPlant is not null)
+            {
+                var mosaic = prop.MosaicPlant;
+                output.AppendFormat(", #effectColor: \"{0}\"", PropEffectColorToString(mosaic.EffectColor));
+
+                output.AppendFormat(", #colorIntensity: \"{0}\"", mosaic.ColorIntensity switch
+                {
+                    MosaicPlantColorIntensity.None => "None",
+                    MosaicPlantColorIntensity.Low => "Low",
+                    MosaicPlantColorIntensity.Medium => "Medium",
+                    MosaicPlantColorIntensity.High => "High",
+                    MosaicPlantColorIntensity.Random => "Random",
+                    _ => throw new Exception($"Invalid Mosaic Plant color intensity value '{mosaic.ColorIntensity}")
+                });
+
+                output.AppendFormat(", #hasFlowers: {0}", mosaic.HasFlowers ? "1" : "0");
+                output.AppendFormat(", #flowerColor: \"{0}\"", PropEffectColorToString(mosaic.FlowerColor));
+            }
+
             if (propInit.Rope is not null)
             {
                 output.Append(", #release: ");
@@ -1260,4 +1307,22 @@ class VanillaFileFormat : ILevelFileFormat
 
         return true;
     }
+
+    private static string PropEffectColorToString(PropEffectColor color)
+        => color switch
+        {
+            PropEffectColor.Dead => "Dead",
+            PropEffectColor.Color1 => "Color1",
+            PropEffectColor.Color2 => "Color2",
+            _ => throw new Exception($"Invalid prop effect color value '{color}'")
+        };
+    
+    private static PropEffectColor StringToPropEffectColor(string str)
+        => str.ToLowerInvariant() switch
+        {
+            "dead" => PropEffectColor.Dead,
+            "color1" => PropEffectColor.Color1,
+            "color2" => PropEffectColor.Color2,
+            _ => throw new Exception($"Invalid prop effect color value '{str}'")
+        };
 }
