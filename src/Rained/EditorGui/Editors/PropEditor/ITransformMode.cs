@@ -164,6 +164,11 @@ partial class PropEditor : IEditorMode
     
     class ScaleTransformMode : ITransformMode
     {
+        enum ProportionObstinance // i pulled out a damn thesaurus for this
+        {
+            None, Soft, Force
+        }
+
         public readonly int handleId; // even = corner, odd = edge
         private readonly RotatedRect origRect;
         private readonly PropTransform[] origPropTransforms;
@@ -172,7 +177,7 @@ partial class PropEditor : IEditorMode
         private readonly Vector2 propRight;
         private readonly Vector2 propUp;
         private readonly Matrix3x2 rotationMatrix;
-        private readonly bool mustMaintainProportions;
+        private readonly ProportionObstinance proportionMode;
         private readonly float snap;
 
         private readonly Prop[] props;
@@ -236,14 +241,24 @@ partial class PropEditor : IEditorMode
 
             // proportion maintenance is required if there is more than
             // one prop selected, and at least one affine prop in the selection
-            mustMaintainProportions = false;
+            proportionMode = ProportionObstinance.None;
+
+            foreach (var prop in props)
+            {
+                if (prop.MosaicPlant is not null)
+                {
+                    proportionMode = ProportionObstinance.Soft;
+                    break;
+                }
+            }
+
             if (props.Length > 1)
             {
                 foreach (var prop in props)
-                {
+                {        
                     if (prop.IsAffine)
                     {
-                        mustMaintainProportions = true;
+                        proportionMode = ProportionObstinance.Force;
                         break;
                     }
                 }
@@ -298,8 +313,16 @@ partial class PropEditor : IEditorMode
             }
             
             // hold shift to maintain proportions
-            // if scaling multiple props at once, this is the only valid mode. curse you, rotation!!!  
-            if (mustMaintainProportions || EditorWindow.IsKeyDown(ImGuiKey.ModShift))
+            // if scaling multiple props at once, this is the only valid mode. curse you, rotation!!!
+            bool proportionLock = proportionMode switch
+            {
+                ProportionObstinance.None => EditorWindow.IsKeyDown(ImGuiKey.ModShift),
+                ProportionObstinance.Soft => !EditorWindow.IsKeyDown(ImGuiKey.ModShift),
+                ProportionObstinance.Force => true,
+                _ => false
+            };
+
+            if (proportionLock)
             {
                 if (handleOffset.X == 0f)
                 {
