@@ -643,6 +643,61 @@ static class PropModule
                         lua.PushNil();
                     break;
                 
+                case "isMosaicPlant":
+                    lua.PushBoolean(prop.MosaicPlant is not null);
+                    break;
+
+                case "mosaicPlantEffectColor":
+                    if (prop.MosaicPlant is not null)
+                        lua.PushInteger((int)prop.MosaicPlant.EffectColor);
+                    else
+                        lua.PushNil();
+                    break;
+
+                case "mosaicPlantColorIntensity":
+                    if (prop.MosaicPlant is not null)
+                    {
+                        switch (prop.MosaicPlant.ColorIntensity)
+                        {
+                            case MosaicPlantColorIntensity.None:
+                                lua.PushString("none");
+                                break;
+                            case MosaicPlantColorIntensity.Low:
+                                lua.PushString("low");
+                                break;
+                            case MosaicPlantColorIntensity.Medium:
+                                lua.PushString("medium");
+                                break;
+                            case MosaicPlantColorIntensity.High:
+                                lua.PushString("high");
+                                break;
+                            case MosaicPlantColorIntensity.Random:
+                                lua.PushString("random");
+                                break;
+                            default:
+                                return lua.ErrorWhere("internal error");
+                        }
+                    }
+                    else
+                    {
+                        lua.PushNil();
+                    }
+                    break;
+                
+                case "mosaicPlantHasFlowers":
+                    if (prop.MosaicPlant is not null)
+                        lua.PushBoolean(prop.MosaicPlant.HasFlowers);
+                    else
+                        lua.PushNil();
+                    break;
+                
+                case "mosaicPlantFlowerColor":
+                    if (prop.MosaicPlant is not null)
+                        lua.PushInteger((int)prop.MosaicPlant.FlowerColor);
+                    else
+                        lua.PushNil();
+                    break;
+                
                 default:
                     lua.PushNil();
                     break;
@@ -742,6 +797,70 @@ static class PropModule
                     
                     TransformChange(prop);
                     prop.FezTree.TrunkAngle = (float)lua.CheckNumber(3);
+                    break;
+                
+                case "mosaicPlantEffectColor":
+                    if (prop.MosaicPlant is null)
+                        return lua.ErrorWhere("prop is not a mosaic plant");
+                    
+                    SettingsChange(prop);
+
+                    // actually why does it just clamp? that seems stupid.
+                    // it should throw an error? but i'm too lazy to find and
+                    // fix all the other occurrences of this. nobody uses the
+                    // scripting feature anyway.
+                    prop.MosaicPlant.EffectColor = (PropEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
+                    break;
+
+                case "mosaicPlantColorIntensity":
+                {
+                    if (prop.MosaicPlant is null)
+                        return lua.ErrorWhere("prop is not a mosaic plant");
+                    
+                    SettingsChange(prop);
+
+                    var str = lua.CheckString(3);
+                    switch (str)
+                    {
+                        case "none":
+                            prop.MosaicPlant.ColorIntensity = MosaicPlantColorIntensity.None;
+                            break;
+                        case "low":
+                            prop.MosaicPlant.ColorIntensity = MosaicPlantColorIntensity.Low;
+                            break;
+                        case "medium":
+                            prop.MosaicPlant.ColorIntensity = MosaicPlantColorIntensity.Medium;
+                            break;
+                        case "high":
+                            prop.MosaicPlant.ColorIntensity = MosaicPlantColorIntensity.High;
+                            break;
+                        case "random":
+                            prop.MosaicPlant.ColorIntensity = MosaicPlantColorIntensity.Random;
+                            break;
+                        default:
+                            return lua.ErrorWhere($"invalid color intensity value of '{str}'");
+                    }
+                    break;
+                }
+
+                case "mosaicPlantHasFlowers":
+                    if (prop.MosaicPlant is null)
+                        return lua.ErrorWhere("prop is not a mosaic plant");
+                    
+                    prop.MosaicPlant.HasFlowers = lua.ToBoolean(3);
+                    break;
+
+                case "mosaicPlantFlowerColor":
+                    if (prop.MosaicPlant is null)
+                        return lua.ErrorWhere("prop is not a mosaic plant");
+                    
+                    SettingsChange(prop);
+
+                    // actually why does it just clamp? that seems stupid.
+                    // it should throw an error? but i'm too lazy to find and
+                    // fix all the other occurrences of this. nobody uses the
+                    // scripting feature anyway.
+                    prop.MosaicPlant.FlowerColor = (PropEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
                     break;
                     
                 default:

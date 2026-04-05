@@ -12,6 +12,13 @@ rained.props = {}
 ---| "preEffects",
 ---| "postEffects"
 
+---@alias MosaicPlantColorIntensity
+---| "none"
+---| "low"
+---| "medium"
+---| "high"
+---| "random"
+
 ---@class Prop
 ---@field name string (Read-only) The name of the prop init.
 ---@field renderOrder integer
@@ -28,6 +35,11 @@ rained.props = {}
 ---@field fezTreeTrunkX number Fez tree trunk X position.
 ---@field fezTreeTrunkY number Fez tree trunk Y position.
 ---@field fezTreeTrunkAngle number Fez tree trunk angle, clockwise and in radians. Origin points upwards.
+---@field isMosaicPlant boolean (Read-only) True if this prop is a mosaic plant. Related properties are nil on read if this is false, and error when written.
+---@field mosaicPlantEffectColor integer Effect color as an integer in the range [0, 2].
+---@field mosaicPlantColorIntensity MosaicPlantColorIntensity Mosaic plant color intensity as a string.
+---@field mosaicPlantHasFlowers boolean True if this mosaic plant renders with flowers, false if not.
+---@field mosaicPlantFlowerColor integer Effect color of the floers as an integer in the range [0, 2].
 local Prop = {}
 
 ---Remove this prop from the level.
