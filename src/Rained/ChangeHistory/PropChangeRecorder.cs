@@ -88,8 +88,14 @@ record PropSettings(Prop Prop)
     public float PropHeight = Prop.IsAffine ? Prop.Rect.Size.Y : 0f; // a.k.a. rope flexibility
     public float RopeThickness = Prop.Rope?.Thickness ?? 0f;
 
-    public float LeafDensity = Prop.FezTree?.LeafDensity ?? 0f;
-    public int EffectColor = (int)(Prop.FezTree?.EffectColor ?? PropEffectColor.Dead);
+    public float FezLeafDensity = Prop.FezTree?.LeafDensity ?? 0f;
+    public int EffectColor
+        = (int)(Prop.FezTree?.EffectColor ?? Prop.MosaicPlant?.EffectColor ?? PropEffectColor.Dead);
+
+    public MosaicPlantColorIntensity MosaicColorIntensity =
+        Prop.MosaicPlant?.ColorIntensity ?? MosaicPlantColorIntensity.None;
+    public bool MosaicHasFlowers = Prop.MosaicPlant?.HasFlowers ?? false;
+    public PropEffectColor MosaicFlowerColor = Prop.MosaicPlant?.FlowerColor ?? PropEffectColor.Dead;
 
     public void Apply(Prop prop)
     {
@@ -118,7 +124,16 @@ record PropSettings(Prop Prop)
         if (tree is not null)
         {
             tree.EffectColor = (PropEffectColor) EffectColor;
-            tree.LeafDensity = LeafDensity;
+            tree.LeafDensity = FezLeafDensity;
+        }
+
+        var mosaic = prop.MosaicPlant;
+        if (mosaic is not null)
+        {
+            mosaic.EffectColor = (PropEffectColor) EffectColor;
+            mosaic.ColorIntensity = MosaicColorIntensity;
+            mosaic.HasFlowers = MosaicHasFlowers;
+            mosaic.FlowerColor = MosaicFlowerColor;
         }
     }
 }
