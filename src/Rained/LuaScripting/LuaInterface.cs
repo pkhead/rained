@@ -14,8 +14,9 @@ static class LuaInterface
     static private Lua luaState = null!;
     public static Lua NLuaState { get => luaState; }
     public static KeraLua.Lua LuaState => luaState.State;
-
-    delegate void LuaPrintDelegate(params string[] args);
+    private static bool WarningsEnabled = true;
+    private static bool DisplayWarningsAsErrors = false;
+    private static bool DisplayNextWarningAsError = false;
 
     private static LuaHelpers.LuaFunction loaderDelegate = new(RainedLoader);
     private static string scriptsPath = null!;
@@ -25,6 +26,10 @@ static class LuaInterface
     public static void Initialize(IAPIHost host, bool runAutoloads)
     {
         Host = host;
+
+        WarningsEnabled = true;
+        DisplayWarningsAsErrors = false;
+        DisplayNextWarningAsError = false;
 
         // scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
         scriptsPath = Path.Combine(Boot.AppDataPath, "scripts");
@@ -36,8 +41,10 @@ static class LuaInterface
         luaState.State.Encoding = Encoding.UTF8;
         LuaHelpers.Init(luaState.State);
 
-        luaState["print"] = new LuaPrintDelegate(LuaPrint);
-        luaState["warn"] = new LuaPrintDelegate(LuaWarning);
+        luaState.State.PushCFunction(LuaPrint);
+        luaState.State.SetGlobal("print");
+        luaState.State.PushCFunction(LuaWarning);
+        luaState.State.SetGlobal("warn");
 
         // configure package.path
         var package = (LuaTable)luaState["package"];
@@ -497,34 +504,77 @@ static class LuaInterface
         Host.Error(msg);
     }
 
-    private static void LuaPrint(params object[] args)
+    private static int LuaPrintBase(KeraLua.Lua lua, bool typeCheck, Action<string> printAction)
     {
-        StringBuilder stringBuilder = new();
+        int nargs = lua.GetTop();
+        StringBuilder builder = new();
 
-        for (int i = 0; i < args.Length; i++)
+        for (int i = 1; i <= nargs; i++)
         {
-            var v = args[i];
-            var str = v is null ? "nil" : v.ToString()!;
-            stringBuilder.Append(str);
-            if (i < args.Length - 1) stringBuilder.Append(' ', 8 - str.Length % 8);
+            var v = typeCheck ? lua.CheckString(i) : lua.ToString(i);
+            builder.Append(v);
+            if (i < nargs) builder.Append(' ', 8 - v.Length % 8);
         }
 
-        Host.Print(stringBuilder.ToString());
+        printAction(builder.ToString());
+        return 0;
     }
 
-    private static void LuaWarning(params object[] args)
+    private static int LuaPrint(nint luaPtr)
     {
-        StringBuilder stringBuilder = new();
+        var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+        return LuaPrintBase(lua, false, Host.Print);
+    }
 
-        for (int i = 0; i < args.Length; i++)
+    private static int LuaWarning(nint luaPtr)
+    {
+        var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+        int nargs = lua.GetTop();
+
+        // handle control message
+        if (nargs == 1)
         {
-            var v = args[i];
-            var str = v is null ? "nil" : v.ToString()!;
-            stringBuilder.Append(str);
-            if (i < args.Length - 1) stringBuilder.Append(' ', 8 - str.Length % 8);
+            var msg = lua.CheckString(1);
+            if (msg.Length > 1 && msg[0] == '@')
+            {
+                switch (msg)
+                {
+                    case "@off":
+                        WarningsEnabled = false;
+                        break;
+                    case "@on":
+                        WarningsEnabled = true;
+                        break;
+                    case "@err on":
+                        DisplayWarningsAsErrors = true;
+                        break;
+                    case "@err off":
+                        DisplayWarningsAsErrors = false;
+                        break;
+                    case "@err next":
+                        DisplayNextWarningAsError = true;
+                        break;
+                }
+
+                return 0;
+            }
         }
 
-        Host.Warn(stringBuilder.ToString());
+        if (!WarningsEnabled)
+            return 0;
+        
+        int ret;
+        if (DisplayWarningsAsErrors || DisplayNextWarningAsError)
+        {   
+            ret = LuaPrintBase(lua, true, Host.Error);
+            DisplayNextWarningAsError = false;
+        }
+        else
+        {
+            ret = LuaPrintBase(lua, true, Host.Warn);
+        }
+
+        return ret;        
     }
 
     public static void UIUpdate()

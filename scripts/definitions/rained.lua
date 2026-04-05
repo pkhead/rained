@@ -240,3 +240,9 @@ function rained.onPostRender(func) end
 ---@param func fun(sourceTxt:string, reason:string?) The function to run.
 ---@return CallbackHandle handle The callback handle.
 function rained.onRenderFailure(func) end
+
+
+-- extra warn control codes:
+-- @err on: display all subsequent warnings as errors
+-- @err off: stop displayiyng all subsequent warnings as errors
+-- @err next: display next warning as an error 
