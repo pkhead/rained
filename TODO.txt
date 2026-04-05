@@ -1,10 +1,5 @@
 sorry this todo list is now very disorganized
 
-Drizzle update:
-- Mosaic plants
-  - properly test serialization
-  - lua api
-
 LargeTexture:
 - large texture for lightmap
 
