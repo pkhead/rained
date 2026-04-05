@@ -2,9 +2,8 @@ sorry this todo list is now very disorganized
 
 Drizzle update:
 - Mosaic plants
-  - lock to proportional scaling (unless SHIFT is held)
-  - serialization
-  - change history
+  - properly test serialization
+  - lua api
 
 LargeTexture:
 - large texture for lightmap
