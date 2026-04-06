@@ -1,5 +1,5 @@
 using System.Globalization;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 namespace Rained.EditorGui;
 
 static class EmergencySaveWindow

@@ -3,7 +3,7 @@
 #endif
 
 using Raylib_cs;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using System.Globalization;
 using Glib;
 using Rained.LuaScripting;

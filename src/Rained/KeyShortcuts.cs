@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Raylib_cs;
 using System.Runtime.InteropServices;
 
@@ -105,20 +105,20 @@ static class KeyShortcuts
         public readonly string Name;
         public string ShortcutString = null!;
         public ImGuiKey Key;
-        public ImGuiModFlags Mods;
-        public ImGuiModFlags AllowedMods;
+        public ImGuiKey Mods;
+        public ImGuiKey AllowedMods;
         public bool IsActivated = false;
         public bool IsDeactivated = false;
         public bool IsDown = false;
         public bool AllowRepeat = false;
 
         public readonly ImGuiKey OriginalKey;
-        public readonly ImGuiModFlags OriginalMods;
+        public readonly ImGuiKey OriginalMods;
 
         public KeyShortcutBinding(
-            string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods,
+            string name, KeyShortcut id, ImGuiKey key, ImGuiKey mods,
             bool allowRepeat = false,
-            ImGuiModFlags allowedMods = ImGuiModFlags.None
+            ImGuiKey allowedMods = ImGuiKey.None
         )
         {
             if (key == ImGuiKey.Backspace) key = ImGuiKey.Delete;
@@ -141,19 +141,19 @@ static class KeyShortcuts
             // build shortcut string
             var str = new List<string>();
 
-            if (Mods.HasFlag(ImGuiModFlags.Ctrl))
+            if (Mods.HasFlag(ImGuiKey.ModCtrl))
                 str.Add(CtrlName);
             
-            if (Mods.HasFlag(ImGuiModFlags.Shift))
+            if (Mods.HasFlag(ImGuiKey.ModShift))
                 str.Add(ShiftName);
             
-            if (Mods.HasFlag(ImGuiModFlags.Alt))
+            if (Mods.HasFlag(ImGuiKey.ModAlt))
                 str.Add(AltName);
             
-            if (Mods.HasFlag(ImGuiModFlags.Super))
+            if (Mods.HasFlag(ImGuiKey.ModSuper))
                 str.Add(SuperName);
             
-            str.Add(ImGui.GetKeyName(Key));
+            str.Add(ImGui.GetKeyNameS(Key));
 
             ShortcutString = string.Join('+', str);
         }
@@ -181,10 +181,10 @@ static class KeyShortcuts
                 kp = ImGui.IsKeyPressed(Key, AllowRepeat);
             
             return kp &&
-            CheckModKey(ImGuiModFlags.Ctrl, ImGuiKey.ModCtrl) &&
-            CheckModKey(ImGuiModFlags.Shift, ImGuiKey.ModShift) &&
-            CheckModKey(ImGuiModFlags.Alt, ImGuiKey.ModAlt) &&
-            CheckModKey(ImGuiModFlags.Super, ImGuiKey.ModSuper);
+            CheckModKey(ImGuiKey.ModCtrl, ImGuiKey.ModCtrl) &&
+            CheckModKey(ImGuiKey.ModShift, ImGuiKey.ModShift) &&
+            CheckModKey(ImGuiKey.ModAlt, ImGuiKey.ModAlt) &&
+            CheckModKey(ImGuiKey.ModSuper, ImGuiKey.ModSuper);
         }
 
         public bool IsKeyDown()
@@ -210,30 +210,30 @@ static class KeyShortcuts
                 kp = ImGui.IsKeyDown(Key);
             
             return kp &&
-            CheckModKey(ImGuiModFlags.Ctrl, ImGuiKey.ModCtrl) &&
-            CheckModKey(ImGuiModFlags.Shift, ImGuiKey.ModShift) &&
-            CheckModKey(ImGuiModFlags.Alt, ImGuiKey.ModAlt) &&
-            CheckModKey(ImGuiModFlags.Super, ImGuiKey.ModSuper);
+            CheckModKey(ImGuiKey.ModCtrl) &&
+            CheckModKey(ImGuiKey.ModShift) &&
+            CheckModKey(ImGuiKey.ModAlt) &&
+            CheckModKey(ImGuiKey.ModSuper);
         }
 
-        private bool CheckModKey(ImGuiModFlags mod, ImGuiKey key) {
-            var down = ImGui.IsKeyDown(key);
-            return (Mods.HasFlag(mod) == down) || (down && AllowedMods.HasFlag(mod));
+        private bool CheckModKey(ImGuiKey modKey) {
+            var down = ImGui.IsKeyDown(modKey);
+            return (Mods.HasFlag(modKey) == down) || (down && AllowedMods.HasFlag(modKey));
         }
     }
     private static readonly Dictionary<KeyShortcut, KeyShortcutBinding> keyShortcuts = [];
 
 
     private static void Register(
-        string name, KeyShortcut id, ImGuiKey key, ImGuiModFlags mods,
+        string name, KeyShortcut id, ImGuiKey key, ImGuiKey mods,
         bool allowRepeat = false,
-        ImGuiModFlags allowedMods = ImGuiModFlags.None
+        ImGuiKey allowedMods = ImGuiKey.None
     )
     {
         keyShortcuts.Add(id, new KeyShortcutBinding(name, id, key, mods, allowRepeat, allowedMods));
     }
 
-    public static void Rebind(KeyShortcut id, ImGuiKey key, ImGuiModFlags mods)
+    public static void Rebind(KeyShortcut id, ImGuiKey key, ImGuiKey mods)
     {
         if (key == ImGuiKey.Backspace) key = ImGuiKey.Delete;
 
@@ -246,7 +246,7 @@ static class KeyShortcuts
     public static void Rebind(KeyShortcut id, string shortcut)
     {
         var keyStr = shortcut.Split('+');
-        ImGuiModFlags mods = ImGuiModFlags.None;
+        ImGuiKey mods = ImGuiKey.None;
         ImGuiKey tKey = ImGuiKey.None;
 
         for (int i = 0; i < keyStr.Length - 1; i++)
@@ -254,13 +254,13 @@ static class KeyShortcuts
             var modStr = keyStr[i];
             
             if (modStr == CtrlName)
-                mods |= ImGuiModFlags.Ctrl;
+                mods |= ImGuiKey.ModCtrl;
             else if (modStr == AltName)
-                mods |= ImGuiModFlags.Alt;
+                mods |= ImGuiKey.ModAlt;
             else if (modStr == ShiftName)
-                mods |= ImGuiModFlags.Shift;
+                mods |= ImGuiKey.ModShift;
             else if (modStr == SuperName)
-                mods |= ImGuiModFlags.Super;
+                mods |= ImGuiKey.ModSuper;
             else
                 throw new Exception($"Unknown modifier key '{modStr}'");
         }
@@ -271,10 +271,10 @@ static class KeyShortcuts
         }
         else
         {
-            for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+            for (int ki = (int)ImGuiKey.NamedKeyBegin; ki < (int)ImGuiKey.NamedKeyEnd; ki++)
             {
                 ImGuiKey key = (ImGuiKey) ki;
-                if (keyStr[^1] == ImGui.GetKeyName(key))
+                if (keyStr[^1] == ImGui.GetKeyNameS(key))
                 {
                     tKey = key;
                     break;
@@ -368,123 +368,123 @@ static class KeyShortcuts
 
     public static void InitShortcuts()
     {
-        Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiModFlags.None,
-            allowedMods: ImGuiModFlags.Ctrl | ImGuiModFlags.Shift | ImGuiModFlags.Alt | ImGuiModFlags.Super
+        Register("Right Mouse Substitute", KeyShortcut.RightMouse, ImGuiKey.None, ImGuiKey.ModNone,
+            allowedMods: ImGuiKey.ModCtrl | ImGuiKey.ModShift | ImGuiKey.ModAlt | ImGuiKey.ModSuper
         );
 
-        Register("Environment Editor", KeyShortcut.EnvironmentEditor, ImGuiKey._1, ImGuiModFlags.None);
-        Register("Geometry Editor", KeyShortcut.GeometryEditor, ImGuiKey._2, ImGuiModFlags.None);
-        Register("Tile Editor", KeyShortcut.TileEditor, ImGuiKey._3, ImGuiModFlags.None);
-        Register("Camera Editor", KeyShortcut.CameraEditor, ImGuiKey._4, ImGuiModFlags.None);
-        Register("Light Editor", KeyShortcut.LightEditor, ImGuiKey._5, ImGuiModFlags.None);
-        Register("Effects Editor", KeyShortcut.EffectsEditor, ImGuiKey._6, ImGuiModFlags.None);
-        Register("Prop Editor", KeyShortcut.PropEditor, ImGuiKey._7, ImGuiModFlags.None);
+        Register("Environment Editor", KeyShortcut.EnvironmentEditor, ImGuiKey.Key1, ImGuiKey.ModNone);
+        Register("Geometry Editor", KeyShortcut.GeometryEditor, ImGuiKey.Key2, ImGuiKey.ModNone);
+        Register("Tile Editor", KeyShortcut.TileEditor, ImGuiKey.Key3, ImGuiKey.ModNone);
+        Register("Camera Editor", KeyShortcut.CameraEditor, ImGuiKey.Key4, ImGuiKey.ModNone);
+        Register("Light Editor", KeyShortcut.LightEditor, ImGuiKey.Key5, ImGuiKey.ModNone);
+        Register("Effects Editor", KeyShortcut.EffectsEditor, ImGuiKey.Key6, ImGuiKey.ModNone);
+        Register("Prop Editor", KeyShortcut.PropEditor, ImGuiKey.Key7, ImGuiKey.ModNone);
 
-        Register("Navigate Up", KeyShortcut.NavUp, ImGuiKey.W, ImGuiModFlags.None, true);
-        Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiModFlags.None, true);
-        Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiModFlags.None, true);
-        Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiModFlags.None, true);
-        Register("Zoom View In", KeyShortcut.ViewZoomIn, ImGuiKey.Equal, ImGuiModFlags.None, true);
-        Register("Zoom View Out", KeyShortcut.ViewZoomOut, ImGuiKey.Minus, ImGuiModFlags.None, true);
+        Register("Navigate Up", KeyShortcut.NavUp, ImGuiKey.W, ImGuiKey.ModNone, true);
+        Register("Navigate Left", KeyShortcut.NavLeft, ImGuiKey.A, ImGuiKey.ModNone, true);
+        Register("Navigate Down", KeyShortcut.NavDown, ImGuiKey.S, ImGuiKey.ModNone, true);
+        Register("Navigate Right", KeyShortcut.NavRight, ImGuiKey.D, ImGuiKey.ModNone, true);
+        Register("Zoom View In", KeyShortcut.ViewZoomIn, ImGuiKey.Equal, ImGuiKey.ModNone, true);
+        Register("Zoom View Out", KeyShortcut.ViewZoomOut, ImGuiKey.Minus, ImGuiKey.ModNone, true);
 
-        Register("New Object", KeyShortcut.NewObject, ImGuiKey.C, ImGuiModFlags.None, true);
-        Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.X, ImGuiModFlags.None, true);
-        Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiModFlags.Ctrl, true);
+        Register("New Object", KeyShortcut.NewObject, ImGuiKey.C, ImGuiKey.ModNone, true);
+        Register("Remove", KeyShortcut.RemoveObject, ImGuiKey.X, ImGuiKey.ModNone, true);
+        Register("Duplicate", KeyShortcut.Duplicate, ImGuiKey.D, ImGuiKey.ModCtrl, true);
 
-        Register("New File", KeyShortcut.New, ImGuiKey.N, ImGuiModFlags.Ctrl);
-        Register("Open File", KeyShortcut.Open, ImGuiKey.O, ImGuiModFlags.Ctrl);
-        Register("Save File", KeyShortcut.Save, ImGuiKey.S, ImGuiModFlags.Ctrl);
-        Register("Save File As", KeyShortcut.SaveAs, ImGuiKey.S, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
-        Register("Close", KeyShortcut.CloseFile, ImGuiKey.W, ImGuiModFlags.Ctrl);
-        Register("Close All", KeyShortcut.CloseAllFiles, ImGuiKey.W, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+        Register("New File", KeyShortcut.New, ImGuiKey.N, ImGuiKey.ModCtrl);
+        Register("Open File", KeyShortcut.Open, ImGuiKey.O, ImGuiKey.ModCtrl);
+        Register("Save File", KeyShortcut.Save, ImGuiKey.S, ImGuiKey.ModCtrl);
+        Register("Save File As", KeyShortcut.SaveAs, ImGuiKey.S, ImGuiKey.ModCtrl | ImGuiKey.ModShift);
+        Register("Close", KeyShortcut.CloseFile, ImGuiKey.W, ImGuiKey.ModCtrl);
+        Register("Close All", KeyShortcut.CloseAllFiles, ImGuiKey.W, ImGuiKey.ModCtrl | ImGuiKey.ModShift);
 
-        Register("Render", KeyShortcut.Render, ImGuiKey.R, ImGuiModFlags.Ctrl);
-        Register("Export Geometry", KeyShortcut.ExportGeometry, ImGuiKey.R, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
+        Register("Render", KeyShortcut.Render, ImGuiKey.R, ImGuiKey.ModCtrl);
+        Register("Export Geometry", KeyShortcut.ExportGeometry, ImGuiKey.R, ImGuiKey.ModCtrl | ImGuiKey.ModShift);
 
-        Register("Cut", KeyShortcut.Cut, ImGuiKey.X, ImGuiModFlags.Ctrl);
-        Register("Copy", KeyShortcut.Copy, ImGuiKey.C, ImGuiModFlags.Ctrl);
-        Register("Paste", KeyShortcut.Paste, ImGuiKey.V, ImGuiModFlags.Ctrl);
-        Register("Select", KeyShortcut.Select, ImGuiKey.E, ImGuiModFlags.Ctrl);
-        Register("Undo", KeyShortcut.Undo, ImGuiKey.Z, ImGuiModFlags.Ctrl, true);
+        Register("Cut", KeyShortcut.Cut, ImGuiKey.X, ImGuiKey.ModCtrl);
+        Register("Copy", KeyShortcut.Copy, ImGuiKey.C, ImGuiKey.ModCtrl);
+        Register("Paste", KeyShortcut.Paste, ImGuiKey.V, ImGuiKey.ModCtrl);
+        Register("Select", KeyShortcut.Select, ImGuiKey.E, ImGuiKey.ModCtrl);
+        Register("Undo", KeyShortcut.Undo, ImGuiKey.Z, ImGuiKey.ModCtrl, true);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            Register("Redo", KeyShortcut.Redo, ImGuiKey.Y, ImGuiModFlags.Ctrl, true);
+            Register("Redo", KeyShortcut.Redo, ImGuiKey.Y, ImGuiKey.ModCtrl, true);
         else
-            Register("Redo", KeyShortcut.Redo, ImGuiKey.Z, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift, true);
+            Register("Redo", KeyShortcut.Redo, ImGuiKey.Z, ImGuiKey.ModCtrl | ImGuiKey.ModShift, true);
 
-        Register("Mode Select", KeyShortcut.SelectEditor, ImGuiKey.GraveAccent, ImGuiModFlags.None);
-        Register("Radial View Menu", KeyShortcut.AdjustView, ImGuiKey.GraveAccent, ImGuiModFlags.Shift);
+        Register("Mode Select", KeyShortcut.SelectEditor, ImGuiKey.GraveAccent, ImGuiKey.ModNone);
+        Register("Radial View Menu", KeyShortcut.AdjustView, ImGuiKey.GraveAccent, ImGuiKey.ModShift);
         
-        Register("Cycle Layer", KeyShortcut.SwitchLayer, ImGuiKey.Tab, ImGuiModFlags.None);
-        Register("Switch Tab", KeyShortcut.SwitchTab, ImGuiKey.Tab, ImGuiModFlags.Shift);
-        Register("Increase Brush Size", KeyShortcut.IncreaseBrushSize, ImGuiKey.O, ImGuiModFlags.None, true);
-        Register("Decrease Brush Size", KeyShortcut.DecreaseBrushSize, ImGuiKey.I, ImGuiModFlags.None, true);
+        Register("Cycle Layer", KeyShortcut.SwitchLayer, ImGuiKey.Tab, ImGuiKey.ModNone);
+        Register("Switch Tab", KeyShortcut.SwitchTab, ImGuiKey.Tab, ImGuiKey.ModShift);
+        Register("Increase Brush Size", KeyShortcut.IncreaseBrushSize, ImGuiKey.O, ImGuiKey.ModNone, true);
+        Register("Decrease Brush Size", KeyShortcut.DecreaseBrushSize, ImGuiKey.I, ImGuiKey.ModNone, true);
 
         // Geometry
-        Register("Toggle Layer 1", KeyShortcut.ToggleLayer1, ImGuiKey.E, ImGuiModFlags.None);
-        Register("Toggle Layer 2", KeyShortcut.ToggleLayer2, ImGuiKey.R, ImGuiModFlags.None);
-        Register("Toggle Layer 3", KeyShortcut.ToggleLayer3, ImGuiKey.T, ImGuiModFlags.None);
-        Register("Toggle Mirror X", KeyShortcut.ToggleMirrorX, ImGuiKey.F, ImGuiModFlags.None, false);
-        Register("Toggle Mirror Y", KeyShortcut.ToggleMirrorY, ImGuiKey.G, ImGuiModFlags.None, false);
-        Register("Flood Fill Modifier", KeyShortcut.FloodFill, ImGuiKey.Q, ImGuiModFlags.None, false);
-        Register("Wall Tool", KeyShortcut.ToolWall, ImGuiKey.Z, ImGuiModFlags.None, false);
-        Register("Shortcut Entrance Tool", KeyShortcut.ToolShortcutEntrance, ImGuiKey.X, ImGuiModFlags.None);
-        Register("Shortcut Dot Tool", KeyShortcut.ToolShortcutDot, ImGuiKey.C, ImGuiModFlags.None);
+        Register("Toggle Layer 1", KeyShortcut.ToggleLayer1, ImGuiKey.E, ImGuiKey.ModNone);
+        Register("Toggle Layer 2", KeyShortcut.ToggleLayer2, ImGuiKey.R, ImGuiKey.ModNone);
+        Register("Toggle Layer 3", KeyShortcut.ToggleLayer3, ImGuiKey.T, ImGuiKey.ModNone);
+        Register("Toggle Mirror X", KeyShortcut.ToggleMirrorX, ImGuiKey.F, ImGuiKey.ModNone, false);
+        Register("Toggle Mirror Y", KeyShortcut.ToggleMirrorY, ImGuiKey.G, ImGuiKey.ModNone, false);
+        Register("Flood Fill Modifier", KeyShortcut.FloodFill, ImGuiKey.Q, ImGuiKey.ModNone, false);
+        Register("Wall Tool", KeyShortcut.ToolWall, ImGuiKey.Z, ImGuiKey.ModNone, false);
+        Register("Shortcut Entrance Tool", KeyShortcut.ToolShortcutEntrance, ImGuiKey.X, ImGuiKey.ModNone);
+        Register("Shortcut Dot Tool", KeyShortcut.ToolShortcutDot, ImGuiKey.C, ImGuiKey.ModNone);
 
         // Tile Editor
-        Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiModFlags.None, true);
-        Register("Set Material to Default", KeyShortcut.SetMaterial, ImGuiKey.E, ImGuiModFlags.None, true);
-        Register("Force Geometry Modifier", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiModFlags.None,
-            allowedMods: ImGuiModFlags.Shift
+        Register("Eyedropper", KeyShortcut.Eyedropper, ImGuiKey.Q, ImGuiKey.ModNone, true);
+        Register("Set Material to Default", KeyShortcut.SetMaterial, ImGuiKey.E, ImGuiKey.ModNone, true);
+        Register("Force Geometry Modifier", KeyShortcut.TileForceGeometry, ImGuiKey.G, ImGuiKey.ModNone,
+            allowedMods: ImGuiKey.ModShift
         );
-        Register("Force Placement Modifier", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiModFlags.None,
-            allowedMods: ImGuiModFlags.Shift
+        Register("Force Placement Modifier", KeyShortcut.TileForcePlacement, ImGuiKey.F, ImGuiKey.ModNone,
+            allowedMods: ImGuiKey.ModShift
         );
-        Register("Disallow Overwrite Modifier", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiModFlags.None,
-            allowedMods: ImGuiModFlags.Shift
+        Register("Disallow Overwrite Modifier", KeyShortcut.TileIgnoreDifferent, ImGuiKey.R, ImGuiKey.ModNone,
+            allowedMods: ImGuiKey.ModShift
         );
 
         // Light Editor
-        Register("Reset Brush Transform", KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiModFlags.None);
-        Register("Move Light Inward", KeyShortcut.ZoomLightIn, ImGuiKey.W, ImGuiModFlags.Shift);
-        Register("Move Light Outward", KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiModFlags.Shift);
-        Register("Rotate Light CW", KeyShortcut.RotateLightCW, ImGuiKey.D, ImGuiModFlags.Shift);
-        Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiModFlags.Shift);
-        Register("Mouse Scale Brush", KeyShortcut.ScaleLightBrush, ImGuiKey.Q, ImGuiModFlags.None);
-        Register("Mouse Rotate Brush", KeyShortcut.RotateLightBrush, ImGuiKey.E, ImGuiModFlags.None);
+        Register("Reset Brush Transform", KeyShortcut.ResetBrushTransform, ImGuiKey.R, ImGuiKey.ModNone);
+        Register("Move Light Inward", KeyShortcut.ZoomLightIn, ImGuiKey.W, ImGuiKey.ModShift);
+        Register("Move Light Outward", KeyShortcut.ZoomLightOut, ImGuiKey.S, ImGuiKey.ModShift);
+        Register("Rotate Light CW", KeyShortcut.RotateLightCW, ImGuiKey.D, ImGuiKey.ModShift);
+        Register("Rotate Light CCW", KeyShortcut.RotateLightCCW, ImGuiKey.A, ImGuiKey.ModShift);
+        Register("Mouse Scale Brush", KeyShortcut.ScaleLightBrush, ImGuiKey.Q, ImGuiKey.ModNone);
+        Register("Mouse Rotate Brush", KeyShortcut.RotateLightBrush, ImGuiKey.E, ImGuiKey.ModNone);
 
-        Register("Rotate Brush CW", KeyShortcut.RotateBrushCW, ImGuiKey.E, ImGuiModFlags.None);
-        Register("Rotate Brush CCW", KeyShortcut.RotateBrushCCW, ImGuiKey.Q, ImGuiModFlags.None);
-        Register("Previous Brush", KeyShortcut.PreviousBrush, ImGuiKey.Z, ImGuiModFlags.None,
+        Register("Rotate Brush CW", KeyShortcut.RotateBrushCW, ImGuiKey.E, ImGuiKey.ModNone);
+        Register("Rotate Brush CCW", KeyShortcut.RotateBrushCCW, ImGuiKey.Q, ImGuiKey.ModNone);
+        Register("Previous Brush", KeyShortcut.PreviousBrush, ImGuiKey.Z, ImGuiKey.ModNone,
             allowRepeat: true
         );
-        Register("Next Brush", KeyShortcut.NextBrush, ImGuiKey.X, ImGuiModFlags.None,
+        Register("Next Brush", KeyShortcut.NextBrush, ImGuiKey.X, ImGuiKey.ModNone,
             allowRepeat: true
         );
 
-        Register("Lightmap Warp", KeyShortcut.LightmapStretch, ImGuiKey.None, ImGuiModFlags.None);
+        Register("Lightmap Warp", KeyShortcut.LightmapStretch, ImGuiKey.None, ImGuiKey.ModNone);
 
         // Camera Editor
-        Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.Q, ImGuiModFlags.None);
-        Register("Camera Snap Y", KeyShortcut.CameraSnapY, ImGuiKey.E, ImGuiModFlags.None);
+        Register("Camera Snap X", KeyShortcut.CameraSnapX, ImGuiKey.Q, ImGuiKey.ModNone);
+        Register("Camera Snap Y", KeyShortcut.CameraSnapY, ImGuiKey.E, ImGuiKey.ModNone);
 
         // Prop Editor
-        Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiModFlags.None);
-        Register("Rope Simulation", KeyShortcut.RopeSimulation, ImGuiKey.Space, ImGuiModFlags.None);
-        Register("Rope Simulation Fast", KeyShortcut.RopeSimulationFast, ImGuiKey.Space, ImGuiModFlags.Shift);
-        Register("Reset Rope Simulation", KeyShortcut.ResetSimulation, ImGuiKey.None, ImGuiModFlags.None);
+        Register("Toggle Vertex Mode", KeyShortcut.ToggleVertexMode, ImGuiKey.F, ImGuiKey.ModNone);
+        Register("Rope Simulation", KeyShortcut.RopeSimulation, ImGuiKey.Space, ImGuiKey.ModNone);
+        Register("Rope Simulation Fast", KeyShortcut.RopeSimulationFast, ImGuiKey.Space, ImGuiKey.ModShift);
+        Register("Reset Rope Simulation", KeyShortcut.ResetSimulation, ImGuiKey.None, ImGuiKey.ModNone);
         
-        Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiModFlags.Shift);
-        Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiModFlags.Shift);
+        Register("Rotate Prop CW", KeyShortcut.RotatePropCW, ImGuiKey.E, ImGuiKey.ModShift);
+        Register("Rotate Prop CCW", KeyShortcut.RotatePropCCW, ImGuiKey.Q, ImGuiKey.ModShift);
 
-        Register("Change Prop Snapping", KeyShortcut.ChangePropSnapping, ImGuiKey.R, ImGuiModFlags.None);
+        Register("Change Prop Snapping", KeyShortcut.ChangePropSnapping, ImGuiKey.R, ImGuiKey.ModNone);
 
         // View options
-        Register("View Grid", KeyShortcut.ToggleViewGrid, ImGuiKey.G, ImGuiModFlags.Ctrl);
-        Register("View Tiles", KeyShortcut.ToggleViewTiles, ImGuiKey.T, ImGuiModFlags.Ctrl);
-        Register("View Props", KeyShortcut.ToggleViewProps, ImGuiKey.P, ImGuiModFlags.Ctrl);
-        Register("View Camera Borders", KeyShortcut.ToggleViewCameras, ImGuiKey.M, ImGuiModFlags.Ctrl);
-        Register("View Tile Graphics", KeyShortcut.ToggleViewGraphics, ImGuiKey.T, ImGuiModFlags.Ctrl | ImGuiModFlags.Shift);
-        Register("View Node Indices", KeyShortcut.ToggleViewNodeIndices, ImGuiKey.None, ImGuiModFlags.None);
+        Register("View Grid", KeyShortcut.ToggleViewGrid, ImGuiKey.G, ImGuiKey.ModCtrl);
+        Register("View Tiles", KeyShortcut.ToggleViewTiles, ImGuiKey.T, ImGuiKey.ModCtrl);
+        Register("View Props", KeyShortcut.ToggleViewProps, ImGuiKey.P, ImGuiKey.ModCtrl);
+        Register("View Camera Borders", KeyShortcut.ToggleViewCameras, ImGuiKey.M, ImGuiKey.ModCtrl);
+        Register("View Tile Graphics", KeyShortcut.ToggleViewGraphics, ImGuiKey.T, ImGuiKey.ModCtrl | ImGuiKey.ModShift);
+        Register("View Node Indices", KeyShortcut.ToggleViewNodeIndices, ImGuiKey.None, ImGuiKey.ModNone);
     }
 }

@@ -7,8 +7,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using ImGuiNET;
+using ImGuiNET = Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 using Silk.NET.Core.Native;
+using System.Text;
 
 namespace Glib.ImGui
 {
@@ -21,16 +23,19 @@ namespace Glib.ImGui
         private static readonly Dictionary<Glib.Key, ImGuiKey> keyMap = new Dictionary<Glib.Key, ImGuiKey>();
         //private ImGuiViewports _viewports;
 
-        private Glib.Texture _fontTexture;
-        public Glib.Texture FontTexture => _fontTexture;
+        public Glib.Texture FontTexture => _textures[0];
         private Glib.Shader _shader;
         private Glib.Mesh _drawMesh;
-        private List<Glib.Texture> _textures = [];
+        private readonly Dictionary<int, Glib.Texture> _textures = [];
+        private readonly Dictionary<Glib.Texture, int> _textureIDs = [];
+        private int _nextTextureId = 0;
+        private readonly Queue<int> _freeTextureIds = [];
+        private readonly List<int> _tempTextureIds = [];
 
         private int _windowWidth;
         private int _windowHeight;
 
-        public IntPtr Context;
+        public ImGuiContextPtr Context;
 
         public bool ignoreMouseUp = false;
 
@@ -40,6 +45,7 @@ namespace Glib.ImGui
         private static GetClipTextCallback _getClipCallback = null!;
         private static SetClipTextCallback _setClipCallback = null!;
         private static unsafe byte* _activeClipboardBuffer = null;
+        private static byte[] _tempImgBuffer = null;
 
         private unsafe void SetClipText(IntPtr userData, byte* text)
         {
@@ -99,11 +105,20 @@ namespace Glib.ImGui
             Init(window);
 
             var io = ImGuiNET.ImGui.GetIO();
+            var platIo = ImGuiNET.ImGui.GetPlatformIO();
+
             if (imGuiFontConfig is not null)
             {
-                var glyphRange = imGuiFontConfig.Value.GetGlyphRange?.Invoke(io) ?? default(IntPtr);
+                nint glyphRange = imGuiFontConfig.Value.GetGlyphRange?.Invoke(io) ?? default(IntPtr);
 
-                io.Fonts.AddFontFromFileTTF(imGuiFontConfig.Value.FontPath, imGuiFontConfig.Value.FontSize, null, glyphRange);
+                var path = Encoding.UTF8.GetBytes(imGuiFontConfig.Value.FontPath);
+                unsafe
+                {
+                    fixed (byte *pathPtr = path)
+                    {
+                        io.Fonts.AddFontFromFileTTF(pathPtr, imGuiFontConfig.Value.FontSize, null, (uint*)(nuint)glyphRange);
+                    }
+                }
             }
 
             onConfigureIO?.Invoke();
@@ -116,8 +131,8 @@ namespace Glib.ImGui
                 _getClipCallback = new GetClipTextCallback(GetClipText);
                 _setClipCallback = new SetClipTextCallback(SetClipText);
 
-                io.SetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_setClipCallback);
-                io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_getClipCallback);
+                platIo.PlatformSetClipboardTextFn = (void*)Marshal.GetFunctionPointerForDelegate(_setClipCallback);
+                platIo.PlatformGetClipboardTextFn = (void*)Marshal.GetFunctionPointerForDelegate(_getClipCallback);
             }
             //io.BackendFlags |= ImGuiBackendFlags.PlatformHasViewports;
             //io.BackendFlags |= ImGuiBackendFlags.RendererHasViewports;
@@ -126,9 +141,6 @@ namespace Glib.ImGui
             SetKeyMappings();
 
             SetPerFrameImGuiData(1f / 60f);
-
-            _textures.Clear();
-            _textures.Add(_fontTexture);
 
             //_viewports = null;
             if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
@@ -278,10 +290,10 @@ namespace Glib.ImGui
                                 ImGuiMouseCursor.Arrow => Glib.MouseCursorIcon.Arrow,
                                 ImGuiMouseCursor.TextInput => Glib.MouseCursorIcon.IBeam,
                                 ImGuiMouseCursor.ResizeAll => Glib.MouseCursorIcon.ResizeAll,
-                                ImGuiMouseCursor.ResizeNS => Glib.MouseCursorIcon.VResize,
-                                ImGuiMouseCursor.ResizeEW => Glib.MouseCursorIcon.HResize,
-                                ImGuiMouseCursor.ResizeNESW => Glib.MouseCursorIcon.NeswResize,
-                                ImGuiMouseCursor.ResizeNWSE => Glib.MouseCursorIcon.NwseResize,
+                                ImGuiMouseCursor.ResizeNs => Glib.MouseCursorIcon.VResize,
+                                ImGuiMouseCursor.ResizeEw => Glib.MouseCursorIcon.HResize,
+                                ImGuiMouseCursor.ResizeNesw => Glib.MouseCursorIcon.NeswResize,
+                                ImGuiMouseCursor.ResizeNwse => Glib.MouseCursorIcon.NwseResize,
                                 ImGuiMouseCursor.Hand => Glib.MouseCursorIcon.Hand,
                                 ImGuiMouseCursor.NotAllowed => Glib.MouseCursorIcon.NotAllowed,
                                 _ => Glib.MouseCursorIcon.Arrow
@@ -298,8 +310,9 @@ namespace Glib.ImGui
                 RenderImDrawData(ImGuiNET.ImGui.GetDrawData());
 
                 // reset texture cache
-                _textures.Clear();
-                _textures.Add(_fontTexture);
+                foreach (var id in _tempTextureIds)
+                    FreeTexture(id);
+                _tempTextureIds.Clear();
 
                 // update and render additional platform windows
                 if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
@@ -434,16 +447,16 @@ namespace Glib.ImGui
             keyMap[Glib.Key.Minus] = ImGuiKey.Minus;
             keyMap[Glib.Key.Period] = ImGuiKey.Period;
             keyMap[Glib.Key.Slash] = ImGuiKey.Slash;
-            keyMap[Glib.Key.Number0] = ImGuiKey._0;
-            keyMap[Glib.Key.Number1] = ImGuiKey._1;
-            keyMap[Glib.Key.Number2] = ImGuiKey._2;
-            keyMap[Glib.Key.Number3] = ImGuiKey._3;
-            keyMap[Glib.Key.Number4] = ImGuiKey._4;
-            keyMap[Glib.Key.Number5] = ImGuiKey._5;
-            keyMap[Glib.Key.Number6] = ImGuiKey._6;
-            keyMap[Glib.Key.Number7] = ImGuiKey._7;
-            keyMap[Glib.Key.Number8] = ImGuiKey._8;
-            keyMap[Glib.Key.Number9] = ImGuiKey._9;
+            keyMap[Glib.Key.Number0] = ImGuiKey.Key0;
+            keyMap[Glib.Key.Number1] = ImGuiKey.Key1;
+            keyMap[Glib.Key.Number2] = ImGuiKey.Key2;
+            keyMap[Glib.Key.Number3] = ImGuiKey.Key3;
+            keyMap[Glib.Key.Number4] = ImGuiKey.Key4;
+            keyMap[Glib.Key.Number5] = ImGuiKey.Key5;
+            keyMap[Glib.Key.Number6] = ImGuiKey.Key6;
+            keyMap[Glib.Key.Number7] = ImGuiKey.Key7;
+            keyMap[Glib.Key.Number8] = ImGuiKey.Key8;
+            keyMap[Glib.Key.Number9] = ImGuiKey.Key9;
             keyMap[Glib.Key.Semicolon] = ImGuiKey.Semicolon;
             keyMap[Glib.Key.Equal] = ImGuiKey.Equal;
             keyMap[Glib.Key.A] = ImGuiKey.A;
@@ -572,6 +585,7 @@ namespace Glib.ImGui
 
         internal unsafe void RenderImDrawData(ImDrawDataPtr drawDataPtr)
         {
+            // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
             Debug.Assert(drawDataPtr.Valid);
             Debug.Assert(drawDataPtr.CmdListsCount == drawDataPtr.CmdLists.Size);
             int framebufferWidth = (int) (drawDataPtr.DisplaySize.X * drawDataPtr.FramebufferScale.X);
@@ -580,6 +594,18 @@ namespace Glib.ImGui
                 return;
             
             var rctx = RenderContext.Instance!;
+
+            // Catch up with texture updates. Most of the times, the list will have 1 element with an OK status, aka nothing to do.
+            // (This almost always points to ImGui::GetPlatformIO().Textures[] but is part of ImDrawData to allow overriding or disabling texture updates).
+            if (drawDataPtr.Handle->Textures is not null)
+            {
+                for (int i = 0; i < drawDataPtr.Textures.Size; i++)
+                {
+                    var tex = drawDataPtr.Textures.Data[i];
+                    if (tex.Status != ImTextureStatus.Ok)
+                        UpdateTexture(tex);
+                }
+            }
 
             // Backup GL state
             var lastProgram = rctx.Shader;
@@ -613,9 +639,9 @@ namespace Glib.ImGui
 
                 for (int cmd_i = 0; cmd_i < cmdListPtr.CmdBuffer.Size; cmd_i++)
                 {
-                    ImDrawCmdPtr cmdPtr = cmdListPtr.CmdBuffer[cmd_i];
+                    var cmdPtr = new ImDrawCmdPtr(cmdListPtr.CmdBuffer.Data + cmd_i);
 
-                    if (cmdPtr.UserCallback != IntPtr.Zero)
+                    if (cmdPtr.UserCallback != ImDrawCmdPtr.Null)
                     {
                         throw new NotImplementedException();
                     }
@@ -634,7 +660,7 @@ namespace Glib.ImGui
 
                             // Bind texture, Draw
                             activeMesh.SetIndexedSlice(cmdPtr.IdxOffset, cmdPtr.VtxOffset, cmdPtr.ElemCount);
-                            activeMesh.Draw(_textures[(int)cmdPtr.TextureId - 1]);
+                            activeMesh.Draw(_textures[(int)cmdPtr.GetTexID()]);
                         }
                     }
                 }
@@ -672,37 +698,107 @@ namespace Glib.ImGui
                 )
                 .SetIndexed(false, Glib.MeshBufferUsage.Transient)
                 .Create(0, 0); // all buffers are transient
+        }
+
+        private int AllocTexture(Glib.Texture tex)
+        {
+            int id;
+            if (_freeTextureIds.Count > 0)
+                id = _freeTextureIds.Dequeue();
+            else
+                id = _nextTextureId++;
             
-            RecreateFontDeviceTexture();
+            _textures[id] = tex;
+            _textureIDs[tex] = id;
+            return id;
+        }
+
+        private void FreeTexture(int texId, bool dispose = false)
+        {
+            var gTex = _textures[texId];
+            _textures.Remove(texId);
+            _textureIDs.Remove(gTex);
+            _freeTextureIds.Enqueue(texId);
+            
+            if (dispose) gTex.Dispose();
+        }
+
+        private bool TryGetTextureID(Glib.Texture tex, out int id)
+        {
+            return _textureIDs.TryGetValue(tex, out id);
         }
 
         /// <summary>
         /// Creates the texture used to render text.
         /// </summary>
-        public unsafe void RecreateFontDeviceTexture()
+        public unsafe void UpdateTexture(ImTextureDataPtr tex)
         {
-            // Build texture atlas
-            var io = ImGuiNET.ImGui.GetIO();
-            io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out int width, out int height, out int bytesPerPixel);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+            switch (tex.Status)
+            {
+                case ImTextureStatus.WantCreate:
+                {
+                    Debug.Assert(tex.TexID == ImTextureID.Null && tex.BackendUserData == null);
+                    Debug.Assert(tex.Format == ImTextureFormat.Rgba32);
+                    byte* pixels = tex.Pixels;
+                    var width = tex.Width;
+                    var height = tex.Height;
 
-            // Upload texture to graphics system
+                    // Upload texture to graphics system
 
-            _fontTexture?.Dispose();
-            //_fontTexture = Glib.Texture.Create(width, height, pixels);
-            _fontTexture = Glib.Texture.Create(width, height, Glib.PixelFormat.RGBA);
-            _fontTexture.FilterMode = TextureFilterMode.Nearest;
-            _fontTexture.UpdateFromImage(new Span<byte>((void*)pixels, width * height * bytesPerPixel));
+                    var gTex = Glib.Texture.Create(width, height, Glib.PixelFormat.RGBA);
+                    gTex.FilterMode = TextureFilterMode.Nearest;
+                    gTex.UpdateFromImage(new Span<byte>((void*)pixels, width * height * tex.BytesPerPixel));
 
-            // Store our identifier
-            io.Fonts.SetTexID(1);
+                    // Store our identifier
+                    var id = AllocTexture(gTex);
+                    tex.SetTexID(id);
+                    tex.SetStatus(ImTextureStatus.Ok);
+                    break;
+                }
+
+                case ImTextureStatus.WantUpdates:
+                {
+                    var gTex = _textures[(int)tex.TexID];
+                    for (int i = 0; i < tex.Updates.Size; i++)
+                    {
+                        var r = new ImTextureRectPtr(tex.Updates.Data + i);
+                        var srcPitch = r.W * tex.BytesPerPixel;
+                        var bufSize = srcPitch * r.H;
+                        if (_tempImgBuffer is null || _tempImgBuffer.Length != bufSize)
+                            _tempImgBuffer = new byte[bufSize];
+                        
+                        int bufOffset = 0;
+                        for (int y = 0; y < r.H; y++, bufOffset += srcPitch)
+                        {
+                            var span = new ReadOnlySpan<byte>(tex.GetPixelsAt(r.X, r.Y + y), srcPitch);
+                            span.CopyTo(_tempImgBuffer.AsSpan(bufOffset));;
+                        }
+
+                        gTex.UpdateFromImage(_tempImgBuffer, r.X, r.Y, r.W, r.H);
+                    }
+                    tex.SetStatus(ImTextureStatus.Ok);
+                    break;
+                }
+
+                case ImTextureStatus.WantDestroy:
+                    if (tex.UnusedFrames > 0)
+                        FreeTexture((int)tex.TexID, true);
+                    break;
+
+                default: break;
+            }
         }
 
         public nint UseTexture(Glib.Texture texture)
         {
-            var idx = _textures.IndexOf(texture);
-            if (idx >= 0) return (nint)idx + 1;
-            _textures.Add(texture);
-            return _textures.Count;
+            int id;
+            if (!TryGetTextureID(texture, out id))
+            {
+                id = AllocTexture(texture);
+                _tempTextureIds.Add(id);
+            }
+
+            return (nint) id;
         }
 
         /// <summary>
@@ -718,10 +814,12 @@ namespace Glib.ImGui
             _window.KeyDown -= OnKeyDown;
             _window.KeyUp -= OnKeyUp;
 
-            _textures = null;
             _shader.Dispose();
             _drawMesh.Dispose();
-            _fontTexture.Dispose();
+
+            foreach (var tex in _textures.Values)
+                tex.Dispose();
+            _textures.Clear();
 
             ImGuiNET.ImGui.DestroyContext(Context);
             GC.SuppressFinalize(this);

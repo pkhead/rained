@@ -2,7 +2,7 @@ namespace Rained.EditorGui;
 
 using System.Numerics;
 using System.Diagnostics;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained.Drizzle;
 
 class MassRenderProcessWindow

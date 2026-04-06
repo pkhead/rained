@@ -4,7 +4,7 @@
 * that the user needs to set up their Data folder
 */
 
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained;
 using Rained.EditorGui;
 using Raylib_cs;

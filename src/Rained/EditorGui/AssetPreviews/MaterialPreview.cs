@@ -1,5 +1,5 @@
 namespace Rained.EditorGui.AssetPreviews;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 
 class MaterialPreview : IDisposable
 {

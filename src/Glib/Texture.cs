@@ -332,6 +332,30 @@ public class Texture : Resource
         GlUtil.CheckError(gl, "Could not update texture data");
     }
 
+    /// <summary>
+    /// Update a part of a texture with an image given by a byte array.
+    /// The pixel format of the image will be interpreted as that of the texture.
+    /// </summary>
+    /// <param name="image">The image data to update the texture with.</param>
+    /// <param name="x">The X coordinate of the top-left corner of the destination rectangle.</param>
+    /// <param name="y">The Y coordinate of the top-left corner of the destination rectangle.</param>
+    /// <param name="w">The width of the destination rectangle, and the width of the source image.</param>
+    /// <param name="h">The height of the destination rectangle, and the height of the source image.</param>
+    /// <exception cref="ArgumentException">Thrown if the image does not fit in the texture or does not have the same pixel format.</exception>
+    public unsafe void UpdateFromImage(ReadOnlySpan<byte> pixels, uint x, uint y, uint w, uint h)
+    {
+        var gl = RenderContext.Gl;
+
+        if (PixelFormat is null) throw new InvalidOperationException("Texture cannot be modified");
+        
+        if (x > ushort.MaxValue || y > ushort.MaxValue || x + w >= Width || y + h >= Height)
+            throw new ArgumentException("Image does not fit", nameof(pixels));
+
+        gl.BindTexture(GLEnum.Texture2D, _handle);
+        gl.TexSubImage2D(GLEnum.Texture2D, 0, (int)x, (int)y, (uint)w, (uint)h, GlTextureFormat, GLEnum.UnsignedByte, pixels);
+        GlUtil.CheckError(gl, "Could not update texture data");
+    }
+
     static GLEnum GLWrapMode(TextureWrapMode mode) => mode switch
     {
         TextureWrapMode.Clamp => GLEnum.ClampToEdge,

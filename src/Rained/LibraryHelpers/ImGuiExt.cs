@@ -4,7 +4,7 @@ using Glib;
 using Raylib_cs;
 using System.Runtime.InteropServices;
 using Rained;
-namespace ImGuiNET;
+namespace Hexa.NET.ImGui;
 
 [Flags]
 enum ButtonGroupOptions : uint
@@ -33,7 +33,7 @@ static class ImGuiExt
     }
 
     /// <summary>
-    /// stupid ImGuiNET, i have to make my own native function wrapper because
+    /// stupid Hexa.NET.ImGui, i have to make my own native function wrapper because
     /// they don't support flags without p_open
     /// </summary>
     /// <param name="label">The display name and ImGui ID for the tab item</param>
@@ -55,7 +55,7 @@ static class ImGuiExt
     }
 
     /// <summary>
-    /// stupid ImGuiNET, i have to make my own native function wrapper because
+    /// stupid Hexa.NET.ImGui, i have to make my own native function wrapper because
     /// they don't support flags without p_open
     /// </summary>
     /// <param name="label">The display name and ImGui ID for the tab item</param>

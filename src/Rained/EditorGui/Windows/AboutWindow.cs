@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained.LuaScripting;
 using System.Runtime.InteropServices;
 namespace Rained.EditorGui;

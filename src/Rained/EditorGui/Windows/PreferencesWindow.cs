@@ -1,5 +1,5 @@
 using System.Numerics;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained.Assets;
 using Rained.Drizzle;
 using Raylib_cs;
@@ -201,12 +201,12 @@ static class PreferencesWindow
             else
             {
                 // get mod flags
-                ImGuiModFlags modFlags = ImGuiModFlags.None;
+                ImGuiKey modFlags = ImGuiKey.ModNone;
 
-                if (ImGui.IsKeyDown(ImGuiKey.ModCtrl)) modFlags |= ImGuiModFlags.Ctrl;
-                if (ImGui.IsKeyDown(ImGuiKey.ModAlt)) modFlags |= ImGuiModFlags.Alt;
-                if (ImGui.IsKeyDown(ImGuiKey.ModShift)) modFlags |= ImGuiModFlags.Shift;
-                if (ImGui.IsKeyDown(ImGuiKey.ModSuper)) modFlags |= ImGuiModFlags.Super;
+                if (ImGui.IsKeyDown(ImGuiKey.ModCtrl)) modFlags |= ImGuiKey.ModCtrl;
+                if (ImGui.IsKeyDown(ImGuiKey.ModAlt)) modFlags |= ImGuiKey.ModAlt;
+                if (ImGui.IsKeyDown(ImGuiKey.ModShift)) modFlags |= ImGuiKey.ModShift;
+                if (ImGui.IsKeyDown(ImGuiKey.ModSuper)) modFlags |= ImGuiKey.ModSuper;
 
                 // find the key that is currently pressed
                 if (Raylib.IsKeyPressed(KeyboardKey.Tab))
@@ -216,7 +216,7 @@ static class PreferencesWindow
                 }
                 else
                 {
-                    for (int ki = (int)ImGuiKey.NamedKey_BEGIN; ki < (int)ImGuiKey.NamedKey_END; ki++)
+                    for (int ki = (int)ImGuiKey.NamedKeyBegin; ki < (int)ImGuiKey.NamedKeyEnd; ki++)
                     {
                         ImGuiKey key = (ImGuiKey) ki;
                         

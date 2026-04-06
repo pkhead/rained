@@ -1,7 +1,7 @@
 namespace Rained.Autotiles;
 using EditorGui;
 using System.Globalization;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 
 [Serializable]
 public class AutotileParseException : Exception

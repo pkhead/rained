@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using KeraLua;
 namespace Rained.LuaScripting.Modules;
 

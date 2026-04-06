@@ -1,6 +1,6 @@
 namespace Rained.EditorGui.Editors;
 using Rained.Autotiles;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using System.Numerics;
 
 class AutotileEditMode : TileEditorMode

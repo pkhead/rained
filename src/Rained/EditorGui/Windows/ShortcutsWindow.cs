@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 namespace Rained.EditorGui;
 
 static partial class ShortcutsWindow

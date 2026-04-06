@@ -9,6 +9,6 @@
     
     <ItemGroup>
       <ProjectReference Include="../Glib/Glib.csproj" />
-      <ProjectReference Include="../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj" />
+      <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
     </ItemGroup>
 </Project>

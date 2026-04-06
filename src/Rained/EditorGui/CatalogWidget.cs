@@ -2,7 +2,7 @@ namespace Rained.EditorGui;
 
 using System.Diagnostics;
 using System.Numerics;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Raylib_cs;
 
 abstract class CatalogWidget

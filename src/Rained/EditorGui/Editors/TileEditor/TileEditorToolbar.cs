@@ -1,5 +1,5 @@
 namespace Rained.EditorGui.Editors;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained.Assets;
 using Rained.EditorGui.AssetPreviews;
 using Rained.Rendering;

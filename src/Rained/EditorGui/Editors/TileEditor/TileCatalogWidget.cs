@@ -2,7 +2,7 @@ namespace Rained.EditorGui.Editors;
 using Raylib_cs;
 using System.Numerics;
 using Rained.Assets;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rained.Rendering;
 using Rained.EditorGui.AssetPreviews;
 
