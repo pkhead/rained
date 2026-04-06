@@ -370,13 +370,15 @@ partial class PropEditor : IEditorMode
         else
         {
             bool v = false;
-            // TODO: intermediate checkbox using internal PushItemFlag, but would require switch to Hexa.Net.ImGUI
-            // TODO: switch to Hexa.Net.ImGUI
+            
+            // ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true)
+            ImGuiInternal.igPushItemFlag(64, 1);
             if (ImGui.Checkbox(label, ref v))
             {
                 foreach (var prop in items)
                     field.SetValue(prop, v);
             }
+            ImGuiInternal.igPopItemFlag();
         }
 
         if (ImGui.IsItemDeactivatedAfterEdit())
