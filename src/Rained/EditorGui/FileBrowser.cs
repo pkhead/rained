@@ -1155,7 +1155,11 @@ partial class FileBrowser
         ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
         if (path is not null)
-            ImGui.TextDisabled(path);
+        {
+            ImGui.BeginDisabled();
+            ImGui.TextUnformatted(path);
+            ImGui.EndDisabled();
+        }
         else
         {
             if (openMode == OpenMode.Directory) ImGui.TextDisabled("Choose directory...");

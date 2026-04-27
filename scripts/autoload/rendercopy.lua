@@ -186,7 +186,7 @@ if not rained.isBatchMode() then
             truncated_text = (p_text:sub(1, visible_chars+1) .. ELLIPSIS);
         end
 
-        imgui.Text(truncated_text);
+        imgui.TextUnformatted(truncated_text);
         if doTruncate then
             if imgui.IsItemHovered(imgui.HoveredFlags_DelayNormal) then
                 imgui.SetTooltip(p_text)
