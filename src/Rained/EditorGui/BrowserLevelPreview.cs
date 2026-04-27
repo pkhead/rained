@@ -251,7 +251,7 @@ class BrowserLevelPreview : FileBrowserPreview
             {
                 var text = "Could not display preview";
                 ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(text).X) / 2f);
-                ImGui.Text(text);
+                ImGui.TextUnformatted(text);
             }
             else
             {

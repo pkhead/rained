@@ -249,7 +249,7 @@ static class AssetManagerGUI
                     {
                         _draggingItem = tile;
                         ImGui.SetDragDropPayload("InitItem", IntPtr.Zero, 0);
-                        ImGui.Text($"{tile.RawLine}");
+                        ImGui.TextUnformatted($"{tile.RawLine}");
                         ImGui.EndDragDropSource();
                     }
 

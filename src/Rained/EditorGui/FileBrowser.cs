@@ -815,7 +815,7 @@ partial class FileBrowser
                     // show file name, centered
                     var fileName = Path.GetFileName(curPreview.Path);
                     ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(fileName).X) / 2f);
-                    ImGui.Text(fileName);
+                    ImGui.TextUnformatted(fileName);
 
                     curPreview.Render();
 
@@ -825,7 +825,7 @@ partial class FileBrowser
                     {
                         string text = "Loading preview...";
                         ImGui.SetCursorPosX((childWidth - ImGui.CalcTextSize(text).X) / 2f);
-                        ImGui.Text(text);
+                        ImGui.TextUnformatted(text);
                     }
                 }
                 ImGui.EndChild();
@@ -1020,7 +1020,7 @@ partial class FileBrowser
             bool errorClose = true;
             if (ImGui.BeginPopupModal("Error", ref errorClose, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
             {
-                ImGui.Text(errorMsg);
+                ImGui.TextUnformatted(errorMsg);
                 ImGui.Separator();
                 if (StandardPopupButtons.Show(PopupButtonList.OK, out _))
                 {

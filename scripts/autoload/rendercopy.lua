@@ -261,7 +261,7 @@ if not rained.isBatchMode() then
                 else
                     imgui.TableNextColumn()
                     imgui.AlignTextToFramePadding()
-                    imgui.Text(dirConfig.prefix)
+                    imgui.TextUnformatted(dirConfig.prefix)
 
                     imgui.TableNextColumn()
                     imgui.AlignTextToFramePadding()

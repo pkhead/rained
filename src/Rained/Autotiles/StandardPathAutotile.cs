@@ -205,7 +205,7 @@ class StandardPathAutotile : Autotile, ITileSelectionState
         }
 
         ImGui.SameLine();
-        ImGui.Text(label);
+        ImGui.TextUnformatted(label);
 
         //ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         

@@ -264,7 +264,7 @@ class AutotileCatalog
         ImGuiExt.CenterNextWindow(ImGuiCond.Appearing);
         if (ImGuiExt.BeginPopupModal("Error", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            ImGui.Text(createError);
+            ImGui.TextUnformatted(createError);
 
             ImGui.Separator();
             if (StandardPopupButtons.Show(PopupButtonList.OK, out _))

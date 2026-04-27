@@ -179,7 +179,7 @@ partial class PropEditor : IEditorMode
             ImGui.PopButtonRepeat();
 
             ImGui.SameLine();
-            ImGui.Text(label);
+            ImGui.TextUnformatted(label);
 
             ImGui.PopStyleVar();
             ImGui.PopItemWidth();
@@ -301,7 +301,7 @@ partial class PropEditor : IEditorMode
         ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
         ImGui.PopStyleVar();
-        ImGui.Text(label);
+        ImGui.TextUnformatted(label);
     }
 
     private void MultiselectListInput<T, L>(T[] items, string label, string fieldName, List<L> list)
