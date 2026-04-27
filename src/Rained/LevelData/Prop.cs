@@ -396,6 +396,16 @@ class Prop
             newProp.FezTree.TrunkAngle = FezTree.TrunkAngle;
         }
 
+        // copy mosaic plant properties
+        if (newProp.MosaicPlant is not null)
+        {
+            Debug.Assert(MosaicPlant is not null);
+            newProp.MosaicPlant.EffectColor = MosaicPlant.EffectColor;
+            newProp.MosaicPlant.ColorIntensity = MosaicPlant.ColorIntensity;
+            newProp.MosaicPlant.HasFlowers = MosaicPlant.HasFlowers;
+            newProp.MosaicPlant.FlowerColor = MosaicPlant.FlowerColor;
+        }
+
         return newProp;
     }
 
