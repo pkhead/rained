@@ -500,19 +500,22 @@ class DrizzleRender : IDisposable
                     break;
                 
                 case MessageRenderFinished:
+                {
                     state = RenderState.Finished;
                     Log.Debug("Close render thread");
                     progress = 1f;
                     DisplayString = "";
                     thread.Join();
 
+                    var levelName = Path.GetFileNameWithoutExtension(filePath);
                     LuaScripting.Modules.RainedModule.PostRenderCallback(
                         filePath,
-                        Path.Combine(RainEd.Instance.AssetDataPath, "Levels", Path.GetFileName(filePath)),
+                        Path.Combine(RainEd.Instance.AssetDataPath, "Levels", levelName + ".txt"),
                         [..pngPaths]
                     );
 
                     break;
+                }
 
                 case MessageScreenFinished scr:
                 {
