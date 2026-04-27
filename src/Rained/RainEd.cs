@@ -10,6 +10,7 @@ using System.Reflection;
 using Rained.LuaScripting;
 using Rained.EditorGui.Windows;
 using Rained.LevelData.FileFormats;
+using System.Diagnostics;
 
 namespace Rained;
 
@@ -564,6 +565,22 @@ sealed class RainEd
     /// <param name="path"></param>
     public void SaveLevel(string path)
         => SaveLevel(path, LevelFileFormats.AutoDetect(path));
+    
+    private void RemoveOldBackupFile(string path)
+    {
+        switch (Preferences.BackupOverwritePolicy)
+        {
+            case UserPreferences.BackupOverwritePolicyEnum.Trash:
+                Platform.TrashFile(path);
+                break;
+
+            case UserPreferences.BackupOverwritePolicyEnum.Delete:
+                File.Delete(path);
+                break;
+
+            default: throw new UnreachableException();
+        }
+    }
 
     /// <summary>
     /// Save the level to the given path.
@@ -600,13 +617,13 @@ sealed class RainEd
 
                 if (File.Exists(levelPath))
                 {
-                    Platform.TrashFile(backupTxt);
+                    RemoveOldBackupFile(backupTxt);
                     File.Move(levelPath, backupTxt);
                 }
 
                 if (File.Exists(pngPath))
                 {
-                    Platform.TrashFile(backupPng);
+                    RemoveOldBackupFile(backupPng);
                     File.Move(pngPath, backupPng);
                 }
             }

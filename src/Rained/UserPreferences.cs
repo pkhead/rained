@@ -503,6 +503,30 @@ class UserPreferences
         };
     }
 
+    public enum BackupOverwritePolicyEnum
+    {
+        Trash,
+        Delete
+    }
+    public BackupOverwritePolicyEnum BackupOverwritePolicy = BackupOverwritePolicyEnum.Trash;
+
+    [JsonPropertyName("backupOverwritePolicy")]
+    public string BackupOverwritePolicyString
+    {
+        get => BackupOverwritePolicy switch
+        {
+            BackupOverwritePolicyEnum.Trash => "trash",
+            BackupOverwritePolicyEnum.Delete => "delete",
+            _ => "trash"
+        };
+        set => BackupOverwritePolicy = value switch
+        {
+            "trash" => BackupOverwritePolicyEnum.Trash,
+            "delete" => BackupOverwritePolicyEnum.Delete,
+            _ => BackupOverwritePolicyEnum.Trash
+        };
+    }
+
     public Dictionary<string, string> Shortcuts { get; set; }
     public uint MaxRecentFiles { get; set; } = 20;
     public List<string> RecentFiles { get; set; }

@@ -302,6 +302,26 @@ static class PreferencesWindow
                 prefs.BackupDirectory = backupDir;
             }
 
+            int backupOverwritePolicy = (int)prefs.BackupOverwritePolicy;
+            if (ImGui.Combo("Backup overwrite policy", ref backupOverwritePolicy, "Move to trash\0Delete\0"))
+            {
+                prefs.BackupOverwritePolicy = (UserPreferences.BackupOverwritePolicyEnum)backupOverwritePolicy;
+            }
+
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.BeginItemTooltip())
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
+
+                ImGui.TextWrapped("When creating a backup of a level that already has a backup file, this controls what should be done to the old file before creating the new backup.");
+
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
+
+
+
             ImGui.Separator();
 
             int levelFileFormat = (int)prefs.PreferredFileFormat;
