@@ -3,23 +3,14 @@ namespace Rained;
 using System.Threading;
 using System.IO.Pipes;
 using System.Text;
+using System.Diagnostics;
 
 /// <summary>
 /// Functionality for new rainED processes to open a file in a pre-existing instance of rainED.
 /// </summary>
 public class SingleInstanceManager : IDisposable
 {
-    // public static SingleInstanceManager Instance {
-    //     get
-    //     {
-    //         if (singleton is not null) return singleton;
-    //         return singleton = new SingleInstanceManager();
-    //     }
-    // }
-
-    // private static SingleInstanceManager? singleton;
-
-    public bool IsSupported { get; private set; }
+    public static bool IsSupported => true;
 
     public Action<string[]>? OnLevelOpenRequest;
 
@@ -32,22 +23,6 @@ public class SingleInstanceManager : IDisposable
     private const string WaitSignalName = @"Global\RAINED_IPCWAIT";
     private const string MutexName = @"Global\RAINED_INSTMTX";
 
-    // on launch, acquire a mutex named RAINED_INSTMTX.
-    // if mutex does not exist, this is the first rained instance to be launched.
-    // if mutex does exist, then it is not the first rained instance to be launched.
-
-    // for first instance:
-    // on every frame, it will try to acquire the RAINED_PIPEBARRIER mutex if it exists. if it does exist and
-    // successfully acquires the mutex, it will read the RAINED_IPCPIPE pipe, and then close the mutex.
-
-    // for subsequent instances:
-    // create the RAINED_IPCPIPE pipe, and write IPC transfer data to it. afterwards, create a mutex named
-    // RAINED_PIPEBARRIER and wait on it.
-    public SingleInstanceManager()
-    {
-        IsSupported = OperatingSystem.IsWindows();
-    }
-
     /// <summary>
     /// Check if an instance of rainED is already running, and if so, open the given level file with it.
     /// </summary>
@@ -56,19 +31,16 @@ public class SingleInstanceManager : IDisposable
     public bool Start(string[] filePaths)
     {
         if (!IsSupported)
-            throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");
-        
-        if (!OperatingSystem.IsWindows()) return false;
+            throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");        
 
         instMutex = new Mutex(true, MutexName, out bool instMutexIsNew);
 
         if (instMutexIsNew)
         {
-            Console.WriteLine("First instance!");
-
             instMutex.WaitOne();
 
             // this is the first instance of rainED
+            // start level request listener thread
             pipeThread = new Thread(MainInstanceThreadProc);
             pipeThread.Start();
 
@@ -76,32 +48,43 @@ public class SingleInstanceManager : IDisposable
         }
         else if (filePaths.Length > 0)
         {
-            Console.WriteLine("Not First instance!");
+            // this is not the first instance of rainED
+            // request the first instance to open these list of levels
+            if (filePaths.Length > byte.MaxValue)
+            {
+                Console.Error.WriteLine("error: too many file paths to open!");
+                Environment.ExitCode = 1;
+                return false;
+            }
 
             instMutex.Dispose();
             instMutex = null;
 
-            // this is not the first instance of rainED
-            using (var otherWait = EventWaitHandle.OpenExisting(WaitSignalName))
+            // Debug.Assert(OperatingSystem.IsWindows());
+            using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
                 otherWait.Set();
             
             using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1);
             pipe.WaitForConnection();
 
-            var data = Encoding.UTF8.GetBytes("Hello, world!");
-            var dataLen = data.Length;
+            var pipeWriter = new BinaryWriter(pipe);
 
-            // first write, length of data as an unsigned 16-bit integer
-            Console.WriteLine($"Write {dataLen} bytes to pipe");
-            pipe.WriteByte((byte)((dataLen >> 8) & 0xFF));
-            pipe.WriteByte((byte)(dataLen & 0xFF));
+            // first, write number of levels to open
+            pipeWriter.Write((byte)(filePaths.Length & 0xFF));
 
-            // then, write data contents
-            pipe.Write(data);
-            pipe.Flush();
+            // then, write the file paths of each level to open.
+            // each string is preceded by its length as an unsigned 16-bit integer
+            foreach (var path in filePaths)
+            {
+                var pathData = Encoding.UTF8.GetBytes(path);
+                var pathLen = pathData.Length;
 
-            // using var myWait = new EventWaitHandle(false, EventResetMode.AutoReset, "Global\\RAINED_IPCWAIT2");
-            // myWait.WaitOne();
+                pipeWriter.Write((ushort)pathLen);
+                pipeWriter.Write(pathData, 0, int.Min(ushort.MaxValue, pathLen));
+            }
+
+            // done
+            pipeWriter.Flush();
 
             return true;
         }
@@ -125,17 +108,23 @@ public class SingleInstanceManager : IDisposable
             using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.In);
             pipe.Connect();
 
-            // length of data is a unsigned 16-bit integer
-            var dataLen = ((int)pipe.ReadByte()) | ((int)pipe.ReadByte() << 8);
-            Log.Debug("Read {ByteCount} bytes from pipe", dataLen);
-            var data = new byte[dataLen];
-            pipe.Read(data, 0, dataLen);
+            var pipeReader = new BinaryReader(pipe);
 
-            var list = new string[1];
-            list[0] = Encoding.UTF8.GetString(data);
-            Log.Debug("It read: {Contents}", list[0]);
+            // read number of file paths to open
+            var levelCount = (int) pipeReader.ReadByte();
+            var filePaths = new string[levelCount];
 
-            OnLevelOpenRequest?.Invoke(list);
+            for (int i = 0; i < levelCount; i++)
+            {
+                // read individual path to level. the string is preceded by its length as an unsigned 16-bit int
+                var strLen = (int) pipeReader.ReadUInt16();
+                var strData = new byte[strLen];
+                pipeReader.Read(strData, 0, strLen);
+
+                filePaths[i] = Encoding.UTF8.GetString(strData);
+            }
+
+            OnLevelOpenRequest?.Invoke(filePaths);
         }
     }
 
@@ -149,7 +138,6 @@ public class SingleInstanceManager : IDisposable
     {
         if (_isDisposed) return;
         _isDisposed = true;
-        // singleton = null;
 
         if (disposing)
         {

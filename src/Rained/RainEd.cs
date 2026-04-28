@@ -135,6 +135,8 @@ sealed class RainEd
     /// </summary>
     public readonly RainedVersionInfo? LatestVersionInfo = null;
 
+    private string[]? ipcLevelPathList;
+
     public struct CommandCreationParameters(string name, Action<int> callback)
     {
         public string Name = name;
@@ -425,7 +427,13 @@ sealed class RainEd
     {
         const float ActivityWaitTime = 2f;
         remainingActiveTime = ActivityWaitTime;
-        Boot.Window.IsEventDriven = false;
+        Boot.Window.SilkWindow.ContinueEvents();
+    }
+
+    public void ReceiveLevelsToOpen(string[] levelPaths)
+    {
+        ipcLevelPathList = levelPaths;
+        NeedScreenRefresh();
     }
 
     private void SavePreferences()
@@ -931,6 +939,17 @@ sealed class RainEd
             foreach (var t in tasks) t.SetResult();
         }
 
+        if (ipcLevelPathList is not null)
+        {
+            Window.SilkWindow.Focus();
+            Window.SilkWindow.WindowState = Silk.NET.Windowing.WindowState.Normal;
+
+            foreach (var path in ipcLevelPathList)
+                LoadLevel(path);
+            
+            ipcLevelPathList = null;
+        }
+
         EditorWindow.UpdateMouseState();
         
         Raylib.ClearBackground(new Color(51, 51, 51, 255));
@@ -976,6 +995,7 @@ sealed class RainEd
         
         if (remainingActiveTime > 0f)
         {
+            Boot.Window.IsEventDriven = false;
             remainingActiveTime -= dt;
         }
         else

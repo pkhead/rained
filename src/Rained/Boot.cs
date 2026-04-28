@@ -169,10 +169,12 @@ namespace Rained
 
         private static void LaunchEditor()
         {
-            using var siMgr = new SingleInstanceManager();
+            SingleInstanceManager? siMgr = null;
 
-            if (siMgr.IsSupported)
+            // TODO: add CLI option to always force a new instance
+            if (SingleInstanceManager.IsSupported)
             {
+                siMgr = new SingleInstanceManager();
                 bool shouldAbort = siMgr.Start([.. bootOptions.Files]);
                 if (shouldAbort) return;
             }
@@ -447,6 +449,9 @@ namespace Rained
                         RefreshRate = app.Preferences.RefreshRate;
                     }
 
+                    if (siMgr is not null)
+                        siMgr.OnLevelOpenRequest = app.ReceiveLevelsToOpen;
+
                     while (app.Running)
                     {
                         // for some reason on MacOS, turning on vsync just... doesn't?
@@ -494,11 +499,18 @@ namespace Rained
                     }
 
                     Log.Information("Shutting down Rained...");
+
+                    siMgr?.Dispose();
+                    siMgr = null;
+
                     app.Shutdown();
                 }
 #if EXCEPTION_CATCHING
                 catch (Exception e)
                 {
+                    siMgr?.Dispose();
+                    siMgr = null;
+
                     try
                     {
                         app.EmergencySave();
@@ -514,6 +526,9 @@ namespace Rained
                 ImGuiController?.Dispose();
                 Raylib.CloseWindow();
             }
+
+            siMgr?.Dispose();
+            siMgr = null;
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
