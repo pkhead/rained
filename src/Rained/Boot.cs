@@ -169,6 +169,14 @@ namespace Rained
 
         private static void LaunchEditor()
         {
+            using var siMgr = new SingleInstanceManager();
+
+            if (siMgr.IsSupported)
+            {
+                bool shouldAbort = siMgr.Start([.. bootOptions.Files]);
+                if (shouldAbort) return;
+            }
+
             bool showAltSplashScreen = EulaUpdate.CanEula;
             AppDataPath = Options.AppDataPath;
             
