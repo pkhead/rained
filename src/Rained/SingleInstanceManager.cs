@@ -1,9 +1,10 @@
+// TODO: put try-catches to handle any sort of error gracefully...
+
 namespace Rained;
 
 using System.Threading;
 using System.IO.Pipes;
 using System.Text;
-using System.Diagnostics;
 
 /// <summary>
 /// Functionality for new rainED processes to open a file in a pre-existing instance of rainED.
