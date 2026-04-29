@@ -32,6 +32,8 @@ partial class BootOptions
 
     private static void PrintHelpMessage()
     {
+        // TODO: automatic screen wrapping!
+
         Console.WriteLine(
         $"""
         Usage:
@@ -55,9 +57,9 @@ partial class BootOptions
                                     Zero means it will be unbound.
         --no-autoloads              Don't run init.lua and other autoloading scripts on startup.
         --script <path>             Run the given Lua script, then exit. Does not start the GUI.
-                                    Any level paths given in the command will be loaded first,
-                                    as well as any autoload scripts. Multiple --script
-                                    arguments can appear.
+                                    Pass - to read from the standard input stream. Any level
+                                    paths given in the command will be loaded first, as well as
+                                    any autoload scripts. Multiple --script arguments can appear.
         --param <name=value>        Parameter to pass to all scripts.
 
         --export-effects <path>     Export Drizzle effect data to a .json file and exit.

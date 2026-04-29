@@ -108,7 +108,10 @@ namespace Rained
                 var lua = LuaInterface.LuaState;
                 foreach (var path in bootOptions.Scripts)
                 {
-                    LuaHelpers.DoFile(lua, path);
+                    if (path == "-")
+                        LuaHelpers.DoString(lua, Console.In.ReadToEnd(), "input");
+                    else
+                        LuaHelpers.DoFile(lua, path);
                 }
             }
             else
