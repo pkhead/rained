@@ -48,7 +48,7 @@ partial class BootOptions
         --no-splash-screen          Do not show the splash screen when launching.
         --app-data <path>           Run with app data directory at <path>.
         --data <path>               Run with the Drizzle data directory at <path>.
-        --new-instance              Always open a new instance of Rained, instead of potentially
+        --new-instance -n           Always open a new instance of Rained, instead of potentially
                                     reusing a pre-existing one.
 
         --render -r                 Render the given levels and exit. Does not start the GUI.
@@ -169,8 +169,6 @@ partial class BootOptions
 
             if (str == "--threads" || str == "-t")
             {
-                batchLifetime = true;
-
                 i++;
                 if (int.TryParse(args[i], out int v) && v >= 0)
                 {
@@ -239,7 +237,7 @@ partial class BootOptions
                 continue;
             }
 
-            if (str == "--new-instance")
+            if (str == "--new-instance" || str == "-n")
             {
                 noReuse = true;
                 continue;

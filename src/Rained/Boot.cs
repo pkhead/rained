@@ -69,9 +69,8 @@ namespace Rained
             {
                 LaunchDrizzleExport(bootOptions.EffectExportOutput);
             }
-            else if (bootOptions.Render || bootOptions.Scripts.Count > 0)
+            else if (bootOptions.Lifetime == BootOptions.InstanceLifetime.Batch)
             {
-                // should I make the conditions for batch launch check the newly-added Lifetime property?
                 LaunchBatch();
             }
             else
@@ -180,9 +179,7 @@ namespace Rained
             if (bootOptions.Lifetime != BootOptions.InstanceLifetime.Batch && SingleInstanceManager.IsSupported)
             {
                 siMgr = new SingleInstanceManager();
-                bool shouldAbort = siMgr.Start(
-                    [.. bootOptions.Files],
-                    bootOptions.Lifetime == BootOptions.InstanceLifetime.PersistentNoReuse);
+                bool shouldAbort = siMgr.Start(bootOptions);
                 if (shouldAbort) return;
             }
 

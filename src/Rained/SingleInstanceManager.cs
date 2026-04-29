@@ -9,7 +9,7 @@ using System.Text;
 /// <summary>
 /// Functionality for new rainED processes to open a file in a pre-existing instance of rainED.
 /// </summary>
-public class SingleInstanceManager : IDisposable
+class SingleInstanceManager : IDisposable
 {
     public static bool IsSupported => true;
 
@@ -27,13 +27,18 @@ public class SingleInstanceManager : IDisposable
     /// <summary>
     /// Check if an instance of rainED is already running, and if so, open the given level file with it.
     /// </summary>
-    /// <param name="filePath">The file path to open in the pre-existing instance of rainED.</param>
-    /// <param name="forceNewInstance">Always create a new instance of rainED.</param>
+    /// <param name="bootOptions">The boot options.</param>
     /// <returns>True if the application should abort, false otherwise.</returns>
-    public bool Start(string[] filePaths, bool forceNewInstance)
+    public bool Start(BootOptions bootOptions)
     {
+        if (bootOptions.Lifetime == BootOptions.InstanceLifetime.Batch)
+            return false;
+        
         if (!IsSupported)
-            throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");        
+            throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");       
+
+        bool forceNewInstance = bootOptions.Lifetime == BootOptions.InstanceLifetime.PersistentNoReuse;
+        var filePaths = bootOptions.Files;
 
         instMutex = new Mutex(true, MutexName, out bool instMutexIsNew);
 
@@ -53,11 +58,11 @@ public class SingleInstanceManager : IDisposable
             instMutex.Dispose();
             instMutex = null;
 
-            if (filePaths.Length > 0 && !forceNewInstance)
+            if (filePaths.Count > 0 && !forceNewInstance)
             {
                 // this is not the first instance of rainED
                 // request the first instance to open these list of levels
-                if (filePaths.Length > byte.MaxValue)
+                if (filePaths.Count > byte.MaxValue)
                 {
                     Boot.PrintError("too many file paths to open");
                     Environment.ExitCode = 2;
@@ -73,14 +78,17 @@ public class SingleInstanceManager : IDisposable
 
                 var pipeWriter = new BinaryWriter(pipe);
 
-                // first, write number of levels to open
-                pipeWriter.Write((byte)(filePaths.Length & 0xFF));
+                // write message type
+                pipeWriter.Write((byte)0);
+
+                // write number of levels to open
+                pipeWriter.Write((byte)(filePaths.Count & 0xFF));
 
                 // then, write the file paths of each level to open.
                 // each string is preceded by its length as an unsigned 16-bit integer
                 foreach (var path in filePaths)
                 {
-                    var pathData = Encoding.UTF8.GetBytes(path);
+                    var pathData = Encoding.UTF8.GetBytes(Path.GetFullPath(path));
                     var pathLen = pathData.Length;
 
                     pipeWriter.Write((ushort)pathLen);
@@ -115,21 +123,35 @@ public class SingleInstanceManager : IDisposable
 
             var pipeReader = new BinaryReader(pipe);
 
-            // read number of file paths to open
-            var levelCount = (int) pipeReader.ReadByte();
-            var filePaths = new string[levelCount];
-
-            for (int i = 0; i < levelCount; i++)
+            var msgType = (int) pipeReader.ReadByte();
+            switch (msgType)
             {
-                // read individual path to level. the string is preceded by its length as an unsigned 16-bit int
-                var strLen = (int) pipeReader.ReadUInt16();
-                var strData = new byte[strLen];
-                pipeReader.Read(strData, 0, strLen);
+                case 0:
+                {
+                    Log.Information("received IPC message to open levels");
 
-                filePaths[i] = Encoding.UTF8.GetString(strData);
+                    // read number of file paths to open
+                    var levelCount = (int) pipeReader.ReadByte();
+                    var filePaths = new string[levelCount];
+
+                    for (int i = 0; i < levelCount; i++)
+                    {
+                        // read individual path to level. the string is preceded by its length as an unsigned 16-bit int
+                        var strLen = (int) pipeReader.ReadUInt16();
+                        var strData = new byte[strLen];
+                        pipeReader.Read(strData, 0, strLen);
+
+                        filePaths[i] = Encoding.UTF8.GetString(strData);
+                    }
+
+                    OnLevelOpenRequest?.Invoke(filePaths);
+                    break;
+                }
+
+                default:
+                    Log.Error("received IPC message, but message type is unknown ({MessageType})", msgType);
+                    break;
             }
-
-            OnLevelOpenRequest?.Invoke(filePaths);
         }
     }
 
