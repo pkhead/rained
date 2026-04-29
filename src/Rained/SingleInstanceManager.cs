@@ -21,8 +21,8 @@ class SingleInstanceManager : IDisposable
     private Mutex? instMutex;
 
     private const string PipeName = @"Global\RAINED_IPCPIPE";
-    private const string WaitSignalName = @"Global\RAINED_IPCWAIT";
     private const string MutexName = @"Global\RAINED_INSTMTX";
+    private static readonly string PipeCompletionFile = Path.Combine(Path.GetTempPath(), "RAINED_IPCPIPESIG");
 
     /// <summary>
     /// Check if an instance of rainED is already running, and if so, open the given level file with it.
@@ -48,7 +48,7 @@ class SingleInstanceManager : IDisposable
 
             // this is the first instance of rainED
             // start level request listener thread
-            pipeThread = new Thread(MainInstanceThreadProc);
+            pipeThread = new Thread(MainInstanceThreadProc) { IsBackground = true };
             pipeThread.Start();
 
             return false;
@@ -70,8 +70,8 @@ class SingleInstanceManager : IDisposable
                 }
 
                 // Debug.Assert(OperatingSystem.IsWindows());
-                using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
-                    otherWait.Set();
+                // using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
+                //     otherWait.Set();
                 
                 using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1);
                 pipe.WaitForConnection();
@@ -97,6 +97,17 @@ class SingleInstanceManager : IDisposable
 
                 // done
                 pipeWriter.Flush();
+                
+                if (OperatingSystem.IsWindows())
+                {
+                    pipe.WaitForPipeDrain();
+                }
+                else
+                {
+                    Thread.Sleep(1000);
+                    while (!File.Exists(PipeCompletionFile))
+                        Thread.Sleep(10);
+                }
 
                 return true;
             }
@@ -107,19 +118,28 @@ class SingleInstanceManager : IDisposable
 
     private void MainInstanceThreadProc()
     {
-        using var myWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName);
         while (true)
         {
-            // wait on the signal, periodically checking if the thread should abort.
+            using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.In);
+
+            // wait for a client, periodically checking if the thread should abort.
+            // it is a background thread, so it doesn't need to be manually aborted
+            // before the process should end, but i suppose it is preferable to cleanly
+            // dispose of the OS handles.
             while (true)
             {
                 if (abort) return;
-                var sig = myWait.WaitOne(20);
-                if (sig) break;
-            }
 
-            using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.In);
-            pipe.Connect();
+                try
+                {
+                    pipe.Connect(500);
+                    break;
+                }
+                catch (TimeoutException)
+                {
+                    continue;
+                }
+            }
 
             var pipeReader = new BinaryReader(pipe);
 
@@ -152,6 +172,9 @@ class SingleInstanceManager : IDisposable
                     Log.Error("received IPC message, but message type is unknown ({MessageType})", msgType);
                     break;
             }
+
+            if (!OperatingSystem.IsWindows())
+                File.Create(PipeCompletionFile);
         }
     }
 
