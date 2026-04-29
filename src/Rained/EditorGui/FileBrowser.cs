@@ -102,7 +102,7 @@ partial class FileBrowser
 
     private static void LoadIcons()
     {
-        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","filebrowser-icons.png"));
+        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AssetsPath,"filebrowser-icons.png"));
     }
 
     private static string GetDirectoryBaseName(string path)

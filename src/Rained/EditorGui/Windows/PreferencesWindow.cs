@@ -1134,7 +1134,7 @@ static class PreferencesWindow
     private static void ReloadThemeList()
     {
         availableThemes.Clear();
-        foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.AppDataPath, "config", "themes")))
+        foreach (var fileName in Directory.EnumerateFiles(Path.Combine(Boot.ConfigPath, "themes")))
         {
             var ext = Path.GetExtension(fileName);
             if (ext != ".json" && ext != ".jsonc") continue;

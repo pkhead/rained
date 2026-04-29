@@ -33,7 +33,7 @@ static class ThemeEditor
 
     public static void SaveStyle()
     {
-        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, SaveCallback, Path.Combine(Boot.AppDataPath, "config", "themes"));
+        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Write, SaveCallback, Path.Combine(Boot.ConfigPath, "themes"));
         fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
         static void SaveCallback(string[] paths)
@@ -50,7 +50,7 @@ static class ThemeEditor
 
     public static void LoadStyle()
     {
-        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, Callback, Path.Combine(Boot.AppDataPath, "config", "themes"));
+        fileBrowser = new FileBrowser(FileBrowser.OpenMode.Read, Callback, Path.Combine(Boot.ConfigPath, "themes"));
         fileBrowser.AddFilter("JSON", [".json", ".jsonc"]);
 
         static void Callback(string[] paths)
@@ -114,7 +114,7 @@ static class ThemeEditor
         if (ImGui.Button("Save to File"))
         {
             var styleState = new SerializableStyle(ImGuiExt.Style);
-            styleState.WriteToFile(Path.Combine(Boot.AppDataPath, "config", "themes", RainEd.Instance.Preferences.Theme + ".json"));
+            styleState.WriteToFile(Path.Combine(Boot.ConfigPath, "themes", RainEd.Instance.Preferences.Theme + ".json"));
 
             ImGuiExt.SaveStyleRef(style, ref ref_saved_style);
             ImGuiExt.SaveStyleRef(style, ref @ref);

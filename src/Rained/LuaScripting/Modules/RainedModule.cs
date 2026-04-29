@@ -57,7 +57,7 @@ static class RainedModule
         lua.ModuleFunction("getAssetDirectory", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
-            lua.PushString(Path.Combine(Boot.AppDataPath, "assets"));
+            lua.PushString(Path.Combine(Boot.AssetsPath));
             return 1;
         });
 

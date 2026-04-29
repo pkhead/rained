@@ -668,7 +668,7 @@ class UserPreferences
     {
         try
         {
-            var dir = Path.Combine(Boot.AppDataPath, "config", "themes");
+            var dir = Path.Combine(Boot.ConfigPath, "themes");
             var filePath = Path.Combine(dir, Theme + ".jsonc");
             if (!File.Exists(filePath)) filePath = Path.Combine(dir, Theme + ".json");
 

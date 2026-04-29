@@ -411,7 +411,7 @@ static class EditorWindow
 
                 if (ImGui.MenuItem("Execute Script..."))
                 {
-                    var startDir = Path.Combine(Boot.AppDataPath, "scripts");
+                    var startDir = Path.Combine(Boot.ScriptsPath);
                     fileBrowser = new FileBrowser(
                         mode: FileBrowser.OpenMode.Read,
                         openDir: startDir,

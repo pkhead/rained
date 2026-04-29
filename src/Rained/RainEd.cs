@@ -181,7 +181,7 @@ sealed class RainEd
 
         // load user preferences
         KeyShortcuts.InitShortcuts();
-        prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
+        prefFilePath = Path.Combine(Boot.ConfigPath, "preferences.json");
 
         if (File.Exists(prefFilePath))
         {

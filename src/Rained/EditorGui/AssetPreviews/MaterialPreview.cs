@@ -18,7 +18,7 @@ class MaterialPreview : IDisposable
         {
             _activeMatPreview = materialName;
             _loadedMatPreview?.Dispose();
-            _loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "mat-previews", materialName + ".png"));
+            _loadedMatPreview = RlManaged.Texture2D.Load(Path.Combine(Boot.AssetsPath, "mat-previews", materialName + ".png"));
         }
 
         if (_loadedMatPreview is not null && Raylib_cs.Raylib.IsTextureReady(_loadedMatPreview))

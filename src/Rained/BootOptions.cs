@@ -12,7 +12,7 @@ partial class BootOptions
 
     public readonly bool ContinueBoot = true;
     public readonly bool ConsoleAttached = false;
-    public readonly string AppDataPath = Boot.AppDataPath;
+    public readonly string? AppDataPath;
     public readonly string? DrizzleDataPath = null;
     public readonly List<string> Files = [];
 

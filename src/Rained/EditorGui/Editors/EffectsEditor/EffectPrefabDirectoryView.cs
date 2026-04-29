@@ -23,7 +23,7 @@ class EffectPrefabDirectoryView : DirectoryTreeView
     private NamePromptState? namePromptState = null;
 
     public EffectPrefabDirectoryView() :
-        base(Path.Combine(Boot.AppDataPath, "config", "prefabs", "effects"), "*.json", false)
+        base(Path.Combine(Boot.ConfigPath, "prefabs", "effects"), "*.json", false)
     {
         Directory.CreateDirectory(Cache.BaseDirectory);
         Cache.Refresh();

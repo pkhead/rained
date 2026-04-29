@@ -112,7 +112,7 @@ class CellSelection
 
     public CellSelection()
     {
-        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath, "assets", "selection-icons.png"));
+        icons ??= RlManaged.Texture2D.Load(Path.Combine(Boot.AssetsPath, "selection-icons.png"));
         changeRecorder = new CellSelectionChangeRecorder();
     }
 

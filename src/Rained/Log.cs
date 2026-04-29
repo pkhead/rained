@@ -15,7 +15,7 @@ static class Log
 
     public static void Setup(bool logToStdout, bool userLoggerToStdout = false)
     {
-        Directory.CreateDirectory(Path.Combine(Boot.AppDataPath, "logs"));
+        Directory.CreateDirectory(Path.Combine(Boot.LogsPath));
 
         #if DEBUG
         var loggerConfig = new LoggerConfiguration().MinimumLevel.Debug();
@@ -25,7 +25,7 @@ static class Log
 
         List<string> logSetupErrors = [];
 
-        var logLatest = Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt");
+        var logLatest = Path.Combine(Boot.LogsPath, "latest.log.txt");
         try
         {
             if (File.Exists(logLatest))
@@ -39,7 +39,7 @@ static class Log
         }
 
         loggerConfig.WriteTo.File(
-            Path.Combine(Boot.AppDataPath, "logs", "log.txt"),
+            Path.Combine(Boot.LogsPath, "log.txt"),
             rollingInterval: RollingInterval.Hour,
             retainedFileCountLimit: 10
         );

@@ -75,7 +75,7 @@ class LightBrushDatabase
     {
         lightBrushes = new List<LightBrush>();
 
-        foreach (var fileName in File.ReadLines(Path.Combine(Boot.AppDataPath,"assets","light","init.txt")))
+        foreach (var fileName in File.ReadLines(Path.Combine(Boot.AssetsPath,"light","init.txt")))
         {
             // if this line is empty, skip
             if (string.IsNullOrWhiteSpace(fileName)) continue;
@@ -84,7 +84,7 @@ class LightBrushDatabase
             if (fileName[0] == '#') continue;
             
             // load light texture
-            var filePath = Path.Combine(Boot.AppDataPath,"assets","light",fileName.Trim());
+            var filePath = Path.Combine(Boot.AssetsPath,"light",fileName.Trim());
             var brush = LoadBrush(filePath);
 
             if (brush is null)

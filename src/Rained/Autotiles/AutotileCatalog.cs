@@ -17,7 +17,7 @@ class AutotileCatalog
     private readonly List<List<Autotile>> Autotiles = [[]];
     private readonly Dictionary<Autotile, string> autotileCategoryMap = [];
 
-    private static readonly string ConfigPath = Path.Combine(Boot.AppDataPath, "config", "autotiles.txt");
+    private static readonly string ConfigPath = Path.Combine(Boot.ConfigPath, "autotiles.txt");
 
     /// <summary>
     /// Adds the given autotile to the catalog.

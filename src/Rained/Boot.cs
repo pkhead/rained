@@ -13,16 +13,46 @@ namespace Rained
     static class Boot
     {
         // find the location of the app data folder
-#if DATA_ASSEMBLY
-        public static string AppDataPath = AppContext.BaseDirectory;
-        public static string ConfigPath = Path.Combine(AppDataPath, "config");
-#elif DATA_APPDATA
-        public static string AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
-        public static string ConfigPath = Path.Combine(AppDataPath, "config");
+        public static string AppDataPath { get; private set; }
+        public static string AssetsPath { get; private set; }
+        public static string ConfigPath { get; private set; }
+        public static string ScriptsPath { get; private set; }
+        public static string LogsPath { get; private set; }
+
+        static Boot()
+        {
+#if DATA_UNIX_XDG
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string xdgConfigHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? Path.Combine(home, ".config"); 
+            string xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(home, ".local", "share");
+            string xdgStateHome = Environment.GetEnvironmentVariable("XDG_STATE_HOME") ?? Path.Combine(home, ".local", "state");
+
+            AppDataPath = Path.Combine(xdgDataHome, "rained");
+#   if DATA_UNIX_SYSTEM
+            AssetsPath = "/usr/share/rained/assets"
+#   else
+            AssetsPath = "/usr/local/share/rained/assets"
+#   endif
+            ConfigPath = Path.Combine(xdgConfigHome, "rained");
+            ScriptsPath = Path.Combine(ConfigPath, "scripts");
+            LogsPath = Path.Combine(xdgStateHome, "rained", "logs");
+
+            Directory.CreateDirectory(AppDataPath);
+            Directory.CreateDirectory(ConfigPath);
 #else
-        public static string AppDataPath = Directory.GetCurrentDirectory();
-        public static string ConfigPath = Path.Combine(AppDataPath, "config");
+#   if DATA_ASSEMBLY
+            AppDataPath = AppContext.BaseDirectory;
+#   elif DATA_APPDATA
+            AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+#   else
+            AppDataPath = Directory.GetCurrentDirectory();
+#   endif
+            AssetsPath = Path.Combine(AppDataPath, "assets");
+            ConfigPath = Path.Combine(AppDataPath, "config");
+            ScriptsPath = Path.Combine(AppDataPath, "scripts");
+            LogsPath = Path.Combine(AppDataPath, "logs");
 #endif
+        }
 
         public const int DefaultWindowWidth = 1200;
         public const int DefaultWindowHeight = 800;
@@ -56,6 +86,15 @@ namespace Rained
         public static int DefaultRefreshRate => window.SilkWindow.Monitor?.VideoMode.RefreshRate ?? 60;
 
         public readonly static CultureInfo UserCulture = Thread.CurrentThread.CurrentCulture;
+
+        private static void UpdatePaths(string appData)
+        {
+            AppDataPath = appData;
+            AssetsPath = Path.Combine(AppDataPath, "assets");
+            ConfigPath = Path.Combine(AppDataPath, "config");
+            ScriptsPath = Path.Combine(AppDataPath, "scripts");
+            LogsPath = Path.Combine(AppDataPath, "logs");
+        }
 
         private static void Main(string[] args)
         {
@@ -184,7 +223,8 @@ namespace Rained
             }
 
             bool showAltSplashScreen = EulaUpdate.CanEula;
-            AppDataPath = Options.AppDataPath;
+            if (Options.AppDataPath is not null)
+                UpdatePaths(Options.AppDataPath);
             
             if (bootOptions.ShowOgscule)
                 showAltSplashScreen = true;
@@ -223,7 +263,7 @@ namespace Rained
             // this is for reading preferences that will be applied in the boot process
             UserPreferences? prefs = null;
             {
-                var prefsFile = Path.Combine(AppDataPath, "config", "preferences.json");
+                var prefsFile = Path.Combine(ConfigPath, "preferences.json");
                 if (File.Exists(prefsFile))
                 {
                     try
@@ -332,8 +372,8 @@ namespace Rained
 
                     // get theme filepath
                     var themeName = prefs?.Theme ?? "Dark";
-                    var themeFilePath = Path.Combine(AppDataPath, "config", "themes", themeName + ".jsonc");
-                    if (!File.Exists(themeFilePath)) themeFilePath = Path.Combine(AppDataPath, "config", "themes", themeName + ".json");
+                    var themeFilePath = Path.Combine(ConfigPath, "themes", themeName + ".jsonc");
+                    if (!File.Exists(themeFilePath)) themeFilePath = Path.Combine(ConfigPath, "themes", themeName + ".json");
 
                     // get accent color from theme
                     Glib.Color color;
@@ -397,7 +437,7 @@ namespace Rained
                 }
 
                 string? assetDataPath = null;
-                if (!File.Exists(Path.Combine(AppDataPath, "config", "preferences.json")))
+                if (!File.Exists(Path.Combine(ConfigPath, "preferences.json")))
                 {
                     window.Visible = true;
                     CloseSplashScreenWindow();

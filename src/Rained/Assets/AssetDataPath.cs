@@ -19,7 +19,7 @@ class AssetDataPath
             return _cachedDataPath;
         }
 
-        var prefFilePath = Path.Combine(Boot.AppDataPath, "config", "preferences.json");
+        var prefFilePath = Path.Combine(Boot.ConfigPath, "preferences.json");
         string dataPath;
 
         if (Boot.Options.DrizzleDataPath is not null)

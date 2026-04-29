@@ -9,7 +9,7 @@ static class DrizzleCast
     private static readonly Dictionary<string, string> _filenameMap = [];
     private static bool _init = false;
 
-    public static readonly string DirectoryPath = Path.Combine(Boot.AppDataPath, "assets", "drizzle-cast");
+    public static readonly string DirectoryPath = Path.Combine(Boot.AssetsPath, "drizzle-cast");
 
     public static void Initialize()
     {

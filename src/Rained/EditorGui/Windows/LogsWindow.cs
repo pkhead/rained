@@ -29,7 +29,7 @@ static class LogsWindow
             
             ImGui.SameLine();
             if (ImGui.Button("Show Full Logs"))
-                Platform.OpenPath(Path.Combine(Boot.AppDataPath, "logs", "latest.log.txt"));
+                Platform.OpenPath(Path.Combine(Boot.LogsPath, "latest.log.txt"));
                 
             ImGui.SameLine();
             ImGui.Checkbox("Wrap", ref wrap);

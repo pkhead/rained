@@ -20,7 +20,7 @@ static class ConfigDirectory
             return configPath;
         }
 
-        return Path.Combine(Boot.AppDataPath, "assets", relativePath);
+        return Path.Combine(Boot.AssetsPath, relativePath);
     }
 
     private static (string configPath, string assetsPath) ParseRelativePath(string? relativePath = null)
@@ -29,7 +29,7 @@ static class ConfigDirectory
         if (relativePath is not null)
         {
             configPath = Path.Combine(Boot.ConfigPath, relativePath);
-            assetsPath = Path.Combine(Boot.AppDataPath, "assets", relativePath);
+            assetsPath = Path.Combine(Boot.AssetsPath, relativePath);
         }
         else
         {

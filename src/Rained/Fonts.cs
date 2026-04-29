@@ -17,7 +17,7 @@ static class Fonts
 
     public static ReadOnlySpan<string> AvailableFonts => availableFontPaths;
 
-    private static readonly string FontDirectory = Path.Combine(Boot.AppDataPath, "config","fonts");
+    private static readonly string FontDirectory = Path.Combine(Boot.ConfigPath,"fonts");
 
     /// <summary>
     /// Set to true if the font should be reloaded before the start

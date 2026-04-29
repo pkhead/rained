@@ -31,8 +31,7 @@ static class LuaInterface
         DisplayWarningsAsErrors = false;
         DisplayNextWarningAsError = false;
 
-        // scriptsPath = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(Boot.AppDataPath, "scripts"));
-        scriptsPath = Path.Combine(Boot.AppDataPath, "scripts");
+        scriptsPath = Boot.ScriptsPath;
 
         luaState = new Lua()
         {
@@ -470,7 +469,7 @@ static class LuaInterface
 
     private static void AutoRequire(string path, bool? recurse)
     {
-        List<string> combineParams = [Boot.AppDataPath, "scripts"];
+        List<string> combineParams = [Boot.ScriptsPath];
         combineParams.AddRange(path.Split('.'));
         var filePath = Path.Combine([.. combineParams]);
 

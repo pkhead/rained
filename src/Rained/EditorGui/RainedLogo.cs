@@ -8,9 +8,9 @@ namespace Rained.EditorGui;
 static class RainedLogo
 {
     private static RlManaged.Texture2D rainedLogo0 =
-        RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo-colorless.png"));
+        RlManaged.Texture2D.Load(Path.Combine(Boot.AssetsPath,"rained-logo-colorless.png"));
     private static RlManaged.Texture2D rainedLogo1 =
-        RlManaged.Texture2D.Load(Path.Combine(Boot.AppDataPath,"assets","rained-logo-color.png"));
+        RlManaged.Texture2D.Load(Path.Combine(Boot.AssetsPath,"rained-logo-color.png"));
     
     public static int Width => rainedLogo0.Width;
     public static int Height => rainedLogo0.Height;

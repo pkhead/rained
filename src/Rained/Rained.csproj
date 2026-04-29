@@ -11,12 +11,11 @@
     <Version>2.5.1</Version>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(AppDataPath)'=='Assembly'">
-    <DefineConstants>DATA_ASSEMBLY</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(AppDataPath)'=='AppData'">
-    <DefineConstants>DATA_APPDATA</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(AppDataPath)'=='Assembly'">DATA_ASSEMBLY</DefineConstants>
+    <DefineConstants Condition="'$(AppDataPath)'=='AppData'">DATA_APPDATA</DefineConstants>
+    <DefineConstants Condition="'$(AppDataPath)'=='Unix+XDG'">DATA_UNIX_XDG</DefineConstants>
+    <DefineConstants Condition="'$(UnixSystemPackage)'!=''">DATA_UNIX_SYSTEM</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
