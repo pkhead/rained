@@ -12,169 +12,107 @@ using System.Text;
 class SingleInstanceManager : IDisposable
 {
     public static bool IsSupported => true;
-
-    public Action<string[]>? OnLevelOpenRequest;
+    private const string PipeName = "RAINED_IPCPIPE";
+    private readonly string LockFilePath = Path.Combine(Path.GetTempPath(), "RAINED_INST.lock");
 
     private bool _isDisposed = false;
-    private bool abort = false;
+    private volatile bool abort = false;
     private Thread? pipeThread;
-    private Mutex? instMutex;
+    private FileStream? lockFileStream;
+    public Action<string[]>? OnLevelOpenRequest;
 
-    private const string PipeName = @"Global\RAINED_IPCPIPE";
-    private const string WaitSignalName = @"Global\RAINED_IPCWAIT";
-    private const string MutexName = @"Global\RAINED_INSTMTX";
-
-    /// <summary>
-    /// Check if an instance of rainED is already running, and if so, open the given level file with it.
-    /// </summary>
-    /// <param name="bootOptions">The boot options.</param>
-    /// <returns>True if the application should abort, false otherwise.</returns>
     public bool Start(BootOptions bootOptions)
     {
-        if (bootOptions.Lifetime == BootOptions.InstanceLifetime.Batch)
-            return false;
-        
-        if (!IsSupported)
-            throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");       
-
-        bool forceNewInstance = bootOptions.Lifetime == BootOptions.InstanceLifetime.PersistentNoReuse;
-        var filePaths = bootOptions.Files;
-
-        instMutex = new Mutex(true, MutexName, out bool instMutexIsNew);
-
-        if (instMutexIsNew)
+        bool isFirstInstance = false;
+        try
         {
-            instMutex.WaitOne();
+            lockFileStream = new FileStream(LockFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            isFirstInstance = true;
+        }
+        catch (IOException)
+        {
+            isFirstInstance = false;
+        }
 
-            // this is the first instance of rainED
-            // start level request listener thread
-            pipeThread = new Thread(MainInstanceThreadProc);
+        if (isFirstInstance)
+        {
+            pipeThread = new Thread(MainInstanceThreadProc) { IsBackground = true };
             pipeThread.Start();
-
             return false;
         }
         else
         {
-            instMutex.Dispose();
-            instMutex = null;
-
-            if (filePaths.Count > 0 && !forceNewInstance)
+            if (bootOptions.Files.Count > 0 && bootOptions.Lifetime != BootOptions.InstanceLifetime.PersistentNoReuse)
             {
-                // this is not the first instance of rainED
-                // request the first instance to open these list of levels
-                if (filePaths.Count > byte.MaxValue)
+                try
                 {
-                    Boot.PrintError("too many file paths to open");
-                    Environment.ExitCode = 2;
-                    return false;
+                    using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+                    pipe.Connect(1000);
+
+                    using var pipeWriter = new BinaryWriter(pipe);
+                    pipeWriter.Write((byte)0);
+                    pipeWriter.Write((byte)bootOptions.Files.Count);
+
+                    foreach (var path in bootOptions.Files)
+                    {
+                        var data = Encoding.UTF8.GetBytes(Path.GetFullPath(path));
+                        pipeWriter.Write((ushort)data.Length);
+                        pipeWriter.Write(data);
+                    }
+                    pipeWriter.Flush();
+                    return true;
                 }
-
-                // Debug.Assert(OperatingSystem.IsWindows());
-                using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
-                    otherWait.Set();
-                
-                using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1);
-                pipe.WaitForConnection();
-
-                var pipeWriter = new BinaryWriter(pipe);
-
-                // write message type
-                pipeWriter.Write((byte)0);
-
-                // write number of levels to open
-                pipeWriter.Write((byte)(filePaths.Count & 0xFF));
-
-                // then, write the file paths of each level to open.
-                // each string is preceded by its length as an unsigned 16-bit integer
-                foreach (var path in filePaths)
+                catch
                 {
-                    var pathData = Encoding.UTF8.GetBytes(Path.GetFullPath(path));
-                    var pathLen = pathData.Length;
-
-                    pipeWriter.Write((ushort)pathLen);
-                    pipeWriter.Write(pathData, 0, int.Min(ushort.MaxValue, pathLen));
                 }
-
-                // done
-                pipeWriter.Flush();
-
-                return true;
             }
+            return false;
         }
-
-        return false;
     }
 
     private void MainInstanceThreadProc()
     {
-        using var myWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName);
-        while (true)
+        while (!abort)
         {
-            // wait on the signal, periodically checking if the thread should abort.
-            while (true)
+            try
             {
-                if (abort) return;
-                var sig = myWait.WaitOne(20);
-                if (sig) break;
-            }
+                using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.In, 1);
+                pipe.WaitForConnection();
 
-            using var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.In);
-            pipe.Connect();
+                if (abort) break;
 
-            var pipeReader = new BinaryReader(pipe);
-
-            var msgType = (int) pipeReader.ReadByte();
-            switch (msgType)
-            {
-                case 0:
+                using var pipeReader = new BinaryReader(pipe);
+                var msgType = pipeReader.ReadByte();
+                if (msgType == 0)
                 {
-                    Log.Information("received IPC message to open levels");
-
-                    // read number of file paths to open
-                    var levelCount = (int) pipeReader.ReadByte();
-                    var filePaths = new string[levelCount];
-
-                    for (int i = 0; i < levelCount; i++)
+                    int count = pipeReader.ReadByte();
+                    var paths = new string[count];
+                    for (int i = 0; i < count; i++)
                     {
-                        // read individual path to level. the string is preceded by its length as an unsigned 16-bit int
-                        var strLen = (int) pipeReader.ReadUInt16();
-                        var strData = new byte[strLen];
-                        pipeReader.Read(strData, 0, strLen);
-
-                        filePaths[i] = Encoding.UTF8.GetString(strData);
+                        int len = pipeReader.ReadUInt16();
+                        paths[i] = Encoding.UTF8.GetString(pipeReader.ReadBytes(len));
                     }
-
-                    OnLevelOpenRequest?.Invoke(filePaths);
-                    break;
+                    OnLevelOpenRequest?.Invoke(paths);
                 }
-
-                default:
-                    Log.Error("received IPC message, but message type is unknown ({MessageType})", msgType);
-                    break;
             }
+            catch (Exception) {}
         }
     }
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
         if (_isDisposed) return;
         _isDisposed = true;
+        abort = true;
 
-        if (disposing)
-        {
-            instMutex?.Dispose();
-        }
+        try {
+            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            client.Connect(50);
+        } catch { }
 
-        if (pipeThread is not null)
-        {
-            abort = true;
-            pipeThread.Join();
-        }
+        pipeThread?.Join(500);
+
+        lockFileStream?.Dispose();
+        if (File.Exists(LockFilePath)) try { File.Delete(LockFilePath); } catch { }
     }
 }
