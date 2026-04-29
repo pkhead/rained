@@ -28,8 +28,9 @@ public class SingleInstanceManager : IDisposable
     /// Check if an instance of rainED is already running, and if so, open the given level file with it.
     /// </summary>
     /// <param name="filePath">The file path to open in the pre-existing instance of rainED.</param>
+    /// <param name="forceNewInstance">Always create a new instance of rainED.</param>
     /// <returns>True if the application should abort, false otherwise.</returns>
-    public bool Start(string[] filePaths)
+    public bool Start(string[] filePaths, bool forceNewInstance)
     {
         if (!IsSupported)
             throw new InvalidOperationException("SingleInstanceManager is not supported on this platform.");        
@@ -47,47 +48,50 @@ public class SingleInstanceManager : IDisposable
 
             return false;
         }
-        else if (filePaths.Length > 0)
+        else
         {
-            // this is not the first instance of rainED
-            // request the first instance to open these list of levels
-            if (filePaths.Length > byte.MaxValue)
-            {
-                Console.Error.WriteLine("error: too many file paths to open!");
-                Environment.ExitCode = 1;
-                return false;
-            }
-
             instMutex.Dispose();
             instMutex = null;
 
-            // Debug.Assert(OperatingSystem.IsWindows());
-            using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
-                otherWait.Set();
-            
-            using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1);
-            pipe.WaitForConnection();
-
-            var pipeWriter = new BinaryWriter(pipe);
-
-            // first, write number of levels to open
-            pipeWriter.Write((byte)(filePaths.Length & 0xFF));
-
-            // then, write the file paths of each level to open.
-            // each string is preceded by its length as an unsigned 16-bit integer
-            foreach (var path in filePaths)
+            if (filePaths.Length > 0 && !forceNewInstance)
             {
-                var pathData = Encoding.UTF8.GetBytes(path);
-                var pathLen = pathData.Length;
+                // this is not the first instance of rainED
+                // request the first instance to open these list of levels
+                if (filePaths.Length > byte.MaxValue)
+                {
+                    Boot.PrintError("too many file paths to open");
+                    Environment.ExitCode = 2;
+                    return false;
+                }
 
-                pipeWriter.Write((ushort)pathLen);
-                pipeWriter.Write(pathData, 0, int.Min(ushort.MaxValue, pathLen));
+                // Debug.Assert(OperatingSystem.IsWindows());
+                using (var otherWait = new EventWaitHandle(false, EventResetMode.AutoReset, WaitSignalName))
+                    otherWait.Set();
+                
+                using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.Out, 1);
+                pipe.WaitForConnection();
+
+                var pipeWriter = new BinaryWriter(pipe);
+
+                // first, write number of levels to open
+                pipeWriter.Write((byte)(filePaths.Length & 0xFF));
+
+                // then, write the file paths of each level to open.
+                // each string is preceded by its length as an unsigned 16-bit integer
+                foreach (var path in filePaths)
+                {
+                    var pathData = Encoding.UTF8.GetBytes(path);
+                    var pathLen = pathData.Length;
+
+                    pipeWriter.Write((ushort)pathLen);
+                    pipeWriter.Write(pathData, 0, int.Min(ushort.MaxValue, pathLen));
+                }
+
+                // done
+                pipeWriter.Flush();
+
+                return true;
             }
-
-            // done
-            pipeWriter.Flush();
-
-            return true;
         }
 
         return false;

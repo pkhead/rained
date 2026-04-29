@@ -71,6 +71,7 @@ namespace Rained
             }
             else if (bootOptions.Render || bootOptions.Scripts.Count > 0)
             {
+                // should I make the conditions for batch launch check the newly-added Lifetime property?
                 LaunchBatch();
             }
             else
@@ -171,11 +172,14 @@ namespace Rained
         {
             SingleInstanceManager? siMgr = null;
 
-            // TODO: add CLI option to always force a new instance
-            if (SingleInstanceManager.IsSupported)
+            // maybe redundant, because it would instead call LaunchBatch on the same conditions as what causes
+            // InstanceLifetime to be Batch, but whatever...
+            if (bootOptions.Lifetime != BootOptions.InstanceLifetime.Batch && SingleInstanceManager.IsSupported)
             {
                 siMgr = new SingleInstanceManager();
-                bool shouldAbort = siMgr.Start([.. bootOptions.Files]);
+                bool shouldAbort = siMgr.Start(
+                    [.. bootOptions.Files],
+                    bootOptions.Lifetime == BootOptions.InstanceLifetime.PersistentNoReuse);
                 if (shouldAbort) return;
             }
 
@@ -606,6 +610,18 @@ namespace Rained
             var windowContents = $"A fatal exception has occured:\n{e}\n\nMore information can be found in the logs. The application will now quit.";
 
             DisplayError(windowTitle, windowContents);
+        }
+
+        /// <summary>
+        /// Write an error message to the standard error stream.
+        /// </summary>
+        /// <param name="msg">The error message to display.</param>
+        public static void PrintError(string msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("error: ");
+            Console.ResetColor();
+            Console.WriteLine(msg);
         }
 
         private static readonly string ImGuiDefaultIni =

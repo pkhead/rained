@@ -3,29 +3,11 @@ namespace Rained;
 
 partial class BootOptions
 {
-    [LibraryImport("kernel32.dll")]
-    private static partial int AttachConsole(int dwProcessId);
-
-    private static void AttachConsole()
+    public enum InstanceLifetime
     {
-        if (!OperatingSystem.IsWindows()) return;
-
-        if (AttachConsole(-1) != 0)
-        {
-            var cin = new StreamReader(Console.OpenStandardInput());
-            var cerr = new StreamWriter(Console.OpenStandardError())
-            {
-                AutoFlush = true
-            };
-            var cout = new StreamWriter(Console.OpenStandardOutput())
-            {
-                AutoFlush = true
-            };
-
-            Console.SetOut(cout);
-            Console.SetIn(cin);
-            Console.SetError(cerr);
-        }
+        Batch, // independent batch process, no windows/IPC
+        Persistent, // connect to pre-existing instance if exists, otherwise create new window.
+        PersistentNoReuse, // always create new window
     }
 
     public readonly bool ContinueBoot = true;
@@ -37,6 +19,7 @@ partial class BootOptions
     public readonly bool NoAutoloads = false;
     public readonly List<string> Scripts = [];
     public readonly List<(string, string)> ScriptParameters = [];
+    public readonly bool ScriptConnect = false;
 
     public readonly bool NoSplashScreen = false;
     public readonly bool ShowOgscule = false;
@@ -44,6 +27,8 @@ partial class BootOptions
     public readonly bool Render = false;
     public readonly int RenderThreads = int.Max(1, Environment.ProcessorCount - 1);
     public readonly string? EffectExportOutput = null;
+
+    public readonly InstanceLifetime Lifetime;
 
     private static void PrintHelpMessage()
     {
@@ -57,10 +42,12 @@ partial class BootOptions
         --help                      Show this help screen.
         --version -v                Print out the app version.
 
-        --log-to-stdout             Print logs to the standard output stream instead of to a file.
-        --no-splash-screen          Do not show the splash screen when starting.
+        --log-to-stdout             Print logs to the standard output stream.
+        --no-splash-screen          Do not show the splash screen when launching.
         --app-data <path>           Run with app data directory at <path>.
         --data <path>               Run with the Drizzle data directory at <path>.
+        --new-instance              Always open a new instance of Rained, instead of potentially
+                                    reusing a pre-existing one.
 
         --render -r                 Render the given levels and exit. Does not start the GUI.
         --threads -t <count>        Optional max degree of parallelism to use when rendering.
@@ -125,12 +112,12 @@ partial class BootOptions
         // normal command-line processing
         static void ParseError(string msg)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("error: ");
-            Console.ResetColor();
-            Console.WriteLine(msg);
+            Boot.PrintError(msg);
             Environment.ExitCode = 2;
         }
+
+        bool batchLifetime = false;
+        bool noReuse = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -140,6 +127,7 @@ partial class BootOptions
 
             // this is here because it appears SFML uses some
             // OpenGL extensions that RenderDoc doesn't support
+            // what the hell. sfml?? how old is this???
             if (str == "--no-splash-screen")
             {
                 NoSplashScreen = true;
@@ -151,6 +139,7 @@ partial class BootOptions
             {
                 i++;
                 AppDataPath = args[i];
+                noReuse = true;
                 continue;
             }
 
@@ -158,23 +147,28 @@ partial class BootOptions
             {
                 i++;
                 DrizzleDataPath = args[i];
+                noReuse = true;
                 continue;
             }
 
             if (str == "--log-to-stdout")
             {
                 LogToStdout = true;
+                noReuse = true;
                 continue;
             }
 
             if (str == "--render" || str == "-r")
             {
                 Render = true;
+                batchLifetime = true;
                 continue;
             }
 
             if (str == "--threads" || str == "-t")
             {
+                batchLifetime = true;
+
                 i++;
                 if (int.TryParse(args[i], out int v) && v >= 0)
                 {
@@ -202,6 +196,7 @@ partial class BootOptions
             {
                 i++;
                 EffectExportOutput = args[i];
+                batchLifetime = true;
                 continue;
             }
 
@@ -209,11 +204,14 @@ partial class BootOptions
             {
                 i++;
                 Scripts.Add(args[i]);
+                batchLifetime = true;
                 continue;
             }
 
             if (str == "--param")
             {
+                noReuse = true;
+
                 i++;
                 var eqIdx = args[i].IndexOf('=');
                 if (eqIdx == -1)
@@ -234,7 +232,14 @@ partial class BootOptions
 
             if (str == "--no-autoloads")
             {
+                noReuse = true;
                 NoAutoloads = true;
+                continue;
+            }
+
+            if (str == "--new-instance")
+            {
+                noReuse = true;
                 continue;
             }
 
@@ -242,19 +247,47 @@ partial class BootOptions
             {
                 Files.Add(str);
             }
-
             else
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("error: ");
-                Console.ResetColor();
-                Console.WriteLine($"unknown option: {str}");
+                Boot.PrintError($"unknown option: {str}");
                 Console.WriteLine();
                 PrintHelpMessage();
 
                 Environment.ExitCode = 2;
                 ContinueBoot = false;
             }
+        }
+
+        if (batchLifetime)
+            Lifetime = InstanceLifetime.Batch;
+        else if (noReuse)
+            Lifetime = InstanceLifetime.PersistentNoReuse;
+        else
+            Lifetime = InstanceLifetime.Persistent;
+    }
+
+    [LibraryImport("kernel32.dll")]
+    private static partial int AttachConsole(int dwProcessId);
+
+    private static void AttachConsole()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        if (AttachConsole(-1) != 0)
+        {
+            var cin = new StreamReader(Console.OpenStandardInput());
+            var cerr = new StreamWriter(Console.OpenStandardError())
+            {
+                AutoFlush = true
+            };
+            var cout = new StreamWriter(Console.OpenStandardOutput())
+            {
+                AutoFlush = true
+            };
+
+            Console.SetOut(cout);
+            Console.SetIn(cin);
+            Console.SetError(cerr);
         }
     }
 }
