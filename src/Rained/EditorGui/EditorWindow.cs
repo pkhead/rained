@@ -1119,7 +1119,7 @@ static class EditorWindow
         #if DEBUG
         var docPath = Path.Combine("dist", "docs", "en", "index.html");
         #else
-        var docPath = Path.Combine(Boot.AppDataPath, "docs", "en", "index.html");
+        var docPath = Path.GetFullPath(Path.Combine(Boot.AssetsPath, "..", "docs", "en", "index.html"));
         #endif
 
         if (File.Exists(docPath))

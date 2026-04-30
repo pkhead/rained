@@ -29,9 +29,9 @@ namespace Rained
 
             AppDataPath = Path.Combine(xdgDataHome, "rained");
 #   if DATA_UNIX_SYSTEM
-            AssetsPath = "/usr/share/rained/assets"
+            AssetsPath = "/usr/share/rained/assets";
 #   else
-            AssetsPath = "/usr/local/share/rained/assets"
+            AssetsPath = "/usr/local/share/rained/assets";
 #   endif
             ConfigPath = Path.Combine(xdgConfigHome, "rained");
             ScriptsPath = Path.Combine(ConfigPath, "scripts");
@@ -120,7 +120,7 @@ namespace Rained
 
         private static void LaunchDrizzleExport(string path)
         {
-            DrizzleExport.DrizzleEffectExport.Export(Assets.AssetDataPath.GetPath(), Path.Combine(AppDataPath, "assets", "drizzle-cast"), path);
+            DrizzleExport.DrizzleEffectExport.Export(Assets.AssetDataPath.GetPath(), Path.Combine(AssetsPath, "drizzle-cast"), path);
         }
 
         private static void LaunchBatch()
@@ -366,9 +366,9 @@ namespace Rained
                     //var rctx = splashScreenWindow.RenderContext!;
                     Glib.Texture texture;
                     if (!showAltSplashScreen || ((texture = EulaUpdate.GetSplashScreenTexture()) is null))
-                        texture = Glib.Texture.Load(Path.Combine(AppDataPath, "assets","splash-screen.png"));
+                        texture = Glib.Texture.Load(Path.Combine(AssetsPath,"splash-screen.png"));
                     
-                    var colorMask = Glib.Texture.Load(Path.Combine(AppDataPath, "assets","splash-screen-colormask.png"));
+                    var colorMask = Glib.Texture.Load(Path.Combine(AssetsPath,"splash-screen-colormask.png"));
 
                     // get theme filepath
                     var themeName = prefs?.Theme ?? "Dark";
@@ -422,12 +422,12 @@ namespace Rained
 
                 {
                     var windowIcons = new Glib.Image[6];
-                    windowIcons[0] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon16.png"));
-                    windowIcons[1] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon24.png"));
-                    windowIcons[2] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon32.png"));
-                    windowIcons[3] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon48.png"));
-                    windowIcons[4] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon128.png"));
-                    windowIcons[5] = Glib.Image.FromFile(Path.Combine(AppDataPath, "assets", "icon256.png"));
+                    windowIcons[0] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon16.png"));
+                    windowIcons[1] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon24.png"));
+                    windowIcons[2] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon32.png"));
+                    windowIcons[3] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon48.png"));
+                    windowIcons[4] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon128.png"));
+                    windowIcons[5] = Glib.Image.FromFile(Path.Combine(AssetsPath, "icon256.png"));
                     window.SetIcon(windowIcons);
 
                     for (int i = 0; i < windowIcons.Length; i++)
