@@ -28,7 +28,7 @@ namespace Rained
             string xdgStateHome = Environment.GetEnvironmentVariable("XDG_STATE_HOME") ?? Path.Combine(home, ".local", "state");
 
             AppDataPath = Path.Combine(xdgDataHome, "rained");
-#   if DATA_UNIX_SYSTEM
+#   if DATA_UNIX_SYSPKG
             AssetsPath = "/usr/share/rained/assets";
 #   else
             AssetsPath = "/usr/local/share/rained/assets";

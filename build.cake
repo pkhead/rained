@@ -11,6 +11,7 @@ var target = Argument("Target", "Build");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 var buildDir = "build_" + os;
 var useGles = Argument<bool>("GLES", os == "win-x64");
+var appDataPath = Argument<string>("app-data-path", "Assembly");
 
 List<string> ExecCapture(string procName, System.Collections.Generic.IEnumerable<string> args)
 {
@@ -142,7 +143,14 @@ Task("DotNetPublish")
     CleanDirectory(buildDir);
 
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
-    buildSettings.Properties.Add("AppDataPath", ["Assembly"]);
+
+    buildSettings.Properties.Add("AppDataPath", [appDataPath]);
+
+    if (HasArgument("unix-sys-pkg"))
+    {
+        Console.WriteLine(appDataPath);
+        buildSettings.Properties.Add("UnixSysPkg", ["true"]);
+    }
 
     if (HasArgument("full-release"))
         buildSettings.Properties.Add("FullRelease", ["true"]);

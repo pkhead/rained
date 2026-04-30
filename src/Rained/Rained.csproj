@@ -14,12 +14,12 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(AppDataPath)'=='Assembly'">DATA_ASSEMBLY</DefineConstants>
     <DefineConstants Condition="'$(AppDataPath)'=='AppData'">DATA_APPDATA</DefineConstants>
-    <DefineConstants Condition="'$(AppDataPath)'=='Unix+XDG'">DATA_UNIX_XDG</DefineConstants>
-    <DefineConstants Condition="'$(UnixSystemPackage)'!=''">DATA_UNIX_SYSTEM</DefineConstants>
+    <DefineConstants Condition="'$(AppDataPath)'=='UnixXDG'">DATA_UNIX_XDG</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(FullRelease)'!=''">FULL_RELEASE</DefineConstants>
+    <DefineConstants Condition="'$(UnixSysPkg)'!=''">$(DefineConstants);DATA_UNIX_SYSPKG</DefineConstants>
+    <DefineConstants Condition="'$(FullRelease)'!=''">$(DefineConstants);FULL_RELEASE</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup>
