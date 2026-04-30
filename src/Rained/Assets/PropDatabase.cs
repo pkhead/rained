@@ -797,6 +797,10 @@ class PropDatabase
             }
         }
 
+        for (int i = 0; i < Categories.Count; i++)
+            Categories[i].Index = i;
+        catIndex = Categories.Count;
+
         // purge empty tile categories
         for (int i = TileCategories.Count - 1; i >= 0; i--)
         {
