@@ -1,5 +1,16 @@
 ---@meta
 
+---@alias OperatingSystemName
+---| "windows"
+---| "linux"
+---| "darwin"
+---| "freebsd"
+---| "unknown"
+
+---Returns the name of the operating system.
+---@return OperatingSystemName
+function os.getname() end
+
 ---Returns the current working directory of the process.
 function os.getcwd() end
 

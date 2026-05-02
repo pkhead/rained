@@ -169,7 +169,25 @@ static class LuaInterface
     }
 
     private static void FileSystemFunctions(KeraLua.Lua lua)
-    {
+    {   
+        lua.ModuleFunction("getname", static (KeraLua.Lua lua) =>
+        {
+            string osName;
+            if (OperatingSystem.IsWindows())
+                osName = "windows";
+            else if (OperatingSystem.IsLinux())
+                osName = "linux";
+            else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+                osName = "darwin";
+            else if (OperatingSystem.IsFreeBSD())
+                osName = "freebsd";
+            else
+                osName = "unknown";
+            
+            lua.PushString(osName);
+            return 1;
+        });
+
         lua.ModuleFunction("getcwd", static (KeraLua.Lua lua) =>
         {
             lua.PushString(Directory.GetCurrentDirectory());
