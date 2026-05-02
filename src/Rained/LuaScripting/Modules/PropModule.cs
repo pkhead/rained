@@ -332,6 +332,12 @@ static class PropModule
             lua.PushBoolean(init.PropFlags.HasFlag(PropFlags.Tile));
             lua.SetField(-2, "tileAsProp");
 
+            lua.PushBoolean(init.PropFlags.HasFlag(PropFlags.CustomColorAvailable));
+            lua.SetField(-2, "hasCustomColor");
+
+            lua.PushBoolean(init.PropFlags.HasFlag(PropFlags.CustomDepthAvailable));
+            lua.SetField(-2, "hasCustomDepth");
+
             return 1;
         });
 
@@ -407,12 +413,27 @@ static class PropModule
                     lua.PushBoolean(prop.ApplyColor);
                     break;
 
+                case "hasCustomDepth":
+                    lua.PushBoolean(prop.PropInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable));
+                    break;
+
                 case "customDepth":
-                    lua.PushInteger(prop.CustomDepth);
+                    if (!prop.PropInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))
+                        lua.PushNil();
+                    else
+                        lua.PushInteger(prop.CustomDepth);
+                    break;
+                
+                case "hasCustomColor":
+                    lua.PushBoolean(prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable));
                     break;
 
                 case "customColor":
-                    lua.PushString(LuaInterface.Host.PropDatabase.PropColors[prop.CustomColor].Name);
+                    if (prop.CustomColor == 0 || !prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
+                        lua.PushNil();
+                    else
+                        lua.PushString(LuaInterface.Host.PropDatabase.PropColors[prop.CustomColor - 1].Name);
+                    
                     break;
                     
                 case "clone":
@@ -749,14 +770,24 @@ static class PropModule
                     break;
 
                 case "customDepth":
-                    SettingsChange(prop);
-                    prop.CustomDepth = (int) lua.CheckInteger(3);
-                    prop.CustomDepth = Math.Max( 0, prop.CustomDepth  );
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CustomDepthAvailable))
+                    {
+                        SettingsChange(prop);
+                        prop.CustomDepth = (int) lua.CheckInteger(3);
+                        prop.CustomDepth = Math.Max( 0, prop.CustomDepth  );
+                    }
                     break;
 
                 case "customColor":
-                    SettingsChange(prop);
-                    prop.CustomColor = lua.CheckOption(3, null, propColorNames);
+                    if (prop.PropInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
+                    {
+                        SettingsChange(prop);
+
+                        if (lua.IsNoneOrNil(3))
+                            prop.CustomColor = 0;
+                        else
+                            prop.CustomColor = lua.CheckOption(3, null, propColorNames) + 1;
+                    }
                     break;
 
                 case "fezTreeEffectColor":

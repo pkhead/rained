@@ -27,8 +27,10 @@ rained.props = {}
 ---@field renderTime PropRenderTime Must be either "preEffects" or "postEffects"
 ---@field variation integer The variation of the prop used. 1 is the first variation, and the maximum can be deduced from `rained.props.getPropInfo`.
 ---@field applyColor boolean
----@field customDepth integer The custom depth of the prop. Minimum value is 1.
----@field customColor string The color of the prop decal used. Must be a string available in `rained.props.getCustomColors`.
+---@field hasCustomDepth boolean (Read-only) True if this prop has a configurable custom depth, false if not.
+---@field customDepth integer The custom depth of the prop. Minimum value is 1. No-op if `hasCustomDepth` is false.
+---@field hasCustomColor boolean (Read-only) True if this prop has a configurable custom color, false if not.
+---@field customColor string? Must either be nil or a string available in `rained.props.getCustomColors`. No-op if `hasCustomColor` is false.
 ---@field isFezTree boolean (Read-only) True if this prop is a fez tree. Fez-tree related properties are nil on read if this is false, and error when written.
 ---@field fezTreeEffectColor integer Fez tree effect color as an integer in the range [0, 2].
 ---@field fezTreeLeafDensity number Fez tree leaf density as a number in the range [0, 1].
@@ -171,6 +173,8 @@ function rained.props.getCustomColors() end
 ---@field colorTreatment PropColorTreatment?
 ---@field variationCount integer
 ---@field tileAsProp boolean True if this is a tile-as-prop, false if not.
+---@field hasCustomColor boolean True if this prop has a configurable custom color, false if not.
+---@field hasCustomDepth boolean True if this prop has a configurable custom depth, false if not.
 
 ---Get information about a prop init.
 ---@param name string The name of the prop init.
