@@ -109,11 +109,9 @@ partial class PropEditor : IEditorMode
         this.window = window;
 
         // register prop color names to be displayed in the custom color dropdown 
-        propColorNames = new List<string>()
-        {
-            Capacity = RainEd.Instance.PropDatabase.PropColors.Count
-        };
+        propColorNames = new List<string>() { Capacity = RainEd.Instance.PropDatabase.PropColors.Count + 1 };
 
+        propColorNames.Add("None");
         foreach (var col in RainEd.Instance.PropDatabase.PropColors)
         {
             propColorNames.Add(col.Name);

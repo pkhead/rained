@@ -680,7 +680,7 @@ class VanillaFileFormat : ILevelFileFormat
 
                     if (settingsData.TryGetValue("color", out tempObject) && tempObject is not null)
                     {
-                        prop.CustomColor = Lingo.LingoNumber.AsInt(tempObject) - 1;
+                        prop.CustomColor = Lingo.LingoNumber.AsInt(tempObject);
                     }
 
                     if (settingsData.TryGetValue("variation", out tempObject) && tempObject is not null)
@@ -1097,7 +1097,7 @@ class VanillaFileFormat : ILevelFileFormat
                 output.AppendFormat(", #customDepth: {0}", prop.CustomDepth);
 
             if (propInit.PropFlags.HasFlag(PropFlags.CustomColorAvailable))
-                output.AppendFormat(", #color: {0}", prop.CustomColor + 1);
+                output.AppendFormat(", #color: {0}", prop.CustomColor);
 
             if (propInit.Type is PropType.VariedStandard or PropType.VariedSoft or PropType.VariedDecal)
                 output.AppendFormat(", #variation: {0}", prop.Variation + 1);
