@@ -495,8 +495,10 @@ static class EditorWindow
     /// </summary>
     /// <param name="callback">The optional callback to run if the file browser was opened.</param>
     /// <param name="overridePath">The path to save the level to.</param>
+    /// <param name="options">Options for the saving of the level.</param>
     /// <returns>True if the level was able to be saved immediately, false if not.</returns>
-    public static bool AsyncSave(AsyncSaveCallback? callback = null, string? overridePath = null)
+    public static bool AsyncSave(AsyncSaveCallback? callback = null, string? overridePath = null,
+                                 LevelSaveOptions? options = null)
     {
         if (RainEd.Instance.CurrentTab!.IsTemporaryFile && string.IsNullOrEmpty(overridePath))
         {
@@ -504,7 +506,7 @@ static class EditorWindow
             {
                 if (paths.Length > 0)
                 {
-                    SaveLevelCallback(paths[0]);
+                    SaveLevelCallback(paths[0], options);
                     callback?.Invoke(paths[0], false);
                 }
                 else
@@ -517,7 +519,7 @@ static class EditorWindow
         else
         {
             var path = overridePath ?? RainEd.Instance.CurrentFilePath;
-            SaveLevelCallback(path);
+            SaveLevelCallback(path, options);
             callback?.Invoke(path, true);
             return true;
         }
@@ -626,7 +628,7 @@ static class EditorWindow
         }
     }
 
-    private static void SaveLevelCallback(string path)
+    private static void SaveLevelCallback(string path, LevelSaveOptions? options = null)
     {
         if (!string.IsNullOrEmpty(path))
         {
@@ -634,7 +636,7 @@ static class EditorWindow
 
             try
             {
-                RainEd.Instance.SaveLevel(path);
+                RainEd.Instance.SaveLevel(path, options);
                 success = true;
             }
             catch

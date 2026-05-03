@@ -50,9 +50,21 @@ function rained.level.screenToCell(screenX, screenY) end
 ---@return number screenX, number screenY
 function rained.level.cellToScreen(x, y) end
 
----Save the level to disk. If the level is not associated with a file on disk, it will open a file browser
----asking the user where to save the file. The thread will then be yielded until the user closes the popup.
----@param path string? Optional path to save the .txt document as
+---@class LevelSaveParameters
+---True if it should not transfer the document to the new level file. False if
+---omitted.
+---@field noOpen boolean?
+---True if it should add the new document to the level history. False if
+---omitted, or if noOpen is true.
+---@field addToHistory boolean?
+---Callback to run when it has been decided where the file will be saved.
+---@field callback fun(path: string, immediate: boolean)?
+
+---Save the level to disk. If the level is not associated with a file on disk,
+---it will open a file browser asking the user where to save the file. The
+---thread will then be yielded until the user closes the popup.
+---@param path string? Optional path to save the .txt document as.
 ---@param callback fun(path: string, immediate: boolean) Callback to run when it has been decided where the file will be saved.
 ---@return boolean immediate True if the operation completed immediately, false if not.
+---@overload fun(path: string?, params: LevelSaveParameters)
 function rained.level.save(path, callback) end

@@ -331,6 +331,32 @@ static class LuaHelpers
         return lua.Error();
     }
 
+    public static string UserTypeName(this Lua lua, int idx)
+    {
+        if (lua.GetMetaField(idx, "__name") == LuaType.String)
+            return lua.ToString(-1);
+        else if (lua.Type(idx) == LuaType.LightUserData)
+            return "light userdata";
+        else
+            return lua.TypeName(idx);
+    }
+
+    // why the fuck does keralua not expose luaL_typeerror.
+    public static int TypeError(this Lua lua, int arg, string tname)
+    {
+        string msg;
+        string typearg; // name for the type of the actual argument
+        if (lua.GetMetaField(arg, "__name") == LuaType.String)
+            typearg = lua.ToString(-1); // use the given type name
+        else if (lua.Type(arg) == LuaType.LightUserData)
+            typearg = "light userdata"; // special name for messages
+        else
+            typearg = lua.TypeName(arg); // standard name
+        msg = $"{tname} expected, got {typearg}";
+        lua.PushString(msg);
+        return lua.ArgumentError(arg, msg);
+    }
+
     /// <summary>
     /// Error message handler to be used with lua_pcall.
     /// </summary>

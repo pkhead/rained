@@ -10,6 +10,13 @@ namespace Rained.LuaScripting;
 
 interface IAPIHost
 {
+    record LevelSaveParameters
+    {
+        public EditorWindow.AsyncSaveCallback? Callback;
+        public bool NoOpen = false;
+        public bool AddToHistory = true;
+    }
+
     public bool IsGui { get; }
     public void Alert(string msg);
 
@@ -25,7 +32,7 @@ interface IAPIHost
 
     public LevelLoadResult OpenLevel(string filePath);
     public void NewLevel(int width, int height, string? filePath);
-    public bool AsyncSaveActiveDocument(EditorWindow.AsyncSaveCallback? callback, string? overridePath);
+    public bool AsyncSaveActiveDocument(LevelSaveParameters parms, string? overridePath);
 
     public void AddAutotile(Rained.Autotiles.Autotile autotile, string category);
     public void RemoveAutotile(Rained.Autotiles.Autotile autotile);
@@ -132,9 +139,14 @@ class APIGuiHost : IAPIHost
         RainEd.Instance.OpenLevel(new LevelData.Level(width, height), filePath ?? "");
     }
 
-    public bool AsyncSaveActiveDocument(EditorWindow.AsyncSaveCallback? callback, string? overridePath)
+    public bool AsyncSaveActiveDocument(IAPIHost.LevelSaveParameters parms, string? overridePath)
     {
-        return EditorWindow.AsyncSave(callback, overridePath);
+        return EditorWindow.AsyncSave(parms.Callback, overridePath,
+            new LevelSaveOptions()
+            {
+                NoOpen = parms.NoOpen,
+                AddToHistory = parms.AddToHistory
+            });
     }
 
     public void AddAutotile(Rained.Autotiles.Autotile autotile, string category)
@@ -383,26 +395,28 @@ class APIBatchHost : IAPIHost
         ActiveDocument = _documents.Count - 1;
     }
 
-    public bool AsyncSaveActiveDocument(EditorWindow.AsyncSaveCallback? callback, string? overridePath)
+    public bool AsyncSaveActiveDocument(IAPIHost.LevelSaveParameters parms, string? overridePath)
     {
         var doc = _documents[ActiveDocument];
         var path = (overridePath ?? doc.FilePath)
             ?? throw new Exception("cannot save a document with no path in batch mode");
         
-        Modules.RainedModule.DocumentSavingCallback(ActiveDocument);
+        if (!parms.NoOpen)
+            Modules.RainedModule.DocumentSavingCallback(ActiveDocument);
 
         var format = LevelFileFormats.AutoDetect(path);
         format.Save(Level!, path, _hostData);
 
-        if (doc.FilePath != overridePath)
+        if (doc.FilePath != overridePath && !parms.NoOpen)
         {
             doc.FilePath = overridePath;
             doc.Name = Path.GetFileNameWithoutExtension(overridePath)!;
         }
 
-        Modules.RainedModule.DocumentSavedCallback(ActiveDocument);
+        if (!parms.NoOpen)
+            Modules.RainedModule.DocumentSavedCallback(ActiveDocument);
 
-        callback?.Invoke(doc.FilePath, true);
+        parms.Callback?.Invoke(doc.FilePath, true);
         return true;
     }
 

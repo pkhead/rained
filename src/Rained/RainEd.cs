@@ -30,6 +30,12 @@ public class NoLevelException : Exception
     public NoLevelException(string message, System.Exception inner) : base(message, inner) { }
 }
 
+record LevelSaveOptions
+{
+    public bool NoOpen = false;
+    public bool AddToHistory = true;
+}
+
 /// <summary>
 /// The main application.
 /// </summary>
@@ -571,8 +577,8 @@ sealed class RainEd
     /// Save the level to the given path.
     /// </summary>
     /// <param name="path"></param>
-    public void SaveLevel(string path)
-        => SaveLevel(path, LevelFileFormats.AutoDetect(path));
+    public void SaveLevel(string path, LevelSaveOptions? options = null)
+        => SaveLevel(path, LevelFileFormats.AutoDetect(path), options);
     
     private void RemoveOldBackupFile(string path)
     {
@@ -594,12 +600,17 @@ sealed class RainEd
     /// Save the level to the given path.
     /// </summary>
     /// <param name="path"></param>
-    public void SaveLevel(string path, ILevelFileFormat format)
+    /// <param name="format"></param>
+    /// <param name="options"></param>
+    public void SaveLevel(string path, ILevelFileFormat format, LevelSaveOptions? options = null)
     {
         Log.Information("Saving level to {Path}...", path);
         IsLevelLocked = true;
 
-        levelView.FlushDirty();
+        options ??= new LevelSaveOptions();
+        bool overwriteDoc = !options.NoOpen;
+
+        levelView?.FlushDirty();
 
         try
         {
@@ -636,42 +647,59 @@ sealed class RainEd
                 }
             }
 
-            LuaScripting.Modules.RainedModule.DocumentSavingCallback(_tabs.IndexOf(_currentTab!));
+            if (overwriteDoc)
+                LuaScripting.Modules.RainedModule.DocumentSavingCallback(_tabs.IndexOf(_currentTab!));
+            
             var saveRes = format.Save(Level, path);
 
-            CurrentTab.FilePath = path;
-            CurrentTab.Name = Path.GetFileNameWithoutExtension(path);
-
-            UpdateTitle();
+            if (overwriteDoc)
+            {
+                CurrentTab.FilePath = path;
+                CurrentTab.Name = Path.GetFileNameWithoutExtension(path);
+                UpdateTitle();
+            }
 
             if (saveRes.WroteLightMap)
             {
-                Log.Information("Done!");
-                EditorWindow.ShowNotification("Saved!");
+                if (overwriteDoc)
+                    EditorWindow.ShowNotification("Saved!");
             }
             else
             {
-                Log.Information("Could not save lightmap, so it is skipped.");
-                Log.Information("Done!");
-                EditorWindow.ShowNotification("Saved, but without the light map.");
+                if (overwriteDoc)
+                {
+                    Log.Information("Could not save lightmap, so it is skipped.");
+                    EditorWindow.ShowNotification("Saved, but without the light map.");
+                }
+                else
+                {
+                    Log.UserLogger.Warning("lightmap could not be written");
+                }
             }
 
-            CurrentTab.ChangeHistory.MarkUpToDate();
-            AddToRecentFiles(CurrentTab.FilePath);
+            Log.Information("Done!");
 
-            // if the old level was an emergency save and the user
-            // saved it to a non-emergency save file, delete the
-            // old file as it is no longer necessary.
-            var oldParentFolder = Path.GetDirectoryName(oldFilePath)!;
-            var newParentFolder = Path.GetDirectoryName(CurrentTab.FilePath);
-
-            if (Util.ArePathsEquivalent(oldParentFolder, EmergencySaveFolder) && !Util.ArePathsEquivalent(newParentFolder, EmergencySaveFolder))
+            if (overwriteDoc)
             {
-                Platform.TrashFile(oldFilePath);
-                Platform.TrashFile(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
-            }
+                CurrentTab.ChangeHistory.MarkUpToDate();
 
-            LuaScripting.Modules.RainedModule.DocumentSavedCallback(_tabs.IndexOf(_currentTab!));
+                if (options.AddToHistory)
+                    AddToRecentFiles(CurrentTab.FilePath);
+                
+                // if the old level was an emergency save and the user
+                // saved it to a non-emergency save file, delete the
+                // old file as it is no longer necessary.
+                var oldParentFolder = Path.GetDirectoryName(oldFilePath)!;
+                var newParentFolder = Path.GetDirectoryName(CurrentTab.FilePath);
+
+                if (Util.ArePathsEquivalent(oldParentFolder, EmergencySaveFolder) && !Util.ArePathsEquivalent(newParentFolder, EmergencySaveFolder))
+                {
+                    Platform.TrashFile(oldFilePath);
+                    Platform.TrashFile(Path.Combine(oldParentFolder, Path.GetFileName(oldFilePath)) + ".png");
+                }
+
+                LuaScripting.Modules.RainedModule.DocumentSavedCallback(_tabs.IndexOf(_currentTab!));
+            }
 
             IsLevelLocked = false;
         }

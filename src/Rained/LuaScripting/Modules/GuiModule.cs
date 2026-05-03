@@ -16,7 +16,7 @@ static class GuiModule
 
     public static bool HasPreferencesCallbacks => prefsCallbacks.Count > 0;
 
-    private static readonly string[] BuiltInMenus = ["File", "Edit", "View", "Help"];
+    private static readonly string[] BuiltInMenus = ["File", "Edit", "View", "Tools", "Help"];
     public static IEnumerable<string> CustomMenus => menuCallbacks.Where(x => Array.IndexOf(BuiltInMenus, x.menuName) == -1).Select(x => x.menuName);
 
     public static void MenuHook(string menuName, bool separator)

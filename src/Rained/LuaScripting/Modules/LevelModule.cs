@@ -113,6 +113,7 @@ static class LevelModule
         lua.ModuleFunction("save", static (nint luaPtr) =>
         {
             var lua = Lua.FromIntPtr(luaPtr);
+            LuaInterface.Host.LevelCheck(lua);
 
             string? overridePath = null;
             if (!lua.IsNoneOrNil(1))
@@ -120,20 +121,48 @@ static class LevelModule
                 overridePath = Path.GetFullPath(lua.ToString(1));
             }
 
-            bool doCallbackFunc = !lua.IsNoneOrNil(2);
+            bool doCallbackFunc = false;
             int funcRef = 0;
-            if (doCallbackFunc)
-            {
-                lua.CheckType(2, LuaType.Function);
+            var parms = new IAPIHost.LevelSaveParameters();
 
-                // save reference to function
-                lua.PushCopy(2);
-                funcRef = lua.Ref(LuaRegistry.Index);
+            if (!lua.IsNoneOrNil(2))
+            {
+                if (lua.IsFunction(2))
+                {
+                    doCallbackFunc = true;
+
+                    // save reference to function
+                    lua.PushCopy(2);
+                    funcRef = lua.Ref(LuaRegistry.Index);
+                }
+                else
+                {
+                    lua.CheckType(2, LuaType.Table);
+
+                    if (lua.GetField(2, "noOpen") != LuaType.Nil)
+                        parms.NoOpen = lua.ToBoolean(-1);
+                    lua.Pop(1);
+
+                    if (lua.GetField(2, "addToHistory") != LuaType.Nil)
+                        parms.AddToHistory = lua.ToBoolean(-1);
+                    lua.Pop(1);
+
+                    if (lua.GetField(2, "callback") != LuaType.Nil)
+                    {
+                        if (lua.Type(-1) != LuaType.Function)
+                            return lua.ErrorWhere($"in argument 2: function expected, got {lua.UserTypeName(-1)}");
+                        
+                        doCallbackFunc = true;
+                        lua.PushCopy(-1);
+                        funcRef = lua.Ref(LuaRegistry.Index);
+                    }
+                    lua.Pop(1);
+                }
             }
 
-            bool immediate = LuaInterface.Host.AsyncSaveActiveDocument(
-                overridePath: overridePath,
-                callback: (string? p, bool immediate) =>
+            if (doCallbackFunc)
+            {
+                parms.Callback = (string? p, bool immediate) =>
                 {
                     var lua = LuaInterface.LuaState;
 
@@ -152,7 +181,12 @@ static class LevelModule
 
                     LuaHelpers.Call(lua, 2, 0);
                     // LuaHelpers.ResumeCoroutine(lua.ToThread(-2), null, 1, out _);
-                }
+                };
+            }
+
+            bool immediate = LuaInterface.Host.AsyncSaveActiveDocument(
+                overridePath: overridePath,
+                parms: parms
             );
 
             lua.PushBoolean(immediate);
