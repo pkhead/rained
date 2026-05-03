@@ -40,10 +40,12 @@ sealed class RainEd
 
     static RainEd()
     {
-        var asmVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var asm = Assembly.GetExecutingAssembly();
+
+        var asmVersion = asm.GetName().Version;
         if (asmVersion is null)
         {
-            Version = "v0.0.0";
+            Version = "v?.?.?";
         }
         else
         {
@@ -52,6 +54,21 @@ sealed class RainEd
 
         #if !FULL_RELEASE
         Version += "-dev";
+
+        // this contains the git commit hash
+        var vstr = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        string buildDate = "unknown build date";
+        foreach (var attr in asm.GetCustomAttributes<AssemblyMetadataAttribute>())
+        {
+            if (attr.Key == "BuildDate" && attr.Value is not null)
+            {
+                buildDate = attr.Value;
+                break;
+            }
+        }
+
+        if (vstr is not null)
+            Version = $"nightly {buildDate} (v{vstr[..14]})";
         #endif
     }
 
