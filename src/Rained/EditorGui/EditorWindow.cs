@@ -498,7 +498,7 @@ static class EditorWindow
     /// <param name="options">Options for the saving of the level.</param>
     /// <returns>True if the level was able to be saved immediately, false if not.</returns>
     public static bool AsyncSave(AsyncSaveCallback? callback = null, string? overridePath = null,
-                                 LevelSaveOptions? options = null)
+                                 RainEd.LevelSaveOptions? options = null)
     {
         if (RainEd.Instance.CurrentTab!.IsTemporaryFile && string.IsNullOrEmpty(overridePath))
         {
@@ -628,7 +628,7 @@ static class EditorWindow
         }
     }
 
-    private static void SaveLevelCallback(string path, LevelSaveOptions? options = null)
+    private static void SaveLevelCallback(string path, RainEd.LevelSaveOptions? options = null)
     {
         if (!string.IsNullOrEmpty(path))
         {

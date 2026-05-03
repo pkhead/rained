@@ -131,7 +131,7 @@ class APIGuiHost : IAPIHost
 
     public LevelLoadResult OpenLevel(string filePath, bool noHistory)
     {
-        var loadOptions = new LevelLoadOptions() { AddToHistory = !noHistory };
+        var loadOptions = new RainEd.LevelLoadOptions() { AddToHistory = !noHistory };
         return RainEd.Instance.LoadLevelThrow(filePath, loadOptions, showLevelLoadFailPopup: false);
     }
 
@@ -143,7 +143,7 @@ class APIGuiHost : IAPIHost
     public bool AsyncSaveActiveDocument(IAPIHost.LevelSaveParameters parms, string? overridePath)
     {
         return EditorWindow.AsyncSave(parms.Callback, overridePath,
-            new LevelSaveOptions()
+            new RainEd.LevelSaveOptions()
             {
                 NoOpen = parms.NoOpen,
                 AddToHistory = parms.AddToHistory

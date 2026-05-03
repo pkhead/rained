@@ -30,17 +30,6 @@ public class NoLevelException : Exception
     public NoLevelException(string message, System.Exception inner) : base(message, inner) { }
 }
 
-record LevelSaveOptions
-{
-    public bool NoOpen = false;
-    public bool AddToHistory = true;
-}
-
-record LevelLoadOptions
-{
-    public bool AddToHistory = true;
-}
-
 /// <summary>
 /// The main application.
 /// </summary>
@@ -64,6 +53,17 @@ sealed class RainEd
         #if !FULL_RELEASE
         Version += "-dev";
         #endif
+    }
+
+    public record LevelSaveOptions
+    {
+        public bool NoOpen = false;
+        public bool AddToHistory = true;
+    }
+
+    public record LevelLoadOptions
+    {
+        public bool AddToHistory = true;
     }
 
     public bool Running = true; // if false, Boot.cs will close the window
