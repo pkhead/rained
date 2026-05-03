@@ -26,7 +26,7 @@ static class GuiModule
             if (name == menuName)
             {
                 var id = 0;
-                foreach (var cb in callbacks)
+                foreach (var cb in callbacks.ToArray())
                 {
                     ImGui.PushID(id);
                     if (separator || id > 0) ImGui.Separator();
@@ -47,7 +47,7 @@ static class GuiModule
         if (Array.IndexOf(BuiltInMenus, menuName) != -1)
         {
             int id = 0;
-            foreach (var cb in globalMenuCallbacks)
+            foreach (var cb in globalMenuCallbacks.ToArray())
             {
                 ImGui.PushID(id + 1000); // add 1000 to prevent collision with menu-local callbacks
                 cb.LuaState.PushString(menuName.ToLowerInvariant());
@@ -92,7 +92,7 @@ static class GuiModule
     public static void PrefsHook()
     {
         var i = 0;
-        foreach (var cb in prefsCallbacks)
+        foreach (var cb in prefsCallbacks.ToArray())
         {
             ImGui.PushID(i++);
             cb.Invoke(0);

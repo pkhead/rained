@@ -498,7 +498,7 @@ static class RainedModule
             RainEd.Instance.NeedScreenRefresh();
         }
         
-        foreach (var cb in updateCallbacks)
+        foreach (var cb in updateCallbacks.ToArray())
         {
             cb.LuaState.PushNumber(dt);
             cb.Invoke(1);
@@ -507,7 +507,7 @@ static class RainedModule
 
     public static void PreRenderCallback(string sourceTxt)
     {
-        foreach (var cb in preRenderCallbacks)
+        foreach (var cb in preRenderCallbacks.ToArray())
         {
             cb.LuaState.PushString(sourceTxt);
             cb.Invoke(1);
@@ -516,7 +516,7 @@ static class RainedModule
 
     public static void PostRenderCallback(string sourceTxt, string dstTxt, params string[] dstPngs)
     {
-        foreach (var cb in postRenderCallbacks)
+        foreach (var cb in postRenderCallbacks.ToArray())
         {
             var lua = cb.LuaState;
             lua.PushString(sourceTxt);
@@ -535,7 +535,7 @@ static class RainedModule
 
     public static void RenderFailureCallback(string sourceTxt, string? errorReason)
     {
-        foreach (var cb in renderFailCallbacks)
+        foreach (var cb in renderFailCallbacks.ToArray())
         {
             cb.LuaState.PushString(sourceTxt);
 
@@ -550,7 +550,7 @@ static class RainedModule
 
     public static void DocumentChangedCallback(int index)
     {
-        foreach (var cb in docChangedCallbacks)
+        foreach (var cb in docChangedCallbacks.ToArray())
         {
             cb.LuaState.PushInteger(index+1);
             cb.Invoke(1);
@@ -559,7 +559,7 @@ static class RainedModule
 
     public static void DocumentOpenedCallback(int index)
     {
-        foreach (var cb in docOpenedCallbacks)
+        foreach (var cb in docOpenedCallbacks.ToArray())
         {
             cb.LuaState.PushInteger(index+1);
             cb.Invoke(1);
@@ -568,7 +568,7 @@ static class RainedModule
 
     public static void DocumentClosingCallback(int index)
     {
-        foreach (var cb in docClosingCallbacks)
+        foreach (var cb in docClosingCallbacks.ToArray())
         {
             cb.LuaState.PushInteger(index+1);
             cb.Invoke(1);
@@ -577,7 +577,7 @@ static class RainedModule
 
     public static void DocumentSavingCallback(int index)
     {
-        foreach (var cb in docSavingCallbacks)
+        foreach (var cb in docSavingCallbacks.ToArray())
         {
             cb.LuaState.PushInteger(index+1);
             cb.Invoke(1);
@@ -586,7 +586,7 @@ static class RainedModule
 
     public static void DocumentSavedCallback(int index)
     {
-        foreach (var cb in docSavedCallbacks)
+        foreach (var cb in docSavedCallbacks.ToArray())
         {
             cb.LuaState.PushInteger(index+1);
             cb.Invoke(1);

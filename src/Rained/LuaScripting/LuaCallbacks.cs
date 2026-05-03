@@ -1,11 +1,11 @@
-namespace Rained.LuaScripting.Modules;
+namespace Rained.LuaScripting;
 using KeraLua;
 
 class LuaCallback : IDisposable
 {
     public Action<Lua, LuaCallback>? OnDisconnect;
-    private readonly int @ref;
     public readonly Lua LuaState;
+    private readonly int @ref;
 
     /// <summary>
     /// Create a LuaCallback object. Pops a function from the stack,
@@ -48,6 +48,7 @@ class LuaCallback : IDisposable
 
     private static readonly ObjectWrap<LuaCallback> wrap = new("CallbackHandle", "CBH_REGISTRY");
     private static readonly LinkedList<LuaCallback> allCallbacks = [];
+
     public static void InitType(Lua lua)
     {
         wrap.InitMetatable(lua);
