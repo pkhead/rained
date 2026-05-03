@@ -64,8 +64,7 @@ function rained.level.cellToScreen(x, y) end
 ---@field callback fun(path: string, immediate: boolean)?
 
 ---Save the level to disk. If the level is not associated with a file on disk,
----it will open a file browser asking the user where to save the file. The
----thread will then be yielded until the user closes the popup.
+---it will open a file browser asking the user where to save the file.
 ---@param path string? Optional path to save the .txt document as.
 ---@param callback fun(path: string, immediate: boolean) Callback to run when it has been decided where the file will be saved.
 ---@return boolean immediate True if the operation completed immediately, false if not.
