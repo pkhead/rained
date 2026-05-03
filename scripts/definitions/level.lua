@@ -54,9 +54,12 @@ function rained.level.cellToScreen(x, y) end
 ---True if it should not transfer the document to the new level file. False if
 ---omitted.
 ---@field noOpen boolean?
----True if it should add the new document to the level history. False if
----omitted, or if noOpen is true.
----@field addToHistory boolean?
+---True if it should not add the new level to the document history. False if
+---omitted.
+---
+---If `noOpen` is true, the saved level will never be added to the document
+---history.
+---@field noHistory boolean?
 ---Callback to run when it has been decided where the file will be saved.
 ---@field callback fun(path: string, immediate: boolean)?
 

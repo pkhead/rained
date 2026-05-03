@@ -143,8 +143,8 @@ static class LevelModule
                         parms.NoOpen = lua.ToBoolean(-1);
                     lua.Pop(1);
 
-                    if (lua.GetField(2, "addToHistory") != LuaType.Nil)
-                        parms.AddToHistory = lua.ToBoolean(-1);
+                    if (lua.GetField(2, "noHistory") != LuaType.Nil)
+                        parms.AddToHistory = !lua.ToBoolean(-1);
                     lua.Pop(1);
 
                     if (lua.GetField(2, "callback") != LuaType.Nil)

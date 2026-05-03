@@ -30,7 +30,7 @@ interface IAPIHost
     public string? GetDocumentFilePath(int index);
     public void CloseDocument(int index);
 
-    public LevelLoadResult OpenLevel(string filePath);
+    public LevelLoadResult OpenLevel(string filePath, bool noHistory);
     public void NewLevel(int width, int height, string? filePath);
     public bool AsyncSaveActiveDocument(LevelSaveParameters parms, string? overridePath);
 
@@ -129,9 +129,10 @@ class APIGuiHost : IAPIHost
         RainEd.Instance.CloseTab(RainEd.Instance.Tabs[index]);
     }
 
-    public LevelLoadResult OpenLevel(string filePath)
+    public LevelLoadResult OpenLevel(string filePath, bool noHistory)
     {
-        return RainEd.Instance.LoadLevelThrow(filePath, showLevelLoadFailPopup: false);
+        var loadOptions = new LevelLoadOptions() { AddToHistory = !noHistory };
+        return RainEd.Instance.LoadLevelThrow(filePath, loadOptions, showLevelLoadFailPopup: false);
     }
 
     public void NewLevel(int width, int height, string? filePath)
@@ -374,7 +375,7 @@ class APIBatchHost : IAPIHost
             Modules.RainedModule.DocumentChangedCallback(_activeDocument);
     }
 
-    public LevelLoadResult OpenLevel(string filePath)
+    public LevelLoadResult OpenLevel(string filePath, bool noHistory)
     {
         var format = LevelFileFormats.AutoDetect(filePath);
         var loadRes = format.Load(Path.GetFullPath(filePath), _hostData);

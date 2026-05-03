@@ -187,9 +187,10 @@ function rained.onDocumentSaved(func) end
 
 ---Opens a level from file. Returns diagnostic information if there were problems loading the level
 ---but it could be opened regardless, but nil if successful.
----@param filePath string The file path to the level txt file.
+---@param filePath string The path to the level file.
+---@param noHistory? boolean True if the level should not be added to the open history, false if so.
 ---@return LevelLoadDiagnostics? diagnostics Table containing diagnostic information if there were problems loading the level.
-function rained.openLevel(filePath) end
+function rained.openLevel(filePath, noHistory) end
 
 ---Creates and opens a new level.
 ---@param width integer The width of the newly created level.

@@ -286,10 +286,15 @@ static class RainedModule
         {
             var lua = Lua.FromIntPtr(luaPtr);
             var filePath = lua.CheckString(1);
+            bool noHistory = false;
+
+            if (!lua.IsNone(2))
+                noHistory = lua.ToBoolean(2);
+            
             LevelLoadResult res;
             try
             {
-                res = LuaInterface.Host.OpenLevel(filePath);
+                res = LuaInterface.Host.OpenLevel(filePath, noHistory);
             }
             catch
             {

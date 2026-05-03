@@ -36,6 +36,11 @@ record LevelSaveOptions
     public bool AddToHistory = true;
 }
 
+record LevelLoadOptions
+{
+    public bool AddToHistory = true;
+}
+
 /// <summary>
 /// The main application.
 /// </summary>
@@ -503,13 +508,15 @@ sealed class RainEd
         SwitchTab(tab, true);
     }
 
-    public LevelLoadResult LoadLevelThrow(string path, bool showLevelLoadFailPopup = true)
-        => LoadLevelThrow(path, LevelFileFormats.AutoDetect(path), showLevelLoadFailPopup);
+    public LevelLoadResult LoadLevelThrow(string path, LevelLoadOptions? opts = null, bool showLevelLoadFailPopup = true)
+        => LoadLevelThrow(path, LevelFileFormats.AutoDetect(path), opts, showLevelLoadFailPopup);
 
-    public LevelLoadResult LoadLevelThrow(string path, ILevelFileFormat fileFormat, bool showLevelLoadFailPopup = true)
+    public LevelLoadResult LoadLevelThrow(string path, ILevelFileFormat fileFormat, LevelLoadOptions? opts = null, bool showLevelLoadFailPopup = true)
     {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty!", nameof(path));
         Log.UserLogger.Information("Load level {Path}", Path.GetFileName(path));
+
+        opts ??= new LevelLoadOptions();
 
         try
         {
@@ -540,7 +547,8 @@ sealed class RainEd
 
             // i think it may be useful to add it to the list
             // even if the level failed to load due to unrecognized assets
-            AddToRecentFiles(path);
+            if (opts.AddToHistory)
+                AddToRecentFiles(path);
 
             return loadRes;
         }
@@ -551,16 +559,16 @@ sealed class RainEd
         }
     }
 
-    public void LoadLevel(string path)
-        => LoadLevel(path, LevelFileFormats.AutoDetect(path));
+    public void LoadLevel(string path, LevelLoadOptions? opts = null)
+        => LoadLevel(path, LevelFileFormats.AutoDetect(path), opts);
 
-    public void LoadLevel(string path, ILevelFileFormat fileFormat)
+    public void LoadLevel(string path, ILevelFileFormat fileFormat, LevelLoadOptions? opts = null)
     {
         if (!string.IsNullOrEmpty(path))
         {
             try
             {
-                LoadLevelThrow(path, fileFormat);
+                LoadLevelThrow(path, fileFormat, opts);
             }
             catch (Exception e)
             {
