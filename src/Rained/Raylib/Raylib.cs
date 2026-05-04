@@ -50,6 +50,8 @@ static class Raylib
 
     private static Vector2? lastMousePos = null;
     private static Vector2 mouseDelta = Vector2.Zero;
+    private static bool mouseHidden = false;
+    private static bool mouseLocked = false;
     private static bool windowShouldClose = false;
     private static bool eventDrivenExit = false;
 
@@ -413,14 +415,37 @@ static class Raylib
 
     public static void HideCursor()
     {
-        var cursor = window.SilkInputContext.Mice[0].Cursor;
-        cursor.CursorMode = Silk.NET.Input.CursorMode.Hidden;
+        mouseHidden = true;
+        UpdateMouseState();
     }
 
     public static void ShowCursor()
     {
+        mouseHidden = false;
+        UpdateMouseState();
+    }
+
+    public static void EnableCursor()
+    {
+        mouseLocked = false;
+        UpdateMouseState();
+    }
+
+    public static void DisableCursor()
+    {
+        mouseLocked = true;
+        UpdateMouseState();
+    }
+
+    private static void UpdateMouseState()
+    {
         var cursor = window.SilkInputContext.Mice[0].Cursor;
-        cursor.CursorMode = Silk.NET.Input.CursorMode.Normal;
+        if (mouseLocked)
+            cursor.CursorMode = Silk.NET.Input.CursorMode.Disabled;
+        else if (mouseHidden)
+            cursor.CursorMode = Silk.NET.Input.CursorMode.Hidden;
+        else
+            cursor.CursorMode = Silk.NET.Input.CursorMode.Normal;
     }
 
     public static void SetMousePosition(int x, int y)

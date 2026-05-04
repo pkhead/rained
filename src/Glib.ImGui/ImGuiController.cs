@@ -410,16 +410,20 @@ namespace Glib.ImGui
             //io.MouseDown[1] = mouseState.IsButtonPressed(MouseButton.Right);
             //io.MouseDown[2] = mouseState.IsButtonPressed(MouseButton.Middle);
 
-            Point point = new((int) _window.MouseX, (int) _window.MouseY);
-            if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+            var currentCursorMode = _window.SilkInputContext.Mice[0].Cursor.CursorMode;
+            if (!(currentCursorMode is Silk.NET.Input.CursorMode.Disabled or Silk.NET.Input.CursorMode.Raw))
             {
-                throw new NotImplementedException("Viewports not implemented");
-                //var windowPos = _window.Position;
-                //point.X += windowPos.X;
-                //point.Y += windowPos.Y;
+                Point point = new((int) _window.MouseX, (int) _window.MouseY);
+                if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+                {
+                    throw new NotImplementedException("Viewports not implemented");
+                    //var windowPos = _window.Position;
+                    //point.X += windowPos.X;
+                    //point.Y += windowPos.Y;
+                }
+                
+                io.AddMousePosEvent(point.X, point.Y);
             }
-            
-            io.AddMousePosEvent(point.X, point.Y);
 
             var wheel = _window.MouseWheel;
             io.AddMouseWheelEvent(wheel.X, wheel.Y);
