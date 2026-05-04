@@ -192,7 +192,6 @@ class TileDatabase
         var lingoParser = new Lingo.LingoParser();
 
         TileCategory? curGroup = null;
-        int groupIndex = 0;
 
         void ProcessLine(string line, int lineNo)
         {
@@ -208,12 +207,7 @@ class TileDatabase
                     return;
                 }
 
-                curGroup = new TileCategory((string) header[0], (Lingo.Color) header[1])
-                {
-                    Index = groupIndex
-                };
-
-                groupIndex++;
+                curGroup = new TileCategory((string) header[0], (Lingo.Color) header[1]);
                 Categories.Add(curGroup);
             }
             else
@@ -336,6 +330,10 @@ class TileDatabase
                 Categories.RemoveAt(i);
             }
         }
+
+        // cache category indices
+        for (int i = 0; i < Categories.Count; i++)
+            Categories[i].Index = i;
     }
 
     public bool HasTile(string name) => stringToTile.ContainsKey(name);
