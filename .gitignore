@@ -6,8 +6,9 @@
 /rained_*.zip
 /rained_*.tar.gz
 
-# Cake Tool files
-/tools
+# Cake tool files
+/tools/Addins
+/tools/cache
 
 # drizzle translated
 /src/Drizzle/Drizzle.Ported/Translated

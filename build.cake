@@ -109,8 +109,8 @@ Task("Build Shaders")
         return;
     }
 
-    Exec(pythonExec, ["shader-preprocessor.py", "gles300"]);
-    Exec(pythonExec, ["shader-preprocessor.py", "gl330"]);
+    Exec(pythonExec, ["tools/shader-preprocessor.py", "gles300"]);
+    Exec(pythonExec, ["tools/shader-preprocessor.py", "gl330"]);
 });
 
 Task("Build")

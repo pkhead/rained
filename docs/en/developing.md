@@ -43,7 +43,7 @@ dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects
 
 3. Generate Lua API (rerun this whenever you update ImGui)
 ```bash
-python3 lua-imgui-gen.py
+python3 tools/lua-imgui-gen.py
 ```
 
 ### Building the app
@@ -69,8 +69,8 @@ This is a translation of the Cake build script:
 ```bash
 # validate/compile updated shader source files
 # if you don't have glslangValidator, just skip these steps.
-python3 shader-preprocessor.py gl330
-python3 shader-preprocessor.py gles300
+python3 tools/shader-preprocessor.py gl330
+python3 tools/shader-preprocessor.py gles300
 
 # you have three options here:
 dotnet build src/Rained/Rained.csproj /p:GL=ES      # you can build with ES/ANGLE

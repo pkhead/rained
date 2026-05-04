@@ -55,7 +55,7 @@ jobs:
     - name: Run generators
       run: |
         dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
-        python3 lua-imgui-gen.py
+        python3 tools/lua-imgui-gen.py
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:
@@ -101,7 +101,7 @@ jobs:
     - name: Run generators
       run: |
         dotnet run --project src/DrizzleExport.Console effects src/Rained/Assets/effects.json
-        python3 lua-imgui-gen.py
+        python3 tools/lua-imgui-gen.py
     - name: Get documentation build
       uses: actions/download-artifact@v4
       with:
