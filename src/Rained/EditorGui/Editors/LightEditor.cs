@@ -106,8 +106,8 @@ class LightEditor : IEditorMode
 
         if (!isCursorEnabled)
         {
-            Raylib.ShowCursor();
             Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
+            Raylib.EnableCursor();
             isCursorEnabled = true;
         }
 
@@ -562,7 +562,7 @@ class LightEditor : IEditorMode
         RlExt.DrawRenderTextureV(level.LightMap.RenderTexture!, lightMapOffset + castOffset, new Color(0, 0, 0, 80));
 
         // Render mouse cursor
-        if (window.IsViewportHovered && changeRecorder is not null)
+        if ((window.IsViewportHovered || !wasCursorEnabled) && changeRecorder is not null)
         {
             var tex = RainEd.Instance.LightBrushDatabase.Brushes[selectedBrush].Texture;
             var mpos = window.MouseCellFloat;
@@ -682,21 +682,16 @@ class LightEditor : IEditorMode
         }
 
         // handle cursor lock when transforming brush
-        if (!isCursorEnabled)
-        {
-            Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);    
-        }
-        
         if (wasCursorEnabled != isCursorEnabled)
         {
             if (isCursorEnabled)
             {
-                Raylib.ShowCursor();
                 Raylib.SetMousePosition((int)savedMousePos.X, (int)savedMousePos.Y);
+                Raylib.EnableCursor();
             }
             else
             {
-                Raylib.HideCursor();
+                Raylib.DisableCursor();
             }
         }
     }
