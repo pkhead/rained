@@ -389,6 +389,12 @@ static class EditorWindow
                 
                 if (ImGui.MenuItem("Open Render Folder"))
                     RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
+
+                if (ImGui.MenuItem("Open Config Folder"))
+                    RainEd.Instance.ShowPathInSystemBrowser(Boot.ConfigPath, false);
+
+                if (ImGui.MenuItem("Open Scripts Folder"))
+                    RainEd.Instance.ShowPathInSystemBrowser(Boot.ScriptsPath, false);
                 
                 ImGui.EndMenu();
             }
