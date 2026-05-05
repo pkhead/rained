@@ -12,13 +12,25 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(AppDataPath)'=='Assembly'">DATA_ASSEMBLY</DefineConstants>
-    <DefineConstants Condition="'$(AppDataPath)'=='AppData'">DATA_APPDATA</DefineConstants>
-    <DefineConstants Condition="'$(AppDataPath)'=='UnixXDG'">DATA_UNIX_XDG</DefineConstants>
+    <DefineConstants Condition="'$(UserFilesPath)'=='' or '$(UserFilesPath)'=='[cwd]'">$(DefineConstants);USERPATH_CWD</DefineConstants>
+    <DefineConstants Condition="'$(ProgramFilesPath)'=='' or '$(ProgramFilesPath)'=='[cwd]'">$(DefineConstants);DATAPATH_CWD</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(UserFilesPath)'!=''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>UserFilesPath</_Parameter1>
+      <_Parameter2>$(UserFilesPath)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ProgramFilesPath)'!=''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ProgramFilesPath</_Parameter1>
+      <_Parameter2>$(ProgramFilesPath)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <PropertyGroup>
-    <DefineConstants Condition="'$(UnixSysPkg)'!=''">$(DefineConstants);DATA_UNIX_SYSPKG</DefineConstants>
     <DefineConstants Condition="'$(FullRelease)'!=''">$(DefineConstants);FULL_RELEASE</DefineConstants>
   </PropertyGroup>
   

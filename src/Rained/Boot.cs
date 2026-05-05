@@ -7,6 +7,7 @@ using ImGuiNET;
 using System.Globalization;
 using Glib;
 using Rained.LuaScripting;
+using System.Reflection;
 
 namespace Rained
 {
@@ -19,39 +20,65 @@ namespace Rained
         public static string ScriptsPath { get; private set; }
         public static string LogsPath { get; private set; }
 
+        // set up directory locations
         static Boot()
         {
-#if DATA_UNIX_XDG
-            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            string xdgConfigHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? Path.Combine(home, ".config"); 
-            string xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(home, ".local", "share");
-            string xdgStateHome = Environment.GetEnvironmentVariable("XDG_STATE_HOME") ?? Path.Combine(home, ".local", "state");
-
-            AppDataPath = Path.Combine(xdgDataHome, "rained");
-#   if DATA_UNIX_SYSPKG
-            AssetsPath = "/usr/share/rained/assets";
-#   else
-            AssetsPath = "/usr/local/share/rained/assets";
-#   endif
-            ConfigPath = Path.Combine(xdgConfigHome, "rained");
-            ScriptsPath = Path.Combine(ConfigPath, "scripts");
-            LogsPath = Path.Combine(xdgStateHome, "rained", "logs");
-
-            Directory.CreateDirectory(AppDataPath);
-            Directory.CreateDirectory(ConfigPath);
+            var asmAttribs = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>();
+            
+            string programFilesPath;
+#if DATAPATH_CWD
+            programFilesPath = Directory.GetCurrentDirectory();
 #else
-#   if DATA_ASSEMBLY
-            AppDataPath = AppContext.BaseDirectory;
-#   elif DATA_APPDATA
-            AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
-#   else
+            programFilesPath = asmAttribs.First((attrib) => attrib.Key == "ProgramFilesPath")!.Value!;
+            if (programFilesPath == "[asm]")
+                programFilesPath = AppContext.BaseDirectory;
+#endif
+            AssetsPath = Path.Combine(programFilesPath, "assets");
+
+#if USERPATH_CWD
             AppDataPath = Directory.GetCurrentDirectory();
-#   endif
-            AssetsPath = Path.Combine(AppDataPath, "assets");
             ConfigPath = Path.Combine(AppDataPath, "config");
             ScriptsPath = Path.Combine(AppDataPath, "scripts");
             LogsPath = Path.Combine(AppDataPath, "logs");
+#else
+            var userPathOpt = asmAttribs.First((attrib) => attrib.Key == "UserFilesPath")!.Value!;
+            switch (userPathOpt)
+            {
+                case "[xdg]":
+                {
+                    string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    string xdgConfigHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? Path.Combine(home, ".config"); 
+                    string xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(home, ".local", "share");
+                    string xdgStateHome = Environment.GetEnvironmentVariable("XDG_STATE_HOME") ?? Path.Combine(home, ".local", "state");
+
+                    AppDataPath = Path.Combine(xdgDataHome, "rained");
+                    ConfigPath = Path.Combine(xdgConfigHome, "rained");
+                    ScriptsPath = Path.Combine(ConfigPath, "scripts");
+                    LogsPath = Path.Combine(xdgStateHome, "rained", "logs");
+                    break;
+                }
+
+                case "[winappdata]":
+                {
+                    AppDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "rained");
+                    ConfigPath = Path.Combine(AppDataPath, "config");
+                    ScriptsPath = Path.Combine(AppDataPath, "scripts");
+                    LogsPath = Path.Combine(AppDataPath, "logs");
+                    break;
+                }
+
+                case "[asm]":
+                {
+                    AppDataPath = AppContext.BaseDirectory;
+                    ConfigPath = Path.Combine(AppDataPath, "config");
+                    ScriptsPath = Path.Combine(AppDataPath, "scripts");
+                    LogsPath = Path.Combine(AppDataPath, "logs");
+                    break;
+                }
+            }
 #endif
+            Directory.CreateDirectory(AppDataPath);
+            Directory.CreateDirectory(ConfigPath);
         }
 
         public const int DefaultWindowWidth = 1200;

@@ -11,7 +11,8 @@ var target = Argument("Target", "Build");
 var os = Argument("OS", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier);
 var buildDir = "build_" + os;
 var useGles = Argument<bool>("GLES", os == "win-x64");
-var appDataPath = Argument<string>("app-data-path", "Assembly");
+var programFilesPath = Argument<string>("program-files", null);
+var userFilesPath = Argument<string>("user-files", null);
 
 List<string> ExecCapture(string procName, System.Collections.Generic.IEnumerable<string> args)
 {
@@ -132,6 +133,12 @@ Task("Build")
     var config = Argument("Configuration", "Debug");
     if (config != "Debug") buildSettings.Configuration = config;
 
+    if (programFilesPath is not null)
+        msBuildSettings.Properties.Add("ProgramFilesPath", [programFilesPath]);
+    
+    if (userFilesPath is not null)
+        msBuildSettings.Properties.Add("UserFilesPath", [userFilesPath]);
+
     DotNetBuild("src/Rained/Rained.csproj", buildSettings);
 });
 
@@ -144,13 +151,8 @@ Task("DotNetPublish")
 
     DotNetMSBuildSettings buildSettings = new DotNetMSBuildSettings();
 
-    buildSettings.Properties.Add("AppDataPath", [appDataPath]);
-
-    if (HasArgument("unix-sys-pkg"))
-    {
-        Console.WriteLine(appDataPath);
-        buildSettings.Properties.Add("UnixSysPkg", ["true"]);
-    }
+    buildSettings.Properties.Add("ProgramFilesPath", [programFilesPath ?? "[asm]"]);
+    buildSettings.Properties.Add("UserFilesPath", [userFilesPath ?? "[asm]"]);
 
     if (HasArgument("full-release"))
         buildSettings.Properties.Add("FullRelease", ["true"]);
