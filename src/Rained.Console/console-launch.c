@@ -9,7 +9,7 @@ int main(int argc, const char* argv[]) {
     // call Rained.exe that is in the same directory as the called executable.
     // I thought i had to do path manipulation from argv[0], but apparently
     // this just works. I assume exe path searching works the same way as DLLS.
-    char str_buf[512];
+    char str_buf[1024];
     ZeroMemory(str_buf, sizeof(str_buf));
     strcpy(str_buf, "Rained.exe ");
     int strIndex = 11;
@@ -24,7 +24,7 @@ int main(int argc, const char* argv[]) {
         if (strIndex + strlen(argv[i]) + 1 >= sizeof(str_buf))
         {
             printf("Arguments string is too long!\n");
-            return 1;
+            return 2;
         }
 
         str_buf[strIndex++] = ' ';
@@ -39,6 +39,11 @@ int main(int argc, const char* argv[]) {
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
+
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
     if (!CreateProcess(
         NULL,

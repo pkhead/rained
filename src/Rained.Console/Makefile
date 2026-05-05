@@ -4,11 +4,8 @@
 # 	make -C src/Rained.Console
 #
 # (personally, i prefer using clang/gcc rather than msvc)
-
-CC := cc
-
 OUT = ../../dist/Rained.Console.exe
 SRC = console-launch.c
 
 $(OUT): $(SRC)
-	$(CC) -static -Os $(SRC) -o $(OUT)
+	$(CC) -static -Os $^ -o $@
