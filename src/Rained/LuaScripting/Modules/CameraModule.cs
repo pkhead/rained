@@ -183,6 +183,7 @@ static class CameraModule
                         var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
+                        idx--;
 
                         var offset = cam.GetCornerOffset(idx);
                         lua.PushNumber(offset.X);
@@ -198,6 +199,7 @@ static class CameraModule
                         var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
+                        idx--;
 
                         var dx = (float) lua.CheckNumber(3);
                         var dy = (float) lua.CheckNumber(4);
@@ -217,6 +219,7 @@ static class CameraModule
                         var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
+                        idx--;
 
                         lua.PushNumber(cam.CornerAngles[idx]);
                         lua.PushNumber(cam.CornerOffsets[idx]);
@@ -231,6 +234,7 @@ static class CameraModule
                         var cam = wrap.GetRef(lua, 1);
                         var idx = (int) lua.CheckNumber(2);
                         if (idx < 1 || idx > 4) return lua.ErrorWhere("corner index is out of bounds");
+                        idx--;
 
                         var angle = (float) lua.CheckNumber(3);
                         var offset = (float) lua.CheckNumber(4);

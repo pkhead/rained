@@ -8,39 +8,39 @@ rained.cameras = {}
 local Camera = {}
 
 ---Get the corner offset of a camera quad.
---- - Index 0: Top-left
---- - Index 1: Top-right
---- - Index 2: Bottom-right
---- - Index 3: Bottom-left
+--- - Index 1: Top-left
+--- - Index 2: Top-right
+--- - Index 3: Bottom-right
+--- - Index 4: Bottom-left
 ---@param index integer The index of the corner.
 ---@return number dx, number dy
 function Camera:getCornerOffset(index) end
 
 ---Set the corner offset of a camera quad.
---- - Index 0: Top-left
---- - Index 1: Top-right
---- - Index 2: Bottom-right
---- - Index 3: Bottom-left
+--- - Index 1: Top-left
+--- - Index 2: Top-right
+--- - Index 3: Bottom-right
+--- - Index 4: Bottom-left
 ---@param index integer The index of the corner.
 ---@param x number The X offset of the corner.
 ---@param y number The Y offset of the corner.
 function Camera:setCornerOffset(index, x, y) end
 
 ---Get the angle and strength of a camera quad corner.
---- - Index 0: Top-left
---- - Index 1: Top-right
---- - Index 2: Bottom-right
---- - Index 3: Bottom-left
+--- - Index 1: Top-left
+--- - Index 2: Top-right
+--- - Index 3: Bottom-right
+--- - Index 4: Bottom-left
 ---@param index integer The index of the corner.
 ---@return number angle The angle in radians
 ---@return number strength The corner strength. This is the distance from the rest position divided by 4.
 function Camera:getCornerAngle(index) end
 
 ---Set the angle and strength of a camera quad corner.
---- - Index 0: Top-left
---- - Index 1: Top-right
---- - Index 2: Bottom-right
---- - Index 3: Bottom-left
+--- - Index 1: Top-left
+--- - Index 2: Top-right
+--- - Index 3: Bottom-right
+--- - Index 4: Bottom-left
 ---@param index integer The index of the corner.
 ---@param angle number The angle in radians
 ---@param strength number The corner strength. This is the distance from the rest position divided by 4.
