@@ -105,7 +105,7 @@ function rained.tiles.getTileCategories() end
 
 ---Get a list of all tiles in a category.
 ---@param categoryName string The name of the category.
----@return string[]
+---@return string[]? tiles Tile list. Nil if the category does not exist.
 function rained.tiles.getTilesInCategory(categoryName) end
 
 ---@alias AutotileType

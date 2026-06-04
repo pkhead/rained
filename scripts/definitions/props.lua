@@ -138,12 +138,12 @@ function rained.props.getTileAsPropCategories() end
 
 ---Get a list of prop init names in the prop category given by name.
 ---@param categoryName string The name of the category.
----@return string[]
+---@return string[]? props Prop list. Nil if the category does not exist.
 function rained.props.getPropsInCategory(categoryName) end
 
 ---Get a list of prop init names in the tile-as-prop category given by name.
 ---@param categoryName string The name of the tile-as-prop category.
----@return string[]
+---@return string[]? props Prop list. Nil if the category does not exist.
 function rained.props.getPropsInTileCategory(categoryName) end
 
 ---Get the list of available custom colors.

@@ -116,6 +116,76 @@ static class TilesModule
         });
         lua.SetField(-2, "getTileInfo");
 
+        // hasTile/isInstalled
+        LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+        {
+            var tileName = lua.CheckString(1);
+            lua.PushBoolean(LuaInterface.Host.TileDatabase.HasTile(tileName));
+            return 1;
+        });
+        lua.PushCopy(-1);
+        lua.SetField(-3, "isInstalled");
+        lua.SetField(-2, "hasTile");
+
+        // getTileCatalog
+        LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+        {
+            lua.NewTable();
+
+            var ti = 1;
+            foreach (var group in LuaInterface.Host.TileDatabase.Categories)
+            {
+                foreach (var tile in group.Tiles)
+                {
+                    lua.PushString(tile.Name);
+                    lua.RawSetInteger(-2, ti++);
+                }
+            }
+
+            return 1;
+        });
+        lua.SetField(-2, "getTileCatalog");
+
+        // getTileCategories
+        LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+        {
+            lua.NewTable();
+
+            var ti = 1;
+            foreach (var group in LuaInterface.Host.TileDatabase.Categories)
+            {
+                lua.PushString(group.Name);
+                lua.RawSetInteger(-2, ti++);
+            }
+
+            return 1;
+        });
+        lua.SetField(-2, "getTileCategories");
+
+        // getTilesInCategory
+        LuaHelpers.PushLuaFunction(lua, static (KeraLua.Lua lua) =>
+        {
+            var name = lua.CheckString(1);
+
+            foreach (var group in LuaInterface.Host.TileDatabase.Categories)
+            {
+                if (name != group.Name) continue;
+
+                lua.NewTable();
+                var ti = 1;
+                foreach (var tile in group.Tiles)
+                {
+                    lua.PushString(tile.Name);
+                    lua.RawSetInteger(-2, ti++);
+                }
+
+                return 1;
+            }
+            
+            return 0;
+        });
+        lua.SetField(-2, "getTilesInCategory");
+
         // set rained.tiles
         lua.SetField(-2, "tiles");
     }
