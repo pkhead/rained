@@ -7,6 +7,14 @@ namespace Rained.Assets;
 enum EffectType
 {
     NN, // i have no idea what this abbreviates, lol
+    /*
+    (5/14/2026, 4:07 UTC+00:00)
+    alduris: if I had to guess, it's Joar shorthand for `none`
+    pkhead: ...
+            its too much work to type an o and an e! too much typing!
+            but also i have a hard time believing it
+            but [at the same time] it would be something joar would do
+    */
     StandardErosion
 }
 
@@ -118,6 +126,8 @@ class EffectsDatabase
     private readonly List<EffectGroup> groups;
     public List<EffectGroup> Groups { get => groups; }
     public bool HasErrors { get; private set; } = false;
+
+    private readonly Dictionary<string, EffectInit> initNameMap = [];
 
     static readonly JsonSerializerOptions jsonOptions = new()
     {
@@ -459,34 +469,15 @@ class EffectsDatabase
 
     public EffectInit GetEffectFromName(string name)
     {
-        foreach (var group in groups)
-        {
-            foreach (var effect in group.effects)
-            {
-                if (effect.name == name)
-                    return effect;
-            }
-        }
-
-        throw new Exception($"Effect '{name}' not found");
+        if (initNameMap.TryGetValue(name, out var init))
+            return init;
+        
+        throw new KeyNotFoundException($"Effect '{name}' not found");
     }
 
     public bool TryGetEffectFromName(string name, [NotNullWhen(true)] out EffectInit? effect)
     {
-        foreach (var group in groups)
-        {
-            foreach (var e in group.effects)
-            {
-                if (e.name == name)
-                {
-                    effect = e;
-                    return true;
-                }
-            }
-        }
-
-        effect = null;
-        return false;
+        return initNameMap.TryGetValue(name, out effect);
     }
 
 #region Helpers
@@ -519,6 +510,7 @@ class EffectsDatabase
     {
         activeEffect = effect;
         activeGroup.effects.Add(effect);
+        initNameMap[effect.name] = effect;
     }
 
     // why the hell did i organize it this way it's stupid
