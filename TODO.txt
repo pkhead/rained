@@ -1,5 +1,8 @@
 sorry this todo list is now very disorganized
 
+- respect custom effectsInit.txt
+- release update anyway but display drizzle version as v0.3.0.4-rc1
+
 LargeTexture:
 - large texture for lightmap
 
