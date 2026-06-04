@@ -383,18 +383,23 @@ static class EditorWindow
                 LuaScripting.Modules.GuiModule.MenuHook("View", true);
 
                 ImGui.Separator();
-                
-                if (ImGui.MenuItem("Open Data Folder"))
-                    RainEd.Instance.ShowPathInSystemBrowser(RainEd.Instance.AssetDataPath, false);
-                
-                if (ImGui.MenuItem("Open Render Folder"))
-                    RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
 
-                if (ImGui.MenuItem("Open Config Folder"))
-                    RainEd.Instance.ShowPathInSystemBrowser(Boot.ConfigPath, false);
+                if (ImGui.BeginMenu("Open Folder"))
+                {
+                    if (ImGui.MenuItem("Data..."))
+                        RainEd.Instance.ShowPathInSystemBrowser(RainEd.Instance.AssetDataPath, false);
+                    
+                    if (ImGui.MenuItem("Render..."))
+                        RainEd.Instance.ShowPathInSystemBrowser(Path.Combine(RainEd.Instance.AssetDataPath, "Levels"), false);
 
-                if (ImGui.MenuItem("Open Scripts Folder"))
-                    RainEd.Instance.ShowPathInSystemBrowser(Boot.ScriptsPath, false);
+                    if (ImGui.MenuItem("Config..."))
+                        RainEd.Instance.ShowPathInSystemBrowser(Boot.ConfigPath, false);
+
+                    if (ImGui.MenuItem("Scripts..."))
+                        RainEd.Instance.ShowPathInSystemBrowser(Boot.ScriptsPath, false);
+                    
+                    ImGui.EndMenu();
+                }
                 
                 ImGui.EndMenu();
             }
