@@ -64,7 +64,7 @@ static class LuaHelpers
 
         // create userdata metatable
         lua.NewMetaTable(UserDataMetatable);
-        lua.PushCFunction(gcDelegate);
+        lua.PushCFunction(userdataGcDelegate);
         lua.SetField(-2, "__gc");
 
         lua.PushCFunction(mtDelegate);
@@ -301,7 +301,15 @@ static class LuaHelpers
     {
         Lua lua = Lua.FromIntPtr(luaPtr)!;
         int id = *((int*)lua.CheckUserData(1, UserDataMetatable));
-        allocatedObjects.Remove(id);
+
+        Debug.Assert(allocatedObjects.ContainsKey(id));
+        if (allocatedObjects.TryGetValue(id, out var obj))
+        {
+            allocatedObjects.Remove(id);
+            if (obj is IDisposable disposable)
+                disposable.Dispose();
+        }
+
         return 0;
     }
 
