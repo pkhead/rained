@@ -23,6 +23,12 @@ static class LuaHelpers
         public LuaErrorException(string message) : base(message) { }
         public LuaErrorException(string message, Exception inner) : base(message, inner) { }
     }
+
+    private struct LuaUserData
+    {
+        public int id;
+        public bool disposeOnCollection;
+    }
     
     private const string FuncWrapperMetatable = "luahelpers_delegate";
     private const string FuncMetatable = "luahelpers_function";
@@ -285,10 +291,11 @@ static class LuaHelpers
         lua.PushCClosure(callDelegate, 1);
     }
 
-    public static unsafe void PushClosureWithUserdata(Lua lua, object userdata, KeraLua.LuaFunction func)
+    public static unsafe void PushClosureWithUserdata(Lua lua, object userdata, bool dispose, KeraLua.LuaFunction func)
     {
-        int* userData = (int*) lua.NewUserData(sizeof(int));
-        *userData = nextID;
+        var userData = (LuaUserData*) lua.NewUserData(sizeof(LuaUserData));
+        userData->id = nextID;
+        userData->disposeOnCollection = dispose;
 
         lua.GetMetaTable(UserDataMetatable);
         lua.SetMetaTable(-2);
@@ -300,13 +307,13 @@ static class LuaHelpers
     private static unsafe int UserDataGCDelegate(nint luaPtr)
     {
         Lua lua = Lua.FromIntPtr(luaPtr)!;
-        int id = *((int*)lua.CheckUserData(1, UserDataMetatable));
+        var ud = ((LuaUserData*)lua.CheckUserData(1, UserDataMetatable));
 
-        Debug.Assert(allocatedObjects.ContainsKey(id));
-        if (allocatedObjects.TryGetValue(id, out var obj))
+        Debug.Assert(allocatedObjects.ContainsKey(ud->id));
+        if (allocatedObjects.TryGetValue(ud->id, out var obj))
         {
-            allocatedObjects.Remove(id);
-            if (obj is IDisposable disposable)
+            allocatedObjects.Remove(ud->id);
+            if (ud->disposeOnCollection && obj is IDisposable disposable)
                 disposable.Dispose();
         }
 
@@ -315,8 +322,8 @@ static class LuaHelpers
 
     public static unsafe object GetUserData(Lua lua)
     {
-        int id = *((int*)lua.CheckUserData(Lua.UpValueIndex(1), UserDataMetatable));
-        return allocatedObjects[id];
+        var ud = ((LuaUserData*)lua.CheckUserData(Lua.UpValueIndex(1), UserDataMetatable));
+        return allocatedObjects[ud->id];
     }
 
     public static void ModuleFunction(this Lua lua, string funcName, KeraLua.LuaFunction func)

@@ -252,20 +252,24 @@ static class LuaInterface
                 return lua.ErrorWhere("could not list entries of " + path);
             }
 
-            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
-            {
-                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
-                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
-                if (enumr.MoveNext())
+            LuaHelpers.PushClosureWithUserdata(lua,
+                userdata: enumerator,
+                dispose: true,
+                func: static (nint luaPtr) =>
                 {
-                    lua.PushString(enumr.Current);
-                    return 1;
+                    var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                    var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                    if (enumr.MoveNext())
+                    {
+                        lua.PushString(enumr.Current);
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                else
-                {
-                    return 0;
-                }
-            });
+            );
             return 1;
         });
 
@@ -288,20 +292,24 @@ static class LuaInterface
                 return lua.ErrorWhere("could not list files of " + path);
             }
 
-            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
-            {
-                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
-                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
-                if (enumr.MoveNext())
+            LuaHelpers.PushClosureWithUserdata(lua,
+                userdata: enumerator,
+                dispose: true,
+                func: static (nint luaPtr) =>
                 {
-                    lua.PushString(enumr.Current);
-                    return 1;
+                    var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                    var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                    if (enumr.MoveNext())
+                    {
+                        lua.PushString(enumr.Current);
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                else
-                {
-                    return 0;
-                }
-            });
+            );
             return 1;
         });
 
@@ -324,20 +332,24 @@ static class LuaInterface
                 return lua.ErrorWhere("could not list subdirectories of " + path);
             }
 
-            LuaHelpers.PushClosureWithUserdata(lua, enumerator, static (nint luaPtr) =>
-            {
-                var lua = KeraLua.Lua.FromIntPtr(luaPtr);
-                var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
-                if (enumr.MoveNext())
+            LuaHelpers.PushClosureWithUserdata(lua,
+                userdata: enumerator,
+                dispose: true,
+                func: static (nint luaPtr) =>
                 {
-                    lua.PushString(enumr.Current);
-                    return 1;
+                    var lua = KeraLua.Lua.FromIntPtr(luaPtr);
+                    var enumr = (IEnumerator<string>) LuaHelpers.GetUserData(lua);
+                    if (enumr.MoveNext())
+                    {
+                        lua.PushString(enumr.Current);
+                        return 1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                else
-                {
-                    return 0;
-                }
-            });
+            );
             return 1;
         });
     }
