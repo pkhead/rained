@@ -355,7 +355,7 @@ sealed class RainEd
         }
         #endif
 
-        if (TileDatabase.HasErrors || PropDatabase.HasErrors)
+        if (TileDatabase.HasErrors || PropDatabase.HasErrors || EffectsDatabase.HasErrors)
             InitErrorsWindow.IsWindowOpen = true;
 
         UpdateTitle();

@@ -110,7 +110,7 @@ class EffectInit
     }
 }
 
-struct EffectGroup
+record EffectGroup
 {
     public string name;
     public List<EffectInit> effects;
@@ -123,11 +123,10 @@ struct EffectGroup
 */
 class EffectsDatabase
 {
-    private readonly List<EffectGroup> groups;
-    public List<EffectGroup> Groups { get => groups; }
+    public List<EffectGroup> Groups { get; private set; }
     public bool HasErrors { get; private set; } = false;
 
-    private readonly Dictionary<string, EffectInit> initNameMap = [];
+    private readonly Dictionary<string, EffectInit> effects = [];
 
     static readonly JsonSerializerOptions jsonOptions = new()
     {
@@ -136,8 +135,27 @@ class EffectsDatabase
 
     public EffectsDatabase()
     {
-        groups = [];
+        Groups = [];
 
+        RegisterInternalEffects();
+        RegisterCustomEffects();
+    }
+
+    public EffectInit GetEffectFromName(string name)
+    {
+        if (effects.TryGetValue(name, out var init))
+            return init;
+        
+        throw new KeyNotFoundException($"Effect '{name}' not found");
+    }
+
+    public bool TryGetEffectFromName(string name, [NotNullWhen(true)] out EffectInit? effect)
+    {
+        return effects.TryGetValue(name, out effect);
+    }
+
+    private void RegisterInternalEffects()
+    {
         using var stream = typeof(RainEd).Assembly.GetManifestResourceStream("Rained.embed.effects")
             ?? throw new Exception("Could not create internal effects JSON resource stream");
         
@@ -346,7 +364,7 @@ class EffectsDatabase
             // CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
         }
 
-        RegisterCustomEffects();
+        RegisterUserGroups();
     }
 
     private void RegisterCustomEffects()
@@ -461,38 +479,179 @@ class EffectsDatabase
         }
     }
 
-    private void LogError(int lineNo, string template, params string[] values)
+    private void CreateEffectsInit()
+    {
+        // actually i'm not sure how this is supposed to wokr. The logic
+        // confuses me.
+        return;
+
+        var initPath = Path.Combine(AssetDataPath.GetPath(), "effectsInit.txt");
+        if (File.Exists(initPath)) return;
+
+        string? basePath;
+        if (!DrizzleCast.GetFileName("baseEffectsInit.txt", out basePath))
+        {
+            Log.UserLogger.Error("Could not find baseEffectsInit.txt in Drizzle cast");
+            return;
+        }
+
+        try
+        {
+            var baseContents = File.ReadAllBytes(basePath);
+            using var f = File.OpenWrite(initPath);
+            f.Write(baseContents);
+
+            // startUp.ls seems to specifically write the Windows return. Okay.
+            f.WriteByte((byte)'\r');
+            f.WriteByte((byte)'\n');
+        }
+        catch (Exception e)
+        {
+            Log.UserLogger.Error("Error while creating effectsInit.txt\n" + e.ToString());
+        }
+    }
+
+    // reorganize groups to appear as it is in drizzle data effectsInit.txt.
+    private void RegisterUserGroups()
+    {        
+        List<string> initLines = [];
+
+        var initPath = Path.Combine(AssetDataPath.GetPath(), "effectsInit.txt");
+        if (!File.Exists(initPath))
+        {
+            CreateEffectsInit();
+            return;
+        }
+
+        Log.UserLogger.Information("Reading effectsInit.txt...");
+
+        try
+        {
+            // get expected version string
+            string expectedVersionStr;
+            if (DrizzleCast.GetFileName("baseEffectsInit.txt", out var basePath))
+            {
+                using var f = File.OpenText(basePath);
+                var firstLine = f.ReadLine();
+
+                if (firstLine is null)
+                {
+                    Log.UserLogger.Error("baseEffectsInit.txt from Drizzle cast is malformed.");
+                    return;
+                }
+
+                expectedVersionStr = firstLine;
+            }
+            else
+            {
+                Log.UserLogger.Error("Could not find baseEffectsInit.txt in Drizzle cast");
+                return;
+            }
+
+            using var initFile = File.OpenText(initPath);
+
+            // check if version string matches
+            var versionStr = initFile.ReadLine();
+
+            if (versionStr is null) // oh, file is empty.
+            {
+                initFile.Dispose();
+                CreateEffectsInit();
+                return;
+            }
+
+            if (versionStr is null || versionStr != expectedVersionStr)
+            {
+                Log.UserLogger.Information("effectsInit.txt version did not match - ignoring.");
+                return;
+            }
+
+            // add remaining lines to initLines list
+            for (string? line; (line = initFile.ReadLine()) is not null;)
+                initLines.Add(line);
+        }
+        catch (Exception e)
+        {
+            Log.UserLogger.Error("Error parsing user effects init!\n" + e.ToString());
+            return;
+        }
+
+        string? groupName = null;
+        List<(int ln, string name)> curGroup = [];
+
+        // clear base effect groups. EffectInits are stored in the effects dict.
+        Groups.Clear();
+
+        void commitGroup()
+        {
+            if (groupName is not null && curGroup.Count > 0)
+            {
+                var list = new List<EffectInit>();
+                foreach (var (ln, name) in curGroup)
+                {
+                    if (!effects.TryGetValue(name, out var ef))
+                    {
+                        LogError(ln, "Effect {EffectName} does not exist (line ignored)", name);
+                        continue;
+                    }
+
+                    list.Add(ef);
+                }
+
+                if (list.Count > 0)
+                {
+                    Groups.Add(new EffectGroup()
+                    {
+                        name = groupName,
+                        effects = list
+                    });
+                }
+            }
+
+            curGroup.Clear();
+        }
+
+        var lineNo = 1;
+        foreach (var l in initLines)
+        {
+            lineNo++;
+            if (string.IsNullOrWhiteSpace(l)) continue;
+
+            var line = l.TrimEnd();
+
+            if (line[0] == '-') // category start
+            {
+                commitGroup();
+                groupName = line[1..];
+            }
+            else
+            {
+                curGroup.Add((lineNo, line));
+            }
+        }
+
+        commitGroup();
+    }
+
+    private void LogError(int lineNo, string template, params object[] values)
     {
         HasErrors = true;
-        Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, template), template, values);
-    }
-
-    public EffectInit GetEffectFromName(string name)
-    {
-        if (initNameMap.TryGetValue(name, out var init))
-            return init;
-        
-        throw new KeyNotFoundException($"Effect '{name}' not found");
-    }
-
-    public bool TryGetEffectFromName(string name, [NotNullWhen(true)] out EffectInit? effect)
-    {
-        return initNameMap.TryGetValue(name, out effect);
+        Log.UserLogger.Error(ErrorFormat.ErrorString(lineNo, template), values);
     }
 
 #region Helpers
-    EffectGroup activeGroup;
+    EffectGroup? activeGroup;
     EffectInit activeEffect = null!;
 
-    private void BeginGroup(string name)
+    private EffectGroup BeginGroup(string name)
     {
         // try to find group if it already exists
-        foreach (var g in groups)
+        foreach (var g in Groups)
         {
             if (g.name == name)
             {
                 activeGroup = g;
-                return;
+                return activeGroup;
             }
         }
 
@@ -500,17 +659,18 @@ class EffectsDatabase
         activeGroup = new EffectGroup()
         {
             name = name,
-            effects = new List<EffectInit>()
+            effects = []
         };
 
-        groups.Add(activeGroup);
+        Groups.Add(activeGroup);
+        return activeGroup;
     }
 
     private void CreateEffect(EffectInit effect)
     {
         activeEffect = effect;
-        activeGroup.effects.Add(effect);
-        initNameMap[effect.name] = effect;
+        activeGroup!.effects.Add(effect);
+        effects[effect.name] = effect;
     }
 
     // why the hell did i organize it this way it's stupid
