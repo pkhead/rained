@@ -769,6 +769,8 @@ class EffectsEditor : IEditorMode
 
             foreach (var group in displayedGroups)
             {
+                ImGui.PushID(group);
+
                 var name = database.Groups[group].name;
                 bool isSelected = selectedGroup == group;
 
@@ -781,6 +783,8 @@ class EffectsEditor : IEditorMode
                         selectedItem = 0;
                     }
                 }
+
+                ImGui.PopID();
             }
         }
 
@@ -789,8 +793,11 @@ class EffectsEditor : IEditorMode
             Debug.Assert(selectedGroup != -1);
             if (selectedGroup == -1 || displayedGroups.Count == 0) return;
 
+            var imId = 0;
             foreach (var item in database.Groups[selectedGroup].effects)
             {
+                ImGui.PushID(imId++);
+
                 if (item.deprecated || !PassesSearchQuery(item.name))
                     continue;
                 
@@ -799,6 +806,8 @@ class EffectsEditor : IEditorMode
                 {
                     AddEffect?.Invoke(item);
                 }
+
+                ImGui.PopID();
             }
         }
     }

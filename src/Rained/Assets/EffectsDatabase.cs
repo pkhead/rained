@@ -479,14 +479,12 @@ class EffectsDatabase
         }
     }
 
-    private void CreateEffectsInit()
+    private static void ResetEffectsInit()
     {
-        // actually i'm not sure how this is supposed to wokr. The logic
-        // confuses me.
-        return;
-
+        // this function should be called when the version header in
+        // effectsInit.txt does not match. but not when the file either does not
+        // exist or is empty? i don't get it.        
         var initPath = Path.Combine(AssetDataPath.GetPath(), "effectsInit.txt");
-        if (File.Exists(initPath)) return;
 
         string? basePath;
         if (!DrizzleCast.GetFileName("baseEffectsInit.txt", out basePath))
@@ -518,10 +516,7 @@ class EffectsDatabase
 
         var initPath = Path.Combine(AssetDataPath.GetPath(), "effectsInit.txt");
         if (!File.Exists(initPath))
-        {
-            CreateEffectsInit();
             return;
-        }
 
         Log.UserLogger.Information("Reading effectsInit.txt...");
 
@@ -552,17 +547,14 @@ class EffectsDatabase
 
             // check if version string matches
             var versionStr = initFile.ReadLine();
-
             if (versionStr is null) // oh, file is empty.
-            {
-                initFile.Dispose();
-                CreateEffectsInit();
                 return;
-            }
 
-            if (versionStr is null || versionStr != expectedVersionStr)
+            if (versionStr != expectedVersionStr)
             {
-                Log.UserLogger.Information("effectsInit.txt version did not match - ignoring.");
+                Log.UserLogger.Information("effectsInit.txt version did not match - resetting.");
+                initFile.Dispose();
+                ResetEffectsInit();
                 return;
             }
 
