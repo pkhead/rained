@@ -1267,7 +1267,7 @@ static class PreferencesWindow
 
         // notice tooltip for voxelStructRandomDisplace for tiles as props
         ImGui.SameLine();
-        ImGui.TextDisabled("(!)");
+        ImGui.TextDisabled("(?)");
         if (ImGui.BeginItemTooltip())
         {
             ImGui.PushTextWrapPos(ImGui.GetFontSize() * 20.0f);
@@ -1295,5 +1295,7 @@ static class PreferencesWindow
             ImGui.PopTextWrapPos();
             ImGui.EndTooltip();
         }
+
+        ConfigCheckbox("Rock types in large trash");
     }
 }

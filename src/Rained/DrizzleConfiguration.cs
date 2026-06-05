@@ -14,14 +14,14 @@ class DrizzleConfiguration
     }
 
     /*
-    Rain World Community Editor; V.0.4.31; Editor configuration file
-    More tile previews : TRUE
+    Rain World Community Editor; v5.1.1; Editor configuration file
+    More tile previews : FALSE
     Grime on gradients : FALSE
     Grime : TRUE
     Exit button : DROUGHT
     Exit render button : DROUGHT
     Material fixes : TRUE
-    Camera editor border fix : TRUE
+    Camera editor border fix : FALSE
     Slime always affects editor decals : FALSE
     voxelStructRandomDisplace for tiles as props : TRUE
     notTrashProp fix : TRUE
@@ -33,6 +33,10 @@ class DrizzleConfiguration
     Large trash debug log : FALSE
     Rough Rock spreads more : FALSE
     Dark Slime fix : TRUE
+    Custom keybinds : TRUE
+    Sky roots fix : FALSE
+    Hide props in effects : FALSE
+    Rock types in large trash : TRUE
     */
 
     public readonly string FilePath;
@@ -80,6 +84,9 @@ class DrizzleConfiguration
     
     [StringName("Sky roots fix")]
     public bool SkyRootsFix { get; set; } = false;
+
+    [StringName("Rock types in large trash")]
+    public bool RockTypesInLargeTrash { get; set; } = true;
 
     private static PropertyInfo? GetPropertyByKey(string key)
     {
