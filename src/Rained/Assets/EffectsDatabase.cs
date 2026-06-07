@@ -435,24 +435,25 @@ class EffectsDatabase
                     LogError(lineNo, "Effect init does not have required field 'tp'.");
                     continue;
                 }
-                string type = (string) temp;
+                string type = ((string) temp).ToLowerInvariant();
 
                 // emit a warning if effect type is not a valid value. (warning instead of error for future-proofing)
                 switch (type)
                 {
-                    case "standardPlant":
+                    case "standardplant":
                     case "grower":
                     case "hanger":
                     case "clinger":
-                    case "standardClinger":
+                    case "standardclinger":
                     case "individual":
-                    case "individualHanger":
-                    case "individualClinger":
+                    case "individualhanger":
+                    case "individualclinger":
                     case "wall":
+                    case "texture":
                         break;
                     
                     default:
-                        Log.UserLogger.Warning(ErrorFormat.ErrorString(lineNo, "Effect init does not have a valid 'tp' field."));
+                        Log.UserLogger.Warning(ErrorFormat.ErrorString(lineNo, "Effect init does not have a recognized 'tp' field."));
                         break;
                 }
 
@@ -473,7 +474,7 @@ class EffectsDatabase
                     use3D = wall && has3D == 2
                 });
 
-                if (type == "clinger" || type == "standardClinger")
+                if (type == "clinger" || type == "standardclinger")
                     CustomConfig("Side", ["Left", "Right", "Random"], "Random");
             }
         }
