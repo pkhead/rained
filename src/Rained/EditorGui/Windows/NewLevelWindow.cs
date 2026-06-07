@@ -17,6 +17,7 @@ static class NewLevelWindow
     private static int levelBufL, levelBufR, levelBufT, levelBufB;
     private static bool[] fillLayer = new bool[3];
     private static bool autoCameras;
+    private static bool lightShaded;
 
     private static RlManaged.RenderTexture2D? previewFramebuffer = null;
     private static List<Vector2> cameraPositions = [];
@@ -38,6 +39,7 @@ static class NewLevelWindow
         fillLayer[1] = true;
         fillLayer[2] = false;
         autoCameras = true;
+        lightShaded = true;
 
         IsWindowOpen = true;
 
@@ -126,6 +128,7 @@ static class NewLevelWindow
                 ImGui.SeparatorText("Options");
                 {
                     ImGui.Checkbox("Auto-place Cameras", ref autoCameras);
+                    ImGui.Checkbox("Shadowed", ref lightShaded);
                 }
 
                 ImGui.PopItemWidth();
@@ -315,6 +318,15 @@ static class NewLevelWindow
         foreach (var camPos in CalcCameraPositions())
         {
             level.Cameras.Add(new Camera(camPos));
+        }
+
+        // light shading
+        if (level.LightMap.RenderTexture is not null)
+        {
+            var rctx = RainEd.RenderContext;
+            rctx.PushFramebuffer(((RenderTexture2D)level.LightMap.RenderTexture).ID!);
+            rctx.Clear(lightShaded ? Glib.Color.Black : Glib.Color.White);
+            rctx.PopFramebuffer();
         }
 
         return level;
