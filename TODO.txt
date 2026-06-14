@@ -1,5 +1,6 @@
 sorry this todo list is now very disorganized
 
+- PushID/PopID for tile editor catalog widget also check the other catalog widgets as well
 - release update anyway but display drizzle version as v0.3.0.4-rc1
 - drizzle config file watcher may crash since file handle is still open! fix
   this via a polling loop that tries opening the file. also, it is done from
