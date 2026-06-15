@@ -142,7 +142,7 @@ class DrizzleConfiguration
     public DrizzleConfiguration(string filePath)
     {
         FilePath = filePath;
-        if (!LoadPreferences())
+        if (!Reload())
         {
             throw new Exception("Invalid header!");
         }
@@ -170,10 +170,8 @@ class DrizzleConfiguration
         return new DrizzleConfiguration(filePath);
     }
 
-    private bool LoadPreferences()
+    public bool LoadPreferences(string[] fileLines)
     {
-        var fileLines = File.ReadAllLines(FilePath);
-
         // process first line, which should be the header
         // we are ignoring validating the version number
         // if the header doesn't match, we don't process the file
@@ -197,10 +195,13 @@ class DrizzleConfiguration
         return true;
     }
 
-    public bool Reload() => LoadPreferences();
+    public bool Reload() => LoadPreferences(File.ReadAllLines(FilePath));
 
     public void SavePreferences()
     {
+        // TODO: use FileStream to create read+write handle to file. This is to
+        //       properly lock the file for the entire duration of this
+        //       procedure.
         var fileLines = new List<string>(File.ReadAllLines(FilePath));
 
         // process first line, which should be the header

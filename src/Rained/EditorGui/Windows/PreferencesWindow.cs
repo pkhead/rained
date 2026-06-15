@@ -30,6 +30,8 @@ static class PreferencesWindow
     private static KeyShortcut activeShortcut = KeyShortcut.None;
     private static DrizzleConfiguration? activeDrizzleConfig = null;
     private static FileSystemWatcher? drizzleConfigWatcher = null;
+    private static readonly Queue<FileSystemEventArgs> drizzleConfigEventQueue = [];
+    private static bool suppressDrizzleConfigChanges = false;
     private static string[]? missingDirs;
 
     private static bool openPopupCmd = false;
@@ -40,8 +42,9 @@ static class PreferencesWindow
 
     private static void SetUpDrizzleConfig()
     {
+        suppressDrizzleConfigChanges = false;
         activeDrizzleConfig ??= DrizzleConfiguration.LoadConfiguration(Path.Combine(RainEd.Instance.AssetDataPath, "editorConfig.txt"));
-            
+        
         drizzleConfigWatcher?.Dispose();
         drizzleConfigWatcher = new FileSystemWatcher(Path.GetDirectoryName(activeDrizzleConfig.FilePath)!, "*.txt");
         drizzleConfigWatcher.NotifyFilter |= NotifyFilters.LastWrite | NotifyFilters.FileName;
@@ -50,32 +53,20 @@ static class PreferencesWindow
         {
             if (e.Name != "editorConfig.txt") return;
 
+            if (e.ChangeType == WatcherChangeTypes.Changed && suppressDrizzleConfigChanges)
+            {
+                suppressDrizzleConfigChanges = false;
+                return;
+            }
+
             switch (e.ChangeType)
             {
                 case WatcherChangeTypes.Deleted:
-                    Log.Debug("Drizzle config deleted");
-
-                    activeDrizzleConfig = null;
-                    drizzleConfigWatcher.Dispose();
-                    SetUpDrizzleConfig();
-                    break;
-
                 case WatcherChangeTypes.Changed:
-                    Log.Debug("Drizzle config changed");
-
-                    if (File.Exists(activeDrizzleConfig.FilePath))
-                        activeDrizzleConfig.Reload();
-                    break;
-
                 case WatcherChangeTypes.Renamed:
-                    Log.Debug("Drizzle config renamed/moved");
-
-                    if (!Util.ArePathsEquivalent(e.FullPath, activeDrizzleConfig.FilePath))
-                    {
-                        activeDrizzleConfig = null;
-                        drizzleConfigWatcher.Dispose();
-                        SetUpDrizzleConfig();
-                    }
+                    lock (drizzleConfigEventQueue)
+                        drizzleConfigEventQueue.Enqueue(e);
+                    
                     break;
             }
         };
@@ -87,15 +78,78 @@ static class PreferencesWindow
                 !e.FullPath.Equals(activeDrizzleConfig.FilePath, StringComparison.InvariantCultureIgnoreCase)
             )
             {
-                Log.Debug("Drizzle config renamed/moved");
-                
-                activeDrizzleConfig = null;
-                drizzleConfigWatcher.Dispose();
-                SetUpDrizzleConfig();
+                lock (drizzleConfigEventQueue)
+                    drizzleConfigEventQueue.Enqueue(e);
             }
         };
 
         drizzleConfigWatcher.EnableRaisingEvents = true;
+    }
+
+    private static void UpdateDrizzleConfig()
+    {
+        while (true)
+        {
+            if (activeDrizzleConfig is null || drizzleConfigWatcher is null)
+                break;
+            
+            if (!drizzleConfigEventQueue.TryDequeue(out var ev))
+                break;
+
+            for (int @try = 0; @try <= 8; @try++)
+            {
+                if (@try == 8)
+                {
+                    EditorWindow.ShowNotification("Failure syncing with editorConfig.txt changes");
+                    Log.Error("Failure syncing with editorConfig.txt changes");
+                    drizzleConfigEventQueue.Clear();
+                    return;
+                }
+
+                try
+                {
+                    switch (ev.ChangeType)
+                    {
+                        case WatcherChangeTypes.Deleted:
+                            Log.Debug("Drizzle config deleted");
+
+                            activeDrizzleConfig = null;
+                            drizzleConfigWatcher.Dispose();
+                            SetUpDrizzleConfig();
+                            break;
+
+                        case WatcherChangeTypes.Changed:
+                            Log.Debug("Drizzle config changed");
+                            
+                            if (File.Exists(activeDrizzleConfig!.FilePath))
+                            {
+                                var lines = File.ReadAllLines(activeDrizzleConfig.FilePath);
+                                activeDrizzleConfig.LoadPreferences(lines);
+                            }
+                            break;
+
+                        case WatcherChangeTypes.Renamed:
+                            Log.Debug("Drizzle config renamed/moved");
+
+                            if (!Util.ArePathsEquivalent(ev.FullPath, activeDrizzleConfig!.FilePath))
+                            {
+                                activeDrizzleConfig = null;
+                                drizzleConfigWatcher.Dispose();
+                                SetUpDrizzleConfig();
+                            }
+                            break;
+                    }
+
+                    break;
+                }
+                catch (IOException err)
+                {
+                    Log.Warning("Error syncing editorConfig.txt: {ErrorMessage}", err.Message);
+                    Log.Warning("Retrying...");
+                    Thread.Sleep(20);
+                }
+            }
+        }
     }
 
     public static void ShowWindow()
@@ -114,8 +168,12 @@ static class PreferencesWindow
         }
 
         if (justOpened)
-        {
             SetUpDrizzleConfig();
+            
+        lock (drizzleConfigEventQueue)
+        {
+            if (drizzleConfigEventQueue.Count > 0)
+                UpdateDrizzleConfig();
         }
 
         if (isWindowOpen)
@@ -446,6 +504,8 @@ static class PreferencesWindow
                 if (ImGui.Checkbox("Require in-bounds effects by default", ref skyRootsFix))
                 {
                     activeDrizzleConfig.SkyRootsFix = skyRootsFix;
+                    
+                    suppressDrizzleConfigChanges = true;
                     activeDrizzleConfig.SavePreferences();
                 }
 
@@ -1214,6 +1274,8 @@ static class PreferencesWindow
             if (ImGui.Checkbox(key, ref v))
             {
                 activeDrizzleConfig.TrySetConfig(key, v);
+                
+                suppressDrizzleConfigChanges = true;
                 activeDrizzleConfig.SavePreferences();
             }
         }
