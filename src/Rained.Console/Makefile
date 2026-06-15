@@ -8,4 +8,4 @@ OUT = ../../dist/Rained.Console.exe
 SRC = console-launch.c
 
 $(OUT): $(SRC)
-	$(CC) -static -Os $^ -o $@
+	$(CC) -static -Os -municode $^ -o $@

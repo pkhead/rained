@@ -1,36 +1,37 @@
-// wrapper exe to launch Rained in a console
-// decided to make this in c instead of c# for a significantly smaller binary size
-// this is only relevant for Windows, because of the distinction between the Windows subsytem and the console subsystem
+// wrapper exe to launch Rained in a console. decided to make this in c instead
+// of c# for a significantly smaller binary size.
+// 
+// this is only relevant for Windows, because of the distinction between the
+// Windows subsytem and the console subsystem
+
+#ifndef UNICODE
+#   define UNICODE
+#endif
+
 #include <stdio.h>
 #include <windows.h>
 #include <string.h>
+#include <stdlib.h>
 
-int main(int argc, const char* argv[]) {
-    // call Rained.exe that is in the same directory as the called executable.
-    // I thought i had to do path manipulation from argv[0], but apparently
-    // this just works. I assume exe path searching works the same way as DLLS.
-    char str_buf[1024];
-    ZeroMemory(str_buf, sizeof(str_buf));
-    strcpy(str_buf, "Rained.exe ");
-    int strIndex = 11;
-    
-    // append arguments to the command
-    strcpy(str_buf + strIndex, "--console");
-    strIndex += 9;
+static const wchar_t cmdPrefix[] = L"Rained.exe --console ";
+#define cmdPrefixLen (sizeof(cmdPrefix) / sizeof(wchar_t) - 1)
 
-    for (int i = 1; i < argc; i++)
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                    PWSTR pCmdLine, int nCmdShow)
+{
+    size_t cmdLineLen = wcslen(pCmdLine);
+    size_t outCmdLineSz = (cmdPrefixLen + cmdLineLen + 1) * sizeof(wchar_t);
+    wchar_t *outCmdLine = malloc(outCmdLineSz);
+    if (!outCmdLine)
     {
-        // check for buffer overflow
-        if (strIndex + strlen(argv[i]) + 1 >= sizeof(str_buf))
-        {
-            printf("Arguments string is too long!\n");
-            return 2;
-        }
-
-        str_buf[strIndex++] = ' ';
-        strcpy(str_buf + strIndex, argv[i]);
-        strIndex += strlen(argv[i]);
+        fprintf(stderr, "error\n");
+        return 1;
     }
+
+    // append command prefix and user-given command line to outCmdLine
+    memcpy(outCmdLine, cmdPrefix, cmdPrefixLen * sizeof(wchar_t));
+    memcpy(outCmdLine + cmdPrefixLen, pCmdLine, cmdLineLen * sizeof(wchar_t));
+    outCmdLine[cmdPrefixLen + cmdLineLen] = 0;
     
     // run process
     STARTUPINFO si;
@@ -47,7 +48,7 @@ int main(int argc, const char* argv[]) {
 
     if (!CreateProcess(
         NULL,
-        str_buf,
+        outCmdLine,
         NULL,
         NULL,
         TRUE,
@@ -58,9 +59,13 @@ int main(int argc, const char* argv[]) {
         &pi
     ))
     {
-        printf("Failed to launch Rained.exe. Error code: %lu\n", GetLastError());
+        fprintf(stderr, "Failed to launch Rained.exe. Error code: %lu\n",
+                GetLastError());
+        free(outCmdLine);
         return 1;
     }
+
+    free(outCmdLine);
 
     // wait until child process exits
     WaitForSingleObject(pi.hProcess, INFINITE);
