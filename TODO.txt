@@ -2,10 +2,10 @@ sorry this todo list is now very disorganized
 
 - PushID/PopID for tile editor catalog widget also check the other catalog widgets as well
 - release update anyway but display drizzle version as v0.3.0.4-rc1
-- drizzle config file watcher may crash since file handle is still open! fix
-  this via a polling loop that tries opening the file. also, it is done from
-  another thread? maybe defer it to execute in the main thread. send the file
-  handle to the main thread.
+- Rained.Console: does it support arguments with spaces? use wWinMain?
+- headless GL context for use with light editor scripting API
+  probably need to interface directly with EGL (angle, wayland) or GLX (X11)
+- upgrade to .net 10?
 
 LargeTexture:
 - large texture for lightmap
