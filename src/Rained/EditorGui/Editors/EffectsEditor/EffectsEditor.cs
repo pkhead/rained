@@ -796,10 +796,10 @@ class EffectsEditor : IEditorMode
             var imId = 0;
             foreach (var item in database.Groups[selectedGroup].effects)
             {
-                ImGui.PushID(imId++);
-
                 if (item.deprecated || !PassesSearchQuery(item.name))
                     continue;
+
+                ImGui.PushID(imId++);
                 
                 bool isSelected = item!.Equals(selectedItem);
                 if (ImGui.Selectable(item.name, isSelected))
