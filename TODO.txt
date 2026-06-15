@@ -1,10 +1,12 @@
 sorry this todo list is now very disorganized
 
 - PushID/PopID for tile editor catalog widget also check the other catalog widgets as well
+  (actually, probably will not address this. you aren't supposed to have
+  multiple assets with the same name, anyway.)
 - release update anyway but display drizzle version as v0.3.0.4-rc1
-- Rained.Console: does it support arguments with spaces? use wWinMain?
 - headless GL context for use with light editor scripting API
-  probably need to interface directly with EGL (angle, wayland) or GLX (X11)
+  probably need to interface directly with EGL (angle, wayland), WGL (windows),
+  or GLX (X11)
 - upgrade to .net 10?
 
 LargeTexture:
