@@ -629,7 +629,24 @@ sealed class RainEd
     /// <param name="options"></param>
     public void SaveLevel(string path, ILevelFileFormat format, LevelSaveOptions? options = null)
     {
-        Log.Information("Saving level to {Path}...", path);
+        // hide user name from path
+        string displayedPath = path;
+        {
+            var usrProf = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string shortForm;
+
+            if (OperatingSystem.IsWindows())
+                shortForm = "%USERPROFILE%";
+            else
+                shortForm = "~";
+            
+            if (path.Length >= usrProf.Length && path[0..usrProf.Length] == usrProf)
+            {
+                displayedPath = shortForm + path[usrProf.Length..];
+            }
+        }
+
+        Log.Information("Saving level to {Path}...", displayedPath);
         IsLevelLocked = true;
 
         options ??= new LevelSaveOptions();
