@@ -255,7 +255,7 @@ class LevelEditRender : IDisposable
             if (!Level.IsInBounds(x, y)) return false;
             
             foreach (var objType in ConnectableShortcutObjects)
-                if (Level.Layers[0,x,y].Has(objType)) return true;
+                if (Level.GetBorderClamped(0,x,y).Has(objType)) return true;
 
             return false;
         }
@@ -263,7 +263,7 @@ class LevelEditRender : IDisposable
         static bool isWallBlock(Level level, int x, int y)
         {
             if (!level.IsInBounds(x, y)) return false;
-            return level.Layers[0,x,y].Geo == GeoType.Solid;
+            return level.GetBorderClamped(0,x,y).Geo == GeoType.Solid;
         }
 
         int neighborCount = 0;
@@ -314,8 +314,8 @@ class LevelEditRender : IDisposable
         }
         else
         {
-            ref var fromCell = ref Level.Layers[0,x-dx,y-dy];
-            ref var toCell = ref Level.Layers[0,x+dx,y+dy];
+            ref var fromCell = ref Level.GetBorderClamped(0,x-dx,y-dy);
+            ref var toCell = ref Level.GetBorderClamped(0,x+dx,y+dy);
             
             // the shortcut it's facing toward has to be over a solid block (wall, glass, slope(?))
             if (

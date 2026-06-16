@@ -368,34 +368,38 @@ class LevelNodeData
         return cell.Geo == GeoType.ShortcutEntrance || (cell.Objects & objectMask) != 0;
     }
 
-    private LevelCell GetCellOrDefault(int x, int y)
+    private LevelCell GetCellOrDefault(int layer, int x, int y)
     {
         if (x < level.BufferTilesLeft || y < level.BufferTilesTop || x >= level.Width - level.BufferTilesRight || y >= level.Height - level.BufferTilesBot)
             return new LevelCell();
         
-        return level.Layers[0,x,y];
+        return level.Layers[layer,x,y];
     }
+
+    private LevelCell GetCellOrDefault(int x, int y) => GetCellOrDefault(0, x, y);
 
     private bool IsValidShortcutEntrance(int x, int y, out int dx, out int dy)
     {
         dx = 0;
         dy = 0;
+
+        LevelCell getc(int layer, int x, int y) => GetCellOrDefault(layer, x, y);
         
         var layers = level.Layers;
         if (layers[0,x,y].Geo != GeoType.ShortcutEntrance) return false;
 
         // check if all four corners are solid blocks
-        if (layers[0,x-1,y-1].Geo != GeoType.Solid) return false;
-        if (layers[0,x+1,y-1].Geo != GeoType.Solid) return false;
-        if (layers[0,x+1,y+1].Geo != GeoType.Solid) return false;
-        if (layers[0,x-1,y+1].Geo != GeoType.Solid) return false;
+        if (getc(0,x-1,y-1).Geo != GeoType.Solid) return false;
+        if (getc(0,x+1,y-1).Geo != GeoType.Solid) return false;
+        if (getc(0,x+1,y+1).Geo != GeoType.Solid) return false;
+        if (getc(0,x-1,y+1).Geo != GeoType.Solid) return false;
         
         // check if all but one of 4 neighbors are solid
         int numSolid = 0;
-        if (layers[0,x-1,y].Geo == GeoType.Solid) numSolid++;
-        if (layers[0,x+1,y].Geo == GeoType.Solid) numSolid++;
-        if (layers[0,x,y-1].Geo == GeoType.Solid) numSolid++;
-        if (layers[0,x,y+1].Geo == GeoType.Solid) numSolid++;
+        if (getc(0,x-1,y).Geo == GeoType.Solid) numSolid++;
+        if (getc(0,x+1,y).Geo == GeoType.Solid) numSolid++;
+        if (getc(0,x,y-1).Geo == GeoType.Solid) numSolid++;
+        if (getc(0,x,y+1).Geo == GeoType.Solid) numSolid++;
         if (numSolid != 3) return false;
 
 
@@ -405,7 +409,8 @@ class LevelNodeData
 
         void checkDir(int pdx, int pdy)
         {
-            if ((layers[0, x+pdx, y+pdy].Geo is GeoType.Solid or GeoType.Platform) && (layers[0, x-pdx, y-pdy].Objects & objectMask) != 0)
+            if ((getc(0, x+pdx, y+pdy).Geo is GeoType.Solid or GeoType.Platform) &&
+                (getc(0, x-pdx, y-pdy).Objects & objectMask) != 0)
             {
                 sdx = pdx;
                 sdy = pdy;

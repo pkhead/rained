@@ -420,18 +420,18 @@ partial class Level : IDisposable
     public bool IsInBounds(int x, int y) =>
         x >= 0 && y >= 0 && x < Width && y < Height;
     
-    public LevelCell GetClamped(int layer, int x, int y)
+    public ref LevelCell GetClamped(int layer, int x, int y)
     {
         x = Math.Clamp(x, 0, Width - 1);
         y = Math.Clamp(y, 0, Height - 1);
-        return Layers[layer, x, y];
+        return ref Layers[layer, x, y];
     }
 
-    public LevelCell GetBorderClamped(int layer, int x, int y)
+    public ref LevelCell GetBorderClamped(int layer, int x, int y)
     {
         x = Math.Clamp(x, BufferTilesLeft, Width - BufferTilesRight - 1);
         y = Math.Clamp(y, BufferTilesTop, Height - BufferTilesBot - 1);
-        return Layers[layer, x, y];
+        return ref Layers[layer, x, y];
     }
 
     // i added this function recently, so older code won't be using this
