@@ -162,48 +162,14 @@ class EffectsDatabase
         var jsonGroups = JsonSerializer.Deserialize<DrizzleExport.DrizzleEffectExport.EffectGroup[]>(stream, jsonOptions)
             ?? throw new Exception("Internal effects JSON is invalid");
         
-        string? lastGroupBaseName = null;
-        int lastGroupNumber = 1;
+        var groupJoiner = new GroupJoiner();
 
         foreach (var group in jsonGroups)
         {
             var groupName = group.Name.Trim();
 
-            // find start index of suffix digit
-            var groupNameDigitIdx = -1;
-            if (groupName.Length > 2)
-            {
-                for (int i = groupName.Length - 2; i >= 0; i--)
-                {
-                    if (char.IsDigit(groupName[i+1]) && !char.IsDigit(groupName[i]))
-                    {
-                        groupNameDigitIdx = i+1;
-                        break;
-                    }
-                }
-
-            }
-
-            // if suffix digit exists, only make a new group if base name changed
-            if (groupNameDigitIdx != -1)
-            {
-                var groupNumber = int.Parse(groupName[groupNameDigitIdx..]);
-                var baseName = groupName[..groupNameDigitIdx].TrimEnd();
-
-                if (lastGroupBaseName is null || baseName != lastGroupBaseName || groupNumber != lastGroupNumber+1)
-                {
-                    BeginGroup(groupName);
-                }
-
-                lastGroupNumber = groupNumber;
-                lastGroupBaseName = baseName;
-            }
-            else
-            {
-                BeginGroup(groupName);
-                lastGroupBaseName = groupName;
-                lastGroupNumber = 1;
-            }
+            if (groupJoiner.DeclareGroup(groupName))
+                BeginGroup(groupName); 
 
             foreach (var effect in group.Effects)
             {
@@ -322,6 +288,8 @@ class EffectsDatabase
             }
         }
 
+        RegisterUserGroups();
+
         // deprecated effects
         {
             BeginGroup("_deprecated_");
@@ -363,8 +331,6 @@ class EffectsDatabase
             // });
             // CustomConfig("Effect Color", "None", ["EffectColor1", "EffectColor2", "None"]);
         }
-
-        RegisterUserGroups();
     }
 
     private void RegisterCustomEffects()
@@ -604,6 +570,7 @@ class EffectsDatabase
             curGroup.Clear();
         }
 
+        var groupJoiner = new GroupJoiner();
         var lineNo = 1;
         foreach (var l in initLines)
         {
@@ -614,8 +581,13 @@ class EffectsDatabase
 
             if (line[0] == '-') // category start
             {
-                commitGroup();
-                groupName = line[1..];
+                var name = line[1..].Trim();
+
+                if (groupJoiner.DeclareGroup(name))
+                {
+                    commitGroup();
+                    groupName = name;
+                }
             }
             else
             {
@@ -679,6 +651,58 @@ class EffectsDatabase
     private void CustomConfig(string name, int min, int max)
     {
         activeEffect.customConfigs.Add(new CustomEffectInteger(name, min, max));
+    }
+
+    private struct GroupJoiner()
+    {
+        private string? lastGroupBaseName = null;
+        private int lastGroupNumber = 1;
+
+        /// <summary>
+        /// Declare a new group.
+        /// </summary>
+        /// <param name="groupName">The name of the group.</param>
+        /// <returns>True if it is a unique group; false if it is a continuation of the last group.</returns>
+        public bool DeclareGroup(string groupName)
+        {
+            bool makeNewGroup = false;
+
+            // find start index of suffix digit
+            var groupNameDigitIdx = -1;
+            if (groupName.Length > 2)
+            {
+                for (int i = groupName.Length - 2; i >= 0; i--)
+                {
+                    if (char.IsDigit(groupName[i+1]) && !char.IsDigit(groupName[i]))
+                    {
+                        groupNameDigitIdx = i+1;
+                        break;
+                    }
+                }
+
+            }
+
+            // if suffix digit exists, only make a new group if base name changed
+            if (groupNameDigitIdx != -1)
+            {
+                var groupNumber = int.Parse(groupName[groupNameDigitIdx..]);
+                var baseName = groupName[..groupNameDigitIdx].TrimEnd();
+
+                if (lastGroupBaseName is null || baseName != lastGroupBaseName || groupNumber != lastGroupNumber+1)
+                    makeNewGroup = true;
+
+                lastGroupNumber = groupNumber;
+                lastGroupBaseName = baseName;
+            }
+            else
+            {
+                makeNewGroup = true;
+                lastGroupBaseName = groupName;
+                lastGroupNumber = 1;
+            }
+
+            return makeNewGroup;
+        }
     }
 #endregion
 }
