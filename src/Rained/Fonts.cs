@@ -55,7 +55,7 @@ static class Fonts
             var builderPtr = new ImFontGlyphRangesBuilderPtr(glyphRangeBuilder);
 
             builderPtr.AddRanges(io.Fonts.GetGlyphRangesCyrillic());
-            builderPtr.AddRanges(io.Fonts.GetGlyphRangesChineseSimplifiedCommon());
+            builderPtr.AddRanges(io.Fonts.GetGlyphRangesChineseFull());
             builderPtr.AddRanges(io.Fonts.GetGlyphRangesJapanese());
 
             builderPtr.BuildRanges(out ranges);
