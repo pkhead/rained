@@ -107,3 +107,5 @@ If you send a crash report, please send me the contents of logs/latest.log.txt b
 Pull requests are welcome.
 
 Documentation about the development setup is found [here](https://pkhead.github.io/rained/en/developing.html).
+
+You can also support me through Ko-Fi donations: https://ko-fi.com/pkhead
