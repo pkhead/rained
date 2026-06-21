@@ -1,8 +1,10 @@
 # Rendering and playing
 Rendering is the process by which the level file gets processed into:
 
-- one text (.txt) file, containing only the information needed by the game to store things like the water level and level collision;
-- and several image (.png) files, one for each camera, containing the visual of the level for an entire screen.
+- one text (.txt) file, containing only the information needed by the game to
+  store things like the water level, camera positions, and level collision;
+- and one or more image (.png) files, for each camera, containing the visual of
+  the level for an entire screen.
 
 This output can be parsed by the Rain World game so that your level can be played.
 
@@ -38,19 +40,19 @@ You also have the option to render multiple levels at once. Click on **File > Ma
 </figure>
 
 You first must add the levels you want to render to the queue. There are two lists, one for individual files and one for folders.
-You can switch between the two by pressing the labeled buttons. Select the items you want by choosing them from the file browser that opens by pressing "Add".
+You can switch editing between the two by pressing the labeled buttons. Select the items you want by choosing them from the file browser that opens by pressing "Add". When rendering, it will process the items of both lists.
 
-You also have the option to specify the maximum amount of threads that can be used. These allow more than one level from the queue to be rendered simultaneously, decreasing the total wait. However, the more threads you have, the more RAM it takes and the more stress it puts on your CPU. Setting it too high may cause Rained or other programs to crash. Therefore, it is best to set it to a number fit for your system. As a reference, each thread will take a little less than 1 GB of RAM. The default option should be good for most computers.
+You also have the option to specify the maximum amount of threads that can be used. These allow more than one level from the queue to be rendered simultaneously, decreasing the total rendering time. However, the more threads you have, the more RAM it takes and the more stress it puts on your CPU. Setting it too high may cause Rained or other programs to crash. Additionally, it will (theoretically) serve no additional time gain when set to an option higher than the number of available CPU cores. Therefore, it is best to set it to a number fit for your system. As a reference, each thread will take a little less than 1 GB of RAM. The default option should be good for most computers.
 
 ## Drizzle options
 There are several options available for configuring Drizzle. These can be accessed in the Drizzle page in the preferences window, opened by selecting **File > Preferences**.
 
 ### Persistent Drizzle runtime
-Usually, Rained has to create and setup a new instance of Drizzle before starting a render. With this enabled, on the render afterward it will keep the created Drizzle instance and reuse it for subsequent renders. However, this means that Rained will eat up more RAM even though it's not using Drizzle.
+Usually, Rained has to create and setup a new instance of the Drizzle runtime before starting a render. With this enabled, instead of destroying the Drizzle runtime when a render finishes, it will keep the created Drizzle runtime and reuse it for subsequent renders. However, this means that Rained will eat up more RAM even though it's not using Drizzle.
 
-Above this option is the button "Discard Drizzle Runtime". When clicked, it will force Rained to re-create a new Drizzle instance on the next render.
+Above this option is the button labeled "Discard Drizzle Runtime". When clicked, it will destroy the persistent Drizzle runtime, forcing Rained to re-create a new Drizzle runtime on the next render.
 
-This option isn't as important, since nowadays Drizzle doesn't take so long to start up thanks to a nice optimization by Alduris.
+This option isn't as important, since nowadays, Drizzle doesn't take so long to start up thanks to a nice optimization by Alduris.
 
 ### Configuration
 There are several options available for configuring how Drizzle renders levels. This is an interface for editing the editorConfig.txt file. These options are listed below the "Rendering" category on the preferences page.
@@ -67,4 +69,4 @@ The above directories are relative to either `RainWorld_Data/StreamingAssets`, o
 
 Putting them in the `levels` folder is the simplest way to access the levels, since you can directly access them from Arena. It is more difficult to access levels from a world folder, because you need to edit room connections in a separate .txt file in order to be able to access it.
 
-Once you are in your level, you will use the Dev Tools to configure the level further. You will also have to edit the world_XX.txt file, either in a text editor or an external program like World Editor, to connect rooms together and add creature spawns. This manual will not go over the details of doing that, since Rained only concerns itself with level editing. Resources for that can be found [here](resources.md).
+Once you are in your level, you will use the Dev Tools to configure the level further. You will also have to edit the world_XX.txt file, either in a text editor or an external program like World Editor or FloodForge, to connect rooms together and add creature spawns. This manual will not go over the details of doing that, since Rained only concerns itself with level editing. Resources for that can be found [here](resources.md).

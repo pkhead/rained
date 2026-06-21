@@ -55,20 +55,21 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Open**: Open a level from disk.
     - **Open Recent**: Open a level that was recently opened.
     - **Save**: Save the level to disk.
-    - **Save As**: Choose a file on disk and save the level to it.
-    - **Render**: Render the level using Drizzle.
-    - **Export Geometry**: Export the geometry of the level without rendering the visuals, using Drizzle.
-    - **Mass Render**: Render multiple levels at once.
-    - **Reload Scripts**: Remove all autotiles, commands, and callbacks, and reload the Lua script engine.
+    - **Save As**: Choose a file path and save the level to disk.
+    - **Close**: Close the currently selected document tab.
+    - **Close All**: Close all document tabs.
+    - **Render**: Render the level using Drizzle. See [Rendering and playing](rendering.md).
+    - **Export Geometry**: Export the geometry of the level without rendering the visuals, using Drizzle. See [Rendering and playing](rendering.md).
+    - **Mass Render**: Render multiple levels at once. See [Rendering and playing](rendering.md).
     - **Preferences**: Open the preferences window.
-    - **Quit**: Quit Rained.
+    - **Quit**: Quit Rained. Equivalent to pressing the close button on the window's title bar.
 
 **Edit**
 :   - **Undo**: Undo an action.
     - **Redo**: Redo an action.
     - **Resize Level**: Open the level resize window.
-    - **Commands**: List of plugin/script commands that can be executed.
-    - Edit actions for the current edit mode will be shown in this menu.
+    - **Commands**: List of plugin/script commands that can be executed. See [Scripting](scripting.md).
+    - Edit actions for the current edit mode will be shown in this menu. Although, users typically do not need to use them often.
 
 **View**
 :   - **Zoom In**: Zoom the viewport inwards.
@@ -79,7 +80,7 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Props**: Toggle the visibility of props outside of the Props edit mode.
     - **Camera Borders**: Toggle the visibility of camera boundaries.
     - **Tile Graphics**: Toggle whether or not tiles are rendered using the in-game render or the editor preview.
-    - **Node Indices**: Options for displaying the numbers and locations of each creature entrance in the level, useful for world editing.
+    - **Node Indices**: Options for displaying the indices and locations of each den or inter-room connection node in the level. Useful for world editing. The same options can also be accessed through the Preferences window.
     - **Obscured Beams**: If on, will show negative space for a horizontal or vertical beam if placed inside a wall.
     - **Tile Heads**: If on, will show a cross at the location of each tile head in the level.
     - **Keyboard Shortcuts**: Toggle the visibility of the keyboard shortcuts window.
@@ -87,10 +88,19 @@ Whenever this documentation refers to an item in the menubar, it will do so by f
     - **Palettes**: Toggle the visibility of the palettes window.
     - **Tile Preview**: Toggles for tile preview visuals.
     - **Home**: Opens the Home tab.
-    - **Show Data Folder**: Open the system's file browser to the Drizzle data folder.
-    - **Show Render Folder**: Open the system's file browser to the folder where Drizzle outputs level renders.
+    - **Open Folder**: Open the system's file browser to several noteworthy folders:
+        - Data: the Drizzle data folder
+        - Render: `Data/Levels`
+        - Config: The folder containing Rained configuration files
+        - Scripts: The folder containing Rained script files
+
+**Tools**
+:   - **Reload Scripts**: Remove all autotiles, commands, and callbacks, and reload the Lua script engine.
+    - **Execute Script**: Opens the file browser, expecting you to choose a Lua source code file. It will execute that
+                          file once given.
+    - **Asset Manager**: Opens the [Asset Manager](asset-manager.md)
 
 **Help**
 :   - **Readme**: Opens the README.txt file in your preferred text viewer.
-    - **Manual**: Opens your preferred file browser to this website.
+    - **Manual**: Opens your preferred file browser to the locally installed manual.
     - **About**: Shows/hides the about window.

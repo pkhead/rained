@@ -9,6 +9,7 @@ Rained should notify you of any new updates upon startup or in the About window.
 If you want to update Rained, you should remove and replace all the files and folders from the installation folder **except**:
 
 - config/
+- scripts/ (if you have custom scripts)
 - Your Data folder, if present.
 
 Then, download and extract the new version of Rained from the releases page.
@@ -31,7 +32,7 @@ Rained should notify you of any new updates upon startup or in the About window.
 If you want to update Rained, run rainedvm again, select the version you want to upgrade to, and press "Install". If you launch Rained after updating and the windows are messed up, delete the config/imgui.ini file, select the version you are on in the version manager, and press "Sync", which replaces the "Install" button. This will reset the window configuration to the default for that version.
 
 ### File conflicts
-rainedvm will detect if you have modified any files (other than config/preferences and config/imgui.ini) and if that file had been changed in the new version, will ask you if you want to either overwrite the changes with the new version, or keep your file changes. On each prompt, if you want the file to be updated, select "Overwrite Changes". Otherwise, select "Keep Changes". You may also cancel the entire operation at that point by pressing the "Cancel" button.
+rainedvm will detect if you have modified any files, and if that file had been changed in the new version, will ask you if you want to either overwrite the changes with the new version, or keep your file changes. On each prompt, if you want the file to be updated, select "Overwrite Changes". Otherwise, select "Keep Changes". You may also cancel the entire operation at that point by pressing the "Cancel" button.
 
 ## Asset installation
 Your first launch of Rained should look like this:
@@ -44,7 +45,7 @@ Your first launch of Rained should look like this:
 
     If you do not already have an installation of a different Rain World level editor on your computer, select "Download Data". Otherwise, continue reading.
 
-Each Rain World level editor should come with a set of tiles, props, and vanilla and DLC levels. However, trying using the same set of tiles, props, and created levels across different level editors can be cumbersome, as they have their own folder/directory to store this data. Additionally, the set of bundled level files takes around 4 GB of storage.
+Each Rain World level editor should come with a set of tiles, props, and vanilla and DLC levels. However, trying using the same set of tiles, props, and created levels across different level editors can be cumbersome, as they have their own folder/directory to store this data. Additionally, the set of bundled level files takes around 4 GB of storage (as of Downpour)
 
 To accomodate for this, Rained allows you to choose whether or not you want it to use a pre-existing directory on your computer for tiles, props, and levels. If you do not already have these installed on your computer (or if you just want to), you need to select "Download Data". It will download the required files from the Internet. Otherwise, you may select "Choose Data Folder". This will open up a file browser where you will choose the correct data directory. The directory you choose should contain the following subdirectories:
 
@@ -53,8 +54,9 @@ To accomodate for this, Rained allows you to choose whether or not you want it t
 - Levels
 - LevelEditorProjects *(optional)*
 - Materials *(optional)*
+- Effects *(optional)*
 
-You can also change the data directory after this initial set-up. This is done by modifying the Data Path option, located in the preferences window (**File > Preferences**) and the asset manager (**File > Asset Manager**).
+You can also change the data directory after this initial set-up. This is done by modifying the Data Path option, located in the preferences window (**File > Preferences**) and the asset manager (**Tools > Asset Manager**).
 
 !!! note
 

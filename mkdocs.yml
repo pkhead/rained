@@ -21,6 +21,9 @@ nav:
       - Effects: effects.md
       - Props: props.md
     - Rendering and playing: rendering.md
+    - Asset manager: asset-manager.md
+    - Scripting: scripting.md
+    - Command-line interface: cmd-interface.md
     - Further reading: resources.md
   - Developing: developing.md
 

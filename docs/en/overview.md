@@ -1,10 +1,21 @@
 # Overview
-Each level is composed of three work layers that each form a grid. The first layer is the one that is closest to the camera and that all creatures will collide and interact with. The second layer is the layer that is second closest to the camera and the first background layer. Certain creatures may be able to interact with this layer by, for example, climbing on it. The third, final layer, is the furthest layer and cannot be interacted with by any creatures.
+Each level is composed of three work layers that each form a grid. Each layer is
+numbered by their distance from the camera, closest to furthest. That is, the
+first layer is closest, and the third layer the furthest. Each layer serves a
+unique functional purpose:
+
+- Layer 1: Foreground layer. All game objects will collide with this layer.
+- Layer 2: Background layer. No interaction with this layer, except for use as a
+  climbing surface (see blue lizards).
+- Layer 3: Background layer. Purely for visual purposes, as it cannot be
+  interacted with by any game procedures or logic.
 
 Levels are created in the level editor are then are rendered into:
 
-- one text (.txt) file, containing only the information needed by the game to store things like the water level and level collision;
-- and several image (.png) files, one for each camera, containing the visual of the level for an entire screen.
+- one text (.txt) file, containing only the information needed by the game to
+  store things like the water level, camera positions, and level collision;
+- and one or more image (.png) files, for each camera, containing the visual of
+  the level for an entire screen.
 
 The files rendered for the game are incompatible with the files for the level editor, and vice versa.
 
@@ -25,6 +36,7 @@ This is the window where you configure the options for a newly created level. It
 - **Border Tiles**: Controls the distance from the edge for each side of the level border. The purpose of this is explained [shortly afterwards](#border).
 - **Fill Layers**: Controls which layers you want to be filled with solid geometry.
 - **Auto-place Cameras**: If checked, will automatically place one or more cameras to fit the level bounds. If unchecked, instead only one camera will be placed at a location independent of the level creation parameters.
+- **Shadowed**: If checked, the level's lightmap will be generated fully in shadow.
 
 ## Level viewport
 <figure markdown="span">

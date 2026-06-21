@@ -83,6 +83,7 @@ function rained.getApiVersion() end
 --- - commands, autotiles, and onUpdate are no-ops.
 --- - `rained.history`, `rained.gui`, and `rained.view` will be nil.
 --- - alert will instead print messages to stdout.
+--- - attempting to index the `imgui` module will throw an error.
 ---@return boolean isConsole
 function rained.isBatchMode() end
 

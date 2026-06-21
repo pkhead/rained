@@ -7,7 +7,7 @@ Props are used similarly to tiles but with a higher degree of freedom for placem
 positioned into any of the 30 sublayers rather than only one of the 3 work layers. Additionally, props are also used to make destruction effects and place
 physically simulated ropes, tubes, and wires.
 
-Unlike tiles, however, props do not affect geometry. If you want a prop to be collidable, you must place fitting geometry and make it invisible. This is done by using the Invisible Wall geometry type, the Invisible material, or filling them with an empty tile.
+Unlike tiles, however, props do not affect geometry. If you want a prop to be faux-collidable, you must place fitting geometry and make it invisible. This is done by using the Invisible Wall geometry type, the Invisible material, or filling them with an empty tile. You can also add a superslope object in the Rain World developer tools, but, as that is done within a separate program, it is a matter which does not concern Rained.
 
 ## Editing props
 You first must select the prop you want to place in the prop catalog, similar to how you would with tiles. Then, to place it down, either right-click in the level view or press the <kbd>C</kbd> key.

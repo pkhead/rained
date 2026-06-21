@@ -20,20 +20,20 @@ To paint geometry with a material, simply hold down the left mouse button. To er
 
 !!! note
 
-    Materials will not be visualized if the cell is also occupied by a tile. Removing the tile will expose the material underneath, but any materials obscured by tiles will not be saved in the file.
+    Materials will not be visualized if the cell is also occupied by a tile. Removing the tile will expose the material underneath, but any materials obscured by tiles will not be saved in the file, due to a limitation of the level editor save format.
 
 ### Modifiers
-There are two placement/erasure modifiers you can use while painting. The first is "Force Geometry", which is activated by holding down the <kbd>G</kbd> key. This will allow you to paint onto empty space, where Rained will then automatically place wall geometry onto the area to allow the material to be placed. The second is "Ignore Different", activated by holding down the <kbd>R</kbd> key. It will prevent overwriting materials in cells, making it so you can only draw on cells without an already assigned material. It can also be active simultaneously with the "Force Geometry" modifier.
+There are two placement/erasure modifiers you can use while painting. The first is "Force Geometry", which is activated by holding down the <kbd>G</kbd> key. This will allow you to paint onto empty space, where Rained will then automatically place wall geometry onto the area to allow the material to be placed. The second is "Disallow Overwrite", activated by holding down the <kbd>R</kbd> key. It will prevent overwriting materials in cells, making it so you can only draw on cells without an already assigned material. It can also be active simultaneously with the "Force Geometry" modifier.
 
 ## Tiles
-A tile is a premade art asset that you can place in a level. Each tile was drawn by someone in an image editor or paint program, depicting things such as metal beams, pipes, stones, machines, and other set pieces.
+A tile is a premade visual asset that you can place in a level. Each tile was drawn by someone using image editing software, depicting things such as metal beams, pipes, stones, machines, and other set pieces.
 
 Functionally, they behave similarly to tiles in tile-based games/level editors, but there are a few things specific to Rain World's version of tiles.
 
-1. Tiles can be of any grid-aligned width and height.
-2. Each tile has a geometry specification, which limits/forces the pattern of geometry the tile can be placed on.
-3. Tiles can have either one or two layers of depth.
-4. Parts of a tile can be removed and the tile will still render as normal.
+- Tiles can be of any grid-aligned width and height.
+- Each tile has a geometry specification, which limits/forces the pattern of geometry the tile can be placed on.
+- Tiles can have one or two layers of depth.
+- Parts of a tile can be removed and the tile will still render as normal.
 
 ### Placement
 In order to place a tile, you first must select the tile you want to place in the tile selector, depicted below. The left column displays tile categories, and the right column displays tiles in the currently selected tile category. Hovering over an item in the right column will show a pop-up preview of the tile, and clicking on it will select that tile.
@@ -43,7 +43,7 @@ In order to place a tile, you first must select the tile you want to place in th
     <figcaption>The tile selector.</figcaption>
 </figure>
 
-With a tile selected and your mouse over the level view, a preview of the tile will display over your mouse which is called the "tile cursor". Pressing down the left mouse button will place down the tile at that position. and pressing down the right mouse button will remove the tile at the cell that is being hovered over. You can also place or remove a rectangular area of tiles by holding <kbd>Shift</kbd> before pressing either the left or right mouse button.
+With a tile selected and your mouse over the level view, a preview of the tile will display over your mouse, which is called the "tile cursor". Pressing down the left mouse button will place down the tile at that position. and pressing down the right mouse button will remove the tile at the cell that is being hovered over. You can also place or remove a rectangular area of tiles by holding <kbd>Shift</kbd> before pressing either the left or right mouse button.
 
 !!! info
 
@@ -61,6 +61,11 @@ The requirement of each individual cell should be obvious—as it shows an outli
 - **Unspecified**: This will not show an outline at a given cell. This means that any kind of geometry is tolerated at that space, and if the tile is placed down with the "Force Geometry" modifier that space will not be modified.
 - **Air**: This will show as a cross, meaning that the geometry at that space must be an air cell.
 
+If the geometry underneath a tile does not match the geometry specifications, the tile cursor will be tinted red, and
+you will not be able to place the tile.
+
+This is a soft limitation, however: even with mismatched geometry, the tile will still render normally.
+
 ### Modifiers
 Normally, you will not be able to place down a tile if the geometry under the cursor does not meet the specifications for the selected tile. In this case, the cursor tile preview will be colored red instead of white. However, you can force Rained to place down the tile regardless of the underlying geometry if you have either the "Force Placement" or "Force Geometry" modifiers active.
 
@@ -75,16 +80,24 @@ These modifiers also work with the rectangular-area fill/erase feature, but "For
 
 ### Heads and Bodies
 
-Rain World handles tiles differently than one would intuit. Normally, a tile appears as and behaves like a singular whole when editing, but in reality a tile is composed of multiple "atoms", each of a 1x1 grid size, that are arranged to form the whole tile. For each placed tile, there is one tile head and zero or more tile bodies that make up the tile.
+Rain World handles tiles differently than one would intuit. Normally, a tile appears as and behaves like a singular whole when editing, but, in reality, a tile, when whole, is a composition of multiple atomic parts: every cell within the tile is assigned to be a
+tile body, and the center of the tile is assigned to be the tile head.
 
 <figure markdown="span">
     ![Tile head highlighted.](img/tilehead.png)
     <figcaption>A tile with its tile head marked by an X.</figcaption>
 </figure>
 
-The center of every tile is the tile head, which is required for a tile to exist as it is the component that references the tile being rendered. The tile head is surrounded by zero or more tile bodies, each of which store a reference to their corresponding tile head. Rained knows which portion of the texture to render for each tile body based by their position relative to its tile head. You may highlight each tile head in the level by enabling **View > Tile Heads**.
+The tile head is required for a tile to exist, as it is the component that asserts the existence of the tile. It is
+surrounded by zero or more tile bodies, each of which store a reference to the location of their corresponding tile
+head. Rained knows which portion of the texture to render for each tile body based off their position relative to its
+tile head.
 
-It is valid for a tile to be missing some tile bodies. You can do so by force-placing another tile over another one, which will remove some tile bodies of the tile being overlapped. However, you cannot place a tile in such a way that it overwrites the tile head, no matter what modifier you use, since by doing so all tile bodies reference by the tile head will become invalid.
+!!! tip
+
+    You may highlight each tile head in the level by enabling **View > Tile Heads**.
+
+It is valid for a tile to be missing some tile bodies. You can do so by force-placing another tile over another one, which will remove some tile bodies of the tile being overlapped. However, you cannot place a tile in such a way that it overwrites the tile head, no matter what modifier you use, since, by doing so, all tile bodies reference by the tile head will become invalid.
 
 In regards to rendering, tile bodies that are missing do not cause the render to be missing those parts of the rendered tile; the tile in its entirety will still be rendered. However, it does affect how the geometry at that tile body is rendered. Without a tile body, the geometry will be rendered overlapping with the tile graphics, whereas with a tile body there will be no rendered geometry at that cell.
 
@@ -104,7 +117,7 @@ Note that the tile graphics preview is inaccurate in regards to geometry renderi
 </figure>
 
 ## Autotiles
-Certain tiles are meant to be parts of a structure. Examples include fence tiles, SU patterns, SU grates, and pipes. The autotiling system is used to quicken the process of creating these structures.
+Certain tiles are meant to be parts of a larger structure. Examples include fence tiles, SU patterns, SU grates, and pipes. The autotiling system is used to aid in the process of creating these structures.
 
 To use autotiles, you first must select the "Autotiles" tab in the Tile Selector window. There will be a list of autotiles under different drop-down categories. Select one from one of these categories in order to be able to use it.
 

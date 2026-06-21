@@ -11,7 +11,10 @@ You may either ping me in a relevant channel in the server of your choice, or DM
 me (they are open).
 
 You may also join my Discord server if you find announcement channels a
-conveninent way of keeping track of Rained news and updates.
+conveninent way of keeping track of Rained news and updates. If you want some
+other way of keeping track of updates (e.g. Twitter, Bluesky, RSS feed), you may
+suggest the idea to me and I may implement it, as the demand becomes present to
+my awareness.
 
 If you send a crash report, please send me the contents of logs/latest.log.txt
 before relaunching the program.
