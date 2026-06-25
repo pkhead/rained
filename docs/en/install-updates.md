@@ -51,8 +51,8 @@ To accomodate for this, Rained allows you to choose whether or not you want it t
 
 - Graphics
 - Props
-- Levels
-- LevelEditorProjects *(optional)*
+- LevelEditorProjects
+- Levels *(optional)*
 - Materials *(optional)*
 - Effects *(optional)*
 
