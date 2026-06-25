@@ -303,7 +303,7 @@ static class PreferencesWindow
         List<string> list = [];
         list.Add("Graphics");
         list.Add("Props");
-        list.Add("Levels");
+        list.Add("LevelEditorProjects");
 
         for (int i = list.Count - 1; i >= 0; i--)
         {

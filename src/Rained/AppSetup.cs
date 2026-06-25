@@ -254,7 +254,7 @@ class AppSetup
             missingDirs.Clear();
             missingDirs.Add("Graphics");
             missingDirs.Add("Props");
-            missingDirs.Add("Levels");
+            missingDirs.Add("LevelEditorProjects");
 
             for (int i = missingDirs.Count - 1; i >= 0; i--)
             {
