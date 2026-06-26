@@ -431,6 +431,21 @@ partial class FileBrowser
             ImGui.SetNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
         }
 
+        // Constrain the window to the work area EVERY frame. The popup persists its
+        // size in imgui.ini (shared across machines), and SetNextWindowSize above only
+        // clamps on FirstUseEver — so a size saved on a larger monitor is restored
+        // verbatim on a smaller/4:3 screen, opening the modal taller than the display
+        // with its title bar and OK/Cancel buttons off-screen. Being modal, that blocks
+        // the whole app while appearing not to display. Clamping max to WorkSize here
+        // prevents the window from ever exceeding the current screen.
+        {
+            var workSize = ImGui.GetMainViewport().WorkSize;
+            var minSize = Vector2.Min(
+                new Vector2(ImGui.GetTextLineHeight() * 30f, ImGui.GetTextLineHeight() * 20f),
+                workSize);
+            ImGui.SetNextWindowSizeConstraints(minSize, workSize);
+        }
+
         if (ImGui.BeginPopupModal(winName + "###File Browser"))
         {
             var windowSize = ImGui.GetWindowSize();
