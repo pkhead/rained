@@ -628,7 +628,7 @@ static class PropModule
                 case "isFezTree":
                     lua.PushBoolean(prop.FezTree is not null);
                     break;
-                
+
                 case "fezTreeEffectColor":
                     if (prop.FezTree is not null)
                         lua.PushInteger((int)prop.FezTree.EffectColor);
@@ -718,7 +718,13 @@ static class PropModule
                     else
                         lua.PushNil();
                     break;
-                
+
+                case "ropeEffectColor":
+                    if (prop.Rope is not null)
+                        lua.PushInteger((int)prop.Rope.EffectColor);
+                    else
+                        lua.PushNil();
+                    break;
                 default:
                     lua.PushNil();
                     break;
@@ -893,7 +899,15 @@ static class PropModule
                     // scripting feature anyway.
                     prop.MosaicPlant.FlowerColor = (PropEffectColor) int.Clamp( (int)lua.CheckInteger(3), 0, 2 );
                     break;
-                    
+
+                case "ropeEffectColor":
+                    if (prop.Rope is null)
+                        return lua.ErrorWhere("prop is not a rope");
+
+                    SettingsChange(prop);
+                    prop.Rope.EffectColor = (PropEffectColor)int.Clamp((int)lua.CheckInteger(3), 0, 2);
+                    break;
+
                 default:
                     return lua.ErrorWhere($"unknown field \"{k}\"");
             }

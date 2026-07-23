@@ -96,6 +96,7 @@ record class PropInit
     public readonly int[] LayerDepths;
     public readonly int VariationCount;
     public readonly string[] Notes;
+    public readonly string[] Tags;
     public readonly RopeInit? Rope;
 
     // used for obtaining preview image
@@ -228,6 +229,7 @@ record class PropInit
 
         // read notes
         var tags = ((Lingo.LinearList)init["tags"]).Cast<string>();
+        Tags = tags.ToArray();
 
         PropFlags = 0;
         if (init.TryGetValue("notes", out tempObject))
@@ -489,6 +491,11 @@ record RopeInit
             selfPush = Lingo.LingoNumber.AsFloat(init["selfPush"]),
             sourcePush = Lingo.LingoNumber.AsFloat(init["sourcePush"])
         };
+    }
+
+    public bool HasEffectColor(PropInit propInit)
+    {
+        return propInit.Tags.Contains("wire");
     }
 }
 

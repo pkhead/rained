@@ -861,6 +861,8 @@ partial class PropEditor : IEditorMode
                     if (ImGui.Checkbox("Apply Color", ref prop.ApplyColor))
                         changeRecorder.PushSettingsChanges();
                 }
+                if (prop.PropInit.Rope != null && prop.PropInit.Rope.HasEffectColor(prop.PropInit))
+                    MultiselectSwitchInput<PropRope, PropEffectColor>(ropes.ToArray(), "Effect Color", "EffectColor", ["X", "1", "2"]);
             }
 
             // rope simulation controls

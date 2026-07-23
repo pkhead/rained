@@ -608,6 +608,9 @@ class VanillaFileFormat : ILevelFileFormat
                     prop.TryConvertToAffine();
                     level.Props.Add(prop);
 
+                    // for optional settings
+                    object? tempObject;
+
                     // read rope points if needed
                     if (propInit.Rope is not null)
                     {
@@ -620,10 +623,9 @@ class VanillaFileFormat : ILevelFileFormat
                         }
 
                         prop.Rope!.LoadPoints(pointList.ToArray());
+                        if (propInit.Rope.HasEffectColor(propInit) && settingsData.TryGetValue("color", out tempObject))
+                            prop.Rope.EffectColor = (PropEffectColor)Lingo.LingoNumber.AsInt(tempObject);
                     }
-
-                    // for optional settings
-                    object? tempObject;
 
                     // read tree parameters
                     if (prop.FezTree is not null)
@@ -1149,6 +1151,8 @@ class VanillaFileFormat : ILevelFileFormat
                         throw new Exception($"Invalid rope release mode for '{propInit.Name}");
                 }
 
+                if (propInit.Rope.HasEffectColor(propInit))
+                    output.AppendFormat(", #color: {0}", (int)prop.Rope.EffectColor);
                 if (propInit.PropFlags.HasFlag(PropFlags.CanSetThickness))
                     output.AppendFormat(", #thickness: {0}", prop.Rope!.Thickness.ToString("0.0000", CultureInfo.InvariantCulture));
             }

@@ -97,6 +97,7 @@ class PropRope
     private readonly PropInit init; 
     private RopeModel? model;
     public RopeReleaseMode ReleaseMode;
+    public PropEffectColor EffectColor = PropEffectColor.Dead;
 
     /// <summary>
     /// The speed at which the rope is being simulated.
@@ -385,6 +386,12 @@ class Prop
         newProp.Variation = srcProp.Variation;
         newProp.Seed = srcProp.Seed;
         newProp.RenderTime = srcProp.RenderTime;
+
+        if (newProp.Rope is not null)
+        {
+            Debug.Assert(Rope is not null);
+            newProp.Rope.EffectColor = Rope.EffectColor;
+        }
 
         // copy fez tree properties
         if (newProp.FezTree is not null)

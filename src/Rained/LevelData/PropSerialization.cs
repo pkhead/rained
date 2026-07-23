@@ -99,6 +99,7 @@ static class PropSerialization
                 Debug.Assert(rope is not null);
                 tmpWriter.Write(rope.Thickness);
                 tmpWriter.Write((byte)rope.ReleaseMode);
+                tmpWriter.Write((byte)rope.EffectColor);
 
                 // ends of the rope
                 tmpWriter.Write(ropeModel.PointA.X);
@@ -231,6 +232,7 @@ static class PropSerialization
                 Debug.Assert(prop.Rope is not null);
                 prop.Rope.Thickness = reader.ReadSingle();
                 prop.Rope.ReleaseMode = (RopeReleaseMode) reader.ReadByte();
+                prop.Rope.EffectColor = (PropEffectColor)reader.ReadByte();
 
                 // ends of the rope
                 prop.Rope.PointA.X = reader.ReadSingle();

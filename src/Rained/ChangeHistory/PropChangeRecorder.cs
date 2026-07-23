@@ -90,7 +90,7 @@ record PropSettings(Prop Prop)
 
     public float FezLeafDensity = Prop.FezTree?.LeafDensity ?? 0f;
     public int EffectColor
-        = (int)(Prop.FezTree?.EffectColor ?? Prop.MosaicPlant?.EffectColor ?? PropEffectColor.Dead);
+        = (int)(Prop.FezTree?.EffectColor ?? Prop.MosaicPlant?.EffectColor ?? Prop.Rope?.EffectColor ?? PropEffectColor.Dead);
 
     public MosaicPlantColorIntensity MosaicColorIntensity =
         Prop.MosaicPlant?.ColorIntensity ?? MosaicPlantColorIntensity.None;
@@ -113,7 +113,8 @@ record PropSettings(Prop Prop)
         {
             rope.ReleaseMode = ReleaseMode;
             rope.Thickness = RopeThickness;
-            
+            rope.EffectColor = (PropEffectColor)EffectColor;
+
             if (prop.IsAffine)
             {
                 prop.Rect.Size.Y = PropHeight;
