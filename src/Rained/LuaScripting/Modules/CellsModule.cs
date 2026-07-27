@@ -111,7 +111,7 @@ static class CellsModule
             if (layer < 0 || layer > 2) throw new LuaHelpers.LuaErrorException("invald layer " + (layer+1));
 
             ref var cell = ref LuaInterface.Host.LevelCheck(lua).Layers[layer, x, y];
-            for (int i = 1; i < 32; i++)
+            for (int i = 1; i <= 32; i++)
             {
                 if (cell.Has((LevelObject)(1 << (i-1))))
                 {
@@ -139,13 +139,27 @@ static class CellsModule
 
             for (int i = 1; i <= lua.Length(4); i++)
             {
-                int k = (int) lua.GetInteger(4, i);
+                var kType = lua.GetInteger(4, i);
+                if (kType is not LuaType.Number)
+                {
+                    var typeName = lua.UserTypeName(-1);
+                    throw new LuaHelpers.LuaErrorException($"bad element #{i} to argument #4 (number expected, got {typeName})");
+                }
+
+                var kNull = lua.ToIntegerX(-1);
+                if (kNull is null)
+                    throw new LuaHelpers.LuaErrorException($"bad element #{i} to argument #4 (number has no integer representation)");
+                
+                var k = (int) kNull.Value;
+                lua.Pop(1);
+
+                if (k == 0) continue;
                 if (k < 1 || k >= 32) throw new LuaHelpers.LuaErrorException("invalid geometry object");
                 objects |= (LevelObject)(1 << (k-1));
             }
 
             LuaInterface.Host.LevelCheck(lua).Layers[layer, x, y].Objects = objects;
-            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects | CellDirtyFlags.Geometry);
 
             return 0;
         });
@@ -197,7 +211,7 @@ static class CellsModule
 
             ref var cell = ref LuaInterface.Host.LevelCheck(lua).Layers[layer, x, y];
             cell.Objects |= objs;
-            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects | CellDirtyFlags.Geometry);
             return 0;
         });
         lua.SetField(-2, "addObject");
@@ -223,7 +237,7 @@ static class CellsModule
 
             ref var cell = ref LuaInterface.Host.LevelCheck(lua).Layers[layer, x, y];
             cell.Objects &= ~objs;
-            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects);
+            LuaInterface.Host.InvalidateCell(x, y, layer, CellDirtyFlags.Objects | CellDirtyFlags.Geometry);
             return 0;
         });
         lua.SetField(-2, "removeObject");
