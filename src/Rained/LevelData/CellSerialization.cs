@@ -82,8 +82,10 @@ static class CellSerialization
         var stream = new MemoryStream(1 + sizeof(uint) * 3);
         var writer = new BinaryWriter(stream);
 
-        // version number, pos and size
+        // version number. bump version whenever serialization format changes.
         writer.Write((byte)0);
+
+        // pos and size
         writer.Write(origX);
         writer.Write(origY);
         writer.Write((uint)width);

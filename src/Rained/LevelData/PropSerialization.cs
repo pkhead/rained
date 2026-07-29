@@ -32,10 +32,15 @@ static class PropSerialization
         using var stream = new MemoryStream(1 + sizeof(uint) * 3);
         using var writer = new BinaryWriter(stream);
 
-        // version number
+        // version number. bump version whenever serialization format changes.
+        // i know version tracking isn't necessary because binary serialization
+        // is only used for the system clipboard, which is a very ephermal
+        // medium. but maybe in the future i want to use this system to save
+        // stuff on disk.
         // 0: initial version
         // 1: fez tree support
-        writer.Write((byte)1);
+        // 2: mosaic plants
+        writer.Write((byte)2);
 
         // write prop type table
         writer.Write((uint)propNames.Count);
@@ -120,16 +125,32 @@ static class PropSerialization
                 }
             }
 
-            // fez tree data
+            // fez tree/mosaic plant data
             var fezTree = prop.FezTree;
-            tmpWriter.Write((byte)(fezTree is not null ? 1 : 0));
+            var mosaicPlant = prop.MosaicPlant;
+
             if (fezTree is not null)
             {
+                tmpWriter.Write((byte)1);
+                
                 tmpWriter.Write((byte)fezTree.EffectColor);
                 tmpWriter.Write((float)fezTree.LeafDensity);
                 tmpWriter.Write((float)fezTree.TrunkPosition.X);
                 tmpWriter.Write((float)fezTree.TrunkPosition.Y);
                 tmpWriter.Write((float)fezTree.TrunkAngle);
+            }
+            else if (mosaicPlant is not null)
+            {
+                tmpWriter.Write((byte)2);
+
+                tmpWriter.Write((byte)mosaicPlant.EffectColor);
+                tmpWriter.Write((byte)mosaicPlant.ColorIntensity);
+                tmpWriter.Write((byte)mosaicPlant.FlowerColor);
+                tmpWriter.Write((bool)mosaicPlant.HasFlowers);
+            }
+            else
+            {
+                tmpWriter.Write((byte)0);
             }
 
             // then, write size of data + data itself to main stream
@@ -149,7 +170,7 @@ static class PropSerialization
         var propDb = RainEd.Instance.PropDatabase;
 
         var version = reader.ReadByte();
-        if (version < 0 || version > 1)
+        if (version < 0 || version > 2)
         {
             Log.Error("DeserializeProps: Invalid version?");
             return null;
@@ -159,7 +180,7 @@ static class PropSerialization
         var numPropTypes = reader.ReadInt32();
         PropInit?[] propInits = new PropInit[numPropTypes];
         for (int i = 0; i < numPropTypes; i++)
-        {            
+        {
             var strLen = (int)reader.ReadByte();
             var name = Encoding.UTF8.GetString(reader.ReadBytes(strLen));
 
@@ -254,11 +275,13 @@ static class PropSerialization
                 prop.Rope.LoadPoints(segments);
             }
 
-            // fez tree data?
+            // fez tree/mosaic plant data?
             if (version >= 1)
             {
-                var hasFezTree = reader.ReadByte() != 0;
-                if (hasFezTree)
+                var customDataType = reader.ReadByte();
+
+                // fez tree
+                if (customDataType == 1)
                 {
                     Debug.Assert(prop.FezTree is not null);
 
@@ -267,6 +290,20 @@ static class PropSerialization
                     prop.FezTree.TrunkPosition.X = reader.ReadSingle();
                     prop.FezTree.TrunkPosition.Y = reader.ReadSingle();
                     prop.FezTree.TrunkAngle = reader.ReadSingle();
+                }
+                // mosaic plant
+                else if (customDataType == 2)
+                {
+                    Debug.Assert(prop.MosaicPlant is not null);
+                    
+                    prop.MosaicPlant.EffectColor = (PropEffectColor) reader.ReadByte();
+                    prop.MosaicPlant.ColorIntensity = (MosaicPlantColorIntensity) reader.ReadByte();
+                    prop.MosaicPlant.FlowerColor = (PropEffectColor) reader.ReadByte();
+                    prop.MosaicPlant.HasFlowers = reader.ReadBoolean();
+                }
+                else if (customDataType != 0)
+                {
+                    Log.Warning("DeserializeProps: Invalid custom data type");
                 }
             }
         }
