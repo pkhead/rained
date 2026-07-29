@@ -149,3 +149,92 @@ rgb(150,0,150) —> shadow color A
 rgb(0,150,150) —> shadow color B
 
 What’s the gigantic singular case you might then ask? Any color rgb(x,255,150) turns into batfly hive white, fading from I think it’s midtone to white based on the red channel
+
+== Plugin System ==
+An overhaul of the scripting system, which allows for easier distribution,
+organization and selective sandboxing.
+
+There shall be a folder named "plugins", with that folder containing plugins.
+Riveting, I know. A "plugin" is a folder of this structure:
+
+id/
+  init.lua
+  [more lua files]
+  config.json
+
+config.json:
+{
+  "name": "Plugin Name",
+  "author": "pkhead",
+  // or "authors": ["pkhead"] if multiple
+  "autorun": false, // if true, init.lua will be automatically ran on load
+}
+
+A plugin may also be a .zip file mirroring the folder structure. ZIP plugins
+will be handled transparently by filesystem operations.
+
+## Sandboxing
+
+everything runs in a sandboxed environment. there are several restrictions:
+
+- os, io, and debug functionality is limited. package.loadlib is disabled, and
+  no DLL/SOs can be loaded through require.
+- everything operates within a "virtual" filesystem:
+    /config   (for rained/config/plugin-data)
+    /plugins  (for rained/plugins. read-only.)
+    /projects (for LevelEditorProjects. read-only.)
+    (root is unwriteable)
+
+to run a piece of code in an unsandboxed environment, use the `edostring` or
+`edofile` functions. (e stands for elevated.) they will run the given code
+in a completely separate unsandboxed Lua environment. the first argument is the
+given file/string, and the following arguments are parameters passed to the
+execution context. there will be an API for a Channel Object provided that
+allows communication between regular and elevated code. Also elevated code
+cannot access the rained API because i'm lazy. it's a different lua state, so
+storing function references would be difficult.
+
+whenever elevated excecution is requested, a prompt will show up to the user
+asking for an OK. the prompt will show the stack trace. maybe also show the
+executed string/file. this should also work in headless mode. it will pause the
+program until the user gives input through stdin.
+
+How will the user be able to allow one specific plugin to run elevated code
+without prompting? well. I suppose. It will look at the first Lua source file
+in the stack trace. if that Lua file belongs to a plugin in the whitelist then
+it will unconditionally agree.
+
+```
+local str = [[
+  local ch = ...
+
+  ch.message = function(...)
+    print("received message:", ...)
+  end
+
+  ch:send("Hello, world!")
+]]
+
+local ch = newchannel()
+local req = edostring(str, ch)
+req.done = function(s)
+  if s then
+    print("Agreed")
+
+    ch.message = function(...)
+      print("received message! pong it back!")
+      ch:send(...)
+    end
+  else
+    print("Disagreed")
+  end
+end
+```
+
+also in the assets folder is the "plugins" folder. it contains the built-in
+rained plugins:
+  rainedx.pattern_box
+  rainedx.stringify
+  rainedx.autotiles
+  rainedx.detach_fix
+  rainedx.rendercopy
