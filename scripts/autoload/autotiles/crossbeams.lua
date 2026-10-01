@@ -67,7 +67,7 @@ do
             endB = "Cross Beam Secured SW"
         },
         distant = {
-            main = "Cross Beam A Distant",
+            main = "Cross Beam B Distant",
             endA = "Cross Beam Secured NE Distant",
             endB = "Cross Beam Secured SW Distant"
         }
