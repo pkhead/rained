@@ -321,19 +321,18 @@ class TileDatabase
             Log.UserLogger.Error("Could not read cast Drought Needed Init.txt");
         }
 
-        // purge empty categories
+        // cache category indices
+        for (int i = 0; i < Categories.Count; i++)
+            Categories[i].Index = i;
+
+        // warn on empty categories
         for (int i = Categories.Count - 1; i >= 0; i--)
         {
             if (Categories[i].Tiles.Count == 0)
             {
                 Log.UserLogger.Warning("{Category} was empty", Categories[i].Name);
-                Categories.RemoveAt(i);
             }
         }
-
-        // cache category indices
-        for (int i = 0; i < Categories.Count; i++)
-            Categories[i].Index = i;
     }
 
     public bool HasTile(string name) => stringToTile.ContainsKey(name);

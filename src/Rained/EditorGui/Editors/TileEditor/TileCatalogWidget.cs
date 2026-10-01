@@ -58,6 +58,7 @@ class TileCatalogWidget(ITileSelectionState selectionState) : TileEditorCatalog
         foreach (var i in tileSearchResults)
         {
             var group = tileDb.Categories[i];
+            if (group.Tiles.Count == 0) continue;
 
             if (ColoredSelectable(group.Name, group.Color, state.SelectedTileGroup == i) || tileSearchResults.Count == 1)
             {
