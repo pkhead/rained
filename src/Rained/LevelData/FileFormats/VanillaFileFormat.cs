@@ -832,6 +832,9 @@ class VanillaFileFormat : ILevelFileFormat
                     // tile head
                     if (cell.TileHead is not null)
                     {
+                        // add two because:
+                        // 1. it's one-indexed
+                        // 2. vanilla has a built-in "Special" psuedo-category that contributes to indexing.
                         int group = cell.TileHead.Category.Index + 2 + hostData.MaterialDatabase.Categories.Count;
                         int sub = cell.TileHead.Category.Tiles.IndexOf(cell.TileHead) + 1;
                         string name = cell.TileHead.Name;
