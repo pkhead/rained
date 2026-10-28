@@ -82,6 +82,19 @@ class DrizzleMassRender : IDisposable
 
     public void Dispose()
     {
+       // _waitHandle.Dispose();
+       Thread[] threads;
+
+        lock (_activeThreads)
+        {
+            threads = [.. _activeThreads];
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Join();
+        }
+
         _waitHandle.Dispose();
     }
 
@@ -158,9 +171,12 @@ class DrizzleMassRender : IDisposable
         finally
         {
             lock (runtime) _runtimes.AddLast(runtime);
-            lock (_activeThreads) _activeThreads.Remove(Thread.CurrentThread);
 
             _waitHandle.Set();
+
+            lock (_activeThreads) _activeThreads.Remove(Thread.CurrentThread);
+
+            
         }
 
         void HandleCancel()
