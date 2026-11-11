@@ -327,10 +327,13 @@ public class Window : IDisposable
     private void OnMouseMove(IMouse mouse, Vector2 position)
     {
         // idk what this is about
-        if (OperatingSystem.IsMacOS())
-        {
-            position *= ContentScale;
-        }
+        // if (OperatingSystem.IsMacOS())
+        // {
+        //     position *= ContentScale;
+        // }
+
+        // This should work for cases like Hi-DPI
+        position *= ContentScale;
         
         _mousePos = position;
         MouseMove?.Invoke(position.X, position.Y);
