@@ -69,14 +69,29 @@ public class Window : IDisposable
     public WindowState WindowState { get => window.WindowState; set => window.WindowState = value; }
     public bool IsEventDriven { get => window.IsEventDriven; set => window.IsEventDriven = value; }
 
+    private enum GlfwPlatform {
+        Any     = 0x00060000,
+        Win32   = 0x00060001,
+        Cocoa   = 0x00060002,
+        Wayland = 0x00060003,
+        X11     = 0x00060004,
+        Null    = 0x00060005
+    };
+    
+    private static readonly unsafe delegate*<GlfwPlatform> GlfwGetPlatform;
     private static readonly unsafe delegate*<WindowHandle*, float*, float*, void> GlfwGetWindowContentScale;
     private static readonly unsafe delegate*<WindowHandle*, nint, void> GlfwSetWindowContentScaleCallback;
+
+    private static GlfwPlatform Platform;
 
     unsafe static Window()
     {
         var glfw = Glfw.GetApi();
 
         glfw.SetErrorCallback(GlfwErrorCallback);
+
+        GlfwGetPlatform = (delegate*<GlfwPlatform>)
+            glfw.Context.GetProcAddress("glfwGetPlatform");
         
         GlfwGetWindowContentScale = (delegate*<WindowHandle*, float*, float*, void>)
             glfw.Context.GetProcAddress("glfwGetWindowContentScale");
@@ -270,6 +285,8 @@ public class Window : IDisposable
                 var ptr = Marshal.GetFunctionPointerForDelegate(_glfwContentScaleChangedCallback);
                 GlfwSetWindowContentScaleCallback(glfwWindow, ptr);
             }
+            
+            Platform = GlfwGetPlatform();
         }
         
         PlatformSpecific.TryWindowTheme(window, out WindowTheme theme);
@@ -326,14 +343,11 @@ public class Window : IDisposable
 
     private void OnMouseMove(IMouse mouse, Vector2 position)
     {
-        // idk what this is about
-        // if (OperatingSystem.IsMacOS())
-        // {
-        //     position *= ContentScale;
-        // }
-
-        // This should work for cases like Hi-DPI
-        position *= ContentScale;
+        // idk what this is about (Fix for Hi-DPI)
+        if (Platform is GlfwPlatform.Cocoa or GlfwPlatform.Wayland)
+        {
+            position *= ContentScale;
+        }
         
         _mousePos = position;
         MouseMove?.Invoke(position.X, position.Y);
